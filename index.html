@@ -313,6 +313,32 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       </div>
     </div>
 
+
+    <!-- ── CAMPAIGN PRESETS ── -->
+    <div class="section">
+      <div class="section-hdr" onclick="toggleSec(this)">
+        <h3>💾 Campaign Presets</h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body">
+        <div class="field">
+          <label>Preset Name</label>
+          <input id="preset-name" placeholder="May 2026 Cruise Campaign">
+        </div>
+        <div class="field">
+          <label>Saved Presets</label>
+          <select id="preset-select" onchange="updatePresetButtons()"></select>
+        </div>
+        <div class="utm-btn-row">
+          <button class="abtn navy" onclick="saveCampaignPreset()">Save Current Campaign</button>
+          <button class="abtn" id="preset-load-btn" onclick="loadCampaignPreset()">Load Preset</button>
+        </div>
+        <div class="utm-btn-row">
+          <button class="abtn red" id="preset-delete-btn" onclick="deleteCampaignPreset()">Delete Preset</button>
+        </div>
+        <div id="preset-status" style="font-size:9px;color:var(--muted);margin-top:4px;min-height:12px;"></div>
+      </div>
+    </div>
+
     <!-- ── 1. PASTE RAW OFFER ── -->
     <div class="section">
       <div class="section-hdr" onclick="toggleSec(this)">
@@ -1328,6 +1354,117 @@ function clearHeroImagesOnly(){
 // ═══════════════════════════════════════════════════════
 // SAVE / LOAD
 // ═══════════════════════════════════════════════════════
+
+const CAMPAIGN_PRESETS_KEY = "campaignPresetsV1";
+
+function getCampaignSnapshot(){
+  return {
+    offers: JSON.parse(JSON.stringify(offers)),
+    campaign: {
+      name: document.getElementById("g-campaign").value || "",
+      date: document.getElementById("g-date").value || "",
+      airport: document.getElementById("g-airport").value || "",
+      terms: document.getElementById("g-terms").value || ""
+    }
+  };
+}
+
+function readCampaignPresets(){
+  try{
+    const raw = localStorage.getItem(CAMPAIGN_PRESETS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  }catch(e){
+    console.warn("Could not parse campaign presets", e);
+    return {};
+  }
+}
+
+function writeCampaignPresets(presets){
+  localStorage.setItem(CAMPAIGN_PRESETS_KEY, JSON.stringify(presets));
+}
+
+function refreshPresetList(selectedName){
+  const presets = readCampaignPresets();
+  const sel = document.getElementById("preset-select");
+  if(!sel) return;
+  const names = Object.keys(presets).sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML = "";
+  if(!names.length){
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "No presets saved";
+    sel.appendChild(opt);
+    sel.value = "";
+  }else{
+    names.forEach(name=>{
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      sel.appendChild(opt);
+    });
+    sel.value = selectedName && presets[selectedName] ? selectedName : names[0];
+  }
+  updatePresetButtons();
+}
+
+function updatePresetButtons(){
+  const sel = document.getElementById("preset-select");
+  const hasSelection = !!(sel && sel.value);
+  const loadBtn = document.getElementById("preset-load-btn");
+  const deleteBtn = document.getElementById("preset-delete-btn");
+  if(loadBtn) loadBtn.disabled = !hasSelection;
+  if(deleteBtn) deleteBtn.disabled = !hasSelection;
+}
+
+function saveCampaignPreset(){
+  save();
+  const nameInput = document.getElementById("preset-name");
+  const status = document.getElementById("preset-status");
+  const name = (nameInput.value || "").trim();
+  if(!name){ if(status) status.textContent = "⚠ Enter a preset name"; return; }
+  const presets = readCampaignPresets();
+  if(presets[name] && !confirm(`Overwrite preset "${name}"?`)) return;
+  presets[name] = { version:"1.0", savedAt:new Date().toISOString(), ...getCampaignSnapshot() };
+  writeCampaignPresets(presets);
+  refreshPresetList(name);
+  if(status) status.textContent = "✓ Preset saved";
+}
+
+function loadCampaignPreset(){
+  const sel = document.getElementById("preset-select");
+  const status = document.getElementById("preset-status");
+  const name = sel ? sel.value : "";
+  if(!name){ if(status) status.textContent = "⚠ Select a preset to load"; return; }
+  const payload = readCampaignPresets()[name];
+  if(!payload){ if(status) status.textContent = "⚠ Preset not found"; refreshPresetList(); return; }
+  offers = payload.offers || [{},{},{},{}];
+  const c = payload.campaign || {};
+  document.getElementById("g-campaign").value = c.name || "";
+  document.getElementById("g-date").value = c.date || "";
+  document.getElementById("g-airport").value = c.airport || "";
+  document.getElementById("g-terms").value = c.terms || "";
+  load(cur);
+  rv();
+  updateAllStatus();
+  genUtm();
+  genStandardUtms();
+  updateExportFilenames();
+  if(status) status.textContent = "✓ Preset loaded";
+}
+
+function deleteCampaignPreset(){
+  const sel = document.getElementById("preset-select");
+  const status = document.getElementById("preset-status");
+  const name = sel ? sel.value : "";
+  if(!name){ if(status) status.textContent = "⚠ Select a preset to delete"; return; }
+  if(!confirm(`Delete preset "${name}"?`)) return;
+  const presets = readCampaignPresets();
+  delete presets[name];
+  writeCampaignPresets(presets);
+  refreshPresetList();
+  if(status) status.textContent = "✓ Preset deleted";
+}
 function saveDraft(){
   save();
   const clean=JSON.parse(JSON.stringify({offers,campaign:{name:document.getElementById("g-campaign").value,date:document.getElementById("g-date").value,airport:document.getElementById("g-airport").value,terms:document.getElementById("g-terms").value}}));
@@ -1587,6 +1724,7 @@ function fillEx(){
   document.getElementById("g-date").value="16th May 2026";
   document.getElementById("g-airport").value="Newcastle";
   document.getElementById("g-terms").value="T&Cs Apply";
+  refreshPresetList();
   load(0); sv(0); rv(); updateAllStatus(); updateExportFilenames();
 }
 
@@ -2213,7 +2351,7 @@ setTimeout(()=>{ try{ genStandardUtms(); }catch(e){} }, 250);
 // ═══════════════════════════════════════════════════════
 window.addEventListener("resize",rv);
 rv(); updateAllStatus();
-
+refreshPresetList();
 
 // ═══════════════════════════════════════════════════════
 // TIGHTER UI PATCH — v1.5.8a
