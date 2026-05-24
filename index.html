@@ -43,7 +43,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .otab.dragging{opacity:.55;}
 .otab.drag-over{background:rgba(160,146,103,.12);border-bottom-color:var(--gold);}
 .otab.move-preflash{background:rgba(160,146,103,.14);box-shadow:inset 0 0 0 1px rgba(160,146,103,.32);}
-.otab.move-postflash{background:rgba(160,146,103,.18);box-shadow:inset 0 0 0 1px rgba(160,146,103,.38);}
+.otab.move-postflash{background:rgba(160,146,103,.16);border-bottom-color:var(--gold);box-shadow:inset 0 0 0 1px rgba(160,146,103,.34);}
 .status-dot{width:6px;height:6px;border-radius:50%;background:var(--border);}
 .status-dot.green{background:var(--green);}
 .status-dot.amber{background:var(--amber);}
@@ -299,9 +299,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <button class="otab" id="ot2" onclick="sv(2)" draggable="true" data-offer-tab="2"><span>Offer 3</span><span class="status-dot amber" id="sd2"></span></button>
     <button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3"><span>Offer 4</span><span class="status-dot amber" id="sd3"></span></button>
   </div>
-  <div class="row" style="margin-top:6px;">
-    <button class="abtn" id="move-left-btn" onclick="moveOfferLeft()" style="flex:1;">← Move Offer Left</button>
-    <button class="abtn" id="move-right-btn" onclick="moveOfferRight()" style="flex:1;">Move Offer Right →</button>
+  <div class="row" style="margin-top:4px;gap:4px;">
+    <button class="abtn" id="move-left-btn" onclick="moveOfferLeft()" style="flex:1;">← Move Left</button>
+    <button class="abtn" id="move-right-btn" onclick="moveOfferRight()" style="flex:1;">Move Right →</button>
   </div>
 
   <div class="sb-body">
@@ -1912,12 +1912,12 @@ function updateMoveOfferButtons(){
   if(leftBtn){
     const canLeft = cur > 0;
     leftBtn.disabled = !canLeft;
-    leftBtn.style.visibility = canLeft ? 'visible' : 'hidden';
+    leftBtn.style.visibility = "visible";
   }
   if(rightBtn){
     const canRight = cur < 3;
     rightBtn.disabled = !canRight;
-    rightBtn.style.visibility = canRight ? 'visible' : 'hidden';
+    rightBtn.style.visibility = "visible";
   }
 }
 function flashOfferTab(idx, className, duration){
@@ -1937,11 +1937,11 @@ async function moveOfferByStep(step){
   const fromIdx = cur;
   const toIdx = fromIdx + step;
   if(toIdx < 0 || toIdx > 3) return;
-  await flashOfferTab(fromIdx, "move-preflash", 120);
+  await flashOfferTab(fromIdx, "move-preflash", 160);
   try { commitVisibleFields(); } catch(_e){}
   moveOfferState(fromIdx, toIdx);
   refreshAfterOfferReorder();
-  await flashOfferTab(toIdx, "move-postflash", 140);
+  await flashOfferTab(toIdx, "move-postflash", 1800);
 }
 function moveOfferLeft(){ moveOfferByStep(-1); }
 function moveOfferRight(){ moveOfferByStep(1); }
