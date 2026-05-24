@@ -203,6 +203,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .act-row{display:flex;gap:4px;margin-bottom:4px;}
 .abtn{flex:1;padding:6px 6px;font-size:10px;font-weight:700;border-radius:var(--radius);border:1px solid var(--border);background:#fff;color:var(--text);letter-spacing:.02em;white-space:nowrap;transition:all .15s;}
 .abtn:hover{background:var(--panel);}
+.abtn.reorder-btn{transition:background-color .16s ease,box-shadow .16s ease,transform .16s ease,border-color .16s ease;}
+.abtn.reorder-btn:hover:not(:disabled){background:#e9e6df;border-color:#c9c1ad;box-shadow:0 1px 4px rgba(14,27,42,.12);transform:translateY(-1px);}
+.abtn.reorder-btn:active:not(:disabled){transform:translateY(0);box-shadow:0 1px 2px rgba(14,27,42,.1);}
 .abtn.navy{background:var(--navy);color:#fff;border-color:var(--navy);}
 .abtn.gold{background:var(--gold);color:#fff;border-color:var(--gold);}
 .abtn.green{background:var(--green);color:#fff;border-color:var(--green);}
@@ -210,6 +213,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .abtn.amber{background:var(--amber);color:#fff;border-color:var(--amber);}
 .lock-ind{display:none;font-size:9px;color:var(--amber);font-weight:700;text-align:center;margin-bottom:4px;padding:3px;background:#fff8e0;border-radius:3px;}
 .lock-ind.active{display:block;}
+.session-hint{font-size:9px;color:var(--muted);text-align:center;margin-top:3px;}
 
 /* ── PREVIEW ── */
 .preview-toolbar{background:var(--navy);padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;}
@@ -332,8 +336,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
   <div class="reorder-group" data-production-optional="true">
     <div class="reorder-label">Reorder Cards</div>
     <div class="reorder-buttons">
-      <button class="abtn" id="move-left-btn" onclick="moveOfferLeft()">← Move Left</button>
-      <button class="abtn" id="move-right-btn" onclick="moveOfferRight()">Move Right →</button>
+      <button class="abtn reorder-btn" id="move-left-btn" onclick="moveOfferLeft()">← Move Left</button>
+      <button class="abtn reorder-btn" id="move-right-btn" onclick="moveOfferRight()">Move Right →</button>
     </div>
   </div>
 
@@ -563,6 +567,9 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <button class="export-btn all" onclick="exportAllJPG()" id="exp-all-jpg-btn">
         <span>⬇</span><span id="exp-all-jpg-lbl">Export All 4 Cards JPG ZIP</span>
       </button>
+      <button class="export-btn all" onclick="exportCampaignPack()" id="exp-pack-btn">
+        <span>📦</span><span id="exp-pack-lbl">Export Campaign Pack</span>
+      </button>
       <div class="export-progress" id="export-progress"></div>
       <div class="export-warn" id="export-warn">
         <strong>⚠ Export Warning</strong><br>
@@ -594,6 +601,10 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <button class="abtn" onclick="resetOffer()">Reset Offer</button>
       <button class="abtn red" onclick="resetAll()">Reset All</button>
     </div>
+    <div class="act-row">
+      <button class="abtn" onclick="clearSavedSession()">Clear Saved Session</button>
+    </div>
+    <div class="session-hint">Local autosave is enabled on this browser</div>
   </div>
 </div>
 
@@ -859,7 +870,7 @@ function load(i){
   else document.getElementById("crop-controls").classList.remove("active");
   operatorChanged(true); genUtm(); genStandardUtms(); updateAllStatus(); updateExportFilenames();
 }
-function up(){ save(); rv(); updateAllStatus(); genUtm(); genStandardUtms(); checkPortsWarn(); updateExportFilenames(); }
+function up(){ save(); rv(); updateAllStatus(); genUtm(); genStandardUtms(); checkPortsWarn(); updateExportFilenames(); queueAutosave(); }
 
 // ═══════════════════════════════════════════════════════
 // OPERATOR
@@ -1489,6 +1500,62 @@ function clearHeroImagesOnly(){
 
 const CAMPAIGN_PRESETS_KEY = "campaignPresetsV1";
 
+const AUTOSAVE_KEY = "cobSessionAutosaveV1";
+let autosaveTimer = null;
+let autosaveHydrating = false;
+
+function buildAutosavePayload(){
+  save();
+  const clonedOffers = JSON.parse(JSON.stringify(offers || [{},{},{},{}]));
+  // Autosave flow: never persist local binary data; keep recovery note for UI messaging.
+  clonedOffers.forEach(o=>{
+    if(o && o._img && String(o._img).startsWith('data:')){ delete o._img; o._imgNeedsReupload = true; }
+    if(o && o._logoCustom && String(o._logoCustom).startsWith('data:')){ delete o._logoCustom; o._logoNeedsReupload = true; }
+  });
+  return {version:'1.0',savedAt:new Date().toISOString(),cur,builderMode,lockedOffers,campaign:{name:document.getElementById('g-campaign').value||'',date:document.getElementById('g-date').value||'',airport:document.getElementById('g-airport').value||'',terms:document.getElementById('g-terms').value||''},offers:clonedOffers};
+}
+function saveSessionNow(){
+  if(autosaveHydrating) return;
+  try{ localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(buildAutosavePayload())); }catch(e){}
+}
+function queueAutosave(){
+  if(autosaveHydrating) return;
+  clearTimeout(autosaveTimer);
+  // Debounced autosave avoids thrashing during slider drags / typing.
+  autosaveTimer = setTimeout(saveSessionNow, 420);
+}
+function readSavedSession(){
+  try{ const raw=localStorage.getItem(AUTOSAVE_KEY); return raw?JSON.parse(raw):null; }catch(e){ return null; }
+}
+function applySessionPayload(data){
+  if(!data || !Array.isArray(data.offers)) return;
+  // Restore flow: hydrate core state in one pass before rendering.
+  autosaveHydrating = true;
+  offers = data.offers.slice(0,4); while(offers.length<4) offers.push({});
+  lockedOffers = Array.isArray(data.lockedOffers) ? data.lockedOffers.slice(0,4) : [false,false,false,false];
+  const c = data.campaign||{};
+  document.getElementById('g-campaign').value = c.name || '';
+  document.getElementById('g-date').value = c.date || '';
+  document.getElementById('g-airport').value = c.airport || '';
+  document.getElementById('g-terms').value = c.terms || '';
+  cur = Number.isInteger(data.cur) ? Math.min(3,Math.max(0,data.cur)) : 0;
+  load(cur); rv(); updateAllStatus(); genUtm(); genStandardUtms(); updateExportFilenames();
+  if(data.builderMode) setBuilderMode(data.builderMode, true);
+  autosaveHydrating = false;
+  const needsReup = offers.some(o => o && (o._imgNeedsReupload || o._logoNeedsReupload));
+  if(needsReup) setTimeout(()=>alert('Local image needs re-uploading'), 120);
+}
+function promptRestoreSession(){
+  const saved = readSavedSession();
+  if(!saved || !saved.offers) return;
+  if(confirm('Restore Previous Session?')) applySessionPayload(saved);
+}
+function clearSavedSession(){
+  try{ localStorage.removeItem(AUTOSAVE_KEY); }catch(e){}
+  alert('Saved session cleared');
+}
+
+
 function getCampaignSnapshot(){
   return {
     offers: JSON.parse(JSON.stringify(offers)),
@@ -2085,6 +2152,7 @@ function refreshAfterOfferReorder(){
   try { updateExportFilenames(); } catch(e){}
   try { renderPreviewMode(true); } catch(e){ try { renderVisibleCard(); } catch(_e){} }
   try { updateMoveOfferButtons(); } catch(e){}
+  queueAutosave();
 }
 
 function initOfferTabDragDrop(){
@@ -2614,6 +2682,39 @@ async function exportAllJPG(){
 setTimeout(()=>{ try{ updateUtmOutput(); }catch(e){} }, 250);
 setTimeout(()=>{ try{ genStandardUtms(); }catch(e){} }, 250);
 
+
+async function exportCampaignPack(){
+  if(exportRunning) return;
+  save();
+  if(!(await ensureJSZipLoaded())) return;
+  const btn=document.getElementById('exp-pack-btn'); const lbl=document.getElementById('exp-pack-lbl'); const prog=document.getElementById('export-progress');
+  exportRunning=true; if(btn) btn.disabled=true; if(lbl) lbl.textContent='Building Pack...';
+  try{
+    // Export pack flow: render assets through canonical renderCardToImageBlob path, then zip once complete.
+    const zip=new JSZip(); const cardsFolder=zip.folder('cards'); const utmFolder=zip.folder('utms'); const summaryFolder=zip.folder('summary');
+    const lines=[];
+    for(let i=0;i<4;i++){
+      const o=offers[i]||{};
+      if(!(o.name||o.ship||o.price)) continue;
+      if(prog) prog.textContent=`Rendering card ${i+1}/4...`;
+      const blob=await renderCardToImageBlob(o,'image/png',1.0);
+      cardsFolder.file(filenameWithExt(i,'png'), blob);
+      lines.push(`Card ${i+1},${(o._utm||buildUtmForOffer(i).url||'').replace(/\n/g,' ')}`);
+    }
+    utmFolder.file('utms.csv',['card,utm',...lines].join('\n'));
+    const stamp=new Date();
+    summaryFolder.file('campaign-summary.txt',`Campaign: ${document.getElementById('g-campaign').value||'untitled'}
+Send Date: ${document.getElementById('g-date').value||''}
+Exported: ${stamp.toISOString()}
+Offers Included: ${lines.length}`);
+    if(prog) prog.textContent='Compressing campaign-pack.zip...';
+    const blob=await zip.generateAsync({type:'blob'});
+    downloadBlob(blob,'campaign-pack.zip');
+    if(prog) prog.textContent='✓ Campaign pack exported';
+  }catch(err){ console.error(err); if(prog) prog.textContent='⚠ Campaign pack export failed'; }
+  exportRunning=false; if(btn) btn.disabled=false; if(lbl) lbl.textContent='Export Campaign Pack';
+}
+
 // ═══════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════
@@ -2626,6 +2727,8 @@ setBuilderMode(savedBuilderMode,true);
 initOfferTabDragDrop();
 updateMoveOfferButtons();
 refreshPresetList();
+promptRestoreSession();
+queueAutosave();
 
 // ═══════════════════════════════════════════════════════
 // TIGHTER UI PATCH — v1.5.8a
