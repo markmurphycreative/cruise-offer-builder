@@ -263,6 +263,19 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .modal-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
 .modal-btn{padding:5px 10px;font-size:11px;font-weight:600;border-radius:var(--radius);border:1px solid var(--border);background:#fff;cursor:pointer;}
 .modal-btn.primary{background:var(--navy);color:#fff;border-color:var(--navy);}
+
+.session-restore-modal{max-width:420px;padding:0;border-radius:10px;overflow:hidden;border:1px solid rgba(14,27,42,.16);box-shadow:0 18px 40px rgba(14,27,42,.28);}
+.session-restore-head{background:var(--navy);padding:14px 18px;border-bottom:3px solid var(--gold);}
+.session-restore-head h2{color:#fff;font-size:14px;letter-spacing:.04em;margin:0;}
+.session-restore-body{padding:16px 18px 18px;background:#fff;}
+.session-restore-body p{font-size:11px;line-height:1.5;color:var(--muted);margin-bottom:12px;}
+.session-restore-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.session-restore-btn{padding:8px 10px;font-size:10px;font-weight:700;letter-spacing:.04em;border-radius:var(--radius);border:1px solid var(--border);background:#fff;color:var(--navy);text-transform:uppercase;}
+.session-restore-btn.restore{background:var(--gold);border-color:var(--gold);color:#fff;}
+.session-restore-btn.fresh{background:#fff;color:var(--navy);}
+@media (max-width:520px){
+  .session-restore-actions{grid-template-columns:1fr;}
+}
 .checklist-item{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:11px;}
 
 /* ── QA PANEL ── */
@@ -653,6 +666,21 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 </div>
 
 <!-- ══════════════════════ MODALS ══════════════════════ -->
+
+<div class="modal-overlay" id="session-restore-modal" role="dialog" aria-modal="true" aria-labelledby="session-restore-title">
+  <div class="modal session-restore-modal">
+    <div class="session-restore-head">
+      <h2 id="session-restore-title">Restore previous session?</h2>
+    </div>
+    <div class="session-restore-body">
+      <p>A saved session was found. Restore it or start fresh.</p>
+      <div class="session-restore-actions">
+        <button class="session-restore-btn restore" onclick="chooseRestoreSession()">Restore Session</button>
+        <button class="session-restore-btn fresh" onclick="chooseStartFreshSession()">Start Fresh</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="parse-preview-modal">
   <div class="modal">
@@ -1585,14 +1613,33 @@ function applySessionPayload(data){
   const needsReup = offers.some(o => o && (o._imgNeedsReupload || o._logoNeedsReupload));
   if(needsReup) setTimeout(()=>alert('Local image needs re-uploading'), 120);
 }
+let pendingRestoreSession = null;
+
+function closeSessionRestoreModal(){
+  const modal = document.getElementById('session-restore-modal');
+  if(modal) modal.classList.remove('active');
+}
+function chooseRestoreSession(){
+  const payload = pendingRestoreSession;
+  pendingRestoreSession = null;
+  closeSessionRestoreModal();
+  if(payload) applySessionPayload(payload);
+}
+function chooseStartFreshSession(){
+  pendingRestoreSession = null;
+  closeSessionRestoreModal();
+}
 function promptRestoreSession(){
   const saved = readSavedSession();
   if(!saved || !saved.offers) return;
-  if(confirm('Restore Previous Session?')) applySessionPayload(saved);
+  pendingRestoreSession = saved;
+  const modal = document.getElementById('session-restore-modal');
+  if(modal) modal.classList.add('active');
 }
 function clearSavedSession(){
   try{ localStorage.removeItem(AUTOSAVE_KEY); }catch(e){}
-  alert('Saved session cleared');
+  pendingRestoreSession = null;
+  closeSessionRestoreModal();
 }
 
 
