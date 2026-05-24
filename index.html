@@ -1818,6 +1818,7 @@ function sv(i){
   try { loadOfferToEditor(cur); } catch(e) { try { load(cur); } catch(_e){} }
   try { updateLockUI(); } catch(e){}
   try { genUtm(); } catch(e){}
+  try { genStandardUtms(); } catch(e){}
   try { updateAllStatus(); } catch(e){}
   try { updateExportFilenames(); } catch(e){}
   renderVisibleCard();
@@ -1826,6 +1827,7 @@ function up(){
   try { commitVisibleFields(); } catch(e){}
   try { updateAllStatus(); } catch(e){}
   try { genUtm(); } catch(e){}
+  try { genStandardUtms(); } catch(e){}
   try { checkPortsWarn(); } catch(e){}
   try { updateExportFilenames(); } catch(e){}
   // Refresh must respect the active preview mode.
@@ -2243,6 +2245,7 @@ async function exportAllJPG(){
 }
 // Keep visible UTM box fresh when the page first opens.
 setTimeout(()=>{ try{ updateUtmOutput(); }catch(e){} }, 250);
+setTimeout(()=>{ try{ genStandardUtms(); }catch(e){} }, 250);
 
 // ═══════════════════════════════════════════════════════
 // INIT
