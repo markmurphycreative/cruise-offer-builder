@@ -2167,15 +2167,30 @@ function rv(skipSave){
   if(!skipSave){ try { commitVisibleFields(); } catch(e){} }
   try { oldRvNoPatch(true); } catch(e) { renderVisibleCard(); }
 }
-// After CSV import, load Offer 1 into the fields and render from the fields.
+// After CSV import, keep the active tab stable and force a full UI/UTM refresh.
 const processSheetCSVStable = processSheetCSV;
 processSheetCSV = function(csv,status){
+  const activeBeforeImport = Number(cur);
   processSheetCSVStable(csv,status);
-  cur = 0;
-  document.querySelectorAll('.otab').forEach(function(t,idx){ t.classList.toggle('active', idx === 0); });
-  try { loadOfferToEditor(0); } catch(e) { try { load(0); } catch(_e){} }
+
+  const nextActive = (Number.isInteger(activeBeforeImport) && activeBeforeImport >= 0 && activeBeforeImport <= 3)
+    ? activeBeforeImport
+    : 0;
+  cur = nextActive;
+
+  document.querySelectorAll('.otab').forEach(function(t,idx){ t.classList.toggle('active', idx === cur); });
+
+  try { loadOfferToEditor(cur); } catch(e) { try { load(cur); } catch(_e){} }
+  try { updateLockUI(); } catch(e){}
   try { updateMoveOfferButtons(); } catch(e){}
-  renderVisibleCard();
+
+  try { updateAllStatus(); } catch(e){}
+  try { genAllUtms(true); } catch(e){}
+  try { genUtm(); } catch(e){}
+  try { genStandardUtms(); } catch(e){}
+  try { updateExportFilenames(); } catch(e){}
+
+  try { renderPreviewMode(true); } catch(e){ try { renderVisibleCard(); } catch(_e){} }
 };
 
 
