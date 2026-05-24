@@ -71,11 +71,12 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-hint{font-size:9px;color:var(--muted);margin:5px 0 2px;}
 .hero-source-block{margin-top:6px;padding-top:6px;border-top:1px solid var(--border);}
 .hero-dropzone{padding:14px 10px;min-height:92px;display:flex;align-items:center;justify-content:center;}
-.prod-status{margin-top:6px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:7px 8px;}
-.prod-status-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px;}
-.prod-status-item{font-size:9px;line-height:1.4;color:var(--text);}
+.prod-status{margin-bottom:7px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;}
+.prod-status-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);margin-bottom:3px;}
+.prod-status-list{display:grid;gap:3px;}
+.prod-status-item{font-size:9px;line-height:1.35;color:var(--text);display:flex;align-items:flex-start;gap:5px;}
 .prod-status-item.ok{color:var(--green);}
-.prod-status-item.warn{color:var(--amber);}
+.prod-status-item.warn{color:var(--amber);font-weight:600;}
 
 /* ── ADVANCED SECTION ── */
 .advanced-section{margin-bottom:6px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
@@ -543,6 +544,10 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     <!-- ── 7. EXPORT ── -->
     <div class="export-section">
       <div class="export-title">⬇ Export Cards</div>
+      <div class="prod-status" id="prod-status">
+        <div class="prod-status-title">Export Checklist</div>
+        <div class="prod-status-list" id="prod-status-list"></div>
+      </div>
       <button class="export-btn single" onclick="exportCurrent()" id="exp-single-btn">
         <span>⬇</span><span id="exp-single-lbl">Export Current Card PNG</span>
       </button>
@@ -564,10 +569,6 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <div class="export-filenames" id="export-filenames">
         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px;">Export filenames:</div>
         <div id="filename-list"></div>
-      </div>
-      <div class="prod-status" id="prod-status">
-        <div class="prod-status-title">Export Readiness</div>
-        <div id="prod-status-list"></div>
       </div>
     </div>
 
@@ -746,6 +747,7 @@ let cur = 0, viewMode = "single", zoomPct = 32;
 let lockedOffers = [false,false,false,false];
 let safeZoneOn = false, exportRunning = false;
 let builderMode = "standard";
+let preProductionSectionState = null;
 const PRODUCTION_OPEN_SECTIONS = new Set(["csv-import","campaign-presets","paste-raw-offer","utm-link","standard-utms","hero-image","offer-details"]);
 const FLDS = ["tags","name","ship","incl","price","basis","board","boardlbl","day","month","nights","ports","url","utm_content"];
 
@@ -763,15 +765,32 @@ function setSectionCollapsedByHeader(hdr, collapsed){
   body.classList.toggle("hidden", collapsed);
 }
 function setBuilderMode(mode){
-  builderMode = mode === "production" ? "production" : "standard";
+  const nextMode = mode === "production" ? "production" : "standard";
+  if(nextMode === builderMode) return;
+  const sections = Array.from(document.querySelectorAll(".section[data-section-key]"));
+
+  if(nextMode === "production"){
+    preProductionSectionState = new Map();
+    sections.forEach(sec=>{
+      const hdr = sec.querySelector(".section-hdr");
+      if(!hdr) return;
+      preProductionSectionState.set(sec.dataset.sectionKey, hdr.classList.contains("collapsed"));
+      const keepOpen = PRODUCTION_OPEN_SECTIONS.has(sec.dataset.sectionKey);
+      setSectionCollapsedByHeader(hdr, !keepOpen);
+    });
+  } else if(preProductionSectionState){
+    sections.forEach(sec=>{
+      const hdr = sec.querySelector(".section-hdr");
+      if(!hdr) return;
+      if(!preProductionSectionState.has(sec.dataset.sectionKey)) return;
+      setSectionCollapsedByHeader(hdr, preProductionSectionState.get(sec.dataset.sectionKey));
+    });
+    preProductionSectionState = null;
+  }
+
+  builderMode = nextMode;
   document.getElementById("mode-standard-btn").classList.toggle("active", builderMode === "standard");
   document.getElementById("mode-production-btn").classList.toggle("active", builderMode === "production");
-  if(builderMode === "production"){
-    document.querySelectorAll(".section[data-section-key]").forEach(sec=>{
-      const keepOpen = PRODUCTION_OPEN_SECTIONS.has(sec.dataset.sectionKey);
-      setSectionCollapsedByHeader(sec.querySelector(".section-hdr"), !keepOpen);
-    });
-  }
 }
 function toggleAdv(hdr){
   hdr.nextElementSibling.classList.toggle("open");
@@ -1158,7 +1177,7 @@ function updateProductionStatus(){
   if(o._img && String(o._img).startsWith("http")) checks.push({ok:false,warnLbl:"⚠ External image URL may affect export"});
   const host=document.getElementById("prod-status-list");
   if(!host) return;
-  host.innerHTML=checks.map(c=>`<div class="prod-status-item ${c.ok?"ok":"warn"}">${c.ok?c.okLbl:c.warnLbl}</div>`).join("");
+  host.innerHTML=checks.map(c=>`<div class="prod-status-item ${c.ok?"ok":"warn"}"><span>${c.ok?"✓":"⚠"}</span><span>${c.ok?(c.okLbl||"").replace(/^✓\s*/,""):(c.warnLbl||"").replace(/^⚠\s*/,"")}</span></div>`).join("");
 }
 
 // ═══════════════════════════════════════════════════════
