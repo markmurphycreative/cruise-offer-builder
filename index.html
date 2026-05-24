@@ -81,10 +81,17 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .prod-status-item.warn{color:var(--amber);font-weight:600;}
 .copy-qa-panel{margin-top:6px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;}
 .copy-qa-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);margin-bottom:4px;}
-.copy-qa-status{font-size:10px;line-height:1.4;color:var(--muted);}
+.copy-qa-status{font-size:9px;line-height:1.35;color:var(--muted);margin-bottom:4px;}
 .copy-qa-status.ok{color:var(--green);font-weight:600;}
 .copy-qa-status.warn{color:var(--amber);font-weight:600;}
-.copy-qa-note{font-size:9px;color:var(--muted);margin-top:3px;line-height:1.35;}
+.copy-qa-checklist{display:grid;gap:2px;margin:2px 0 0;}
+.copy-qa-item{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:9px;color:var(--muted);line-height:1.3;}
+.copy-qa-item strong{font-weight:600;color:var(--text);}
+.copy-qa-item .state{font-variant-numeric:tabular-nums;}
+.copy-qa-item.checked .state{color:var(--green);}
+.copy-qa-item.review .state{color:var(--amber);font-weight:600;}
+.copy-qa-item.empty .state{color:#9a9a9a;}
+.copy-qa-note{font-size:9px;color:var(--muted);margin-top:4px;line-height:1.35;}
 .hero-restore-note{display:none;margin-top:5px;font-size:9px;color:#8a5000;background:#fff8f0;border:1px solid #f0c080;border-radius:var(--radius);padding:4px 6px;}
 .hero-restore-note.active{display:block;}
 
@@ -591,8 +598,9 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       </div>
       <div class="copy-qa-panel">
         <div class="copy-qa-title">Spellcheck / Copy QA</div>
-        <div class="copy-qa-status" id="copy-qa-status">✓ Copy looks OK</div>
-        <div class="copy-qa-note" id="copy-qa-note">Passive checks only — review highlighted fields for unusual terms.</div>
+        <div class="copy-qa-status" id="copy-qa-status">— QA not run yet</div>
+        <div class="copy-qa-checklist" id="copy-qa-checklist"></div>
+        <div class="copy-qa-note" id="copy-qa-note">Passive checks only — no auto-correction. Export is never blocked.</div>
       </div>
       <button class="export-btn single" onclick="exportCurrent()" id="exp-single-btn">
         <span>⬇</span><span id="exp-single-lbl">Export Current Card PNG</span>
@@ -1236,9 +1244,10 @@ const SPELLCHECK_FIELDS=[
   {id:"f-incl",warnId:"spell-warn-name",label:"Inclusions"},
   {id:"f-ports",warnId:"spell-warn-ports",label:"Ports"},
   {id:"f-tags",warnId:"spell-warn-tags",label:"USP text"},
-  {id:"raw-paste",warnId:"spell-warn-raw",label:"Parser input"}
+  {id:"raw-paste",warnId:"spell-warn-raw",label:"Parsed offer text"}
 ];
 const PROTECTED_WORDS=new Set(["p&o","p and o","marella","arvia","msc","caribbean","martinique","st","maarten","tenerife","klaviyo","cunard","antigua","grenada","tortola","barbados","lucia","kitts"]);
+let copyQaRunCount=0;
 function getLikelyTypos(text){
   const words=String(text||"").toLowerCase().match(/[a-z][a-z'&.-]{2,}/g)||[];
   const issues=[];
@@ -1251,19 +1260,42 @@ function getLikelyTypos(text){
   return [...new Set(issues)].slice(0,4);
 }
 function setSpellWarn(warnId,msg){const el=document.getElementById(warnId); if(!el) return; el.textContent=msg||""; el.classList.toggle("active",!!msg);}
+function buildQaChecklist(rows){
+  const host=document.getElementById("copy-qa-checklist");
+  if(!host) return;
+  host.innerHTML=rows.map(row=>`<div class="copy-qa-item ${row.stateClass}"><strong>${row.label}</strong><span class="state">${row.state}</span></div>`).join('');
+}
 function runSpellQA(){
+  copyQaRunCount++;
   const byWarn={};
-  SPELLCHECK_FIELDS.forEach(f=>{ const el=document.getElementById(f.id); if(!el) return; const bad=getLikelyTypos(el.value); el.classList.toggle('spell-flag',bad.length>0); if(bad.length){ (byWarn[f.warnId]||(byWarn[f.warnId]=[])).push(`${f.label}: ${bad.join(', ')}`);} });
-  ["spell-warn-name","spell-warn-ports","spell-warn-tags","spell-warn-raw"].forEach(id=>setSpellWarn(id,(byWarn[id]||[]).length?`Spelling QA: ${byWarn[id].join(" · ")}`:""));
-  const qaIssues=Object.values(byWarn).flat().length;
+  const rows=[];
+  SPELLCHECK_FIELDS.forEach(f=>{
+    const el=document.getElementById(f.id);
+    if(!el) return;
+    const value=String(el.value||"").trim();
+    const bad=value?getLikelyTypos(value):[];
+    const isEmpty=!value;
+    el.classList.toggle('spell-flag',bad.length>0);
+    if(bad.length){ (byWarn[f.warnId]||(byWarn[f.warnId]=[])).push(`${f.label}: ${bad.join(', ')}`); }
+    const state=isEmpty?"— Empty / not checked":(bad.length?"⚠ Review":"✓ Checked");
+    const stateClass=isEmpty?"empty":(bad.length?"review":"checked");
+    rows.push({label:f.label,state,stateClass});
+  });
+  buildQaChecklist(rows);
+  ["spell-warn-name","spell-warn-ports","spell-warn-tags","spell-warn-raw"].forEach(id=>setSpellWarn(id,(byWarn[id]||[]).length?`Spelling QA: ${(byWarn[id]||[]).join(" · ")}`:""));
+  const qaIssues=Object.values(byWarn).flat();
   const qaStatus=document.getElementById("copy-qa-status");
   const qaNote=document.getElementById("copy-qa-note");
   if(qaStatus){
-    qaStatus.classList.toggle("ok",qaIssues===0);
-    qaStatus.classList.toggle("warn",qaIssues>0);
-    qaStatus.textContent=qaIssues===0?"✓ Copy looks OK":"⚠ Check spelling / unusual terms";
+    qaStatus.classList.toggle("ok",qaIssues.length===0);
+    qaStatus.classList.toggle("warn",qaIssues.length>0);
+    qaStatus.textContent=qaIssues.length===0?`✓ QA ran (${copyQaRunCount}) — no unusual terms flagged`:`⚠ QA ran (${copyQaRunCount}) — ${qaIssues.length} unusual term${qaIssues.length===1?'':'s'} flagged`;
   }
-  if(qaNote) qaNote.textContent=qaIssues===0?"Passive checks only — browser spellcheck is enabled in key text fields.":"Passive checks only — review highlighted fields and spelling hints before export.";
+  if(qaNote){
+    qaNote.textContent=qaIssues.length===0
+      ?"Passive checks only — no auto-correction. Export is never blocked."
+      :`Passive checks only — review: ${qaIssues.join(' · ')}.`;
+  }
 }
 function checkPortsWarn(){
   const ports=(document.getElementById("f-ports")||{}).value||"";
@@ -1811,14 +1843,14 @@ function loadDraft(){
   const raw=localStorage.getItem("draftCampaign"); if(!raw){alert("No saved draft found");return;}
   const data=JSON.parse(raw); offers=data.offers||[{},{},{},{}];
   if(data.campaign){document.getElementById("g-campaign").value=data.campaign.name||"";document.getElementById("g-date").value=data.campaign.date||"";document.getElementById("g-airport").value=data.campaign.airport||"";document.getElementById("g-terms").value=data.campaign.terms||"";}
-  load(cur); rv(); updateAllStatus(); document.getElementById("save-status").textContent="✓ Draft loaded";
+  load(cur); rv(); updateAllStatus(); runSpellQA(); document.getElementById("save-status").textContent="✓ Draft loaded";
 }
 function exportJSON(){
   save(); const blob=new Blob([JSON.stringify({offers,version:"1.1",exportedAt:new Date().toISOString()},null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="DAS_campaign_"+Date.now()+".json"; a.click();
 }
 function importJSON(){ document.getElementById("import-modal").classList.add("active"); }
 function doImportJSON(){
-  try{ const data=JSON.parse(document.getElementById("import-json-area").value); offers=data.offers||[{},{},{},{}]; load(cur); rv(); updateAllStatus(); closeModal("import-modal"); alert("Imported successfully"); }catch(e){alert("Invalid JSON");}
+  try{ const data=JSON.parse(document.getElementById("import-json-area").value); offers=data.offers||[{},{},{},{}]; load(cur); rv(); updateAllStatus(); runSpellQA(); closeModal("import-modal"); alert("Imported successfully"); }catch(e){alert("Invalid JSON");}
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1851,12 +1883,12 @@ function parseOffer(){
   pendingParseResult={parsed,confidence,score}; showParsePreview();
 }
 function setParseStatus(msg,level){const el=document.getElementById('parse-result'); if(!el) return; el.textContent=msg; el.className='parse-result '+(level||'');}
-function showParsePreview(){const modal=document.getElementById('parse-preview-modal'); if(!modal||!pendingParseResult) return; const {parsed,confidence,score}=pendingParseResult; const body=document.getElementById('parse-preview-body'); const conf=document.getElementById('parse-confidence-badge'); const label=confidence==='high'?'High Confidence':confidence==='partial'?'Partial Match':'Needs Review'; conf.className='parse-result '+confidence; conf.textContent=`${label} (${score})`; const keys=['operatorKey','name','ship','day','month','nights','price','board','boardlbl','incl','ports']; body.innerHTML=keys.filter(k=>parsed[k]).map(k=>{const typos=getLikelyTypos(parsed[k]); return `<div class="parse-preview-item ${typos.length?'spell-flag':''}"><strong>${k}</strong>${parsed[k]}</div>`;}).join('')||'<div class="parse-preview-item">No fields confidently detected.</div>'; const parseTypos=Object.values(parsed).flatMap(v=>getLikelyTypos(v)); setSpellWarn("spell-warn-parse-preview",parseTypos.length?`Spelling QA: ${[...new Set(parseTypos)].slice(0,6).join(", ")}`:""); modal.classList.add('active');}
+function showParsePreview(){const modal=document.getElementById('parse-preview-modal'); if(!modal||!pendingParseResult) return; const {parsed,confidence,score}=pendingParseResult; const body=document.getElementById('parse-preview-body'); const conf=document.getElementById('parse-confidence-badge'); const label=confidence==='high'?'High Confidence':confidence==='partial'?'Partial Match':'Needs Review'; conf.className='parse-result '+confidence; conf.textContent=`${label} (${score})`; const keys=['operatorKey','name','ship','day','month','nights','price','board','boardlbl','incl','ports']; body.innerHTML=keys.filter(k=>parsed[k]).map(k=>{const typos=getLikelyTypos(parsed[k]); return `<div class="parse-preview-item ${typos.length?'spell-flag':''}"><strong>${k}</strong>${parsed[k]}</div>`;}).join('')||'<div class="parse-preview-item">No fields confidently detected.</div>'; const parseTypos=Object.values(parsed).flatMap(v=>getLikelyTypos(v)); setSpellWarn("spell-warn-parse-preview",parseTypos.length?`Spelling QA: ${[...new Set(parseTypos)].slice(0,6).join(", ")}`:""); modal.classList.add('active'); runSpellQA();}
 function cancelParsedOffer(){const m=document.getElementById('parse-preview-modal'); if(m) m.classList.remove('active'); pendingParseResult=null;}
 function applyParsedOffer(){if(!pendingParseResult) return; const {parsed,confidence}=pendingParseResult; const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
   touched.forEach(el=>{el.classList.remove('parse-field-flash'); void el.offsetWidth; el.classList.add('parse-field-flash'); setTimeout(()=>el.classList.remove('parse-field-flash'),1700);});
   const applied=touched.length; const label=confidence==='high'?'High Confidence':confidence==='partial'?'Partial Match':'Needs Review';
-  setParseStatus(`✓ Parsed ${applied} fields — ${label}`,confidence); cancelParsedOffer(); rv(); updateAllStatus(); genUtm(); checkPortsWarn(); updateExportFilenames();}
+  setParseStatus(`✓ Parsed ${applied} fields — ${label}`,confidence); cancelParsedOffer(); rv(); updateAllStatus(); genUtm(); checkPortsWarn(); updateExportFilenames(); runSpellQA();}
 
 // ═══════════════════════════════════════════════════════
 // CARD BUILDER
@@ -2187,6 +2219,7 @@ processSheetCSV = function(csv,status){
   loadOfferToEditor(0);
   updateLockUI();
   renderOfferIndex(0);
+  runSpellQA();
 };
 
 
@@ -2367,6 +2400,7 @@ function up(){
   try { genUtm(); } catch(e){}
   try { genStandardUtms(); } catch(e){}
   try { checkPortsWarn(); } catch(e){}
+  try { runSpellQA(); } catch(e){}
   try { updateExportFilenames(); } catch(e){}
   // Refresh must respect the active preview mode.
   // Single updates one card, Email updates the vertical stack, All 4 updates the grid.
@@ -2404,6 +2438,7 @@ processSheetCSV = function(csv,status){
   try { genUtm(); } catch(e){}
   try { genStandardUtms(); } catch(e){}
   try { updateExportFilenames(); } catch(e){}
+  try { runSpellQA(); } catch(e){}
 
   try { renderPreviewMode(true); } catch(e){ try { renderVisibleCard(); } catch(_e){} }
 };
