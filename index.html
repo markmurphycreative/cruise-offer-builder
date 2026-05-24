@@ -670,24 +670,24 @@ const OPERATOR_HEADERS = {
   custom:   { name:"Custom",               svgData:null, pngData:null, defaultTags:"", color:"#a09267", defaultBoard:"", ships:[] }
 };
 
-const OPERATOR_LANDING_PAGES = {
-  ambassador: "https://www.dawsonandsanderson.co.uk/ambassador-cruise-line",
-  celebrity: "https://www.dawsonandsanderson.co.uk/celebrity-cruises",
-  cunard: "https://www.dawsonandsanderson.co.uk/cunard",
-  fred: "https://www.dawsonandsanderson.co.uk/fred-olsen-cruise-lines",
-  marella: "https://www.dawsonandsanderson.co.uk/marella-cruises",
-  po: "https://www.dawsonandsanderson.co.uk/p-and-o-cruises",
-  royal: "https://www.dawsonandsanderson.co.uk/royal-caribbean-international"
+const OPERATOR_CONFIG = {
+  ambassador:{displayName:"Ambassador Cruise Line",key:"ambassador",url:"https://www.dawsonandsanderson.co.uk/ambassador-cruise-line",usp:"",defaultBoard:"",utmSlug:"ambassador",logoAsset:"none",aliases:[/\bambassador\b/i]},
+  celebrity:{displayName:"Celebrity Cruises",key:"celebrity",url:"https://www.dawsonandsanderson.co.uk/celebrity-cruises",usp:"Luxury · Dining · Wellness · Adults",defaultBoard:"AI",utmSlug:"celebrity",logoAsset:"header",aliases:[/\bcelebrity\b/i,/\bcelebrity\s+cruises\b/i]},
+  cunard:{displayName:"Cunard",key:"cunard",url:"https://www.dawsonandsanderson.co.uk/cunard",usp:"Classic · Luxury · Transatlantic · Heritage",defaultBoard:"HB",utmSlug:"cunard",logoAsset:"header",aliases:[/\bcunard\b/i]},
+  fred:{displayName:"Fred. Olsen Cruise Lines",key:"fred",url:"https://www.dawsonandsanderson.co.uk/fred-olsen-cruise-lines",usp:"Destination · Heritage · Discovery · Boutique",defaultBoard:"HB",utmSlug:"fred_olsen",logoAsset:"header",aliases:[/\bfred\b/i,/\bfred\.?\s*olsen\b/i]},
+  marella:{displayName:"Marella Cruises",key:"marella",url:"https://www.dawsonandsanderson.co.uk/marella-cruises",usp:"Accessible · All Inclusive · Entertainment · Adults Only Cruise",defaultBoard:"AI",utmSlug:"marella",logoAsset:"header",aliases:[/\bmarella\b/i,/\bmarella\s+cruises\b/i]},
+  po:{displayName:"P&O Cruises",key:"po",url:"https://www.dawsonandsanderson.co.uk/p-and-o-cruises",usp:"Adult Only Options · Cuisine · Entertainment · Family",defaultBoard:"FB",utmSlug:"pando",logoAsset:"header",aliases:[/\bp\s*&\s*o\b/i,/\bp\s*and\s*o\b/i,/\bp&o\s+cruises\b/i]},
+  royal:{displayName:"Royal Caribbean",key:"royal",url:"https://www.dawsonandsanderson.co.uk/royal-caribbean-international",usp:"Adventure · Dining · Entertainment · Family",defaultBoard:"SC",utmSlug:"royal_caribbean",logoAsset:"header",aliases:[/\broyal\s+caribbean\b/i,/\brci\b/i,/\broyal\b/i]}
 };
 
 function getOperatorLandingUrl(operatorKey){
-  return OPERATOR_LANDING_PAGES[operatorKey || ""] || "";
+  return (OPERATOR_CONFIG[operatorKey || ""]||{}).url || "";
 }
 
 function shouldAutoFillUrl(currentUrl){
   const val = String(currentUrl || "").trim();
   if(!val) return true;
-  return Object.values(OPERATOR_LANDING_PAGES).includes(val);
+  return Object.values(OPERATOR_CONFIG).some(o=>o.url===val);
 }
 
 const BOARD_MAP = {
@@ -777,6 +777,7 @@ function operatorChanged(silent){
   offers[cur].operator=key;
   document.getElementById("logo-override-area").style.display=(key==="custom"||key==="")?  "block":"none";
   const op=OPERATOR_HEADERS[key];
+  const cfg=OPERATOR_CONFIG[key];
   const urlInput = document.getElementById("f-url");
   const landingUrl = getOperatorLandingUrl(key);
   if(urlInput && landingUrl && shouldAutoFillUrl(urlInput.value)){
@@ -784,11 +785,11 @@ function operatorChanged(silent){
     offers[cur].url = landingUrl;
   }
   if(op&&!silent){
-    if(!offers[cur].tags&&op.defaultTags){ offers[cur].tags=op.defaultTags; document.getElementById("f-tags").value=op.defaultTags; }
-    if(!offers[cur].board&&op.defaultBoard){ const bm=BOARD_MAP[op.defaultBoard]; if(bm){ offers[cur].board=bm[0]; offers[cur].boardlbl=bm[1]; document.getElementById("f-board").value=bm[0]; document.getElementById("f-boardlbl").value=bm[1]; } }
+    if(!offers[cur].tags&&(cfg&&cfg.usp||op.defaultTags)){ const usp=(cfg&&cfg.usp)||op.defaultTags; offers[cur].tags=usp; document.getElementById("f-tags").value=usp; }
+    if(!offers[cur].board&&((cfg&&cfg.defaultBoard)||op.defaultBoard)){ const bm=BOARD_MAP[(cfg&&cfg.defaultBoard)||op.defaultBoard]; if(bm){ offers[cur].board=bm[0]; offers[cur].boardlbl=bm[1]; document.getElementById("f-board").value=bm[0]; document.getElementById("f-boardlbl").value=bm[1]; } }
   }
   if(!silent) rv();
-  genStandardUtms();
+  genUtm(); genStandardUtms(); updateExportFilenames();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -908,9 +909,8 @@ function getExportFilename(i){
       ddmmyy = String(n.getDate()).padStart(2,"0") + String(n.getMonth()+1).padStart(2,"0") + String(n.getFullYear()).slice(-2);
     }
   }
-  const opSlugMap = {po:"po", marella:"marella", royal:"royal_caribbean", celebrity:"celebrity", fred:"fred_olsen", msc:"msc", cunard:"cunard", ncl:"ncl", princess:"princess", virgin:"virgin", tui:"tui", jet2:"jet2", wendy:"wendy_wu"};
   const cleanSlug = v => String(v||"").toLowerCase().replace(/&/g,"and").replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"");
-  const opSlug = opSlugMap[o.operator] || cleanSlug((OPERATOR_HEADERS[o.operator]||{}).name || o.operator || "operator").substring(0,18);
+  const opSlug = ((OPERATOR_CONFIG[o.operator]||{}).utmSlug) || cleanSlug((OPERATOR_HEADERS[o.operator]||{}).name || o.operator || "operator").substring(0,18);
   const nameSlug = cleanSlug(o.name || "offer").substring(0,24);
   return ddmmyy + "_" + opSlug + "_" + nameSlug + "_card" + (i+1) + ".png";
 }
@@ -1195,11 +1195,7 @@ function processSheetCSV(csv,status){
   }
   function opKey(s){
     const v=norm(s).toLowerCase();
-    if(v.includes("p&o")||v.includes("p and o")||v.includes("po cruises")) return "po";
-    if(v.includes("marella")) return "marella";
-    if(v.includes("royal")) return "royal";
-    if(v.includes("celebrity")) return "celebrity";
-    if(v.includes("fred")) return "fred";
+    for(const [k,cfg] of Object.entries(OPERATOR_CONFIG)){ if((cfg.aliases||[]).some(r=>r.test(v))) return k; }
     if(v.includes("msc")) return "msc";
     if(v.includes("cunard")) return "cunard";
     if(v.includes("norwegian")||v==="ncl") return "ncl";
@@ -1522,7 +1518,7 @@ function doImportJSON(){
 function getOrdinal(n){ const s=["th","st","nd","rd"],v=n%100; return s[(v-20)%10]||s[v]||s[0]; }
 let pendingParseResult=null;
 const PARSE_FIELD_MAP={operatorKey:"f-operator",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};
-const OPERATOR_ALIASES={po:[/\bp\s*&\s*o\b/i,/\bp\s*and\s*o\b/i],royal:[/\broyal\b/i,/\brci\b/i,/\broyal\s+caribbean\b/i],marella:[/\bmarella\b/i],celebrity:[/\bcelebrity\b/i],fred:[/\bfred\b/i,/\bfred\.?\s*olsen\b/i],cunard:[/\bcunard\b/i],msc:[/\bmsc\b/i],ncl:[/\bnorwegian\b/i,/\bncl\b/i],princess:[/\bprincess\b/i],ambassador:[/\bambassador\b/i],virgin:[/\bvirgin\b/i]};
+const OPERATOR_ALIASES={po:[/\bp\s*&\s*o\b/i,/\bp\s*and\s*o\b/i,/\bp&o\s+cruises\b/i],royal:[/\broyal\b/i,/\brci\b/i,/\broyal\s+caribbean\b/i],marella:[/\bmarella\b/i,/\bmarella\s+cruises\b/i],celebrity:[/\bcelebrity\b/i,/\bcelebrity\s+cruises\b/i],fred:[/\bfred\s+olsen\b/i,/\bfred\.?\s*olsen\b/i],cunard:[/\bcunard\b/i],msc:[/\bmsc\b/i],ncl:[/\bnorwegian\b/i,/\bncl\b/i],princess:[/\bprincess\b/i],ambassador:[/\bambassador\b/i],virgin:[/\bvirgin\b/i]};
 const AIRPORT_WORDS=["newcastle","manchester","heathrow","gatwick","birmingham","bristol","glasgow","edinburgh","london"];
 function parseOffer(){
   const raw=(document.getElementById("raw-paste")||{}).value||""; if(!raw.trim()) return setParseStatus("Nothing to parse","low");
@@ -2190,15 +2186,14 @@ function rv(skipSave){
 // CLEAN UTM MODULE — v1.5.4
 // One UTM source of truth. Does not touch preview / CSV / export rendering.
 // ═══════════════════════════════════════════════════════
-const DANDS_OPERATOR_UTM = {
-  ambassador: { slug: "ambassador", label: "Ambassador Cruise Line", url: "https://www.dawsonandsanderson.co.uk/ambassador-cruise-line", needles:["ambassador-cruise-line","ambassador"] },
-  celebrity:  { slug: "celebrity", label: "Celebrity Cruises", url: "https://www.dawsonandsanderson.co.uk/celebrity-cruises", needles:["celebrity-cruises","celebrity"] },
-  cunard:     { slug: "cunard", label: "Cunard", url: "https://www.dawsonandsanderson.co.uk/cunard", needles:["/cunard","cunard"] },
-  fred:       { slug: "fred_olsen", label: "Fred. Olsen Cruise Lines", url: "https://www.dawsonandsanderson.co.uk/fred-olsen-cruise-lines", needles:["fred-olsen-cruise-lines","fred-olsen","fred"] },
-  marella:    { slug: "marella", label: "Marella Cruises", url: "https://www.dawsonandsanderson.co.uk/marella-cruises", needles:["marella-cruises","marella"] },
-  po:         { slug: "pando", label: "P&O Cruises", url: "https://www.dawsonandsanderson.co.uk/p-and-o-cruises", needles:["p-and-o-cruises","p-and-o-c","p&o","p%26o","po cruises"] },
-  royal:      { slug: "royal_caribbean", label: "Royal Caribbean", url: "https://www.dawsonandsanderson.co.uk/royal-caribbean-international", needles:["royal-caribbean-international","royal-caribbean","royal"] }
-};
+const DANDS_OPERATOR_UTM = Object.fromEntries(
+  Object.entries(OPERATOR_CONFIG).map(([key,cfg])=>[key,{
+    slug: cfg.utmSlug,
+    label: cfg.displayName,
+    url: cfg.url,
+    needles:[cfg.url.split("/").pop(), key, cfg.displayName.toLowerCase(), ...(cfg.aliases||[]).map(r=>String(r))]
+  }])
+);
 function cleanUtmSlug(v){
   return String(v || "")
     .toLowerCase()
@@ -2223,6 +2218,7 @@ function parseSendDateToDDMMYY(raw){
 function detectOperatorKey(input){
   const text = String(input || "").toLowerCase();
   if(!text) return "";
+  for(const [key,cfg] of Object.entries(OPERATOR_CONFIG)){ if((cfg.aliases||[]).some(r=>r.test(text))) return key; }
   if(DANDS_OPERATOR_UTM[text]) return text;
   for(const [key,cfg] of Object.entries(DANDS_OPERATOR_UTM)){
     if((cfg.needles || []).some(n => text.includes(String(n).toLowerCase()))) return key;
