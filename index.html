@@ -79,6 +79,14 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .prod-status-item{font-size:9px;line-height:1.35;color:var(--text);display:flex;align-items:flex-start;gap:5px;}
 .prod-status-item.ok{color:var(--green);}
 .prod-status-item.warn{color:var(--amber);font-weight:600;}
+.copy-qa-panel{margin-top:6px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;}
+.copy-qa-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);margin-bottom:4px;}
+.copy-qa-status{font-size:10px;line-height:1.4;color:var(--muted);}
+.copy-qa-status.ok{color:var(--green);font-weight:600;}
+.copy-qa-status.warn{color:var(--amber);font-weight:600;}
+.copy-qa-note{font-size:9px;color:var(--muted);margin-top:3px;line-height:1.35;}
+.hero-restore-note{display:none;margin-top:5px;font-size:9px;color:#8a5000;background:#fff8f0;border:1px solid #f0c080;border-radius:var(--radius);padding:4px 6px;}
+.hero-restore-note.active{display:block;}
 
 /* ── ADVANCED SECTION ── */
 .advanced-section{margin-bottom:6px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
@@ -489,6 +497,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
           </div>
         </div>
         <div class="hero-hint">Local uploads recommended for best export quality</div>
+        <div class="hero-restore-note" id="hero-restore-note">Hero image needs re-uploading</div>
         <div class="crop-controls" id="crop-controls">
           <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;">Image Position</div>
           <div class="crop-row"><label>Zoom</label><input type="range" id="crop-zoom" min="100" max="200" value="100" oninput="updateCrop()"><span id="cv-zoom">100%</span></div>
@@ -579,6 +588,11 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <div class="prod-status" id="prod-status">
         <div class="prod-status-title">Export Checklist</div>
         <div class="prod-status-list" id="prod-status-list"></div>
+      </div>
+      <div class="copy-qa-panel">
+        <div class="copy-qa-title">Spellcheck / Copy QA</div>
+        <div class="copy-qa-status" id="copy-qa-status">✓ Copy looks OK</div>
+        <div class="copy-qa-note" id="copy-qa-note">Passive checks only — review highlighted fields for unusual terms.</div>
       </div>
       <button class="export-btn single" onclick="exportCurrent()" id="exp-single-btn">
         <span>⬇</span><span id="exp-single-lbl">Export Current Card PNG</span>
@@ -1241,6 +1255,15 @@ function runSpellQA(){
   const byWarn={};
   SPELLCHECK_FIELDS.forEach(f=>{ const el=document.getElementById(f.id); if(!el) return; const bad=getLikelyTypos(el.value); el.classList.toggle('spell-flag',bad.length>0); if(bad.length){ (byWarn[f.warnId]||(byWarn[f.warnId]=[])).push(`${f.label}: ${bad.join(', ')}`);} });
   ["spell-warn-name","spell-warn-ports","spell-warn-tags","spell-warn-raw"].forEach(id=>setSpellWarn(id,(byWarn[id]||[]).length?`Spelling QA: ${byWarn[id].join(" · ")}`:""));
+  const qaIssues=Object.values(byWarn).flat().length;
+  const qaStatus=document.getElementById("copy-qa-status");
+  const qaNote=document.getElementById("copy-qa-note");
+  if(qaStatus){
+    qaStatus.classList.toggle("ok",qaIssues===0);
+    qaStatus.classList.toggle("warn",qaIssues>0);
+    qaStatus.textContent=qaIssues===0?"✓ Copy looks OK":"⚠ Check spelling / unusual terms";
+  }
+  if(qaNote) qaNote.textContent=qaIssues===0?"Passive checks only — browser spellcheck is enabled in key text fields.":"Passive checks only — review highlighted fields and spelling hints before export.";
 }
 function checkPortsWarn(){
   const ports=(document.getElementById("f-ports")||{}).value||"";
@@ -1575,9 +1598,8 @@ let autosaveHydrating = false;
 function buildAutosavePayload(){
   save();
   const clonedOffers = JSON.parse(JSON.stringify(offers || [{},{},{},{}]));
-  // Autosave flow: never persist local binary data; keep recovery note for UI messaging.
+  // Autosave flow: keep hero data URLs for restore; logo data URLs still require reupload.
   clonedOffers.forEach(o=>{
-    if(o && o._img && String(o._img).startsWith('data:')){ delete o._img; o._imgNeedsReupload = true; }
     if(o && o._logoCustom && String(o._logoCustom).startsWith('data:')){ delete o._logoCustom; o._logoNeedsReupload = true; }
   });
   return {version:'1.0',savedAt:new Date().toISOString(),cur,builderMode,lockedOffers,campaign:{name:document.getElementById('g-campaign').value||'',date:document.getElementById('g-date').value||'',airport:document.getElementById('g-airport').value||'',terms:document.getElementById('g-terms').value||''},offers:clonedOffers};
@@ -1610,8 +1632,14 @@ function applySessionPayload(data){
   load(cur); rv(); updateAllStatus(); genUtm(); genStandardUtms(); updateExportFilenames();
   if(data.builderMode) setBuilderMode(data.builderMode, true);
   autosaveHydrating = false;
-  const needsReup = offers.some(o => o && (o._imgNeedsReupload || o._logoNeedsReupload));
-  if(needsReup) setTimeout(()=>alert('Local image needs re-uploading'), 120);
+  updateHeroRestoreNote();
+  runSpellQA();
+}
+function updateHeroRestoreNote(){
+  const note=document.getElementById('hero-restore-note');
+  if(!note) return;
+  const o=offers[cur]||{};
+  note.classList.toggle('active', !!o._imgNeedsReupload);
 }
 let pendingRestoreSession = null;
 
@@ -2061,6 +2089,7 @@ function loadOfferToEditor(i){
   const cvy=document.getElementById('cv-y'); if(cvy) cvy.textContent=(o._cropY||0)+'%';
   const cc=document.getElementById('crop-controls'); if(cc) cc.classList.toggle('active', !!o._img);
   const logoArea=document.getElementById('logo-override-area'); if(logoArea) logoArea.style.display=(o.operator==='custom'||!o.operator)?'block':'none';
+  updateHeroRestoreNote();
 }
 
 function renderOfferIndex(i){
@@ -2797,26 +2826,26 @@ async function exportCampaignPack(){
   try{
     // Export pack flow: render assets through canonical renderCardToImageBlob path, then zip once complete.
     const zip=new JSZip(); const cardsFolder=zip.folder('cards'); const utmFolder=zip.folder('utms'); const summaryFolder=zip.folder('summary');
-    const lines=[];
+    const combinedRows=[];
     for(let i=0;i<4;i++){
       const o=offers[i]||{};
       if(!(o.name||o.ship||o.price)) continue;
       if(prog) prog.textContent=`Rendering card ${i+1}/4...`;
       const blob=await renderCardToImageBlob(o,'image/png',1.0);
       cardsFolder.file(filenameWithExt(i,'png'), blob);
-      lines.push(`Card ${i+1},${(o._utm||buildUtmForOffer(i).url||'').replace(/\n/g,' ')}`);
+      combinedRows.push({type:'offer',label:`Card ${i+1} UTM`,utm:(o._utm||buildUtmForOffer(i).url||'').replace(/\n/g,' ')});
     }
-    utmFolder.file('utms.csv',['card,utm',...lines].join('\n'));
     const standardUtmRows = buildAllStandardUtmRows();
-    utmFolder.file('standard-utms.csv',[
-      'label,base_url,utm_content,utm',
-      ...standardUtmRows.map(row => [row.label,row.baseUrl,row.content,row.utm].map(csvCell).join(','))
+    standardUtmRows.forEach(row=>combinedRows.push({type:'standard',label:row.label,utm:row.utm}));
+    utmFolder.file('all-utms.csv',[
+      'type,label,utm',
+      ...combinedRows.map(row => [row.type,row.label,row.utm].map(csvCell).join(','))
     ].join('\n'));
     const stamp=new Date();
     summaryFolder.file('campaign-summary.txt',`Campaign: ${document.getElementById('g-campaign').value||'untitled'}
 Send Date: ${document.getElementById('g-date').value||''}
 Exported: ${stamp.toISOString()}
-Offers Included: ${lines.length}`);
+Offers Included: ${combinedRows.filter(row=>row.type==='offer').length}`);
     if(prog) prog.textContent='Compressing campaign-pack.zip...';
     const blob=await zip.generateAsync({type:'blob'});
     downloadBlob(blob,'campaign-pack.zip');
