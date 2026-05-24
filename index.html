@@ -877,115 +877,13 @@ function getCampaignZipFilename(){
 }
 
 async function renderCardToBlob(offerData){
-  return new Promise(async (resolve, reject)=>{
-    const wrap = document.createElement("div");
-    wrap.style.cssText = "position:fixed;left:-9999px;top:0;width:1200px;min-width:1200px;max-width:1200px;background:#fff;z-index:-999;pointer-events:none;overflow:visible;";
-    wrap.innerHTML = bc(offerData);
-    document.body.appendChild(wrap);
-
-    const imgs = Array.from(wrap.querySelectorAll("img"));
-    await Promise.all(imgs.map(img => new Promise(res => {
-      if(img.complete && img.naturalWidth > 0) return res();
-      img.onload = res;
-      img.onerror = res;
-    })));
-
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-    await new Promise(r => setTimeout(r, 350));
-
-    try{
-      const canvas = await html2canvas(wrap, {
-        scale: 1,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#ffffff",
-        width: 1200,
-        windowWidth: 1200,
-        logging: false,
-        imageTimeout: 12000,
-        onclone: (clonedDoc, clonedEl) => {
-          if(!clonedDoc.querySelector("link[data-export-font]")){
-            const lnk = clonedDoc.createElement("link");
-            lnk.rel = "stylesheet";
-            lnk.setAttribute("data-export-font","1");
-            lnk.href = "https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap";
-            clonedDoc.head.appendChild(lnk);
-          }
-          clonedEl.style.cssText = "width:1200px;min-width:1200px;position:static;left:0;top:0;background:#fff;";
-        }
-      });
-
-      document.body.removeChild(wrap);
-      canvas.toBlob(blob => {
-        if(blob) resolve(blob);
-        else reject(new Error("PNG blob creation failed"));
-      }, "image/png", 1.0);
-    } catch(err){
-      if(document.body.contains(wrap)) document.body.removeChild(wrap);
-      reject(err);
-    }
-  });
+  return renderCardToImageBlob(offerData, "image/png", 1.0);
 }
 
 async function renderCardToPNG(offerData, filename){
-  return new Promise(async (resolve, reject)=>{
-    // ── Build off-screen container at exact 1200px ──
-    const wrap = document.createElement("div");
-    wrap.style.cssText = "position:fixed;left:-9999px;top:0;width:1200px;min-width:1200px;max-width:1200px;background:#fff;z-index:-999;pointer-events:none;overflow:visible;";
-    wrap.innerHTML = bc(offerData);
-    document.body.appendChild(wrap);
-
-    // ── Wait for all images to load ──
-    const imgs = Array.from(wrap.querySelectorAll("img"));
-    await Promise.all(imgs.map(img => new Promise(res => {
-      if(img.complete && img.naturalWidth > 0) return res();
-      img.onload = res;
-      img.onerror = res;
-    })));
-
-    // ── Two animation frames + paint delay ──
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-    await new Promise(r => setTimeout(r, 350));
-
-    try{
-      const canvas = await html2canvas(wrap, {
-        scale: 1,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#ffffff",
-        width: 1200,
-        windowWidth: 1200,
-        logging: false,
-        imageTimeout: 12000,
-        onclone: (clonedDoc, clonedEl) => {
-          // Ensure Montserrat is available in cloned doc
-          if(!clonedDoc.querySelector("link[data-export-font]")){
-            const lnk = clonedDoc.createElement("link");
-            lnk.rel = "stylesheet";
-            lnk.setAttribute("data-export-font","1");
-            lnk.href = "https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap";
-            clonedDoc.head.appendChild(lnk);
-          }
-          // Force 1200px on cloned wrapper
-          clonedEl.style.cssText = "width:1200px;min-width:1200px;position:static;left:0;top:0;background:#fff;";
-        }
-      });
-
-      document.body.removeChild(wrap);
-
-      // ── Trigger download ──
-      const link = document.createElement("a");
-      link.download = filename;
-      link.href = canvas.toDataURL("image/png", 1.0);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      resolve(true);
-    } catch(err){
-      if(document.body.contains(wrap)) document.body.removeChild(wrap);
-      reject(err);
-    }
-  });
+  const blob = await renderCardToImageBlob(offerData, "image/png", 1.0);
+  downloadBlob(blob, filename);
+  return true;
 }
 
 async function exportCurrent(){
@@ -2144,27 +2042,55 @@ function getCampaignZipFilenameExt(ext){
 async function renderCardToImageBlob(offerData, mimeType, quality){
   return new Promise(async (resolve, reject)=>{
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:1200px;min-width:1200px;max-width:1200px;background:#fff;z-index:-999;pointer-events:none;overflow:visible;';
+    wrap.style.cssText = 'position:fixed;left:-99999px;top:0;width:1200px;min-width:1200px;max-width:1200px;background:#fff;z-index:-999;pointer-events:none;overflow:visible;transform:none;';
     wrap.innerHTML = bc(offerData);
     document.body.appendChild(wrap);
+
+    const target = wrap.querySelector('.cc') || wrap;
     const imgs = Array.from(wrap.querySelectorAll('img'));
     await Promise.all(imgs.map(img => new Promise(res => {
-      if(img.complete && img.naturalWidth > 0) return res();
-      img.onload = res; img.onerror = res;
+      if(img.complete && img.naturalWidth > 0){
+        if(typeof img.decode === 'function') img.decode().catch(()=>{}).finally(res);
+        else res();
+        return;
+      }
+      img.onload = () => {
+        if(typeof img.decode === 'function') img.decode().catch(()=>{}).finally(res);
+        else res();
+      };
+      img.onerror = res;
     })));
+
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-    await new Promise(r => setTimeout(r, 350));
+
+    const exportWidth = 1200;
+    const exportHeight = Math.max(1, Math.ceil(target.scrollHeight || target.getBoundingClientRect().height || wrap.scrollHeight || 1));
+
     try{
-      const canvas = await html2canvas(wrap, {
-        scale: 1, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', width: 1200, windowWidth: 1200, logging: false, imageTimeout: 12000,
-        onclone: (clonedDoc, clonedEl) => {
+      const canvas = await html2canvas(target, {
+        scale: 1,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        width: exportWidth,
+        height: exportHeight,
+        windowWidth: exportWidth,
+        windowHeight: exportHeight,
+        scrollX: 0,
+        scrollY: 0,
+        logging: false,
+        imageTimeout: 15000,
+        onclone: (clonedDoc) => {
           if(!clonedDoc.querySelector('link[data-export-font]')){
             const lnk = clonedDoc.createElement('link');
             lnk.rel='stylesheet'; lnk.setAttribute('data-export-font','1');
             lnk.href='https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap';
             clonedDoc.head.appendChild(lnk);
           }
-          clonedEl.style.cssText='width:1200px;min-width:1200px;position:static;left:0;top:0;background:#fff;';
+          const clonedTarget = clonedDoc.querySelector('.cc');
+          if(clonedTarget) clonedTarget.style.cssText += ';width:1200px;min-width:1200px;max-width:1200px;transform:none;';
+          const clonedWrap = clonedDoc.body && clonedDoc.body.lastElementChild;
+          if(clonedWrap) clonedWrap.style.cssText += ';transform:none;zoom:1;';
         }
       });
       document.body.removeChild(wrap);
