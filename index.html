@@ -204,7 +204,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .abtn{flex:1;padding:6px 6px;font-size:10px;font-weight:700;border-radius:var(--radius);border:1px solid var(--border);background:#fff;color:var(--text);letter-spacing:.02em;white-space:nowrap;transition:all .15s;}
 .abtn:hover{background:var(--panel);}
 .abtn.reorder-btn{transition:background-color .16s ease,box-shadow .16s ease,transform .16s ease,border-color .16s ease;}
-.abtn.reorder-btn:hover:not(:disabled){background:#e9e6df;border-color:#c9c1ad;box-shadow:0 1px 4px rgba(14,27,42,.12);transform:translateY(-1px);}
+.abtn.reorder-btn:hover:not(:disabled){background:#dfe4ec;border-color:#9eabbd;box-shadow:inset 0 1px 0 rgba(255,255,255,.38),0 1px 4px rgba(14,27,42,.14);transform:translateY(-1px);}
 .abtn.reorder-btn:active:not(:disabled){transform:translateY(0);box-shadow:0 1px 2px rgba(14,27,42,.1);}
 .abtn.navy{background:var(--navy);color:#fff;border-color:var(--navy);}
 .abtn.gold{background:var(--gold);color:#fff;border-color:var(--gold);}
@@ -224,6 +224,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .ptool .pval{font-size:9px;color:rgba(255,255,255,.8);min-width:28px;}
 .view-btns{display:flex;border:1px solid rgba(255,255,255,.2);border-radius:3px;overflow:hidden;}
 .vbtn{padding:3px 8px;font-size:9px;font-weight:700;border:none;background:transparent;color:rgba(255,255,255,.5);letter-spacing:.04em;}
+.vbtn:hover:not(.active){background:rgba(255,255,255,.1);color:rgba(255,255,255,.88);}
+.vbtn{transition:background-color .16s ease,color .16s ease;}
 .vbtn.active{background:var(--gold);color:#fff;}
 .tbtn{padding:3px 7px;font-size:9px;font-weight:700;border:1px solid rgba(255,255,255,.2);border-radius:3px;background:transparent;color:rgba(255,255,255,.6);margin-left:3px;}
 .tbtn.on{background:rgba(255,255,255,.15);color:#fff;}
@@ -2521,6 +2523,18 @@ function buildStandardUtm(baseUrl, content){
   return `${baseUrl}?utm_source=klaviyo&utm_medium=email&utm_campaign=${encodeURIComponent(campaign)}&utm_content=${encodeURIComponent(content)}`;
 }
 
+function buildAllStandardUtmRows(){
+  return STANDARD_UTM_LINKS.map((item)=>{
+    const full = buildStandardUtm(item.url, item.content);
+    return {
+      label: item.label,
+      baseUrl: item.url,
+      content: item.content,
+      utm: full.indexOf("http") === 0 ? full : ""
+    };
+  });
+}
+
 function copyStandardUtm(idx){
   const link = STANDARD_UTM_LINKS[idx];
   if(!link) return;
@@ -2535,8 +2549,9 @@ function copyStandardUtm(idx){
 function genStandardUtms(){
   const wrap = document.getElementById("std-utm-list");
   if(!wrap) return;
-  wrap.innerHTML = STANDARD_UTM_LINKS.map((item,idx)=>{
-    const full = buildStandardUtm(item.url, item.content);
+  const rows = buildAllStandardUtmRows();
+  wrap.innerHTML = rows.map((item,idx)=>{
+    const full = item.utm || "(needs operator and send date)";
     const disabled = full.indexOf("http")===0 ? "" : "disabled";
     return `<div class="std-utm-item"><div class="std-utm-head"><strong>${item.label}</strong><button class="abtn" id="std-copy-${idx}" onclick="copyStandardUtm(${idx})" style="font-size:9px;padding:3px 6px;flex:0 0 auto;" ${disabled}>Copy</button></div><div class="std-utm-url">${full}</div></div>`;
   }).join("");
@@ -2544,6 +2559,10 @@ function genStandardUtms(){
 
 function filenameWithExt(i, ext){
   return getExportFilename(i).replace(/\.(png|jpg|jpeg)$/i, '.' + ext);
+}
+function csvCell(value){
+  const text = String(value == null ? "" : value);
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g,'""')}"` : text;
 }
 function getCampaignZipFilenameExt(ext){
   return getCampaignZipFilename().replace(/_cards\.zip$/i, '_' + ext + '_cards.zip').replace(/\.zip$/i, '_' + ext + '_cards.zip');
@@ -2702,6 +2721,11 @@ async function exportCampaignPack(){
       lines.push(`Card ${i+1},${(o._utm||buildUtmForOffer(i).url||'').replace(/\n/g,' ')}`);
     }
     utmFolder.file('utms.csv',['card,utm',...lines].join('\n'));
+    const standardUtmRows = buildAllStandardUtmRows();
+    utmFolder.file('standard-utms.csv',[
+      'label,base_url,utm_content,utm',
+      ...standardUtmRows.map(row => [row.label,row.baseUrl,row.content,row.utm].map(csvCell).join(','))
+    ].join('\n'));
     const stamp=new Date();
     summaryFolder.file('campaign-summary.txt',`Campaign: ${document.getElementById('g-campaign').value||'untitled'}
 Send Date: ${document.getElementById('g-date').value||''}
