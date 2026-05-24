@@ -1652,6 +1652,7 @@ const CAMPAIGN_PRESETS_KEY = "campaignPresetsV1";
 const AUTOSAVE_KEY = "cobSessionAutosaveV1";
 let autosaveTimer = null;
 let autosaveHydrating = false;
+let autosaveAwaitingRestoreDecision = false;
 
 function buildAutosavePayload(){
   save();
@@ -1665,11 +1666,11 @@ function buildAutosavePayload(){
   return {version:'1.0',savedAt:new Date().toISOString(),cur,builderMode,lockedOffers,sectionState,campaign:{name:document.getElementById('g-campaign').value||'',date:document.getElementById('g-date').value||'',airport:document.getElementById('g-airport').value||'',terms:document.getElementById('g-terms').value||''},offers:clonedOffers};
 }
 function saveSessionNow(){
-  if(autosaveHydrating) return;
+  if(autosaveHydrating || autosaveAwaitingRestoreDecision) return;
   try{ localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(buildAutosavePayload())); }catch(e){}
 }
 function queueAutosave(){
-  if(autosaveHydrating) return;
+  if(autosaveHydrating || autosaveAwaitingRestoreDecision) return;
   clearTimeout(autosaveTimer);
   // Debounced autosave avoids thrashing during slider drags / typing.
   autosaveTimer = setTimeout(saveSessionNow, 420);
@@ -1747,6 +1748,7 @@ function closeSessionRestoreModal(){
   if(modal) modal.classList.remove('active');
 }
 function chooseRestoreSession(){
+  autosaveAwaitingRestoreDecision = false;
   const payload = pendingRestoreSession;
   pendingRestoreSession = null;
   closeSessionRestoreModal();
@@ -1757,18 +1759,21 @@ function chooseRestoreSession(){
   }
 }
 function chooseStartFreshSession(){
+  autosaveAwaitingRestoreDecision = false;
   pendingRestoreSession = null;
   closeSessionRestoreModal();
   showSessionFeedback("",false);
 }
 function promptRestoreSession(){
   const saved = readSavedSession();
+  autosaveAwaitingRestoreDecision = !!(saved && saved.offers);
   if(!saved || !saved.offers) return;
   pendingRestoreSession = saved;
   const modal = document.getElementById('session-restore-modal');
   if(modal) modal.classList.add('active');
 }
 function clearSavedSession(){
+  autosaveAwaitingRestoreDecision = false;
   try{ localStorage.removeItem(AUTOSAVE_KEY); }catch(e){}
   pendingRestoreSession = null;
   closeSessionRestoreModal();
