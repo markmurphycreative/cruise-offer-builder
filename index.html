@@ -2446,7 +2446,7 @@ const STANDARD_UTM_LINKS = [
 function buildStandardUtm(baseUrl, content){
   const dateEl = document.getElementById("g-date");
   const dateCode = parseSendDateToDDMMYY((dateEl && (dateEl.value || dateEl.getAttribute("placeholder"))) || "");
-  const op = offers[cur] || {};
+  const op = (typeof getUtmOfferData === "function") ? getUtmOfferData(cur) : (offers[cur] || {});
   const cfg = getBaseOperatorConfig(op);
   if(!cfg || !dateCode) return "(needs operator and send date)";
   const campaign = `cruise_${cfg.slug}_${dateCode}`;
@@ -2688,6 +2688,23 @@ function syncSailDateFromHidden(){
     };
   }
   syncSailDateFromHidden();
+})();
+
+// Ensure Standard UTMs stay in sync with the active editor context and CSV/import flows.
+(function(){
+  function refreshStandardUtmsSafe(){
+    try { genStandardUtms(); } catch(e){}
+  }
+  ["loadOfferToEditor","load","rv","sv","up","processSheetCSV"].forEach(function(fnName){
+    if(typeof window[fnName] !== "function") return;
+    const previous = window[fnName];
+    window[fnName] = function(){
+      const result = previous.apply(this, arguments);
+      refreshStandardUtmsSafe();
+      return result;
+    };
+  });
+  refreshStandardUtmsSafe();
 })();
 
 </script>
