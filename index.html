@@ -42,6 +42,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .otab.active{color:var(--navy);border-bottom-color:var(--gold);background:#fff;}
 .otab.dragging{opacity:.55;}
 .otab.drag-over{background:rgba(160,146,103,.12);border-bottom-color:var(--gold);}
+.otab.move-preflash{background:rgba(160,146,103,.14);box-shadow:inset 0 0 0 1px rgba(160,146,103,.32);}
+.otab.move-postflash{background:rgba(160,146,103,.18);box-shadow:inset 0 0 0 1px rgba(160,146,103,.38);}
 .status-dot{width:6px;height:6px;border-radius:50%;background:var(--border);}
 .status-dot.green{background:var(--green);}
 .status-dot.amber{background:var(--amber);}
@@ -1918,15 +1920,28 @@ function updateMoveOfferButtons(){
     rightBtn.style.visibility = canRight ? 'visible' : 'hidden';
   }
 }
-function moveOfferByStep(step){
+function flashOfferTab(idx, className, duration){
+  return new Promise(function(resolve){
+    const tab = document.getElementById('ot' + idx);
+    if(!tab || !className){ resolve(); return; }
+    tab.classList.add(className);
+    setTimeout(function(){
+      tab.classList.remove(className);
+      resolve();
+    }, Math.max(60, Number(duration) || 120));
+  });
+}
+async function moveOfferByStep(step){
   step = Number(step) || 0;
   if(!step) return;
   const fromIdx = cur;
   const toIdx = fromIdx + step;
   if(toIdx < 0 || toIdx > 3) return;
+  await flashOfferTab(fromIdx, "move-preflash", 120);
   try { commitVisibleFields(); } catch(_e){}
   moveOfferState(fromIdx, toIdx);
   refreshAfterOfferReorder();
+  await flashOfferTab(toIdx, "move-postflash", 140);
 }
 function moveOfferLeft(){ moveOfferByStep(-1); }
 function moveOfferRight(){ moveOfferByStep(1); }
