@@ -137,6 +137,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 /* ── UTM OUTPUT PANEL ── */
 .utm-visible-output{width:100%;min-height:76px;font-size:9px;font-family:monospace;line-height:1.45;color:var(--navy);background:#fafaf8;border:1px solid var(--border);border-radius:var(--radius);padding:6px 7px;resize:vertical;margin-top:4px;}
 .utm-btn-row{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:5px;}
+.std-utm-list{display:grid;gap:6px;margin-top:4px;}
+.std-utm-item{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:6px;}
+.std-utm-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:3px;}
+.std-utm-head strong{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.std-utm-url{font-size:9px;font-family:monospace;line-height:1.4;color:var(--navy);word-break:break-all;}
 
 /* ── WARNINGS ── */
 .warn-box{background:#fff8f0;border:1px solid #f0c080;border-radius:var(--radius);padding:5px 7px;margin-top:4px;display:none;font-size:10px;color:#8a5000;line-height:1.5;}
@@ -278,7 +283,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
   <!-- Campaign globals -->
   <div class="campaign-bar">
     <div><span class="clabel">Campaign Name</span><input id="g-campaign" placeholder="cruise-may-2026" oninput="genAllUtms()"></div>
-    <div><span class="clabel">Send Date</span><input id="g-date" placeholder="16th May 2026" oninput="genUtm()"></div>
+    <div><span class="clabel">Send Date</span><input id="g-date" placeholder="16th May 2026" oninput="genUtm();genStandardUtms()"></div>
     <div><span class="clabel">Departure Airport</span><input id="g-airport" placeholder="Newcastle"></div>
     <div><span class="clabel">Default T&amp;Cs</span><input id="g-terms" placeholder="T&amp;Cs Apply" oninput="up()"></div>
   </div>
@@ -457,7 +462,19 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       </div>
     </div>
 
-    <!-- ── 6. EXPORT ── -->
+
+
+    <!-- ── 6. STANDARD UTMs ── -->
+    <div class="section">
+      <div class="section-hdr" onclick="toggleSec(this)">
+        <h3>🔗 Standard UTMs</h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body">
+        <div class="std-utm-list" id="std-utm-list"></div>
+      </div>
+    </div>
+
+    <!-- ── 7. EXPORT ── -->
     <div class="export-section">
       <div class="export-title">⬇ Export Cards</div>
       <button class="export-btn single" onclick="exportCurrent()" id="exp-single-btn">
@@ -692,9 +709,9 @@ function load(i){
   document.getElementById("cv-y").textContent=(offers[i]._cropY||0)+"%";
   if(offers[i]._img) document.getElementById("crop-controls").classList.add("active");
   else document.getElementById("crop-controls").classList.remove("active");
-  operatorChanged(true); genUtm(); updateAllStatus(); updateExportFilenames();
+  operatorChanged(true); genUtm(); genStandardUtms(); updateAllStatus(); updateExportFilenames();
 }
-function up(){ save(); rv(); updateAllStatus(); genUtm(); checkPortsWarn(); updateExportFilenames(); }
+function up(){ save(); rv(); updateAllStatus(); genUtm(); genStandardUtms(); checkPortsWarn(); updateExportFilenames(); }
 
 // ═══════════════════════════════════════════════════════
 // OPERATOR
@@ -715,6 +732,7 @@ function operatorChanged(silent){
     if(!offers[cur].board&&op.defaultBoard){ const bm=BOARD_MAP[op.defaultBoard]; if(bm){ offers[cur].board=bm[0]; offers[cur].boardlbl=bm[1]; document.getElementById("f-board").value=bm[0]; document.getElementById("f-boardlbl").value=bm[1]; } }
   }
   if(!silent) rv();
+  genStandardUtms();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2073,6 +2091,46 @@ function copyAllUtms(){
   const visible = document.getElementById("utm-visible-output");
   if(visible) visible.value = lines;
   navigator.clipboard.writeText(lines).then(()=>alert("All UTMs copied"));
+}
+
+const STANDARD_UTM_LINKS = [
+  {label:"Homepage / footer logo", url:"https://www.dawsonandsanderson.co.uk/", content:"homepage_logo"},
+  {label:"Award Winning Service", url:"https://www.dawsonandsanderson.co.uk/service-awards", content:"aws"},
+  {label:"Instagram", url:"https://www.instagram.com/dawsonandsanderson/", content:"instagram"},
+  {label:"Facebook", url:"https://www.facebook.com/DawsonandSandersonLtd/", content:"facebook"},
+  {label:"TikTok", url:"https://www.tiktok.com/@dawsonandsanderson", content:"tiktok"},
+  {label:"YouTube", url:"https://www.youtube.com/@DawsonandSandersonTravel", content:"youtube"}
+];
+
+function buildStandardUtm(baseUrl, content){
+  const dateEl = document.getElementById("g-date");
+  const dateCode = parseSendDateToDDMMYY((dateEl && (dateEl.value || dateEl.getAttribute("placeholder"))) || "");
+  const op = offers[cur] || {};
+  const cfg = getBaseOperatorConfig(op);
+  if(!cfg || !dateCode) return "(needs operator and send date)";
+  const campaign = `cruise_${cfg.slug}_${dateCode}`;
+  return `${baseUrl}?utm_source=klaviyo&utm_medium=email&utm_campaign=${encodeURIComponent(campaign)}&utm_content=${encodeURIComponent(content)}`;
+}
+
+function copyStandardUtm(idx){
+  const link = STANDARD_UTM_LINKS[idx];
+  if(!link) return;
+  const full = buildStandardUtm(link.url, link.content);
+  if(full.indexOf("http") !== 0) return alert("Standard UTMs need operator and send date.");
+  navigator.clipboard.writeText(full).then(()=>{
+    const b = document.getElementById(`std-copy-${idx}`);
+    if(b){ const t=b.textContent; b.textContent="✓ Copied"; setTimeout(()=>b.textContent=t,1600); }
+  });
+}
+
+function genStandardUtms(){
+  const wrap = document.getElementById("std-utm-list");
+  if(!wrap) return;
+  wrap.innerHTML = STANDARD_UTM_LINKS.map((item,idx)=>{
+    const full = buildStandardUtm(item.url, item.content);
+    const disabled = full.indexOf("http")===0 ? "" : "disabled";
+    return `<div class="std-utm-item"><div class="std-utm-head"><strong>${item.label}</strong><button class="abtn" id="std-copy-${idx}" onclick="copyStandardUtm(${idx})" style="font-size:9px;padding:3px 6px;flex:0 0 auto;" ${disabled}>Copy</button></div><div class="std-utm-url">${full}</div></div>`;
+  }).join("");
 }
 
 function filenameWithExt(i, ext){
