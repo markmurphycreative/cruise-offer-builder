@@ -77,7 +77,15 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .parse-area textarea:focus{outline:none;border-color:var(--gold);}
 .parse-btn{width:100%;margin-top:5px;padding:6px;font-size:11px;font-weight:700;border:none;border-radius:var(--radius);background:var(--navy);color:#fff;letter-spacing:.04em;}
 .parse-btn:hover{background:#1a2f48;}
-.parse-result{margin-top:4px;font-size:10px;color:var(--green);min-height:14px;}
+.parse-result{margin-top:4px;font-size:10px;color:var(--muted);min-height:14px;}
+.parse-result.high{color:var(--green);}
+.parse-result.partial{color:var(--amber);}
+.parse-result.low{color:var(--red);}
+.parse-field-flash{animation:parseFlash 1.6s ease-out;}
+@keyframes parseFlash{0%{background:#fff8d6;border-color:var(--gold);}100%{background:#fafaf8;border-color:var(--border);}}
+.parse-preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;}
+.parse-preview-item{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:6px;}
+.parse-preview-item strong{display:block;font-size:9px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;}
 
 /* ── OPERATOR ── */
 .op-select{width:100%;padding:5px 8px;font-size:12px;font-weight:600;border:1px solid var(--border);border-radius:var(--radius);background:#fff;color:var(--text);appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
@@ -590,6 +598,20 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 </div>
 
 <!-- ══════════════════════ MODALS ══════════════════════ -->
+
+<div class="modal-overlay" id="parse-preview-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="cancelParsedOffer()">✕</button>
+    <h2>Preview Parsed Data</h2>
+    <div id="parse-confidence-badge" class="parse-result"></div>
+    <div id="parse-preview-body" class="parse-preview-grid"></div>
+    <div class="modal-actions">
+      <button class="modal-btn primary" onclick="applyParsedOffer()">Apply</button>
+      <button class="modal-btn" onclick="cancelParsedOffer()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="summary-modal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal(&#39;summary-modal&#39;)">✕</button>
@@ -1498,38 +1520,38 @@ function doImportJSON(){
 // PARSE RAW OFFER
 // ═══════════════════════════════════════════════════════
 function getOrdinal(n){ const s=["th","st","nd","rd"],v=n%100; return s[(v-20)%10]||s[v]||s[0]; }
+let pendingParseResult=null;
+const PARSE_FIELD_MAP={operatorKey:"f-operator",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};
+const OPERATOR_ALIASES={po:[/\bp\s*&\s*o\b/i,/\bp\s*and\s*o\b/i],royal:[/\broyal\b/i,/\brci\b/i,/\broyal\s+caribbean\b/i],marella:[/\bmarella\b/i],celebrity:[/\bcelebrity\b/i],fred:[/\bfred\b/i,/\bfred\.?\s*olsen\b/i],cunard:[/\bcunard\b/i],msc:[/\bmsc\b/i],ncl:[/\bnorwegian\b/i,/\bncl\b/i],princess:[/\bprincess\b/i],ambassador:[/\bambassador\b/i],virgin:[/\bvirgin\b/i]};
+const AIRPORT_WORDS=["newcastle","manchester","heathrow","gatwick","birmingham","bristol","glasgow","edinburgh","london"];
 function parseOffer(){
-  const raw=document.getElementById("raw-paste").value.trim();
-  if(!raw){document.getElementById("parse-result").textContent="Nothing to parse";return;}
-  const lines=raw.split(/\n/).map(l=>l.trim()).filter(Boolean);
-  let parsed={}, filled=0;
-  // Operator/ship via pipe
-  for(const line of lines){ if(/[|]/.test(line)){const parts=line.split("|").map(s=>s.trim());if(parts[0])parsed.operator_name=parts[0];if(parts[1])parsed.ship=parts[1];break;} }
-  // Match operator key
-  if(parsed.operator_name){ for(const[k,op]of Object.entries(OPERATOR_HEADERS)){if(op.name&&op.name.toLowerCase().includes(parsed.operator_name.toLowerCase())){parsed.operatorKey=k;break;}}}
-  // Nights
-  for(const line of lines){const m=line.match(/(\d+)\s*nights?/i);if(m){parsed.nights=m[1];break;}}
-  // Date
-  for(const line of lines){const m=line.match(/(\d{1,2})(?:st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})/i);if(m){parsed.day=m[1];parsed.month=m[2]+" "+m[3];break;}}
-  // Board
-  for(const line of lines){const u=line.toUpperCase();for(const[code,vals]of Object.entries(BOARD_MAP)){if(u.includes(code)){parsed.board=vals[0];parsed.boardlbl=vals[1];break;}}if(parsed.board)break;}
-  // Price
-  for(const line of lines){const m=line.match(/(?:from\s*)?£?(\d[\d,]+)\s*(?:pp)?/i);if(m&&parseInt(m[1].replace(/,/,""))>100){parsed.price=m[1].replace(/,/,"");break;}}
-  // Inclusions
-  for(const line of lines){if(/flights?|luggage|transfer|included/i.test(line)){parsed.incl=line;break;}}
-  // Ports
-  const portLines=lines.filter(l=>/[•·]/.test(l)&&!/flights?|luggage|included|nights?|board|£/i.test(l));
-  if(portLines.length) parsed.ports=portLines.join(" • ").split(/[•·]/).map(s=>s.trim()).filter(Boolean).join(" • ");
-  // Cruise name — best remaining line
-  const used=new Set(lines.filter(l=>(parsed.operator_name&&l.toLowerCase().includes(parsed.operator_name.toLowerCase()))||(parsed.ship&&l.toLowerCase().includes(parsed.ship.toLowerCase()))||/nights?|\d{4}|£|board|flights?|luggage|[•·]/.test(l)));
-  for(const line of lines){if(!used.has(line)&&line.length>8&&!/^[\d£]/.test(line)&&!/[|•·]/.test(line)){parsed.name=line;break;}}
-  // Apply
-  const map={name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};
-  for(const[pk,fid]of Object.entries(map)){if(parsed[pk]!==undefined){const el=document.getElementById(fid);if(el){el.value=parsed[pk];offers[cur][pk.replace("f-","")]=parsed[pk];filled++;}}}
-  if(parsed.operatorKey){document.getElementById("f-operator").value=parsed.operatorKey;offers[cur].operator=parsed.operatorKey;operatorChanged(false);}
-  document.getElementById("parse-result").textContent="✓ Parsed "+filled+" fields";
-  rv(); updateAllStatus(); genUtm(); checkPortsWarn(); updateExportFilenames();
+  const raw=(document.getElementById("raw-paste")||{}).value||""; if(!raw.trim()) return setParseStatus("Nothing to parse","low");
+  const lines=raw.split(/\n/).map(l=>l.trim()).filter(Boolean); const txt=lines.join(" \n "); const parsed={}; let score=0;
+  for(const [k,arr] of Object.entries(OPERATOR_ALIASES)){ if(arr.some(r=>r.test(txt))){ parsed.operatorKey=k; score+=22; break; } }
+  if(!parsed.operatorKey){ for(const[k,op]of Object.entries(OPERATOR_HEADERS)){ if(op.name&&new RegExp(op.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i').test(txt)){ parsed.operatorKey=k; score+=20; break; } } }
+  const pipe=lines.find(l=>l.includes('|')); if(pipe){const parts=pipe.split('|').map(s=>s.trim()); if(!parsed.operatorKey&&parts[0]){for(const[k,arr]of Object.entries(OPERATOR_ALIASES)){if(arr.some(r=>r.test(parts[0]))){parsed.operatorKey=k;score+=18;break;}}} if(parts[1]){parsed.ship=parts[1];score+=8;} }
+  const nm=txt.match(/\b(\d{1,2})\s*(?:nights?|nts?)\b/i); if(nm){parsed.nights=nm[1];score+=14;}
+  const pm=txt.match(/(?:from\s*)?£?\s*(\d{3,5}(?:,\d{3})?)\s*pp?\b|(?:from\s*)?£\s*(\d{3,5}(?:,\d{3})?)/i); if(pm){parsed.price=(pm[1]||pm[2]||'').replace(/,/g,'');score+=14;}
+  const bm=txt.match(/\b(AI|FB|HB|SC)\b/i); if(bm&&BOARD_MAP[bm[1].toUpperCase()]){parsed.board=bm[1].toUpperCase();parsed.boardlbl=BOARD_MAP[parsed.board][1];score+=10;}
+  const months='january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec';
+  let dm=txt.match(new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${months})\\s+(\\d{2,4})\\b`,'i'))||txt.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);
+  if(dm){ if(dm[0].includes('/')){const y=dm[3].length===2?'20'+dm[3]:dm[3]; const date=new Date(`${y}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}`); parsed.day=String(date.getDate()); parsed.month=date.toLocaleString('en-GB',{month:'long'})+' '+date.getFullYear(); } else {const y=dm[3].length===2?'20'+dm[3]:dm[3]; const mn=new Date(`${dm[2]} 1, ${y}`); parsed.day=dm[1]; parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+y;} score+=16; }
+  else { const mm=txt.match(new RegExp(`\\b(${months})\\s+(\\d{4})\\b`,'i')); if(mm){ const mn=new Date(`${mm[1]} 1, ${mm[2]}`); parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+mm[2]; score+=10; } }
+  const ports=lines.filter(l=>/[•·,]/.test(l)&&/(?:[A-Za-z]{3,}\s*){2,}/.test(l)&&!/from|£|nights?|nts?|included|flights?/i.test(l)); if(ports.length){parsed.ports=ports.join(' • ').replace(/[·,]/g,' • ').replace(/\s*•\s*/g,' • ').replace(/( • ){2,}/g,' • ');score+=8;}
+  const incl=lines.find(l=>/flights?|luggage|transfer|included|all inclusive/i.test(l)); if(incl){parsed.incl=incl;score+=6;}
+  const airport=AIRPORT_WORDS.find(a=>new RegExp('\\b'+a+'\\b','i').test(txt)); if(airport&&!parsed.incl){parsed.incl=airport[0].toUpperCase()+airport.slice(1)+' departures';score+=4;}
+  if(!parsed.ship){const shipLine=lines.find(l=>/\b(cruise|explorer|symphony|arvia|voyager|queen|discovery)\b/i.test(l)); if(shipLine){const m=shipLine.match(/\b([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+){0,3})\b/); if(m) parsed.ship=m[1];}}
+  const title=lines.find(l=>!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b/i.test(l))&&l.length>8&&l!==parsed.ship); if(title){parsed.name=title.replace(/^[-•\s]+/,'');score+=8;}
+  const confidence=score>=62?'high':score>=35?'partial':'low';
+  pendingParseResult={parsed,confidence,score}; showParsePreview();
 }
+function setParseStatus(msg,level){const el=document.getElementById('parse-result'); if(!el) return; el.textContent=msg; el.className='parse-result '+(level||'');}
+function showParsePreview(){const modal=document.getElementById('parse-preview-modal'); if(!modal||!pendingParseResult) return; const {parsed,confidence,score}=pendingParseResult; const body=document.getElementById('parse-preview-body'); const conf=document.getElementById('parse-confidence-badge'); const label=confidence==='high'?'High Confidence':confidence==='partial'?'Partial Match':'Needs Review'; conf.className='parse-result '+confidence; conf.textContent=`${label} (${score})`; const keys=['operatorKey','name','ship','day','month','nights','price','board','boardlbl','incl','ports']; body.innerHTML=keys.filter(k=>parsed[k]).map(k=>`<div class="parse-preview-item"><strong>${k}</strong>${parsed[k]}</div>`).join('')||'<div class="parse-preview-item">No fields confidently detected.</div>'; modal.classList.add('active');}
+function cancelParsedOffer(){const m=document.getElementById('parse-preview-modal'); if(m) m.classList.remove('active'); pendingParseResult=null;}
+function applyParsedOffer(){if(!pendingParseResult) return; const {parsed,confidence}=pendingParseResult; const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
+  touched.forEach(el=>{el.classList.remove('parse-field-flash'); void el.offsetWidth; el.classList.add('parse-field-flash'); setTimeout(()=>el.classList.remove('parse-field-flash'),1700);});
+  const applied=touched.length; const label=confidence==='high'?'High Confidence':confidence==='partial'?'Partial Match':'Needs Review';
+  setParseStatus(`✓ Parsed ${applied} fields — ${label}`,confidence); cancelParsedOffer(); rv(); updateAllStatus(); genUtm(); checkPortsWarn(); updateExportFilenames();}
 
 // ═══════════════════════════════════════════════════════
 // CARD BUILDER
