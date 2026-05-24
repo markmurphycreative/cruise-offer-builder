@@ -671,9 +671,14 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <button class="abtn red" onclick="resetAll()">Reset All</button>
     </div>
     <div class="act-row">
+      <button class="abtn green" onclick="saveProjectFile()">Save Project</button>
+      <button class="abtn" onclick="triggerLoadProjectFile()">Load Project</button>
+      <input type="file" id="load-project-input" accept="application/json,.json" style="display:none;" onchange="handleLoadProjectFile(event)">
+    </div>
+    <div class="act-row">
       <button class="abtn" onclick="clearSavedSession()">Clear Saved Session</button>
     </div>
-    <div class="session-hint">Local autosave is enabled on this browser</div>
+    <div class="session-hint">Project Save/Load is primary. Local autosave remains as a background backup.</div>
     <div class="session-feedback" id="session-feedback" aria-live="polite"></div>
   </div>
 </div>
@@ -712,7 +717,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <!-- ══════════════════════ MODALS ══════════════════════ -->
 
-<div class="modal-overlay" id="session-restore-modal" role="dialog" aria-modal="true" aria-labelledby="session-restore-title">
+<div class="modal-overlay" id="session-restore-modal" role="dialog" aria-modal="true" aria-labelledby="session-restore-title" style="display:none;">
   <div class="modal session-restore-modal">
     <div class="session-restore-head">
       <h2 id="session-restore-title">Restore previous session?</h2>
@@ -1778,6 +1783,57 @@ function clearSavedSession(){
   pendingRestoreSession = null;
   closeSessionRestoreModal();
   showSessionFeedback("",false);
+}
+
+function slugifyCampaignName(name){
+  return String(name||"campaign").trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"") || "campaign";
+}
+function buildProjectFilename(){
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2,"0");
+  const mm = String(now.getMonth()+1).padStart(2,"0");
+  const yy = String(now.getFullYear()).slice(-2);
+  return `${dd}${mm}${yy}_${slugifyCampaignName(document.getElementById("g-campaign").value)}_builder-project.json`;
+}
+function buildProjectPayload(){
+  const payload = buildAutosavePayload();
+  return {
+    projectType: "cruise-offer-builder-project",
+    version: "2.0",
+    savedAt: new Date().toISOString(),
+    ...payload
+  };
+}
+function saveProjectFile(){
+  const blob = new Blob([JSON.stringify(buildProjectPayload(), null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = buildProjectFilename();
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showSessionFeedback("Project file saved", false);
+}
+function triggerLoadProjectFile(){
+  const input = document.getElementById("load-project-input");
+  if(!input) return;
+  input.value = "";
+  input.click();
+}
+function handleLoadProjectFile(event){
+  const file = event && event.target && event.target.files && event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const parsed = JSON.parse(String(reader.result||"{}"));
+      applySessionPayload(parsed);
+      queueAutosave();
+      showSessionFeedback("Project loaded", false);
+    }catch(e){
+      showSessionFeedback("Invalid project JSON", true);
+    }
+  };
+  reader.readAsText(file);
 }
 
 
@@ -3014,7 +3070,6 @@ setBuilderMode(savedBuilderMode,true);
 initOfferTabDragDrop();
 updateMoveOfferButtons();
 refreshPresetList();
-promptRestoreSession();
 queueAutosave();
 
 // ═══════════════════════════════════════════════════════
