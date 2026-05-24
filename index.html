@@ -62,6 +62,20 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .section-hdr.collapsed .section-toggle{transform:rotate(-90deg);}
 .section-body{padding:8px 10px;}
 .section-body.hidden{display:none;}
+.mode-toggle{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:7px 10px;border-bottom:1px solid var(--border);background:#fafaf8;}
+.mode-btn{padding:6px 8px;font-size:9px;font-weight:700;border:1px solid var(--border);border-radius:var(--radius);background:#fff;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+.mode-btn.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+.reorder-group{margin:6px 10px 4px;border:1px solid var(--border);border-radius:var(--radius);padding:6px;background:#fafaf8;}
+.reorder-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px;}
+.reorder-buttons{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.hero-hint{font-size:9px;color:var(--muted);margin:5px 0 2px;}
+.hero-source-block{margin-top:6px;padding-top:6px;border-top:1px solid var(--border);}
+.hero-dropzone{padding:14px 10px;min-height:92px;display:flex;align-items:center;justify-content:center;}
+.prod-status{margin-top:6px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:7px 8px;}
+.prod-status-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px;}
+.prod-status-item{font-size:9px;line-height:1.4;color:var(--text);}
+.prod-status-item.ok{color:var(--green);}
+.prod-status-item.warn{color:var(--amber);}
 
 /* ── ADVANCED SECTION ── */
 .advanced-section{margin-bottom:6px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
@@ -307,9 +321,16 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <button class="otab" id="ot2" onclick="sv(2)" draggable="true" data-offer-tab="2"><span>Offer 3</span><span class="status-dot amber" id="sd2"></span></button>
     <button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3"><span>Offer 4</span><span class="status-dot amber" id="sd3"></span></button>
   </div>
-  <div class="row" style="margin-top:4px;gap:4px;">
-    <button class="abtn" id="move-left-btn" onclick="moveOfferLeft()" style="flex:1;">← Move Left</button>
-    <button class="abtn" id="move-right-btn" onclick="moveOfferRight()" style="flex:1;">Move Right →</button>
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="mode-standard-btn" onclick="setBuilderMode('standard')">Standard Mode</button>
+    <button class="mode-btn" id="mode-production-btn" onclick="setBuilderMode('production')">Production Mode</button>
+  </div>
+  <div class="reorder-group">
+    <div class="reorder-label">Reorder Cards</div>
+    <div class="reorder-buttons">
+      <button class="abtn" id="move-left-btn" onclick="moveOfferLeft()">← Move Left</button>
+      <button class="abtn" id="move-right-btn" onclick="moveOfferRight()">Move Right →</button>
+    </div>
   </div>
 
   <div class="sb-body">
@@ -317,7 +338,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 
 
     <!-- ── CSV IMPORT (CORE WORKFLOW) ── -->
-    <div class="section csv-core-section">
+    <div class="section csv-core-section" data-section-key="csv-import">
       <div class="section-hdr" onclick="toggleSec(this)">
         <h3>📥 CSV Import</h3><span class="section-toggle">▾</span>
       </div>
@@ -331,7 +352,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 
 
     <!-- ── CAMPAIGN PRESETS ── -->
-    <div class="section">
+    <div class="section" data-section-key="campaign-presets">
       <div class="section-hdr" onclick="toggleSec(this)">
         <h3>💾 Campaign Presets</h3><span class="section-toggle">▾</span>
       </div>
@@ -356,7 +377,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     </div>
 
     <!-- ── 1. PASTE RAW OFFER ── -->
-    <div class="section">
+    <div class="section" data-section-key="paste-raw-offer">
       <div class="section-hdr" onclick="toggleSec(this)">
         <h3>📋 Paste Raw Offer</h3><span class="section-toggle">▾</span>
       </div>
@@ -375,7 +396,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     </div>
 
     <!-- ── 2. OPERATOR ── -->
-    <div class="section">
+    <div class="section" data-section-key="operator-logo">
       <div class="section-hdr" onclick="toggleSec(this)">
         <h3>🚢 Operator Logo</h3><span class="section-toggle">▾</span>
       </div>
@@ -424,18 +445,19 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     </div>
 
     <!-- ── 3. HERO IMAGE ── -->
-    <div class="section">
+    <div class="section" data-section-key="hero-image">
       <div class="section-hdr" onclick="toggleSec(this)">
         <h3>🖼 Hero</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body">
         <div class="dz-wrap">
-          <div class="dropzone" id="dz-hero" ondragover="dzOver(event,&#39;dz-hero&#39;)" ondragleave="dzOut(&#39;dz-hero&#39;)" ondrop="dzDrop(event,&#39;hero&#39;)">
+          <div class="dropzone hero-dropzone" id="dz-hero" ondragover="dzOver(event,&#39;dz-hero&#39;)" ondragleave="dzOut(&#39;dz-hero&#39;)" ondrop="dzDrop(event,&#39;hero&#39;)">
             <input type="file" accept="image/*" onchange="fileChosen(event,&#39;hero&#39;)">
             <div class="dz-inner"><div class="dz-icon">🖼</div><div class="dz-lbl">Drop hero image here</div><div class="dz-sub">JPG/PNG · Adobe Stock or local file</div></div>
             <img class="dz-thumb hero-t" id="hero-thumb" alt="hero" style="display: none;">
           </div>
         </div>
+        <div class="hero-hint">Local uploads recommended for best export quality</div>
         <div class="crop-controls" id="crop-controls">
           <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;">Image Position</div>
           <div class="crop-row"><label>Zoom</label><input type="range" id="crop-zoom" min="100" max="200" value="100" oninput="updateCrop()"><span id="cv-zoom">100%</span></div>
@@ -443,6 +465,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
           <div class="crop-row"><label>V. Pos</label><input type="range" id="crop-y" min="-50" max="50" value="0" oninput="updateCrop()"><span id="cv-y">0%</span></div>
           <button class="abtn" onclick="resetCrop()" style="width:100%;margin-top:3px;font-size:9px;padding:3px;">Reset</button>
         </div>
+        <div class="hero-source-block">
         <div class="img-src-tabs">
           <button class="ist active" onclick="switchImg(&#39;unsplash&#39;)">Unsplash</button>
           <button class="ist" onclick="switchImg(&#39;url&#39;)">URL</button>
@@ -459,11 +482,12 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
           <div class="field"><label>Image URL (Klaviyo hosted)</label><input id="f-img-url" placeholder="https://..." oninput="imgUrlCh()"></div>
           <div style="font-size:9px;color:var(--muted);margin-top:2px;">⚠ External URLs may not export — upload locally for best PNG export results</div>
         </div>
+        </div>
       </div>
     </div>
 
     <!-- ── 4. OFFER DETAILS ── -->
-    <div class="section">
+    <div class="section" data-section-key="offer-details">
       <div class="section-hdr" onclick="toggleSec(this)">
         <h3>✏️ Offer Details</h3><span class="section-toggle">▾</span>
       </div>
@@ -487,7 +511,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     </div>
 
     <!-- ── 5. UTM ── -->
-    <div class="section">
+    <div class="section" data-section-key="utm-link">
       <div class="section-hdr" onclick="toggleSec(this)">
         <h3>🔗 UTM Link</h3><span class="section-toggle">▾</span>
       </div>
@@ -507,7 +531,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 
     <!-- ── 6. STANDARD UTMs ── -->
-    <div class="section">
+    <div class="section" data-section-key="standard-utms">
       <div class="section-hdr" onclick="toggleSec(this)">
         <h3>🔗 Standard UTMs</h3><span class="section-toggle">▾</span>
       </div>
@@ -540,6 +564,10 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <div class="export-filenames" id="export-filenames">
         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px;">Export filenames:</div>
         <div id="filename-list"></div>
+      </div>
+      <div class="prod-status" id="prod-status">
+        <div class="prod-status-title">Export Readiness</div>
+        <div id="prod-status-list"></div>
       </div>
     </div>
 
@@ -717,6 +745,8 @@ let offers = [{},{},{},{}];
 let cur = 0, viewMode = "single", zoomPct = 32;
 let lockedOffers = [false,false,false,false];
 let safeZoneOn = false, exportRunning = false;
+let builderMode = "standard";
+const PRODUCTION_OPEN_SECTIONS = new Set(["csv-import","campaign-presets","paste-raw-offer","utm-link","standard-utms","hero-image","offer-details"]);
 const FLDS = ["tags","name","ship","incl","price","basis","board","boardlbl","day","month","nights","ports","url","utm_content"];
 
 // ═══════════════════════════════════════════════════════
@@ -725,6 +755,23 @@ const FLDS = ["tags","name","ship","incl","price","basis","board","boardlbl","da
 function toggleSec(hdr){
   hdr.classList.toggle("collapsed");
   hdr.nextElementSibling.classList.toggle("hidden");
+}
+function setSectionCollapsedByHeader(hdr, collapsed){
+  const body = hdr && hdr.nextElementSibling;
+  if(!hdr || !body || !body.classList.contains("section-body")) return;
+  hdr.classList.toggle("collapsed", collapsed);
+  body.classList.toggle("hidden", collapsed);
+}
+function setBuilderMode(mode){
+  builderMode = mode === "production" ? "production" : "standard";
+  document.getElementById("mode-standard-btn").classList.toggle("active", builderMode === "standard");
+  document.getElementById("mode-production-btn").classList.toggle("active", builderMode === "production");
+  if(builderMode === "production"){
+    document.querySelectorAll(".section[data-section-key]").forEach(sec=>{
+      const keepOpen = PRODUCTION_OPEN_SECTIONS.has(sec.dataset.sectionKey);
+      setSectionCollapsedByHeader(sec.querySelector(".section-hdr"), !keepOpen);
+    });
+  }
 }
 function toggleAdv(hdr){
   hdr.nextElementSibling.classList.toggle("open");
@@ -1098,6 +1145,20 @@ function updateAllStatus(){
     const dot=document.getElementById("sd"+i); if(!dot) continue;
     const s=getOfferStatus(i); dot.className="status-dot"+(s?" "+s:"");
   }
+  updateProductionStatus();
+}
+function updateProductionStatus(){
+  const o=offers[cur]||{};
+  const checks=[
+    {ok:!!(o.name||o.price||o._img),okLbl:"✓ Offer loaded",warnLbl:"⚠ Offer not loaded"},
+    {ok:!!o._img,okLbl:"✓ Hero image loaded",warnLbl:"⚠ Hero image missing"},
+    {ok:!!o.operator,okLbl:"✓ Operator selected",warnLbl:"⚠ Operator not selected"},
+    {ok:!!o._utm,okLbl:"✓ UTMs generated",warnLbl:"⚠ UTM missing"}
+  ];
+  if(o._img && String(o._img).startsWith("http")) checks.push({ok:false,warnLbl:"⚠ External image URL may affect export"});
+  const host=document.getElementById("prod-status-list");
+  if(!host) return;
+  host.innerHTML=checks.map(c=>`<div class="prod-status-item ${c.ok?"ok":"warn"}">${c.ok?c.okLbl:c.warnLbl}</div>`).join("");
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2498,6 +2559,7 @@ setTimeout(()=>{ try{ genStandardUtms(); }catch(e){} }, 250);
 // ═══════════════════════════════════════════════════════
 window.addEventListener("resize",rv);
 rv(); updateAllStatus();
+setBuilderMode("standard");
 initOfferTabDragDrop();
 updateMoveOfferButtons();
 refreshPresetList();
