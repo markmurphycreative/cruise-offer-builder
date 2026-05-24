@@ -235,6 +235,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .lock-ind{display:none;font-size:9px;color:var(--amber);font-weight:700;text-align:center;margin-bottom:4px;padding:3px;background:#fff8e0;border-radius:3px;}
 .lock-ind.active{display:block;}
 .session-hint{font-size:9px;color:var(--muted);text-align:center;margin-top:3px;}
+.session-feedback{font-size:9px;color:var(--green);text-align:center;margin-top:3px;min-height:12px;opacity:0;transition:opacity .2s ease;}
+.session-feedback.warn{color:#8a5000;}
+.session-feedback.active{opacity:1;}
 
 /* ── PREVIEW ── */
 .preview-toolbar{background:var(--navy);padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;}
@@ -671,6 +674,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <button class="abtn" onclick="clearSavedSession()">Clear Saved Session</button>
     </div>
     <div class="session-hint">Local autosave is enabled on this browser</div>
+    <div class="session-feedback" id="session-feedback" aria-live="polite"></div>
   </div>
 </div>
 
@@ -1027,13 +1031,13 @@ function readFile(file,type){
       const src=ev.target.result;
       if(type==="logo"){ offers[cur]._logoCustom=src; if(!offers[cur]._logoSize) offers[cur]._logoSize=50; setThumb("logo",src); document.getElementById("logo-size-row").style.display="flex"; }
       else{ offers[cur]._img=src; setThumb("hero",src); document.getElementById("crop-controls").classList.add("active"); }
-      rv(); updateAllStatus(); updateExportFilenames();
+      rv(); updateAllStatus(); updateExportFilenames(); queueAutosave();
     }; r.readAsDataURL(file);
   }
 }
 function setThumb(type,src){ const el=document.getElementById(type==="logo"?"logo-thumb":"hero-thumb"); if(!el) return; if(src){el.src=src;el.style.display="block";}else el.style.display="none"; }
-function logoSz(val){ offers[cur]._logoSize=parseInt(val); document.getElementById("logo-size-val").textContent=val+"%"; rv(); }
-function imgUrlCh(){ offers[cur]._img=document.getElementById("f-img-url").value; setThumb("hero",offers[cur]._img); if(offers[cur]._img) document.getElementById("crop-controls").classList.add("active"); rv(); updateAllStatus(); updateExportFilenames(); }
+function logoSz(val){ offers[cur]._logoSize=parseInt(val); document.getElementById("logo-size-val").textContent=val+"%"; rv(); queueAutosave(); }
+function imgUrlCh(){ offers[cur]._img=document.getElementById("f-img-url").value; setThumb("hero",offers[cur]._img); if(offers[cur]._img) document.getElementById("crop-controls").classList.add("active"); rv(); updateAllStatus(); updateExportFilenames(); queueAutosave(); }
 
 // ═══════════════════════════════════════════════════════
 // CROP
@@ -1045,13 +1049,13 @@ function updateCrop(){
   document.getElementById("cv-zoom").textContent=offers[cur]._cropZoom+"%";
   document.getElementById("cv-x").textContent=offers[cur]._cropX+"%";
   document.getElementById("cv-y").textContent=offers[cur]._cropY+"%";
-  rv();
+  rv(); queueAutosave();
 }
 function resetCrop(){
   offers[cur]._cropZoom=100; offers[cur]._cropX=0; offers[cur]._cropY=0;
   document.getElementById("crop-zoom").value=100; document.getElementById("crop-x").value=0; document.getElementById("crop-y").value=0;
   document.getElementById("cv-zoom").textContent="100%"; document.getElementById("cv-x").textContent="0%"; document.getElementById("cv-y").textContent="0%";
-  rv();
+  rv(); queueAutosave();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1726,6 +1730,16 @@ function updateHeroRestoreNote(){
   const o=offers[cur]||{};
   note.classList.toggle('active', !!o._imgNeedsReupload);
 }
+function showSessionFeedback(msg,isWarn){
+  const el=document.getElementById('session-feedback');
+  if(!el) return;
+  el.textContent=msg||'';
+  el.classList.toggle('warn',!!isWarn);
+  el.classList.toggle('active',!!msg);
+}
+function sessionHasMissingHeroImages(payload){
+  return !!(((payload&&payload.offers)||[]).find(o=>o&&o._imgNeedsReupload));
+}
 let pendingRestoreSession = null;
 
 function closeSessionRestoreModal(){
@@ -1736,11 +1750,16 @@ function chooseRestoreSession(){
   const payload = pendingRestoreSession;
   pendingRestoreSession = null;
   closeSessionRestoreModal();
-  if(payload) applySessionPayload(payload);
+  if(payload){
+    applySessionPayload(payload);
+    const partial=sessionHasMissingHeroImages(payload);
+    showSessionFeedback(partial ? "Session restored, but hero images need re-uploading" : "Previous session restored", partial);
+  }
 }
 function chooseStartFreshSession(){
   pendingRestoreSession = null;
   closeSessionRestoreModal();
+  showSessionFeedback("",false);
 }
 function promptRestoreSession(){
   const saved = readSavedSession();
@@ -1753,6 +1772,7 @@ function clearSavedSession(){
   try{ localStorage.removeItem(AUTOSAVE_KEY); }catch(e){}
   pendingRestoreSession = null;
   closeSessionRestoreModal();
+  showSessionFeedback("",false);
 }
 
 
@@ -2449,6 +2469,7 @@ function sv(i){
   try { updateExportFilenames(); } catch(e){}
   try { updateMoveOfferButtons(); } catch(e){}
   renderVisibleCard();
+  queueAutosave();
 }
 function up(){
   try { commitVisibleFields(); } catch(e){}
@@ -2461,6 +2482,7 @@ function up(){
   // Refresh must respect the active preview mode.
   // Single updates one card, Email updates the vertical stack, All 4 updates the grid.
   try { renderPreviewMode(true); } catch(e) { try { renderVisibleCard(); } catch(_e){} }
+  queueAutosave();
 }
 function rv(skipSave){
   if(viewMode === 'single'){
