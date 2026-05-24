@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cruise Offer Builder v1.5.4 — Dawson &amp; Sanderson</title>
 <link href="./HELLO Cruise Offer Builder v1.5.4 — Dawson &amp; Sanderson_files/css2" rel="stylesheet">
-<script src="./HELLO Cruise Offer Builder v1.5.4 — Dawson &amp; Sanderson_files/html2canvas.min.js"></script>
-<script src="./HELLO Cruise Offer Builder v1.5.4 — Dawson &amp; Sanderson_files/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" crossorigin="anonymous"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -859,6 +859,41 @@ function getExportFilename(i){
   return ddmmyy + "_" + opSlug + "_" + nameSlug + "_card" + (i+1) + ".png";
 }
 
+
+function loadScriptOnce(url, globalName){
+  return new Promise((resolve, reject) => {
+    if(globalName && typeof window[globalName] !== "undefined"){ resolve(true); return; }
+    const existing = Array.from(document.querySelectorAll("script[src]")).find(s => s.src === url);
+    if(existing){
+      existing.addEventListener('load', ()=>resolve(true), {once:true});
+      existing.addEventListener('error', ()=>reject(new Error(`Failed to load ${url}`)), {once:true});
+      return;
+    }
+    const sc = document.createElement('script');
+    sc.src = url;
+    sc.async = true;
+    sc.crossOrigin = 'anonymous';
+    sc.onload = () => resolve(true);
+    sc.onerror = () => reject(new Error(`Failed to load ${url}`));
+    document.head.appendChild(sc);
+  });
+}
+
+async function ensureJSZipLoaded(){
+  if(typeof window.JSZip !== "undefined") return true;
+  const sources = [
+    "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js",
+    "https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"
+  ];
+  for(const src of sources){
+    try{
+      await loadScriptOnce(src, 'JSZip');
+      if(typeof window.JSZip !== "undefined") return true;
+    }catch(_e){}
+  }
+  return false;
+}
+
 function hasExternalImg(o){
   return o._img && (o._img.startsWith("http://") || o._img.startsWith("https://"));
 }
@@ -928,7 +963,7 @@ async function exportAll(){
 
   const toExport=offers.map((o,i)=>({o,i})).filter(({o})=>o.name||o._img);
   if(!toExport.length){ prog.textContent="No offers to export — fill in at least one offer first"; return; }
-  if(typeof JSZip==="undefined"){
+  if(!(await ensureJSZipLoaded())){
     prog.textContent="⚠ ZIP export unavailable — JSZip did not load. Check your internet connection and try again.";
     return;
   }
@@ -2143,7 +2178,7 @@ async function exportAllJPG(){
   if(warn) warn.classList.remove('active');
   const toExport=offers.map((o,i)=>({o,i})).filter(({o})=>o.name||o._img);
   if(!toExport.length){ if(prog) prog.textContent='No offers to export — fill in at least one offer first'; return; }
-  if(typeof JSZip==='undefined'){ if(prog) prog.textContent='⚠ ZIP export unavailable — JSZip did not load.'; return; }
+  if(!(await ensureJSZipLoaded())){ if(prog) prog.textContent='⚠ ZIP export unavailable — JSZip did not load. Check your internet connection and try again.'; return; }
   if(toExport.some(({o})=>hasExternalImg(o)) && warn) warn.classList.add('active');
   exportRunning=true; if(btn) btn.disabled=true;
   const zip=new JSZip(); let done=0;
