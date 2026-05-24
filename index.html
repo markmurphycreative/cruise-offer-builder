@@ -1587,7 +1587,7 @@ function cleanPortsDisplay(str){
     .join(" • ");
 }
 function chunkBullets(str,n){ const p=cleanPortsDisplay(str).split("•").map(s=>s.trim()).filter(Boolean); const rows=[]; for(let i=0;i<p.length;i+=n)rows.push(p.slice(i,i+n).join(" • ")); return rows.join("<br>"); }
-function bc(d){
+function renderCardHTML(d){
   const name=d.name||"";
   const incl=d.incl||"";
   const ship=d.ship||"";
@@ -1610,6 +1610,7 @@ function bc(d){
   const nightLabel=nights?"Nights":"";
   return `<div class="cc">${getHeaderHTML(d)}${heroHTML}<div class="isec"><div class="cname">${name}</div><div class="incl">${incl}</div><div class="sname">${shipLine}</div><div class="price-block">${priceHTML}<div class="pbasis">${basis}</div></div></div><div class="ibar"><div class="icell gold"><div class="ival">${board}</div><div class="ilbl">${boardlbl}</div></div><div class="icell blk"><div class="ival">${dateHTML}</div><div class="ilbl">${month}</div></div><div class="icell gold"><div class="ival">${nights}</div><div class="ilbl">${nightLabel}</div></div></div><div class="vsec"><div class="vtit">You'll Visit</div><div class="vpts">${portsHTML}</div></div><div class="tcbar">${terms}</div></div>`;
 }
+function bc(d){ return renderCardHTML(d); }
 
 // ═══════════════════════════════════════════════════════
 // RENDER
@@ -1633,7 +1634,7 @@ function renderSingleOffer(data){
   const out=document.getElementById("card-output");
   const scale=zoomPct/100;
   document.getElementById("preview-title").textContent=`Live Preview — Offer ${cur+1}`;
-  out.innerHTML=bc(data||{});
+  out.innerHTML=renderCardHTML(data||{});
   scaler.style.width="1200px";
   scaler.style.transform=`scale(${scale})`;
   scaler.style.transformOrigin="top center";
@@ -1656,7 +1657,7 @@ function rv(skipSave){
     bar.innerHTML=`<div class="email-dot" style="background:#ff5f57"></div><div class="email-dot" style="background:#ffbd2e"></div><div class="email-dot" style="background:#28ca41"></div><span style="font-size:10px;color:#aaa;margin-left:8px;">Klaviyo — ${document.getElementById("g-campaign").value||"Campaign"}</span>`;
     chrome.appendChild(bar);
     const stack=document.createElement("div"); stack.className="email-cards-stack";
-    offers.forEach(d=>{ if(!d.name&&!d._img) return; const cw=document.createElement("div"); cw.className="email-card-wrap"; cw.innerHTML=bc(d); stack.appendChild(cw); });
+    offers.forEach(d=>{ if(!d.name&&!d._img) return; const cw=document.createElement("div"); cw.className="email-card-wrap"; cw.innerHTML=renderCardHTML(d); stack.appendChild(cw); });
     const footer=document.createElement("div"); footer.className="email-footer"; footer.innerHTML="Dawson &amp; Sanderson · T&amp;Cs Apply<br><span style='font-size:10px;'>Unsubscribe</span>";
     chrome.appendChild(stack); chrome.appendChild(footer); wrap.appendChild(chrome);
     out.innerHTML=""; out.appendChild(wrap);
@@ -1665,7 +1666,7 @@ function rv(skipSave){
   } else if(viewMode==="all"){
     document.getElementById("preview-title").textContent="All 4 Cards";
     const grid=document.createElement("div"); grid.style.cssText="display:grid;grid-template-columns:1200px 1200px;width:2400px;background:#333;gap:2px;";
-    offers.forEach(d=>{const c=document.createElement("div");c.innerHTML=bc(d);grid.appendChild(c);});
+    offers.forEach(d=>{const c=document.createElement("div");c.innerHTML=renderCardHTML(d);grid.appendChild(c);});
     out.innerHTML=""; out.appendChild(grid);
     scaler.style.width="2400px"; scaler.style.transform=`scale(${scale})`; scaler.style.transformOrigin="top center";
     setTimeout(()=>scaler.style.height=(out.offsetHeight*scale)+"px",200);
@@ -1677,7 +1678,7 @@ function rv(skipSave){
 // ═══════════════════════════════════════════════════════
 // COPY HTML
 // ═══════════════════════════════════════════════════════
-function copyHTML(){ save(); navigator.clipboard.writeText(bc(offers[cur])).then(()=>{ const b=event.target; b.textContent="✓ Copied!"; setTimeout(()=>b.textContent="Copy HTML",2000); }); }
+function copyHTML(){ save(); navigator.clipboard.writeText(renderCardHTML(offers[cur])).then(()=>{ const b=event.target; b.textContent="✓ Copied!"; setTimeout(()=>b.textContent="Copy HTML",2000); }); }
 
 // ═══════════════════════════════════════════════════════
 // QA
@@ -1811,7 +1812,7 @@ function renderOfferIndex(i){
   if(viewMode==='single'){
     const title=document.getElementById('preview-title');
     if(title) title.textContent='Live Preview — Offer '+(i+1);
-    out.innerHTML=bc(d);
+    out.innerHTML=renderCardHTML(d);
     scaler.style.width='1200px';
     scaler.style.transform='scale('+scale+')';
     scaler.style.transformOrigin='top center';
@@ -1902,7 +1903,7 @@ function renderVisibleCard(){
   const scale = zoomPct / 100;
   const title = document.getElementById('preview-title');
   if(title) title.textContent = 'Live Preview — Offer ' + (cur + 1);
-  out.innerHTML = bc(visibleFieldsToData());
+  out.innerHTML = renderCardHTML(visibleFieldsToData());
   scaler.style.width = '1200px';
   scaler.style.transform = 'scale(' + scale + ')';
   scaler.style.transformOrigin = 'top center';
@@ -2362,7 +2363,7 @@ async function renderCardToImageBlob(offerData, mimeType, quality){
   return new Promise(async (resolve, reject)=>{
     const wrap = document.createElement('div');
     wrap.style.cssText = 'position:fixed;left:-99999px;top:0;width:1200px;min-width:1200px;max-width:1200px;background:#fff;z-index:-999;pointer-events:none;overflow:visible;transform:none;';
-    wrap.innerHTML = bc(offerData);
+    wrap.innerHTML = renderCardHTML(offerData);
     document.body.appendChild(wrap);
 
     const target = wrap.querySelector('.cc') || wrap;
