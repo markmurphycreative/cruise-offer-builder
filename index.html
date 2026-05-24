@@ -297,6 +297,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <button class="otab" id="ot2" onclick="sv(2)" draggable="true" data-offer-tab="2"><span>Offer 3</span><span class="status-dot amber" id="sd2"></span></button>
     <button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3"><span>Offer 4</span><span class="status-dot amber" id="sd3"></span></button>
   </div>
+  <div class="row" style="margin-top:6px;">
+    <button class="abtn" id="move-left-btn" onclick="moveOfferLeft()" style="flex:1;">← Move Offer Left</button>
+    <button class="abtn" id="move-right-btn" onclick="moveOfferRight()" style="flex:1;">Move Offer Right →</button>
+  </div>
 
   <div class="sb-body">
     <div class="lock-ind" id="lock-ind">🔒 CARD LOCKED — Click Unlock to edit</div>
@@ -1900,6 +1904,32 @@ function moveOfferState(fromIdx, toIdx){
   else if(fromIdx < cur && toIdx >= cur) cur -= 1;
   else if(fromIdx > cur && toIdx <= cur) cur += 1;
 }
+function updateMoveOfferButtons(){
+  const leftBtn = document.getElementById('move-left-btn');
+  const rightBtn = document.getElementById('move-right-btn');
+  if(leftBtn){
+    const canLeft = cur > 0;
+    leftBtn.disabled = !canLeft;
+    leftBtn.style.visibility = canLeft ? 'visible' : 'hidden';
+  }
+  if(rightBtn){
+    const canRight = cur < 3;
+    rightBtn.disabled = !canRight;
+    rightBtn.style.visibility = canRight ? 'visible' : 'hidden';
+  }
+}
+function moveOfferByStep(step){
+  step = Number(step) || 0;
+  if(!step) return;
+  const fromIdx = cur;
+  const toIdx = fromIdx + step;
+  if(toIdx < 0 || toIdx > 3) return;
+  try { commitVisibleFields(); } catch(_e){}
+  moveOfferState(fromIdx, toIdx);
+  refreshAfterOfferReorder();
+}
+function moveOfferLeft(){ moveOfferByStep(-1); }
+function moveOfferRight(){ moveOfferByStep(1); }
 
 function refreshAfterOfferReorder(){
   document.querySelectorAll('.otab').forEach(function(t,idx){
@@ -1914,6 +1944,7 @@ function refreshAfterOfferReorder(){
   try { genStandardUtms(); } catch(e){}
   try { updateExportFilenames(); } catch(e){}
   try { renderPreviewMode(true); } catch(e){ try { renderVisibleCard(); } catch(_e){} }
+  try { updateMoveOfferButtons(); } catch(e){}
 }
 
 function initOfferTabDragDrop(){
@@ -1972,6 +2003,7 @@ function sv(i){
   try { genStandardUtms(); } catch(e){}
   try { updateAllStatus(); } catch(e){}
   try { updateExportFilenames(); } catch(e){}
+  try { updateMoveOfferButtons(); } catch(e){}
   renderVisibleCard();
 }
 function up(){
@@ -2002,6 +2034,7 @@ processSheetCSV = function(csv,status){
   cur = 0;
   document.querySelectorAll('.otab').forEach(function(t,idx){ t.classList.toggle('active', idx === 0); });
   try { loadOfferToEditor(0); } catch(e) { try { load(0); } catch(_e){} }
+  try { updateMoveOfferButtons(); } catch(e){}
   renderVisibleCard();
 };
 
@@ -2432,6 +2465,7 @@ setTimeout(()=>{ try{ genStandardUtms(); }catch(e){} }, 250);
 window.addEventListener("resize",rv);
 rv(); updateAllStatus();
 initOfferTabDragDrop();
+updateMoveOfferButtons();
 refreshPresetList();
 
 // ═══════════════════════════════════════════════════════
