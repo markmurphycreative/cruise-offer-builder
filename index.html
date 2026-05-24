@@ -172,6 +172,12 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .std-utm-head strong{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
 .std-utm-url{font-size:9px;font-family:monospace;line-height:1.4;color:var(--navy);word-break:break-all;}
 
+
+.spell-warn{margin-top:4px;font-size:9px;color:#9a6c1f;line-height:1.35;display:none;}
+.spell-warn.active{display:block;}
+.spell-flag{border-color:#e8c88a!important;background:#fffdf6!important;box-shadow:inset 0 0 0 1px rgba(212,130,10,.08);}
+.parse-preview-item.spell-flag{border-color:#e8c88a;background:#fffdf6;}
+
 /* ── WARNINGS ── */
 .warn-box{background:#fff8f0;border:1px solid #f0c080;border-radius:var(--radius);padding:5px 7px;margin-top:4px;display:none;font-size:10px;color:#8a5000;line-height:1.5;}
 .warn-box.active{display:block;}
@@ -392,7 +398,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
         <h3>📋 Paste Raw Offer</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body parse-area">
-        <textarea id="raw-paste" placeholder="Paste Trello / operator copy here...
+        <textarea id="raw-paste" spellcheck="true" placeholder="Paste Trello / operator copy here...
 
 P&amp;O Cruises | Arvia
 Eastern Caribbean Islands Fly-Cruise
@@ -402,6 +408,7 @@ Newcastle Flights, Luggage &amp; Transfers Included
 Barbados • Martinique • St Kitts • Tortola"></textarea>
         <button class="parse-btn" onclick="parseOffer()">⚡ Load Offer</button>
         <div class="parse-result" id="parse-result"></div>
+        <div class="spell-warn" id="spell-warn-raw"></div>
       </div>
     </div>
 
@@ -449,7 +456,8 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         </div>
         <div class="field" style="margin-top:4px;">
           <label>USP's</label>
-          <input id="f-tags" placeholder="Adult Only Options · Cuisine · Entertainment · Family" oninput="up()">
+          <input id="f-tags" spellcheck="true" placeholder="Adult Only Options · Cuisine · Entertainment · Family" oninput="up()">
+          <div class="spell-warn" id="spell-warn-tags"></div>
         </div>
       </div>
     </div>
@@ -503,10 +511,11 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       </div>
       <div class="section-body">
         <div class="fg2">
-          <div class="field"><label>Cruise Name</label><input id="f-name" placeholder="Eastern Caribbean..." oninput="up()"></div>
-          <div class="field"><label>Ship Name</label><input id="f-ship" placeholder="Arvia" oninput="up()"></div>
+          <div class="field"><label>Cruise Name</label><input id="f-name" spellcheck="true" placeholder="Eastern Caribbean..." oninput="up()"></div>
+          <div class="field"><label>Ship Name</label><input id="f-ship" spellcheck="true" placeholder="Arvia" oninput="up()"></div>
         </div>
-        <div class="field"><label>Inclusions</label><input id="f-incl" placeholder="Newcastle Flights, Luggage &amp; Transfers Included" oninput="up()"></div>
+        <div class="spell-warn" id="spell-warn-name"></div>
+        <div class="field"><label>Inclusions</label><input id="f-incl" spellcheck="true" placeholder="Newcastle Flights, Luggage &amp; Transfers Included" oninput="up()"></div>
         <div class="fg2">
           <div class="field"><label>Price (£)</label><input id="f-price" placeholder="1669" oninput="up()"></div>
           <div class="field"><label>Price Basis</label><input id="f-basis" placeholder="Based On 2 Adults Sharing" oninput="up()"></div>
@@ -515,8 +524,9 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
           <div class="field"><label>Date</label><input id="f-saildate" placeholder="20 November 2026" oninput="splitSailDate();up()"><input type="hidden" id="f-day" value="12"><input type="hidden" id="f-month" value="November 2026"></div>
           <div class="field"><label>Nights</label><input id="f-nights" placeholder="14" oninput="up()"></div>
         </div>
-        <div class="field"><label>Ports — separate with •</label><textarea id="f-ports" placeholder="Barbados • Martinique • St Kitts • Tortola • St Maarten • Antigua • St Lucia • Grenada" oninput="up();checkPortsWarn()"></textarea></div>
+        <div class="field"><label>Ports — separate with •</label><textarea id="f-ports" spellcheck="true" placeholder="Barbados • Martinique • St Kitts • Tortola • St Maarten • Antigua • St Lucia • Grenada" oninput="up();checkPortsWarn()"></textarea></div>
         <div class="warn-box" id="ports-warn"></div>
+        <div class="spell-warn" id="spell-warn-ports"></div>
       </div>
     </div>
 
@@ -650,6 +660,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     <h2>Preview Parsed Data</h2>
     <div id="parse-confidence-badge" class="parse-result"></div>
     <div id="parse-preview-body" class="parse-preview-grid"></div>
+    <div class="spell-warn" id="spell-warn-parse-preview"></div>
     <div class="modal-actions">
       <button class="modal-btn primary" onclick="applyParsedOffer()">Apply</button>
       <button class="modal-btn" onclick="cancelParsedOffer()">Cancel</button>
@@ -872,7 +883,7 @@ function load(i){
   else document.getElementById("crop-controls").classList.remove("active");
   operatorChanged(true); genUtm(); genStandardUtms(); updateAllStatus(); updateExportFilenames();
 }
-function up(){ save(); rv(); updateAllStatus(); genUtm(); genStandardUtms(); checkPortsWarn(); updateExportFilenames(); queueAutosave(); }
+function up(){ save(); rv(); updateAllStatus(); genUtm(); genStandardUtms(); checkPortsWarn(); runSpellQA(); updateExportFilenames(); queueAutosave(); }
 
 // ═══════════════════════════════════════════════════════
 // OPERATOR
@@ -1176,6 +1187,33 @@ async function exportAll(){
 // ═══════════════════════════════════════════════════════
 // PORTS WARN
 // ═══════════════════════════════════════════════════════
+
+const SPELLCHECK_FIELDS=[
+  {id:"f-name",warnId:"spell-warn-name",label:"Cruise name"},
+  {id:"f-ship",warnId:"spell-warn-name",label:"Ship name"},
+  {id:"f-incl",warnId:"spell-warn-name",label:"Inclusions"},
+  {id:"f-ports",warnId:"spell-warn-ports",label:"Ports"},
+  {id:"f-tags",warnId:"spell-warn-tags",label:"USP text"},
+  {id:"raw-paste",warnId:"spell-warn-raw",label:"Parser input"}
+];
+const PROTECTED_WORDS=new Set(["p&o","p and o","marella","arvia","msc","caribbean","martinique","st","maarten","tenerife","klaviyo","cunard","antigua","grenada","tortola","barbados","lucia","kitts"]);
+function getLikelyTypos(text){
+  const words=String(text||"").toLowerCase().match(/[a-z][a-z'&.-]{2,}/g)||[];
+  const issues=[];
+  for(const w of words){
+    if(PROTECTED_WORDS.has(w)) continue;
+    if(/(.)\1\1/.test(w)) issues.push(w);
+    if(/[^aeiou]{5,}/.test(w) && !/(cruise|rhythms|myths)/.test(w)) issues.push(w);
+    if(/\b(teh|adn|incldued|caribean|martinque|maartin|tranfers)\b/.test(w)) issues.push(w);
+  }
+  return [...new Set(issues)].slice(0,4);
+}
+function setSpellWarn(warnId,msg){const el=document.getElementById(warnId); if(!el) return; el.textContent=msg||""; el.classList.toggle("active",!!msg);}
+function runSpellQA(){
+  const byWarn={};
+  SPELLCHECK_FIELDS.forEach(f=>{ const el=document.getElementById(f.id); if(!el) return; const bad=getLikelyTypos(el.value); el.classList.toggle('spell-flag',bad.length>0); if(bad.length){ (byWarn[f.warnId]||(byWarn[f.warnId]=[])).push(`${f.label}: ${bad.join(', ')}`);} });
+  ["spell-warn-name","spell-warn-ports","spell-warn-tags","spell-warn-raw"].forEach(id=>setSpellWarn(id,(byWarn[id]||[]).length?`Spelling QA: ${byWarn[id].join(" · ")}`:""));
+}
 function checkPortsWarn(){
   const ports=(document.getElementById("f-ports")||{}).value||"";
   const panel=document.getElementById("ports-warn"); const warns=[];
@@ -1717,7 +1755,7 @@ function parseOffer(){
   pendingParseResult={parsed,confidence,score}; showParsePreview();
 }
 function setParseStatus(msg,level){const el=document.getElementById('parse-result'); if(!el) return; el.textContent=msg; el.className='parse-result '+(level||'');}
-function showParsePreview(){const modal=document.getElementById('parse-preview-modal'); if(!modal||!pendingParseResult) return; const {parsed,confidence,score}=pendingParseResult; const body=document.getElementById('parse-preview-body'); const conf=document.getElementById('parse-confidence-badge'); const label=confidence==='high'?'High Confidence':confidence==='partial'?'Partial Match':'Needs Review'; conf.className='parse-result '+confidence; conf.textContent=`${label} (${score})`; const keys=['operatorKey','name','ship','day','month','nights','price','board','boardlbl','incl','ports']; body.innerHTML=keys.filter(k=>parsed[k]).map(k=>`<div class="parse-preview-item"><strong>${k}</strong>${parsed[k]}</div>`).join('')||'<div class="parse-preview-item">No fields confidently detected.</div>'; modal.classList.add('active');}
+function showParsePreview(){const modal=document.getElementById('parse-preview-modal'); if(!modal||!pendingParseResult) return; const {parsed,confidence,score}=pendingParseResult; const body=document.getElementById('parse-preview-body'); const conf=document.getElementById('parse-confidence-badge'); const label=confidence==='high'?'High Confidence':confidence==='partial'?'Partial Match':'Needs Review'; conf.className='parse-result '+confidence; conf.textContent=`${label} (${score})`; const keys=['operatorKey','name','ship','day','month','nights','price','board','boardlbl','incl','ports']; body.innerHTML=keys.filter(k=>parsed[k]).map(k=>{const typos=getLikelyTypos(parsed[k]); return `<div class="parse-preview-item ${typos.length?'spell-flag':''}"><strong>${k}</strong>${parsed[k]}</div>`;}).join('')||'<div class="parse-preview-item">No fields confidently detected.</div>'; const parseTypos=Object.values(parsed).flatMap(v=>getLikelyTypos(v)); setSpellWarn("spell-warn-parse-preview",parseTypos.length?`Spelling QA: ${[...new Set(parseTypos)].slice(0,6).join(", ")}`:""); modal.classList.add('active');}
 function cancelParsedOffer(){const m=document.getElementById('parse-preview-modal'); if(m) m.classList.remove('active'); pendingParseResult=null;}
 function applyParsedOffer(){if(!pendingParseResult) return; const {parsed,confidence}=pendingParseResult; const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
   touched.forEach(el=>{el.classList.remove('parse-field-flash'); void el.offsetWidth; el.classList.add('parse-field-flash'); setTimeout(()=>el.classList.remove('parse-field-flash'),1700);});
@@ -2022,6 +2060,7 @@ function up(){
   updateAllStatus();
   genUtm();
   checkPortsWarn();
+  runSpellQA();
   updateExportFilenames();
 }
 
