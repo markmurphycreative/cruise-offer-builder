@@ -63,6 +63,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .section-body{padding:8px 10px;}
 .section-body.hidden{display:none;}
 .mode-toggle{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:7px 10px;border-bottom:1px solid var(--border);background:#fafaf8;}
+.mode-note{grid-column:1 / -1;font-size:9px;color:var(--muted);line-height:1.3;opacity:0;min-height:0;transition:opacity .15s ease;}
+.mode-note.active{opacity:1;min-height:12px;}
 .mode-btn{padding:6px 8px;font-size:9px;font-weight:700;border:1px solid var(--border);border-radius:var(--radius);background:#fff;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
 .mode-btn.active{background:var(--navy);border-color:var(--navy);color:#fff;}
 .reorder-group{margin:6px 10px 4px;border:1px solid var(--border);border-radius:var(--radius);padding:6px;background:#fafaf8;}
@@ -322,11 +324,12 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <button class="otab" id="ot2" onclick="sv(2)" draggable="true" data-offer-tab="2"><span>Offer 3</span><span class="status-dot amber" id="sd2"></span></button>
     <button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3"><span>Offer 4</span><span class="status-dot amber" id="sd3"></span></button>
   </div>
-  <div class="mode-toggle">
+  <div class="mode-toggle" id="builder-mode-toggle">
+    <div class="mode-note" id="mode-note" aria-live="polite"></div>
     <button class="mode-btn active" id="mode-standard-btn" onclick="setBuilderMode('standard')">Standard Mode</button>
     <button class="mode-btn" id="mode-production-btn" onclick="setBuilderMode('production')">Production Mode</button>
   </div>
-  <div class="reorder-group">
+  <div class="reorder-group" data-production-optional="true">
     <div class="reorder-label">Reorder Cards</div>
     <div class="reorder-buttons">
       <button class="abtn" id="move-left-btn" onclick="moveOfferLeft()">← Move Left</button>
@@ -748,6 +751,8 @@ let lockedOffers = [false,false,false,false];
 let safeZoneOn = false, exportRunning = false;
 let builderMode = "standard";
 let preProductionSectionState = null;
+const BUILDER_MODE_STORAGE_KEY = "cruise-builder-mode";
+// Production-essential sections stay visible for the day-to-day build workflow.
 const PRODUCTION_OPEN_SECTIONS = new Set(["csv-import","campaign-presets","paste-raw-offer","utm-link","standard-utms","hero-image","offer-details"]);
 const FLDS = ["tags","name","ship","incl","price","basis","board","boardlbl","day","month","nights","ports","url","utm_content"];
 
@@ -757,6 +762,7 @@ const FLDS = ["tags","name","ship","incl","price","basis","board","boardlbl","da
 function toggleSec(hdr){
   hdr.classList.toggle("collapsed");
   hdr.nextElementSibling.classList.toggle("hidden");
+  if(builderMode === "standard") captureStandardSectionState();
 }
 function setSectionCollapsedByHeader(hdr, collapsed){
   const body = hdr && hdr.nextElementSibling;
@@ -764,20 +770,33 @@ function setSectionCollapsedByHeader(hdr, collapsed){
   hdr.classList.toggle("collapsed", collapsed);
   body.classList.toggle("hidden", collapsed);
 }
-function setBuilderMode(mode){
+function getSectionCollapseState(){
+  const state = new Map();
+  document.querySelectorAll(".section[data-section-key]").forEach(sec=>{
+    const hdr = sec.querySelector(".section-hdr");
+    if(hdr) state.set(sec.dataset.sectionKey, hdr.classList.contains("collapsed"));
+  });
+  return state;
+}
+function captureStandardSectionState(){
+  if(builderMode !== "standard") return;
+  preProductionSectionState = getSectionCollapseState();
+}
+function setBuilderMode(mode,force=false){
   const nextMode = mode === "production" ? "production" : "standard";
-  if(nextMode === builderMode) return;
+  if(!force && nextMode === builderMode) return;
   const sections = Array.from(document.querySelectorAll(".section[data-section-key]"));
+  const optionalUiBlocks = Array.from(document.querySelectorAll("[data-production-optional]"));
 
   if(nextMode === "production"){
-    preProductionSectionState = new Map();
+    captureStandardSectionState();
     sections.forEach(sec=>{
       const hdr = sec.querySelector(".section-hdr");
       if(!hdr) return;
-      preProductionSectionState.set(sec.dataset.sectionKey, hdr.classList.contains("collapsed"));
       const keepOpen = PRODUCTION_OPEN_SECTIONS.has(sec.dataset.sectionKey);
       setSectionCollapsedByHeader(hdr, !keepOpen);
     });
+    optionalUiBlocks.forEach(el=>{ el.style.display = "none"; });
   } else if(preProductionSectionState){
     sections.forEach(sec=>{
       const hdr = sec.querySelector(".section-hdr");
@@ -785,12 +804,19 @@ function setBuilderMode(mode){
       if(!preProductionSectionState.has(sec.dataset.sectionKey)) return;
       setSectionCollapsedByHeader(hdr, preProductionSectionState.get(sec.dataset.sectionKey));
     });
-    preProductionSectionState = null;
+    optionalUiBlocks.forEach(el=>{ el.style.display = ""; });
   }
 
   builderMode = nextMode;
   document.getElementById("mode-standard-btn").classList.toggle("active", builderMode === "standard");
   document.getElementById("mode-production-btn").classList.toggle("active", builderMode === "production");
+  const modeNote = document.getElementById("mode-note");
+  if(modeNote){
+    const productionActive = builderMode === "production";
+    modeNote.textContent = productionActive ? "Production Mode: streamlined workflow view" : "";
+    modeNote.classList.toggle("active", productionActive);
+  }
+  try{ localStorage.setItem(BUILDER_MODE_STORAGE_KEY,builderMode); }catch(e){}
 }
 function toggleAdv(hdr){
   hdr.nextElementSibling.classList.toggle("open");
@@ -2578,7 +2604,10 @@ setTimeout(()=>{ try{ genStandardUtms(); }catch(e){} }, 250);
 // ═══════════════════════════════════════════════════════
 window.addEventListener("resize",rv);
 rv(); updateAllStatus();
-setBuilderMode("standard");
+captureStandardSectionState();
+let savedBuilderMode = "standard";
+try{ savedBuilderMode = localStorage.getItem(BUILDER_MODE_STORAGE_KEY) || "standard"; }catch(e){}
+setBuilderMode(savedBuilderMode,true);
 initOfferTabDragDrop();
 updateMoveOfferButtons();
 refreshPresetList();
