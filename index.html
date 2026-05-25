@@ -159,32 +159,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .crop-row input[type=range]{flex:1;accent-color:var(--gold);height:3px;}
 .crop-row span{font-size:9px;color:var(--navy);min-width:26px;text-align:right;}
 
-/* ── UNSPLASH ── */
-.img-src-tabs{display:flex;gap:3px;margin-top:4px;}
-.ist{padding:3px 7px;font-size:9px;font-weight:700;border:1px solid var(--border);border-radius:3px;background:#fafaf8;color:var(--muted);letter-spacing:.04em;}
-.ist.active{background:var(--navy);color:#fff;border-color:var(--navy);}
-.img-panel{display:none;margin-top:4px;}
-.img-panel.active{display:block;}
-.urow{display:flex;gap:4px;}
-.urow input{flex:1;font-size:10px;padding:4px 6px;border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;}
-.urow input:focus{outline:none;border-color:var(--gold);}
-.urow button{padding:4px 7px;font-size:9px;font-weight:700;border:none;border-radius:3px;background:var(--navy);color:#fff;}
-.u-more{margin-top:6px;}
-.u-more button{width:100%;padding:5px 8px;font-size:9px;font-weight:700;border:1px solid var(--border);border-radius:3px;background:#fff;color:var(--navy);}
-.u-more button:disabled{opacity:.5;cursor:not-allowed;}
-.ugrid-wrap{margin-top:4px;max-height:212px;overflow-y:auto;padding-right:2px;}
-.ugrid-wrap::-webkit-scrollbar{width:4px;}
-.ugrid-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:999px;}
-.ugrid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
-.ugrid img{width:100%;height:82px;object-fit:cover;border-radius:3px;cursor:pointer;border:2px solid transparent;transition:border-color .15s;}
-.ugrid img.selected{border-color:var(--gold);}
-.umsg{font-size:9px;color:var(--muted);margin-top:3px;}
-.umsg.error{color:#8a5000;font-weight:600;}
 /* ── SPLASH ── */
 .splash{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:1;visibility:visible;transition:opacity .45s ease,visibility .45s ease;}
 .splash.hidden{opacity:0;visibility:hidden;pointer-events:none;}
 .splash-inner{text-align:center;color:#fff;padding:18px;min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;width:min(560px,100%);}
-.splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transform:translateY(8px) scale(.99);animation:splashFadeIn .42s ease-out .08s forwards;}
 .splash-title{font-size:22px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
 .splash-brand{margin-top:6px;font-size:13px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;}
 .splash-version{margin-top:18px;font-size:11px;color:rgba(255,255,255,.7);}
@@ -195,21 +174,14 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash-recent-title{font-size:10px;font-weight:500;letter-spacing:.03em;color:rgba(255,255,255,.68);}
 .splash-recent-name{display:inline;margin-left:4px;font-size:11px;color:rgba(255,255,255,.84);font-weight:600;line-height:1.3;}
 .splash-recent-time{margin-top:3px;font-size:10px;color:rgba(255,255,255,.64);} 
-.splash-load-status{margin-top:10px;font-size:10px;color:rgba(255,255,255,.82);opacity:0;transform:translateY(2px);transition:opacity .2s ease,transform .2s ease;}
-.splash-load-status.active{opacity:1;transform:translateY(0);} 
-.project-load-modal{max-width:400px;padding:0;border-radius:10px;overflow:hidden;border:1px solid rgba(14,27,42,.16);box-shadow:0 18px 40px rgba(14,27,42,.28);}
-.project-load-head{padding:14px 16px;background:var(--navy);color:#fff;}
-.project-load-head h2{margin:0;color:#fff;font-size:13px;}
-.project-load-body{padding:14px 16px;}
-.project-load-copy{font-size:11px;line-height:1.45;color:var(--text);}
-.project-load-actions{margin-top:12px;display:flex;justify-content:flex-end;}
 .splash-btn{padding:8px 10px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:4px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.08);color:#fff;transition:background .15s ease,border-color .15s ease,transform .15s ease;}
 .splash-btn:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.44);transform:translateY(-1px);}
 .splash-btn:active{transform:translateY(0);}
 .splash-btn.gold{background:var(--gold);border-color:var(--gold);color:#fff;}
 .splash-btn.gold:hover{background:#b2a277;border-color:#b2a277;}
+@keyframes splashFadeIn{from{opacity:0;transform:translateY(8px) scale(.99);}to{opacity:1;transform:translateY(0) scale(1);}}
 @media (prefers-reduced-motion:reduce){
-  .splash{transition:none;}
+  .splash,.splash-main{transition:none;animation:none;transform:none;opacity:1;}
   .splash-btn{transition:none;}
 }
 
@@ -424,7 +396,6 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       <div><span class="splash-recent-title">Recent Session:</span><span class="splash-recent-name" id="splash-recent-name"></span></div>
       <div class="splash-recent-time" id="splash-recent-time"></div>
     </div>
-    <div class="splash-load-status" id="splash-load-status" aria-live="polite"></div>
   </div>
 </div>
 <div class="app start-hidden" id="builder-app" aria-hidden="true">
@@ -732,13 +703,11 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     </div>
     <div class="act-row">
       <button class="abtn green" onclick="saveProjectFile()">Save Project</button>
-      <button class="abtn" onclick="triggerLoadProjectFile()">Load Project</button>
-      <input type="file" id="load-project-input" accept="application/json,.json" style="display:none;" onchange="handleLoadProjectFile(event)">
-    </div>
+          </div>
     <div class="act-row">
       <button class="abtn" onclick="clearSavedSession()">Clear Saved Session</button>
     </div>
-    <div class="session-hint">Save Project downloads a reusable project file.<br>Autosave is local browser recovery for this device/browser only.</div>
+    <div class="session-hint">Save Project downloads a backup JSON snapshot.<br>Use autosave, CSV import and Campaign Presets for normal workflow recovery.</div>
     <div class="session-feedback" id="session-feedback" aria-live="polite"></div>
   </div>
 </div>
@@ -808,19 +777,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 </div>
 
 
-<div class="modal-overlay" id="project-load-error-modal" role="dialog" aria-modal="true" aria-labelledby="project-load-error-title">
-  <div class="modal project-load-modal">
-    <div class="project-load-head">
-      <h2 id="project-load-error-title">Couldn't Load Project</h2>
-    </div>
-    <div class="project-load-body">
-      <p class="project-load-copy">That file isn't a valid Cruise Offer Builder project JSON. Please choose a valid project export and try again.</p>
-      <div class="project-load-actions">
-        <button class="session-restore-btn restore" onclick="closeProjectLoadErrorModal()">OK</button>
-      </div>
-    </div>
-  </div>
-</div>
+
 
 <div class="modal-overlay" id="confirm-action-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-action-title">
   <div class="modal session-restore-modal">
@@ -2081,113 +2038,6 @@ function saveProjectFile(){
   URL.revokeObjectURL(a.href);
   showSessionFeedback(`Project downloaded (${fileName})`, false);
 }
-function triggerLoadProjectFile(){
-  const input = document.getElementById("load-project-input");
-  if(!input) return;
-  input.value = "";
-  input.click();
-}
-function handleLoadProjectFile(event){
-  const file = event && event.target && event.target.files && event.target.files[0];
-  if(!file) return;
-  loadProjectFromFileInput(file).then(()=>{
-    if(!splashClosed) closeSplash();
-  }).catch(()=>{});
-}
-function closeProjectLoadErrorModal(){
-  const modal = document.getElementById('project-load-error-modal');
-  if(modal) modal.classList.remove('active');
-}
-function showProjectLoadErrorModal(){
-  const modal = document.getElementById('project-load-error-modal');
-  if(modal) modal.classList.add('active');
-}
-function showSplashLoadStatus(msg){
-  const el=document.getElementById('splash-load-status');
-  if(!el) return;
-  el.textContent=msg||'';
-  el.classList.toggle('active', !!msg);
-  if(msg){ window.setTimeout(()=>{ if(el.textContent===msg){ el.textContent=''; el.classList.remove('active'); } }, 2200); }
-}
-function resolveBuilderProjectPayload(raw){
-  if(!raw || typeof raw !== "object") return null;
-  if(Array.isArray(raw.offers)) return raw;
-  if(raw.project && typeof raw.project === "object" && Array.isArray(raw.project.offers)) return raw.project;
-  if(raw.payload && typeof raw.payload === "object" && Array.isArray(raw.payload.offers)) return raw.payload;
-  if(raw.data && typeof raw.data === "object" && Array.isArray(raw.data.offers)) return raw.data;
-  return raw;
-}
-function normalizeBuilderProjectPayload(raw){
-  const payload = resolveBuilderProjectPayload(raw);
-  if(!payload || typeof payload !== "object") return null;
-  const safeOffers = Array.isArray(payload.offers) ? payload.offers.filter(o=>o && typeof o === "object") : [];
-  if(!safeOffers.length) return null;
-  const normalised = {
-    version: String(payload.version || raw.version || "1.0"),
-    savedAt: payload.savedAt || raw.savedAt || payload.exportedAt || raw.exportedAt || new Date().toISOString(),
-    cur: Number.isInteger(payload.cur) ? Math.min(3, Math.max(0, payload.cur)) : 0,
-    builderMode: (payload.builderMode === "standard" || payload.builderMode === "advanced") ? payload.builderMode : "standard",
-    lockedOffers: Array.isArray(payload.lockedOffers) ? payload.lockedOffers.slice(0,4).map(Boolean) : [false,false,false,false],
-    sectionState: payload.sectionState && typeof payload.sectionState === "object" ? payload.sectionState : {},
-    campaign: payload.campaign && typeof payload.campaign === "object" ? payload.campaign : {},
-    offers: safeOffers.slice(0,4)
-  };
-  while(normalised.lockedOffers.length < 4) normalised.lockedOffers.push(false);
-  while(normalised.offers.length < 4) normalised.offers.push({});
-  return normalised;
-}
-function isValidBuilderProjectPayload(parsed){
-  const reasons = [];
-  if(!parsed || typeof parsed !== "object"){
-    reasons.push("root is not an object");
-    return { valid:false, reasons, payload:null, resolvedPayload:null };
-  }
-  const resolvedPayload = resolveBuilderProjectPayload(parsed);
-  if(!resolvedPayload || typeof resolvedPayload !== "object") reasons.push("no payload-like object found");
-  if(!resolvedPayload || !Array.isArray(resolvedPayload.offers)) reasons.push("offers[] not found");
-  if(Array.isArray(resolvedPayload && resolvedPayload.offers) && resolvedPayload.offers.filter(o=>o && typeof o === "object").length < 1) reasons.push("offers[] has no offer objects");
-  const payload = normalizeBuilderProjectPayload(parsed);
-  if(!payload) reasons.push("payload normalization failed");
-  return { valid: reasons.length===0, reasons, payload, resolvedPayload };
-}
-function loadProjectFromFileInput(file){
-  return new Promise((resolve,reject)=>{
-    if(!file){ reject(new Error("no_file")); return; }
-    const reader = new FileReader();
-    reader.onload = ()=>{
-      try{
-        showSessionFeedback("Loading project…", false);
-        const parsed = JSON.parse(String(reader.result||"{}"));
-        const topLevelKeys = (parsed && typeof parsed === "object") ? Object.keys(parsed) : [];
-        const validation = isValidBuilderProjectPayload(parsed);
-        if(!validation.valid){
-          const resolvedKeys = validation.resolvedPayload && typeof validation.resolvedPayload === "object" ? Object.keys(validation.resolvedPayload) : [];
-          console.warn("Project load validation failed", { filename:file && file.name, topLevelKeys, resolvedPayloadKeys:resolvedKeys, reasons:validation.reasons });
-          throw new Error("invalid_project_payload");
-        }
-        applySessionPayload(validation.payload);
-        saveSessionNow();
-        syncAutosaveStatus();
-        showSessionFeedback("Project loaded", false);
-        showSplashLoadStatus("Restored Successfully");
-        resolve(true);
-      }catch(e){
-        if(e && e.message === "invalid_project_payload"){
-          showSessionFeedback("Invalid project JSON", true);
-          showProjectLoadErrorModal();
-        }else{
-          console.warn("Project JSON parse/read failed", { filename:file && file.name, topLevelKeys:[], reason:(e&&e.message)||"parse_error" });
-          showSessionFeedback("Invalid project JSON", true);
-          showProjectLoadErrorModal();
-        }
-        reject(e);
-      }
-    };
-    reader.onerror=()=>reject(new Error("read_failed"));
-    reader.readAsText(file);
-  });
-}
-
 
 function getCampaignSnapshot(){
   return {
