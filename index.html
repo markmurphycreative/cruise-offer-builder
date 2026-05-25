@@ -1126,21 +1126,23 @@ function setImageSearchUnavailable(msgText){
   msg.textContent=msgText||"Image search unavailable. Use local upload or URL.";
   msg.classList.add("error");
 }
-let imageSearchState={q:"",displayQuery:"",results:[],offset:0,pageSize:15,requestId:0,nextContinue:null,seen:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:false};
+let imageSearchState={q:"",displayQuery:"",broadQuery:"",results:[],offset:0,pageSize:15,requestId:0,nextContinue:null,seen:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:false,isBroadFallback:false};
 function buildTravelQuery(rawQuery){
   const q=String(rawQuery||"").trim();
   const lower=q.toLowerCase();
   const explicitAircraft=/(plane|aircraft|airport|airline|jet|runway)/.test(lower);
-  if(explicitAircraft) return {query:q,explicitAircraft:true};
+  if(explicitAircraft) return {query:q,broadQuery:q,explicitAircraft:true};
   const shortPlaceTerm=q.split(/\s+/).filter(Boolean).length<=3;
-  const enriched=shortPlaceTerm?`${q} travel destination city landmark coastline resort landscape skyline old town`:`${q} travel destination landscape coastline city landmark`;
-  return {query:enriched,explicitAircraft:false};
+  const enriched=shortPlaceTerm?`${q} travel destination city landmark`:`${q} travel destination landscape coastline city landmark`;
+  const broad=`${q} travel`;
+  return {query:enriched,broadQuery:broad,explicitAircraft:false};
 }
 function isRelevantTravelImage(url,title,query,allowAircraft){
   if(allowAircraft) return true;
   const t=`${title||""} ${url||""} ${query||""}`.toLowerCase();
   if(/(plane|aircraft|airport|airline|jet|runway|cockpit)/.test(t)) return false;
-  return /(travel|destination|landmark|city|coast|coastline|beach|resort|island|harbour|skyline|landscape|tourism|bay|old town|cruise)/.test(t);
+  if(/(logo|icon|map|flag|coat of arms|svg|diagram|infobox|location map|route map|poster|ticket|brochure|stamp|seal)/.test(t)) return false;
+  return true;
 }
 function renderImageSearchBatch(reset){
   const grid=document.getElementById("ugrid"),msg=document.getElementById("umsg"),moreBtn=document.getElementById("u-more-btn");
@@ -1158,7 +1160,7 @@ function renderImageSearchBatch(reset){
   });
   imageSearchState.offset+=slice.length;
   const rendered=grid.querySelectorAll("img").length;
-  if(rendered){ msg.textContent="Click a photo to use it"; msg.classList.remove("error"); }
+  if(rendered){ msg.textContent=imageSearchState.isBroadFallback?"Showing broader image results":"Click a photo to use it"; msg.classList.remove("error"); }
   else { msg.textContent="Image search unavailable. Use local upload or URL."; msg.classList.add("error"); }
   if(moreBtn) moreBtn.disabled=imageSearchState.loading||((imageSearchState.offset>=imageSearchState.results.length)&&imageSearchState.exhausted);
 }
@@ -1170,7 +1172,8 @@ async function fetchImageSearchPage(resetSearch){
   msg.textContent=resetSearch?"Loading...":"Loading more images...";
   msg.classList.remove("error");
   const requestId=imageSearchState.requestId;
-  const searchTerms=imageSearchState.explicitAircraft?`${imageSearchState.displayQuery} filetype:bitmap`:`${imageSearchState.displayQuery} filetype:bitmap -plane -airport -aircraft -cockpit`;
+  const searchBase=imageSearchState.isBroadFallback?imageSearchState.broadQuery:imageSearchState.displayQuery;
+  const searchTerms=imageSearchState.explicitAircraft?`${searchBase} filetype:bitmap`:`${searchBase} filetype:bitmap -plane -airport -aircraft -cockpit`;
   const params=new URLSearchParams({
     action:"query",format:"json",origin:"*",generator:"search",
     gsrsearch:searchTerms,
@@ -1195,7 +1198,16 @@ async function fetchImageSearchPage(resetSearch){
     imageSearchState.nextContinue=(data&&data.continue&&typeof data.continue.gsroffset!=="undefined")?data.continue.gsroffset:null;
     imageSearchState.exhausted=!imageSearchState.nextContinue;
     renderImageSearchBatch(!resetSearch?false:true);
-    if(!imageSearchState.results.length && imageSearchState.exhausted) setImageSearchUnavailable("No destination-style images found. Try a more specific place search.");
+    if(!imageSearchState.results.length && imageSearchState.exhausted){
+      if(!imageSearchState.isBroadFallback && !imageSearchState.explicitAircraft){
+        imageSearchState.isBroadFallback=true;
+        imageSearchState.nextContinue=null;
+        imageSearchState.exhausted=false;
+        fetchImageSearchPage(true);
+        return;
+      }
+      setImageSearchUnavailable("No images found. Try a different place search.");
+    }
   }catch(e){
     if(requestId===imageSearchState.requestId) setImageSearchUnavailable("Image search unavailable. Use local upload or URL.");
   }finally{
@@ -1209,14 +1221,14 @@ function doSearch(){
   if(!q){
     grid.innerHTML="";
     const moreBtn=document.getElementById("u-more-btn"); if(moreBtn) moreBtn.disabled=true;
-    imageSearchState={q:"",displayQuery:"",results:[],offset:0,pageSize:15,requestId:imageSearchState.requestId,nextContinue:null,seen:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:false};
+    imageSearchState={q:"",displayQuery:"",broadQuery:"",results:[],offset:0,pageSize:15,requestId:imageSearchState.requestId,nextContinue:null,seen:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:false,isBroadFallback:false};
     msg.textContent="Search a destination photo";
     msg.classList.remove("error");
     return;
   }
   grid.innerHTML="";
   const travelQuery=buildTravelQuery(q);
-  imageSearchState={q,displayQuery:travelQuery.query,results:[],offset:0,pageSize:15,requestId:imageSearchState.requestId+1,nextContinue:null,seen:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:travelQuery.explicitAircraft};
+  imageSearchState={q,displayQuery:travelQuery.query,broadQuery:travelQuery.broadQuery,results:[],offset:0,pageSize:15,requestId:imageSearchState.requestId+1,nextContinue:null,seen:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:travelQuery.explicitAircraft,isBroadFallback:false};
   fetchImageSearchPage(true);
 }
 async function loadMoreImages(){
