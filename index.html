@@ -189,6 +189,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash-version{margin-top:18px;font-size:11px;color:rgba(255,255,255,.7);}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
 .splash-actions{margin-top:18px;display:grid;gap:6px;max-width:220px;margin-left:auto;margin-right:auto;}
+.splash-recent{margin:14px auto 0;max-width:260px;text-align:left;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:10px 11px;display:none;}
+.splash-recent.active{display:block;}
+.splash-recent-title{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;}
+.splash-recent-name{margin-top:5px;font-size:11px;color:#fff;font-weight:600;line-height:1.35;}
+.splash-recent-time{margin-top:3px;font-size:9px;color:rgba(255,255,255,.72);}
 .splash-btn{padding:8px 10px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:4px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.08);color:#fff;transition:background .15s ease,border-color .15s ease,transform .15s ease;}
 .splash-btn:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.44);transform:translateY(-1px);}
 .splash-btn:active{transform:translateY(0);}
@@ -321,6 +326,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .session-restore-btn{padding:8px 10px;font-size:10px;font-weight:700;letter-spacing:.04em;border-radius:var(--radius);border:1px solid var(--border);background:#fff;color:var(--navy);text-transform:uppercase;}
 .session-restore-btn.restore{background:var(--gold);border-color:var(--gold);color:#fff;}
 .session-restore-btn.fresh{background:#fff;color:var(--navy);}
+.session-restore-meta{font-weight:700;color:var(--navy);}
 .summary-modal{max-width:820px;width:min(94vw,820px);padding:0;border-radius:12px;overflow:hidden;border:1px solid rgba(14,27,42,.16);box-shadow:0 18px 40px rgba(14,27,42,.28);}
 .summary-head{background:var(--navy);padding:14px 18px;border-bottom:3px solid var(--gold);display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .summary-head h2{color:#fff;font-size:14px;letter-spacing:.04em;margin:0;}
@@ -398,7 +404,13 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <div class="splash-brand">Dawson &amp; Sanderson</div>
     <div class="splash-version">v1.5.8e</div>
     <div class="splash-line">Select how you want to begin.</div>
+    <div id="splash-recent-session" class="splash-recent" aria-live="polite">
+      <div class="splash-recent-title">Recent Session Found</div>
+      <div class="splash-recent-name" id="splash-recent-name"></div>
+      <div class="splash-recent-time" id="splash-recent-time"></div>
+    </div>
     <div class="splash-actions">
+      <button class="splash-btn gold" id="splash-continue-session-btn" style="display:none;">Continue Last Session</button>
       <button class="splash-btn gold" id="splash-open-builder-btn">Open Builder</button>
       <button class="splash-btn" id="splash-load-csv-btn">Load CSV</button>
       <button class="splash-btn" id="splash-load-project-btn">Load Project</button>
@@ -731,7 +743,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     <div class="act-row">
       <button class="abtn" onclick="clearSavedSession()">Clear Saved Session</button>
     </div>
-    <div class="session-hint">Save Project is the reliable long-term save. Autosave is a local backup for this browser.</div>
+    <div class="session-hint">Save Project downloads a reusable project file.<br>Autosave is local browser recovery for this device/browser only.</div>
     <div class="session-feedback" id="session-feedback" aria-live="polite"></div>
   </div>
 </div>
@@ -774,13 +786,27 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 <div class="modal-overlay" id="session-restore-modal" role="dialog" aria-modal="true" aria-labelledby="session-restore-title" style="display:none;">
   <div class="modal session-restore-modal">
     <div class="session-restore-head">
-      <h2 id="session-restore-title">Restore previous session?</h2>
+      <h2 id="session-restore-title">Continue Previous Session?</h2>
     </div>
     <div class="session-restore-body">
-      <p id="session-restore-copy">A local autosave was found. Restore it or start fresh.</p>
+      <p id="session-restore-copy">An autosaved session was found.</p>
       <div class="session-restore-actions">
-        <button class="session-restore-btn restore" onclick="chooseRestoreSession()">Restore Session</button>
+        <button class="session-restore-btn restore" onclick="chooseRestoreSession()">Continue Session</button>
         <button class="session-restore-btn fresh" onclick="chooseStartFreshSession()">Start Fresh</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="clear-session-modal" role="dialog" aria-modal="true" aria-labelledby="clear-session-title">
+  <div class="modal session-restore-modal">
+    <div class="session-restore-head">
+      <h2 id="clear-session-title">Clear Local Recovery?</h2>
+    </div>
+    <div class="session-restore-body">
+      <p>This removes the local autosave stored in this browser.<br><span class="session-restore-meta">Downloaded project files will NOT be deleted.</span></p>
+      <div class="session-restore-actions">
+        <button class="session-restore-btn fresh" onclick="closeClearSessionModal()">Cancel</button>
+        <button class="session-restore-btn restore" onclick="confirmClearSavedSession()">Clear Recovery</button>
       </div>
     </div>
   </div>
@@ -1945,6 +1971,24 @@ function formatAutosaveTime(ts){
   if(Number.isNaN(dt.getTime())) return "";
   return dt.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", hour12:false});
 }
+function formatAutosaveDateTime(ts){
+  if(!ts) return "";
+  const dt = new Date(ts);
+  if(Number.isNaN(dt.getTime())) return "";
+  const now = new Date();
+  const sameDay = dt.toDateString() === now.toDateString();
+  const base = sameDay ? "Today" : dt.toLocaleDateString([], {month:"short", day:"numeric", year:"numeric"});
+  return `${base} at ${dt.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", hour12:false})}`;
+}
+function formatRelativeAutosave(ts){
+  if(!ts) return "";
+  const dt = new Date(ts);
+  if(Number.isNaN(dt.getTime())) return "";
+  const mins = Math.max(1, Math.round((Date.now() - dt.getTime()) / 60000));
+  if(mins < 60) return `Autosaved ${mins} min${mins===1?"":"s"} ago`;
+  const hrs = Math.round(mins/60);
+  return `Autosaved ${hrs} hr${hrs===1?"":"s"} ago`;
+}
 function setAutosaveStatus(label,isWarn=false){
   const el=document.getElementById("autosave-status");
   if(!el) return;
@@ -1952,9 +1996,9 @@ function setAutosaveStatus(label,isWarn=false){
   el.classList.toggle("warn", !!isWarn);
 }
 function syncAutosaveStatus(){
-  if(autosaveAwaitingRestoreDecision){ setAutosaveStatus("Restore available"); return; }
+  if(autosaveAwaitingRestoreDecision){ setAutosaveStatus("Recovery available", true); return; }
   if(autosaveHydrating){ setAutosaveStatus("Autosave paused"); return; }
-  if(autosaveLastSavedAt){ setAutosaveStatus(`Saved ${formatAutosaveTime(autosaveLastSavedAt)}`); return; }
+  if(autosaveLastSavedAt){ setAutosaveStatus(`Autosaved ${formatAutosaveTime(autosaveLastSavedAt)}`); return; }
   setAutosaveStatus("Autosave paused");
 }
 function markUnsavedChanges(){
@@ -1975,7 +2019,7 @@ function buildAutosavePayload(){
 }
 function saveSessionNow(){
   if(autosaveHydrating || autosaveAwaitingRestoreDecision) return;
-  setAutosaveStatus("Saving…");
+  setAutosaveStatus("Autosaving…");
   try{
     const payload = buildAutosavePayload();
     localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(payload));
@@ -2072,7 +2116,7 @@ function chooseRestoreSession(){
   if(payload){
     applySessionPayload(payload);
     autosaveLastSavedAt = payload.savedAt || autosaveLastSavedAt;
-    setAutosaveStatus("Restored from autosave");
+    setAutosaveStatus(`Autosaved ${formatAutosaveTime(autosaveLastSavedAt)}`);
     const partial=sessionHasMissingHeroImages(payload);
     showSessionFeedback(partial ? "Session restored, but hero images need re-uploading" : "Previous session restored", partial);
   }
@@ -2081,7 +2125,7 @@ function chooseStartFreshSession(){
   autosaveAwaitingRestoreDecision = false;
   pendingRestoreSession = null;
   closeSessionRestoreModal();
-  setAutosaveStatus("Fresh session");
+  setAutosaveStatus("Autosave paused");
   showSessionFeedback("",false);
 }
 function promptRestoreSession(){
@@ -2091,14 +2135,23 @@ function promptRestoreSession(){
   pendingRestoreSession = saved;
   const copy=document.getElementById("session-restore-copy");
   if(copy){
-    const ts = formatAutosaveTime(saved.savedAt);
-    copy.textContent = `A local autosave was found from ${ts || "an earlier session"}. Restore it or start fresh.`;
+    const ts = formatAutosaveDateTime(saved.savedAt) || "an earlier session";
+    copy.innerHTML = `An autosaved session from:<br><strong>${ts}</strong> was found.<br><br>Autosave is local to this browser.`;
   }
-  setAutosaveStatus("Restore available");
+  setAutosaveStatus("Recovery available", true);
   const modal = document.getElementById('session-restore-modal');
   if(modal) modal.classList.add('active');
 }
 function clearSavedSession(){
+  const modal = document.getElementById('clear-session-modal');
+  if(modal) modal.classList.add('active');
+}
+function closeClearSessionModal(){
+  const modal = document.getElementById('clear-session-modal');
+  if(modal) modal.classList.remove('active');
+}
+function confirmClearSavedSession(){
+  closeClearSessionModal();
   autosaveAwaitingRestoreDecision = false;
   try{ localStorage.removeItem(AUTOSAVE_KEY); }catch(e){}
   pendingRestoreSession = null;
@@ -2128,13 +2181,14 @@ function buildProjectPayload(){
   };
 }
 function saveProjectFile(){
+  const fileName = buildProjectFilename();
   const blob = new Blob([JSON.stringify(buildProjectPayload(), null, 2)], {type:"application/json"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = buildProjectFilename();
+  a.download = fileName;
   a.click();
   URL.revokeObjectURL(a.href);
-  showSessionFeedback("Project file saved", false);
+  showSessionFeedback(`Project downloaded (${fileName})`, false);
 }
 function triggerLoadProjectFile(){
   const input = document.getElementById("load-project-input");
@@ -2153,9 +2207,10 @@ function loadProjectFromFileInput(file){
     const reader = new FileReader();
     reader.onload = ()=>{
       try{
+        showSessionFeedback("Loading project…", false);
         const parsed = JSON.parse(String(reader.result||"{}"));
         applySessionPayload(parsed);
-        queueAutosave();
+        saveSessionNow();
         showSessionFeedback("Project loaded", false);
         resolve(true);
       }catch(e){
@@ -3431,8 +3486,15 @@ function initStartScreenActions(){
   const openBtn=document.getElementById("splash-open-builder-btn");
   const csvBtn=document.getElementById("splash-load-csv-btn");
   const projectBtn=document.getElementById("splash-load-project-btn");
+  const continueBtn=document.getElementById("splash-continue-session-btn");
   const projectInput=document.getElementById("load-project-input");
   if(openBtn) openBtn.addEventListener("click",()=>closeSplash());
+  if(continueBtn){
+    continueBtn.addEventListener("click",()=>{
+      chooseRestoreSession();
+      closeSplash();
+    });
+  }
   if(csvBtn){
     csvBtn.addEventListener("click",()=>{
       const temp=document.createElement("input");
@@ -3456,7 +3518,21 @@ function initStartScreenActions(){
     });
   }
 }
+function hydrateSplashRecentSession(){
+  const wrap=document.getElementById("splash-recent-session");
+  const name=document.getElementById("splash-recent-name");
+  const time=document.getElementById("splash-recent-time");
+  const continueBtn=document.getElementById("splash-continue-session-btn");
+  const saved=readSavedSession();
+  if(!(wrap&&name&&time&&continueBtn&&saved&&saved.offers)) return;
+  wrap.classList.add("active");
+  continueBtn.style.display="block";
+  const campaignName=((saved.campaign&&saved.campaign.name)||"Untitled Cruise Campaign").trim() || "Untitled Cruise Campaign";
+  name.textContent=campaignName;
+  time.textContent=formatRelativeAutosave(saved.savedAt) || "Autosaved recently";
+}
 initStartScreenActions();
+hydrateSplashRecentSession();
 
 // ═══════════════════════════════════════════════════════
 // TIGHTER UI PATCH — v1.5.8a
