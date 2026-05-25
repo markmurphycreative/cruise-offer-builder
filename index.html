@@ -1127,6 +1127,7 @@ function setImageSearchUnavailable(msgText){
   msg.classList.add("error");
 }
 let imageSearchState={q:"",displayQuery:"",broadQuery:"",results:[],rawResults:[],offset:0,pageSize:15,requestId:0,nextContinue:null,seen:new Set(),seenRaw:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:false,isBroadFallback:false,usedBroadResults:false};
+const IMAGE_SEARCH_TIMEOUT_MS=12000;
 function buildTravelQuery(rawQuery){
   const q=String(rawQuery||"").trim();
   const lower=q.toLowerCase();
@@ -1169,13 +1170,32 @@ function renderImageSearchBatch(reset){
     msg.textContent=imageSearchState.loading?"Loading...":"No images found. Try a different place search.";
     msg.classList.add("error");
   }
-  if(moreBtn) moreBtn.disabled=imageSearchState.loading||((imageSearchState.offset>=imageSearchState.results.length)&&imageSearchState.exhausted);
+  updateLoadMoreState();
+}
+function updateLoadMoreState(){
+  const moreBtn=document.getElementById("u-more-btn");
+  if(!moreBtn) return;
+  const hasSearch=Boolean(imageSearchState.q);
+  const hasBufferedResults=imageSearchState.offset<imageSearchState.results.length;
+  const canFetchMore=!imageSearchState.exhausted;
+  const showButton=hasSearch && (imageSearchState.loading || hasBufferedResults || canFetchMore);
+  moreBtn.style.display=showButton?"block":"none";
+  moreBtn.disabled=!showButton || imageSearchState.loading;
+}
+async function fetchWithTimeout(url, options={}, timeoutMs=IMAGE_SEARCH_TIMEOUT_MS){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(new Error("timeout")), timeoutMs);
+  try{
+    return await fetch(url,{...options,signal:controller.signal});
+  }finally{
+    clearTimeout(timer);
+  }
 }
 async function fetchImageSearchPage(resetSearch){
   if(imageSearchState.loading) return;
   imageSearchState.loading=true;
-  const msg=document.getElementById("umsg"),moreBtn=document.getElementById("u-more-btn");
-  if(moreBtn) moreBtn.disabled=true;
+  updateLoadMoreState();
+  const msg=document.getElementById("umsg");
   msg.textContent=resetSearch?"Loading...":"Loading more images...";
   msg.classList.remove("error");
   const requestId=imageSearchState.requestId;
@@ -1188,11 +1208,11 @@ async function fetchImageSearchPage(resetSearch){
   });
   if(imageSearchState.nextContinue) params.set("gsroffset", String(imageSearchState.nextContinue));
   try{
-    const resp=await fetch("https://commons.wikimedia.org/w/api.php?"+params.toString());
+    const resp=await fetchWithTimeout("https://commons.wikimedia.org/w/api.php?"+params.toString());
     if(!resp.ok) throw new Error("search_failed");
     const data=await resp.json();
     if(requestId!==imageSearchState.requestId) return;
-    const pages=(data&&data.query&&data.query.pages)?Object.values(data.query.pages):[];
+    const pages=(data&&data.query&&data.query.pages&&typeof data.query.pages==="object")?Object.values(data.query.pages):[];
     const incomingRaw=[];
     const incomingFiltered=[];
     pages.forEach(p=>{
@@ -1225,17 +1245,21 @@ async function fetchImageSearchPage(resetSearch){
         imageSearchState.isBroadFallback=true;
         imageSearchState.nextContinue=null;
         imageSearchState.exhausted=false;
-        fetchImageSearchPage(true);
+        await fetchImageSearchPage(true);
         return;
       }
       msg.textContent="No images found. Try a different place search.";
       msg.classList.add("error");
     }
   }catch(e){
-    if(requestId===imageSearchState.requestId) setImageSearchUnavailable("Image search unavailable. Use local upload or URL.");
+    if(requestId===imageSearchState.requestId){
+      const isTimeout=(e&&e.name==="AbortError")||(e&&String(e.message||"").toLowerCase().includes("timeout"));
+      if(isTimeout) setImageSearchUnavailable("Image search timed out. Try again or use local upload.");
+      else setImageSearchUnavailable("Image search unavailable. Use local upload or URL.");
+    }
   }finally{
     imageSearchState.loading=false;
-    if(moreBtn) moreBtn.disabled=imageSearchState.loading||((imageSearchState.offset>=imageSearchState.results.length)&&imageSearchState.exhausted);
+    updateLoadMoreState();
   }
 }
 function doSearch(){
@@ -1247,11 +1271,13 @@ function doSearch(){
     imageSearchState={q:"",displayQuery:"",broadQuery:"",results:[],rawResults:[],offset:0,pageSize:15,requestId:imageSearchState.requestId,nextContinue:null,seen:new Set(),seenRaw:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:false,isBroadFallback:false,usedBroadResults:false};
     msg.textContent="Search a destination photo";
     msg.classList.remove("error");
+    updateLoadMoreState();
     return;
   }
   grid.innerHTML="";
   const travelQuery=buildTravelQuery(q);
   imageSearchState={q,displayQuery:travelQuery.query,broadQuery:travelQuery.broadQuery,results:[],rawResults:[],offset:0,pageSize:15,requestId:imageSearchState.requestId+1,nextContinue:null,seen:new Set(),seenRaw:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:travelQuery.explicitAircraft,isBroadFallback:false,usedBroadResults:false};
+  updateLoadMoreState();
   fetchImageSearchPage(true);
 }
 async function loadMoreImages(){
