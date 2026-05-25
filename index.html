@@ -381,8 +381,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       <div class="splash-line">Select how you want to begin.</div>
       <div class="splash-actions">
         <button class="splash-btn gold" id="splash-continue-session-btn" style="display:none;">Continue Last Session</button>
-        <button class="splash-btn gold" id="splash-open-builder-btn">Open Builder</button>
-        <button class="splash-btn" id="splash-load-csv-btn">Load CSV</button>
+        <button class="splash-btn gold" id="splash-open-builder-btn" onclick="openBuilderFromSplash(event)">Open Builder</button>
+        <button class="splash-btn" id="splash-load-csv-btn" onclick="loadCsvFromSplash(event)">Load CSV</button>
               </div>
     </div>
     <div id="splash-recent-session" class="splash-recent" aria-live="polite">
@@ -3180,6 +3180,22 @@ syncAutosaveStatus();
 promptRestoreSession();
 queueAutosave();
 let splashClosed=false;
+window.openBuilderFromSplash = function(event){
+  if(event) event.preventDefault();
+  console.log("Splash open builder clicked");
+  dismissSplashAndShowBuilder();
+  refreshOfferUi({utm:true,spell:true,autosave:false});
+};
+window.loadCsvFromSplash = function(event){
+  if(event) event.preventDefault();
+  console.log("Splash load CSV clicked");
+  const sheetsFile=document.getElementById("sheets-file");
+  if(!sheetsFile){
+    console.warn("[splash] Missing #sheets-file; Load CSV picker cannot open.");
+    return;
+  }
+  sheetsFile.click();
+};
 function dismissSplashAndShowBuilder(){
   if(splashClosed) return;
   splashClosed=true;
@@ -3210,11 +3226,8 @@ function initStartScreenActions(){
   if(!sheetsFile) console.warn("[splash] Missing #sheets-file; Load CSV picker cannot open.");
 
   if(openBtn){
-    openBtn.removeAttribute("onclick");
     openBtn.addEventListener("click",(e)=>{
-      if(e) e.preventDefault();
-      dismissSplashAndShowBuilder();
-      refreshOfferUi({utm:true,spell:true,autosave:false});
+      window.openBuilderFromSplash(e);
     });
   }
   if(continueBtn){
@@ -3226,10 +3239,8 @@ function initStartScreenActions(){
     });
   }
   if(csvBtn && sheetsFile){
-    csvBtn.removeAttribute("onclick");
     csvBtn.addEventListener("click",(e)=>{
-      if(e) e.preventDefault();
-      sheetsFile.click();
+      window.loadCsvFromSplash(e);
     });
   }
   if(sheetsFile){
