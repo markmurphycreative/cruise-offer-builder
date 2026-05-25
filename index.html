@@ -40,7 +40,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 /* ── OFFER TABS ── */
 .offer-tabs{display:flex;border-bottom:1px solid var(--border);background:#fafaf8;flex-shrink:0;}
 .otab{flex:1;padding:6px 4px 5px;font-size:10px;font-weight:600;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:.05em;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:2px;}
-.otab.active{color:var(--navy);border-bottom-color:var(--gold);background:#fff;}
+.otab.active{color:var(--navy);border-bottom-color:var(--gold);border-bottom-width:3px;background:rgba(160,146,103,.16);box-shadow:inset 0 1px 0 rgba(160,146,103,.28);}
 .otab.dragging{opacity:.55;}
 .otab.drag-over{background:rgba(160,146,103,.12);border-bottom-color:var(--gold);}
 .otab.move-preflash{background:rgba(160,146,103,.14);box-shadow:inset 0 0 0 1px rgba(160,146,103,.32);}
@@ -160,15 +160,15 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .crop-row span{font-size:9px;color:var(--navy);min-width:26px;text-align:right;}
 
 /* ── SPLASH ── */
-.splash{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:1;visibility:visible;transition:opacity .45s ease,visibility .45s ease;}
+.splash{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:1;visibility:visible;transition:opacity .62s cubic-bezier(.22,.61,.36,1),visibility .62s cubic-bezier(.22,.61,.36,1);}
 .splash.hidden{opacity:0;visibility:hidden;pointer-events:none;}
 .splash-inner{text-align:center;color:#fff;padding:18px;min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;width:min(560px,100%);}
-.splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;animation:splashLiftIn .62s cubic-bezier(.2,.75,.25,1) .06s both;}
-.splash-title{font-size:22px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;opacity:0;animation:splashItemIn .48s ease-out .12s forwards;}
-.splash-brand{margin-top:6px;font-size:13px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;opacity:0;animation:splashItemIn .48s ease-out .2s forwards;}
-.splash-version{margin-top:18px;font-size:11px;color:rgba(255,255,255,.7);opacity:0;animation:splashItemIn .48s ease-out .28s forwards;}
-.splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);opacity:0;animation:splashItemIn .48s ease-out .34s forwards;}
-.splash-actions{margin-top:18px;display:grid;gap:6px;max-width:220px;margin-left:auto;margin-right:auto;width:100%;opacity:0;animation:splashItemIn .5s ease-out .42s forwards;}
+.splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;animation:splashLiftIn .78s cubic-bezier(.22,.61,.36,1) .08s both;}
+.splash-title{font-size:22px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;opacity:0;animation:splashItemIn .62s cubic-bezier(.22,.61,.36,1) .16s forwards;}
+.splash-brand{margin-top:6px;font-size:13px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;opacity:0;animation:splashItemIn .62s cubic-bezier(.22,.61,.36,1) .26s forwards;}
+.splash-version{margin-top:18px;font-size:11px;color:rgba(255,255,255,.7);opacity:0;animation:splashItemIn .62s cubic-bezier(.22,.61,.36,1) .34s forwards;}
+.splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);opacity:0;animation:splashItemIn .62s cubic-bezier(.22,.61,.36,1) .42s forwards;}
+.splash-actions{margin-top:18px;display:grid;gap:6px;max-width:220px;margin-left:auto;margin-right:auto;width:100%;opacity:0;animation:splashItemIn .64s cubic-bezier(.22,.61,.36,1) .52s forwards;}
 .splash-recent{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);max-width:320px;text-align:center;display:none;}
 .splash-recent.active{display:block;}
 .splash-recent-title{font-size:10px;font-weight:500;letter-spacing:.03em;color:rgba(255,255,255,.68);}
@@ -179,8 +179,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash-btn:active{transform:translateY(0);}
 .splash-btn.gold{background:var(--gold);border-color:var(--gold);color:#fff;box-shadow:0 2px 10px rgba(160,146,103,.28),0 0 0 1px rgba(255,255,255,.06) inset;}
 .splash-btn.gold:hover{background:#b2a277;border-color:#b2a277;box-shadow:0 4px 14px rgba(160,146,103,.32),0 0 0 1px rgba(255,255,255,.09) inset;}
-@keyframes splashLiftIn{from{opacity:0;transform:translateY(10px) scale(.992);}to{opacity:1;transform:translateY(0) scale(1);}}
-@keyframes splashItemIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+@keyframes splashLiftIn{from{opacity:0;transform:translateY(8px) scale(.996);}to{opacity:1;transform:translateY(0) scale(1);}}
+@keyframes splashItemIn{from{opacity:0;transform:translateY(3px);}to{opacity:1;transform:translateY(0);}}
 @media (prefers-reduced-motion:reduce){
   .splash,.splash-main,.splash-title,.splash-brand,.splash-version,.splash-line,.splash-actions{transition:none;animation:none;transform:none;opacity:1;}
   .splash-btn{transition:none;box-shadow:none;}
@@ -253,7 +253,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .session-feedback{font-size:9px;color:var(--green);text-align:center;margin-top:3px;min-height:12px;opacity:0;transition:opacity .2s ease;}
 .session-feedback.warn{color:#8a5000;}
 .session-feedback.active{opacity:1;}
-.section.summary-section .section-hdr{background:var(--gold);}
+.section.summary-section .section-hdr{background:var(--navy);}
 .section.summary-section .section-hdr h3{color:#fff;}
 .section.summary-section .section-toggle{color:rgba(255,255,255,.85);}
 
@@ -313,7 +313,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .session-restore-btn.fresh{background:#fff;color:var(--navy);}
 .session-restore-meta{font-weight:700;color:var(--navy);}
 .summary-modal{max-width:820px;width:min(94vw,820px);padding:0;border-radius:12px;overflow:hidden;border:1px solid rgba(14,27,42,.16);box-shadow:0 18px 40px rgba(14,27,42,.28);}
-.summary-head{background:var(--gold);padding:14px 18px;border-bottom:3px solid var(--gold-d);display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.summary-head{background:var(--navy);padding:14px 18px;border-bottom:3px solid var(--gold);display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .summary-head h2{color:#fff;font-size:14px;letter-spacing:.04em;margin:0;}
 .summary-close{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:4px;width:28px;height:28px;line-height:24px;font-size:16px;}
 .summary-body{background:#fff;padding:14px 16px 16px;max-height:min(76vh,700px);overflow-y:auto;display:grid;gap:8px;}
@@ -641,7 +641,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-top:4px;">Generated UTM</label>
         <textarea id="utm-visible-output" class="utm-visible-output" readonly="" placeholder="Generate or enter a destination URL + campaign name"></textarea>
         <div class="utm-btn-row">
-          <button class="abtn amber" onclick="genAllUtms()" style="font-size:9px;padding:4px;">Generate All UTMs</button>
+          <button class="abtn navy" onclick="genAllUtms()" style="font-size:9px;padding:4px;">Generate All UTMs</button>
           <button class="abtn" id="utm-copy-btn" onclick="copyUtm()" style="font-size:9px;padding:4px;">Copy Current UTM</button>
           <button class="abtn" onclick="copyAllUtms()" style="font-size:9px;padding:4px;">Copy All UTMs</button>
         </div>
@@ -686,7 +686,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         <span>⬇</span><span id="exp-all-jpg-lbl">Export All 4 Cards JPG ZIP</span>
       </button>
       <button class="export-btn all" onclick="exportCampaignPack()" id="exp-pack-btn">
-        <span>📦</span><span id="exp-pack-lbl">Export Campaign Pack</span>
+        <span id="exp-pack-lbl">Export Campaign Pack</span>
       </button>
       <div class="export-progress" id="export-progress"></div>
       <div class="export-warn" id="export-warn">
