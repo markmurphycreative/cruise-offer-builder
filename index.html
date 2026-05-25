@@ -3180,7 +3180,7 @@ syncAutosaveStatus();
 promptRestoreSession();
 queueAutosave();
 let splashClosed=false;
-function closeSplash(){
+function dismissSplashAndShowBuilder(){
   if(splashClosed) return;
   splashClosed=true;
   const splash=document.getElementById("app-splash");
@@ -3210,23 +3210,31 @@ function initStartScreenActions(){
   if(!sheetsFile) console.warn("[splash] Missing #sheets-file; Load CSV picker cannot open.");
 
   if(openBtn){
-    openBtn.onclick=(e)=>{ if(e) e.preventDefault(); closeSplash(); refreshOfferUi({utm:true,spell:true,autosave:false}); };
+    openBtn.removeAttribute("onclick");
+    openBtn.addEventListener("click",(e)=>{
+      if(e) e.preventDefault();
+      dismissSplashAndShowBuilder();
+      refreshOfferUi({utm:true,spell:true,autosave:false});
+    });
   }
   if(continueBtn){
-    continueBtn.onclick=(e)=>{
+    continueBtn.removeAttribute("onclick");
+    continueBtn.addEventListener("click",(e)=>{
       if(e) e.preventDefault();
       chooseRestoreSession();
-      closeSplash();
-    };
+      dismissSplashAndShowBuilder();
+    });
   }
   if(csvBtn && sheetsFile){
-    csvBtn.onclick=(e)=>{
+    csvBtn.removeAttribute("onclick");
+    csvBtn.addEventListener("click",(e)=>{
       if(e) e.preventDefault();
       sheetsFile.click();
-    };
+    });
   }
   if(sheetsFile){
-    sheetsFile.onchange=(e)=>loadFromCSVFile(Object.assign(e,{_onSuccess:closeSplash}));
+    sheetsFile.removeAttribute("onchange");
+    sheetsFile.addEventListener("change",(e)=>loadFromCSVFile(Object.assign(e,{_onSuccess:dismissSplashAndShowBuilder})));
   }
 }
 function hydrateSplashRecentSession(){
