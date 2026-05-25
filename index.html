@@ -581,8 +581,8 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
           </div>
           <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;">Crop & Position</div>
           <div class="crop-row"><label>Zoom</label><input type="range" id="crop-zoom" min="100" max="200" value="100" oninput="updateCrop()"><span id="cv-zoom">100%</span></div>
-          <div class="crop-row"><label>Horizontal</label><input type="range" id="crop-x" min="-50" max="50" value="0" oninput="updateCrop()"><span id="cv-x">0%</span></div>
-          <div class="crop-row"><label>Vertical</label><input type="range" id="crop-y" min="-50" max="50" value="0" oninput="updateCrop()"><span id="cv-y">0%</span></div>
+          <div class="crop-row"><label>Horizontal</label><input type="range" id="crop-x" min="0" max="100" value="50" oninput="updateCrop()"><span id="cv-x">50%</span></div>
+          <div class="crop-row"><label>Vertical</label><input type="range" id="crop-y" min="0" max="100" value="50" oninput="updateCrop()"><span id="cv-y">50%</span></div>
         </div>
         <div class="hero-source-block">
         <div class="img-src-tabs">
@@ -996,7 +996,21 @@ function save(){
   FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e) offers[cur][f]=e.value; });
   const op=document.getElementById("f-operator"); if(op) offers[cur].operator=op.value;
 }
+function normalizeCropPositionForOffer(offer){
+  if(!offer) return;
+  if(offer._cropPosVersion===2){
+    offer._cropX=Math.max(0,Math.min(100,parseInt(offer._cropX??50,10)));
+    offer._cropY=Math.max(0,Math.min(100,parseInt(offer._cropY??50,10)));
+    return;
+  }
+  const legacyX=parseInt(offer._cropX??0,10);
+  const legacyY=parseInt(offer._cropY??0,10);
+  offer._cropX=Math.max(0,Math.min(100,legacyX+50));
+  offer._cropY=Math.max(0,Math.min(100,legacyY+50));
+  offer._cropPosVersion=2;
+}
 function load(i){
+  normalizeCropPositionForOffer(offers[i]);
   FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e) e.value=offers[i][f]||""; });
   const op=document.getElementById("f-operator"); if(op) op.value=offers[i].operator||"";
   setThumb("logo",offers[i]._logoCustom||"");
@@ -1006,11 +1020,11 @@ function load(i){
   const lsz=document.getElementById("logo-size"); if(lsz) lsz.value=sz;
   const lsv=document.getElementById("logo-size-val"); if(lsv) lsv.textContent=sz+"%";
   document.getElementById("crop-zoom").value=offers[i]._cropZoom||100;
-  document.getElementById("crop-x").value=offers[i]._cropX||0;
-  document.getElementById("crop-y").value=offers[i]._cropY||0;
+  document.getElementById("crop-x").value=offers[i]._cropX??50;
+  document.getElementById("crop-y").value=offers[i]._cropY??50;
   document.getElementById("cv-zoom").textContent=(offers[i]._cropZoom||100)+"%";
-  document.getElementById("cv-x").textContent=(offers[i]._cropX||0)+"%";
-  document.getElementById("cv-y").textContent=(offers[i]._cropY||0)+"%";
+  document.getElementById("cv-x").textContent=(offers[i]._cropX??50)+"%";
+  document.getElementById("cv-y").textContent=(offers[i]._cropY??50)+"%";
   if(!offers[i]._heroFitMode) offers[i]._heroFitMode="fill";
   syncHeroUi();
   if(offers[i]._img) document.getElementById("crop-controls").classList.add("active");
@@ -1116,21 +1130,24 @@ function updateCrop(){
   offers[cur]._cropZoom=parseInt(document.getElementById("crop-zoom").value);
   offers[cur]._cropX=parseInt(document.getElementById("crop-x").value);
   offers[cur]._cropY=parseInt(document.getElementById("crop-y").value);
+  offers[cur]._cropPosVersion=2;
   document.getElementById("cv-zoom").textContent=offers[cur]._cropZoom+"%";
   document.getElementById("cv-x").textContent=offers[cur]._cropX+"%";
   document.getElementById("cv-y").textContent=offers[cur]._cropY+"%";
   refreshOfferUi({status:false,utm:false,spell:false});
 }
 function resetCrop(){
-  offers[cur]._cropZoom=100; offers[cur]._cropX=0; offers[cur]._cropY=0;
-  document.getElementById("crop-zoom").value=100; document.getElementById("crop-x").value=0; document.getElementById("crop-y").value=0;
-  document.getElementById("cv-zoom").textContent="100%"; document.getElementById("cv-x").textContent="0%"; document.getElementById("cv-y").textContent="0%";
+  offers[cur]._heroFitMode="fill";
+  offers[cur]._cropZoom=100; offers[cur]._cropX=50; offers[cur]._cropY=50; offers[cur]._cropPosVersion=2;
+  document.getElementById("crop-zoom").value=100; document.getElementById("crop-x").value=50; document.getElementById("crop-y").value=50;
+  document.getElementById("cv-zoom").textContent="100%"; document.getElementById("cv-x").textContent="50%"; document.getElementById("cv-y").textContent="50%";
+  syncHeroUi();
   refreshOfferUi({status:false,utm:false,spell:false});
 }
 function centreHeroImage(){
-  offers[cur]._cropX=0; offers[cur]._cropY=0;
-  document.getElementById("crop-x").value=0; document.getElementById("crop-y").value=0;
-  document.getElementById("cv-x").textContent="0%"; document.getElementById("cv-y").textContent="0%";
+  offers[cur]._cropX=50; offers[cur]._cropY=50; offers[cur]._cropPosVersion=2;
+  document.getElementById("crop-x").value=50; document.getElementById("crop-y").value=50;
+  document.getElementById("cv-x").textContent="50%"; document.getElementById("cv-y").textContent="50%";
   refreshOfferUi({status:false,utm:false,spell:false});
 }
 function removeHeroImage(){
@@ -2322,12 +2339,12 @@ function renderCardHTML(d){
   const ports=(d.ports||"").trim();
   const portsHTML=ports?chunkBullets(ports,3):"";
   const terms=document.getElementById("g-terms").value||"T&Cs Apply";
-  const cz=d._cropZoom||100; const cx=d._cropX||0; const cy=d._cropY||0;
+  const cz=d._cropZoom||100; const cx=d._cropX??50; const cy=d._cropY??50;
   const heroFitMode=d._heroFitMode==="fit"?"fit":"fill";
   const heroObjectFit=heroFitMode==="fit"?"contain":"cover";
   const heroBg=heroFitMode==="fit"?"background:#0e1b2a;":"";
   const heroHTML=d._img
-    ? `<div class="hero-wrap" style="${heroBg}"><img class="hero" src="${d._img}" style="object-fit:${heroObjectFit};transform:scale(${cz/100}) translate(${cx}%,${cy}%);transform-origin:center center;" onerror="this.parentElement.innerHTML='<div class=hph><span>Image failed to load</span></div>'"></div>`
+    ? `<div class="hero-wrap" style="${heroBg}"><img class="hero" src="${d._img}" style="object-fit:${heroObjectFit};object-position:${cx}% ${cy}%;transform:scale(${cz/100});transform-origin:center center;" onerror="this.parentElement.innerHTML='<div class=hph><span>Image failed to load</span></div>'"></div>`
     : `<div class="hph"><span></span></div>`;
   const shipLine=ship?`Sailing on ${ship}`:"";
   const priceHTML=price?`<div class="pfrom">From</div><div class="pmain">£${price}<span class="ppp">pp</span></div>`:`<div class="pfrom"></div><div class="pmain"></div>`;
@@ -2524,13 +2541,15 @@ function saveEditorToOffer(){
   const x=document.getElementById('crop-x');
   const y=document.getElementById('crop-y');
   if(z) o._cropZoom=parseInt(z.value||100,10);
-  if(x) o._cropX=parseInt(x.value||0,10);
-  if(y) o._cropY=parseInt(y.value||0,10);
+  if(x) o._cropX=parseInt(x.value||50,10);
+  if(y) o._cropY=parseInt(y.value||50,10);
+  o._cropPosVersion=2;
   o._heroFitMode = o._heroFitMode==="fit" ? "fit" : "fill";
 }
 
 function loadOfferToEditor(i){
   const o = offers[i] || {};
+  normalizeCropPositionForOffer(o);
   FLDS.forEach(f=>{
     const e=document.getElementById('f-'+f);
     if(e) e.value = o[f] || '';
@@ -2544,11 +2563,11 @@ function loadOfferToEditor(i){
   const lsz=document.getElementById('logo-size'); if(lsz) lsz.value=sz;
   const lsv=document.getElementById('logo-size-val'); if(lsv) lsv.textContent=sz+'%';
   const cz=document.getElementById('crop-zoom'); if(cz) cz.value=o._cropZoom||100;
-  const cx=document.getElementById('crop-x'); if(cx) cx.value=o._cropX||0;
-  const cy=document.getElementById('crop-y'); if(cy) cy.value=o._cropY||0;
+  const cx=document.getElementById('crop-x'); if(cx) cx.value=o._cropX??50;
+  const cy=document.getElementById('crop-y'); if(cy) cy.value=o._cropY??50;
   const cvz=document.getElementById('cv-zoom'); if(cvz) cvz.textContent=(o._cropZoom||100)+'%';
-  const cvx=document.getElementById('cv-x'); if(cvx) cvx.textContent=(o._cropX||0)+'%';
-  const cvy=document.getElementById('cv-y'); if(cvy) cvy.textContent=(o._cropY||0)+'%';
+  const cvx=document.getElementById('cv-x'); if(cvx) cvx.textContent=(o._cropX??50)+'%';
+  const cvy=document.getElementById('cv-y'); if(cvy) cvy.textContent=(o._cropY??50)+'%';
   if(!o._heroFitMode) o._heroFitMode='fill';
   syncHeroUi();
   const logoArea=document.getElementById('logo-override-area'); if(logoArea) logoArea.style.display=(o.operator==='custom'||!o.operator)?'block':'none';
@@ -2651,8 +2670,9 @@ function visibleFieldsToData(){
   const x = document.getElementById('crop-x');
   const y = document.getElementById('crop-y');
   if(z) base._cropZoom = parseInt(z.value || base._cropZoom || 100, 10);
-  if(x) base._cropX = parseInt(x.value || base._cropX || 0, 10);
-  if(y) base._cropY = parseInt(y.value || base._cropY || 0, 10);
+  if(x) base._cropX = parseInt(x.value || base._cropX || 50, 10);
+  if(y) base._cropY = parseInt(y.value || base._cropY || 50, 10);
+  base._cropPosVersion = 2;
   return base;
 }
 function commitVisibleFields(){
