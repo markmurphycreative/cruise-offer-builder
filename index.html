@@ -3164,39 +3164,8 @@ function applySafeGlobalDefaults(){
   if(terms && !String(terms.value||"").trim()) terms.value = "T&Cs Apply";
 }
 
-applySafeGlobalDefaults();
-load(0);
-refreshOfferUi({utm:true,spell:true,autosave:false});
-window.addEventListener("resize",rv);
-rv(); updateAllStatus();
-captureStandardSectionState();
-let savedBuilderMode = "standard";
-try{ savedBuilderMode = localStorage.getItem(BUILDER_MODE_STORAGE_KEY) || "standard"; }catch(e){}
-setBuilderMode(savedBuilderMode,true);
-initOfferTabDragDrop();
-updateMoveOfferButtons();
-refreshPresetList();
-syncAutosaveStatus();
-promptRestoreSession();
-queueAutosave();
 let splashClosed=false;
-window.openBuilderFromSplash = function(event){
-  if(event) event.preventDefault();
-  console.log("Splash open builder clicked");
-  dismissSplashAndShowBuilder();
-  refreshOfferUi({utm:true,spell:true,autosave:false});
-};
-window.loadCsvFromSplash = function(event){
-  if(event) event.preventDefault();
-  console.log("Splash load CSV clicked");
-  const sheetsFile=document.getElementById("sheets-file");
-  if(!sheetsFile){
-    console.warn("[splash] Missing #sheets-file; Load CSV picker cannot open.");
-    return;
-  }
-  sheetsFile.click();
-};
-function dismissSplashAndShowBuilder(){
+function closeSplash(){
   if(splashClosed) return;
   splashClosed=true;
   const splash=document.getElementById("app-splash");
@@ -3214,16 +3183,38 @@ function dismissSplashAndShowBuilder(){
   splash.classList.add("hidden");
   window.setTimeout(()=>{ splash.remove(); }, 520);
 }
+function dismissSplashAndShowBuilder(){
+  closeSplash();
+  try{
+    if(typeof refreshOfferUi==="function") refreshOfferUi({utm:true,spell:true,autosave:false});
+    if(typeof rv==="function") rv();
+    if(typeof updateAllStatus==="function") updateAllStatus();
+  }catch(err){
+    console.error("[splash] Builder UI refresh failed after splash dismissal.", err);
+  }
+}
+window.openBuilderFromSplash = function(event){
+  if(event) event.preventDefault();
+  console.log("Splash open builder clicked");
+  dismissSplashAndShowBuilder();
+};
+window.loadCsvFromSplash = function(event){
+  if(event) event.preventDefault();
+  console.log("Splash load CSV clicked");
+  const temp=document.createElement("input");
+  temp.type="file";
+  temp.accept=".csv,text/csv,.tsv,text/tab-separated-values";
+  temp.onchange=(e)=>loadFromCSVFile(Object.assign(e,{_onSuccess:closeSplash}));
+  temp.click();
+};
 function initStartScreenActions(){
   const openBtn=document.getElementById("splash-open-builder-btn") || document.querySelector("#app-splash .splash-btn.gold");
   const csvBtn=document.getElementById("splash-load-csv-btn") || document.querySelector("#app-splash .splash-btn:not(.gold)");
   const continueBtn=document.getElementById("splash-continue-session-btn");
   const splash=document.getElementById("app-splash");
-  const sheetsFile=document.getElementById("sheets-file");
   if(!splash) console.warn("[splash] Missing #app-splash; start screen actions cannot be wired.");
   if(!openBtn) console.warn("[splash] Missing Open Builder button; action not bound.");
   if(!csvBtn) console.warn("[splash] Missing Load CSV button; action not bound.");
-  if(!sheetsFile) console.warn("[splash] Missing #sheets-file; Load CSV picker cannot open.");
 
   if(openBtn){
     openBtn.addEventListener("click",(e)=>{
@@ -3238,11 +3229,12 @@ function initStartScreenActions(){
       dismissSplashAndShowBuilder();
     });
   }
-  if(csvBtn && sheetsFile){
+  if(csvBtn){
     csvBtn.addEventListener("click",(e)=>{
       window.loadCsvFromSplash(e);
     });
   }
+  const sheetsFile=document.getElementById("sheets-file");
   if(sheetsFile){
     sheetsFile.removeAttribute("onchange");
     sheetsFile.addEventListener("change",(e)=>loadFromCSVFile(Object.assign(e,{_onSuccess:dismissSplashAndShowBuilder})));
@@ -3269,6 +3261,30 @@ if(document.readyState==="loading"){
   initStartScreenActions();
   hydrateSplashRecentSession();
 }
+
+function initBuilderApp(){
+  try{
+    applySafeGlobalDefaults();
+    load(0);
+    refreshOfferUi({utm:true,spell:true,autosave:false});
+    window.addEventListener("resize",rv);
+    rv();
+    updateAllStatus();
+    captureStandardSectionState();
+    let savedBuilderMode = "standard";
+    try{ savedBuilderMode = localStorage.getItem(BUILDER_MODE_STORAGE_KEY) || "standard"; }catch(e){}
+    setBuilderMode(savedBuilderMode,true);
+    initOfferTabDragDrop();
+    updateMoveOfferButtons();
+    refreshPresetList();
+    syncAutosaveStatus();
+    promptRestoreSession();
+    queueAutosave();
+  }catch(err){
+    console.error("[init] Builder app initialisation failed.", err);
+  }
+}
+initBuilderApp();
 
 // ═══════════════════════════════════════════════════════
 
