@@ -610,7 +610,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <div class="section-body">
         <div class="utm-btn-row">
           <button class="abtn gold" onclick="saveProjectFile()">Save Project</button>
-          <button class="abtn navy" onclick="openSummary()">Open Summary</button>
+          <button class="abtn navy" id="open-summary-btn" onclick="openSummary()">Open Summary</button>
         </div>
         <div class="utm-btn-row">
           <button class="abtn" onclick="resetOffer()">Reset Offer</button>
@@ -734,6 +734,23 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <!-- Off-screen export render area -->
 <div id="export-render-area"></div>
+
+
+<div class="modal-overlay" id="summary-modal" onclick="if(event.target===this) closeModal('summary-modal')">
+  <div class="summary-modal" role="dialog" aria-modal="true" aria-labelledby="summary-title">
+    <div class="summary-head">
+      <h2 id="summary-title">Campaign Summary</h2>
+      <button class="summary-close" type="button" aria-label="Close summary" onclick="closeModal('summary-modal')">×</button>
+    </div>
+    <div class="summary-body" id="summary-content"></div>
+    <div class="summary-actions">
+      <button class="summary-btn primary" type="button" onclick="copySummary()">Copy Campaign Summary</button>
+      <button class="summary-btn" type="button" onclick="downloadSummaryTxt()">Download Summary TXT</button>
+      <button class="summary-btn" type="button" onclick="copyAllUtms()">Copy All UTMs</button>
+      <button class="summary-btn" type="button" onclick="closeModal('summary-modal')">Close</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -2250,6 +2267,12 @@ function copyHTML(){ save(); navigator.clipboard.writeText(renderCardHTML(offers
 // ═══════════════════════════════════════════════════════
 function openSummary(){
   save();
+  const modal=document.getElementById("summary-modal");
+  const content=document.getElementById("summary-content");
+  if(!modal||!content){
+    console.warn("Summary modal unavailable: #summary-modal or #summary-content is missing.");
+    return;
+  }
   const name=document.getElementById("g-campaign").value||"(unnamed)";
   const date=document.getElementById("g-date").value||"(TBC)";
   const offerCards=offers.map((o,i)=>{
@@ -2267,8 +2290,8 @@ function openSummary(){
       <div><strong>UTM</strong><span class="${o._utm?'sum-ok':'sum-warn'}">${o._utm?'Generated':'Missing'}</span></div></div></div>`;
   }).join("");
   const html=`<div class="summary-meta"><div class="summary-chip"><strong>Campaign</strong><br>${name}</div><div class="summary-chip"><strong>Send date</strong><br>${date}</div><div class="summary-chip"><strong>Export pack hints</strong><br>cards/, utms/all-utms.csv, summary/campaign-summary.txt</div></div><div class="summary-grid">${offerCards}</div>`;
-  document.getElementById("summary-content").innerHTML=html;
-  document.getElementById("summary-modal").classList.add("active");
+  content.innerHTML=html;
+  modal.classList.add("active");
 }
 function getSummaryText(){
   let txt=`CAMPAIGN SUMMARY\nCampaign: ${document.getElementById("g-campaign").value||"(unnamed)"}\nSend Date: ${document.getElementById("g-date").value||"(TBC)"}\nGenerated: ${new Date().toLocaleString()}\n\n`;
@@ -2285,7 +2308,7 @@ function copyChecklist(){
   offers.forEach((o,i)=>{ const n=i+1; txt+=`Offer ${n}:\n  [${o.operator?"✓":"✗"}] Operator\n  [${o.name?"✓":"✗"}] Cruise name\n  [${o.price?"✓":"✗"}] Price\n  [${o.day?"✓":"✗"}] Date\n  [${o._img?"✓":"✗"}] Hero image\n  [${o._utm?"✓":"✗"}] UTM\n\n`; });
   navigator.clipboard.writeText(txt).then(()=>alert("Checklist copied"));
 }
-function closeModal(id){ document.getElementById(id).classList.remove("active"); }
+function closeModal(id){ const modal=document.getElementById(id); if(!modal){ console.warn(`Modal unavailable: #${id} not found.`); return; } modal.classList.remove("active"); }
 
 // ═══════════════════════════════════════════════════════
 // EXAMPLES
