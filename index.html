@@ -262,7 +262,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .abtn.amber{background:var(--amber);color:#fff;border-color:var(--amber);}
 .lock-ind{display:none;font-size:9px;color:var(--amber);font-weight:700;text-align:center;margin-bottom:4px;padding:3px;background:#fff8e0;border-radius:3px;}
 .lock-ind.active{display:block;}
-.session-hint{font-size:9px;color:var(--muted);text-align:center;margin-top:3px;}
+.session-hint{font-size:9px;color:var(--muted);text-align:center;margin-top:3px;line-height:1.35;}
 .session-feedback{font-size:9px;color:var(--green);text-align:center;margin-top:3px;min-height:12px;opacity:0;transition:opacity .2s ease;}
 .session-feedback.warn{color:#8a5000;}
 .session-feedback.active{opacity:1;}
@@ -270,6 +270,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 /* ── PREVIEW ── */
 .preview-toolbar{background:var(--navy);padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;}
 .preview-title{color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.autosave-status{font-size:9px;color:rgba(255,255,255,.72);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:2px 7px;line-height:1.2;white-space:nowrap;}
+.autosave-status.warn{color:#ffe2b0;border-color:rgba(255,203,129,.45);background:rgba(255,166,0,.12);}
 .ptool{display:flex;align-items:center;gap:4px;}
 .ptool span{font-size:9px;color:rgba(255,255,255,.6);white-space:nowrap;}
 .ptool input[type=range]{accent-color:var(--gold);width:70px;height:3px;}
@@ -729,7 +731,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     <div class="act-row">
       <button class="abtn" onclick="clearSavedSession()">Clear Saved Session</button>
     </div>
-    <div class="session-hint">Project Save/Load is primary. Local autosave remains as a background backup.</div>
+    <div class="session-hint">Save Project is the reliable long-term save. Autosave is a local backup for this browser.</div>
     <div class="session-feedback" id="session-feedback" aria-live="polite"></div>
   </div>
 </div>
@@ -738,6 +740,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 <div class="preview-pane">
   <div class="preview-toolbar">
     <span class="preview-title" id="preview-title">Live Preview — Offer 1</span>
+    <span class="autosave-status" id="autosave-status" aria-live="polite">Autosave paused</span>
     <div class="ptool">
       <span>Zoom</span>
       <input type="range" min="10" max="70" value="32" oninput="setZoom(this.value)" id="zoom-slider">
@@ -774,7 +777,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <h2 id="session-restore-title">Restore previous session?</h2>
     </div>
     <div class="session-restore-body">
-      <p>A saved session was found. Restore it or start fresh.</p>
+      <p id="session-restore-copy">A local autosave was found. Restore it or start fresh.</p>
       <div class="session-restore-actions">
         <button class="session-restore-btn restore" onclick="chooseRestoreSession()">Restore Session</button>
         <button class="session-restore-btn fresh" onclick="chooseStartFreshSession()">Start Fresh</button>
@@ -1934,6 +1937,30 @@ const AUTOSAVE_KEY = "cobSessionAutosaveV1";
 let autosaveTimer = null;
 let autosaveHydrating = false;
 let autosaveAwaitingRestoreDecision = false;
+let autosaveLastSavedAt = null;
+
+function formatAutosaveTime(ts){
+  if(!ts) return "";
+  const dt = new Date(ts);
+  if(Number.isNaN(dt.getTime())) return "";
+  return dt.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", hour12:false});
+}
+function setAutosaveStatus(label,isWarn=false){
+  const el=document.getElementById("autosave-status");
+  if(!el) return;
+  el.textContent=label;
+  el.classList.toggle("warn", !!isWarn);
+}
+function syncAutosaveStatus(){
+  if(autosaveAwaitingRestoreDecision){ setAutosaveStatus("Restore available"); return; }
+  if(autosaveHydrating){ setAutosaveStatus("Autosave paused"); return; }
+  if(autosaveLastSavedAt){ setAutosaveStatus(`Saved ${formatAutosaveTime(autosaveLastSavedAt)}`); return; }
+  setAutosaveStatus("Autosave paused");
+}
+function markUnsavedChanges(){
+  if(autosaveHydrating || autosaveAwaitingRestoreDecision) return;
+  setAutosaveStatus("Unsaved changes");
+}
 
 function buildAutosavePayload(){
   save();
@@ -1948,11 +1975,20 @@ function buildAutosavePayload(){
 }
 function saveSessionNow(){
   if(autosaveHydrating || autosaveAwaitingRestoreDecision) return;
-  try{ localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(buildAutosavePayload())); }catch(e){}
+  setAutosaveStatus("Saving…");
+  try{
+    const payload = buildAutosavePayload();
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(payload));
+    autosaveLastSavedAt = payload.savedAt || new Date().toISOString();
+    syncAutosaveStatus();
+  }catch(e){
+    setAutosaveStatus("Autosave failed", true);
+  }
 }
 function queueAutosave(){
   if(autosaveHydrating || autosaveAwaitingRestoreDecision) return;
   clearTimeout(autosaveTimer);
+  markUnsavedChanges();
   // Debounced autosave avoids thrashing during slider drags / typing.
   autosaveTimer = setTimeout(saveSessionNow, 420);
 }
@@ -2035,6 +2071,8 @@ function chooseRestoreSession(){
   closeSessionRestoreModal();
   if(payload){
     applySessionPayload(payload);
+    autosaveLastSavedAt = payload.savedAt || autosaveLastSavedAt;
+    setAutosaveStatus("Restored from autosave");
     const partial=sessionHasMissingHeroImages(payload);
     showSessionFeedback(partial ? "Session restored, but hero images need re-uploading" : "Previous session restored", partial);
   }
@@ -2043,6 +2081,7 @@ function chooseStartFreshSession(){
   autosaveAwaitingRestoreDecision = false;
   pendingRestoreSession = null;
   closeSessionRestoreModal();
+  setAutosaveStatus("Fresh session");
   showSessionFeedback("",false);
 }
 function promptRestoreSession(){
@@ -2050,6 +2089,12 @@ function promptRestoreSession(){
   autosaveAwaitingRestoreDecision = !!(saved && saved.offers);
   if(!saved || !saved.offers) return;
   pendingRestoreSession = saved;
+  const copy=document.getElementById("session-restore-copy");
+  if(copy){
+    const ts = formatAutosaveTime(saved.savedAt);
+    copy.textContent = `A local autosave was found from ${ts || "an earlier session"}. Restore it or start fresh.`;
+  }
+  setAutosaveStatus("Restore available");
   const modal = document.getElementById('session-restore-modal');
   if(modal) modal.classList.add('active');
 }
@@ -2057,7 +2102,9 @@ function clearSavedSession(){
   autosaveAwaitingRestoreDecision = false;
   try{ localStorage.removeItem(AUTOSAVE_KEY); }catch(e){}
   pendingRestoreSession = null;
+  autosaveLastSavedAt = null;
   closeSessionRestoreModal();
+  syncAutosaveStatus();
   showSessionFeedback("",false);
 }
 
@@ -3363,6 +3410,8 @@ setBuilderMode(savedBuilderMode,true);
 initOfferTabDragDrop();
 updateMoveOfferButtons();
 refreshPresetList();
+syncAutosaveStatus();
+promptRestoreSession();
 queueAutosave();
 let splashClosed=false;
 function closeSplash(){
