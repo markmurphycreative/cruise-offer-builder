@@ -189,11 +189,19 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash-version{margin-top:18px;font-size:11px;color:rgba(255,255,255,.7);}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
 .splash-actions{margin-top:18px;display:grid;gap:6px;max-width:220px;margin-left:auto;margin-right:auto;}
-.splash-recent{margin:14px auto 0;max-width:260px;text-align:left;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:10px 11px;display:none;}
+.splash-recent{margin:14px auto 0;max-width:300px;text-align:left;display:none;}
 .splash-recent.active{display:block;}
-.splash-recent-title{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;}
-.splash-recent-name{margin-top:5px;font-size:11px;color:#fff;font-weight:600;line-height:1.35;}
-.splash-recent-time{margin-top:3px;font-size:9px;color:rgba(255,255,255,.72);}
+.splash-recent-title{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:rgba(255,255,255,.8);}
+.splash-recent-name{margin-top:4px;font-size:12px;color:#fff;font-weight:600;line-height:1.3;}
+.splash-recent-time{margin-top:2px;font-size:10px;color:rgba(255,255,255,.68);} 
+.splash-load-status{margin-top:10px;font-size:10px;color:rgba(255,255,255,.82);opacity:0;transform:translateY(2px);transition:opacity .2s ease,transform .2s ease;}
+.splash-load-status.active{opacity:1;transform:translateY(0);} 
+.project-load-modal{max-width:400px;padding:0;border-radius:10px;overflow:hidden;border:1px solid rgba(14,27,42,.16);box-shadow:0 18px 40px rgba(14,27,42,.28);}
+.project-load-head{padding:14px 16px;background:var(--navy);color:#fff;}
+.project-load-head h2{margin:0;color:#fff;font-size:13px;}
+.project-load-body{padding:14px 16px;}
+.project-load-copy{font-size:11px;line-height:1.45;color:var(--text);}
+.project-load-actions{margin-top:12px;display:flex;justify-content:flex-end;}
 .splash-btn{padding:8px 10px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:4px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.08);color:#fff;transition:background .15s ease,border-color .15s ease,transform .15s ease;}
 .splash-btn:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.44);transform:translateY(-1px);}
 .splash-btn:active{transform:translateY(0);}
@@ -405,7 +413,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <div class="splash-version">v1.5.8e</div>
     <div class="splash-line">Select how you want to begin.</div>
     <div id="splash-recent-session" class="splash-recent" aria-live="polite">
-      <div class="splash-recent-title">Recent Session Found</div>
+      <div class="splash-recent-title">Recent Session</div>
       <div class="splash-recent-name" id="splash-recent-name"></div>
       <div class="splash-recent-time" id="splash-recent-time"></div>
     </div>
@@ -415,6 +423,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       <button class="splash-btn" id="splash-load-csv-btn">Load CSV</button>
       <button class="splash-btn" id="splash-load-project-btn">Load Project</button>
     </div>
+    <div class="splash-load-status" id="splash-load-status" aria-live="polite"></div>
   </div>
 </div>
 <div class="app start-hidden" id="builder-app" aria-hidden="true">
@@ -807,6 +816,21 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <div class="session-restore-actions">
         <button class="session-restore-btn fresh" onclick="closeClearSessionModal()">Cancel</button>
         <button class="session-restore-btn restore" onclick="confirmClearSavedSession()">Clear Recovery</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal-overlay" id="project-load-error-modal" role="dialog" aria-modal="true" aria-labelledby="project-load-error-title">
+  <div class="modal project-load-modal">
+    <div class="project-load-head">
+      <h2 id="project-load-error-title">Couldn't Load Project</h2>
+    </div>
+    <div class="project-load-body">
+      <p class="project-load-copy">That file isn't a valid Cruise Offer Builder project JSON. Please choose a valid project export and try again.</p>
+      <div class="project-load-actions">
+        <button class="session-restore-btn restore" onclick="closeProjectLoadErrorModal()">OK</button>
       </div>
     </div>
   </div>
@@ -2201,6 +2225,21 @@ function handleLoadProjectFile(event){
   if(!file) return;
   loadProjectFromFileInput(file).catch(()=>{});
 }
+function closeProjectLoadErrorModal(){
+  const modal = document.getElementById('project-load-error-modal');
+  if(modal) modal.classList.remove('active');
+}
+function showProjectLoadErrorModal(){
+  const modal = document.getElementById('project-load-error-modal');
+  if(modal) modal.classList.add('active');
+}
+function showSplashLoadStatus(msg){
+  const el=document.getElementById('splash-load-status');
+  if(!el) return;
+  el.textContent=msg||'';
+  el.classList.toggle('active', !!msg);
+  if(msg){ window.setTimeout(()=>{ if(el.textContent===msg){ el.textContent=''; el.classList.remove('active'); } }, 2200); }
+}
 function loadProjectFromFileInput(file){
   return new Promise((resolve,reject)=>{
     if(!file){ reject(new Error("no_file")); return; }
@@ -2211,10 +2250,13 @@ function loadProjectFromFileInput(file){
         const parsed = JSON.parse(String(reader.result||"{}"));
         applySessionPayload(parsed);
         saveSessionNow();
+        syncAutosaveStatus();
         showSessionFeedback("Project loaded", false);
+        showSplashLoadStatus("Restored Successfully");
         resolve(true);
       }catch(e){
         showSessionFeedback("Invalid project JSON", true);
+        showProjectLoadErrorModal();
         reject(e);
       }
     };
@@ -3506,15 +3548,13 @@ function initStartScreenActions(){
   }
   if(projectBtn&&projectInput){
     projectBtn.addEventListener("click",()=>{
-      const temp=document.createElement("input");
-      temp.type="file";
-      temp.accept="application/json,.json";
-      temp.onchange=(e)=>{
-        const file=e&&e.target&&e.target.files&&e.target.files[0];
-        if(!file) return;
-        loadProjectFromFileInput(file).then(()=>closeSplash()).catch(()=>{});
-      };
-      temp.click();
+      projectInput.value="";
+      projectInput.click();
+    });
+    projectInput.addEventListener("change",(e)=>{
+      const file=e&&e.target&&e.target.files&&e.target.files[0];
+      if(!file) return;
+      loadProjectFromFileInput(file).then(()=>closeSplash()).catch(()=>{});
     });
   }
 }
@@ -3527,9 +3567,9 @@ function hydrateSplashRecentSession(){
   if(!(wrap&&name&&time&&continueBtn&&saved&&saved.offers)) return;
   wrap.classList.add("active");
   continueBtn.style.display="block";
-  const campaignName=((saved.campaign&&saved.campaign.name)||"Untitled Cruise Campaign").trim() || "Untitled Cruise Campaign";
+  const campaignName=((saved.campaign&&saved.campaign.name)||"").trim() || (saved.savedAt ? "Recovered Session" : "Untitled Campaign");
   name.textContent=campaignName;
-  time.textContent=formatRelativeAutosave(saved.savedAt) || "Autosaved recently";
+  time.textContent=`Autosaved ${formatRelativeAutosave(saved.savedAt) || "recently"}`;
 }
 initStartScreenActions();
 hydrateSplashRecentSession();
