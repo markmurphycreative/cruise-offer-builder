@@ -372,7 +372,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 </style>
 </head>
 <body>
-<div id="app-splash" class="splash" aria-hidden="true">
+<div id="app-splash" class="splash" aria-hidden="false">
   <div class="splash-inner">
     <div class="splash-main">
       <div class="splash-title">Cruise Offer Builder</div>
@@ -380,9 +380,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       <div class="splash-version">v1.5.8e</div>
       <div class="splash-line">Select how you want to begin.</div>
       <div class="splash-actions">
-        <button class="splash-btn gold" id="splash-continue-session-btn" style="display:none;">Continue Last Session</button>
-        <button class="splash-btn gold" id="splash-open-builder-btn" onclick="openBuilderFromSplash(event)">Open Builder</button>
-        <button class="splash-btn" id="splash-load-csv-btn" onclick="loadCsvFromSplash(event)">Load CSV</button>
+        <button class="splash-btn gold" id="splash-continue-session-btn" type="button" style="display:none;">Continue Last Session</button>
+        <button class="splash-btn gold" id="splash-open-builder-btn" type="button">Open Builder</button>
+        <button class="splash-btn" id="splash-load-csv-btn" type="button">Load CSV</button>
               </div>
     </div>
     <div id="splash-recent-session" class="splash-recent" aria-live="polite">
