@@ -190,7 +190,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash-version{margin-top:18px;font-size:11px;color:rgba(255,255,255,.7);}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
 .splash-actions{margin-top:18px;display:grid;gap:6px;max-width:220px;margin-left:auto;margin-right:auto;width:100%;}
-.splash-recent{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);max-width:320px;text-align:center;display:none;}
+.splash-recent{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);max-width:320px;text-align:center;display:none;}
 .splash-recent.active{display:block;}
 .splash-recent-title{font-size:10px;font-weight:500;letter-spacing:.03em;color:rgba(255,255,255,.68);}
 .splash-recent-name{display:inline;margin-left:4px;font-size:11px;color:rgba(255,255,255,.84);font-weight:600;line-height:1.3;}
@@ -2244,13 +2244,27 @@ function showSplashLoadStatus(msg){
   el.classList.toggle('active', !!msg);
   if(msg){ window.setTimeout(()=>{ if(el.textContent===msg){ el.textContent=''; el.classList.remove('active'); } }, 2200); }
 }
+function normalizeBuilderProjectPayload(raw){
+  if(!raw || typeof raw !== "object") return null;
+  if(Array.isArray(raw.offers)) return raw;
+  if(raw.project && typeof raw.project === "object" && Array.isArray(raw.project.offers)) return raw.project;
+  if(raw.payload && typeof raw.payload === "object" && Array.isArray(raw.payload.offers)) return raw.payload;
+  return raw;
+}
 function isValidBuilderProjectPayload(parsed){
-  const required = [];
-  if(!parsed || typeof parsed !== "object") required.push("root object");
-  if(!Array.isArray(parsed && parsed.offers)) required.push("offers[]");
-  if(parsed && parsed.projectType && parsed.projectType !== "cruise-offer-builder-project") required.push("projectType=cruise-offer-builder-project");
-  if(!parsed || typeof parsed.savedAt !== "string") required.push("savedAt ISO timestamp");
-  return { valid: required.length===0, missing: required };
+  const missing = [];
+  if(!parsed || typeof parsed !== "object"){
+    missing.push("root object");
+    return { valid:false, missing, payload:null };
+  }
+  const payload = normalizeBuilderProjectPayload(parsed);
+  if(!payload || typeof payload !== "object") missing.push("payload object");
+  if(payload && !Array.isArray(payload.offers)) missing.push("offers[]");
+  if(payload && (!Array.isArray(payload.offers) || payload.offers.length < 1)) missing.push("at least 1 offer");
+  if(parsed.projectType && parsed.projectType !== "cruise-offer-builder-project") missing.push("projectType=cruise-offer-builder-project");
+  if(payload && typeof payload.savedAt !== "string") missing.push("savedAt ISO timestamp");
+  if(payload && (!payload.campaign || typeof payload.campaign !== "object")) missing.push("campaign object");
+  return { valid: missing.length===0, missing, payload };
 }
 function loadProjectFromFileInput(file){
   return new Promise((resolve,reject)=>{
@@ -2262,10 +2276,10 @@ function loadProjectFromFileInput(file){
         const parsed = JSON.parse(String(reader.result||"{}"));
         const validation = isValidBuilderProjectPayload(parsed);
         if(!validation.valid){
-          console.warn("Project load validation failed. Missing/invalid:", validation.missing.join(", "), { file: file && file.name, parsed });
+          console.warn("Project load validation failed. Missing/invalid fields:", validation.missing, { file: file && file.name, parsed });
           throw new Error("invalid_project_payload");
         }
-        applySessionPayload(parsed);
+        applySessionPayload(validation.payload);
         saveSessionNow();
         syncAutosaveStatus();
         showSessionFeedback("Project loaded", false);
@@ -3574,8 +3588,7 @@ function hydrateSplashRecentSession(){
   if(!(wrap&&name&&time&&continueBtn&&saved&&saved.offers)) return;
   wrap.classList.add("active");
   continueBtn.style.display="block";
-  const campaignName=((saved.campaign&&saved.campaign.name)||"").trim() || "Recovered Session";
-  name.textContent=campaignName;
+  name.textContent="Recovered Session";
   time.textContent=formatRelativeAutosave(saved.savedAt) || "Autosaved recently";
 }
 initStartScreenActions();
