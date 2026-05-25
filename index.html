@@ -185,8 +185,15 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash-brand{margin-top:6px;font-size:13px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;}
 .splash-version{margin-top:18px;font-size:11px;color:rgba(255,255,255,.7);}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
+.splash-actions{margin-top:18px;display:grid;gap:6px;max-width:220px;margin-left:auto;margin-right:auto;}
+.splash-btn{padding:8px 10px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:4px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.08);color:#fff;transition:background .15s ease,border-color .15s ease,transform .15s ease;}
+.splash-btn:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.44);transform:translateY(-1px);}
+.splash-btn:active{transform:translateY(0);}
+.splash-btn.gold{background:var(--gold);border-color:var(--gold);color:#fff;}
+.splash-btn.gold:hover{background:#b2a277;border-color:#b2a277;}
 @media (prefers-reduced-motion:reduce){
   .splash{transition:none;}
+  .splash-btn{transition:none;}
 }
 
 /* ── UTM ── */
@@ -386,6 +393,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <div class="splash-brand">Dawson &amp; Sanderson</div>
     <div class="splash-version">v1.5.8e</div>
     <div class="splash-line">Preparing campaign workspace…</div>
+    <div class="splash-actions">
+      <button class="splash-btn gold" id="splash-open-builder-btn">Open Builder</button>
+      <button class="splash-btn" id="splash-load-csv-btn">Load CSV</button>
+      <button class="splash-btn" id="splash-load-project-btn">Load Project</button>
+    </div>
   </div>
 </div>
 <div class="app">
@@ -1113,7 +1125,19 @@ function setImageSearchUnavailable(msgText){
   msg.textContent=msgText||"Image search unavailable. Use local upload or URL.";
   msg.classList.add("error");
 }
-let imageSearchState={q:"",results:[],offset:0,pageSize:15,requestId:0};
+let imageSearchState={q:"",displayQuery:"",results:[],offset:0,pageSize:15,requestId:0,nextContinue:null,seen:new Set(),exhausted:false,loading:false};
+function buildTravelQuery(rawQuery){
+  const q=String(rawQuery||"").trim();
+  const lower=q.toLowerCase();
+  const explicitAircraft=/(plane|aircraft|airport|airline|jet|runway)/.test(lower);
+  if(explicitAircraft) return q;
+  return `${q} travel destination city landmark coastline resort landscape`;
+}
+function isRelevantTravelImage(url,title,query){
+  const t=`${title||""} ${url||""} ${query||""}`.toLowerCase();
+  if(/(plane|aircraft|airport|airline|jet|runway|cockpit)/.test(t)) return false;
+  return /(travel|destination|landmark|city|coast|coastline|beach|resort|island|harbour|skyline|landscape|tourism|bay|old town|cruise)/.test(t);
+}
 function renderImageSearchBatch(reset){
   const grid=document.getElementById("ugrid"),msg=document.getElementById("umsg"),moreBtn=document.getElementById("u-more-btn");
   if(reset) grid.innerHTML="";
@@ -1132,7 +1156,46 @@ function renderImageSearchBatch(reset){
   const rendered=grid.querySelectorAll("img").length;
   if(rendered){ msg.textContent="Click a photo to use it"; msg.classList.remove("error"); }
   else { msg.textContent="Image search unavailable. Use local upload or URL."; msg.classList.add("error"); }
-  if(moreBtn) moreBtn.disabled=imageSearchState.offset>=imageSearchState.results.length;
+  if(moreBtn) moreBtn.disabled=imageSearchState.loading||((imageSearchState.offset>=imageSearchState.results.length)&&imageSearchState.exhausted);
+}
+async function fetchImageSearchPage(resetSearch){
+  if(imageSearchState.loading) return;
+  imageSearchState.loading=true;
+  const msg=document.getElementById("umsg"),moreBtn=document.getElementById("u-more-btn");
+  if(moreBtn) moreBtn.disabled=true;
+  msg.textContent=resetSearch?"Loading...":"Loading more images...";
+  msg.classList.remove("error");
+  const requestId=imageSearchState.requestId;
+  const params=new URLSearchParams({
+    action:"query",format:"json",origin:"*",generator:"search",
+    gsrsearch:imageSearchState.displayQuery+" filetype:bitmap",
+    gsrnamespace:"6",gsrlimit:"40",prop:"imageinfo",iiprop:"url",gsrinfo:"totalhits"
+  });
+  if(imageSearchState.nextContinue) params.set("gsroffset", String(imageSearchState.nextContinue));
+  try{
+    const resp=await fetch("https://commons.wikimedia.org/w/api.php?"+params.toString());
+    if(!resp.ok) throw new Error("search_failed");
+    const data=await resp.json();
+    if(requestId!==imageSearchState.requestId) return;
+    const pages=(data&&data.query&&data.query.pages)?Object.values(data.query.pages):[];
+    pages.forEach(p=>{
+      const file=((p.imageinfo&&p.imageinfo[0])||{}).url;
+      if(!file) return;
+      if(!isRelevantTravelImage(file,p.title,imageSearchState.displayQuery)) return;
+      if(imageSearchState.seen.has(file)) return;
+      imageSearchState.seen.add(file);
+      imageSearchState.results.push(file);
+    });
+    imageSearchState.nextContinue=(data&&data.continue&&typeof data.continue.gsroffset!=="undefined")?data.continue.gsroffset:null;
+    imageSearchState.exhausted=!imageSearchState.nextContinue;
+    renderImageSearchBatch(!resetSearch?false:true);
+    if(!imageSearchState.results.length && imageSearchState.exhausted) setImageSearchUnavailable("No destination-style images found. Try a more specific place search.");
+  }catch(e){
+    if(requestId===imageSearchState.requestId) setImageSearchUnavailable("Image search unavailable. Use local upload or URL.");
+  }finally{
+    imageSearchState.loading=false;
+    if(moreBtn) moreBtn.disabled=imageSearchState.loading||((imageSearchState.offset>=imageSearchState.results.length)&&imageSearchState.exhausted);
+  }
 }
 function doSearch(){
   const q=document.getElementById("uq").value.trim();
@@ -1140,29 +1203,20 @@ function doSearch(){
   if(!q){
     grid.innerHTML="";
     const moreBtn=document.getElementById("u-more-btn"); if(moreBtn) moreBtn.disabled=true;
-    imageSearchState={q:"",results:[],offset:0,pageSize:15};
+    imageSearchState={q:"",displayQuery:"",results:[],offset:0,pageSize:15,requestId:imageSearchState.requestId,nextContinue:null,seen:new Set(),exhausted:false,loading:false};
     msg.textContent="Search a destination photo";
     msg.classList.remove("error");
     return;
   }
   grid.innerHTML="";
-  msg.textContent="Loading...";
-  msg.classList.remove("error");
-  const requestId = ++imageSearchState.requestId;
-  const apiUrl="https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch="+encodeURIComponent(q)+" filetype:bitmap&gsrnamespace=6&gsrlimit=36&prop=imageinfo&iiprop=url";
-  fetch(apiUrl)
-    .then(resp=>{ if(!resp.ok) throw new Error("search_failed"); return resp.json(); })
-    .then(data=>{
-      if(requestId!==imageSearchState.requestId) return;
-      const pages=(data&&data.query&&data.query.pages)?Object.values(data.query.pages):[];
-      const files=[...new Set(pages.map(p=>((p.imageinfo&&p.imageinfo[0])||{}).url).filter(Boolean))].slice(0,30);
-      if(!files.length){ setImageSearchUnavailable("Image search unavailable. Use local upload or URL."); return; }
-      imageSearchState={q,results:files,offset:0,pageSize:15};
-      renderImageSearchBatch(true);
-    })
-    .catch(()=>{ if(requestId===imageSearchState.requestId) setImageSearchUnavailable("Image search unavailable. Use local upload or URL."); });
+  imageSearchState={q,displayQuery:buildTravelQuery(q),results:[],offset:0,pageSize:15,requestId:imageSearchState.requestId+1,nextContinue:null,seen:new Set(),exhausted:false,loading:false};
+  fetchImageSearchPage(true);
 }
-function loadMoreImages(){ if(!imageSearchState.results.length) return; renderImageSearchBatch(false); }
+function loadMoreImages(){
+  if(!imageSearchState.q || imageSearchState.loading) return;
+  if(imageSearchState.offset<imageSearchState.results.length){ renderImageSearchBatch(false); return; }
+  if(!imageSearchState.exhausted) fetchImageSearchPage(false);
+}
 
 // ═══════════════════════════════════════════════════════
 // UTM
@@ -1514,6 +1568,7 @@ function loadFromCSVFile(event){
   reader.onload=function(){
     try{
       processSheetCSV(reader.result,status);
+      if(typeof event._onSuccess==="function") event._onSuccess();
     }catch(e){
       console.error("CSV file import error:",e);
       status.className="csv-error";
@@ -1905,18 +1960,27 @@ function triggerLoadProjectFile(){
 function handleLoadProjectFile(event){
   const file = event && event.target && event.target.files && event.target.files[0];
   if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ()=>{
-    try{
-      const parsed = JSON.parse(String(reader.result||"{}"));
-      applySessionPayload(parsed);
-      queueAutosave();
-      showSessionFeedback("Project loaded", false);
-    }catch(e){
-      showSessionFeedback("Invalid project JSON", true);
-    }
-  };
-  reader.readAsText(file);
+  loadProjectFromFileInput(file).catch(()=>{});
+}
+function loadProjectFromFileInput(file){
+  return new Promise((resolve,reject)=>{
+    if(!file){ reject(new Error("no_file")); return; }
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      try{
+        const parsed = JSON.parse(String(reader.result||"{}"));
+        applySessionPayload(parsed);
+        queueAutosave();
+        showSessionFeedback("Project loaded", false);
+        resolve(true);
+      }catch(e){
+        showSessionFeedback("Invalid project JSON", true);
+        reject(e);
+      }
+    };
+    reader.onerror=()=>reject(new Error("read_failed"));
+    reader.readAsText(file);
+  });
 }
 
 
@@ -3154,12 +3218,56 @@ initOfferTabDragDrop();
 updateMoveOfferButtons();
 refreshPresetList();
 queueAutosave();
-setTimeout(()=>{
+let splashClosed=false;
+let splashAutoTimer=null;
+function closeSplash(){
+  if(splashClosed) return;
+  splashClosed=true;
   const splash=document.getElementById("app-splash");
   if(!splash) return;
   splash.classList.add("hidden");
-  window.setTimeout(()=>{ splash.remove(); }, 460);
-}, 950);
+  window.setTimeout(()=>{ splash.remove(); }, 520);
+}
+function startSplashAutoDismiss(){
+  splashAutoTimer=window.setTimeout(closeSplash,2000);
+}
+function clearSplashAutoDismiss(){
+  if(splashAutoTimer){ window.clearTimeout(splashAutoTimer); splashAutoTimer=null; }
+}
+function initStartScreenActions(){
+  const openBtn=document.getElementById("splash-open-builder-btn");
+  const csvBtn=document.getElementById("splash-load-csv-btn");
+  const projectBtn=document.getElementById("splash-load-project-btn");
+  const csvInput=document.getElementById("sheets-file");
+  const projectInput=document.getElementById("load-project-input");
+  if(openBtn) openBtn.addEventListener("click",()=>{ clearSplashAutoDismiss(); closeSplash(); });
+  if(csvBtn&&csvInput){
+    csvBtn.addEventListener("click",()=>{
+      clearSplashAutoDismiss();
+      const temp=document.createElement("input");
+      temp.type="file";
+      temp.accept=".csv,text/csv,.tsv,text/tab-separated-values";
+      temp.onchange=(e)=>loadFromCSVFile(Object.assign(e,{_onSuccess:closeSplash}));
+      temp.click();
+    });
+  }
+  if(projectBtn&&projectInput){
+    projectBtn.addEventListener("click",()=>{
+      clearSplashAutoDismiss();
+      const temp=document.createElement("input");
+      temp.type="file";
+      temp.accept="application/json,.json";
+      temp.onchange=(e)=>{
+        const file=e&&e.target&&e.target.files&&e.target.files[0];
+        if(!file) return;
+        loadProjectFromFileInput(file).then(()=>closeSplash()).catch(()=>{});
+      };
+      temp.click();
+    });
+  }
+  startSplashAutoDismiss();
+}
+initStartScreenActions();
 
 // ═══════════════════════════════════════════════════════
 // TIGHTER UI PATCH — v1.5.8a
