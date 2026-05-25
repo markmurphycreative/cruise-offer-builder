@@ -437,7 +437,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
         <h3>📥 CSV Import</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body">
-          <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values" style="display:none" onchange="loadFromCSVFile(event)">
+          <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values" style="display:none">
           <button class="abtn navy" onclick="document.getElementById(&#39;sheets-file&#39;).click()" style="width:100%;margin-top:4px;">Load Downloaded CSV File</button>
           <div style="font-size:9px;color:var(--muted);margin-top:3px;" id="sheets-status">No CSV loaded</div>
 
@@ -3188,8 +3188,13 @@ function closeSplash(){
   if(app){
     app.classList.remove("start-hidden");
     app.setAttribute("aria-hidden","false");
+  }else{
+    console.warn("[splash] Missing #builder-app; cannot reveal builder app.");
   }
-  if(!splash) return;
+  if(!splash){
+    console.warn("[splash] Missing #app-splash; nothing to dismiss.");
+    return;
+  }
   splash.classList.add("hidden");
   window.setTimeout(()=>{ splash.remove(); }, 520);
 }
@@ -3197,6 +3202,10 @@ function initStartScreenActions(){
   const openBtn=document.getElementById("splash-open-builder-btn");
   const csvBtn=document.getElementById("splash-load-csv-btn");
   const continueBtn=document.getElementById("splash-continue-session-btn");
+  const sheetsFile=document.getElementById("sheets-file");
+  if(!openBtn) console.warn("[splash] Missing #splash-open-builder-btn; Open Builder action not bound.");
+  if(!csvBtn) console.warn("[splash] Missing #splash-load-csv-btn; Load CSV action not bound.");
+  if(!sheetsFile) console.warn("[splash] Missing #sheets-file; Load CSV picker cannot open.");
   if(openBtn) openBtn.addEventListener("click",()=>closeSplash());
   if(continueBtn){
     continueBtn.addEventListener("click",()=>{
@@ -3204,14 +3213,13 @@ function initStartScreenActions(){
       closeSplash();
     });
   }
-  if(csvBtn){
+  if(csvBtn && sheetsFile){
     csvBtn.addEventListener("click",()=>{
-      const temp=document.createElement("input");
-      temp.type="file";
-      temp.accept=".csv,text/csv,.tsv,text/tab-separated-values";
-      temp.onchange=(e)=>loadFromCSVFile(Object.assign(e,{_onSuccess:closeSplash}));
-      temp.click();
+      sheetsFile.click();
     });
+  }
+  if(sheetsFile){
+    sheetsFile.addEventListener("change",(e)=>loadFromCSVFile(Object.assign(e,{_onSuccess:closeSplash})));
   }
 }
 function hydrateSplashRecentSession(){
@@ -3226,8 +3234,15 @@ function hydrateSplashRecentSession(){
   name.textContent="Recovered Session";
   time.textContent=formatRelativeAutosave(saved.savedAt) || "Autosaved recently";
 }
-initStartScreenActions();
-hydrateSplashRecentSession();
+if(document.readyState==="loading"){
+  document.addEventListener("DOMContentLoaded",()=>{
+    initStartScreenActions();
+    hydrateSplashRecentSession();
+  },{once:true});
+}else{
+  initStartScreenActions();
+  hydrateSplashRecentSession();
+}
 
 // ═══════════════════════════════════════════════════════
 
