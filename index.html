@@ -21,6 +21,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 
 /* ── LAYOUT ── */
 .app{display:grid;grid-template-columns:340px 1fr;height:100vh;overflow:hidden;}
+.app.start-hidden{opacity:0;visibility:hidden;pointer-events:none;}
 .sidebar{background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;height:100vh;}
 .preview-pane{display:flex;flex-direction:column;overflow:hidden;height:100vh;}
 
@@ -392,7 +393,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <div class="splash-title">Cruise Offer Builder</div>
     <div class="splash-brand">Dawson &amp; Sanderson</div>
     <div class="splash-version">v1.5.8e</div>
-    <div class="splash-line">Preparing campaign workspace…</div>
+    <div class="splash-line">Select how you want to begin.</div>
     <div class="splash-actions">
       <button class="splash-btn gold" id="splash-open-builder-btn">Open Builder</button>
       <button class="splash-btn" id="splash-load-csv-btn">Load CSV</button>
@@ -400,7 +401,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     </div>
   </div>
 </div>
-<div class="app">
+<div class="app start-hidden" id="builder-app" aria-hidden="true">
 
 <!-- ══════════════════════ SIDEBAR ══════════════════════ -->
 <div class="sidebar">
@@ -1125,15 +1126,18 @@ function setImageSearchUnavailable(msgText){
   msg.textContent=msgText||"Image search unavailable. Use local upload or URL.";
   msg.classList.add("error");
 }
-let imageSearchState={q:"",displayQuery:"",results:[],offset:0,pageSize:15,requestId:0,nextContinue:null,seen:new Set(),exhausted:false,loading:false};
+let imageSearchState={q:"",displayQuery:"",results:[],offset:0,pageSize:15,requestId:0,nextContinue:null,seen:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:false};
 function buildTravelQuery(rawQuery){
   const q=String(rawQuery||"").trim();
   const lower=q.toLowerCase();
   const explicitAircraft=/(plane|aircraft|airport|airline|jet|runway)/.test(lower);
-  if(explicitAircraft) return q;
-  return `${q} travel destination city landmark coastline resort landscape`;
+  if(explicitAircraft) return {query:q,explicitAircraft:true};
+  const shortPlaceTerm=q.split(/\s+/).filter(Boolean).length<=3;
+  const enriched=shortPlaceTerm?`${q} travel destination city landmark coastline resort landscape skyline old town`:`${q} travel destination landscape coastline city landmark`;
+  return {query:enriched,explicitAircraft:false};
 }
-function isRelevantTravelImage(url,title,query){
+function isRelevantTravelImage(url,title,query,allowAircraft){
+  if(allowAircraft) return true;
   const t=`${title||""} ${url||""} ${query||""}`.toLowerCase();
   if(/(plane|aircraft|airport|airline|jet|runway|cockpit)/.test(t)) return false;
   return /(travel|destination|landmark|city|coast|coastline|beach|resort|island|harbour|skyline|landscape|tourism|bay|old town|cruise)/.test(t);
@@ -1166,9 +1170,10 @@ async function fetchImageSearchPage(resetSearch){
   msg.textContent=resetSearch?"Loading...":"Loading more images...";
   msg.classList.remove("error");
   const requestId=imageSearchState.requestId;
+  const searchTerms=imageSearchState.explicitAircraft?`${imageSearchState.displayQuery} filetype:bitmap`:`${imageSearchState.displayQuery} filetype:bitmap -plane -airport -aircraft -cockpit`;
   const params=new URLSearchParams({
     action:"query",format:"json",origin:"*",generator:"search",
-    gsrsearch:imageSearchState.displayQuery+" filetype:bitmap",
+    gsrsearch:searchTerms,
     gsrnamespace:"6",gsrlimit:"40",prop:"imageinfo",iiprop:"url",gsrinfo:"totalhits"
   });
   if(imageSearchState.nextContinue) params.set("gsroffset", String(imageSearchState.nextContinue));
@@ -1181,11 +1186,12 @@ async function fetchImageSearchPage(resetSearch){
     pages.forEach(p=>{
       const file=((p.imageinfo&&p.imageinfo[0])||{}).url;
       if(!file) return;
-      if(!isRelevantTravelImage(file,p.title,imageSearchState.displayQuery)) return;
+      if(!isRelevantTravelImage(file,p.title,imageSearchState.displayQuery,imageSearchState.explicitAircraft)) return;
       if(imageSearchState.seen.has(file)) return;
       imageSearchState.seen.add(file);
       imageSearchState.results.push(file);
     });
+    imageSearchState.page+=1;
     imageSearchState.nextContinue=(data&&data.continue&&typeof data.continue.gsroffset!=="undefined")?data.continue.gsroffset:null;
     imageSearchState.exhausted=!imageSearchState.nextContinue;
     renderImageSearchBatch(!resetSearch?false:true);
@@ -1203,19 +1209,25 @@ function doSearch(){
   if(!q){
     grid.innerHTML="";
     const moreBtn=document.getElementById("u-more-btn"); if(moreBtn) moreBtn.disabled=true;
-    imageSearchState={q:"",displayQuery:"",results:[],offset:0,pageSize:15,requestId:imageSearchState.requestId,nextContinue:null,seen:new Set(),exhausted:false,loading:false};
+    imageSearchState={q:"",displayQuery:"",results:[],offset:0,pageSize:15,requestId:imageSearchState.requestId,nextContinue:null,seen:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:false};
     msg.textContent="Search a destination photo";
     msg.classList.remove("error");
     return;
   }
   grid.innerHTML="";
-  imageSearchState={q,displayQuery:buildTravelQuery(q),results:[],offset:0,pageSize:15,requestId:imageSearchState.requestId+1,nextContinue:null,seen:new Set(),exhausted:false,loading:false};
+  const travelQuery=buildTravelQuery(q);
+  imageSearchState={q,displayQuery:travelQuery.query,results:[],offset:0,pageSize:15,requestId:imageSearchState.requestId+1,nextContinue:null,seen:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:travelQuery.explicitAircraft};
   fetchImageSearchPage(true);
 }
-function loadMoreImages(){
+async function loadMoreImages(){
   if(!imageSearchState.q || imageSearchState.loading) return;
   if(imageSearchState.offset<imageSearchState.results.length){ renderImageSearchBatch(false); return; }
-  if(!imageSearchState.exhausted) fetchImageSearchPage(false);
+  if(imageSearchState.exhausted) return;
+  const previousCount=imageSearchState.results.length;
+  await fetchImageSearchPage(false);
+  if(!imageSearchState.exhausted && imageSearchState.results.length===previousCount){
+    await fetchImageSearchPage(false);
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -3219,31 +3231,27 @@ updateMoveOfferButtons();
 refreshPresetList();
 queueAutosave();
 let splashClosed=false;
-let splashAutoTimer=null;
 function closeSplash(){
   if(splashClosed) return;
   splashClosed=true;
   const splash=document.getElementById("app-splash");
+  const app=document.getElementById("builder-app");
+  if(app){
+    app.classList.remove("start-hidden");
+    app.setAttribute("aria-hidden","false");
+  }
   if(!splash) return;
   splash.classList.add("hidden");
   window.setTimeout(()=>{ splash.remove(); }, 520);
-}
-function startSplashAutoDismiss(){
-  splashAutoTimer=window.setTimeout(closeSplash,2000);
-}
-function clearSplashAutoDismiss(){
-  if(splashAutoTimer){ window.clearTimeout(splashAutoTimer); splashAutoTimer=null; }
 }
 function initStartScreenActions(){
   const openBtn=document.getElementById("splash-open-builder-btn");
   const csvBtn=document.getElementById("splash-load-csv-btn");
   const projectBtn=document.getElementById("splash-load-project-btn");
-  const csvInput=document.getElementById("sheets-file");
   const projectInput=document.getElementById("load-project-input");
-  if(openBtn) openBtn.addEventListener("click",()=>{ clearSplashAutoDismiss(); closeSplash(); });
-  if(csvBtn&&csvInput){
+  if(openBtn) openBtn.addEventListener("click",()=>closeSplash());
+  if(csvBtn){
     csvBtn.addEventListener("click",()=>{
-      clearSplashAutoDismiss();
       const temp=document.createElement("input");
       temp.type="file";
       temp.accept=".csv,text/csv,.tsv,text/tab-separated-values";
@@ -3253,7 +3261,6 @@ function initStartScreenActions(){
   }
   if(projectBtn&&projectInput){
     projectBtn.addEventListener("click",()=>{
-      clearSplashAutoDismiss();
       const temp=document.createElement("input");
       temp.type="file";
       temp.accept="application/json,.json";
@@ -3265,7 +3272,6 @@ function initStartScreenActions(){
       temp.click();
     });
   }
-  startSplashAutoDismiss();
 }
 initStartScreenActions();
 
