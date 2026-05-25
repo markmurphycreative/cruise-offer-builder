@@ -418,8 +418,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
         <button class="splash-btn gold" id="splash-continue-session-btn" style="display:none;">Continue Last Session</button>
         <button class="splash-btn gold" id="splash-open-builder-btn">Open Builder</button>
         <button class="splash-btn" id="splash-load-csv-btn">Load CSV</button>
-        <button class="splash-btn" id="splash-load-project-btn">Load Project</button>
-      </div>
+              </div>
     </div>
     <div id="splash-recent-session" class="splash-recent" aria-live="polite">
       <div><span class="splash-recent-title">Recent Session:</span><span class="splash-recent-name" id="splash-recent-name"></span></div>
@@ -610,23 +609,8 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
           <div class="crop-row"><label>Vertical</label><input type="range" id="crop-y" min="0" max="100" value="50" oninput="updateCrop()"><span id="cv-y">50%</span></div>
         </div>
         <div class="hero-source-block">
-        <div class="img-src-tabs">
-          <button class="ist" onclick="switchImg(&#39;url&#39;)">URL</button>
-          <button class="ist active" onclick="switchImg(&#39;search&#39;)">Image Search</button>
-        </div>
-        <div class="img-panel" id="ip-search">
-          <div class="urow">
-            <input type="text" id="uq" placeholder="caribbean beach, mediterranean..." onkeydown="if(event.key===&#39;Enter&#39;)doSearch()">
-            <button onclick="doSearch()">Go</button>
-          </div>
-          <div class="ugrid-wrap"><div id="ugrid" class="ugrid"></div></div>
-          <div class="u-more"><button id="u-more-btn" onclick="loadMoreImages()" disabled>Load More Images</button></div>
-          <div id="umsg" class="umsg">Search a destination photo</div>
-        </div>
-        <div class="img-panel active" id="ip-url">
           <div class="field"><label>Image URL (Klaviyo hosted)</label><input id="f-img-url" placeholder="https://..." oninput="imgUrlCh()"></div>
           <div style="font-size:9px;color:var(--muted);margin-top:2px;">⚠ External URLs may not export — upload locally for best PNG export results</div>
-        </div>
         </div>
       </div>
     </div>
@@ -833,6 +817,21 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <p class="project-load-copy">That file isn't a valid Cruise Offer Builder project JSON. Please choose a valid project export and try again.</p>
       <div class="project-load-actions">
         <button class="session-restore-btn restore" onclick="closeProjectLoadErrorModal()">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirm-action-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-action-title">
+  <div class="modal session-restore-modal">
+    <div class="session-restore-head">
+      <h2 id="confirm-action-title">Confirm Action</h2>
+    </div>
+    <div class="session-restore-body">
+      <p id="confirm-action-copy">Are you sure?</p>
+      <div class="session-restore-actions">
+        <button class="session-restore-btn fresh" onclick="closeConfirmActionModal()">Cancel</button>
+        <button class="session-restore-btn restore" id="confirm-action-ok-btn" onclick="confirmActionModalAccept()">Confirm</button>
       </div>
     </div>
   </div>
@@ -1146,8 +1145,24 @@ function duplicateOffer(){
   offers[target]=JSON.parse(JSON.stringify(offers[cur]));
   updateAllStatus(); alert("Offer duplicated to Offer "+(target+1));
 }
-function resetOffer(){ if(!confirm("Reset Offer "+(cur+1)+"?")) return; offers[cur]={}; load(cur); refreshOfferUi({utm:false,spell:false,autosave:false}); }
-function resetAll(){ if(!confirm("Reset ALL 4 offers? Cannot be undone.")) return; offers=[{},{},{},{}]; lockedOffers=[false,false,false,false]; load(cur); refreshOfferUi({utm:false,spell:false,autosave:false}); }
+function resetOffer(){
+  openConfirmActionModal({
+    title:"Reset Offer?",
+    message:"Reset Offer "+(cur+1)+"?",
+    confirmLabel:"Reset Offer",
+    destructive:true,
+    onConfirm:()=>{ offers[cur]={}; load(cur); refreshOfferUi({utm:false,spell:false,autosave:false}); }
+  });
+}
+function resetAll(){
+  openConfirmActionModal({
+    title:"Reset All Offers?",
+    message:"Reset ALL 4 offers? Cannot be undone.",
+    confirmLabel:"Reset All",
+    destructive:true,
+    onConfirm:()=>{ offers=[{},{},{},{}]; lockedOffers=[false,false,false,false]; load(cur); refreshOfferUi({utm:false,spell:false,autosave:false}); }
+  });
+}
 
 // ═══════════════════════════════════════════════════════
 // DROP ZONES
@@ -1229,186 +1244,6 @@ function syncHeroUi(){
   const fitBtn=document.getElementById("hero-mode-fit");
   if(fillBtn) fillBtn.classList.toggle("navy",mode==="fill");
   if(fitBtn) fitBtn.classList.toggle("navy",mode==="fit");
-}
-
-// ═══════════════════════════════════════════════════════
-// UNSPLASH
-// ═══════════════════════════════════════════════════════
-function switchImg(tab){
-  document.querySelectorAll(".ist").forEach(t=>t.classList.toggle("active",t.textContent.trim().toLowerCase().includes(tab)));
-  document.querySelectorAll(".img-panel").forEach(p=>p.classList.remove("active"));
-  document.getElementById("ip-"+tab).classList.add("active");
-}
-function setImageSearchUnavailable(msgText){
-  const grid=document.getElementById("ugrid"),msg=document.getElementById("umsg");
-  grid.innerHTML="";
-  const moreBtn=document.getElementById("u-more-btn"); if(moreBtn) moreBtn.disabled=true;
-  msg.textContent=msgText||"Image search unavailable. Use local upload or URL.";
-  msg.classList.add("error");
-}
-let imageSearchState={q:"",displayQuery:"",broadQuery:"",results:[],rawResults:[],offset:0,pageSize:15,requestId:0,nextContinue:null,seen:new Set(),seenRaw:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:false,isBroadFallback:false,usedBroadResults:false};
-const IMAGE_SEARCH_TIMEOUT_MS=12000;
-function buildTravelQuery(rawQuery){
-  const q=String(rawQuery||"").trim();
-  const lower=q.toLowerCase();
-  const explicitAircraft=/(plane|aircraft|airport|airline|jet|runway)/.test(lower);
-  if(explicitAircraft) return {query:q,broadQuery:q,explicitAircraft:true};
-  const shortPlaceTerm=q.split(/\s+/).filter(Boolean).length<=3;
-  const enriched=shortPlaceTerm?`${q} travel destination city landmark`:`${q} travel destination landscape coastline city landmark`;
-  const broad=`${q} travel`;
-  return {query:enriched,broadQuery:broad,explicitAircraft:false};
-}
-function isRelevantTravelImage(url,title,query,allowAircraft){
-  if(allowAircraft) return true;
-  const t=`${title||""} ${url||""} ${query||""}`.toLowerCase();
-  if(/(plane|aircraft|airport|airline|jet|runway|cockpit)/.test(t)) return false;
-  if(/(logo|icon|map|flag|coat of arms|svg|diagram|infobox|location map|route map|poster|ticket|brochure|stamp|seal)/.test(t)) return false;
-  return true;
-}
-function renderImageSearchBatch(reset){
-  const grid=document.getElementById("ugrid"),msg=document.getElementById("umsg"),moreBtn=document.getElementById("u-more-btn");
-  if(reset) grid.innerHTML="";
-  const safeResults=Array.isArray(imageSearchState.results)?imageSearchState.results:[];
-  const slice=safeResults.slice(imageSearchState.offset,imageSearchState.offset+imageSearchState.pageSize);
-  slice.forEach(url=>{
-    const thumb="https://commons.wikimedia.org/w/thumb.php?f="+encodeURIComponent(url.split('/').pop())+"&w=360";
-    const img=document.createElement("img");
-    img.alt="Search result";
-    img.loading="lazy";
-    img.src=thumb;
-    img.onerror=()=>{ img.remove(); if(!grid.querySelector("img")) setImageSearchUnavailable("Image search unavailable. Use local upload or URL."); };
-    img.onclick=()=>{ document.querySelectorAll(".ugrid img").forEach(x=>x.classList.remove("selected")); img.classList.add("selected"); offers[cur]._img=url; setThumb("hero",url); syncHeroUi(); refreshOfferUi({utm:false,spell:false}); };
-    grid.appendChild(img);
-  });
-  imageSearchState.offset+=slice.length;
-  const rendered=grid.querySelectorAll("img").length;
-  if(rendered){
-    msg.textContent=imageSearchState.usedBroadResults?"Showing broader image results":"Click a photo to use it";
-    msg.classList.remove("error");
-  }
-  else {
-    msg.textContent=imageSearchState.loading?"Loading...":"No images found. Try a different place search.";
-    msg.classList.add("error");
-  }
-  updateLoadMoreState();
-}
-function updateLoadMoreState(){
-  const moreBtn=document.getElementById("u-more-btn");
-  if(!moreBtn) return;
-  const hasSearch=Boolean(imageSearchState.q);
-  const hasBufferedResults=imageSearchState.offset<imageSearchState.results.length;
-  const canFetchMore=!imageSearchState.exhausted;
-  const showButton=hasSearch && (imageSearchState.loading || hasBufferedResults || canFetchMore);
-  moreBtn.style.display=showButton?"block":"none";
-  moreBtn.disabled=!showButton || imageSearchState.loading;
-}
-async function fetchWithTimeout(url, options={}, timeoutMs=IMAGE_SEARCH_TIMEOUT_MS){
-  const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(new Error("timeout")), timeoutMs);
-  try{
-    return await fetch(url,{...options,signal:controller.signal});
-  }finally{
-    clearTimeout(timer);
-  }
-}
-async function fetchImageSearchPage(resetSearch){
-  if(imageSearchState.loading) return;
-  imageSearchState.loading=true;
-  updateLoadMoreState();
-  const msg=document.getElementById("umsg");
-  msg.textContent=resetSearch?"Loading...":"Loading more images...";
-  msg.classList.remove("error");
-  const requestId=imageSearchState.requestId;
-  const searchBase=imageSearchState.isBroadFallback?imageSearchState.broadQuery:imageSearchState.displayQuery;
-  const searchTerms=imageSearchState.explicitAircraft?`${searchBase} filetype:bitmap`:`${searchBase} filetype:bitmap -plane -airport -aircraft -cockpit`;
-  const params=new URLSearchParams({
-    action:"query",format:"json",origin:"*",generator:"search",
-    gsrsearch:searchTerms,
-    gsrnamespace:"6",gsrlimit:"40",prop:"imageinfo",iiprop:"url",gsrinfo:"totalhits"
-  });
-  if(imageSearchState.nextContinue) params.set("gsroffset", String(imageSearchState.nextContinue));
-  try{
-    const resp=await fetchWithTimeout("https://commons.wikimedia.org/w/api.php?"+params.toString());
-    if(!resp.ok) throw new Error("search_failed");
-    const data=await resp.json();
-    if(requestId!==imageSearchState.requestId) return;
-    const pages=(data&&data.query&&data.query.pages&&typeof data.query.pages==="object")?Object.values(data.query.pages):[];
-    const incomingRaw=[];
-    const incomingFiltered=[];
-    pages.forEach(p=>{
-      const file=((p&&p.imageinfo&&p.imageinfo[0])||{}).url;
-      if(!file) return;
-      if(!imageSearchState.seenRaw.has(file)){
-        imageSearchState.seenRaw.add(file);
-        incomingRaw.push(file);
-      }
-      const isRelevant=isRelevantTravelImage(file,p.title,imageSearchState.displayQuery,imageSearchState.explicitAircraft);
-      if(!isRelevant || imageSearchState.seen.has(file)) return;
-      imageSearchState.seen.add(file);
-      incomingFiltered.push(file);
-    });
-    if(!Array.isArray(imageSearchState.rawResults)) imageSearchState.rawResults=[];
-    if(!Array.isArray(imageSearchState.results)) imageSearchState.results=[];
-    imageSearchState.rawResults.push(...incomingRaw);
-    imageSearchState.results.push(...incomingFiltered);
-    const MIN_FILTERED_RESULTS=6;
-    if(!imageSearchState.explicitAircraft && imageSearchState.results.length<MIN_FILTERED_RESULTS && imageSearchState.rawResults.length>=MIN_FILTERED_RESULTS){
-      imageSearchState.results=imageSearchState.rawResults.slice();
-      imageSearchState.usedBroadResults=true;
-    }
-    imageSearchState.page+=1;
-    imageSearchState.nextContinue=(data&&data.continue&&typeof data.continue.gsroffset!=="undefined")?data.continue.gsroffset:null;
-    imageSearchState.exhausted=!imageSearchState.nextContinue;
-    renderImageSearchBatch(!resetSearch?false:true);
-    if(!imageSearchState.results.length && imageSearchState.exhausted){
-      if(!imageSearchState.isBroadFallback && !imageSearchState.explicitAircraft){
-        imageSearchState.isBroadFallback=true;
-        imageSearchState.nextContinue=null;
-        imageSearchState.exhausted=false;
-        await fetchImageSearchPage(true);
-        return;
-      }
-      msg.textContent="No images found. Try a different place search.";
-      msg.classList.add("error");
-    }
-  }catch(e){
-    if(requestId===imageSearchState.requestId){
-      const isTimeout=(e&&e.name==="AbortError")||(e&&String(e.message||"").toLowerCase().includes("timeout"));
-      if(isTimeout) setImageSearchUnavailable("Image search timed out. Try again or use local upload.");
-      else setImageSearchUnavailable("Image search unavailable. Use local upload or URL.");
-    }
-  }finally{
-    imageSearchState.loading=false;
-    updateLoadMoreState();
-  }
-}
-function doSearch(){
-  const q=document.getElementById("uq").value.trim();
-  const grid=document.getElementById("ugrid"),msg=document.getElementById("umsg");
-  if(!q){
-    grid.innerHTML="";
-    const moreBtn=document.getElementById("u-more-btn"); if(moreBtn) moreBtn.disabled=true;
-    imageSearchState={q:"",displayQuery:"",broadQuery:"",results:[],rawResults:[],offset:0,pageSize:15,requestId:imageSearchState.requestId,nextContinue:null,seen:new Set(),seenRaw:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:false,isBroadFallback:false,usedBroadResults:false};
-    msg.textContent="Search a destination photo";
-    msg.classList.remove("error");
-    updateLoadMoreState();
-    return;
-  }
-  grid.innerHTML="";
-  const travelQuery=buildTravelQuery(q);
-  imageSearchState={q,displayQuery:travelQuery.query,broadQuery:travelQuery.broadQuery,results:[],rawResults:[],offset:0,pageSize:15,requestId:imageSearchState.requestId+1,nextContinue:null,seen:new Set(),seenRaw:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:travelQuery.explicitAircraft,isBroadFallback:false,usedBroadResults:false};
-  updateLoadMoreState();
-  fetchImageSearchPage(true);
-}
-async function loadMoreImages(){
-  if(!imageSearchState.q || imageSearchState.loading) return;
-  if(imageSearchState.offset<imageSearchState.results.length){ renderImageSearchBatch(false); return; }
-  if(imageSearchState.exhausted) return;
-  const previousCount=imageSearchState.results.length;
-  await fetchImageSearchPage(false);
-  if(!imageSearchState.exhausted && imageSearchState.results.length===previousCount){
-    await fetchImageSearchPage(false);
-  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1973,10 +1808,17 @@ function downloadCSVTemplate(){
   URL.revokeObjectURL(a.href);
 }
 function clearHeroImagesOnly(){
-  if(!confirm("Clear hero images from all 4 offers? Text and headers will be kept.")) return;
-  save();
-  offers.forEach(o=>{ delete o._img; delete o._cropZoom; delete o._cropX; delete o._cropY; });
-  load(cur); refreshOfferUi({utm:false,spell:false,autosave:false}); updateExportFilenames();
+  openConfirmActionModal({
+    title:"Clear Hero Images?",
+    message:"Clear hero images from all 4 offers? Text and headers will be kept.",
+    confirmLabel:"Clear Images",
+    destructive:true,
+    onConfirm:()=>{
+      save();
+      offers.forEach(o=>{ delete o._img; delete o._cropZoom; delete o._cropX; delete o._cropY; });
+      load(cur); refreshOfferUi({utm:false,spell:false,autosave:false}); updateExportFilenames();
+    }
+  });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2172,6 +2014,29 @@ function clearSavedSession(){
   const modal = document.getElementById('clear-session-modal');
   if(modal) modal.classList.add('active');
 }
+let confirmActionModalHandler=null;
+function openConfirmActionModal(opts={}){
+  const modal=document.getElementById('confirm-action-modal');
+  if(!modal) return;
+  const titleEl=document.getElementById('confirm-action-title');
+  const copyEl=document.getElementById('confirm-action-copy');
+  const okBtn=document.getElementById('confirm-action-ok-btn');
+  if(titleEl) titleEl.textContent=opts.title||"Confirm Action";
+  if(copyEl) copyEl.textContent=opts.message||"Are you sure?";
+  if(okBtn) okBtn.textContent=opts.confirmLabel||"Confirm";
+  confirmActionModalHandler=typeof opts.onConfirm==="function" ? opts.onConfirm : null;
+  modal.classList.add('active');
+}
+function closeConfirmActionModal(){
+  const modal=document.getElementById('confirm-action-modal');
+  if(modal) modal.classList.remove('active');
+  confirmActionModalHandler=null;
+}
+function confirmActionModalAccept(){
+  const fn=confirmActionModalHandler;
+  closeConfirmActionModal();
+  if(fn) fn();
+}
 function closeClearSessionModal(){
   const modal = document.getElementById('clear-session-modal');
   if(modal) modal.classList.remove('active');
@@ -2293,10 +2158,11 @@ function loadProjectFromFileInput(file){
       try{
         showSessionFeedback("Loading project…", false);
         const parsed = JSON.parse(String(reader.result||"{}"));
+        const topLevelKeys = (parsed && typeof parsed === "object") ? Object.keys(parsed) : [];
         const validation = isValidBuilderProjectPayload(parsed);
         if(!validation.valid){
           const resolvedKeys = validation.resolvedPayload && typeof validation.resolvedPayload === "object" ? Object.keys(validation.resolvedPayload) : [];
-          console.warn("Project load validation failed", { filename:file && file.name, resolvedPayloadKeys:resolvedKeys, reasons:validation.reasons });
+          console.warn("Project load validation failed", { filename:file && file.name, topLevelKeys, resolvedPayloadKeys:resolvedKeys, reasons:validation.reasons });
           throw new Error("invalid_project_payload");
         }
         applySessionPayload(validation.payload);
@@ -2310,7 +2176,7 @@ function loadProjectFromFileInput(file){
           showSessionFeedback("Invalid project JSON", true);
           showProjectLoadErrorModal();
         }else{
-          console.warn("Project JSON parse/read failed", { filename:file && file.name, reason:(e&&e.message)||"parse_error" });
+          console.warn("Project JSON parse/read failed", { filename:file && file.name, topLevelKeys:[], reason:(e&&e.message)||"parse_error" });
           showSessionFeedback("Invalid project JSON", true);
           showProjectLoadErrorModal();
         }
@@ -2383,14 +2249,23 @@ function updatePresetButtons(){
   if(deleteBtn) deleteBtn.disabled = !hasSelection;
 }
 
-function saveCampaignPreset(){
+function saveCampaignPreset(forceOverwrite){
   save();
   const nameInput = document.getElementById("preset-name");
   const status = document.getElementById("preset-status");
   const name = (nameInput.value || "").trim();
   if(!name){ if(status) status.textContent = "⚠ Enter a preset name"; return; }
   const presets = readCampaignPresets();
-  if(presets[name] && !confirm(`Overwrite preset "${name}"?`)) return;
+  if(presets[name] && !forceOverwrite){
+    openConfirmActionModal({
+      title:"Overwrite Preset?",
+      message:`Overwrite preset "${name}"?`,
+      confirmLabel:"Overwrite",
+      destructive:true,
+      onConfirm:()=>saveCampaignPreset(true)
+    });
+    return;
+  }
   presets[name] = { version:"1.0", savedAt:new Date().toISOString(), ...getCampaignSnapshot() };
   writeCampaignPresets(presets);
   refreshPresetList(name);
@@ -2424,7 +2299,15 @@ function deleteCampaignPreset(){
   const status = document.getElementById("preset-status");
   const name = sel ? sel.value : "";
   if(!name){ if(status) status.textContent = "⚠ Select a preset to delete"; return; }
-  if(!confirm(`Delete preset "${name}"?`)) return;
+  openConfirmActionModal({
+    title:"Delete Preset?",
+    message:`Delete preset "${name}"?`,
+    confirmLabel:"Delete",
+    destructive:true,
+    onConfirm:()=>confirmDeleteCampaignPreset(name,status)
+  });
+}
+function confirmDeleteCampaignPreset(name,status){
   const presets = readCampaignPresets();
   delete presets[name];
   writeCampaignPresets(presets);
@@ -3584,9 +3467,7 @@ function closeSplash(){
 function initStartScreenActions(){
   const openBtn=document.getElementById("splash-open-builder-btn");
   const csvBtn=document.getElementById("splash-load-csv-btn");
-  const projectBtn=document.getElementById("splash-load-project-btn");
   const continueBtn=document.getElementById("splash-continue-session-btn");
-  const projectInput=document.getElementById("load-project-input");
   if(openBtn) openBtn.addEventListener("click",()=>closeSplash());
   if(continueBtn){
     continueBtn.addEventListener("click",()=>{
@@ -3603,7 +3484,6 @@ function initStartScreenActions(){
       temp.click();
     });
   }
-  if(projectBtn&&projectInput) projectBtn.addEventListener("click",()=>triggerLoadProjectFile());
 }
 function hydrateSplashRecentSession(){
   const wrap=document.getElementById("splash-recent-session");
