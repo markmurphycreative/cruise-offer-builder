@@ -180,11 +180,17 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 /* ── SPLASH ── */
 .splash{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:1;visibility:visible;transition:opacity .45s ease,visibility .45s ease;}
 .splash.hidden{opacity:0;visibility:hidden;pointer-events:none;}
-.splash-inner{text-align:center;color:#fff;padding:18px;}
+.splash-inner{text-align:center;color:#fff;padding:22px 18px;min-width:320px;max-width:440px;}
 .splash-title{font-size:22px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
 .splash-brand{margin-top:6px;font-size:13px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;}
 .splash-version{margin-top:18px;font-size:11px;color:rgba(255,255,255,.7);}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
+.splash-actions{margin-top:16px;display:grid;gap:7px;}
+.splash-btn{width:100%;padding:8px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border-radius:4px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;transition:background .2s ease,border-color .2s ease,transform .2s ease;}
+.splash-btn:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.6);transform:translateY(-1px);}
+.splash-btn.primary{background:var(--gold);border-color:var(--gold);color:#fff;}
+.splash-btn.primary:hover{background:#b4a777;border-color:#b4a777;}
+.splash-note{margin-top:10px;font-size:9px;color:rgba(255,255,255,.72);}
 @media (prefers-reduced-motion:reduce){
   .splash{transition:none;}
 }
@@ -386,6 +392,12 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <div class="splash-brand">Dawson &amp; Sanderson</div>
     <div class="splash-version">v1.5.8e</div>
     <div class="splash-line">Preparing campaign workspace…</div>
+    <div class="splash-actions">
+      <button class="splash-btn" onclick="startLoadCSV()">Load CSV</button>
+      <button class="splash-btn" onclick="startLoadProject()">Load Project</button>
+      <button class="splash-btn primary" onclick="openBuilderNow()">Open Builder</button>
+    </div>
+    <div class="splash-note">Tip: load data now or continue to the builder.</div>
   </div>
 </div>
 <div class="app">
@@ -1101,7 +1113,30 @@ function setImageSearchUnavailable(msgText){
   msg.textContent=msgText||"Image search unavailable. Use local upload or URL.";
   msg.classList.add("error");
 }
-let imageSearchState={q:"",results:[],offset:0,pageSize:15};
+let imageSearchState={q:"",displayQuery:"",continueToken:null,results:[],seen:new Set(),offset:0,pageSize:15,loading:false,hasMore:false};
+function buildTravelSearchQuery(raw){
+  const q=String(raw||"").trim();
+  if(!q) return "";
+  const lower=q.toLowerCase();
+  const keepAsIs=/(airport|aircraft|airplane|plane|jet|helicopter|aviation|runway)/.test(lower);
+  if(keepAsIs) return q;
+  return `${q} travel destination city landmark coastline resort landscape`;
+}
+function isRelevantTravelImage(page){
+  const title=String((page&&page.title)||"").toLowerCase();
+  const bad=["aircraft","airplane","airport","runway","cockpit","helicopter","jet","logo","flag","map","diagram","icon"];
+  const good=["city","landmark","beach","coast","coastline","resort","harbor","harbour","seaside","island","mountain","landscape","old town","skyline","port","bay"];
+  if(bad.some(t=>title.includes(t))) return false;
+  if(good.some(t=>title.includes(t))) return true;
+  return true;
+}
+function appendUniqueResults(urls){
+  urls.forEach(url=>{
+    if(!url || imageSearchState.seen.has(url)) return;
+    imageSearchState.seen.add(url);
+    imageSearchState.results.push(url);
+  });
+}
 function renderImageSearchBatch(reset){
   const grid=document.getElementById("ugrid"),msg=document.getElementById("umsg"),moreBtn=document.getElementById("u-more-btn");
   if(reset) grid.innerHTML="";
@@ -1120,7 +1155,11 @@ function renderImageSearchBatch(reset){
   const rendered=grid.querySelectorAll("img").length;
   if(rendered){ msg.textContent="Click a photo to use it"; msg.classList.remove("error"); }
   else { msg.textContent="Image search unavailable. Use local upload or URL."; msg.classList.add("error"); }
-  if(moreBtn) moreBtn.disabled=imageSearchState.offset>=imageSearchState.results.length;
+  if(moreBtn){
+    const canRenderFromCache=imageSearchState.offset<imageSearchState.results.length;
+    moreBtn.disabled=imageSearchState.loading||(!canRenderFromCache&&!imageSearchState.hasMore);
+    moreBtn.textContent=imageSearchState.loading?"Loading...":"Load More Images";
+  }
 }
 function doSearch(){
   const q=document.getElementById("uq").value.trim();
@@ -1128,7 +1167,7 @@ function doSearch(){
   if(!q){
     grid.innerHTML="";
     const moreBtn=document.getElementById("u-more-btn"); if(moreBtn) moreBtn.disabled=true;
-    imageSearchState={q:"",results:[],offset:0,pageSize:15};
+    imageSearchState={q:"",displayQuery:"",continueToken:null,results:[],seen:new Set(),offset:0,pageSize:15,loading:false,hasMore:false};
     msg.textContent="Search a destination photo";
     msg.classList.remove("error");
     return;
@@ -1136,19 +1175,45 @@ function doSearch(){
   grid.innerHTML="";
   msg.textContent="Loading...";
   msg.classList.remove("error");
-  const apiUrl="https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch="+encodeURIComponent(q)+" filetype:bitmap&gsrnamespace=6&gsrlimit=36&prop=imageinfo&iiprop=url";
-  fetch(apiUrl)
+  const displayQuery=q;
+  const enriched=buildTravelSearchQuery(q);
+  imageSearchState={q:enriched,displayQuery,continueToken:null,results:[],seen:new Set(),offset:0,pageSize:15,loading:false,hasMore:true};
+  loadMoreImages(true);
+}
+function fetchImageSearchPage(reset){
+  const params=new URLSearchParams({
+    action:"query",format:"json",origin:"*",generator:"search",gsrsearch:`${imageSearchState.q} filetype:bitmap`,
+    gsrnamespace:"6",gsrlimit:"40",prop:"imageinfo",iiprop:"url"
+  });
+  if(imageSearchState.continueToken){
+    params.set("gsroffset", String(imageSearchState.continueToken));
+  }
+  imageSearchState.loading=true;
+  renderImageSearchBatch(!!reset);
+  return fetch("https://commons.wikimedia.org/w/api.php?"+params.toString())
     .then(resp=>{ if(!resp.ok) throw new Error("search_failed"); return resp.json(); })
     .then(data=>{
       const pages=(data&&data.query&&data.query.pages)?Object.values(data.query.pages):[];
-      const files=pages.map(p=>((p.imageinfo&&p.imageinfo[0])||{}).url).filter(Boolean).slice(0,30);
-      if(!files.length){ setImageSearchUnavailable("Image search unavailable. Use local upload or URL."); return; }
-      imageSearchState={q,results:files,offset:0,pageSize:15};
-      renderImageSearchBatch(true);
+      const files=pages.filter(isRelevantTravelImage).map(p=>((p.imageinfo&&p.imageinfo[0])||{}).url).filter(Boolean);
+      appendUniqueResults(files);
+      imageSearchState.continueToken=data&&data.continue&&Number.isFinite(data.continue.gsroffset)?data.continue.gsroffset:null;
+      imageSearchState.hasMore=imageSearchState.continueToken!==null;
+      if(!imageSearchState.results.length && !imageSearchState.hasMore){
+        setImageSearchUnavailable("No relevant destination photos found. Try a more specific place.");
+        return;
+      }
+      renderImageSearchBatch(!!reset);
     })
-    .catch(()=>{ setImageSearchUnavailable("Image search unavailable. Use local upload or URL."); });
+    .catch(()=>{ setImageSearchUnavailable("Image search unavailable. Use local upload or URL."); })
+    .finally(()=>{ imageSearchState.loading=false; renderImageSearchBatch(false); });
 }
-function loadMoreImages(){ if(!imageSearchState.results.length) return; renderImageSearchBatch(false); }
+function loadMoreImages(reset){
+  if(!imageSearchState.q) return;
+  if(imageSearchState.loading) return;
+  if(imageSearchState.offset<imageSearchState.results.length){ renderImageSearchBatch(!!reset); return; }
+  if(!imageSearchState.hasMore){ renderImageSearchBatch(false); return; }
+  fetchImageSearchPage(!!reset);
+}
 
 // ═══════════════════════════════════════════════════════
 // UTM
@@ -1512,6 +1577,7 @@ function loadFromCSVFile(event){
   };
   reader.readAsText(file);
   event.target.value="";
+  if(typeof onStartDataLoaded==="function") onStartDataLoaded("csv");
 }
 
 function processSheetCSV(csv,status){
@@ -1898,11 +1964,38 @@ function handleLoadProjectFile(event){
       applySessionPayload(parsed);
       queueAutosave();
       showSessionFeedback("Project loaded", false);
+      if(typeof onStartDataLoaded==="function") onStartDataLoaded("project");
     }catch(e){
       showSessionFeedback("Invalid project JSON", true);
     }
   };
   reader.readAsText(file);
+}
+
+let splashClosed=false;
+let splashAutoTimer=null;
+function closeSplashScreen(){
+  if(splashClosed) return;
+  splashClosed=true;
+  if(splashAutoTimer){ clearTimeout(splashAutoTimer); splashAutoTimer=null; }
+  const splash=document.getElementById("app-splash");
+  if(!splash) return;
+  splash.classList.add("hidden");
+  window.setTimeout(()=>{ splash.remove(); }, 500);
+}
+function openBuilderNow(){ closeSplashScreen(); }
+function startLoadCSV(){
+  const input=document.getElementById("sheets-file");
+  if(input) input.click();
+}
+function startLoadProject(){
+  const input=document.getElementById("load-project-input");
+  if(!input) return;
+  input.value="";
+  input.click();
+}
+function onStartDataLoaded(){
+  closeSplashScreen();
 }
 
 
@@ -3140,12 +3233,7 @@ initOfferTabDragDrop();
 updateMoveOfferButtons();
 refreshPresetList();
 queueAutosave();
-setTimeout(()=>{
-  const splash=document.getElementById("app-splash");
-  if(!splash) return;
-  splash.classList.add("hidden");
-  window.setTimeout(()=>{ splash.remove(); }, 460);
-}, 950);
+splashAutoTimer=setTimeout(()=>{ closeSplashScreen(); }, 2000);
 
 // ═══════════════════════════════════════════════════════
 // TIGHTER UI PATCH — v1.5.8a
