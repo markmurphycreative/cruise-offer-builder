@@ -991,7 +991,19 @@ function load(i){
   else document.getElementById("crop-controls").classList.remove("active");
   operatorChanged(true); genUtm(); genStandardUtms(); updateAllStatus(); updateExportFilenames();
 }
-function up(){ save(); rv(); updateAllStatus(); genUtm(); genStandardUtms(); checkPortsWarn(); runSpellQA(); updateExportFilenames(); queueAutosave(); }
+function refreshOfferUi(opts={}){
+  const {render=true,status=true,utm=true,spell=true,autosave=true}=opts;
+  if(render) rv();
+  if(status){ updateAllStatus(); checkPortsWarn(); }
+  if(utm){ genUtm(); genStandardUtms(); }
+  if(spell) runSpellQA();
+  updateExportFilenames();
+  if(autosave) queueAutosave();
+}
+function up(){
+  save();
+  refreshOfferUi();
+}
 
 // ═══════════════════════════════════════════════════════
 // OPERATOR
@@ -1039,8 +1051,8 @@ function duplicateOffer(){
   offers[target]=JSON.parse(JSON.stringify(offers[cur]));
   updateAllStatus(); alert("Offer duplicated to Offer "+(target+1));
 }
-function resetOffer(){ if(!confirm("Reset Offer "+(cur+1)+"?")) return; offers[cur]={}; load(cur); rv(); updateAllStatus(); }
-function resetAll(){ if(!confirm("Reset ALL 4 offers? Cannot be undone.")) return; offers=[{},{},{},{}]; lockedOffers=[false,false,false,false]; load(cur); rv(); updateAllStatus(); }
+function resetOffer(){ if(!confirm("Reset Offer "+(cur+1)+"?")) return; offers[cur]={}; load(cur); refreshOfferUi({utm:false,spell:false,autosave:false}); }
+function resetAll(){ if(!confirm("Reset ALL 4 offers? Cannot be undone.")) return; offers=[{},{},{},{}]; lockedOffers=[false,false,false,false]; load(cur); refreshOfferUi({utm:false,spell:false,autosave:false}); }
 
 // ═══════════════════════════════════════════════════════
 // DROP ZONES
@@ -1063,13 +1075,13 @@ function readFile(file,type){
       const src=ev.target.result;
       if(type==="logo"){ offers[cur]._logoCustom=src; if(!offers[cur]._logoSize) offers[cur]._logoSize=50; setThumb("logo",src); document.getElementById("logo-size-row").style.display="flex"; }
       else{ offers[cur]._img=src; setThumb("hero",src); document.getElementById("crop-controls").classList.add("active"); }
-      rv(); updateAllStatus(); updateExportFilenames(); queueAutosave();
+      refreshOfferUi({utm:false,spell:false});
     }; r.readAsDataURL(file);
   }
 }
 function setThumb(type,src){ const el=document.getElementById(type==="logo"?"logo-thumb":"hero-thumb"); if(!el) return; if(src){el.src=src;el.style.display="block";}else el.style.display="none"; }
-function logoSz(val){ offers[cur]._logoSize=parseInt(val); document.getElementById("logo-size-val").textContent=val+"%"; rv(); queueAutosave(); }
-function imgUrlCh(){ offers[cur]._img=document.getElementById("f-img-url").value; setThumb("hero",offers[cur]._img); if(offers[cur]._img) document.getElementById("crop-controls").classList.add("active"); rv(); updateAllStatus(); updateExportFilenames(); queueAutosave(); }
+function logoSz(val){ offers[cur]._logoSize=parseInt(val); document.getElementById("logo-size-val").textContent=val+"%"; refreshOfferUi({status:false,utm:false,spell:false}); }
+function imgUrlCh(){ offers[cur]._img=document.getElementById("f-img-url").value; setThumb("hero",offers[cur]._img); if(offers[cur]._img) document.getElementById("crop-controls").classList.add("active"); refreshOfferUi({utm:false,spell:false}); }
 
 // ═══════════════════════════════════════════════════════
 // CROP
@@ -1081,13 +1093,13 @@ function updateCrop(){
   document.getElementById("cv-zoom").textContent=offers[cur]._cropZoom+"%";
   document.getElementById("cv-x").textContent=offers[cur]._cropX+"%";
   document.getElementById("cv-y").textContent=offers[cur]._cropY+"%";
-  rv(); queueAutosave();
+  refreshOfferUi({status:false,utm:false,spell:false});
 }
 function resetCrop(){
   offers[cur]._cropZoom=100; offers[cur]._cropX=0; offers[cur]._cropY=0;
   document.getElementById("crop-zoom").value=100; document.getElementById("crop-x").value=0; document.getElementById("crop-y").value=0;
   document.getElementById("cv-zoom").textContent="100%"; document.getElementById("cv-x").textContent="0%"; document.getElementById("cv-y").textContent="0%";
-  rv(); queueAutosave();
+  refreshOfferUi({status:false,utm:false,spell:false});
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1101,7 +1113,7 @@ function setImageSearchUnavailable(msgText){
   msg.textContent=msgText||"Image search unavailable. Use local upload or URL.";
   msg.classList.add("error");
 }
-let imageSearchState={q:"",results:[],offset:0,pageSize:15};
+let imageSearchState={q:"",results:[],offset:0,pageSize:15,requestId:0};
 function renderImageSearchBatch(reset){
   const grid=document.getElementById("ugrid"),msg=document.getElementById("umsg"),moreBtn=document.getElementById("u-more-btn");
   if(reset) grid.innerHTML="";
@@ -1113,7 +1125,7 @@ function renderImageSearchBatch(reset){
     img.loading="lazy";
     img.src=thumb;
     img.onerror=()=>{ img.remove(); if(!grid.querySelector("img")) setImageSearchUnavailable("Image search unavailable. Use local upload or URL."); };
-    img.onclick=()=>{ document.querySelectorAll(".ugrid img").forEach(x=>x.classList.remove("selected")); img.classList.add("selected"); offers[cur]._img=url; setThumb("hero",url); document.getElementById("crop-controls").classList.add("active"); rv(); updateAllStatus(); updateExportFilenames(); queueAutosave(); };
+    img.onclick=()=>{ document.querySelectorAll(".ugrid img").forEach(x=>x.classList.remove("selected")); img.classList.add("selected"); offers[cur]._img=url; setThumb("hero",url); document.getElementById("crop-controls").classList.add("active"); refreshOfferUi({utm:false,spell:false}); };
     grid.appendChild(img);
   });
   imageSearchState.offset+=slice.length;
@@ -1136,17 +1148,19 @@ function doSearch(){
   grid.innerHTML="";
   msg.textContent="Loading...";
   msg.classList.remove("error");
+  const requestId = ++imageSearchState.requestId;
   const apiUrl="https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch="+encodeURIComponent(q)+" filetype:bitmap&gsrnamespace=6&gsrlimit=36&prop=imageinfo&iiprop=url";
   fetch(apiUrl)
     .then(resp=>{ if(!resp.ok) throw new Error("search_failed"); return resp.json(); })
     .then(data=>{
+      if(requestId!==imageSearchState.requestId) return;
       const pages=(data&&data.query&&data.query.pages)?Object.values(data.query.pages):[];
-      const files=pages.map(p=>((p.imageinfo&&p.imageinfo[0])||{}).url).filter(Boolean).slice(0,30);
+      const files=[...new Set(pages.map(p=>((p.imageinfo&&p.imageinfo[0])||{}).url).filter(Boolean))].slice(0,30);
       if(!files.length){ setImageSearchUnavailable("Image search unavailable. Use local upload or URL."); return; }
       imageSearchState={q,results:files,offset:0,pageSize:15};
       renderImageSearchBatch(true);
     })
-    .catch(()=>{ setImageSearchUnavailable("Image search unavailable. Use local upload or URL."); });
+    .catch(()=>{ if(requestId===imageSearchState.requestId) setImageSearchUnavailable("Image search unavailable. Use local upload or URL."); });
 }
 function loadMoreImages(){ if(!imageSearchState.results.length) return; renderImageSearchBatch(false); }
 
@@ -1714,7 +1728,7 @@ function clearHeroImagesOnly(){
   if(!confirm("Clear hero images from all 4 offers? Text and headers will be kept.")) return;
   save();
   offers.forEach(o=>{ delete o._img; delete o._cropZoom; delete o._cropX; delete o._cropY; });
-  load(cur); rv(); updateAllStatus(); updateExportFilenames();
+  load(cur); refreshOfferUi({utm:false,spell:false,autosave:false}); updateExportFilenames();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2025,14 +2039,14 @@ function loadDraft(){
   const raw=localStorage.getItem("draftCampaign"); if(!raw){alert("No saved draft found");return;}
   const data=JSON.parse(raw); offers=data.offers||[{},{},{},{}];
   if(data.campaign){document.getElementById("g-campaign").value=data.campaign.name||"";document.getElementById("g-date").value=data.campaign.date||"";document.getElementById("g-airport").value=data.campaign.airport||"";document.getElementById("g-terms").value=data.campaign.terms||"";}
-  load(cur); rv(); updateAllStatus(); runSpellQA(); document.getElementById("save-status").textContent="✓ Draft loaded";
+  load(cur); refreshOfferUi({utm:false,spell:false,autosave:false}); runSpellQA(); document.getElementById("save-status").textContent="✓ Draft loaded";
 }
 function exportJSON(){
   save(); const blob=new Blob([JSON.stringify({offers,version:"1.1",exportedAt:new Date().toISOString()},null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="DAS_campaign_"+Date.now()+".json"; a.click();
 }
 function importJSON(){ document.getElementById("import-modal").classList.add("active"); }
 function doImportJSON(){
-  try{ const data=JSON.parse(document.getElementById("import-json-area").value); offers=data.offers||[{},{},{},{}]; load(cur); rv(); updateAllStatus(); runSpellQA(); closeModal("import-modal"); alert("Imported successfully"); }catch(e){alert("Invalid JSON");}
+  try{ const data=JSON.parse(document.getElementById("import-json-area").value); offers=data.offers||[{},{},{},{}]; load(cur); refreshOfferUi({utm:false,spell:false,autosave:false}); runSpellQA(); closeModal("import-modal"); alert("Imported successfully"); }catch(e){alert("Invalid JSON");}
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2299,7 +2313,7 @@ function fillEx(){
   document.getElementById("g-airport").value="Newcastle";
   document.getElementById("g-terms").value="T&Cs Apply";
   refreshPresetList();
-  load(0); sv(0); rv(); updateAllStatus(); updateExportFilenames();
+  load(0); sv(0); refreshOfferUi({utm:false,spell:false,autosave:false});
 }
 
 
