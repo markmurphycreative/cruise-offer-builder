@@ -3199,27 +3199,34 @@ function closeSplash(){
   window.setTimeout(()=>{ splash.remove(); }, 520);
 }
 function initStartScreenActions(){
-  const openBtn=document.getElementById("splash-open-builder-btn");
-  const csvBtn=document.getElementById("splash-load-csv-btn");
+  const openBtn=document.getElementById("splash-open-builder-btn") || document.querySelector("#app-splash .splash-btn.gold");
+  const csvBtn=document.getElementById("splash-load-csv-btn") || document.querySelector("#app-splash .splash-btn:not(.gold)");
   const continueBtn=document.getElementById("splash-continue-session-btn");
+  const splash=document.getElementById("app-splash");
   const sheetsFile=document.getElementById("sheets-file");
-  if(!openBtn) console.warn("[splash] Missing #splash-open-builder-btn; Open Builder action not bound.");
-  if(!csvBtn) console.warn("[splash] Missing #splash-load-csv-btn; Load CSV action not bound.");
+  if(!splash) console.warn("[splash] Missing #app-splash; start screen actions cannot be wired.");
+  if(!openBtn) console.warn("[splash] Missing Open Builder button; action not bound.");
+  if(!csvBtn) console.warn("[splash] Missing Load CSV button; action not bound.");
   if(!sheetsFile) console.warn("[splash] Missing #sheets-file; Load CSV picker cannot open.");
-  if(openBtn) openBtn.addEventListener("click",()=>closeSplash());
+
+  if(openBtn){
+    openBtn.onclick=(e)=>{ if(e) e.preventDefault(); closeSplash(); refreshOfferUi({utm:true,spell:true,autosave:false}); };
+  }
   if(continueBtn){
-    continueBtn.addEventListener("click",()=>{
+    continueBtn.onclick=(e)=>{
+      if(e) e.preventDefault();
       chooseRestoreSession();
       closeSplash();
-    });
+    };
   }
   if(csvBtn && sheetsFile){
-    csvBtn.addEventListener("click",()=>{
+    csvBtn.onclick=(e)=>{
+      if(e) e.preventDefault();
       sheetsFile.click();
-    });
+    };
   }
   if(sheetsFile){
-    sheetsFile.addEventListener("change",(e)=>loadFromCSVFile(Object.assign(e,{_onSuccess:closeSplash})));
+    sheetsFile.onchange=(e)=>loadFromCSVFile(Object.assign(e,{_onSuccess:closeSplash}));
   }
 }
 function hydrateSplashRecentSession(){
