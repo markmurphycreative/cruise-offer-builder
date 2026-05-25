@@ -152,8 +152,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 /* ── CROP ── */
 .crop-controls{margin-top:5px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;display:none;}
 .crop-controls.active{display:block;}
+.hero-actions{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:5px;}
+.hero-fit-toggle{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:5px;}
 .crop-row{display:flex;align-items:center;gap:5px;margin-bottom:3px;}
-.crop-row label{font-size:9px;color:var(--muted);width:28px;flex-shrink:0;}
+.crop-row label{font-size:9px;color:var(--muted);width:68px;flex-shrink:0;}
 .crop-row input[type=range]{flex:1;accent-color:var(--gold);height:3px;}
 .crop-row span{font-size:9px;color:var(--navy);min-width:26px;text-align:right;}
 
@@ -567,18 +569,27 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         <div class="hero-hint">Local uploads recommended for best export quality</div>
         <div class="hero-restore-note" id="hero-restore-note">Hero image needs re-uploading</div>
         <div class="crop-controls" id="crop-controls">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;">Image Position</div>
+          <div class="hero-actions">
+            <button class="abtn red" onclick="removeHeroImage()" style="font-size:9px;padding:4px;">Remove Image</button>
+            <button class="abtn" onclick="replaceHeroImage()" style="font-size:9px;padding:4px;">Replace Image</button>
+            <button class="abtn" onclick="resetCrop()" style="font-size:9px;padding:4px;">Reset Crop</button>
+            <button class="abtn" onclick="centreHeroImage()" style="font-size:9px;padding:4px;">Centre Image</button>
+          </div>
+          <div class="hero-fit-toggle">
+            <button id="hero-mode-fill" class="abtn" onclick="setHeroFitMode('fill')" style="font-size:9px;padding:4px;">Fill Frame</button>
+            <button id="hero-mode-fit" class="abtn" onclick="setHeroFitMode('fit')" style="font-size:9px;padding:4px;">Fit Image</button>
+          </div>
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;">Crop & Position</div>
           <div class="crop-row"><label>Zoom</label><input type="range" id="crop-zoom" min="100" max="200" value="100" oninput="updateCrop()"><span id="cv-zoom">100%</span></div>
-          <div class="crop-row"><label>H. Pos</label><input type="range" id="crop-x" min="-50" max="50" value="0" oninput="updateCrop()"><span id="cv-x">0%</span></div>
-          <div class="crop-row"><label>V. Pos</label><input type="range" id="crop-y" min="-50" max="50" value="0" oninput="updateCrop()"><span id="cv-y">0%</span></div>
-          <button class="abtn" onclick="resetCrop()" style="width:100%;margin-top:3px;font-size:9px;padding:3px;">Reset</button>
+          <div class="crop-row"><label>Horizontal</label><input type="range" id="crop-x" min="-50" max="50" value="0" oninput="updateCrop()"><span id="cv-x">0%</span></div>
+          <div class="crop-row"><label>Vertical</label><input type="range" id="crop-y" min="-50" max="50" value="0" oninput="updateCrop()"><span id="cv-y">0%</span></div>
         </div>
         <div class="hero-source-block">
         <div class="img-src-tabs">
-          <button class="ist active" onclick="switchImg(&#39;search&#39;)">Image Search</button>
           <button class="ist" onclick="switchImg(&#39;url&#39;)">URL</button>
+          <button class="ist active" onclick="switchImg(&#39;search&#39;)">Image Search</button>
         </div>
-        <div class="img-panel active" id="ip-search">
+        <div class="img-panel" id="ip-search">
           <div class="urow">
             <input type="text" id="uq" placeholder="caribbean beach, mediterranean..." onkeydown="if(event.key===&#39;Enter&#39;)doSearch()">
             <button onclick="doSearch()">Go</button>
@@ -587,7 +598,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
           <div class="u-more"><button id="u-more-btn" onclick="loadMoreImages()" disabled>Load More Images</button></div>
           <div id="umsg" class="umsg">Search a destination photo</div>
         </div>
-        <div class="img-panel" id="ip-url">
+        <div class="img-panel active" id="ip-url">
           <div class="field"><label>Image URL (Klaviyo hosted)</label><input id="f-img-url" placeholder="https://..." oninput="imgUrlCh()"></div>
           <div style="font-size:9px;color:var(--muted);margin-top:2px;">⚠ External URLs may not export — upload locally for best PNG export results</div>
         </div>
@@ -1000,6 +1011,8 @@ function load(i){
   document.getElementById("cv-zoom").textContent=(offers[i]._cropZoom||100)+"%";
   document.getElementById("cv-x").textContent=(offers[i]._cropX||0)+"%";
   document.getElementById("cv-y").textContent=(offers[i]._cropY||0)+"%";
+  if(!offers[i]._heroFitMode) offers[i]._heroFitMode="fill";
+  syncHeroUi();
   if(offers[i]._img) document.getElementById("crop-controls").classList.add("active");
   else document.getElementById("crop-controls").classList.remove("active");
   operatorChanged(true); genUtm(); genStandardUtms(); updateAllStatus(); updateExportFilenames();
@@ -1087,14 +1100,14 @@ function readFile(file,type){
     const r=new FileReader(); r.onload=ev=>{
       const src=ev.target.result;
       if(type==="logo"){ offers[cur]._logoCustom=src; if(!offers[cur]._logoSize) offers[cur]._logoSize=50; setThumb("logo",src); document.getElementById("logo-size-row").style.display="flex"; }
-      else{ offers[cur]._img=src; setThumb("hero",src); document.getElementById("crop-controls").classList.add("active"); }
+      else{ offers[cur]._img=src; setThumb("hero",src); syncHeroUi(); }
       refreshOfferUi({utm:false,spell:false});
     }; r.readAsDataURL(file);
   }
 }
 function setThumb(type,src){ const el=document.getElementById(type==="logo"?"logo-thumb":"hero-thumb"); if(!el) return; if(src){el.src=src;el.style.display="block";}else el.style.display="none"; }
 function logoSz(val){ offers[cur]._logoSize=parseInt(val); document.getElementById("logo-size-val").textContent=val+"%"; refreshOfferUi({status:false,utm:false,spell:false}); }
-function imgUrlCh(){ offers[cur]._img=document.getElementById("f-img-url").value; setThumb("hero",offers[cur]._img); if(offers[cur]._img) document.getElementById("crop-controls").classList.add("active"); refreshOfferUi({utm:false,spell:false}); }
+function imgUrlCh(){ offers[cur]._img=document.getElementById("f-img-url").value; setThumb("hero",offers[cur]._img); syncHeroUi(); refreshOfferUi({utm:false,spell:false}); }
 
 // ═══════════════════════════════════════════════════════
 // CROP
@@ -1114,11 +1127,46 @@ function resetCrop(){
   document.getElementById("cv-zoom").textContent="100%"; document.getElementById("cv-x").textContent="0%"; document.getElementById("cv-y").textContent="0%";
   refreshOfferUi({status:false,utm:false,spell:false});
 }
+function centreHeroImage(){
+  offers[cur]._cropX=0; offers[cur]._cropY=0;
+  document.getElementById("crop-x").value=0; document.getElementById("crop-y").value=0;
+  document.getElementById("cv-x").textContent="0%"; document.getElementById("cv-y").textContent="0%";
+  refreshOfferUi({status:false,utm:false,spell:false});
+}
+function removeHeroImage(){
+  offers[cur]._img="";
+  setThumb("hero","");
+  syncHeroUi();
+  refreshOfferUi({utm:false,spell:false});
+}
+function replaceHeroImage(){
+  const input=document.querySelector("#dz-hero input[type=file]");
+  if(input){ input.click(); }
+}
+function setHeroFitMode(mode){
+  offers[cur]._heroFitMode=(mode==="fit")?"fit":"fill";
+  syncHeroUi();
+  refreshOfferUi({status:false,utm:false,spell:false});
+}
+function syncHeroUi(){
+  const hasImg=!!(offers[cur]&&offers[cur]._img);
+  const cc=document.getElementById("crop-controls");
+  if(cc) cc.classList.toggle("active",hasImg);
+  const mode=(offers[cur]&&offers[cur]._heroFitMode)||"fill";
+  const fillBtn=document.getElementById("hero-mode-fill");
+  const fitBtn=document.getElementById("hero-mode-fit");
+  if(fillBtn) fillBtn.classList.toggle("navy",mode==="fill");
+  if(fitBtn) fitBtn.classList.toggle("navy",mode==="fit");
+}
 
 // ═══════════════════════════════════════════════════════
 // UNSPLASH
 // ═══════════════════════════════════════════════════════
-function switchImg(tab){ document.querySelectorAll(".ist").forEach((t,i)=>t.classList.toggle("active",["search","url"][i]===tab)); document.querySelectorAll(".img-panel").forEach(p=>p.classList.remove("active")); document.getElementById("ip-"+tab).classList.add("active"); }
+function switchImg(tab){
+  document.querySelectorAll(".ist").forEach(t=>t.classList.toggle("active",t.textContent.trim().toLowerCase().includes(tab)));
+  document.querySelectorAll(".img-panel").forEach(p=>p.classList.remove("active"));
+  document.getElementById("ip-"+tab).classList.add("active");
+}
 function setImageSearchUnavailable(msgText){
   const grid=document.getElementById("ugrid"),msg=document.getElementById("umsg");
   grid.innerHTML="";
@@ -1157,7 +1205,7 @@ function renderImageSearchBatch(reset){
     img.loading="lazy";
     img.src=thumb;
     img.onerror=()=>{ img.remove(); if(!grid.querySelector("img")) setImageSearchUnavailable("Image search unavailable. Use local upload or URL."); };
-    img.onclick=()=>{ document.querySelectorAll(".ugrid img").forEach(x=>x.classList.remove("selected")); img.classList.add("selected"); offers[cur]._img=url; setThumb("hero",url); document.getElementById("crop-controls").classList.add("active"); refreshOfferUi({utm:false,spell:false}); };
+    img.onclick=()=>{ document.querySelectorAll(".ugrid img").forEach(x=>x.classList.remove("selected")); img.classList.add("selected"); offers[cur]._img=url; setThumb("hero",url); syncHeroUi(); refreshOfferUi({utm:false,spell:false}); };
     grid.appendChild(img);
   });
   imageSearchState.offset+=slice.length;
@@ -2275,8 +2323,11 @@ function renderCardHTML(d){
   const portsHTML=ports?chunkBullets(ports,3):"";
   const terms=document.getElementById("g-terms").value||"T&Cs Apply";
   const cz=d._cropZoom||100; const cx=d._cropX||0; const cy=d._cropY||0;
+  const heroFitMode=d._heroFitMode==="fit"?"fit":"fill";
+  const heroObjectFit=heroFitMode==="fit"?"contain":"cover";
+  const heroBg=heroFitMode==="fit"?"background:#0e1b2a;":"";
   const heroHTML=d._img
-    ? `<div class="hero-wrap"><img class="hero" src="${d._img}" style="transform:scale(${cz/100}) translate(${cx}%,${cy}%);transform-origin:center center;" onerror="this.parentElement.innerHTML='<div class=hph><span>Image failed to load</span></div>'"></div>`
+    ? `<div class="hero-wrap" style="${heroBg}"><img class="hero" src="${d._img}" style="object-fit:${heroObjectFit};transform:scale(${cz/100}) translate(${cx}%,${cy}%);transform-origin:center center;" onerror="this.parentElement.innerHTML='<div class=hph><span>Image failed to load</span></div>'"></div>`
     : `<div class="hph"><span></span></div>`;
   const shipLine=ship?`Sailing on ${ship}`:"";
   const priceHTML=price?`<div class="pfrom">From</div><div class="pmain">£${price}<span class="ppp">pp</span></div>`:`<div class="pfrom"></div><div class="pmain"></div>`;
@@ -2475,6 +2526,7 @@ function saveEditorToOffer(){
   if(z) o._cropZoom=parseInt(z.value||100,10);
   if(x) o._cropX=parseInt(x.value||0,10);
   if(y) o._cropY=parseInt(y.value||0,10);
+  o._heroFitMode = o._heroFitMode==="fit" ? "fit" : "fill";
 }
 
 function loadOfferToEditor(i){
@@ -2497,7 +2549,8 @@ function loadOfferToEditor(i){
   const cvz=document.getElementById('cv-zoom'); if(cvz) cvz.textContent=(o._cropZoom||100)+'%';
   const cvx=document.getElementById('cv-x'); if(cvx) cvx.textContent=(o._cropX||0)+'%';
   const cvy=document.getElementById('cv-y'); if(cvy) cvy.textContent=(o._cropY||0)+'%';
-  const cc=document.getElementById('crop-controls'); if(cc) cc.classList.toggle('active', !!o._img);
+  if(!o._heroFitMode) o._heroFitMode='fill';
+  syncHeroUi();
   const logoArea=document.getElementById('logo-override-area'); if(logoArea) logoArea.style.display=(o.operator==='custom'||!o.operator)?'block':'none';
   updateHeroRestoreNote();
 }
