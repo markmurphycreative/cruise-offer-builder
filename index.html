@@ -166,11 +166,28 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .urow input{flex:1;font-size:10px;padding:4px 6px;border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;}
 .urow input:focus{outline:none;border-color:var(--gold);}
 .urow button{padding:4px 7px;font-size:9px;font-weight:700;border:none;border-radius:3px;background:var(--navy);color:#fff;}
-.ugrid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:4px;}
-.ugrid img{width:100%;height:38px;object-fit:cover;border-radius:3px;cursor:pointer;border:2px solid transparent;transition:border-color .15s;}
+.u-more{margin-top:6px;}
+.u-more button{width:100%;padding:5px 8px;font-size:9px;font-weight:700;border:1px solid var(--border);border-radius:3px;background:#fff;color:var(--navy);}
+.u-more button:disabled{opacity:.5;cursor:not-allowed;}
+.ugrid-wrap{margin-top:4px;max-height:212px;overflow-y:auto;padding-right:2px;}
+.ugrid-wrap::-webkit-scrollbar{width:4px;}
+.ugrid-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:999px;}
+.ugrid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
+.ugrid img{width:100%;height:82px;object-fit:cover;border-radius:3px;cursor:pointer;border:2px solid transparent;transition:border-color .15s;}
 .ugrid img.selected{border-color:var(--gold);}
 .umsg{font-size:9px;color:var(--muted);margin-top:3px;}
 .umsg.error{color:#8a5000;font-weight:600;}
+/* ── SPLASH ── */
+.splash{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:1;visibility:visible;transition:opacity .45s ease,visibility .45s ease;}
+.splash.hidden{opacity:0;visibility:hidden;pointer-events:none;}
+.splash-inner{text-align:center;color:#fff;padding:18px;}
+.splash-title{font-size:22px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
+.splash-brand{margin-top:6px;font-size:13px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;}
+.splash-version{margin-top:18px;font-size:11px;color:rgba(255,255,255,.7);}
+.splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
+@media (prefers-reduced-motion:reduce){
+  .splash{transition:none;}
+}
 
 /* ── UTM ── */
 .utm-out{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:5px 7px;font-size:9px;font-family:monospace;color:var(--muted);word-break:break-all;margin-top:3px;display:none;line-height:1.4;}
@@ -363,6 +380,14 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 </style>
 </head>
 <body>
+<div id="app-splash" class="splash" aria-hidden="true">
+  <div class="splash-inner">
+    <div class="splash-title">Cruise Offer Builder</div>
+    <div class="splash-brand">Dawson &amp; Sanderson</div>
+    <div class="splash-version">v1.5.8e</div>
+    <div class="splash-line">Preparing campaign workspace…</div>
+  </div>
+</div>
 <div class="app">
 
 <!-- ══════════════════════ SIDEBAR ══════════════════════ -->
@@ -545,7 +570,8 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
             <input type="text" id="uq" placeholder="caribbean beach, mediterranean..." onkeydown="if(event.key===&#39;Enter&#39;)doSearch()">
             <button onclick="doSearch()">Go</button>
           </div>
-          <div id="ugrid" class="ugrid"></div>
+          <div class="ugrid-wrap"><div id="ugrid" class="ugrid"></div></div>
+          <div class="u-more"><button id="u-more-btn" onclick="loadMoreImages()" disabled>Load More Images</button></div>
           <div id="umsg" class="umsg">Search a destination photo</div>
         </div>
         <div class="img-panel" id="ip-url">
@@ -1071,14 +1097,38 @@ function switchImg(tab){ document.querySelectorAll(".ist").forEach((t,i)=>t.clas
 function setImageSearchUnavailable(msgText){
   const grid=document.getElementById("ugrid"),msg=document.getElementById("umsg");
   grid.innerHTML="";
+  const moreBtn=document.getElementById("u-more-btn"); if(moreBtn) moreBtn.disabled=true;
   msg.textContent=msgText||"Image search unavailable. Use local upload or URL.";
   msg.classList.add("error");
+}
+let imageSearchState={q:"",results:[],offset:0,pageSize:15};
+function renderImageSearchBatch(reset){
+  const grid=document.getElementById("ugrid"),msg=document.getElementById("umsg"),moreBtn=document.getElementById("u-more-btn");
+  if(reset) grid.innerHTML="";
+  const slice=imageSearchState.results.slice(imageSearchState.offset,imageSearchState.offset+imageSearchState.pageSize);
+  slice.forEach(url=>{
+    const thumb="https://commons.wikimedia.org/w/thumb.php?f="+encodeURIComponent(url.split('/').pop())+"&w=360";
+    const img=document.createElement("img");
+    img.alt="Search result";
+    img.loading="lazy";
+    img.src=thumb;
+    img.onerror=()=>{ img.remove(); if(!grid.querySelector("img")) setImageSearchUnavailable("Image search unavailable. Use local upload or URL."); };
+    img.onclick=()=>{ document.querySelectorAll(".ugrid img").forEach(x=>x.classList.remove("selected")); img.classList.add("selected"); offers[cur]._img=url; setThumb("hero",url); document.getElementById("crop-controls").classList.add("active"); rv(); updateAllStatus(); updateExportFilenames(); queueAutosave(); };
+    grid.appendChild(img);
+  });
+  imageSearchState.offset+=slice.length;
+  const rendered=grid.querySelectorAll("img").length;
+  if(rendered){ msg.textContent="Click a photo to use it"; msg.classList.remove("error"); }
+  else { msg.textContent="Image search unavailable. Use local upload or URL."; msg.classList.add("error"); }
+  if(moreBtn) moreBtn.disabled=imageSearchState.offset>=imageSearchState.results.length;
 }
 function doSearch(){
   const q=document.getElementById("uq").value.trim();
   const grid=document.getElementById("ugrid"),msg=document.getElementById("umsg");
   if(!q){
     grid.innerHTML="";
+    const moreBtn=document.getElementById("u-more-btn"); if(moreBtn) moreBtn.disabled=true;
+    imageSearchState={q:"",results:[],offset:0,pageSize:15};
     msg.textContent="Search a destination photo";
     msg.classList.remove("error");
     return;
@@ -1086,35 +1136,19 @@ function doSearch(){
   grid.innerHTML="";
   msg.textContent="Loading...";
   msg.classList.remove("error");
-  const apiUrl="https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch="+encodeURIComponent(q)+" filetype:bitmap&gsrnamespace=6&gsrlimit=12&prop=imageinfo&iiprop=url";
+  const apiUrl="https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch="+encodeURIComponent(q)+" filetype:bitmap&gsrnamespace=6&gsrlimit=36&prop=imageinfo&iiprop=url";
   fetch(apiUrl)
     .then(resp=>{ if(!resp.ok) throw new Error("search_failed"); return resp.json(); })
     .then(data=>{
       const pages=(data&&data.query&&data.query.pages)?Object.values(data.query.pages):[];
-      const files=pages
-        .map(p=>((p.imageinfo&&p.imageinfo[0])||{}).url)
-        .filter(Boolean)
-        .slice(0,8);
-      if(!files.length){
-        setImageSearchUnavailable("Image search unavailable. Use local upload or URL.");
-        return;
-      }
-      let rendered=0;
-      files.forEach(url=>{
-        const thumb="https://commons.wikimedia.org/w/thumb.php?f="+encodeURIComponent(url.split('/').pop())+"&w=240";
-        const img=document.createElement("img");
-        img.alt="Search result";
-        img.loading="lazy";
-        img.src=thumb;
-        img.onerror=()=>{ img.remove(); if(!grid.querySelector("img")) setImageSearchUnavailable("Image search unavailable. Use local upload or URL."); };
-        img.onclick=()=>{ document.querySelectorAll(".ugrid img").forEach(x=>x.classList.remove("selected")); img.classList.add("selected"); offers[cur]._img=url; setThumb("hero",url); document.getElementById("crop-controls").classList.add("active"); rv(); updateAllStatus(); updateExportFilenames(); queueAutosave(); };
-        grid.appendChild(img); rendered++;
-      });
-      msg.textContent=rendered?"Click a photo to use it":"Image search unavailable. Use local upload or URL.";
-      msg.classList.toggle("error", !rendered);
+      const files=pages.map(p=>((p.imageinfo&&p.imageinfo[0])||{}).url).filter(Boolean).slice(0,30);
+      if(!files.length){ setImageSearchUnavailable("Image search unavailable. Use local upload or URL."); return; }
+      imageSearchState={q,results:files,offset:0,pageSize:15};
+      renderImageSearchBatch(true);
     })
     .catch(()=>{ setImageSearchUnavailable("Image search unavailable. Use local upload or URL."); });
 }
+function loadMoreImages(){ if(!imageSearchState.results.length) return; renderImageSearchBatch(false); }
 
 // ═══════════════════════════════════════════════════════
 // UTM
@@ -3106,6 +3140,12 @@ initOfferTabDragDrop();
 updateMoveOfferButtons();
 refreshPresetList();
 queueAutosave();
+setTimeout(()=>{
+  const splash=document.getElementById("app-splash");
+  if(!splash) return;
+  splash.classList.add("hidden");
+  window.setTimeout(()=>{ splash.remove(); }, 460);
+}, 950);
 
 // ═══════════════════════════════════════════════════════
 // TIGHTER UI PATCH — v1.5.8a
