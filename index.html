@@ -2244,27 +2244,46 @@ function showSplashLoadStatus(msg){
   el.classList.toggle('active', !!msg);
   if(msg){ window.setTimeout(()=>{ if(el.textContent===msg){ el.textContent=''; el.classList.remove('active'); } }, 2200); }
 }
-function normalizeBuilderProjectPayload(raw){
+function resolveBuilderProjectPayload(raw){
   if(!raw || typeof raw !== "object") return null;
   if(Array.isArray(raw.offers)) return raw;
   if(raw.project && typeof raw.project === "object" && Array.isArray(raw.project.offers)) return raw.project;
   if(raw.payload && typeof raw.payload === "object" && Array.isArray(raw.payload.offers)) return raw.payload;
+  if(raw.data && typeof raw.data === "object" && Array.isArray(raw.data.offers)) return raw.data;
   return raw;
 }
+function normalizeBuilderProjectPayload(raw){
+  const payload = resolveBuilderProjectPayload(raw);
+  if(!payload || typeof payload !== "object") return null;
+  const safeOffers = Array.isArray(payload.offers) ? payload.offers.filter(o=>o && typeof o === "object") : [];
+  if(!safeOffers.length) return null;
+  const normalised = {
+    version: String(payload.version || raw.version || "1.0"),
+    savedAt: payload.savedAt || raw.savedAt || payload.exportedAt || raw.exportedAt || new Date().toISOString(),
+    cur: Number.isInteger(payload.cur) ? Math.min(3, Math.max(0, payload.cur)) : 0,
+    builderMode: (payload.builderMode === "standard" || payload.builderMode === "advanced") ? payload.builderMode : "standard",
+    lockedOffers: Array.isArray(payload.lockedOffers) ? payload.lockedOffers.slice(0,4).map(Boolean) : [false,false,false,false],
+    sectionState: payload.sectionState && typeof payload.sectionState === "object" ? payload.sectionState : {},
+    campaign: payload.campaign && typeof payload.campaign === "object" ? payload.campaign : {},
+    offers: safeOffers.slice(0,4)
+  };
+  while(normalised.lockedOffers.length < 4) normalised.lockedOffers.push(false);
+  while(normalised.offers.length < 4) normalised.offers.push({});
+  return normalised;
+}
 function isValidBuilderProjectPayload(parsed){
-  const missing = [];
+  const reasons = [];
   if(!parsed || typeof parsed !== "object"){
-    missing.push("root object");
-    return { valid:false, missing, payload:null };
+    reasons.push("root is not an object");
+    return { valid:false, reasons, payload:null, resolvedPayload:null };
   }
+  const resolvedPayload = resolveBuilderProjectPayload(parsed);
+  if(!resolvedPayload || typeof resolvedPayload !== "object") reasons.push("no payload-like object found");
+  if(!resolvedPayload || !Array.isArray(resolvedPayload.offers)) reasons.push("offers[] not found");
+  if(Array.isArray(resolvedPayload && resolvedPayload.offers) && resolvedPayload.offers.filter(o=>o && typeof o === "object").length < 1) reasons.push("offers[] has no offer objects");
   const payload = normalizeBuilderProjectPayload(parsed);
-  if(!payload || typeof payload !== "object") missing.push("payload object");
-  if(payload && !Array.isArray(payload.offers)) missing.push("offers[]");
-  if(payload && (!Array.isArray(payload.offers) || payload.offers.length < 1)) missing.push("at least 1 offer");
-  if(parsed.projectType && parsed.projectType !== "cruise-offer-builder-project") missing.push("projectType=cruise-offer-builder-project");
-  if(payload && typeof payload.savedAt !== "string") missing.push("savedAt ISO timestamp");
-  if(payload && (!payload.campaign || typeof payload.campaign !== "object")) missing.push("campaign object");
-  return { valid: missing.length===0, missing, payload };
+  if(!payload) reasons.push("payload normalization failed");
+  return { valid: reasons.length===0, reasons, payload, resolvedPayload };
 }
 function loadProjectFromFileInput(file){
   return new Promise((resolve,reject)=>{
@@ -2276,7 +2295,8 @@ function loadProjectFromFileInput(file){
         const parsed = JSON.parse(String(reader.result||"{}"));
         const validation = isValidBuilderProjectPayload(parsed);
         if(!validation.valid){
-          console.warn("Project load validation failed. Missing/invalid fields:", validation.missing, { file: file && file.name, parsed });
+          const resolvedKeys = validation.resolvedPayload && typeof validation.resolvedPayload === "object" ? Object.keys(validation.resolvedPayload) : [];
+          console.warn("Project load validation failed", { filename:file && file.name, resolvedPayloadKeys:resolvedKeys, reasons:validation.reasons });
           throw new Error("invalid_project_payload");
         }
         applySessionPayload(validation.payload);
@@ -2286,8 +2306,14 @@ function loadProjectFromFileInput(file){
         showSplashLoadStatus("Restored Successfully");
         resolve(true);
       }catch(e){
-        showSessionFeedback("Invalid project JSON", true);
-        showProjectLoadErrorModal();
+        if(e && e.message === "invalid_project_payload"){
+          showSessionFeedback("Invalid project JSON", true);
+          showProjectLoadErrorModal();
+        }else{
+          console.warn("Project JSON parse/read failed", { filename:file && file.name, reason:(e&&e.message)||"parse_error" });
+          showSessionFeedback("Invalid project JSON", true);
+          showProjectLoadErrorModal();
+        }
         reject(e);
       }
     };
