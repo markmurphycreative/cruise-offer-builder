@@ -183,17 +183,17 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 /* ── SPLASH ── */
 .splash{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:1;visibility:visible;transition:opacity .45s ease,visibility .45s ease;}
 .splash.hidden{opacity:0;visibility:hidden;pointer-events:none;}
-.splash-inner{text-align:center;color:#fff;padding:18px;}
+.splash-inner{text-align:center;color:#fff;padding:18px;min-height:72vh;display:flex;flex-direction:column;align-items:center;}
 .splash-title{font-size:22px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
 .splash-brand{margin-top:6px;font-size:13px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;}
 .splash-version{margin-top:18px;font-size:11px;color:rgba(255,255,255,.7);}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
 .splash-actions{margin-top:18px;display:grid;gap:6px;max-width:220px;margin-left:auto;margin-right:auto;}
-.splash-recent{margin:14px auto 0;max-width:300px;text-align:left;display:none;}
+.splash-recent{margin-top:auto;padding-top:24px;max-width:320px;text-align:center;display:none;}
 .splash-recent.active{display:block;}
-.splash-recent-title{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:rgba(255,255,255,.8);}
-.splash-recent-name{margin-top:4px;font-size:12px;color:#fff;font-weight:600;line-height:1.3;}
-.splash-recent-time{margin-top:2px;font-size:10px;color:rgba(255,255,255,.68);} 
+.splash-recent-title{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:rgba(255,255,255,.74);}
+.splash-recent-name{display:inline;margin-left:4px;font-size:12px;color:#fff;font-weight:600;line-height:1.3;}
+.splash-recent-time{margin-top:3px;font-size:10px;color:rgba(255,255,255,.64);} 
 .splash-load-status{margin-top:10px;font-size:10px;color:rgba(255,255,255,.82);opacity:0;transform:translateY(2px);transition:opacity .2s ease,transform .2s ease;}
 .splash-load-status.active{opacity:1;transform:translateY(0);} 
 .project-load-modal{max-width:400px;padding:0;border-radius:10px;overflow:hidden;border:1px solid rgba(14,27,42,.16);box-shadow:0 18px 40px rgba(14,27,42,.28);}
@@ -413,8 +413,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <div class="splash-version">v1.5.8e</div>
     <div class="splash-line">Select how you want to begin.</div>
     <div id="splash-recent-session" class="splash-recent" aria-live="polite">
-      <div class="splash-recent-title">Recent Session</div>
-      <div class="splash-recent-name" id="splash-recent-name"></div>
+      <div><span class="splash-recent-title">Recent Session:</span><span class="splash-recent-name" id="splash-recent-name"></span></div>
       <div class="splash-recent-time" id="splash-recent-time"></div>
     </div>
     <div class="splash-actions">
@@ -2240,6 +2239,14 @@ function showSplashLoadStatus(msg){
   el.classList.toggle('active', !!msg);
   if(msg){ window.setTimeout(()=>{ if(el.textContent===msg){ el.textContent=''; el.classList.remove('active'); } }, 2200); }
 }
+function isValidBuilderProjectPayload(parsed){
+  const required = [];
+  if(!parsed || typeof parsed !== "object") required.push("root object");
+  if(!Array.isArray(parsed && parsed.offers)) required.push("offers[]");
+  if(!parsed || parsed.projectType !== "cruise-offer-builder-project") required.push("projectType=cruise-offer-builder-project");
+  if(!parsed || typeof parsed.savedAt !== "string") required.push("savedAt ISO timestamp");
+  return { valid: required.length===0, missing: required };
+}
 function loadProjectFromFileInput(file){
   return new Promise((resolve,reject)=>{
     if(!file){ reject(new Error("no_file")); return; }
@@ -2248,6 +2255,11 @@ function loadProjectFromFileInput(file){
       try{
         showSessionFeedback("Loading project…", false);
         const parsed = JSON.parse(String(reader.result||"{}"));
+        const validation = isValidBuilderProjectPayload(parsed);
+        if(!validation.valid){
+          console.warn("Project load validation failed. Missing/invalid:", validation.missing.join(", "), { file: file && file.name, parsed });
+          throw new Error("invalid_project_payload");
+        }
         applySessionPayload(parsed);
         saveSessionNow();
         syncAutosaveStatus();
@@ -3547,10 +3559,7 @@ function initStartScreenActions(){
     });
   }
   if(projectBtn&&projectInput){
-    projectBtn.addEventListener("click",()=>{
-      projectInput.value="";
-      projectInput.click();
-    });
+    projectBtn.addEventListener("click",()=>triggerLoadProjectFile());
     projectInput.addEventListener("change",(e)=>{
       const file=e&&e.target&&e.target.files&&e.target.files[0];
       if(!file) return;
@@ -3567,9 +3576,9 @@ function hydrateSplashRecentSession(){
   if(!(wrap&&name&&time&&continueBtn&&saved&&saved.offers)) return;
   wrap.classList.add("active");
   continueBtn.style.display="block";
-  const campaignName=((saved.campaign&&saved.campaign.name)||"").trim() || (saved.savedAt ? "Recovered Session" : "Untitled Campaign");
+  const campaignName=((saved.campaign&&saved.campaign.name)||"").trim() || "Recovered Session";
   name.textContent=campaignName;
-  time.textContent=`Autosaved ${formatRelativeAutosave(saved.savedAt) || "recently"}`;
+  time.textContent=formatRelativeAutosave(saved.savedAt) || "Autosaved recently";
 }
 initStartScreenActions();
 hydrateSplashRecentSession();
