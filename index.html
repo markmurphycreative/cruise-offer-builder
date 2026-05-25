@@ -1126,7 +1126,7 @@ function setImageSearchUnavailable(msgText){
   msg.textContent=msgText||"Image search unavailable. Use local upload or URL.";
   msg.classList.add("error");
 }
-let imageSearchState={q:"",displayQuery:"",broadQuery:"",results:[],offset:0,pageSize:15,requestId:0,nextContinue:null,seen:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:false,isBroadFallback:false};
+let imageSearchState={q:"",displayQuery:"",broadQuery:"",results:[],rawResults:[],offset:0,pageSize:15,requestId:0,nextContinue:null,seen:new Set(),seenRaw:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:false,isBroadFallback:false,usedBroadResults:false};
 function buildTravelQuery(rawQuery){
   const q=String(rawQuery||"").trim();
   const lower=q.toLowerCase();
@@ -1147,7 +1147,8 @@ function isRelevantTravelImage(url,title,query,allowAircraft){
 function renderImageSearchBatch(reset){
   const grid=document.getElementById("ugrid"),msg=document.getElementById("umsg"),moreBtn=document.getElementById("u-more-btn");
   if(reset) grid.innerHTML="";
-  const slice=imageSearchState.results.slice(imageSearchState.offset,imageSearchState.offset+imageSearchState.pageSize);
+  const safeResults=Array.isArray(imageSearchState.results)?imageSearchState.results:[];
+  const slice=safeResults.slice(imageSearchState.offset,imageSearchState.offset+imageSearchState.pageSize);
   slice.forEach(url=>{
     const thumb="https://commons.wikimedia.org/w/thumb.php?f="+encodeURIComponent(url.split('/').pop())+"&w=360";
     const img=document.createElement("img");
@@ -1160,8 +1161,14 @@ function renderImageSearchBatch(reset){
   });
   imageSearchState.offset+=slice.length;
   const rendered=grid.querySelectorAll("img").length;
-  if(rendered){ msg.textContent=imageSearchState.isBroadFallback?"Showing broader image results":"Click a photo to use it"; msg.classList.remove("error"); }
-  else { msg.textContent="Image search unavailable. Use local upload or URL."; msg.classList.add("error"); }
+  if(rendered){
+    msg.textContent=imageSearchState.usedBroadResults?"Showing broader image results":"Click a photo to use it";
+    msg.classList.remove("error");
+  }
+  else {
+    msg.textContent=imageSearchState.loading?"Loading...":"No images found. Try a different place search.";
+    msg.classList.add("error");
+  }
   if(moreBtn) moreBtn.disabled=imageSearchState.loading||((imageSearchState.offset>=imageSearchState.results.length)&&imageSearchState.exhausted);
 }
 async function fetchImageSearchPage(resetSearch){
@@ -1186,14 +1193,29 @@ async function fetchImageSearchPage(resetSearch){
     const data=await resp.json();
     if(requestId!==imageSearchState.requestId) return;
     const pages=(data&&data.query&&data.query.pages)?Object.values(data.query.pages):[];
+    const incomingRaw=[];
+    const incomingFiltered=[];
     pages.forEach(p=>{
-      const file=((p.imageinfo&&p.imageinfo[0])||{}).url;
+      const file=((p&&p.imageinfo&&p.imageinfo[0])||{}).url;
       if(!file) return;
-      if(!isRelevantTravelImage(file,p.title,imageSearchState.displayQuery,imageSearchState.explicitAircraft)) return;
-      if(imageSearchState.seen.has(file)) return;
+      if(!imageSearchState.seenRaw.has(file)){
+        imageSearchState.seenRaw.add(file);
+        incomingRaw.push(file);
+      }
+      const isRelevant=isRelevantTravelImage(file,p.title,imageSearchState.displayQuery,imageSearchState.explicitAircraft);
+      if(!isRelevant || imageSearchState.seen.has(file)) return;
       imageSearchState.seen.add(file);
-      imageSearchState.results.push(file);
+      incomingFiltered.push(file);
     });
+    if(!Array.isArray(imageSearchState.rawResults)) imageSearchState.rawResults=[];
+    if(!Array.isArray(imageSearchState.results)) imageSearchState.results=[];
+    imageSearchState.rawResults.push(...incomingRaw);
+    imageSearchState.results.push(...incomingFiltered);
+    const MIN_FILTERED_RESULTS=6;
+    if(!imageSearchState.explicitAircraft && imageSearchState.results.length<MIN_FILTERED_RESULTS && imageSearchState.rawResults.length>=MIN_FILTERED_RESULTS){
+      imageSearchState.results=imageSearchState.rawResults.slice();
+      imageSearchState.usedBroadResults=true;
+    }
     imageSearchState.page+=1;
     imageSearchState.nextContinue=(data&&data.continue&&typeof data.continue.gsroffset!=="undefined")?data.continue.gsroffset:null;
     imageSearchState.exhausted=!imageSearchState.nextContinue;
@@ -1206,7 +1228,8 @@ async function fetchImageSearchPage(resetSearch){
         fetchImageSearchPage(true);
         return;
       }
-      setImageSearchUnavailable("No images found. Try a different place search.");
+      msg.textContent="No images found. Try a different place search.";
+      msg.classList.add("error");
     }
   }catch(e){
     if(requestId===imageSearchState.requestId) setImageSearchUnavailable("Image search unavailable. Use local upload or URL.");
@@ -1221,14 +1244,14 @@ function doSearch(){
   if(!q){
     grid.innerHTML="";
     const moreBtn=document.getElementById("u-more-btn"); if(moreBtn) moreBtn.disabled=true;
-    imageSearchState={q:"",displayQuery:"",broadQuery:"",results:[],offset:0,pageSize:15,requestId:imageSearchState.requestId,nextContinue:null,seen:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:false,isBroadFallback:false};
+    imageSearchState={q:"",displayQuery:"",broadQuery:"",results:[],rawResults:[],offset:0,pageSize:15,requestId:imageSearchState.requestId,nextContinue:null,seen:new Set(),seenRaw:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:false,isBroadFallback:false,usedBroadResults:false};
     msg.textContent="Search a destination photo";
     msg.classList.remove("error");
     return;
   }
   grid.innerHTML="";
   const travelQuery=buildTravelQuery(q);
-  imageSearchState={q,displayQuery:travelQuery.query,broadQuery:travelQuery.broadQuery,results:[],offset:0,pageSize:15,requestId:imageSearchState.requestId+1,nextContinue:null,seen:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:travelQuery.explicitAircraft,isBroadFallback:false};
+  imageSearchState={q,displayQuery:travelQuery.query,broadQuery:travelQuery.broadQuery,results:[],rawResults:[],offset:0,pageSize:15,requestId:imageSearchState.requestId+1,nextContinue:null,seen:new Set(),seenRaw:new Set(),exhausted:false,loading:false,page:0,explicitAircraft:travelQuery.explicitAircraft,isBroadFallback:false,usedBroadResults:false};
   fetchImageSearchPage(true);
 }
 async function loadMoreImages(){
