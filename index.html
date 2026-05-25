@@ -439,7 +439,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       <div class="section-body">
           <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values" style="display:none" onchange="loadFromCSVFile(event)">
           <button class="abtn navy" onclick="document.getElementById(&#39;sheets-file&#39;).click()" style="width:100%;margin-top:4px;">Load Downloaded CSV File</button>
-          <div style="font-size:9px;color:var(--muted);margin-top:3px;" id="sheets-status" class="csv-success">✓ Loaded 4 offer(s)</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:3px;" id="sheets-status">No CSV loaded</div>
 
       </div>
     </div>
@@ -594,7 +594,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
           <div class="field"><label>Price Basis</label><input id="f-basis" placeholder="Based On 2 Adults Sharing" oninput="up()"></div>
           <div class="field"><label>Board Code</label><input id="f-board" placeholder="FB" oninput="autoBoardLabel(); up()"></div>
           <div class="field"><label>Board Basis</label><input id="f-boardlbl" placeholder="Full Board" oninput="up()"></div>
-          <div class="field"><label>Date</label><input id="f-saildate" placeholder="20 November 2026" oninput="splitSailDate();up()"><input type="hidden" id="f-day" value="12"><input type="hidden" id="f-month" value="November 2026"></div>
+          <div class="field"><label>Date</label><input id="f-saildate" placeholder="20 November 2026" oninput="splitSailDate();up()"><input type="hidden" id="f-day" value=""><input type="hidden" id="f-month" value=""></div>
           <div class="field"><label>Nights</label><input id="f-nights" placeholder="14" oninput="up()"></div>
         </div>
         <div class="field"><label>Ports — separate with •</label><textarea id="f-ports" spellcheck="true" placeholder="Barbados • Martinique • St Kitts • Tortola • St Maarten • Antigua • St Lucia • Grenada" oninput="up();checkPortsWarn()"></textarea></div>
@@ -626,7 +626,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       </div>
       <div class="section-body">
         <div class="field"><label>Operator Landing Page</label><input id="f-url" placeholder="https://dawsonandsanderson.co.uk/cruises" oninput="genUtm()"></div>
-        <div class="utm-out" id="utm-out" style="display: block;" aria-hidden="true">https://www.dawsonandsanderson.co.uk/p-and-o-cruises?utm_source=klaviyo&amp;utm_medium=email&amp;utm_campaign=cruise_pando_160526&amp;utm_content=160526_pando_caribbean_card1</div>
+        <div class="utm-out" id="utm-out" aria-hidden="true"></div>
         <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-top:4px;">Generated UTM</label>
         <textarea id="utm-visible-output" class="utm-visible-output" readonly="" placeholder="Generate or enter a destination URL + campaign name"></textarea>
         <div class="utm-btn-row">
@@ -3157,6 +3157,16 @@ Offers Included: ${combinedRows.filter(row=>row.type==='offer').length}`);
 // ═══════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════
+function applySafeGlobalDefaults(){
+  const airport = document.getElementById("g-airport");
+  const terms = document.getElementById("g-terms");
+  if(airport && !String(airport.value||"").trim()) airport.value = "Newcastle";
+  if(terms && !String(terms.value||"").trim()) terms.value = "T&Cs Apply";
+}
+
+applySafeGlobalDefaults();
+load(0);
+refreshOfferUi({utm:true,spell:true,autosave:false});
 window.addEventListener("resize",rv);
 rv(); updateAllStatus();
 captureStandardSectionState();
