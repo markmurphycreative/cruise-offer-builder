@@ -51,24 +51,24 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .status-dot.red{background:var(--red);}
 
 /* ── SIDEBAR BODY ── */
-.sb-body{flex:1;overflow-y:auto;padding:6px 10px 4px;}
+.sb-body{flex:1;overflow-y:auto;padding:5px 9px 3px;}
 .sb-body::-webkit-scrollbar{width:3px;}
 .sb-body::-webkit-scrollbar-thumb{background:var(--border);}
 
 /* ── SECTIONS ── */
-.section{margin-bottom:5px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
-.section-hdr{background:var(--panel);padding:5px 10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+.section{margin-bottom:4px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.section-hdr{background:var(--panel);padding:5px 9px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
 .section-hdr h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);}
 .section-toggle{font-size:10px;color:var(--muted);transition:transform .2s;display:inline-block;}
 .section-hdr.collapsed .section-toggle{transform:rotate(-90deg);}
-.section-body{padding:7px 10px;}
+.section-body{padding:6px 9px;}
 .section-body.hidden{display:none;}
 .mode-toggle{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:7px 10px;border-bottom:1px solid var(--border);background:#fafaf8;}
 .mode-note{grid-column:1 / -1;font-size:9px;color:var(--muted);line-height:1.3;opacity:0;min-height:0;transition:opacity .15s ease;}
 .mode-note.active{opacity:1;min-height:12px;}
 .mode-btn{padding:6px 8px;font-size:9px;font-weight:700;border:1px solid var(--border);border-radius:var(--radius);background:#fff;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
 .mode-btn.active{background:var(--navy);border-color:var(--navy);color:#fff;}
-.reorder-group{margin:6px 10px 4px;border:1px solid var(--border);border-radius:var(--radius);padding:6px;background:#fafaf8;}
+.reorder-group{margin:5px 9px 3px;border:1px solid var(--border);border-radius:var(--radius);padding:5px;background:#fafaf8;}
 .reorder-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px;}
 .reorder-buttons{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
 .hero-hint{font-size:9px;color:var(--muted);margin:5px 0 2px;}
@@ -178,7 +178,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash-btn:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.44);transform:translateY(-1px);}
 .splash-btn:active{transform:translateY(0);}
 .splash-btn.gold{background:var(--gold);border-color:var(--gold);color:#fff;box-shadow:0 2px 10px rgba(160,146,103,.28),0 0 0 1px rgba(255,255,255,.06) inset;}
-.splash-btn.gold:hover{background:#b2a277;border-color:#b2a277;}
+.splash-btn.gold:hover{background:#b2a277;border-color:#b2a277;box-shadow:0 4px 14px rgba(160,146,103,.32),0 0 0 1px rgba(255,255,255,.09) inset;}
 @keyframes splashLiftIn{from{opacity:0;transform:translateY(10px) scale(.992);}to{opacity:1;transform:translateY(0) scale(1);}}
 @keyframes splashItemIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
 @media (prefers-reduced-motion:reduce){
@@ -235,7 +235,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .template-actions{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px;}
 
 /* ── ACTION BUTTONS ── */
-.sb-actions{padding:7px 10px;border-top:1px solid var(--border);background:var(--panel);flex-shrink:0;}
+.sb-actions{padding:6px 9px;border-top:1px solid var(--border);background:var(--panel);flex-shrink:0;}
 .act-row{display:flex;gap:4px;margin-bottom:4px;}
 .abtn{flex:1;padding:6px 6px;font-size:10px;font-weight:700;border-radius:var(--radius);border:1px solid var(--border);background:#fff;color:var(--text);letter-spacing:.02em;white-space:nowrap;transition:all .15s;}
 .abtn:hover{background:var(--panel);}
@@ -253,6 +253,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .session-feedback{font-size:9px;color:var(--green);text-align:center;margin-top:3px;min-height:12px;opacity:0;transition:opacity .2s ease;}
 .session-feedback.warn{color:#8a5000;}
 .session-feedback.active{opacity:1;}
+.section.summary-section .section-hdr{background:var(--gold);}
+.section.summary-section .section-hdr h3{color:#fff;}
+.section.summary-section .section-toggle{color:rgba(255,255,255,.85);}
 
 /* ── PREVIEW ── */
 .preview-toolbar{background:var(--navy);padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;}
@@ -439,22 +442,6 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
   <div class="sb-body">
     <div class="lock-ind" id="lock-ind">🔒 CARD LOCKED — Click Unlock to edit</div>
 
-    <div class="section" data-section-key="summary-tools">
-      <div class="section-hdr" onclick="toggleSec(this)">
-        <h3>🧾 Summary</h3><span class="section-toggle">▾</span>
-      </div>
-      <div class="section-body">
-        <div class="utm-btn-row">
-          <button class="abtn navy" onclick="openSummary()">Open Summary</button>
-          <button class="abtn" onclick="saveProjectFile()">Save Project</button>
-        </div>
-        <div class="utm-btn-row">
-          <button class="abtn" onclick="resetOffer()">Reset Offer</button>
-          <button class="abtn red" onclick="resetAll()">Reset All</button>
-        </div>
-      </div>
-    </div>
-
     <!-- ── CSV IMPORT (CORE WORKFLOW) ── -->
     <div class="section csv-core-section" data-section-key="csv-import">
       <div class="section-hdr" onclick="toggleSec(this)">
@@ -471,10 +458,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 
     <!-- ── CAMPAIGN PRESETS ── -->
     <div class="section" data-section-key="campaign-presets">
-      <div class="section-hdr" onclick="toggleSec(this)">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
         <h3>💾 Campaign Presets</h3><span class="section-toggle">▾</span>
       </div>
-      <div class="section-body">
+      <div class="section-body hidden">
         <div class="field">
           <label>Preset Name</label>
           <input id="preset-name" placeholder="May 2026 Cruise Campaign">
@@ -516,10 +503,10 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
     <!-- ── 2. OPERATOR ── -->
     <div class="section" data-section-key="operator-logo">
-      <div class="section-hdr" onclick="toggleSec(this)">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
         <h3>🚢 Operator Logo</h3><span class="section-toggle">▾</span>
       </div>
-      <div class="section-body">
+      <div class="section-body hidden">
         <div class="field">
           <label>Operator</label>
           <select class="op-select" id="f-operator" onchange="operatorChanged()">
@@ -577,7 +564,6 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
             <img class="dz-thumb hero-t" id="hero-thumb" alt="hero" style="display: none;">
           </div>
         </div>
-        <div class="hero-hint">Local uploads recommended for best export quality</div>
         <div class="hero-restore-note" id="hero-restore-note">Hero image needs re-uploading</div>
         <div class="crop-controls" id="crop-controls">
           <div class="hero-actions">
@@ -597,7 +583,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         </div>
         <div class="hero-source-block">
           <div class="field"><label>Image URL (Klaviyo hosted)</label><input id="f-img-url" placeholder="https://..." oninput="imgUrlCh()"></div>
-          <div style="font-size:9px;color:var(--muted);margin-top:2px;">⚠ External URLs may not export — upload locally for best PNG export results</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:2px;">External URLs may fail export; local upload is safer.</div>
         </div>
       </div>
     </div>
@@ -625,6 +611,22 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         <div class="field"><label>Ports — separate with •</label><textarea id="f-ports" spellcheck="true" placeholder="Barbados • Martinique • St Kitts • Tortola • St Maarten • Antigua • St Lucia • Grenada" oninput="up();checkPortsWarn()"></textarea></div>
         <div class="warn-box" id="ports-warn"></div>
         <div class="spell-warn" id="spell-warn-ports"></div>
+      </div>
+    </div>
+
+    <div class="section summary-section" data-section-key="summary-tools">
+      <div class="section-hdr" onclick="toggleSec(this)">
+        <h3>🧾 Summary</h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body">
+        <div class="utm-btn-row">
+          <button class="abtn gold" onclick="saveProjectFile()">Save Project</button>
+          <button class="abtn navy" onclick="openSummary()">Open Summary</button>
+        </div>
+        <div class="utm-btn-row">
+          <button class="abtn" onclick="resetOffer()">Reset Offer</button>
+          <button class="abtn" onclick="resetAll()">Reset All</button>
+        </div>
       </div>
     </div>
 
@@ -713,7 +715,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     <div class="act-row">
       <button class="abtn" onclick="clearSavedSession()">Clear Saved Session</button>
     </div>
-    <div class="session-hint">Save Project downloads a backup JSON snapshot.<br>Use autosave, CSV import and Campaign Presets for normal workflow recovery.</div>
+    <div class="session-hint">Use autosave/Continue Last Session for everyday recovery.</div>
     <div class="session-feedback" id="session-feedback" aria-live="polite"></div>
   </div>
 </div>
@@ -1935,6 +1937,9 @@ function sessionHasMissingHeroImages(payload){
 }
 let pendingRestoreSession = null;
 
+// ═══════════════════════════════════════════════════════
+// MODAL HELPERS
+// ═══════════════════════════════════════════════════════
 function closeSessionRestoreModal(){
   const modal = document.getElementById('session-restore-modal');
   if(modal) modal.classList.remove('active');
@@ -2034,6 +2039,9 @@ function buildProjectPayload(){
     ...payload
   };
 }
+// ═══════════════════════════════════════════════════════
+// EXPORT / BACKUP HELPERS
+// ═══════════════════════════════════════════════════════
 function saveProjectFile(){
   const fileName = buildProjectFilename();
   const blob = new Blob([JSON.stringify(buildProjectPayload(), null, 2)], {type:"application/json"});
@@ -2386,6 +2394,9 @@ function openQA(){
 
 // ═══════════════════════════════════════════════════════
 // SUMMARY & CHECKLIST
+// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// SUMMARY HELPERS
 // ═══════════════════════════════════════════════════════
 function openSummary(){
   save();
