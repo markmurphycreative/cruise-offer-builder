@@ -2124,11 +2124,33 @@ function applyParsedOffer(){if(!pendingParseResult) return; const {parsed,confid
 // ═══════════════════════════════════════════════════════
 // CARD BUILDER
 // ═══════════════════════════════════════════════════════
+const OPERATOR_SKINS = {
+  default:{
+    colors:{navy:"#0e1b2a",gold:"#a09267",black:"#000",contentBg:"#fff",mutedText:"#555",basisText:"#999"}
+  },
+  po:{
+    colors:{navy:"#01172d",gold:"#a49668",black:"#000000",contentBg:"#ffffff",mutedText:"#505a66",basisText:"#8f98a3"},
+    header:{
+      assetType:"image",
+      src:(OPERATOR_HEADERS.po&&OPERATOR_HEADERS.po.pngData)||(OPERATOR_HEADERS.po&&OPERATOR_HEADERS.po.svgData)||"",
+      background:"#01172d"
+    }
+  }
+};
+function getOperatorSkinPreset(operatorKey){
+  return OPERATOR_SKINS[operatorKey] || OPERATOR_SKINS.default;
+}
+
 function getHeaderHTML(d){
   const key=d.operator||""; const op=OPERATOR_HEADERS[key];
+  const skin=getOperatorSkinPreset(key);
   if(d._logoCustom){
     const sz=d._logoSize||50; const w=Math.round(1140*(sz/100));
-    return `<div style="width:1200px;background:#0e1b2a;height:497px;display:flex;align-items:center;justify-content:center;padding:30px 80px;overflow:hidden;"><img src="${d._logoCustom}" style="width:${w}px;max-height:430px;object-fit:contain;display:block;"></div>`;
+    const bg = skin && skin.header && skin.header.background ? skin.header.background : "#0e1b2a";
+    return `<div style="width:1200px;background:${bg};height:497px;display:flex;align-items:center;justify-content:center;padding:30px 80px;overflow:hidden;"><img src="${d._logoCustom}" style="width:${w}px;max-height:430px;object-fit:contain;display:block;"></div>`;
+  }
+  if(skin&&skin.header&&skin.header.assetType==="image"){
+    return `<div class="header-block" style="width:1200px;height:497px;overflow:hidden;display:block;line-height:0;background:${skin.header.background||"#0e1b2a"};"><img src="${skin.header.src}" width="1200" height="497" style="width:1200px;height:497px;object-fit:cover;display:block;"></div>`;
   }
   // Prefer baked PNG over SVG for export reliability. SVG text can render with wrong font metrics in html2canvas.
   if(op&&op.pngData) return `<div class="header-block" style="width:1200px;height:497px;overflow:hidden;display:block;line-height:0;background:#0e1b2a;"><img src="${op.pngData}" width="1200" height="497" style="width:1200px;height:497px;object-fit:cover;display:block;"></div>`;
@@ -2160,6 +2182,7 @@ function cleanPortsDisplay(str){
 }
 function chunkBullets(str,n){ const p=cleanPortsDisplay(str).split("•").map(s=>s.trim()).filter(Boolean); const rows=[]; for(let i=0;i<p.length;i+=n)rows.push(p.slice(i,i+n).join(" • ")); return rows.join("<br>"); }
 function renderCardHTML(d){
+  const skin=getOperatorSkinPreset(d.operator||"");
   const name=d.name||"";
   const incl=d.incl||"";
   const ship=d.ship||"";
@@ -2175,7 +2198,7 @@ function renderCardHTML(d){
   const cz=d._cropZoom||100; const cx=d._cropX??50; const cy=d._cropY??50;
   const heroFitMode=d._heroFitMode==="fit"?"fit":"fill";
   const heroObjectFit=heroFitMode==="fit"?"contain":"cover";
-  const heroBg=heroFitMode==="fit"?"background:#0e1b2a;":"";
+  const heroBg=heroFitMode==="fit"?`background:${(skin&&skin.colors&&skin.colors.navy)||"#0e1b2a"};`:"";
   const heroHTML=d._img
     ? `<div class="hero-wrap" style="${heroBg}"><img class="hero" src="${d._img}" style="object-fit:${heroObjectFit};object-position:${cx}% ${cy}%;transform:scale(${cz/100});transform-origin:center center;" onerror="this.parentElement.innerHTML='<div class=hph><span>Image failed to load</span></div>'"></div>`
     : `<div class="hph"><span></span></div>`;
@@ -2183,7 +2206,13 @@ function renderCardHTML(d){
   const priceHTML=price?`<div class="pfrom">From</div><div class="pmain">£${price}<span class="ppp">pp</span></div>`:`<div class="pfrom"></div><div class="pmain"></div>`;
   const dateHTML=(day||month)?`${day}`:"";
   const nightLabel=nights?"Nights":"";
-  return `<div class="cc">${getHeaderHTML(d)}${heroHTML}<div class="isec"><div class="cname">${name}</div><div class="incl">${incl}</div><div class="sname">${shipLine}</div><div class="price-block">${priceHTML}<div class="pbasis">${basis}</div></div></div><div class="ibar"><div class="icell gold"><div class="ival">${board}</div><div class="ilbl">${boardlbl}</div></div><div class="icell blk"><div class="ival">${dateHTML}</div><div class="ilbl">${month}</div></div><div class="icell gold"><div class="ival">${nights}</div><div class="ilbl">${nightLabel}</div></div></div><div class="vsec"><div class="vtit">You'll Visit</div><div class="vpts">${portsHTML}</div></div><div class="tcbar">${terms}</div></div>`;
+  const navy=(skin&&skin.colors&&skin.colors.navy)||"#0e1b2a";
+  const gold=(skin&&skin.colors&&skin.colors.gold)||"#a09267";
+  const black=(skin&&skin.colors&&skin.colors.black)||"#000";
+  const contentBg=(skin&&skin.colors&&skin.colors.contentBg)||"#fff";
+  const muted=(skin&&skin.colors&&skin.colors.mutedText)||"#555";
+  const basisColor=(skin&&skin.colors&&skin.colors.basisText)||"#999";
+  return `<div class="cc">${getHeaderHTML(d)}${heroHTML}<div class="isec" style="background:${contentBg};"><div class="cname" style="color:${navy};">${name}</div><div class="incl" style="color:${muted};">${incl}</div><div class="sname" style="color:${gold};">${shipLine}</div><div class="price-block">${priceHTML}<div class="pbasis" style="color:${basisColor};">${basis}</div></div></div><div class="ibar"><div class="icell gold" style="background:${gold};"><div class="ival">${board}</div><div class="ilbl">${boardlbl}</div></div><div class="icell blk" style="background:${black};"><div class="ival">${dateHTML}</div><div class="ilbl">${month}</div></div><div class="icell gold" style="background:${gold};"><div class="ival">${nights}</div><div class="ilbl">${nightLabel}</div></div></div><div class="vsec" style="background:${navy};"><div class="vtit">You'll Visit</div><div class="vpts">${portsHTML}</div></div><div class="tcbar" style="background:${black};">${terms}</div></div>`;
 }
 function bc(d){ return renderCardHTML(d); }
 
