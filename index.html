@@ -3165,6 +3165,13 @@ function applySafeGlobalDefaults(){
 }
 
 let splashClosed=false;
+const BUILDER_ENTERED_STORAGE_KEY="builderEntered";
+function hasEnteredBuilder(){
+  try{ return localStorage.getItem(BUILDER_ENTERED_STORAGE_KEY)==="true"; }catch(e){ return false; }
+}
+function markBuilderEntered(){
+  try{ localStorage.setItem(BUILDER_ENTERED_STORAGE_KEY,"true"); }catch(e){}
+}
 function closeSplash(){
   if(splashClosed) return;
   splashClosed=true;
@@ -3184,6 +3191,7 @@ function closeSplash(){
   window.setTimeout(()=>{ splash.remove(); }, 520);
 }
 function dismissSplashAndShowBuilder(){
+  markBuilderEntered();
   closeSplash();
   try{
     if(typeof refreshOfferUi==="function") refreshOfferUi({utm:true,spell:true,autosave:false});
@@ -3204,7 +3212,7 @@ window.loadCsvFromSplash = function(event){
   const temp=document.createElement("input");
   temp.type="file";
   temp.accept=".csv,text/csv,.tsv,text/tab-separated-values";
-  temp.onchange=(e)=>loadFromCSVFile(Object.assign(e,{_onSuccess:closeSplash}));
+  temp.onchange=(e)=>loadFromCSVFile(Object.assign(e,{_onSuccess:dismissSplashAndShowBuilder}));
   temp.click();
 };
 function initStartScreenActions(){
@@ -3256,10 +3264,12 @@ if(document.readyState==="loading"){
   document.addEventListener("DOMContentLoaded",()=>{
     initStartScreenActions();
     hydrateSplashRecentSession();
+    if(hasEnteredBuilder()) dismissSplashAndShowBuilder();
   },{once:true});
 }else{
   initStartScreenActions();
   hydrateSplashRecentSession();
+  if(hasEnteredBuilder()) dismissSplashAndShowBuilder();
 }
 
 function initBuilderApp(){
