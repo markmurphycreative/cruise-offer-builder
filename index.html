@@ -3203,12 +3203,10 @@ function dismissSplashAndShowBuilder(){
 }
 window.openBuilderFromSplash = function(event){
   if(event) event.preventDefault();
-  console.log("Splash open builder clicked");
   dismissSplashAndShowBuilder();
 };
 window.loadCsvFromSplash = function(event){
   if(event) event.preventDefault();
-  console.log("Splash load CSV clicked");
   const temp=document.createElement("input");
   temp.type="file";
   temp.accept=".csv,text/csv,.tsv,text/tab-separated-values";
@@ -3264,12 +3262,12 @@ if(document.readyState==="loading"){
   document.addEventListener("DOMContentLoaded",()=>{
     initStartScreenActions();
     hydrateSplashRecentSession();
-    if(hasEnteredBuilder()) dismissSplashAndShowBuilder();
+    if(hasEnteredBuilder()) closeSplash();
   },{once:true});
 }else{
   initStartScreenActions();
   hydrateSplashRecentSession();
-  if(hasEnteredBuilder()) dismissSplashAndShowBuilder();
+  if(hasEnteredBuilder()) closeSplash();
 }
 
 function initBuilderApp(){
