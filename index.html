@@ -3332,6 +3332,8 @@ function initBuilderApp(){
     syncAutosaveStatus();
     promptRestoreSession();
     queueAutosave();
+    // Ensure preview is initialised through the same path as clicking the active offer tab.
+    sv(cur);
   }catch(err){
     console.error("[init] Builder app initialisation failed.", err);
   }
