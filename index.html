@@ -16,7 +16,6 @@
   --green:#2a7a4a;--red:#c0392b;--amber:#d4820a;--radius:5px;
 }
 html,body{height:100%;font-family:'Montserrat',sans-serif;font-size:12px;color:var(--text);background:var(--bg);}
-html.builder-entered-startup #app-splash{opacity:0!important;visibility:hidden!important;pointer-events:none!important;}
 button{cursor:pointer;font-family:'Montserrat',sans-serif;}
 input,textarea,select{font-family:'Montserrat',sans-serif;}
 
@@ -1903,7 +1902,6 @@ function confirmClearSavedSession(){
   closeClearSessionModal();
   autosaveAwaitingRestoreDecision = false;
   try{ localStorage.removeItem(AUTOSAVE_KEY); }catch(e){}
-  try{ localStorage.removeItem(BUILDER_ENTERED_STORAGE_KEY); }catch(e){}
   pendingRestoreSession = null;
   autosaveLastSavedAt = null;
   closeSessionRestoreModal();
@@ -3167,17 +3165,9 @@ function applySafeGlobalDefaults(){
 }
 
 let splashClosed=false;
-const BUILDER_ENTERED_STORAGE_KEY="builderEntered";
-function hasEnteredBuilder(){
-  try{ return localStorage.getItem(BUILDER_ENTERED_STORAGE_KEY)==="true"; }catch(e){ return false; }
-}
-function markBuilderEntered(){
-  try{ localStorage.setItem(BUILDER_ENTERED_STORAGE_KEY,"true"); }catch(e){}
-}
 function closeSplash(){
   if(splashClosed) return;
   splashClosed=true;
-  document.documentElement.classList.remove("builder-entered-startup");
   const splash=document.getElementById("app-splash");
   const app=document.getElementById("builder-app");
   if(app){
@@ -3197,7 +3187,6 @@ function closeSplash(){
   },520);
 }
 function dismissSplashAndShowBuilder(){
-  markBuilderEntered();
   closeSplash();
   try{
     if(typeof refreshOfferUi==="function") refreshOfferUi({utm:true,spell:true,autosave:false});
@@ -3264,19 +3253,14 @@ function hydrateSplashRecentSession(){
   name.textContent="Recovered Session";
   time.textContent=formatRelativeAutosave(saved.savedAt) || "Autosaved recently";
 }
-if(hasEnteredBuilder()){
-  document.documentElement.classList.add("builder-entered-startup");
-}
 if(document.readyState==="loading"){
   document.addEventListener("DOMContentLoaded",()=>{
     initStartScreenActions();
     hydrateSplashRecentSession();
-    if(hasEnteredBuilder()) closeSplash();
   },{once:true});
 }else{
   initStartScreenActions();
   hydrateSplashRecentSession();
-  if(hasEnteredBuilder()) closeSplash();
 }
 
 function initBuilderApp(){
