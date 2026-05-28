@@ -1901,7 +1901,10 @@ function closeClearSessionModal(){
 function confirmClearSavedSession(){
   closeClearSessionModal();
   autosaveAwaitingRestoreDecision = false;
-  try{ localStorage.removeItem(AUTOSAVE_KEY); }catch(e){}
+  try{
+    localStorage.removeItem(AUTOSAVE_KEY);
+    localStorage.removeItem(BUILDER_OPEN_STORAGE_KEY);
+  }catch(e){}
   pendingRestoreSession = null;
   autosaveLastSavedAt = null;
   closeSessionRestoreModal();
@@ -3157,6 +3160,17 @@ Offers Included: ${combinedRows.filter(row=>row.type==='offer').length}`);
 // ═══════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════
+
+const BUILDER_OPEN_STORAGE_KEY = "builderOpen";
+function markBuilderOpenState(isOpen){
+  try{
+    if(isOpen) localStorage.setItem(BUILDER_OPEN_STORAGE_KEY,"true");
+    else localStorage.removeItem(BUILDER_OPEN_STORAGE_KEY);
+  }catch(e){}
+}
+function shouldBypassSplashOnLoad(){
+  try{ return localStorage.getItem(BUILDER_OPEN_STORAGE_KEY)==="true"; }catch(e){ return false; }
+}
 function applySafeGlobalDefaults(){
   const airport = document.getElementById("g-airport");
   const terms = document.getElementById("g-terms");
@@ -3165,6 +3179,12 @@ function applySafeGlobalDefaults(){
 }
 
 let splashClosed=false;
+function hideSplashImmediately(){
+  const splash=document.getElementById("app-splash");
+  if(!splash) return;
+  splash.classList.add("hidden");
+  splash.remove();
+}
 function closeSplash(){
   if(splashClosed) return;
   splashClosed=true;
@@ -3187,6 +3207,7 @@ function closeSplash(){
   },520);
 }
 function dismissSplashAndShowBuilder(){
+  markBuilderOpenState(true);
   closeSplash();
   try{
     if(typeof refreshOfferUi==="function") refreshOfferUi({utm:true,spell:true,autosave:false});
@@ -3217,6 +3238,16 @@ function initStartScreenActions(){
   if(!openBtn) console.warn("[splash] Missing Open Builder button; action not bound.");
   if(!csvBtn) console.warn("[splash] Missing Load CSV button; action not bound.");
 
+  if(shouldBypassSplashOnLoad()){
+    const app=document.getElementById("builder-app");
+    if(app){
+      app.classList.remove("start-hidden");
+      app.setAttribute("aria-hidden","false");
+    }
+    splashClosed=true;
+    hideSplashImmediately();
+  }
+
   if(openBtn){
     openBtn.addEventListener("click",(e)=>{
       window.openBuilderFromSplash(e);
@@ -3226,6 +3257,7 @@ function initStartScreenActions(){
     continueBtn.removeAttribute("onclick");
     continueBtn.addEventListener("click",(e)=>{
       if(e) e.preventDefault();
+      markBuilderOpenState(true);
       chooseRestoreSession();
       dismissSplashAndShowBuilder();
     });
