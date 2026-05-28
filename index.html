@@ -1685,6 +1685,7 @@ const AUTOSAVE_KEY = "cobSessionAutosaveV1";
 let autosaveTimer = null;
 let autosaveHydrating = false;
 let autosaveAwaitingRestoreDecision = false;
+const DISABLE_AUTORESTORE_SESSION = true;
 let autosaveLastSavedAt = null;
 
 function formatAutosaveTime(ts){
@@ -1854,6 +1855,12 @@ function chooseStartFreshSession(){
   showSessionFeedback("",false);
 }
 function promptRestoreSession(){
+  if(DISABLE_AUTORESTORE_SESSION){
+    autosaveAwaitingRestoreDecision = false;
+    pendingRestoreSession = null;
+    setAutosaveStatus("Autosave paused");
+    return;
+  }
   const saved = readSavedSession();
   autosaveAwaitingRestoreDecision = !!(saved && saved.offers);
   if(!saved || !saved.offers) return;
@@ -3281,6 +3288,12 @@ function initStartScreenActions(){
 }
 function hydrateSplashRecentSession(){
   const wrap=document.getElementById("splash-recent-session");
+  if(DISABLE_AUTORESTORE_SESSION){
+    const continueBtn=document.getElementById("splash-continue-session-btn");
+    if(wrap) wrap.classList.remove("active");
+    if(continueBtn) continueBtn.style.display="none";
+    return;
+  }
   const name=document.getElementById("splash-recent-name");
   const time=document.getElementById("splash-recent-time");
   const continueBtn=document.getElementById("splash-continue-session-btn");
