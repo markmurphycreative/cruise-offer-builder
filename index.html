@@ -337,11 +337,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 }
 
 /* ── CARD CSS ── */
-.cc{width:1200px;font-family:'Montserrat',sans-serif;font-weight:300;background:#fff;display:block;}
-.cc .header-block{width:1200px;display:block;line-height:0;}
+.cc{width:1200px;font-family:'Montserrat',sans-serif;font-weight:300;background:var(--operator-bg,var(--navy));display:block;}
+.cc .header-block{width:1200px;display:block;line-height:0;background:var(--operator-bg,var(--navy));overflow:hidden;}
 .cc .header-block img{width:1200px;height:auto;display:block;}
-.cc .hero-wrap{width:1200px;height:849px;overflow:hidden;position:relative;}
-.cc .hero{width:100%;height:100%;object-fit:cover;display:block;position:absolute;top:0;left:0;transform-origin:center center;}
+.cc .hero-wrap{width:1200px;height:849px;overflow:hidden;position:relative;background:var(--operator-bg,var(--navy));line-height:0;}
+.cc .hero{width:100%;height:calc(100% + 1px);object-fit:cover;display:block;position:absolute;top:-1px;left:0;transform-origin:center center;}
 .cc .hph{width:1200px;height:849px;background:#b8ccd8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
 .cc .hph span{font-size:22px;font-weight:300;color:#5a7a90;font-family:'Montserrat',sans-serif;}
 .cc .isec{width:1200px;background:#fff;padding:48px 62px 44px;text-align:center;}
@@ -353,8 +353,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cc .pmain{font-size:90px;font-weight:300;color:var(--operator-text,var(--navy));line-height:1.0;}
 .cc .ppp{font-size:40px;font-weight:300;vertical-align:super;}
 .cc .pbasis{font-size:34px;font-weight:300;color:#999;margin-top:4px;line-height:1.2;}
-.cc .ibar{width:1200px;display:grid;grid-template-columns:400px 400px 400px;height:297px;}
-.cc .icell{height:297px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;}
+.cc .ibar{width:1200px;display:grid;grid-template-columns:400px 400px 400px;height:297px;background:#000;line-height:0;}
+.cc .icell{height:297px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;position:relative;line-height:normal;}
+.cc .icell::before{content:"";position:absolute;top:-1px;left:0;right:0;height:2px;background:inherit;pointer-events:none;}
 .cc .icell.gold{background:var(--operator-info,var(--operator-accent,var(--gold)));}
 .cc .icell.blk{background:#000;}
 .cc .ival{font-size:72px;font-weight:300;color:#fff;line-height:1;display:flex;align-items:center;justify-content:center;gap:2px;}
@@ -362,10 +363,12 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cc .ilbl{font-size:30px;font-weight:300;line-height:1.1;}
 .cc .icell.gold .ilbl{color:rgba(255,255,255,.82);}
 .cc .icell.blk .ilbl{color:rgba(255,255,255,.7);}
-.cc .vsec{width:1200px;min-height:536px;height:auto;background:var(--operator-bg,var(--navy));display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 80px;text-align:center;overflow:visible;}
+.cc .vsec{width:1200px;min-height:536px;height:auto;background:var(--operator-bg,var(--navy));display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 80px;text-align:center;overflow:visible;position:relative;}
+.cc .vsec::before{content:"";position:absolute;top:-1px;left:0;right:0;height:2px;background:var(--operator-bg,var(--navy));pointer-events:none;}
 .cc .vtit{font-size:68px;font-weight:300;color:#fff;margin-bottom:26px;letter-spacing:.03em;line-height:1.1;}
 .cc .vpts{font-size:40px;font-weight:300;color:rgba(255,255,255,.65);line-height:1.35;overflow-wrap:anywhere;word-break:normal;}
-.cc .tcbar{width:1200px;height:123px;background:#000;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:300;color:#555;letter-spacing:.06em;}
+.cc .tcbar{width:1200px;height:123px;background:#000;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:400;color:rgba(255,255,255,.72);letter-spacing:.06em;position:relative;}
+.cc .tcbar::before{content:"";position:absolute;top:-1px;left:0;right:0;height:2px;background:#000;pointer-events:none;}
 
 /* ── EXPORT RENDER CONTAINER ── */
 #export-render-area{position:fixed;left:-9999px;top:0;z-index:-1;background:#fff;}
@@ -2179,7 +2182,7 @@ function getHeaderHTML(d){
   const skin=getOperatorSkin(d);
   if(d._logoCustom){
     const sz=d._logoSize||50; const w=Math.round(1140*(sz/100));
-    return `<div style="width:1200px;background:#0e1b2a;height:497px;display:flex;align-items:center;justify-content:center;padding:30px 80px;overflow:hidden;"><img src="${d._logoCustom}" style="width:${w}px;max-height:430px;object-fit:contain;display:block;"></div>`;
+    return `<div class="header-block" style="width:1200px;background:#0e1b2a;height:497px;display:flex;align-items:center;justify-content:center;padding:30px 80px;overflow:hidden;line-height:0;"><img src="${d._logoCustom}" style="width:${w}px;max-height:430px;object-fit:contain;display:block;"></div>`;
   }
   // Prefer baked PNG over SVG for export reliability. SVG text can render with wrong font metrics in html2canvas.
   // Operator skins deliberately use text/logo-label fallbacks only for this pass.
@@ -2189,7 +2192,7 @@ function getHeaderHTML(d){
   const accent=skin?.accentStrip||op?.color||"#a09267";
   const background=skin?.background||"#0e1b2a";
   const label=(skin?.logoLabel||(op?op.name:d.line||"CRUISE LINE")).replace(/\n/g,"<br>");
-  return `<div style="width:1200px;height:497px;background:${background};overflow:hidden;"><div style="background:${accent};height:107px;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-size:26px;font-weight:300;color:#fff;letter-spacing:.1em;">${tags}</div><div style="height:390px;display:flex;align-items:center;justify-content:center;text-align:center;font-family:'Montserrat',sans-serif;font-size:72px;font-weight:300;letter-spacing:.14em;line-height:1.15;color:#fff;">${label}</div></div>`;
+  return `<div class="header-block" style="width:1200px;height:497px;background:${background};overflow:hidden;display:block;line-height:0;"><div style="background:${accent};height:107px;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-size:26px;font-weight:300;color:#fff;letter-spacing:.1em;line-height:normal;">${tags}</div><div style="height:390px;display:flex;align-items:center;justify-content:center;text-align:center;font-family:'Montserrat',sans-serif;font-size:72px;font-weight:300;letter-spacing:.14em;line-height:1.15;color:#fff;">${label}</div></div>`;
 }
 function cleanPortsDisplay(str){
   return (str||"")
