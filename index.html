@@ -3219,6 +3219,18 @@ function closeSplash(){
     splash.remove();
   },520);
 }
+function renderActiveOfferAfterBuilderVisible(){
+  window.requestAnimationFrame(()=>{
+    window.requestAnimationFrame(()=>{
+      try{
+        if(typeof sv==="function") sv(cur);
+        else if(typeof rv==="function") rv();
+      }catch(err){
+        console.error("[splash] Active offer render failed after builder reveal.", err);
+      }
+    });
+  });
+}
 function dismissSplashAndShowBuilder(){
   markBuilderOpenState(true);
   closeSplash();
@@ -3226,6 +3238,7 @@ function dismissSplashAndShowBuilder(){
     if(typeof refreshOfferUi==="function") refreshOfferUi({utm:true,spell:true,autosave:false});
     if(typeof rv==="function") rv();
     if(typeof updateAllStatus==="function") updateAllStatus();
+    renderActiveOfferAfterBuilderVisible();
   }catch(err){
     console.error("[splash] Builder UI refresh failed after splash dismissal.", err);
   }
@@ -3259,6 +3272,7 @@ function initStartScreenActions(){
     }
     splashClosed=true;
     hideSplashImmediately();
+    renderActiveOfferAfterBuilderVisible();
   }
 
   if(openBtn){
