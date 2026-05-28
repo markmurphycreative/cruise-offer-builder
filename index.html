@@ -16,6 +16,7 @@
   --green:#2a7a4a;--red:#c0392b;--amber:#d4820a;--radius:5px;
 }
 html,body{height:100%;font-family:'Montserrat',sans-serif;font-size:12px;color:var(--text);background:var(--bg);}
+html.builder-entered-startup #app-splash{opacity:0!important;visibility:hidden!important;pointer-events:none!important;}
 button{cursor:pointer;font-family:'Montserrat',sans-serif;}
 input,textarea,select{font-family:'Montserrat',sans-serif;}
 
@@ -161,7 +162,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 
 /* ── SPLASH ── */
 .splash{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:1;visibility:visible;transition:opacity .62s cubic-bezier(.22,.61,.36,1),visibility .62s cubic-bezier(.22,.61,.36,1);}
-.splash.hidden{opacity:0;visibility:hidden;pointer-events:none;}
+.splash.hidden,.splash.is-exiting{opacity:0;visibility:hidden;pointer-events:none;}
 .splash-inner{text-align:center;color:#fff;padding:18px;min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;width:min(560px,100%);}
 .splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;animation:splashLiftIn .78s cubic-bezier(.22,.61,.36,1) .08s both;}
 .splash-title{font-size:22px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;opacity:0;animation:splashItemIn .62s cubic-bezier(.22,.61,.36,1) .16s forwards;}
@@ -3176,6 +3177,7 @@ function markBuilderEntered(){
 function closeSplash(){
   if(splashClosed) return;
   splashClosed=true;
+  document.documentElement.classList.remove("builder-entered-startup");
   const splash=document.getElementById("app-splash");
   const app=document.getElementById("builder-app");
   if(app){
@@ -3188,8 +3190,11 @@ function closeSplash(){
     console.warn("[splash] Missing #app-splash; nothing to dismiss.");
     return;
   }
-  splash.classList.add("hidden");
-  window.setTimeout(()=>{ splash.remove(); }, 520);
+  splash.classList.add("is-exiting");
+  window.setTimeout(()=>{
+    splash.classList.add("hidden");
+    splash.remove();
+  },520);
 }
 function dismissSplashAndShowBuilder(){
   markBuilderEntered();
@@ -3258,6 +3263,9 @@ function hydrateSplashRecentSession(){
   continueBtn.style.display="block";
   name.textContent="Recovered Session";
   time.textContent=formatRelativeAutosave(saved.savedAt) || "Autosaved recently";
+}
+if(hasEnteredBuilder()){
+  document.documentElement.classList.add("builder-entered-startup");
 }
 if(document.readyState==="loading"){
   document.addEventListener("DOMContentLoaded",()=>{
