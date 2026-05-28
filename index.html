@@ -1902,6 +1902,7 @@ function confirmClearSavedSession(){
   closeClearSessionModal();
   autosaveAwaitingRestoreDecision = false;
   try{ localStorage.removeItem(AUTOSAVE_KEY); }catch(e){}
+  try{ localStorage.removeItem(BUILDER_ENTERED_STORAGE_KEY); }catch(e){}
   pendingRestoreSession = null;
   autosaveLastSavedAt = null;
   closeSessionRestoreModal();
