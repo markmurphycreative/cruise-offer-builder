@@ -1904,6 +1904,7 @@ function confirmClearSavedSession(){
   try{
     localStorage.removeItem(AUTOSAVE_KEY);
     localStorage.removeItem(BUILDER_OPEN_STORAGE_KEY);
+    sessionStorage.removeItem(BUILDER_OPEN_STORAGE_KEY);
   }catch(e){}
   pendingRestoreSession = null;
   autosaveLastSavedAt = null;
@@ -3164,12 +3165,17 @@ Offers Included: ${combinedRows.filter(row=>row.type==='offer').length}`);
 const BUILDER_OPEN_STORAGE_KEY = "builderOpen";
 function markBuilderOpenState(isOpen){
   try{
-    if(isOpen) localStorage.setItem(BUILDER_OPEN_STORAGE_KEY,"true");
-    else localStorage.removeItem(BUILDER_OPEN_STORAGE_KEY);
+    if(isOpen) sessionStorage.setItem(BUILDER_OPEN_STORAGE_KEY,"true");
+    else sessionStorage.removeItem(BUILDER_OPEN_STORAGE_KEY);
+    localStorage.removeItem(BUILDER_OPEN_STORAGE_KEY);
   }catch(e){}
 }
 function shouldBypassSplashOnLoad(){
-  try{ return localStorage.getItem(BUILDER_OPEN_STORAGE_KEY)==="true"; }catch(e){ return false; }
+  try{
+    const isOpen=sessionStorage.getItem(BUILDER_OPEN_STORAGE_KEY)==="true";
+    localStorage.removeItem(BUILDER_OPEN_STORAGE_KEY);
+    return isOpen;
+  }catch(e){ return false; }
 }
 function applySafeGlobalDefaults(){
   const airport = document.getElementById("g-airport");
