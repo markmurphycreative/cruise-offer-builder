@@ -215,10 +215,15 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 /* ── EXPORT SECTION ── */
 .export-section{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:6px;}
 .export-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin-bottom:6px;}
-.export-btn{width:100%;padding:9px;font-size:11px;font-weight:700;border:none;border-radius:var(--radius);color:#fff;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;letter-spacing:.03em;}
+.export-group{margin-top:8px;}
+.export-group-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;}
+.export-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.export-actions.single-action{grid-template-columns:1fr;}
+.export-btn{width:100%;padding:8px 9px;font-size:11px;font-weight:700;border:none;border-radius:var(--radius);color:#fff;margin:0;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s;letter-spacing:.03em;}
 .export-btn:hover{opacity:.88;transform:translateY(-1px);}
 .export-btn.single{background:var(--gold);box-shadow:0 2px 6px rgba(160,146,103,.35);}
 .export-btn.all{background:var(--navy);box-shadow:0 2px 6px rgba(14,27,42,.35);}
+.export-label-state{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
 .export-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
 .export-progress{font-size:10px;color:var(--muted);text-align:center;min-height:14px;margin-top:2px;}
 .export-warn{background:#fff0f0;border:1px solid #f0b0b0;border-radius:var(--radius);padding:6px 8px;font-size:10px;color:var(--red);margin-top:5px;display:none;line-height:1.5;}
@@ -665,21 +670,36 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         <div class="copy-qa-checklist" id="copy-qa-checklist"></div>
         <div class="copy-qa-note" id="copy-qa-note">Passive checks only — no auto-correction. Export is never blocked.</div>
       </div>
-      <button class="export-btn single" onclick="exportCurrent()" id="exp-single-btn">
-        <span>⬇</span><span id="exp-single-lbl">Export Current Card PNG</span>
-      </button>
-      <button class="export-btn single" onclick="exportCurrentJPG()" id="exp-single-jpg-btn">
-        <span>⬇</span><span id="exp-single-jpg-lbl">Export Current Card JPG</span>
-      </button>
-      <button class="export-btn all" onclick="exportAll()" id="exp-all-btn">
-        <span>⬇</span><span id="exp-all-lbl">Export All 4 Cards PNG ZIP</span>
-      </button>
-      <button class="export-btn all" onclick="exportAllJPG()" id="exp-all-jpg-btn">
-        <span>⬇</span><span id="exp-all-jpg-lbl">Export All 4 Cards JPG ZIP</span>
-      </button>
-      <button class="export-btn all" onclick="exportCampaignPack()" id="exp-pack-btn">
-        <span id="exp-pack-lbl">Export Campaign Pack</span>
-      </button>
+      <div class="export-group">
+        <div class="export-group-title">Current Card</div>
+        <div class="export-actions">
+          <button class="export-btn single" onclick="exportCurrent()" id="exp-single-btn">
+            <span>⬇</span><span class="export-label-state" id="exp-single-lbl">Export Current Card PNG</span><span aria-hidden="true">PNG</span>
+          </button>
+          <button class="export-btn single" onclick="exportCurrentJPG()" id="exp-single-jpg-btn">
+            <span>⬇</span><span class="export-label-state" id="exp-single-jpg-lbl">Export Current Card JPG</span><span aria-hidden="true">JPG</span>
+          </button>
+        </div>
+      </div>
+      <div class="export-group">
+        <div class="export-group-title">All 4 Cards</div>
+        <div class="export-actions">
+          <button class="export-btn all" onclick="exportAll()" id="exp-all-btn">
+            <span>⬇</span><span class="export-label-state" id="exp-all-lbl">Export All 4 Cards PNG ZIP</span><span aria-hidden="true">PNG ZIP</span>
+          </button>
+          <button class="export-btn all" onclick="exportAllJPG()" id="exp-all-jpg-btn">
+            <span>⬇</span><span class="export-label-state" id="exp-all-jpg-lbl">Export All 4 Cards JPG ZIP</span><span aria-hidden="true">JPG ZIP</span>
+          </button>
+        </div>
+      </div>
+      <div class="export-group">
+        <div class="export-group-title">Campaign Pack</div>
+        <div class="export-actions single-action">
+          <button class="export-btn all" onclick="exportCampaignPack()" id="exp-pack-btn">
+            <span class="export-label-state" id="exp-pack-lbl">Export Campaign Pack</span><span aria-hidden="true">Export</span>
+          </button>
+        </div>
+      </div>
       <div class="export-progress" id="export-progress"></div>
       <div class="export-warn" id="export-warn">
         <strong>⚠ Export Warning</strong><br>
