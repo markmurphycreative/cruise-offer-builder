@@ -1040,7 +1040,6 @@ function operatorChanged(silent){
   }
   if(op&&!silent){
     if(!offers[cur].tags&&(cfg&&cfg.usp||op.defaultTags)){ const usp=(cfg&&cfg.usp)||op.defaultTags; offers[cur].tags=usp; document.getElementById("f-tags").value=usp; }
-    if(!offers[cur].board&&((cfg&&cfg.defaultBoard)||op.defaultBoard)){ const bm=BOARD_MAP[(cfg&&cfg.defaultBoard)||op.defaultBoard]; if(bm){ offers[cur].board=bm[0]; offers[cur].boardlbl=bm[1]; document.getElementById("f-board").value=bm[0]; document.getElementById("f-boardlbl").value=bm[1]; } }
   }
   if(!silent) rv();
   genUtm(); genStandardUtms(); updateExportFilenames();
