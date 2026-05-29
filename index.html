@@ -349,6 +349,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cc .operator-png-logo-area{height:390px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:48px 96px;line-height:0;overflow:hidden;}
 .cc .header-block img.operator-png-logo{width:auto;height:auto;max-width:760px;max-height:280px;object-fit:contain;display:block;}
 .cc .operator-png-logo.operator-png-logo--msc{max-width:380px;max-height:140px;transform:scale(.6);transform-origin:center center;}
+.cc .operator-png-logo.operator-png-logo--marella{max-width:304px;max-height:112px;}
 .cc .hero-wrap{width:1200px;height:849px;overflow:hidden;position:relative;background:var(--operator-bg,var(--navy));line-height:0;}
 .cc .hero{width:100%;height:calc(100% + 1px);object-fit:cover;display:block;position:absolute;top:-1px;left:0;transform-origin:center center;}
 .cc .hph{width:1200px;height:849px;background:#b8ccd8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
@@ -2269,7 +2270,7 @@ function getHeaderHTML(d){
   }
   // PNG operator assets are logo files, not full headers; keep the fixed header/USP layout and contain the logo within it.
   if(op&&op.pngData){
-    const logoClass=`operator-png-logo${key==='msc'?' operator-png-logo--msc':''}`;
+    const logoClass=`operator-png-logo${key==='msc'?' operator-png-logo--msc':''}${key==='marella'?' operator-png-logo--marella':''}`;
     return `<div class="header-block operator-png-header" style="width:1200px;height:497px;overflow:hidden;display:block;line-height:0;background:${skin?.background||'#0e1b2a'};"><div class="operator-png-usp" style="background:${skin?.accentStrip||op.color||'#a09267'};">${tags}</div><div class="operator-png-logo-area"><img class="${logoClass}" src="${op.pngData}" alt="${op.name} logo"></div></div>`;
   }
   if(!skin&&op&&op.svgData) return `<div class="header-block" style="width:1200px;height:497px;overflow:hidden;display:block;line-height:0;background:#0e1b2a;"><img src="${op.svgData}" width="1200" height="497" style="width:1200px;height:497px;object-fit:cover;display:block;"></div>`;
