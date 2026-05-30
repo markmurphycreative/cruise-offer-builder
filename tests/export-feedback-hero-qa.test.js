@@ -19,7 +19,7 @@ function extractFunction(name) {
 }
 
 test('successful export actions expose session-only green completion ticks', () => {
-  const ids = ['exp-single-complete', 'exp-single-jpg-complete', 'exp-all-complete', 'exp-all-jpg-complete', 'exp-pack-complete'];
+  const ids = ['exp-single-jpg-complete', 'exp-all-jpg-complete', 'exp-pack-complete'];
   ids.forEach(id => {
     assert.match(html, new RegExp(`id="${id}"[^>]*aria-label="Export completed"`));
     assert.match(html, new RegExp(`markExportComplete\\(["']${id}["']\\)`));
@@ -28,6 +28,21 @@ test('successful export actions expose session-only green completion ticks', () 
   assert.match(html, /\.export-complete\.active\{display:inline;\}/);
   assert.doesNotMatch(extractFunction('markExportComplete'), /localStorage|sessionStorage/);
   assert.doesNotMatch(html, /class="export-complete active"/);
+});
+
+
+test('export panel exposes only the streamlined JPG and campaign-pack actions while retaining internal PNG support', () => {
+  assert.match(html, /class="export-actions single-action">\s*<button class="export-btn single" onclick="exportCurrentJPG\(\)" id="exp-single-jpg-btn"/);
+  assert.match(html, /class="export-actions single-action">\s*<button class="export-btn all" onclick="exportAllJPG\(\)" id="exp-all-jpg-btn"/);
+  assert.match(html, /class="export-actions single-action">\s*<button class="export-btn all" onclick="exportCampaignPack\(\)" id="exp-pack-btn"/);
+  assert.match(html, /id="exp-pack-lbl">Export Campaign Pack<\/span><span aria-hidden="true">Export Campaign Pack<\/span>/);
+  assert.doesNotMatch(html, /id="exp-single-btn"/);
+  assert.doesNotMatch(html, /id="exp-all-btn"/);
+  assert.match(html, /function exportCurrent\(\)/);
+  assert.match(html, /function exportAll\(\)/);
+  assert.match(extractFunction('exportCurrentJPG'), /renderCardToImageBlob\(o,'image\/jpeg',0\.92\)/);
+  assert.match(extractFunction('exportAllJPG'), /renderCardToImageBlob\(o,'image\/jpeg',0\.92\)/);
+  assert.match(extractFunction('exportCampaignPack'), /renderCardToImageBlob\(o,'image\/png',1\.0\)/);
 });
 
 test('Celebrity Cruises alone receives the recommended empty hero imagery placeholder', () => {
