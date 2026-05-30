@@ -60,6 +60,19 @@ test('Dawson & Sanderson and no-logo headers reuse the fixed PNG header structur
   assert.match(html, /return pngHeader\(`<img class="\$\{logoClass\}" src="\$\{op\.pngData\}" alt="\$\{op\.name\} logo">`\);/);
 });
 
+test('Dawson & Sanderson logo uses the operator-specific centered scaling approach', () => {
+  assert.match(html, /\.cc \.operator-png-logo\.operator-png-logo--dands\{max-width:760px;max-height:250px;transform:scale\(\.75\);transform-origin:center center;\}/);
+  assert.match(html, /<img class="operator-png-logo operator-png-logo--dands" src="assets\/operator-logos\/dawson-and-sanderson-logo\.png"/);
+});
+
+test('Single, Email and All 4 previews share the canonical card renderer used by exports', () => {
+  assert.match(html, /function bc\(d\)\{ return renderCardHTML\(d\); \}/);
+  assert.match(html, /out\.innerHTML = renderCardHTML\(visibleFieldsToData\(\)\);/);
+  assert.match(html, /cardWrap\.innerHTML = bc\(d\);/);
+  assert.match(html, /c\.innerHTML = bc\(d \|\| \{\}\);/);
+  assert.match(html, /wrap\.innerHTML = renderCardHTML\(offerData\);/);
+});
+
 test('PNG and JPG exports use the same card renderer as previews', () => {
   assert.match(html, /wrap\.innerHTML = renderCardHTML\(offerData\);/);
   assert.match(html, /out\.innerHTML = renderCardHTML\(visibleFieldsToData\(\)\);/);
