@@ -793,30 +793,47 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 // ═══════════════════════════════════════════════════════
 // OPERATOR HEADERS — baked-in base64 assets
 // ═══════════════════════════════════════════════════════
+const OPERATOR_USP_PRESETS = {
+  ambassador: "Adult Only Options · Entertainment · Sustainability · Value",
+  celebrity: "Cuisine · Cultural Experiences · Entertainment · Overnight Port Stays",
+  cunard: "Cuisine · Entertainment · Luxury · Wellness",
+  fred: "Cultural Experiences · Education · Entertainment · Unique Itineraries",
+  marella: "Accessible · Adult Only Options · All-inclusive · Entertainment",
+  msc: "All-inclusive · Entertainment · Family · Diverse Itineraries",
+  ncl: "Entertainment · Family · Kids' Clubs · Value",
+  po: "Adult Only Options · Cuisine · Entertainment · Family",
+  princess: "All-inclusive · Cuisine · Entertainment · Family",
+  royal: "Amenities · Family · Entertainment · Kids' Clubs",
+  virgin: "All-inclusive · Cuisine · Overnight Port Stays · Adult Only Options",
+  tui: "Family · Beach · Value · Summer",
+  jet2: "Family · Value · Beach · City Breaks",
+  wendy: "Culture · Adventure · Asia · Discovery",
+  custom: ""
+};
+
 const OPERATOR_HEADERS = {
-  po:       { name:"P&O Cruises",           pngData:"assets/operator-logos/po-cruises-logo.png", defaultTags:"Adult Only Options · Cuisine · Entertainment · Family",           color:"#a09267", defaultBoard:"FB", ships:["Arvia","Iona","Britannia","Ventura","Azura","Aurora","Arcadia"] },
+  po:       { name:"P&O Cruises",           pngData:"assets/operator-logos/po-cruises-logo.png", color:"#a09267", defaultBoard:"FB", ships:["Arvia","Iona","Britannia","Ventura","Azura","Aurora","Arcadia"] },
   marella: {
     name: "Marella Cruises",
     svgData: null,
     pngData: "assets/operator-logos/marella-logo.png",
-    defaultTags: "Accessible · All Inclusive · Entertainment · Adults Only Cruise",
     color: "#88979e",
     defaultBoard: "AI",
     ships: ["Marella Explorer", "Marella Discovery", "Marella Discovery 2", "Marella Voyager", "Marella Explorer 2"]
   },
-  royal:    { name:"Royal Caribbean",       svgData:null, pngData:"assets/operator-logos/royal-caribbean-logo.png", defaultTags:"Adventure · Dining · Entertainment · Family",        color:"#003087", defaultBoard:"SC", ships:[] },
-  ambassador:{ name:"Ambassador Cruise Line",svgData:null, pngData:"assets/operator-logos/ambassador-cruise-line-logo.png", defaultTags:"Adult Only Options · Entertainment · Sustainability · Value", color:"#3b0d43", defaultBoard:"FB", ships:[] },
-  celebrity:{ name:"Celebrity Cruises",     svgData:null, pngData:"assets/operator-logos/celebrity-logo.png", defaultTags:"Luxury · Dining · Wellness · Adults", color:"#1a1a1a", defaultBoard:"AI", ships:[] },
-  fred:     { name:"Fred. Olsen Cruise Lines",svgData:null,pngData:"assets/operator-logos/fred-olsen-logo.png",defaultTags:"Destination · Heritage · Discovery · Boutique",      color:"#1a3a5c", defaultBoard:"HB", ships:["Borealis","Bolette","Balmoral","Black Watch"] },
-  msc:      { name:"MSC Cruises",           svgData:null, pngData:"assets/operator-logos/msc-cruises-logo.png", defaultTags:"Family · Entertainment · Dining · Adventure",        color:"#003399", defaultBoard:"SC", ships:[] },
-  cunard:   { name:"Cunard",                svgData:null, pngData:"assets/operator-logos/cunard-logo.png", defaultTags:"Classic · Luxury · Transatlantic · Heritage",        color:"#8b0000", defaultBoard:"HB", ships:["Queen Mary 2","Queen Victoria","Queen Elizabeth","Queen Anne"] },
-  ncl:      { name:"Norwegian Cruise Line", svgData:null, pngData:"assets/operator-logos/ncl-logo.png", defaultTags:"Freestyle · Dining · Entertainment · Adventure",     color:"#e31837", defaultBoard:"SC", ships:[] },
-  princess: { name:"Princess Cruises",      svgData:null, pngData:"assets/operator-logos/princess-cruises-logo.png", defaultTags:"Discovery · Dining · Relaxation · Family",           color:"#1a3a5c", defaultBoard:"FB", ships:[] },
-  virgin:   { name:"Virgin Voyages",        svgData:null, pngData:"assets/operator-logos/virgin-voyages-logo.png", defaultTags:"Adults Only · Dining · Music · Adventure",           color:"#e31837", defaultBoard:"AI", ships:[] },
-  tui:      { name:"TUI",                   svgData:null, pngData:null, defaultTags:"Family · Beach · Value · Summer",                    color:"#e3000f", defaultBoard:"AI", ships:[] },
-  jet2:     { name:"Jet2holidays",          svgData:null, pngData:null, defaultTags:"Family · Value · Beach · City Breaks",               color:"#e31837", defaultBoard:"SC", ships:[] },
-  wendy:    { name:"Wendy Wu Tours",        svgData:null, pngData:null, defaultTags:"Culture · Adventure · Asia · Discovery",             color:"#c41e3a", defaultBoard:"FB", ships:[] },
-  custom:   { name:"Custom",               svgData:null, pngData:null, defaultTags:"", color:"#a09267", defaultBoard:"", ships:[] }
+  royal:    { name:"Royal Caribbean",       svgData:null, pngData:"assets/operator-logos/royal-caribbean-logo.png", color:"#003087", defaultBoard:"SC", ships:[] },
+  ambassador:{ name:"Ambassador Cruise Line",svgData:null, pngData:"assets/operator-logos/ambassador-cruise-line-logo.png", color:"#3b0d43", defaultBoard:"FB", ships:[] },
+  celebrity:{ name:"Celebrity Cruises",     svgData:null, pngData:"assets/operator-logos/celebrity-logo.png", color:"#1a1a1a", defaultBoard:"AI", ships:[] },
+  fred:     { name:"Fred. Olsen Cruise Lines",svgData:null,pngData:"assets/operator-logos/fred-olsen-logo.png", color:"#1a3a5c", defaultBoard:"HB", ships:["Borealis","Bolette","Balmoral","Black Watch"] },
+  msc:      { name:"MSC Cruises",           svgData:null, pngData:"assets/operator-logos/msc-cruises-logo.png", color:"#003399", defaultBoard:"SC", ships:[] },
+  cunard:   { name:"Cunard",                svgData:null, pngData:"assets/operator-logos/cunard-logo.png", color:"#8b0000", defaultBoard:"HB", ships:["Queen Mary 2","Queen Victoria","Queen Elizabeth","Queen Anne"] },
+  ncl:      { name:"Norwegian Cruise Line", svgData:null, pngData:"assets/operator-logos/ncl-logo.png", color:"#e31837", defaultBoard:"SC", ships:[] },
+  princess: { name:"Princess Cruises",      svgData:null, pngData:"assets/operator-logos/princess-cruises-logo.png", color:"#1a3a5c", defaultBoard:"FB", ships:[] },
+  virgin:   { name:"Virgin Voyages",        svgData:null, pngData:"assets/operator-logos/virgin-voyages-logo.png", color:"#e31837", defaultBoard:"AI", ships:[] },
+  tui:      { name:"TUI",                   svgData:null, pngData:null, color:"#e3000f", defaultBoard:"AI", ships:[] },
+  jet2:     { name:"Jet2holidays",          svgData:null, pngData:null, color:"#e31837", defaultBoard:"SC", ships:[] },
+  wendy:    { name:"Wendy Wu Tours",        svgData:null, pngData:null, color:"#c41e3a", defaultBoard:"FB", ships:[] },
+  custom:   { name:"Custom",               svgData:null, pngData:null, color:"#a09267", defaultBoard:"", ships:[] }
 };
 
 
@@ -901,15 +918,15 @@ const OPERATOR_SKINS = {
 };
 
 const OPERATOR_CONFIG = {
-  ambassador:{displayName:"Ambassador Cruise Line",key:"ambassador",url:"https://www.dawsonandsanderson.co.uk/ambassador-cruise-line",usp:"",defaultBoard:"",utmSlug:"ambassador",logoAsset:"none",aliases:[/\bambassador\b/i]},
-  celebrity:{displayName:"Celebrity Cruises",key:"celebrity",url:"https://www.dawsonandsanderson.co.uk/celebrity-cruises",usp:"Luxury · Dining · Wellness · Adults",defaultBoard:"AI",utmSlug:"celebrity",logoAsset:"header",aliases:[/\bcelebrity\b/i,/\bcelebrity\s+cruises\b/i]},
-  cunard:{displayName:"Cunard",key:"cunard",url:"https://www.dawsonandsanderson.co.uk/cunard",usp:"Classic · Luxury · Transatlantic · Heritage",defaultBoard:"HB",utmSlug:"cunard",logoAsset:"header",aliases:[/\bcunard\b/i]},
-  fred:{displayName:"Fred. Olsen Cruise Lines",key:"fred",url:"https://www.dawsonandsanderson.co.uk/fred-olsen-cruise-lines",usp:"Destination · Heritage · Discovery · Boutique",defaultBoard:"HB",utmSlug:"fred_olsen",logoAsset:"header",aliases:[/\bfred\b/i,/\bfred\.?\s*olsen\b/i]},
-  marella:{displayName:"Marella Cruises",key:"marella",url:"https://www.dawsonandsanderson.co.uk/marella-cruises",usp:"Accessible · All Inclusive · Entertainment · Adults Only Cruise",defaultBoard:"AI",utmSlug:"marella",logoAsset:"header",aliases:[/\bmarella\b/i,/\bmarella\s+cruises\b/i]},
-  princess:{displayName:"Princess Cruises",key:"princess",url:"https://www.dawsonandsanderson.co.uk/cruises",usp:"Luxury • Destinations • Dining • Discovery",defaultBoard:"FB",utmSlug:"princess",logoAsset:"header",aliases:[/\bprincess\b/i,/\bprincess\s+cruises\b/i]},
-  po:{displayName:"P&O Cruises",key:"po",url:"https://www.dawsonandsanderson.co.uk/p-and-o-cruises",usp:"Adult Only Options · Cuisine · Entertainment · Family",defaultBoard:"FB",utmSlug:"pando",logoAsset:"header",aliases:[/\bp\s*&\s*o\b/i,/\bp\s*and\s*o\b/i,/\bp&o\s+cruises\b/i]},
-  royal:{displayName:"Royal Caribbean",key:"royal",url:"https://www.dawsonandsanderson.co.uk/royal-caribbean-international",usp:"Adventure · Dining · Entertainment · Family",defaultBoard:"SC",utmSlug:"royal_caribbean",logoAsset:"header",aliases:[/\broyal\s+caribbean\b/i,/\brci\b/i,/\broyal\b/i]},
-  virgin:{displayName:"Virgin Voyages",key:"virgin",url:"https://www.dawsonandsanderson.co.uk/cruises",usp:"Adults Only • Dining • Entertainment • Wellness",defaultBoard:"AI",utmSlug:"virgin",logoAsset:"header",aliases:[/\bvirgin\b/i,/\bvirgin\s+voyages\b/i]}
+  ambassador:{displayName:"Ambassador Cruise Line",key:"ambassador",url:"https://www.dawsonandsanderson.co.uk/ambassador-cruise-line",defaultBoard:"",utmSlug:"ambassador",logoAsset:"none",aliases:[/\bambassador\b/i]},
+  celebrity:{displayName:"Celebrity Cruises",key:"celebrity",url:"https://www.dawsonandsanderson.co.uk/celebrity-cruises",defaultBoard:"AI",utmSlug:"celebrity",logoAsset:"header",aliases:[/\bcelebrity\b/i,/\bcelebrity\s+cruises\b/i]},
+  cunard:{displayName:"Cunard",key:"cunard",url:"https://www.dawsonandsanderson.co.uk/cunard",defaultBoard:"HB",utmSlug:"cunard",logoAsset:"header",aliases:[/\bcunard\b/i]},
+  fred:{displayName:"Fred. Olsen Cruise Lines",key:"fred",url:"https://www.dawsonandsanderson.co.uk/fred-olsen-cruise-lines",defaultBoard:"HB",utmSlug:"fred_olsen",logoAsset:"header",aliases:[/\bfred\b/i,/\bfred\.?\s*olsen\b/i]},
+  marella:{displayName:"Marella Cruises",key:"marella",url:"https://www.dawsonandsanderson.co.uk/marella-cruises",defaultBoard:"AI",utmSlug:"marella",logoAsset:"header",aliases:[/\bmarella\b/i,/\bmarella\s+cruises\b/i]},
+  princess:{displayName:"Princess Cruises",key:"princess",url:"https://www.dawsonandsanderson.co.uk/cruises",defaultBoard:"FB",utmSlug:"princess",logoAsset:"header",aliases:[/\bprincess\b/i,/\bprincess\s+cruises\b/i]},
+  po:{displayName:"P&O Cruises",key:"po",url:"https://www.dawsonandsanderson.co.uk/p-and-o-cruises",defaultBoard:"FB",utmSlug:"pando",logoAsset:"header",aliases:[/\bp\s*&\s*o\b/i,/\bp\s*and\s*o\b/i,/\bp&o\s+cruises\b/i]},
+  royal:{displayName:"Royal Caribbean",key:"royal",url:"https://www.dawsonandsanderson.co.uk/royal-caribbean-international",defaultBoard:"SC",utmSlug:"royal_caribbean",logoAsset:"header",aliases:[/\broyal\s+caribbean\b/i,/\brci\b/i,/\broyal\b/i]},
+  virgin:{displayName:"Virgin Voyages",key:"virgin",url:"https://www.dawsonandsanderson.co.uk/cruises",defaultBoard:"AI",utmSlug:"virgin",logoAsset:"header",aliases:[/\bvirgin\b/i,/\bvirgin\s+voyages\b/i]}
 };
 
 function getOperatorLandingUrl(operatorKey){
@@ -1104,8 +1121,10 @@ function operatorChanged(silent){
     urlInput.value = landingUrl;
     offers[cur].url = landingUrl;
   }
-  if(op&&!silent){
-    if(!offers[cur].tags&&(cfg&&cfg.usp||op.defaultTags)){ const usp=(cfg&&cfg.usp)||op.defaultTags; offers[cur].tags=usp; document.getElementById("f-tags").value=usp; }
+  if(op&&!silent&&Object.prototype.hasOwnProperty.call(OPERATOR_USP_PRESETS,key)){
+    const usp=OPERATOR_USP_PRESETS[key];
+    offers[cur].tags=usp;
+    document.getElementById("f-tags").value=usp;
   }
   if(!silent) rv();
   genUtm(); genStandardUtms(); updateExportFilenames();
@@ -2272,7 +2291,7 @@ function getOperatorSkinStyle(d){
 function getHeaderHTML(d){
   const key=d.operator||""; const op=OPERATOR_HEADERS[key];
   const skin=getOperatorSkin(d);
-  const tags=d.tags||op?.defaultTags||"Cruise · Destinations · Entertainment";
+  const tags=d.tags||OPERATOR_USP_PRESETS[key]||"Cruise · Destinations · Entertainment";
   if(d._logoCustom){
     const sz=d._logoSize||50; const w=Math.round(1140*(sz/100));
     return `<div class="header-block" style="width:1200px;background:#0e1b2a;height:497px;display:flex;align-items:center;justify-content:center;padding:30px 80px;overflow:hidden;line-height:0;"><img src="${d._logoCustom}" style="width:${w}px;max-height:430px;object-fit:contain;display:block;"></div>`;
