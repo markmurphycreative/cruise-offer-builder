@@ -81,13 +81,15 @@ test('PNG and JPG exports use the same card renderer as previews', () => {
 });
 
 
-test('every generated USP strip uses the one shared 27px style without operator-specific sizing', () => {
+test('every generated USP strip uses the one shared 28px style without operator-specific sizing', () => {
   const uspRule = html.match(/\.cc \.operator-png-usp\{[^}]+\}/)?.[0];
   assert.ok(uspRule, 'shared USP strip rule should exist');
   assert.match(uspRule, /height:107px/);
-  assert.match(uspRule, /font-size:27px/);
+  assert.match(uspRule, /font-size:28px/);
   assert.match(uspRule, /line-height:normal/);
-  assert.equal((html.match(/font-size:27px/g) || []).length, 1, 'USP font size should have one shared declaration');
+  assert.equal((html.match(/\.cc \.operator-png-usp\{[^}]*font-size:28px/g) || []).length, 1, 'USP font size should have one shared declaration');
+  const stylesheet = html.match(/<style>([\s\S]*?)<\/style>/)?.[1] || '';
+  assert.equal((stylesheet.match(/operator-png-usp[^,{]*\{/g) || []).length, 1, 'USP strip should not have operator-specific style overrides');
 
   const fallback = renderHeader({ operator: 'unknown', tags: 'All-inclusive · Cuisine · Overnight Port Stays · Adult Only Options' });
   assert.match(fallback, /<div class="operator-png-usp" style="background:[^;]+;">All-inclusive · Cuisine · Overnight Port Stays · Adult Only Options<\/div>/);
