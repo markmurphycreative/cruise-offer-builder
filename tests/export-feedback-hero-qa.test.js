@@ -45,22 +45,47 @@ test('export panel exposes only the streamlined JPG and campaign-pack actions wh
   assert.match(extractFunction('exportCampaignPack'), /renderCardToImageBlob\(o,'image\/png',1\.0\)/);
 });
 
-test('Celebrity Cruises alone receives the recommended empty hero imagery placeholder', () => {
+test('supported cruise operators receive their recommended empty hero imagery placeholders only when no hero image exists', () => {
+  const expected = {
+    po: ['P&amp;O Cruises', 'Destination Imagery Recommended'],
+    marella: ['Marella Cruises', 'Beach &amp; Destination Imagery Recommended'],
+    celebrity: ['Celebrity Cruises', 'Lifestyle &amp; Luxury Imagery Recommended'],
+    royal: ['Royal Caribbean', 'Ship &amp; Destination Imagery Recommended'],
+    fred: ['Fred. Olsen Cruise Lines', 'Scenic Destination Imagery Recommended'],
+    cunard: ['Cunard', 'Elegant Destination Imagery Recommended'],
+    princess: ['Princess Cruises', 'Destination &amp; Discovery Imagery Recommended'],
+    msc: ['MSC Cruises', 'Mediterranean Lifestyle Imagery Recommended'],
+    ncl: ['Norwegian Cruise Line', 'Destination &amp; Lifestyle Imagery Recommended'],
+    virgin: ['Virgin Voyages', 'Lifestyle Imagery Recommended'],
+    ambassador: ['Ambassador Cruise Line', 'Scenic Destination Imagery Recommended']
+  };
+  const placeholders = html.match(/const OPERATOR_HERO_PLACEHOLDERS = \{[\s\S]*?\n\};/)?.[0];
+  assert.ok(placeholders, 'Could not locate OPERATOR_HERO_PLACEHOLDERS');
   const script = [
+    placeholders.replace('const OPERATOR_HERO_PLACEHOLDERS', 'var OPERATOR_HERO_PLACEHOLDERS'),
     'function getOperatorSkinStyle(){ return ""; }',
     'function getHeaderHTML(){ return ""; }',
     extractFunction('cleanPortsDisplay'),
     extractFunction('chunkBullets'),
     extractFunction('renderCardHTML'),
-    'result = { celebrity: renderCardHTML({operator:"celebrity"}), other: renderCardHTML({operator:"royal"}), image: renderCardHTML({operator:"celebrity", _img:"hero.jpg"}) };'
+    'result = Object.fromEntries(Object.keys(OPERATOR_HERO_PLACEHOLDERS).map(operator => [operator, { empty: renderCardHTML({operator}), image: renderCardHTML({operator, _img:"hero.jpg"}) }]));',
+    'result.other = { empty: renderCardHTML({operator:"custom"}) };'
   ].join('\n');
   const context = { document: { getElementById: () => ({ value: '' }) }, result: null };
   vm.createContext(context);
   vm.runInContext(script, context);
-  assert.match(context.result.celebrity, /Celebrity Cruises/);
-  assert.match(context.result.celebrity, /Lifestyle &amp; Luxury Imagery Recommended/);
-  assert.doesNotMatch(context.result.other, /Lifestyle &amp; Luxury Imagery Recommended/);
-  assert.doesNotMatch(context.result.image, /Lifestyle &amp; Luxury Imagery Recommended/);
+
+  assert.deepEqual(Object.keys(context.result).filter(operator => operator !== 'other'), Object.keys(expected));
+  Object.entries(expected).forEach(([operator, [name, recommendation]]) => {
+    assert.match(context.result[operator].empty, new RegExp(`<div class="hph"><span>${name}</span><span>${recommendation}</span></div>`));
+    assert.doesNotMatch(context.result[operator].image, new RegExp(recommendation));
+  });
+  assert.match(context.result.other.empty, /<div class="hph"><span><\/span><\/div>/);
+});
+
+test('empty hero placeholder text is approximately 25% larger without changing the hero dimensions or positioning styles', () => {
+  assert.match(html, /\.cc \.hph\{width:1200px;height:849px;background:#b8ccd8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;\}/);
+  assert.match(html, /\.cc \.hph span\{font-size:28px;font-weight:300;color:#5a7a90;font-family:'Montserrat',sans-serif;\}/);
 });
 
 test('missing hero QA retains passive logic while adding a stronger warning treatment', () => {
