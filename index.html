@@ -816,6 +816,11 @@ const OPERATOR_USP_PRESETS = {
 };
 
 const OPERATOR_SHIPS = {
+  ambassador: [
+    "Ambition",
+    "Renaissance",
+    "Ambience"
+  ],
   marella: [
     "Marella Explorer",
     "Marella Explorer 2",
@@ -1542,7 +1547,7 @@ function getOperatorShipQaIssue(operatorKey,shipName){
   const closeThreshold=Math.max(2,Math.floor(closest.name.length*.15));
   return closest.distance<=closeThreshold
     ?`Possible ship name error: did you mean ${closest.name}?`
-    :`Ship name not found in ${operatorKey==="marella"?"Marella Cruises":operatorKey==="po"?"P&O Cruises":"Royal Caribbean"} ship list.`;
+    :`Ship name not found in ${operatorKey==="ambassador"?"Ambassador Cruise Line":operatorKey==="marella"?"Marella Cruises":operatorKey==="po"?"P&O Cruises":"Royal Caribbean"} ship list.`;
 }
 function setSpellWarn(warnId,msg){const el=document.getElementById(warnId); if(!el) return; el.textContent=msg||""; el.classList.toggle("active",!!msg);}
 function buildQaChecklist(rows){

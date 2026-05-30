@@ -27,7 +27,26 @@ test('Royal Caribbean ship catalogue contains the official first-pass list', () 
   const { OPERATOR_SHIPS } = createShipQaHarness();
   assert.equal(OPERATOR_SHIPS.royal.length, 30);
   assert.ok(OPERATOR_SHIPS.royal.includes('Navigator of the Seas'));
-  assert.deepEqual(Object.keys(OPERATOR_SHIPS), ['marella', 'po', 'royal']);
+  assert.deepEqual(Object.keys(OPERATOR_SHIPS), ['ambassador', 'marella', 'po', 'royal']);
+});
+
+test('Ambassador Cruise Line ship catalogue contains the requested list', () => {
+  const { OPERATOR_SHIPS } = createShipQaHarness();
+  assert.deepEqual(Array.from(OPERATOR_SHIPS.ambassador), ['Ambition', 'Renaissance', 'Ambience']);
+});
+
+test('Ambassador Cruise Line ship QA covers exact, close, empty and unknown values', () => {
+  const { getOperatorShipQaIssue } = createShipQaHarness();
+  assert.equal(getOperatorShipQaIssue('ambassador', 'Ambition'), '');
+  assert.equal(
+    getOperatorShipQaIssue('ambassador', 'Ambiance'),
+    'Possible ship name error: did you mean Ambience?'
+  );
+  assert.equal(getOperatorShipQaIssue('ambassador', ''), '');
+  assert.equal(
+    getOperatorShipQaIssue('ambassador', 'Entirely Unknown Vessel'),
+    'Ship name not found in Ambassador Cruise Line ship list.'
+  );
 });
 
 test('Marella Cruises ship catalogue contains the requested list', () => {
@@ -170,6 +189,27 @@ function createQaPanelHarness(operator, ship) {
   vm.runInContext(source, context);
   return { context, elements };
 }
+
+test('Ambassador Cruise Line states appear as passive QA results in the existing panel', () => {
+  const exact = createQaPanelHarness('ambassador', 'Ambition');
+  exact.context.runSpellQA();
+  assert.match(exact.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">✓ Checked<\/span>/);
+
+  const close = createQaPanelHarness('ambassador', 'Ambiance');
+  close.context.runSpellQA();
+  assert.match(close.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">⚠ Review<\/span>/);
+  assert.match(close.elements['spell-warn-name'].textContent, /Possible ship name error: did you mean Ambience\?/);
+  assert.match(close.elements['copy-qa-note'].textContent, /Possible ship name error: did you mean Ambience\?/);
+
+  const empty = createQaPanelHarness('ambassador', '');
+  empty.context.runSpellQA();
+  assert.match(empty.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">— Empty \/ not checked<\/span>/);
+
+  const unknown = createQaPanelHarness('ambassador', 'Entirely Unknown Vessel');
+  unknown.context.runSpellQA();
+  assert.match(unknown.elements['spell-warn-name'].textContent, /Ship name not found in Ambassador Cruise Line ship list\./);
+  assert.match(unknown.elements['copy-qa-note'].textContent, /Passive checks only — review:/);
+});
 
 test('Marella Cruises states appear as passive QA results in the existing panel', () => {
   const exact = createQaPanelHarness('marella', 'Marella Explorer');
