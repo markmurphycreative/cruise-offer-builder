@@ -288,6 +288,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .tbtn.on{background:rgba(255,255,255,.15);color:#fff;}
 .preview-wrap{flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:stretch;}
 .preview-scaler{margin-block:auto;transform-origin:top center;transition:transform .1s;}
+#card-output{opacity:1;transition:opacity .15s ease-out;}
+#card-output.preview-mode-transition{opacity:0;}
+@media (prefers-reduced-motion:reduce){#card-output{transition:none;}}
 
 /* ── EMAIL PREVIEW ── */
 .email-preview-wrap{background:#2a2a2a;padding:20px;min-width:fit-content;}
@@ -3144,13 +3147,30 @@ processSheetCSV = function(csv,status){
 // Email: full-width stacked preview, no horizontal clipping.
 // All 4: 2x2 grid, auto-scaled to fit the preview pane without scrolling.
 // ═══════════════════════════════════════════════════════
+let previewModeTransitionFrame = null;
+function fadePreviewModeIn(){
+  const out = document.getElementById('card-output');
+  if(!out) return;
+  if(previewModeTransitionFrame !== null) cancelAnimationFrame(previewModeTransitionFrame);
+  out.classList.remove('preview-mode-transition');
+  out.classList.add('preview-mode-transition');
+  void out.offsetWidth;
+  previewModeTransitionFrame = requestAnimationFrame(function(){
+    out.classList.remove('preview-mode-transition');
+    previewModeTransitionFrame = null;
+  });
+}
+
 function setView(v){
-  viewMode = v || 'single';
+  const nextViewMode = v || 'single';
+  const didChange = nextViewMode !== viewMode;
+  viewMode = nextViewMode;
   ['single','email','all'].forEach(function(x){
     const b = document.getElementById('vb-' + x);
     if(b) b.classList.toggle('active', x === viewMode);
   });
   renderPreviewMode(true);
+  if(didChange) fadePreviewModeIn();
   queueAutosave();
 }
 
