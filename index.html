@@ -80,6 +80,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .prod-status-item{font-size:9px;line-height:1.35;color:var(--text);display:flex;align-items:flex-start;gap:5px;}
 .prod-status-item.ok{color:var(--green);}
 .prod-status-item.warn{color:var(--amber);font-weight:600;}
+.prod-status-item.hero-warning{color:#8a5000;background:#fff4df;border:1px solid #efbf74;border-radius:3px;padding:4px 5px;font-weight:700;}
 .copy-qa-panel{margin-top:6px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;}
 .copy-qa-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);margin-bottom:4px;}
 .copy-qa-status{font-size:9px;line-height:1.35;color:var(--muted);margin-bottom:4px;}
@@ -223,6 +224,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .export-btn:hover{opacity:.88;transform:translateY(-1px);}
 .export-btn.single{background:var(--gold);box-shadow:0 2px 6px rgba(160,146,103,.35);}
 .export-btn.all{background:var(--navy);box-shadow:0 2px 6px rgba(14,27,42,.35);}
+.export-complete{display:none;color:#b8f0c7;font-size:14px;font-weight:700;line-height:1;}
+.export-complete.active{display:inline;}
 .export-label-state{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
 .export-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
 .export-progress{font-size:10px;color:var(--muted);text-align:center;min-height:14px;margin-top:2px;}
@@ -255,6 +258,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .btn-compact{font-size:9px;padding:4px;}
 .lock-ind{display:none;font-size:9px;color:var(--amber);font-weight:700;text-align:center;margin-bottom:4px;padding:3px;background:#fff8e0;border-radius:3px;}
 .lock-ind.active{display:block;}
+.session-status{font-size:9px;color:var(--muted);background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:5px 7px;margin-bottom:5px;line-height:1.4;text-align:center;}
+.session-status strong{display:block;color:var(--navy);font-size:9px;}
 .session-hint{font-size:9px;color:var(--muted);text-align:center;margin-top:3px;line-height:1.35;}
 .session-feedback{font-size:9px;color:var(--green);text-align:center;margin-top:3px;min-height:12px;opacity:0;transition:opacity .2s ease;}
 .session-feedback.warn{color:#8a5000;}
@@ -655,10 +660,10 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         <div class="export-group-title">Current Card</div>
         <div class="export-actions">
           <button class="export-btn single" onclick="exportCurrent()" id="exp-single-btn">
-            <span>⬇</span><span class="export-label-state" id="exp-single-lbl">Export Current Card PNG</span><span aria-hidden="true">PNG</span>
+            <span>⬇</span><span class="export-label-state" id="exp-single-lbl">Export Current Card PNG</span><span aria-hidden="true">PNG</span><span class="export-complete" id="exp-single-complete" aria-label="Export completed">✓</span>
           </button>
           <button class="export-btn single" onclick="exportCurrentJPG()" id="exp-single-jpg-btn">
-            <span>⬇</span><span class="export-label-state" id="exp-single-jpg-lbl">Export Current Card JPG</span><span aria-hidden="true">JPG</span>
+            <span>⬇</span><span class="export-label-state" id="exp-single-jpg-lbl">Export Current Card JPG</span><span aria-hidden="true">JPG</span><span class="export-complete" id="exp-single-jpg-complete" aria-label="Export completed">✓</span>
           </button>
         </div>
       </div>
@@ -666,10 +671,10 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         <div class="export-group-title">All 4 Cards</div>
         <div class="export-actions">
           <button class="export-btn all" onclick="exportAll()" id="exp-all-btn">
-            <span>⬇</span><span class="export-label-state" id="exp-all-lbl">Export All 4 Cards PNG ZIP</span><span aria-hidden="true">PNG ZIP</span>
+            <span>⬇</span><span class="export-label-state" id="exp-all-lbl">Export All 4 Cards PNG ZIP</span><span aria-hidden="true">PNG ZIP</span><span class="export-complete" id="exp-all-complete" aria-label="Export completed">✓</span>
           </button>
           <button class="export-btn all" onclick="exportAllJPG()" id="exp-all-jpg-btn">
-            <span>⬇</span><span class="export-label-state" id="exp-all-jpg-lbl">Export All 4 Cards JPG ZIP</span><span aria-hidden="true">JPG ZIP</span>
+            <span>⬇</span><span class="export-label-state" id="exp-all-jpg-lbl">Export All 4 Cards JPG ZIP</span><span aria-hidden="true">JPG ZIP</span><span class="export-complete" id="exp-all-jpg-complete" aria-label="Export completed">✓</span>
           </button>
         </div>
       </div>
@@ -677,7 +682,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         <div class="export-group-title">Campaign Pack</div>
         <div class="export-actions single-action">
           <button class="export-btn all" onclick="exportCampaignPack()" id="exp-pack-btn">
-            <span class="export-label-state" id="exp-pack-lbl">Export Campaign Pack</span><span aria-hidden="true">Export</span>
+            <span class="export-label-state" id="exp-pack-lbl">Export Campaign Pack</span><span aria-hidden="true">Export</span><span class="export-complete" id="exp-pack-complete" aria-label="Export completed">✓</span>
           </button>
         </div>
       </div>
@@ -751,6 +756,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
   <!-- Actions -->
   <div class="sb-actions">
+    <div class="session-status" id="saved-session-status" aria-live="polite"><strong>No Saved Session</strong></div>
     <div class="act-row">
       <button class="abtn" onclick="clearSavedSession()">Clear Saved Session</button>
     </div>
@@ -1524,6 +1530,11 @@ async function renderCardToPNG(offerData, filename){
   return true;
 }
 
+function markExportComplete(id){
+  const indicator=document.getElementById(id);
+  if(indicator) indicator.classList.add("active");
+}
+
 async function exportCurrent(){
   if(exportRunning) return;
   save();
@@ -1546,6 +1557,7 @@ async function exportCurrent(){
     const filename=getExportFilename(cur);
     await renderCardToPNG(o, filename);
     prog.textContent="✓ Exported: "+filename;
+    markExportComplete("exp-single-complete");
     document.getElementById("exp-single-lbl").textContent="Export Current Card PNG";
   } catch(err){
     prog.textContent="⚠ Export failed — try using a locally uploaded image";
@@ -1605,6 +1617,7 @@ async function exportAll(){
     setTimeout(()=>URL.revokeObjectURL(link.href), 1000);
     document.body.removeChild(link);
     prog.textContent=`✓ ZIP exported — ${done} card(s) included`;
+    markExportComplete("exp-all-complete");
   } catch(err){
     prog.textContent="⚠ ZIP export failed";
     console.error("ZIP creation error:", err);
@@ -1738,14 +1751,14 @@ function updateProductionStatus(){
   const o=offers[cur]||{};
   const checks=[
     {ok:!!(o.name||o.price||o._img),okLbl:"✓ Offer loaded",warnLbl:"⚠ Offer not loaded"},
-    {ok:!!o._img,okLbl:"✓ Hero image loaded",warnLbl:"⚠ Hero image missing"},
+    {ok:!!o._img,okLbl:"✓ Hero image loaded",warnLbl:"⚠ Hero image missing",warningClass:"hero-warning"},
     {ok:!!o.operator,okLbl:"✓ Operator selected",warnLbl:"⚠ Operator not selected"},
     {ok:!!o._utm,okLbl:"✓ UTMs generated",warnLbl:"⚠ UTM missing"}
   ];
   if(o._img && String(o._img).startsWith("http")) checks.push({ok:false,warnLbl:"⚠ External image URL may affect export"});
   const host=document.getElementById("prod-status-list");
   if(!host) return;
-  host.innerHTML=checks.map(c=>`<div class="prod-status-item ${c.ok?"ok":"warn"}"><span>${c.ok?"✓":"⚠"}</span><span>${c.ok?(c.okLbl||"").replace(/^✓\s*/,""):(c.warnLbl||"").replace(/^⚠\s*/,"")}</span></div>`).join("");
+  host.innerHTML=checks.map(c=>`<div class="prod-status-item ${c.ok?"ok":`warn ${c.warningClass||""}`}"><span>${c.ok?"✓":"⚠"}</span><span>${c.ok?(c.okLbl||"").replace(/^✓\s*/,""):(c.warnLbl||"").replace(/^⚠\s*/,"")}</span></div>`).join("");
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2064,6 +2077,21 @@ function formatRelativeAutosave(ts){
   const hrs = Math.round(mins/60);
   return `Autosaved ${hrs} hr${hrs===1?"":"s"} ago`;
 }
+function countLoadedSessionOffers(payload){
+  return ((payload&&payload.offers)||[]).filter(o=>o&&(o.name||o.ship||o.price||o._img)).length;
+}
+function updateSavedSessionStatus(payload){
+  const el=document.getElementById("saved-session-status");
+  if(!el) return;
+  const saved=payload||readSavedSession();
+  if(!(saved&&saved.offers)){
+    el.innerHTML="<strong>No Saved Session</strong>";
+    return;
+  }
+  const loaded=countLoadedSessionOffers(saved);
+  const updated=formatAutosaveTime(saved.savedAt)||"—";
+  el.innerHTML=`<strong>Session Saved</strong>${loaded} Offer${loaded===1?"":"s"} Loaded<br>Last Updated: ${updated}`;
+}
 function setAutosaveStatus(label,isWarn=false){
   const el=document.getElementById("autosave-status");
   if(!el) return;
@@ -2071,6 +2099,7 @@ function setAutosaveStatus(label,isWarn=false){
   el.classList.toggle("warn", !!isWarn);
 }
 function syncAutosaveStatus(){
+  updateSavedSessionStatus();
   if(autosaveAwaitingRestoreDecision){ setAutosaveStatus("Recovery available", true); return; }
   if(autosaveHydrating){ setAutosaveStatus("Autosave paused"); return; }
   if(autosaveLastSavedAt){ setAutosaveStatus(`Autosaved ${formatAutosaveTime(autosaveLastSavedAt)}`); return; }
@@ -2099,6 +2128,7 @@ function saveSessionNow(){
     const payload = buildAutosavePayload();
     localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(payload));
     autosaveLastSavedAt = payload.savedAt || new Date().toISOString();
+    updateSavedSessionStatus(payload);
     syncAutosaveStatus();
   }catch(e){
     setAutosaveStatus("Autosave failed", true);
@@ -2557,9 +2587,12 @@ function renderCardHTML(d){
   const heroFitMode=d._heroFitMode==="fit"?"fit":"fill";
   const heroObjectFit=heroFitMode==="fit"?"contain":"cover";
   const heroBg=heroFitMode==="fit"?"background:#0e1b2a;":"";
+  const emptyHeroHTML=d.operator==="celebrity"
+    ? `<div class="hph"><span>Celebrity Cruises</span><span>Lifestyle &amp; Luxury Imagery Recommended</span></div>`
+    : `<div class="hph"><span></span></div>`;
   const heroHTML=d._img
     ? `<div class="hero-wrap" style="${heroBg}"><img class="hero" src="${d._img}" style="object-fit:${heroObjectFit};object-position:${cx}% ${cy}%;transform:scale(${cz/100});transform-origin:center center;" onerror="this.parentElement.innerHTML='<div class=hph><span>Image failed to load</span></div>'"></div>`
-    : `<div class="hph"><span></span></div>`;
+    : emptyHeroHTML;
   const shipLine=ship?`Sailing on ${ship}`:"";
   const priceHTML=price?`<div class="pfrom">From</div><div class="pmain">£${price}<span class="ppp">pp</span></div>`:`<div class="pfrom"></div><div class="pmain"></div>`;
   const dateHTML=(day||month)?`${day}`:"";
@@ -3455,6 +3488,7 @@ async function exportCurrentJPG(){
     const blob=await renderCardToImageBlob(o,'image/jpeg',0.92);
     downloadBlob(blob,filename);
     if(prog) prog.textContent='✓ Exported: '+filename;
+    markExportComplete('exp-single-jpg-complete');
   }catch(err){
     if(prog) prog.textContent='⚠ JPG export failed — try using a locally uploaded image';
     if(warn) warn.classList.add('active');
@@ -3492,6 +3526,7 @@ async function exportAllJPG(){
     const zipBlob=await zip.generateAsync({type:'blob'});
     downloadBlob(zipBlob,getCampaignZipFilenameExt('jpg'));
     if(prog) prog.textContent=`✓ JPG ZIP exported — ${done} card(s) included`;
+    markExportComplete('exp-all-jpg-complete');
   }catch(err){
     if(prog) prog.textContent='⚠ JPG ZIP export failed';
     console.error('JPG ZIP creation error:',err);
@@ -3537,6 +3572,7 @@ Offers Included: ${combinedRows.filter(row=>row.type==='offer').length}`);
     const blob=await zip.generateAsync({type:'blob'});
     downloadBlob(blob,'campaign-pack.zip');
     if(prog) prog.textContent='✓ Campaign pack exported';
+    markExportComplete('exp-pack-complete');
   }catch(err){ console.error(err); if(prog) prog.textContent='⚠ Campaign pack export failed'; }
   exportRunning=false; if(btn) btn.disabled=false; if(lbl) lbl.textContent='Export Campaign Pack';
 }
