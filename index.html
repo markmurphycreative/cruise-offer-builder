@@ -58,7 +58,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 /* ── SECTIONS ── */
 .section{margin-bottom:4px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
 .section-hdr{background:var(--panel);padding:5px 9px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
-.section-hdr h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);}
+.section-hdr h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);display:flex;align-items:center;gap:6px;}
+.section-icon{width:18px;height:18px;flex-shrink:0;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;}
 .section-toggle{font-size:10px;color:var(--muted);transition:transform .2s;display:inline-block;}
 .section-hdr.collapsed .section-toggle{transform:rotate(-90deg);}
 .section-body{padding:6px 9px;}
@@ -467,7 +468,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <!-- ── CSV IMPORT (CORE WORKFLOW) ── -->
     <div class="section csv-core-section" data-section-key="csv-import">
       <div class="section-hdr" onclick="toggleSec(this)">
-        <h3>📥 CSV Import</h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>CSV Import</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body">
           <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values" style="display:none">
@@ -481,7 +482,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <!-- ── CAMPAIGN PRESETS ── -->
     <div class="section" data-section-key="campaign-presets">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3>💾 Campaign Presets</h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path><path d="M17 21v-8H7v8"></path><path d="M7 3v5h8"></path></svg>Campaign Presets</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body hidden">
         <div class="field">
@@ -506,7 +507,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <!-- ── 1. PASTE RAW OFFER ── -->
     <div class="section" data-section-key="paste-raw-offer">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3>📋 Paste Raw Offer</h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M11 14h10"></path><path d="m17 10 4 4-4 4"></path><path d="M9 5V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"></path><path d="M17 5h1a2 2 0 0 1 2 2v3"></path><path d="M9 18H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1"></path><rect width="8" height="5" x="8" y="4" rx="1"></rect></svg>Paste Raw Offer</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body parse-area hidden">
         <textarea id="raw-paste" spellcheck="true" placeholder="Paste Trello / operator copy here...
@@ -526,7 +527,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     <!-- ── 2. OPERATOR ── -->
     <div class="section" data-section-key="operator-logo">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3>🚢 Operator Logo</h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"></path></svg>Operator Logo</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body hidden">
         <div class="field">
@@ -584,7 +585,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     <!-- ── 3. HERO IMAGE ── -->
     <div class="section" data-section-key="hero-image">
       <div class="section-hdr" onclick="toggleSec(this)">
-        <h3>🖼 Hero</h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"></path></svg>Hero Image</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body">
         <div class="dz-wrap">
@@ -621,7 +622,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     <!-- ── 4. OFFER DETAILS ── -->
     <div class="section" data-section-key="offer-details">
       <div class="section-hdr" onclick="toggleSec(this)">
-        <h3>✏️ Offer Details</h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M16 13H8"></path><path d="M16 17H8"></path><path d="M10 9H8"></path></svg>Offer Details</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body">
         <div class="fg2">
@@ -695,7 +696,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
     <div class="section summary-section" data-section-key="summary-tools">
       <div class="section-hdr" onclick="toggleSec(this)">
-        <h3>🧾 Summary</h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg>Summary</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body">
         <div class="utm-btn-row">
@@ -712,7 +713,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     <!-- ── 5. UTM ── -->
     <div class="section" data-section-key="utm-link">
       <div class="section-hdr" onclick="toggleSec(this)">
-        <h3>🔗 UTM Link</h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>UTM Link</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body">
         <div class="field"><label>Operator Landing Page</label><input id="f-url" placeholder="https://dawsonandsanderson.co.uk/cruises" oninput="genUtm()"></div>
@@ -732,7 +733,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     <!-- ── 6. STANDARD UTMs ── -->
     <div class="section" data-section-key="standard-utms">
       <div class="section-hdr" onclick="toggleSec(this)">
-        <h3>🔗 Standard UTMs</h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>Standard UTMs</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body">
         <div class="std-utm-list" id="std-utm-list"></div>
