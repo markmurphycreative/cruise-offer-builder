@@ -811,6 +811,41 @@ const OPERATOR_USP_PRESETS = {
   custom: ""
 };
 
+const OPERATOR_SHIPS = {
+  royal: [
+    "Adventure of the Seas",
+    "Allure of the Seas",
+    "Anthem of the Seas",
+    "Brilliance of the Seas",
+    "Enchantment of the Seas",
+    "Explorer of the Seas",
+    "Freedom of the Seas",
+    "Grandeur of the Seas",
+    "Harmony of the Seas",
+    "Icon of the Seas",
+    "Independence of the Seas",
+    "Jewel of the Seas",
+    "Legend of the Seas",
+    "Liberty of the Seas",
+    "Mariner of the Seas",
+    "Navigator of the Seas",
+    "Oasis of the Seas",
+    "Odyssey of the Seas",
+    "Ovation of the Seas",
+    "Quantum of the Seas",
+    "Radiance of the Seas",
+    "Rhapsody of the Seas",
+    "Serenade of the Seas",
+    "Spectrum of the Seas",
+    "Star of the Seas",
+    "Symphony of the Seas",
+    "Utopia of the Seas",
+    "Vision of the Seas",
+    "Voyager of the Seas",
+    "Wonder of the Seas"
+  ]
+};
+
 const OPERATOR_HEADERS = {
   po:       { name:"P&O Cruises",           pngData:"assets/operator-logos/po-cruises-logo.png", color:"#a09267", defaultBoard:"FB", ships:["Arvia","Iona","Britannia","Ventura","Azura","Aurora","Arcadia"] },
   marella: {
@@ -1128,6 +1163,7 @@ function operatorChanged(silent){
   }
   if(!silent) rv();
   genUtm(); genStandardUtms(); updateExportFilenames();
+  try { runSpellQA(); } catch(e){}
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1463,6 +1499,31 @@ function getLikelyTypos(text){
   }
   return [...new Set(issues)].slice(0,4);
 }
+function levenshteinDistance(a,b){
+  const left=String(a||"").toLowerCase();
+  const right=String(b||"").toLowerCase();
+  const row=Array.from({length:right.length+1},(_,i)=>i);
+  for(let i=1;i<=left.length;i++){
+    let previous=row[0];
+    row[0]=i;
+    for(let j=1;j<=right.length;j++){
+      const above=row[j];
+      row[j]=Math.min(row[j]+1,row[j-1]+1,previous+(left[i-1]===right[j-1]?0:1));
+      previous=above;
+    }
+  }
+  return row[right.length];
+}
+function getOperatorShipQaIssue(operatorKey,shipName){
+  const ships=OPERATOR_SHIPS[operatorKey];
+  const value=String(shipName||"").trim();
+  if(!ships||!value||ships.includes(value)) return "";
+  const closest=ships.map(name=>({name,distance:levenshteinDistance(value,name)})).sort((a,b)=>a.distance-b.distance)[0];
+  const closeThreshold=Math.max(2,Math.floor(closest.name.length*.15));
+  return closest.distance<=closeThreshold
+    ?`Possible ship name error: did you mean ${closest.name}?`
+    :"Ship name not found in Royal Caribbean ship list.";
+}
 function setSpellWarn(warnId,msg){const el=document.getElementById(warnId); if(!el) return; el.textContent=msg||""; el.classList.toggle("active",!!msg);}
 function buildQaChecklist(rows){
   const host=document.getElementById("copy-qa-checklist");
@@ -1478,11 +1539,13 @@ function runSpellQA(){
     if(!el) return;
     const value=String(el.value||"").trim();
     const bad=value?getLikelyTypos(value):[];
+    const shipIssue=f.id==="f-ship"?getOperatorShipQaIssue((document.getElementById("f-operator")||{}).value,value):"";
+    const issues=[...(bad.length?[`${f.label}: ${bad.join(', ')}`]:[]),...(shipIssue?[shipIssue]:[])];
     const isEmpty=!value;
-    el.classList.toggle('spell-flag',bad.length>0);
-    if(bad.length){ (byWarn[f.warnId]||(byWarn[f.warnId]=[])).push(`${f.label}: ${bad.join(', ')}`); }
-    const state=isEmpty?"— Empty / not checked":(bad.length?"⚠ Review":"✓ Checked");
-    const stateClass=isEmpty?"empty":(bad.length?"review":"checked");
+    el.classList.toggle('spell-flag',issues.length>0);
+    if(issues.length){ (byWarn[f.warnId]||(byWarn[f.warnId]=[])).push(...issues); }
+    const state=isEmpty?"— Empty / not checked":(issues.length?"⚠ Review":"✓ Checked");
+    const stateClass=isEmpty?"empty":(issues.length?"review":"checked");
     rows.push({label:f.label,state,stateClass});
   });
   buildQaChecklist(rows);
