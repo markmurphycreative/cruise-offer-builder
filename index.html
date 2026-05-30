@@ -373,6 +373,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cc .hph{width:1200px;height:849px;background:#b8ccd8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
 .cc .hph span{font-size:28px;font-weight:300;color:#5a7a90;font-family:'Montserrat',sans-serif;}
 .cc .isec{width:1200px;height:auto;min-height:0;overflow:visible;background:#fff;padding:80px 62px 112px;text-align:center;}
+.cc .isec-content{position:relative;top:16px;}
 .cc .cname,.cc .incl,.cc .sname,.cc .price-block,.cc .pmain,.cc .pbasis{max-width:100%;min-width:0;white-space:normal;word-wrap:break-word;overflow-wrap:break-word;}
 .cc .cname,.cc .incl,.cc .sname,.cc .pbasis{max-width:1000px;margin-left:auto;margin-right:auto;}
 .cc .price-block{max-width:1000px;}
@@ -2634,7 +2635,7 @@ function renderCardHTML(d){
   const priceHTML=price?`<div class="pfrom">From</div><div class="pmain">£${price}<span class="ppp">pp</span></div>`:`<div class="pfrom"></div><div class="pmain"></div>`;
   const dateHTML=(day||month)?`${day}`:"";
   const nightLabel=nights?"Nights":"";
-  return `<div class="cc"${getOperatorSkinStyle(d)}>${getHeaderHTML(d)}${heroHTML}<div class="isec"><div class="cname">${name}</div><div class="incl">${incl}</div><div class="sname">${shipLine}</div><div class="price-block">${priceHTML}<div class="pbasis">${basis}</div></div></div><div class="ibar"><div class="icell gold"><div class="ival">${board}</div><div class="ilbl">${boardlbl}</div></div><div class="icell blk"><div class="ival">${dateHTML}</div><div class="ilbl">${month}</div></div><div class="icell gold"><div class="ival">${nights}</div><div class="ilbl">${nightLabel}</div></div></div><div class="vsec"><div class="vtit">You'll Visit</div><div class="vpts">${portsHTML}</div></div><div class="tcbar">${terms}</div></div>`;
+  return `<div class="cc"${getOperatorSkinStyle(d)}>${getHeaderHTML(d)}${heroHTML}<div class="isec"><div class="isec-content"><div class="cname">${name}</div><div class="incl">${incl}</div><div class="sname">${shipLine}</div><div class="price-block">${priceHTML}<div class="pbasis">${basis}</div></div></div></div><div class="ibar"><div class="icell gold"><div class="ival">${board}</div><div class="ilbl">${boardlbl}</div></div><div class="icell blk"><div class="ival">${dateHTML}</div><div class="ilbl">${month}</div></div><div class="icell gold"><div class="ival">${nights}</div><div class="ilbl">${nightLabel}</div></div></div><div class="vsec"><div class="vtit">You'll Visit</div><div class="vpts">${portsHTML}</div></div><div class="tcbar">${terms}</div></div>`;
 }
 function bc(d){ return renderCardHTML(d); }
 

@@ -19,11 +19,13 @@ test('preview and image exports continue to use the same wrapped card renderer',
   assert.match(html, /html2canvas\(target, \{/);
 });
 
-test('white information panel narrows editorial copy, grows naturally, and leaves lower breathing room', () => {
+test('white information panel narrows editorial copy, grows naturally, and centres the content group', () => {
   assert.match(
     html,
     /\.cc \.isec\{width:1200px;height:auto;min-height:0;overflow:visible;background:#fff;padding:80px 62px 112px;text-align:center;\}/
   );
+  assert.match(html, /\.cc \.isec-content\{position:relative;top:16px;\}/);
+  assert.match(html, /<div class="isec"><div class="isec-content"><div class="cname">\$\{name\}<\/div>/);
   assert.match(
     html,
     /\.cc \.cname,\.cc \.incl,\.cc \.sname,\.cc \.pbasis\{max-width:1000px;margin-left:auto;margin-right:auto;\}/
