@@ -625,52 +625,6 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       </div>
     </div>
 
-    <div class="section summary-section" data-section-key="summary-tools">
-      <div class="section-hdr" onclick="toggleSec(this)">
-        <h3>🧾 Summary</h3><span class="section-toggle">▾</span>
-      </div>
-      <div class="section-body">
-        <div class="utm-btn-row">
-          <button class="abtn gold" onclick="saveProjectFile()">Save Project</button>
-          <button class="abtn navy" id="open-summary-btn" onclick="openSummary()">Open Summary</button>
-        </div>
-        <div class="utm-btn-row">
-          <button class="abtn" onclick="resetOffer()">Reset Offer</button>
-          <button class="abtn" onclick="resetAll()">Reset All</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── 5. UTM ── -->
-    <div class="section" data-section-key="utm-link">
-      <div class="section-hdr" onclick="toggleSec(this)">
-        <h3>🔗 UTM Link</h3><span class="section-toggle">▾</span>
-      </div>
-      <div class="section-body">
-        <div class="field"><label>Operator Landing Page</label><input id="f-url" placeholder="https://dawsonandsanderson.co.uk/cruises" oninput="genUtm()"></div>
-        <div class="utm-out" id="utm-out" aria-hidden="true"></div>
-        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-top:4px;">Generated UTM</label>
-        <textarea id="utm-visible-output" class="utm-visible-output" readonly="" placeholder="Generate or enter a destination URL + campaign name"></textarea>
-        <div class="utm-btn-row">
-          <button class="abtn navy btn-compact" onclick="genAllUtms()">Generate All UTMs</button>
-          <button class="abtn btn-compact" id="utm-copy-btn" onclick="copyUtm()">Copy Current UTM</button>
-          <button class="abtn btn-compact" onclick="copyAllUtms()">Copy All UTMs</button>
-        </div>
-      </div>
-    </div>
-
-
-
-    <!-- ── 6. STANDARD UTMs ── -->
-    <div class="section" data-section-key="standard-utms">
-      <div class="section-hdr" onclick="toggleSec(this)">
-        <h3>🔗 Standard UTMs</h3><span class="section-toggle">▾</span>
-      </div>
-      <div class="section-body">
-        <div class="std-utm-list" id="std-utm-list"></div>
-      </div>
-    </div>
-
     <!-- ── 7. EXPORT ── -->
     <div class="export-section">
       <div class="export-title">⬇ Export Cards</div>
@@ -723,6 +677,52 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <div class="export-filenames" id="export-filenames">
         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px;">Export filenames:</div>
         <div id="filename-list"></div>
+      </div>
+    </div>
+
+    <div class="section summary-section" data-section-key="summary-tools">
+      <div class="section-hdr" onclick="toggleSec(this)">
+        <h3>🧾 Summary</h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body">
+        <div class="utm-btn-row">
+          <button class="abtn gold" onclick="saveProjectFile()">Save Project</button>
+          <button class="abtn navy" id="open-summary-btn" onclick="openSummary()">Open Summary</button>
+        </div>
+        <div class="utm-btn-row">
+          <button class="abtn" onclick="resetOffer()">Reset Offer</button>
+          <button class="abtn" onclick="resetAll()">Reset All</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 5. UTM ── -->
+    <div class="section" data-section-key="utm-link">
+      <div class="section-hdr" onclick="toggleSec(this)">
+        <h3>🔗 UTM Link</h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body">
+        <div class="field"><label>Operator Landing Page</label><input id="f-url" placeholder="https://dawsonandsanderson.co.uk/cruises" oninput="genUtm()"></div>
+        <div class="utm-out" id="utm-out" aria-hidden="true"></div>
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-top:4px;">Generated UTM</label>
+        <textarea id="utm-visible-output" class="utm-visible-output" readonly="" placeholder="Generate or enter a destination URL + campaign name"></textarea>
+        <div class="utm-btn-row">
+          <button class="abtn navy btn-compact" onclick="genAllUtms()">Generate All UTMs</button>
+          <button class="abtn btn-compact" id="utm-copy-btn" onclick="copyUtm()">Copy Current UTM</button>
+          <button class="abtn btn-compact" onclick="copyAllUtms()">Copy All UTMs</button>
+        </div>
+      </div>
+    </div>
+
+
+
+    <!-- ── 6. STANDARD UTMs ── -->
+    <div class="section" data-section-key="standard-utms">
+      <div class="section-hdr" onclick="toggleSec(this)">
+        <h3>🔗 Standard UTMs</h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body">
+        <div class="std-utm-list" id="std-utm-list"></div>
       </div>
     </div>
 
