@@ -359,6 +359,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cc .operator-png-logo[src="assets/operator-logos/princess-cruises-logo.png"]{transform:scale(.80);transform-origin:center center;}
 .cc .operator-png-logo[src="assets/operator-logos/virgin-voyages-logo.png"]{transform:scale(.88);transform-origin:center center;}
 .cc .operator-png-logo.operator-png-logo--msc{max-width:380px;max-height:140px;transform:scale(.6);transform-origin:center center;}
+.cc .operator-png-logo.operator-png-logo--dands{max-width:760px;max-height:250px;}
+.cc .operator-logo-fallback{font-family:'Montserrat',sans-serif;font-size:58px;font-weight:500;letter-spacing:.12em;line-height:1.15;color:#fff;text-align:center;}
 .cc .hero-wrap{width:1200px;height:849px;overflow:hidden;position:relative;background:var(--operator-bg,var(--navy));line-height:0;}
 .cc .hero{width:100%;height:calc(100% + 1px);object-fit:cover;display:block;position:absolute;top:-1px;left:0;transform-origin:center center;}
 .cc .hph{width:1200px;height:849px;background:#b8ccd8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
@@ -521,6 +523,14 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         <h3>🚢 Operator Logo</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body hidden">
+        <div class="field">
+          <label>Logo Display</label>
+          <select id="f-logo-display" onchange="up()">
+            <option value="operator">Operator Logo</option>
+            <option value="dands">Dawson &amp; Sanderson</option>
+            <option value="none">No Logo</option>
+          </select>
+        </div>
         <div class="field">
           <label>Operator</label>
           <select class="op-select" id="f-operator" onchange="operatorChanged()">
@@ -753,7 +763,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 <div class="preview-pane">
   <div class="preview-toolbar">
     <span class="preview-title" id="preview-title">Live Preview — Offer 1</span>
-    <span class="autosave-status" id="autosave-status" aria-live="polite">Autosave paused</span>
+    <span class="autosave-status" id="autosave-status" aria-live="polite" hidden>Autosave paused</span>
     <div class="ptool">
       <span>Zoom</span>
       <input type="range" min="10" max="70" value="32" oninput="setZoom(this.value)" id="zoom-slider">
@@ -793,7 +803,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 </div>
 
 <script>
-const APP_VERSION = "v1.6.3";
+const APP_VERSION = "v1.8.1";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -1220,6 +1230,7 @@ function sv(i){
 function save(){
   FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e) offers[cur][f]=e.value; });
   const op=document.getElementById("f-operator"); if(op) offers[cur].operator=op.value;
+  const logoDisplay=document.getElementById("f-logo-display"); if(logoDisplay) offers[cur]._logoDisplay=logoDisplay.value||"operator";
 }
 function normalizeCropPositionForOffer(offer){
   if(!offer) return;
@@ -1238,6 +1249,7 @@ function load(i){
   normalizeCropPositionForOffer(offers[i]);
   FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e) e.value=offers[i][f]||""; });
   const op=document.getElementById("f-operator"); if(op) op.value=offers[i].operator||"";
+  const logoDisplay=document.getElementById("f-logo-display"); if(logoDisplay) logoDisplay.value=offers[i]._logoDisplay||"operator";
   setThumb("logo",offers[i]._logoCustom||"");
   setThumb("hero",offers[i]._img||"");
   const sz=offers[i]._logoSize||50;
@@ -1918,6 +1930,7 @@ function processSheetCSV(csv,status){
     const newOffer={
       ...offers[loaded],
       operator: opKey(operatorText),
+      _logoDisplay: "operator",
       name: val(row,headers,["offer_name","cruise_name","name"]),
       ship: val(row,headers,["ship_name","ship"]),
       price: val(row,headers,["price"]).replace(/[^0-9.]/g,"") || "",
@@ -2484,6 +2497,14 @@ function getHeaderHTML(d){
   const key=d.operator||""; const op=OPERATOR_HEADERS[key];
   const skin=getOperatorSkin(d);
   const tags=d.tags||OPERATOR_USP_PRESETS[key]||"Cruise · Destinations · Entertainment";
+  const logoDisplay=d._logoDisplay||"operator";
+  const accent=skin?.accentStrip||op?.color||"#a09267";
+  const background=skin?.background||"#0e1b2a";
+  const pngHeader=(logoHTML)=>`<div class="header-block operator-png-header" style="width:1200px;height:497px;overflow:hidden;display:block;line-height:0;background:${background};"><div class="operator-png-usp" style="background:${accent};">${tags}</div><div class="operator-png-logo-area">${logoHTML}</div></div>`;
+  if(logoDisplay==="dands"){
+    return pngHeader(`<img class="operator-png-logo operator-png-logo--dands" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo" onerror="this.outerHTML='<span class=&quot;operator-logo-fallback&quot;>DAWSON &amp; SANDERSON</span>'">`);
+  }
+  if(logoDisplay==="none") return pngHeader("");
   if(d._logoCustom){
     const sz=d._logoSize||50; const w=Math.round(1140*(sz/100));
     return `<div class="header-block" style="width:1200px;background:#0e1b2a;height:497px;display:flex;align-items:center;justify-content:center;padding:30px 80px;overflow:hidden;line-height:0;"><img src="${d._logoCustom}" style="width:${w}px;max-height:430px;object-fit:contain;display:block;"></div>`;
@@ -2491,11 +2512,9 @@ function getHeaderHTML(d){
   // PNG operator assets are logo files, not full headers; keep the fixed header/USP layout and contain the logo within it.
   if(op&&op.pngData){
     const logoClass=`operator-png-logo${key==='msc'?' operator-png-logo--msc':''}`;
-    return `<div class="header-block operator-png-header" style="width:1200px;height:497px;overflow:hidden;display:block;line-height:0;background:${skin?.background||'#0e1b2a'};"><div class="operator-png-usp" style="background:${skin?.accentStrip||op.color||'#a09267'};">${tags}</div><div class="operator-png-logo-area"><img class="${logoClass}" src="${op.pngData}" alt="${op.name} logo"></div></div>`;
+    return pngHeader(`<img class="${logoClass}" src="${op.pngData}" alt="${op.name} logo">`);
   }
   if(!skin&&op&&op.svgData) return `<div class="header-block" style="width:1200px;height:497px;overflow:hidden;display:block;line-height:0;background:#0e1b2a;"><img src="${op.svgData}" width="1200" height="497" style="width:1200px;height:497px;object-fit:cover;display:block;"></div>`;
-  const accent=skin?.accentStrip||op?.color||"#a09267";
-  const background=skin?.background||"#0e1b2a";
   const label=(skin?.logoLabel||(op?op.name:d.line||"CRUISE LINE")).replace(/\n/g,"<br>");
   return `<div class="header-block" style="width:1200px;height:497px;background:${background};overflow:hidden;display:block;line-height:0;"><div style="background:${accent};height:107px;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-size:26px;font-weight:300;color:#fff;letter-spacing:.1em;line-height:normal;">${tags}</div><div style="height:390px;display:flex;align-items:center;justify-content:center;text-align:center;font-family:'Montserrat',sans-serif;font-size:72px;font-weight:300;letter-spacing:.14em;line-height:1.15;color:#fff;">${label}</div></div>`;
 }
@@ -2702,6 +2721,8 @@ function saveEditorToOffer(){
   });
   const op=document.getElementById('f-operator');
   if(op) o.operator=op.value;
+  const logoDisplay=document.getElementById('f-logo-display');
+  if(logoDisplay) o._logoDisplay=logoDisplay.value||'operator';
   const z=document.getElementById('crop-zoom');
   const x=document.getElementById('crop-x');
   const y=document.getElementById('crop-y');
@@ -2721,6 +2742,8 @@ function loadOfferToEditor(i){
   });
   const op=document.getElementById('f-operator');
   if(op) op.value = o.operator || '';
+  const logoDisplay=document.getElementById('f-logo-display');
+  if(logoDisplay) logoDisplay.value = o._logoDisplay || 'operator';
   setThumb('logo', o._logoCustom || '');
   setThumb('hero', o._img || '');
   const sz=o._logoSize||50;
@@ -2831,6 +2854,8 @@ function visibleFieldsToData(){
   });
   const op = document.getElementById('f-operator');
   if(op) base.operator = op.value || '';
+  const logoDisplay = document.getElementById('f-logo-display');
+  if(logoDisplay) base._logoDisplay = logoDisplay.value || 'operator';
   const z = document.getElementById('crop-zoom');
   const x = document.getElementById('crop-x');
   const y = document.getElementById('crop-y');
