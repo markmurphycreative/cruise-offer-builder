@@ -22,7 +22,7 @@ test('preview and image exports continue to use the same wrapped card renderer',
 test('white information panel narrows editorial copy, grows naturally, and leaves lower breathing room', () => {
   assert.match(
     html,
-    /\.cc \.isec\{width:1200px;height:auto;min-height:0;overflow:visible;background:#fff;padding:48px 62px 64px;text-align:center;\}/
+    /\.cc \.isec\{width:1200px;height:auto;min-height:0;overflow:visible;background:#fff;padding:80px 62px 112px;text-align:center;\}/
   );
   assert.match(
     html,
