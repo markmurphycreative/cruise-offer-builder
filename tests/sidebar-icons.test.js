@@ -32,11 +32,19 @@ test('sidebar section names retain their order and rename Hero to Hero Image', (
 });
 
 test('required workflow headings expose the requested icon shapes', () => {
-  const [upload, save, clipboardPaste, badge, image, fileText] = sectionHeaders;
+  const [upload, save, clipboardPaste, logoAsset, image, fileText] = sectionHeaders;
   assert.match(upload, /<polyline points="17 8 12 3 7 8"><\/polyline>/);
   assert.match(save, /<path d="M17 21v-8H7v8"><\/path>/);
   assert.match(clipboardPaste, /<path d="m17 10 4 4-4 4"><\/path>/);
-  assert.match(badge, /<path d="M3\.85 8\.62a4 4 0 0 1 4\.78-4\.77/);
+  assert.match(logoAsset, /<circle cx="10" cy="13" r="2"><\/circle>/);
   assert.match(image, /<circle cx="9" cy="9" r="2"><\/circle>/);
   assert.match(fileText, /<path d="M16 13H8"><\/path>/);
+});
+
+
+test('hero drop zone reuses the Hero Image heading SVG instead of an emoji', () => {
+  const heroImageSvg = sectionHeaders[4].match(/<svg[\s\S]*?<\/svg>/)[0];
+  const heroDropzone = html.match(/<div class="dropzone hero-dropzone"[\s\S]*?<img class="dz-thumb hero-t"/)[0];
+  assert.match(heroDropzone, new RegExp(heroImageSvg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.doesNotMatch(heroDropzone, /🖼/);
 });
