@@ -27,7 +27,7 @@ test('Royal Caribbean ship catalogue contains the official first-pass list', () 
   const { OPERATOR_SHIPS } = createShipQaHarness();
   assert.equal(OPERATOR_SHIPS.royal.length, 30);
   assert.ok(OPERATOR_SHIPS.royal.includes('Navigator of the Seas'));
-  assert.deepEqual(Object.keys(OPERATOR_SHIPS), ['ambassador', 'marella', 'po', 'royal']);
+  assert.deepEqual(Object.keys(OPERATOR_SHIPS), ['ambassador', 'celebrity', 'marella', 'po', 'royal']);
 });
 
 test('Ambassador Cruise Line ship catalogue contains the requested list', () => {
@@ -46,6 +46,41 @@ test('Ambassador Cruise Line ship QA covers exact, close, empty and unknown valu
   assert.equal(
     getOperatorShipQaIssue('ambassador', 'Entirely Unknown Vessel'),
     'Ship name not found in Ambassador Cruise Line ship list.'
+  );
+});
+
+test('Celebrity Cruises ship catalogue contains the requested list', () => {
+  const { OPERATOR_SHIPS } = createShipQaHarness();
+  assert.deepEqual(Array.from(OPERATOR_SHIPS.celebrity), [
+    'Celebrity Apex',
+    'Celebrity Ascent',
+    'Celebrity Beyond',
+    'Celebrity Constellation',
+    'Celebrity Eclipse',
+    'Celebrity Edge',
+    'Celebrity Equinox',
+    'Celebrity Flora',
+    'Celebrity Infinity',
+    'Celebrity Millennium',
+    'Celebrity Reflection',
+    'Celebrity Silhouette',
+    'Celebrity Solstice',
+    'Celebrity Summit',
+    'Celebrity Xcel'
+  ]);
+});
+
+test('Celebrity Cruises ship QA covers exact, close, empty and unknown values', () => {
+  const { getOperatorShipQaIssue } = createShipQaHarness();
+  assert.equal(getOperatorShipQaIssue('celebrity', 'Celebrity Beyond'), '');
+  assert.equal(
+    getOperatorShipQaIssue('celebrity', 'Celebrity Beyound'),
+    'Possible ship name error: did you mean Celebrity Beyond?'
+  );
+  assert.equal(getOperatorShipQaIssue('celebrity', ''), '');
+  assert.equal(
+    getOperatorShipQaIssue('celebrity', 'Entirely Unknown Vessel'),
+    'Ship name not found in Celebrity Cruises ship list.'
   );
 });
 
@@ -208,6 +243,27 @@ test('Ambassador Cruise Line states appear as passive QA results in the existing
   const unknown = createQaPanelHarness('ambassador', 'Entirely Unknown Vessel');
   unknown.context.runSpellQA();
   assert.match(unknown.elements['spell-warn-name'].textContent, /Ship name not found in Ambassador Cruise Line ship list\./);
+  assert.match(unknown.elements['copy-qa-note'].textContent, /Passive checks only — review:/);
+});
+
+test('Celebrity Cruises states appear as passive QA results in the existing panel', () => {
+  const exact = createQaPanelHarness('celebrity', 'Celebrity Beyond');
+  exact.context.runSpellQA();
+  assert.match(exact.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">✓ Checked<\/span>/);
+
+  const close = createQaPanelHarness('celebrity', 'Celebrity Beyound');
+  close.context.runSpellQA();
+  assert.match(close.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">⚠ Review<\/span>/);
+  assert.match(close.elements['spell-warn-name'].textContent, /Possible ship name error: did you mean Celebrity Beyond\?/);
+  assert.match(close.elements['copy-qa-note'].textContent, /Possible ship name error: did you mean Celebrity Beyond\?/);
+
+  const empty = createQaPanelHarness('celebrity', '');
+  empty.context.runSpellQA();
+  assert.match(empty.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">— Empty \/ not checked<\/span>/);
+
+  const unknown = createQaPanelHarness('celebrity', 'Entirely Unknown Vessel');
+  unknown.context.runSpellQA();
+  assert.match(unknown.elements['spell-warn-name'].textContent, /Ship name not found in Celebrity Cruises ship list\./);
   assert.match(unknown.elements['copy-qa-note'].textContent, /Passive checks only — review:/);
 });
 
