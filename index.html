@@ -3,7 +3,7 @@
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cruise Offer Builder v1.5.4 — Dawson &amp; Sanderson</title>
+<title>Cruise Offer Builder — Dawson &amp; Sanderson</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" crossorigin="anonymous"></script>
@@ -399,7 +399,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <div class="splash-main">
       <div class="splash-title">Cruise Offer Builder</div>
       <div class="splash-brand">Dawson &amp; Sanderson</div>
-      <div class="splash-version">v1.5.8e</div>
+      <div class="splash-version" data-app-version></div>
       <div class="splash-line">Select how you want to begin.</div>
       <div class="splash-actions">
         <button class="splash-btn gold" id="splash-continue-session-btn" type="button" style="display:none;">Continue Last Session</button>
@@ -419,7 +419,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 <div class="sidebar">
   <div class="sb-top">
     <div class="sb-brand">Cruise Offer Builder<span>Dawson &amp; Sanderson</span></div>
-    <span class="version-tag">v1.5.8e</span>
+    <span class="version-tag" data-app-version></span>
   </div>
 
   <!-- Campaign globals -->
@@ -790,6 +790,10 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 </div>
 
 <script>
+const APP_VERSION = "v1.6.3";
+document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
+document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
+
 // ═══════════════════════════════════════════════════════
 // OPERATOR HEADERS — baked-in base64 assets
 // ═══════════════════════════════════════════════════════
@@ -3023,7 +3027,7 @@ function rv(skipSave){
 
 
 // ═══════════════════════════════════════════════════════
-// CLEAN UTM MODULE — v1.5.4
+// CLEAN UTM MODULE
 // One UTM source of truth. Does not touch preview / CSV / export rendering.
 // ═══════════════════════════════════════════════════════
 const DANDS_OPERATOR_UTM = Object.fromEntries(
