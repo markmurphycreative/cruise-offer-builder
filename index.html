@@ -838,12 +838,71 @@ const OPERATOR_SHIPS = {
     "Celebrity Summit",
     "Celebrity Xcel"
   ],
+  cunard: [
+    "Queen Anne",
+    "Queen Mary 2",
+    "Queen Victoria",
+    "Queen Elizabeth"
+  ],
+  fred: [
+    "Bolette",
+    "Borealis",
+    "Balmoral"
+  ],
   marella: [
     "Marella Explorer",
     "Marella Explorer 2",
     "Marella Discovery",
     "Marella Discovery 2",
     "Marella Voyager"
+  ],
+  msc: [
+    "MSC World America",
+    "MSC Euribia",
+    "MSC Seascape",
+    "MSC World Europa",
+    "MSC Seashore",
+    "MSC Virtuosa",
+    "MSC Grandiosa",
+    "MSC Bellissima",
+    "MSC Seaview",
+    "MSC Seaside",
+    "MSC Meraviglia",
+    "MSC Preziosa",
+    "MSC Divina",
+    "MSC Splendida",
+    "MSC Fantasia",
+    "MSC Magnifica",
+    "MSC Poesia",
+    "MSC Orchestra",
+    "MSC Musica",
+    "MSC Sinfonia",
+    "MSC Armonia",
+    "MSC Opera",
+    "MSC Lirica"
+  ],
+  ncl: [
+    "Norwegian Aqua",
+    "Norwegian Luna",
+    "Norwegian Prima",
+    "Norwegian Viva",
+    "Norwegian Encore",
+    "Norwegian Bliss",
+    "Norwegian Joy",
+    "Norwegian Escape",
+    "Norwegian Getaway",
+    "Norwegian Breakaway",
+    "Norwegian Epic",
+    "Norwegian Gem",
+    "Norwegian Jade",
+    "Norwegian Jewel",
+    "Norwegian Pearl",
+    "Norwegian Dawn",
+    "Norwegian Star",
+    "Norwegian Spirit",
+    "Norwegian Sky",
+    "Norwegian Sun",
+    "Pride of America"
   ],
   po: [
     "Arvia",
@@ -853,6 +912,25 @@ const OPERATOR_SHIPS = {
     "Azura",
     "Arcadia",
     "Aurora"
+  ],
+  princess: [
+    "Caribbean Princess",
+    "Coral Princess",
+    "Crown Princess",
+    "Diamond Princess",
+    "Discovery Princess",
+    "Emerald Princess",
+    "Enchanted Princess",
+    "Grand Princess",
+    "Island Princess",
+    "Majestic Princess",
+    "Regal Princess",
+    "Royal Princess",
+    "Ruby Princess",
+    "Sapphire Princess",
+    "Sky Princess",
+    "Star Princess",
+    "Sun Princess"
   ],
   royal: [
     "Adventure of the Seas",
@@ -885,6 +963,12 @@ const OPERATOR_SHIPS = {
     "Vision of the Seas",
     "Voyager of the Seas",
     "Wonder of the Seas"
+  ],
+  virgin: [
+    "Scarlet Lady",
+    "Valiant Lady",
+    "Resilient Lady",
+    "Brilliant Lady"
   ]
 };
 
@@ -1564,7 +1648,7 @@ function getOperatorShipQaIssue(operatorKey,shipName){
   const closeThreshold=Math.max(2,Math.floor(closest.name.length*.15));
   return closest.distance<=closeThreshold
     ?`Possible ship name error: did you mean ${closest.name}?`
-    :`Ship name not found in ${operatorKey==="ambassador"?"Ambassador Cruise Line":operatorKey==="celebrity"?"Celebrity Cruises":operatorKey==="marella"?"Marella Cruises":operatorKey==="po"?"P&O Cruises":"Royal Caribbean"} ship list.`;
+    :`Ship name not found in ${{ambassador:"Ambassador Cruise Line",celebrity:"Celebrity Cruises",cunard:"Cunard",fred:"Fred. Olsen Cruise Lines",marella:"Marella Cruises",msc:"MSC Cruises",ncl:"Norwegian Cruise Line",po:"P&O Cruises",princess:"Princess Cruises",royal:"Royal Caribbean",virgin:"Virgin Voyages"}[operatorKey]} ship list.`;
 }
 function setSpellWarn(warnId,msg){const el=document.getElementById(warnId); if(!el) return; el.textContent=msg||""; el.classList.toggle("active",!!msg);}
 function buildQaChecklist(rows){
