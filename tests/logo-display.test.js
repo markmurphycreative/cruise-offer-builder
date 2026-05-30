@@ -81,6 +81,21 @@ test('PNG and JPG exports use the same card renderer as previews', () => {
 });
 
 
+test('every generated USP strip uses the one shared 27px style without operator-specific sizing', () => {
+  const uspRule = html.match(/\.cc \.operator-png-usp\{[^}]+\}/)?.[0];
+  assert.ok(uspRule, 'shared USP strip rule should exist');
+  assert.match(uspRule, /height:107px/);
+  assert.match(uspRule, /font-size:27px/);
+  assert.match(uspRule, /line-height:normal/);
+  assert.equal((html.match(/font-size:27px/g) || []).length, 1, 'USP font size should have one shared declaration');
+
+  const fallback = renderHeader({ operator: 'unknown', tags: 'All-inclusive · Cuisine · Overnight Port Stays · Adult Only Options' });
+  assert.match(fallback, /<div class="operator-png-usp" style="background:[^;]+;">All-inclusive · Cuisine · Overnight Port Stays · Adult Only Options<\/div>/);
+  const fallbackUsp = fallback.match(/<div class="operator-png-usp"[^>]*>/)?.[0];
+  assert.ok(fallbackUsp, 'fallback USP strip should use the shared class');
+  assert.doesNotMatch(fallbackUsp, /font-size:/);
+});
+
 test('header rendering preserves the USP strip and fixed card header dimensions in every logo mode', () => {
   const operator = renderHeader({ operator: 'po' });
   const dands = renderHeader({ operator: 'po', _logoDisplay: 'dands' });
