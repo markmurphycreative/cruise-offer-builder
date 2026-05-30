@@ -1830,6 +1830,25 @@ function loadFromCSVFile(event){
   event.target.value="";
 }
 
+const LAST_SUCCESSFUL_CSV_KEY = "cobLastSuccessfulCsvV1";
+let restoringLastSuccessfulCsv = false;
+function storeLastSuccessfulCsv(csv){
+  try{ localStorage.setItem(LAST_SUCCESSFUL_CSV_KEY, String(csv||"")); }catch(e){}
+}
+function restoreLastSuccessfulCsv(){
+  const status=document.getElementById("sheets-status");
+  let csv="";
+  try{ csv=localStorage.getItem(LAST_SUCCESSFUL_CSV_KEY)||""; }catch(e){}
+  if(!csv || !status) return false;
+  restoringLastSuccessfulCsv=true;
+  try{
+    processSheetCSV(csv,status);
+    return true;
+  }finally{
+    restoringLastSuccessfulCsv=false;
+  }
+}
+
 function processSheetCSV(csv,status){
   function norm(v){return (v==null?"":String(v)).replace(/^\uFEFF/,"").trim();}
   function slugHeader(v){
@@ -1987,6 +2006,7 @@ function processSheetCSV(csv,status){
   try{ updateExportFilenames(); }catch(e){ console.error("CSV filename update error",e); }
   status.className=loaded?"csv-success":"csv-error";
   status.textContent=loaded?"✓ Loaded "+loaded+" offer(s)":"⚠ CSV read, but no offer rows found. Headers found: "+headers.join(", ");
+  if(loaded && !restoringLastSuccessfulCsv) storeLastSuccessfulCsv(csv);
 }
 
 function parseCSV(str){
@@ -2293,6 +2313,7 @@ function confirmClearSavedSession(){
   autosaveAwaitingRestoreDecision = false;
   try{
     localStorage.removeItem(AUTOSAVE_KEY);
+    localStorage.removeItem(LAST_SUCCESSFUL_CSV_KEY);
     localStorage.removeItem(BUILDER_OPEN_STORAGE_KEY);
     sessionStorage.removeItem(BUILDER_OPEN_STORAGE_KEY);
   }catch(e){}
@@ -3745,6 +3766,7 @@ function initBuilderApp(){
   try{
     applySafeGlobalDefaults();
     load(0);
+    restoreLastSuccessfulCsv();
     refreshOfferUi({utm:true,spell:true,autosave:false});
     window.addEventListener("resize",rv);
     rv();
