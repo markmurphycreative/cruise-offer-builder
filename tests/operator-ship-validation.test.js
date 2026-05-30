@@ -5,6 +5,10 @@ import vm from 'node:vm';
 
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
+test('ship name QA warnings use the stronger red warning treatment', () => {
+  assert.match(html, /#spell-warn-name\{color:var\(--red\);\}/);
+});
+
 function extract(pattern, label) {
   const match = html.match(pattern);
   assert.ok(match, `Could not locate ${label}`);

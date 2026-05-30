@@ -50,7 +50,7 @@ test('Celebrity Cruises alone receives the recommended empty hero imagery placeh
 
 test('missing hero QA retains passive logic while adding a stronger warning treatment', () => {
   assert.match(html, /warnLbl:"⚠ Hero image missing",warningClass:"hero-warning"/);
-  assert.match(html, /\.prod-status-item\.hero-warning\{color:#8a5000;background:#fff4df;border:1px solid #efbf74;/);
+  assert.match(html, /\.prod-status-item\.hero-warning\{color:var\(--red\);background:#fff0f0;border:1px solid #f0b0b0;/);
   assert.match(html, /Passive checks only — no auto-correction\. Export is never blocked\./);
 });
 
