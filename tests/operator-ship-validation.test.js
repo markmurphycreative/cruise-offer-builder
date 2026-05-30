@@ -27,7 +27,38 @@ test('Royal Caribbean ship catalogue contains the official first-pass list', () 
   const { OPERATOR_SHIPS } = createShipQaHarness();
   assert.equal(OPERATOR_SHIPS.royal.length, 30);
   assert.ok(OPERATOR_SHIPS.royal.includes('Navigator of the Seas'));
-  assert.deepEqual(Object.keys(OPERATOR_SHIPS), ['royal']);
+  assert.deepEqual(Object.keys(OPERATOR_SHIPS), ['po', 'royal']);
+});
+
+test('P&O Cruises ship catalogue contains the requested list', () => {
+  const { OPERATOR_SHIPS } = createShipQaHarness();
+  assert.deepEqual(Array.from(OPERATOR_SHIPS.po), ['Arvia', 'Iona', 'Britannia', 'Ventura', 'Azura', 'Arcadia', 'Aurora']);
+});
+
+test('exact P&O Cruises ship name passes QA', () => {
+  const { getOperatorShipQaIssue } = createShipQaHarness();
+  assert.equal(getOperatorShipQaIssue('po', 'Arvia'), '');
+});
+
+test('close P&O Cruises ship name warns with the closest suggestion', () => {
+  const { getOperatorShipQaIssue } = createShipQaHarness();
+  assert.equal(
+    getOperatorShipQaIssue('po', 'Ionna'),
+    'Possible ship name error: did you mean Iona?'
+  );
+});
+
+test('empty P&O Cruises ship name keeps empty QA behaviour', () => {
+  const { getOperatorShipQaIssue } = createShipQaHarness();
+  assert.equal(getOperatorShipQaIssue('po', ''), '');
+});
+
+test('unknown P&O Cruises ship name receives a soft warning without suggestion', () => {
+  const { getOperatorShipQaIssue } = createShipQaHarness();
+  assert.equal(
+    getOperatorShipQaIssue('po', 'Entirely Unknown Vessel'),
+    'Ship name not found in P&O Cruises ship list.'
+  );
 });
 
 test('exact Royal Caribbean ship name passes QA', () => {
@@ -58,7 +89,7 @@ test('unknown Royal Caribbean ship name receives a soft warning without suggesti
 
 test('other operators retain existing ship QA behaviour', () => {
   const { getOperatorShipQaIssue } = createShipQaHarness();
-  assert.equal(getOperatorShipQaIssue('po', 'Navigator of the Seat'), '');
+  assert.equal(getOperatorShipQaIssue('marella', 'Ionna'), '');
   assert.equal(getOperatorShipQaIssue('', 'Navigator of the Seat'), '');
 });
 
@@ -103,6 +134,25 @@ function createQaPanelHarness(operator, ship) {
   return { context, elements };
 }
 
+test('P&O Cruises states appear as passive QA results in the existing panel', () => {
+  const exact = createQaPanelHarness('po', 'Arvia');
+  exact.context.runSpellQA();
+  assert.match(exact.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">✓ Checked<\/span>/);
+
+  const close = createQaPanelHarness('po', 'Ionna');
+  close.context.runSpellQA();
+  assert.match(close.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">⚠ Review<\/span>/);
+  assert.match(close.elements['spell-warn-name'].textContent, /Possible ship name error: did you mean Iona\?/);
+
+  const empty = createQaPanelHarness('po', '');
+  empty.context.runSpellQA();
+  assert.match(empty.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">— Empty \/ not checked<\/span>/);
+
+  const unknown = createQaPanelHarness('po', 'Entirely Unknown Vessel');
+  unknown.context.runSpellQA();
+  assert.match(unknown.elements['spell-warn-name'].textContent, /Ship name not found in P&O Cruises ship list\./);
+});
+
 test('Royal Caribbean close match appears as a passive QA warning in the existing panel', () => {
   const { context, elements } = createQaPanelHarness('royal', 'Navigator of the Seat');
   context.runSpellQA();
@@ -121,12 +171,12 @@ test('Royal Caribbean exact and empty values preserve checked and empty panel st
   assert.match(empty.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">— Empty \/ not checked<\/span>/);
 });
 
-test('unknown Royal Caribbean value and non-Royal value diverge only for operator-scoped QA', () => {
+test('unknown Royal Caribbean value and non-catalogued operator value diverge only for operator-scoped QA', () => {
   const unknown = createQaPanelHarness('royal', 'Entirely Unknown Vessel');
   unknown.context.runSpellQA();
   assert.match(unknown.elements['spell-warn-name'].textContent, /Ship name not found in Royal Caribbean ship list\./);
 
-  const other = createQaPanelHarness('po', 'Entirely Unknown Vessel');
+  const other = createQaPanelHarness('marella', 'Entirely Unknown Vessel');
   other.context.runSpellQA();
   assert.match(other.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">✓ Checked<\/span>/);
   assert.equal(other.elements['spell-warn-name'].textContent, '');
