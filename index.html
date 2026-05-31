@@ -589,10 +589,10 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
     <!-- ── 3. HERO IMAGE ── -->
     <div class="section" data-section-key="hero-image">
-      <div class="section-hdr" onclick="toggleSec(this)">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"></path></svg>Hero Image</h3><span class="section-toggle">▾</span>
       </div>
-      <div class="section-body">
+      <div class="section-body hidden">
         <div class="dz-wrap">
           <div class="dropzone hero-dropzone" id="dz-hero" ondragover="dzOver(event,&#39;dz-hero&#39;)" ondragleave="dzOut(&#39;dz-hero&#39;)" ondrop="dzDrop(event,&#39;hero&#39;)">
             <input type="file" accept="image/*" onchange="fileChosen(event,&#39;hero&#39;)">
@@ -626,10 +626,10 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
     <!-- ── 4. OFFER DETAILS ── -->
     <div class="section" data-section-key="offer-details">
-      <div class="section-hdr" onclick="toggleSec(this)">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M16 13H8"></path><path d="M16 17H8"></path><path d="M10 9H8"></path></svg>Offer Details</h3><span class="section-toggle">▾</span>
       </div>
-      <div class="section-body">
+      <div class="section-body hidden">
         <div class="fg2">
           <div class="field"><label>Cruise Name</label><input id="f-name" spellcheck="true" placeholder="Eastern Caribbean..." oninput="up()"></div>
           <div class="field"><label>Ship Name</label><input id="f-ship" spellcheck="true" placeholder="Arvia" oninput="up()"></div>
@@ -700,10 +700,10 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     </div>
 
     <div class="section summary-section" data-section-key="summary-tools">
-      <div class="section-hdr" onclick="toggleSec(this)">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg>Summary</h3><span class="section-toggle">▾</span>
       </div>
-      <div class="section-body">
+      <div class="section-body hidden">
         <div class="utm-btn-row">
           <button class="abtn gold" onclick="saveProjectFile()">Save Project</button>
           <button class="abtn navy" id="open-summary-btn" onclick="openSummary()">Open Summary</button>
@@ -717,10 +717,10 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
     <!-- ── 5. UTM ── -->
     <div class="section" data-section-key="utm-link">
-      <div class="section-hdr" onclick="toggleSec(this)">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>UTM Link</h3><span class="section-toggle">▾</span>
       </div>
-      <div class="section-body">
+      <div class="section-body hidden">
         <div class="field"><label>Operator Landing Page</label><input id="f-url" placeholder="https://dawsonandsanderson.co.uk/cruises" oninput="genUtm()"></div>
         <div class="utm-out" id="utm-out" aria-hidden="true"></div>
         <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-top:4px;">Generated UTM</label>
@@ -737,10 +737,10 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
     <!-- ── 6. STANDARD UTMs ── -->
     <div class="section" data-section-key="standard-utms">
-      <div class="section-hdr" onclick="toggleSec(this)">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>Standard UTMs</h3><span class="section-toggle">▾</span>
       </div>
-      <div class="section-body">
+      <div class="section-body hidden">
         <div class="std-utm-list" id="std-utm-list"></div>
       </div>
     </div>
@@ -1164,17 +1164,21 @@ let safeZoneOn = false, exportRunning = false;
 let builderMode = "standard";
 let preProductionSectionState = null;
 const BUILDER_MODE_STORAGE_KEY = "cruise-builder-mode";
-// Production-essential sections stay visible for the day-to-day build workflow.
-const PRODUCTION_OPEN_SECTIONS = new Set(["summary-tools","csv-import","campaign-presets","paste-raw-offer","utm-link","standard-utms","hero-image","offer-details"]);
 const FLDS = ["tags","name","ship","incl","price","basis","board","boardlbl","day","month","nights","ports","url","utm_content"];
 
 // ═══════════════════════════════════════════════════════
 // SECTION TOGGLE
 // ═══════════════════════════════════════════════════════
 function toggleSec(hdr){
-  hdr.classList.toggle("collapsed");
-  hdr.nextElementSibling.classList.toggle("hidden");
+  const willOpen = hdr.classList.contains("collapsed");
+  if(willOpen){
+    document.querySelectorAll(".section[data-section-key] .section-hdr").forEach(otherHdr=>{
+      if(otherHdr !== hdr) setSectionCollapsedByHeader(otherHdr, true);
+    });
+  }
+  setSectionCollapsedByHeader(hdr, !willOpen);
   if(builderMode === "standard") captureStandardSectionState();
+  queueAutosave();
 }
 function setSectionCollapsedByHeader(hdr, collapsed){
   const body = hdr && hdr.nextElementSibling;
@@ -1190,6 +1194,26 @@ function getSectionCollapseState(){
   });
   return state;
 }
+function getOpenSectionKey(){
+  let openKey = null;
+  getSectionCollapseState().forEach((collapsed,key)=>{ if(!collapsed) openKey = key; });
+  return openKey;
+}
+function applySectionCollapseState(sectionState, preferredOpenKey){
+  const sections = Array.from(document.querySelectorAll(".section[data-section-key]"));
+  let openKey = preferredOpenKey && sectionState[preferredOpenKey] === false ? preferredOpenKey : null;
+  if(!openKey){
+    sections.forEach(sec=>{
+      if(sectionState[sec.dataset.sectionKey] === false) openKey = sec.dataset.sectionKey;
+    });
+  }
+  sections.forEach(sec=>{
+    const hdr = sec.querySelector(".section-hdr");
+    if(hdr && Object.prototype.hasOwnProperty.call(sectionState,sec.dataset.sectionKey)){
+      setSectionCollapsedByHeader(hdr, sec.dataset.sectionKey !== openKey);
+    }
+  });
+}
 function captureStandardSectionState(){
   if(builderMode !== "standard") return;
   preProductionSectionState = getSectionCollapseState();
@@ -1197,25 +1221,13 @@ function captureStandardSectionState(){
 function setBuilderMode(mode,force=false){
   const nextMode = mode === "production" ? "production" : "standard";
   if(!force && nextMode === builderMode) return;
-  const sections = Array.from(document.querySelectorAll(".section[data-section-key]"));
   const optionalUiBlocks = Array.from(document.querySelectorAll("[data-production-optional]"));
 
   if(nextMode === "production"){
     captureStandardSectionState();
-    sections.forEach(sec=>{
-      const hdr = sec.querySelector(".section-hdr");
-      if(!hdr) return;
-      const keepOpen = PRODUCTION_OPEN_SECTIONS.has(sec.dataset.sectionKey);
-      setSectionCollapsedByHeader(hdr, !keepOpen);
-    });
     optionalUiBlocks.forEach(el=>{ el.style.display = "none"; });
   } else if(preProductionSectionState){
-    sections.forEach(sec=>{
-      const hdr = sec.querySelector(".section-hdr");
-      if(!hdr) return;
-      if(!preProductionSectionState.has(sec.dataset.sectionKey)) return;
-      setSectionCollapsedByHeader(hdr, preProductionSectionState.get(sec.dataset.sectionKey));
-    });
+    applySectionCollapseState(Object.fromEntries(preProductionSectionState), getOpenSectionKey());
     optionalUiBlocks.forEach(el=>{ el.style.display = ""; });
   }
 
@@ -2154,7 +2166,7 @@ function buildAutosavePayload(){
   });
   const sectionState = {};
   getSectionCollapseState().forEach((collapsed,key)=>{ sectionState[key]=!!collapsed; });
-  return {version:'1.0',savedAt:new Date().toISOString(),cur,viewMode,builderMode,lockedOffers,sectionState,campaign:{name:document.getElementById('g-campaign').value||'',date:document.getElementById('g-date').value||'',airport:document.getElementById('g-airport').value||'',terms:document.getElementById('g-terms').value||''},offers:clonedOffers};
+  return {version:'1.0',savedAt:new Date().toISOString(),cur,viewMode,builderMode,lockedOffers,sectionState,openSectionKey:getOpenSectionKey(),campaign:{name:document.getElementById('g-campaign').value||'',date:document.getElementById('g-date').value||'',airport:document.getElementById('g-airport').value||'',terms:document.getElementById('g-terms').value||''},offers:clonedOffers};
 }
 function saveSessionNow(){
   if(autosaveHydrating || autosaveAwaitingRestoreDecision) return;
@@ -2203,14 +2215,7 @@ function applySessionPayload(data){
     if(b) b.classList.toggle("active", x === viewMode);
   });
   if(data.sectionState && typeof data.sectionState === "object"){
-    document.querySelectorAll(".section[data-section-key]").forEach(sec=>{
-      const hdr = sec.querySelector(".section-hdr");
-      if(!hdr) return;
-      const key = sec.dataset.sectionKey;
-      if(Object.prototype.hasOwnProperty.call(data.sectionState,key)){
-        setSectionCollapsedByHeader(hdr, !!data.sectionState[key]);
-      }
-    });
+    applySectionCollapseState(data.sectionState, data.openSectionKey);
     if((data.builderMode||builderMode)==="standard") captureStandardSectionState();
   }
   if(data.builderMode) setBuilderMode(data.builderMode, true);
