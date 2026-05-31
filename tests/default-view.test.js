@@ -21,8 +21,18 @@ test('autosave persists and restore reapplies an existing valid view preference'
 test('preview mode switches fade in quickly without animating layout or zoom dimensions', () => {
   assert.match(html, /#card-output\{opacity:1;transition:opacity \.15s ease-out;\}/);
   assert.match(html, /#card-output\.preview-mode-transition\{opacity:0;\}/);
-  assert.match(html, /@media \(prefers-reduced-motion:reduce\)\{#card-output\{transition:none;\}\}/);
+  assert.match(html, /@media \(prefers-reduced-motion:reduce\)\{#card-output,\.view-pill\{transition:none;\}\}/);
   assert.match(html, /function fadePreviewModeIn\(\)\{[\s\S]*?out\.classList\.add\('preview-mode-transition'\);[\s\S]*?requestAnimationFrame\(function\(\)\{[\s\S]*?out\.classList\.remove\('preview-mode-transition'\);/);
   assert.match(html, /renderPreviewMode\(true\);\s*if\(didChange\) fadePreviewModeIn\(\);\s*queueAutosave\(\);/);
   assert.doesNotMatch(html, /#card-output[^}]*transition:[^;}]*(?:width|height|transform)/);
+});
+
+test('view selector uses a transform-driven sliding gold pill without changing button sizing', () => {
+  assert.match(html, /<span class="view-pill" id="view-pill" aria-hidden="true"><\/span>/);
+  assert.match(html, /\.view-pill\{[^}]*background:var\(--gold\);[^}]*transform:translateX\(0\);[^}]*transition:transform \.18s ease,width \.18s ease;/);
+  assert.match(html, /\.vbtn\.active\{color:var\(--navy\);\}/);
+  assert.match(html, /function updateViewPill\(\)\{[\s\S]*?pill\.style\.width = activeButton\.offsetWidth \+ 'px';[\s\S]*?pill\.style\.transform = 'translateX\(' \+ activeButton\.offsetLeft \+ 'px\)';/);
+  assert.match(html, /updateViewPill\(\);\s*renderPreviewMode\(true\);/);
+  assert.match(html, /requestAnimationFrame\(updateViewPill\);/);
+  assert.doesNotMatch(html, /\.vbtn\.active\{[^}]*background:/);
 });

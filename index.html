@@ -288,18 +288,18 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .ptool span{font-size:9px;color:rgba(255,255,255,.6);white-space:nowrap;}
 .ptool input[type=range]{accent-color:var(--gold);width:70px;height:3px;}
 .ptool .pval{font-size:9px;color:rgba(255,255,255,.8);min-width:28px;}
-.view-btns{display:flex;border:1px solid rgba(255,255,255,.2);border-radius:3px;overflow:hidden;}
-.vbtn{padding:3px 8px;font-size:9px;font-weight:700;border:none;background:transparent;color:rgba(255,255,255,.5);letter-spacing:.04em;}
-.vbtn:hover:not(.active){background:rgba(255,255,255,.1);color:rgba(255,255,255,.88);}
-.vbtn{transition:background-color .16s ease,color .16s ease;}
-.vbtn.active{background:var(--gold);color:#fff;}
+.view-btns{position:relative;display:flex;border:1px solid rgba(255,255,255,.2);border-radius:999px;overflow:hidden;isolation:isolate;}
+.view-pill{position:absolute;z-index:0;top:0;bottom:0;left:0;width:0;border-radius:999px;background:var(--gold);box-shadow:0 2px 5px rgba(0,0,0,.24);transform:translateX(0);transition:transform .18s ease,width .18s ease;pointer-events:none;}
+.vbtn{position:relative;z-index:1;padding:3px 8px;font-size:9px;font-weight:700;border:none;background:transparent;color:rgba(255,255,255,.5);letter-spacing:.04em;transition:color .18s ease;}
+.vbtn:hover:not(.active){color:rgba(255,255,255,.88);}
+.vbtn.active{color:var(--navy);}
 .tbtn{padding:3px 7px;font-size:9px;font-weight:700;border:1px solid rgba(255,255,255,.2);border-radius:3px;background:transparent;color:rgba(255,255,255,.6);margin-left:3px;}
 .tbtn.on{background:rgba(255,255,255,.15);color:#fff;}
 .preview-wrap{flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:stretch;}
 .preview-scaler{margin-block:auto;transform-origin:top center;transition:transform .1s;}
 #card-output{opacity:1;transition:opacity .15s ease-out;}
 #card-output.preview-mode-transition{opacity:0;}
-@media (prefers-reduced-motion:reduce){#card-output{transition:none;}}
+@media (prefers-reduced-motion:reduce){#card-output,.view-pill{transition:none;}}
 
 /* ── EMAIL PREVIEW ── */
 .email-preview-wrap{background:#2a2a2a;padding:20px;min-width:fit-content;}
@@ -799,6 +799,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <span class="pval" id="zoom-val">32%</span>
     </div>
     <div class="view-btns">
+      <span class="view-pill" id="view-pill" aria-hidden="true"></span>
       <button class="vbtn" id="vb-single" onclick="setView(&#39;single&#39;)">Single</button>
       <button class="vbtn" id="vb-email" onclick="setView(&#39;email&#39;)">Email</button>
       <button class="vbtn active" id="vb-all" onclick="setView(&#39;all&#39;)">All 4</button>
@@ -2377,6 +2378,7 @@ function applySessionPayload(data){
     const b = document.getElementById("vb-" + x);
     if(b) b.classList.toggle("active", x === viewMode);
   });
+  updateViewPill();
   if(data.sectionState && typeof data.sectionState === "object"){
     applySectionCollapseState(data.sectionState, data.openSectionKey);
     if((data.builderMode||builderMode)==="standard") captureStandardSectionState();
@@ -3370,6 +3372,14 @@ function fadePreviewModeIn(){
   });
 }
 
+function updateViewPill(){
+  const pill = document.getElementById('view-pill');
+  const activeButton = document.getElementById('vb-' + viewMode);
+  if(!pill || !activeButton) return;
+  pill.style.width = activeButton.offsetWidth + 'px';
+  pill.style.transform = 'translateX(' + activeButton.offsetLeft + 'px)';
+}
+
 function setView(v){
   const nextViewMode = v || 'single';
   const didChange = nextViewMode !== viewMode;
@@ -3378,6 +3388,7 @@ function setView(v){
     const b = document.getElementById('vb-' + x);
     if(b) b.classList.toggle('active', x === viewMode);
   });
+  updateViewPill();
   renderPreviewMode(true);
   if(didChange) fadePreviewModeIn();
   queueAutosave();
@@ -4119,6 +4130,9 @@ function syncSailDateFromHidden(){
   });
   refreshStandardUtmsSafe();
 })();
+
+window.addEventListener('resize', updateViewPill);
+requestAnimationFrame(updateViewPill);
 
 </script>
 
