@@ -169,30 +169,28 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .crop-row span{font-size:9px;color:var(--navy);min-width:26px;text-align:right;}
 
 /* ── SPLASH ── */
-.splash{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:1;visibility:visible;transition:opacity .62s cubic-bezier(.22,.61,.36,1),visibility .62s cubic-bezier(.22,.61,.36,1);}
+.splash{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:1;visibility:visible;}
 .splash.hidden,.splash.is-exiting{opacity:0;visibility:hidden;pointer-events:none;}
 .splash-inner{text-align:center;color:#fff;padding:18px;min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;width:min(560px,100%);}
-.splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;animation:splashLiftIn .78s cubic-bezier(.22,.61,.36,1) .08s both;}
-.splash-title{font-size:22px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;opacity:0;animation:splashItemIn .62s cubic-bezier(.22,.61,.36,1) .16s forwards;}
-.splash-brand{margin-top:6px;font-size:13px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;opacity:0;animation:splashItemIn .62s cubic-bezier(.22,.61,.36,1) .26s forwards;}
-.splash-version{margin-top:18px;font-size:11px;color:rgba(255,255,255,.7);opacity:0;animation:splashItemIn .62s cubic-bezier(.22,.61,.36,1) .34s forwards;}
-.splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);opacity:0;animation:splashItemIn .62s cubic-bezier(.22,.61,.36,1) .42s forwards;}
-.splash-actions{margin-top:18px;display:grid;gap:6px;max-width:220px;margin-left:auto;margin-right:auto;width:100%;opacity:0;animation:splashItemIn .64s cubic-bezier(.22,.61,.36,1) .52s forwards;}
+.splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;animation:splashFadeIn .28s ease-out both;}
+.splash-title{font-size:22px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
+.splash-brand{margin-top:6px;font-size:13px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;}
+.splash-version{margin-top:18px;font-size:11px;color:rgba(255,255,255,.7);}
+.splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
+.splash-actions{margin-top:18px;display:grid;gap:6px;max-width:220px;margin-left:auto;margin-right:auto;width:100%;}
 .splash-recent{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);max-width:320px;text-align:center;display:none;}
 .splash-recent.active{display:block;}
 .splash-recent-title{font-size:10px;font-weight:500;letter-spacing:.03em;color:rgba(255,255,255,.68);}
 .splash-recent-name{display:inline;margin-left:4px;font-size:11px;color:rgba(255,255,255,.84);font-weight:600;line-height:1.3;}
 .splash-recent-time{margin-top:3px;font-size:10px;color:rgba(255,255,255,.64);} 
-.splash-btn{padding:8px 10px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:4px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.08);color:#fff;transition:background .15s ease,border-color .15s ease,transform .15s ease;}
-.splash-btn:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.44);transform:translateY(-1px);}
-.splash-btn:active{transform:translateY(0);}
+.splash-btn{padding:8px 10px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:4px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.08);color:#fff;}
+.splash-btn:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.44);}
 .splash-btn.gold{background:var(--gold);border-color:var(--gold);color:#fff;box-shadow:0 2px 10px rgba(160,146,103,.28),0 0 0 1px rgba(255,255,255,.06) inset;}
 .splash-btn.gold:hover{background:#b2a277;border-color:#b2a277;box-shadow:0 4px 14px rgba(160,146,103,.32),0 0 0 1px rgba(255,255,255,.09) inset;}
-@keyframes splashLiftIn{from{opacity:0;transform:translateY(8px) scale(.996);}to{opacity:1;transform:translateY(0) scale(1);}}
-@keyframes splashItemIn{from{opacity:0;transform:translateY(3px);}to{opacity:1;transform:translateY(0);}}
+@keyframes splashFadeIn{from{opacity:0;}to{opacity:1;}}
 @media (prefers-reduced-motion:reduce){
-  .splash,.splash-main,.splash-title,.splash-brand,.splash-version,.splash-line,.splash-actions{transition:none;animation:none;transform:none;opacity:1;}
-  .splash-btn{transition:none;box-shadow:none;}
+  .splash-main{animation:none;}
+  .splash-btn{box-shadow:none;}
 }
 
 /* ── UTM ── */
@@ -427,7 +425,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       <div class="splash-title">Cruise Offer Builder</div>
       <div class="splash-brand">Dawson &amp; Sanderson</div>
       <div class="splash-version" data-app-version></div>
-      <div class="splash-line">Select how you want to begin.</div>
+      <div class="splash-line">Start a new campaign or load a CSV.</div>
       <div class="splash-actions">
         <button class="splash-btn gold" id="splash-continue-session-btn" type="button" style="display:none;">Continue Last Session</button>
         <button class="splash-btn gold" id="splash-open-builder-btn" type="button">Open Builder</button>
@@ -823,7 +821,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 </div>
 
 <script>
-const APP_VERSION = "v1.8.1";
+const APP_VERSION = "v1.9.3";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
