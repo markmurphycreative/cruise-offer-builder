@@ -8,6 +8,10 @@ const start = html.indexOf('const GOOGLE_SHEET_SOURCE_KEY =');
 const end = html.indexOf('\nfunction loadFromCSVFile(event){', start);
 assert.ok(start >= 0 && end > start, 'Could not locate Google Sheet workflow block');
 const workflowSource = html.slice(start, end).replace('const GOOGLE_SHEET_SOURCE_KEY', 'var GOOGLE_SHEET_SOURCE_KEY');
+const localFileImportStart = end + 1;
+const localFileImportEnd = html.indexOf('\nconst LAST_SUCCESSFUL_CSV_KEY =', localFileImportStart);
+assert.ok(localFileImportEnd > localFileImportStart, 'Could not locate local CSV file import block');
+const localFileImportSource = html.slice(localFileImportStart, localFileImportEnd);
 
 function createHarness({ savedSource = '', csv = 'operator,offer_name\nP&O,Caribbean', processSheetCSV } = {}) {
   const storage = new Map();
@@ -70,6 +74,48 @@ test('loading a Sheet stores the original source and routes generated CSV throug
   assert.deepEqual(fetched, ['https://docs.google.com/spreadsheets/d/abc123/export?format=csv&gid=42']);
   assert.deepEqual(imported, ['operator,offer_name\nP&O,Caribbean']);
   assert.equal(status.textContent, 'Offers loaded');
+});
+
+test('Load Sheet uses the existing remote CSV fallback path and forwards successful response text to processSheetCSV', async () => {
+  const csv = 'operator\noffer without commas';
+  const { context, input, fetched, imported } = createHarness({ csv });
+  input.value = 'https://docs.google.com/spreadsheets/d/abc123/edit';
+  context.fetch = async url => {
+    fetched.push(url);
+    if (fetched.length === 1) throw new Error('direct fetch blocked by CORS');
+    return { ok: true, text: async () => csv };
+  };
+  assert.equal(await context.loadFromSheets(), true);
+  assert.deepEqual(fetched, [
+    'https://docs.google.com/spreadsheets/d/abc123/export?format=csv',
+    'https://api.allorigins.win/raw?url=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2Fabc123%2Fexport%3Fformat%3Dcsv'
+  ]);
+  assert.deepEqual(imported, [csv]);
+});
+
+test('manual downloaded CSV file import still forwards FileReader text to processSheetCSV', () => {
+  const csv = 'operator,offer_name\nP&O,Caribbean';
+  const status = { className: '', textContent: '' };
+  const imported = [];
+  const file = { name: 'offers.csv' };
+  const event = { target: { files: [file], value: 'offers.csv' } };
+  const context = {
+    console,
+    document: { getElementById: id => id === 'sheets-status' ? status : null },
+    FileReader: class {
+      readAsText(loadedFile) {
+        assert.equal(loadedFile, file);
+        this.result = csv;
+        this.onload();
+      }
+    },
+    processSheetCSV: (loadedCsv, loadedStatus) => imported.push({ csv: loadedCsv, status: loadedStatus })
+  };
+  vm.createContext(context);
+  vm.runInContext(localFileImportSource, context);
+  context.loadFromCSVFile(event);
+  assert.deepEqual(imported, [{ csv, status }]);
+  assert.equal(event.target.value, '');
 });
 
 test('saved source repopulates on startup without automatically loading offers', () => {
