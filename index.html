@@ -1833,7 +1833,7 @@ function updateProductionStatus(){
     {label:"Offers",checks:[
       {ok:loadedOffers>0,okLbl:"✓ At least one offer loaded",warnLbl:"⚠ No offers loaded",render:loadedOffers<offers.length},
       // Keep the existing readiness requirement while rendering the loaded count as progress.
-      {ok:loadedOffers===offers.length,okLbl:`✓ ${loadedOffers}/${offers.length} offers loaded`,render:loadedOffers>0,displayOk:true}
+      {ok:loadedOffers===offers.length,okLbl:`✓ Offers loaded (${loadedOffers}/${offers.length})`,render:loadedOffers>0,displayOk:true}
     ]},
     {label:"Assets",checks:[
       {ok:!!o._img,okLbl:"✓ Hero image loaded",warnLbl:"⚠ Hero image required for export",warningClass:"hero-warning"},
@@ -1847,10 +1847,12 @@ function updateProductionStatus(){
   if(o._img && String(o._img).startsWith("http")) groups[2].checks.push({ok:false,warnLbl:"⚠ External image URL may affect export"});
   const checks=groups.flatMap(group=>group.checks);
   const attentionCount=checks.filter(check=>!check.ok).length;
+  const blockerCount=Number(!o._img);
+  const warningCount=Number(!value("g-campaign"))+Number(!value("g-date"));
   const summary=document.getElementById("prod-status-summary");
   if(summary){
     summary.className=`prod-status-summary ${attentionCount?"warn":"ok"}`;
-    summary.innerHTML=attentionCount?`⚠ Campaign Not Ready<br><span class="prod-status-secondary">${attentionCount} item${attentionCount===1?"":"s"} need${attentionCount===1?"s":""} attention</span>`:`✓ Ready for Export<br><span class="prod-status-secondary">All checks passed</span>`;
+    summary.innerHTML=attentionCount?`⚠ Campaign Not Ready<br><span class="prod-status-secondary">${blockerCount} blocker${blockerCount===1?"":"s"} • ${warningCount} warning${warningCount===1?"":"s"}</span>`:`✓ Ready for Export<br><span class="prod-status-secondary">No blockers found</span>`;
   }
   const host=document.getElementById("prod-status-list");
   if(!host) return;
