@@ -4,22 +4,29 @@ import test from 'node:test';
 
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
-test('fresh startup defaults to the All 4 preview with the matching active button', () => {
+test('fresh startup defaults to the All 4 preview with the matching active button and render path', () => {
   assert.match(html, /<button class="vbtn" id="vb-single"[^>]*>Single<\/button>/);
   assert.match(html, /<button class="vbtn" id="vb-email"[^>]*>Email<\/button>/);
   assert.match(html, /<button class="vbtn active" id="vb-all"[^>]*>All 4<\/button>/);
   assert.match(html, /let cur = 0, viewMode = "all", zoomPct = 32;/);
+  assert.match(html, /function sv\(i\)\{[\s\S]*?renderPreviewMode\(true\);[\s\S]*?queueAutosave\(\);/);
 });
 
-test('autosave persists and restore reapplies an existing valid view preference', () => {
+test('autosave persists and restore reapplies an existing valid view preference through selector sync', () => {
   assert.match(html, /return \{version:'1\.0',savedAt:new Date\(\)\.toISOString\(\),cur,viewMode,builderMode,/);
   assert.match(html, /if\(\["single","email","all"\]\.includes\(data\.viewMode\)\) viewMode = data\.viewMode;/);
-  assert.match(html, /b\.classList\.toggle\("active", x === viewMode\);/);
-  assert.match(html, /function setView\(v\)\{[\s\S]*?renderPreviewMode\(true\);[\s\S]*?queueAutosave\(\);/);
+  assert.match(html, /function applySessionPayload\(data\)\{[\s\S]*?syncViewSelector\(\);[\s\S]*?refreshAfterRestore\(\);/);
+  assert.match(html, /function syncViewSelector\(\)\{[\s\S]*?b\.classList\.toggle\('active', x === viewMode\);[\s\S]*?updateViewPill\(\);/);
+});
+
+test('Single, Email and All 4 switching normalises state and renders the selected mode', () => {
+  assert.match(html, /function normalisePreviewMode\(v\)\{\s*return \['single','email','all'\]\.includes\(v\) \? v : 'single';\s*\}/);
+  assert.match(html, /function setView\(v\)\{[\s\S]*?viewMode = nextViewMode;[\s\S]*?syncViewSelector\(\);[\s\S]*?renderPreviewMode\(true\);[\s\S]*?queueAutosave\(\);/);
+  assert.match(html, /function renderPreviewMode\(skipSave\)\{[\s\S]*?syncViewSelector\(\);[\s\S]*?if\(viewMode === 'email'\)[\s\S]*?if\(viewMode === 'all'\)[\s\S]*?renderVisibleCard\(\);/);
 });
 
 test('preview mode switches soft-fade within the premium transition window without animating layout or zoom dimensions', () => {
-  assert.match(html, /#card-output\{opacity:1;transition:opacity \.22s ease-out;\}/);
+  assert.match(html, /#card-output\{[^}]*opacity:1;[^}]*transition:opacity \.22s ease-out;[^}]*\}/);
   assert.match(html, /#card-output\.preview-mode-transition\{opacity:0;\}/);
   assert.match(html, /@media \(prefers-reduced-motion:reduce\)\{#card-output,\.view-pill\{transition:none;\}\}/);
   assert.match(html, /function fadePreviewModeIn\(\)\{[\s\S]*?out\.classList\.add\('preview-mode-transition'\);[\s\S]*?requestAnimationFrame\(function\(\)\{[\s\S]*?out\.classList\.remove\('preview-mode-transition'\);/);
@@ -34,7 +41,7 @@ test('view selector keeps a transform-driven sliding gold indicator with subtly 
   assert.doesNotMatch(html, /\.(?:view-btns|view-pill)\{[^}]*border-radius:999px;/);
   assert.match(html, /\.vbtn\.active\{color:var\(--navy\);\}/);
   assert.match(html, /function updateViewPill\(\)\{[\s\S]*?pill\.style\.width = activeButton\.offsetWidth \+ 'px';[\s\S]*?pill\.style\.transform = 'translateX\(' \+ activeButton\.offsetLeft \+ 'px\)';/);
-  assert.match(html, /updateViewPill\(\);\s*renderPreviewMode\(true\);/);
+  assert.match(html, /syncViewSelector\(\);\s*renderPreviewMode\(true\);/);
   assert.match(html, /requestAnimationFrame\(updateViewPill\);/);
   assert.doesNotMatch(html, /\.vbtn\.active\{[^}]*background:/);
 });
@@ -53,8 +60,24 @@ test('preview canvas uses a slightly darker warm neutral background across modes
   assert.match(html, /\.preview-wrap\{[^}]*background:#dedad2;[^}]*\}/);
 });
 
-test('preview scaler stays top-aligned so scrolling ends with the rendered content', () => {
-  assert.match(html, /\.preview-scaler\{margin-block:0;transform-origin:top center;\}/);
+test('Single preview uses a centred scaled footprint without changing card dimensions', () => {
+  assert.match(html, /\.preview-wrap\{[^}]*justify-content:center;[^}]*align-items:flex-start;[^}]*\}/);
+  assert.match(html, /\.preview-scaler\{flex:0 0 auto;margin-block:0;\}/);
+  assert.match(html, /out\.style\.left = '50%';/);
+  assert.match(html, /out\.style\.transform = 'translateX\(-50%\) scale\(' \+ scale \+ '\)';/);
+  assert.match(html, /\.cc\{width:1200px;/);
+});
+
+test('preview scroll footprint ends naturally after Single, Email and All 4 rendered content', () => {
   assert.doesNotMatch(html, /\.preview-scaler\{[^}]*margin-block:auto;/);
+  assert.match(html, /scaler\.style\.width = Math\.ceil\(width \* scale\) \+ 'px';/);
   assert.match(html, /scaler\.style\.height = Math\.ceil\(renderedHeight \* scale\) \+ 'px';/);
+  assert.match(html, /setScalerBox\(1200, out\.offsetHeight, scale\);/);
+  assert.match(html, /setScalerBox\(1200, out\.offsetHeight \|\| stackWrap\.offsetHeight, baseScale \* EMAIL_PREVIEW_SCALE\);/);
+  assert.match(html, /setScalerBox\(gridW, fullH, Math\.max\(0\.08, fitScale\)\);/);
+});
+
+test('preview-only scaling leaves export dimensions unchanged', () => {
+  assert.match(html, /const exportWidth = 1200;/);
+  assert.match(html, /width:1200px;min-width:1200px;max-width:1200px;transform:none;/);
 });
