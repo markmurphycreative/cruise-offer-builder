@@ -25,6 +25,24 @@ test('campaign summary opens read-only and consumes existing status output', () 
   assert.match(openSummary, /Offer \$\{i\+1\} — Empty/);
 });
 
+test('campaign summary offer headers reuse available operator logos without changing no-logo fallbacks', () => {
+  const logo = extractFunction('getSummaryOperatorLogoHtml');
+  const openSummary = extractFunction('openSummary');
+  assert.match(logo, /hasOperatorLogo\(o\)/);
+  assert.match(logo, /o\._logoCustom\|\|op\.pngData\|\|op\.svgData/);
+  assert.match(logo, /class="summary-offer-logo"/);
+  assert.match(logo, /onerror="this\.remove\(\)"/);
+  assert.match(openSummary, /\$\{getSummaryOperatorLogoHtml\(o\)\}/);
+  assert.match(openSummary, /Offer \$\{i\+1\} — Empty/);
+});
+
+test('campaign summary offer headings are compact and visually prominent', () => {
+  assert.match(html, /\.summary-grid\{display:grid;gap:6px;\}/);
+  assert.match(html, /\.summary-offer-head\{display:flex;align-items:center;gap:7px;margin-bottom:4px;\}/);
+  assert.match(html, /\.summary-offer-logo\{width:32px;height:20px;/);
+  assert.match(html, /\.summary-offer-title\{font-size:11px;font-weight:800;/);
+});
+
 test('campaign summary reuses existing offer readiness status and presents full review fields', () => {
   const details = extractFunction('getSummaryOfferDetails');
   assert.match(details, /getOfferStatus\(i\)==="green"/);

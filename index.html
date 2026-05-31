@@ -346,9 +346,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .summary-chip{background:#f7f6f3;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:10px;line-height:1.35;}
 .summary-health{background:#f7f6f3;border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:6px;padding:7px 9px;font-size:10px;line-height:1.45;}
 .summary-health strong{color:var(--navy);}
-.summary-grid{display:grid;gap:8px;}
+.summary-grid{display:grid;gap:6px;}
 .summary-offer-card{border:1px solid var(--border);border-radius:8px;padding:8px;background:#fdfdfc;}
-.summary-offer-title{font-size:10px;font-weight:700;color:var(--navy);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em;}
+.summary-offer-head{display:flex;align-items:center;gap:7px;margin-bottom:4px;}
+.summary-offer-logo{width:32px;height:20px;object-fit:contain;object-position:center;flex:0 0 auto;}
+.summary-offer-title{font-size:11px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;}
 .summary-list{display:grid;gap:3px;font-size:10px;}
 .summary-list div{display:flex;justify-content:space-between;gap:8px;}
 .summary-list strong{color:var(--muted);font-weight:700;}
@@ -2811,6 +2813,14 @@ function getCampaignHealthReviewText(){
   if(!(summary&&summary.innerHTML)) return "Campaign Health unavailable";
   return summary.innerHTML.replace(/<br\s*\/?>/gi,"\n").replace(/<[^>]+>/g,"").trim();
 }
+function getSummaryOperatorLogoHtml(o){
+  if(!hasOperatorLogo(o)) return "";
+  const op=OPERATOR_HEADERS[o.operator]||{};
+  const src=o._logoCustom||op.pngData||op.svgData;
+  if(!src) return "";
+  const alt=op.name?`${op.name} logo`:"Operator logo";
+  return `<img class="summary-offer-logo" src="${summaryHtml(src)}" alt="${summaryHtml(alt)}" onerror="this.remove()">`;
+}
 function getSummaryOfferDetails(o,i){
   const op=OPERATOR_HEADERS[o.operator];
   const imageStatus=o._img?"Loaded":(o._imgNeedsReupload?"Needs re-upload":"Missing");
@@ -2843,9 +2853,9 @@ function openSummary(){
   const name=summaryHtml(document.getElementById("g-campaign").value,"(unnamed)");
   const date=summaryHtml(document.getElementById("g-date").value,"(TBC)");
   const offerCards=offers.map((o,i)=>{
-    if(!isOfferLoaded(o)) return `<div class="summary-offer-card"><div class="summary-offer-title">Offer ${i+1} — Empty</div></div>`;
+    if(!isOfferLoaded(o)) return `<div class="summary-offer-card"><div class="summary-offer-head"><div class="summary-offer-title">Offer ${i+1} — Empty</div></div></div>`;
     const rows=getSummaryOfferDetails(o,i).map(([label,value,statusClass])=>`<div><strong>${label}</strong><span${statusClass?` class="${statusClass}"`:""}>${summaryHtml(value)}</span></div>`).join("");
-    return `<div class="summary-offer-card"><div class="summary-offer-title">Offer ${i+1} — ${summaryHtml(o.name,"Unnamed offer")}</div><div class="summary-list">${rows}</div></div>`;
+    return `<div class="summary-offer-card"><div class="summary-offer-head">${getSummaryOperatorLogoHtml(o)}<div class="summary-offer-title">Offer ${i+1} — ${summaryHtml(o.name,"Unnamed offer")}</div></div><div class="summary-list">${rows}</div></div>`;
   }).join("");
   const html=`<div class="summary-health"><strong>Campaign Health</strong><br>${getCampaignHealthReviewHtml()}</div><div class="summary-meta"><div class="summary-chip"><strong>Campaign</strong><br>${name}</div><div class="summary-chip"><strong>Send date</strong><br>${date}</div><div class="summary-chip"><strong>Export pack hints</strong><br>cards/, utms/all-utms.csv, summary/campaign-summary.txt</div></div><div class="summary-grid">${offerCards}</div>`;
   content.innerHTML=html;
