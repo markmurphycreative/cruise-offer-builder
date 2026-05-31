@@ -133,7 +133,7 @@ test('empty hero placeholder text is approximately 25% larger without changing t
 });
 
 test('required hero QA retains passive logic while adding a stronger warning treatment', () => {
-  assert.match(html, /warnLbl:"⚠ Hero image required",warningClass:"hero-warning"/);
+  assert.match(html, /warnLbl:"⚠ Hero image required for export",warningClass:"hero-warning"/);
   assert.match(html, /\.prod-status-item\.hero-warning\{color:var\(--red\);background:#fff0f0;border:1px solid #f0b0b0;/);
   assert.match(html, /Passive checks only — no auto-correction\. Export is never blocked\./);
 });

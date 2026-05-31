@@ -79,6 +79,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .prod-status{margin-bottom:7px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;}
 .prod-status-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);margin-bottom:3px;}
 .prod-status-summary{font-size:9px;line-height:1.35;font-weight:700;margin-bottom:4px;}
+.prod-status-secondary{font-size:8px;font-weight:500;opacity:.72;}
 .prod-status-summary.ok{color:var(--green);}
 .prod-status-summary.warn{color:var(--amber);}
 .prod-status-list{display:grid;gap:3px;}
@@ -1820,22 +1821,22 @@ function updateProductionStatus(){
   const value=id=>String(((document.getElementById(id)||{}).value)||"").trim();
   const groups=[
     {label:"Campaign",checks:[
-      {ok:!!value("g-campaign"),okLbl:"✓ Campaign name present",warnLbl:"⚠ Campaign name required"},
-      {ok:!!value("g-date"),okLbl:"✓ Send date present",warnLbl:"⚠ Send date required"},
-      {ok:!!value("g-airport"),okLbl:"✓ Departure airport present",warnLbl:"⚠ Departure airport required"},
-      {ok:!!value("g-terms"),okLbl:"✓ Default T&Cs present",warnLbl:"⚠ Default T&Cs required"}
+      {ok:!!value("g-campaign"),okLbl:"✓ Campaign name present",warnLbl:"⚠ Campaign name missing"},
+      {ok:!!value("g-date"),okLbl:"✓ Send date present",warnLbl:"⚠ Send date missing"},
+      {ok:!!value("g-airport"),okLbl:"✓ Departure airport present",warnLbl:"⚠ Departure airport missing"},
+      {ok:!!value("g-terms"),okLbl:"✓ Default T&Cs present",warnLbl:"⚠ Default T&Cs missing"}
     ]},
     {label:"Offers",checks:[
       {ok:loadedOffers>0,okLbl:"✓ At least one offer loaded",warnLbl:"⚠ No offers loaded"},
       {ok:loadedOffers===offers.length,okLbl:`✓ ${loadedOffers}/${offers.length} offers loaded`,warnLbl:`⚠ ${loadedOffers}/${offers.length} offers loaded`}
     ]},
     {label:"Assets",checks:[
-      {ok:!!o._img,okLbl:"✓ Hero image loaded",warnLbl:"⚠ Hero image required",warningClass:"hero-warning"},
-      {ok:hasOperatorLogo(o),okLbl:"✓ Operator logo present",warnLbl:"⚠ Operator logo required"},
+      {ok:!!o._img,okLbl:"✓ Hero image loaded",warnLbl:"⚠ Hero image required for export",warningClass:"hero-warning"},
+      {ok:hasOperatorLogo(o),okLbl:"✓ Operator logo present",warnLbl:"⚠ Operator logo missing"},
       {ok:!!o.operator,okLbl:"✓ Operator selected",warnLbl:"⚠ Operator not selected"}
     ]},
     {label:"Marketing",checks:[
-      {ok:!!o._utm,okLbl:"✓ UTMs generated",warnLbl:"⚠ UTM required"}
+      {ok:!!o._utm,okLbl:"✓ UTMs generated",warnLbl:"⚠ UTM missing"}
     ]}
   ];
   if(o._img && String(o._img).startsWith("http")) groups[2].checks.push({ok:false,warnLbl:"⚠ External image URL may affect export"});
@@ -1844,7 +1845,7 @@ function updateProductionStatus(){
   const summary=document.getElementById("prod-status-summary");
   if(summary){
     summary.className=`prod-status-summary ${attentionCount?"warn":"ok"}`;
-    summary.innerHTML=attentionCount?`⚠ Campaign Not Ready<br>${attentionCount} item${attentionCount===1?"":"s"} need${attentionCount===1?"s":""} attention`:"✓ Ready for Export<br>All checks passed";
+    summary.innerHTML=attentionCount?`⚠ Campaign Not Ready<br><span class="prod-status-secondary">${attentionCount} item${attentionCount===1?"":"s"} need${attentionCount===1?"s":""} attention</span>`:`✓ Ready for Export<br><span class="prod-status-secondary">All checks passed</span>`;
   }
   const host=document.getElementById("prod-status-list");
   if(!host) return;
