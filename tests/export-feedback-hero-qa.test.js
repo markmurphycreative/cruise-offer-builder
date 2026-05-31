@@ -138,6 +138,10 @@ test('required hero QA retains passive logic while adding a stronger warning tre
   assert.match(html, /Passive checks only — no auto-correction\. Export is never blocked\./);
 });
 
+test('saved-session panel uses the Session Status heading before autosave hydration', () => {
+  assert.match(html, /<div class="session-status" id="saved-session-status" aria-live="polite"><strong>Session Status<\/strong>No saved session<\/div>/);
+});
+
 test('saved-session summary reports the existing autosave payload without changing storage', () => {
   const status = { innerHTML: '' };
   const context = {
@@ -152,9 +156,9 @@ test('saved-session summary reports the existing autosave payload without changi
   ].join('\n'), context);
 
   context.updateSavedSessionStatus();
-  assert.equal(status.innerHTML, '<strong>No Saved Session</strong>');
+  assert.equal(status.innerHTML, '<strong>Session Status</strong>No saved session');
 
   context.updateSavedSessionStatus({ savedAt: '2026-05-30T09:24:00Z', offers: [{ name: 'One' }, { price: '999' }, {}, { _img: 'hero.jpg' }] });
-  assert.match(status.innerHTML, /^<strong>Session Saved<\/strong>3 Offers Loaded<br>Last Updated: /);
+  assert.match(status.innerHTML, /^<strong>Session Status<\/strong>Session saved<br>3 offers loaded<br>Last updated \d{2}:\d{2}$/);
   assert.doesNotMatch(extractFunction('updateSavedSessionStatus'), /setItem|removeItem/);
 });

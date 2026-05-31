@@ -768,7 +768,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
   <!-- Actions -->
   <div class="sb-actions">
-    <div class="session-status" id="saved-session-status" aria-live="polite"><strong>No Saved Session</strong></div>
+    <div class="session-status" id="saved-session-status" aria-live="polite"><strong>Session Status</strong>No saved session</div>
     <div class="act-row">
       <button class="abtn" onclick="clearSavedSession()">Clear Saved Session</button>
     </div>
@@ -1827,8 +1827,9 @@ function updateProductionStatus(){
       {ok:!!value("g-terms"),okLbl:"✓ Default T&Cs present",warnLbl:"⚠ Default T&Cs missing"}
     ]},
     {label:"Offers",checks:[
-      {ok:loadedOffers>0,okLbl:"✓ At least one offer loaded",warnLbl:"⚠ No offers loaded"},
-      {ok:loadedOffers===offers.length,okLbl:`✓ ${loadedOffers}/${offers.length} offers loaded`,warnLbl:`⚠ ${loadedOffers}/${offers.length} offers loaded`}
+      {ok:loadedOffers>0,okLbl:`✓ ${loadedOffers}/${offers.length} offers loaded`,warnLbl:"⚠ No offers loaded"},
+      // Keep the existing readiness requirement without rendering a duplicate offer-count message.
+      {ok:loadedOffers===offers.length,render:false}
     ]},
     {label:"Assets",checks:[
       {ok:!!o._img,okLbl:"✓ Hero image loaded",warnLbl:"⚠ Hero image required for export",warningClass:"hero-warning"},
@@ -1849,7 +1850,7 @@ function updateProductionStatus(){
   }
   const host=document.getElementById("prod-status-list");
   if(!host) return;
-  host.innerHTML=groups.map(group=>`<div class="prod-status-group">${group.label}</div>${group.checks.map(c=>`<div class="prod-status-item ${c.ok?"ok":`warn ${c.warningClass||""}`}"><span>${c.ok?"✓":"⚠"}</span><span>${c.ok?(c.okLbl||"").replace(/^✓\s*/,""):(c.warnLbl||"").replace(/^⚠\s*/,"")}</span></div>`).join("")}`).join("");
+  host.innerHTML=groups.map(group=>`<div class="prod-status-group">${group.label}</div>${group.checks.filter(c=>c.render!==false).map(c=>`<div class="prod-status-item ${c.ok?"ok":`warn ${c.warningClass||""}`}"><span>${c.ok?"✓":"⚠"}</span><span>${c.ok?(c.okLbl||"").replace(/^✓\s*/,""):(c.warnLbl||"").replace(/^⚠\s*/,"")}</span></div>`).join("")}`).join("");
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2196,12 +2197,12 @@ function updateSavedSessionStatus(payload){
   if(!el) return;
   const saved=payload||readSavedSession();
   if(!(saved&&saved.offers)){
-    el.innerHTML="<strong>No Saved Session</strong>";
+    el.innerHTML="<strong>Session Status</strong>No saved session";
     return;
   }
   const loaded=countLoadedSessionOffers(saved);
   const updated=formatAutosaveTime(saved.savedAt)||"—";
-  el.innerHTML=`<strong>Session Saved</strong>${loaded} Offer${loaded===1?"":"s"} Loaded<br>Last Updated: ${updated}`;
+  el.innerHTML=`<strong>Session Status</strong>Session saved<br>${loaded} offer${loaded===1?"":"s"} loaded<br>Last updated ${updated}`;
 }
 function setAutosaveStatus(label,isWarn=false){
   const el=document.getElementById("autosave-status");
