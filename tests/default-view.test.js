@@ -52,3 +52,9 @@ test('Single and Email previews display at 75% of their prior on-screen scale wh
 test('preview canvas uses a slightly darker warm neutral background across modes', () => {
   assert.match(html, /\.preview-wrap\{[^}]*background:#dedad2;[^}]*\}/);
 });
+
+test('preview scaler stays top-aligned so scrolling ends with the rendered content', () => {
+  assert.match(html, /\.preview-scaler\{margin-block:0;transform-origin:top center;\}/);
+  assert.doesNotMatch(html, /\.preview-scaler\{[^}]*margin-block:auto;/);
+  assert.match(html, /scaler\.style\.height = Math\.ceil\(renderedHeight \* scale\) \+ 'px';/);
+});
