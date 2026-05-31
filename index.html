@@ -1831,9 +1831,9 @@ function updateProductionStatus(){
       {ok:!!value("g-terms"),okLbl:"✓ Default T&Cs present",warnLbl:"⚠ Default T&Cs missing"}
     ]},
     {label:"Offers",checks:[
-      {ok:loadedOffers>0,okLbl:`✓ ${loadedOffers}/${offers.length} offers loaded`,warnLbl:"⚠ No offers loaded"},
-      // Keep the existing readiness requirement without rendering a duplicate offer-count message.
-      {ok:loadedOffers===offers.length,render:false}
+      {ok:loadedOffers>0,okLbl:"✓ At least one offer loaded",warnLbl:"⚠ No offers loaded",render:loadedOffers<offers.length},
+      // Keep the existing readiness requirement while rendering the loaded count as progress.
+      {ok:loadedOffers===offers.length,okLbl:`✓ ${loadedOffers}/${offers.length} offers loaded`,render:loadedOffers>0,displayOk:true}
     ]},
     {label:"Assets",checks:[
       {ok:!!o._img,okLbl:"✓ Hero image loaded",warnLbl:"⚠ Hero image required for export",warningClass:"hero-warning"},
@@ -1854,7 +1854,7 @@ function updateProductionStatus(){
   }
   const host=document.getElementById("prod-status-list");
   if(!host) return;
-  host.innerHTML=groups.map(group=>`<div class="prod-status-group">${group.label}</div>${group.checks.filter(c=>c.render!==false).map(c=>`<div class="prod-status-item ${c.ok?"ok":`warn ${c.warningClass||""}`}"><span>${c.ok?"✓":"⚠"}</span><span>${c.ok?(c.okLbl||"").replace(/^✓\s*/,""):(c.warnLbl||"").replace(/^⚠\s*/,"")}</span></div>`).join("")}`).join("");
+  host.innerHTML=groups.map(group=>`<div class="prod-status-group">${group.label}</div>${group.checks.filter(c=>c.render!==false).map(c=>{const displayOk=c.displayOk===undefined?c.ok:c.displayOk;return `<div class="prod-status-item ${displayOk?"ok":`warn ${c.warningClass||""}`}"><span>${displayOk?"✓":"⚠"}</span><span>${displayOk?(c.okLbl||"").replace(/^✓\s*/,""):(c.warnLbl||"").replace(/^⚠\s*/,"")}</span></div>`}).join("")}`).join("");
 }
 
 // ═══════════════════════════════════════════════════════
