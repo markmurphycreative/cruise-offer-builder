@@ -296,6 +296,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .tbtn{padding:3px 7px;font-size:9px;font-weight:700;border:1px solid rgba(255,255,255,.2);border-radius:3px;background:transparent;color:rgba(255,255,255,.6);margin-left:3px;}
 .tbtn.on{background:rgba(255,255,255,.15);color:#fff;}
 .preview-wrap{flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:flex-start;background:#dedad2;}
+.preview-wrap.single-preview{flex:0 1 auto;}
 .preview-scaler{flex:0 0 auto;margin-block:0;}
 #card-output{opacity:1;transition:opacity .22s ease-out;transform-origin:top left;}
 #card-output.preview-mode-transition{opacity:0;}
@@ -3151,6 +3152,7 @@ function commitVisibleFields(){
   offers[cur] = Object.assign({}, offers[cur] || {}, visibleFieldsToData());
 }
 function renderVisibleCard(){
+  setPreviewWrapMode('single');
   const scaler = document.getElementById('preview-scaler');
   const out = document.getElementById('card-output');
   if(!scaler || !out) return;
@@ -3158,7 +3160,9 @@ function renderVisibleCard(){
   const title = document.getElementById('preview-title');
   if(title) title.textContent = 'Live Preview — Offer ' + (cur + 1);
   out.innerHTML = renderCardHTML(visibleFieldsToData());
-  setScalerBox(1200, out.offsetHeight, scale);
+  const renderedHeight = out.offsetHeight;
+  setScalerBox(1200, renderedHeight, scale);
+  setSinglePreviewCanvasHeight(renderedHeight, scale);
 }
 function moveOfferState(fromIdx, toIdx){
   fromIdx = Number(fromIdx);
@@ -3406,6 +3410,21 @@ function getPreviewPaneSize(){
   };
 }
 
+function setPreviewWrapMode(mode){
+  const wrap = document.querySelector('.preview-wrap');
+  if(!wrap) return;
+  const isSingle = mode === 'single';
+  wrap.classList.toggle('single-preview', isSingle);
+  if(!isSingle) wrap.style.height = '';
+}
+
+function setSinglePreviewCanvasHeight(renderedHeight, scale){
+  const wrap = document.querySelector('.preview-wrap');
+  if(!wrap) return;
+  const verticalPadding = 24;
+  wrap.style.height = Math.ceil(renderedHeight * scale) + verticalPadding + 'px';
+}
+
 function setScalerBox(width, renderedHeight, scale){
   const scaler = document.getElementById('preview-scaler');
   const out = document.getElementById('card-output');
@@ -3427,6 +3446,7 @@ function renderPreviewMode(skipSave){
   if(!scaler || !out) return;
 
   syncViewSelector();
+  setPreviewWrapMode(viewMode);
   const baseScale = zoomPct / 100;
 
   if(viewMode === 'email'){
