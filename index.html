@@ -295,9 +295,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .vbtn.active{color:var(--navy);}
 .tbtn{padding:3px 7px;font-size:9px;font-weight:700;border:1px solid rgba(255,255,255,.2);border-radius:3px;background:transparent;color:rgba(255,255,255,.6);margin-left:3px;}
 .tbtn.on{background:rgba(255,255,255,.15);color:#fff;}
-.preview-wrap{flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:stretch;background:#dedad2;}
-.preview-scaler{margin-block:0;transform-origin:top center;}
-#card-output{opacity:1;transition:opacity .22s ease-out;}
+.preview-wrap{flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:flex-start;background:#dedad2;}
+.preview-scaler{flex:0 0 auto;margin-block:0;}
+#card-output{opacity:1;transition:opacity .22s ease-out;transform-origin:top center;}
 #card-output.preview-mode-transition{opacity:0;}
 @media (prefers-reduced-motion:reduce){#card-output,.view-pill{transition:none;}}
 
@@ -2374,11 +2374,7 @@ function applySessionPayload(data){
   document.getElementById('g-terms').value = c.terms || '';
   cur = Number.isInteger(data.cur) ? Math.min(3,Math.max(0,data.cur)) : 0;
   if(["single","email","all"].includes(data.viewMode)) viewMode = data.viewMode;
-  ["single","email","all"].forEach(x=>{
-    const b = document.getElementById("vb-" + x);
-    if(b) b.classList.toggle("active", x === viewMode);
-  });
-  updateViewPill();
+  syncViewSelector();
   if(data.sectionState && typeof data.sectionState === "object"){
     applySectionCollapseState(data.sectionState, data.openSectionKey);
     if((data.builderMode||builderMode)==="standard") captureStandardSectionState();
@@ -3162,10 +3158,7 @@ function renderVisibleCard(){
   const title = document.getElementById('preview-title');
   if(title) title.textContent = 'Live Preview — Offer ' + (cur + 1);
   out.innerHTML = renderCardHTML(visibleFieldsToData());
-  scaler.style.width = '1200px';
-  scaler.style.transform = 'scale(' + scale + ')';
-  scaler.style.transformOrigin = 'top center';
-  setTimeout(function(){ scaler.style.height = (out.offsetHeight * scale) + 'px'; }, 100);
+  setScalerBox(1200, out.offsetHeight, scale);
 }
 function moveOfferState(fromIdx, toIdx){
   fromIdx = Number(fromIdx);
@@ -3297,7 +3290,7 @@ function sv(i){
   try { updateAllStatus(); } catch(e){}
   try { updateExportFilenames(); } catch(e){}
   try { updateMoveOfferButtons(); } catch(e){}
-  renderVisibleCard();
+  renderPreviewMode(true);
   queueAutosave();
 }
 function up(){
@@ -3374,23 +3367,32 @@ function fadePreviewModeIn(){
   });
 }
 
+function normalisePreviewMode(v){
+  return ['single','email','all'].includes(v) ? v : 'single';
+}
+
+function syncViewSelector(){
+  viewMode = normalisePreviewMode(viewMode);
+  ['single','email','all'].forEach(function(x){
+    const b = document.getElementById('vb-' + x);
+    if(b) b.classList.toggle('active', x === viewMode);
+  });
+  updateViewPill();
+}
+
 function updateViewPill(){
   const pill = document.getElementById('view-pill');
-  const activeButton = document.getElementById('vb-' + viewMode);
+  const activeButton = document.getElementById('vb-' + normalisePreviewMode(viewMode));
   if(!pill || !activeButton) return;
   pill.style.width = activeButton.offsetWidth + 'px';
   pill.style.transform = 'translateX(' + activeButton.offsetLeft + 'px)';
 }
 
 function setView(v){
-  const nextViewMode = v || 'single';
+  const nextViewMode = normalisePreviewMode(v);
   const didChange = nextViewMode !== viewMode;
   viewMode = nextViewMode;
-  ['single','email','all'].forEach(function(x){
-    const b = document.getElementById('vb-' + x);
-    if(b) b.classList.toggle('active', x === viewMode);
-  });
-  updateViewPill();
+  syncViewSelector();
   renderPreviewMode(true);
   if(didChange) fadePreviewModeIn();
   queueAutosave();
@@ -3406,11 +3408,14 @@ function getPreviewPaneSize(){
 
 function setScalerBox(width, renderedHeight, scale){
   const scaler = document.getElementById('preview-scaler');
-  if(!scaler) return;
-  scaler.style.width = width + 'px';
-  scaler.style.transform = 'scale(' + scale + ')';
-  scaler.style.transformOrigin = 'top center';
+  const out = document.getElementById('card-output');
+  if(!scaler || !out) return;
+  scaler.style.width = Math.ceil(width * scale) + 'px';
   scaler.style.height = Math.ceil(renderedHeight * scale) + 'px';
+  scaler.style.transform = 'none';
+  out.style.width = width + 'px';
+  out.style.left = '50%';
+  out.style.transform = 'translateX(-50%) scale(' + scale + ')';
 }
 
 function renderPreviewMode(skipSave){
@@ -3420,6 +3425,7 @@ function renderPreviewMode(skipSave){
   const out = document.getElementById('card-output');
   if(!scaler || !out) return;
 
+  syncViewSelector();
   const baseScale = zoomPct / 100;
 
   if(viewMode === 'email'){
@@ -3446,7 +3452,7 @@ function renderPreviewMode(skipSave){
 
     out.innerHTML = '';
     out.appendChild(stackWrap);
-    setTimeout(function(){ setScalerBox(1200, out.offsetHeight || stackWrap.offsetHeight, baseScale * EMAIL_PREVIEW_SCALE); }, 80);
+    setScalerBox(1200, out.offsetHeight || stackWrap.offsetHeight, baseScale * EMAIL_PREVIEW_SCALE);
     return;
   }
 
@@ -3471,12 +3477,10 @@ function renderPreviewMode(skipSave){
     out.innerHTML = '';
     out.appendChild(grid);
 
-    setTimeout(function(){
-      const pane = getPreviewPaneSize();
-      const fullH = grid.offsetHeight || out.offsetHeight || 4600;
-      const fitScale = Math.min(pane.w / gridW, pane.h / fullH, 0.32);
-      setScalerBox(gridW, fullH, Math.max(0.08, fitScale));
-    }, 120);
+    const pane = getPreviewPaneSize();
+    const fullH = grid.offsetHeight || out.offsetHeight || 4600;
+    const fitScale = Math.min(pane.w / gridW, pane.h / fullH, 0.32);
+    setScalerBox(gridW, fullH, Math.max(0.08, fitScale));
     return;
   }
 
