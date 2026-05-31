@@ -18,6 +18,24 @@ function extractFunction(name) {
   throw new Error(`Could not extract ${name}`);
 }
 
+function createCleanOffer(name) {
+  return {
+    name,
+    ship: 'Arvia',
+    price: '1669',
+    day: '20',
+    month: 'November 2026',
+    ports: 'Barbados • Martinique',
+    nights: '14',
+    board: 'FB',
+    boardlbl: 'Full Board',
+    operator: 'po',
+    tags: 'Adult Only Options · Cuisine · Entertainment · Family',
+    _img: 'hero-one.jpg',
+    _utm: 'https://example.com/?utm_source=klaviyo'
+  };
+}
+
 function createHarness({ globals = {}, offers = [{}, {}, {}, {}], cur = 0, headers = {} } = {}) {
   const elements = {
     'g-campaign': { value: globals.campaign || '' },
@@ -73,10 +91,10 @@ test('campaign health reports grouped required checks and updates to ready when 
   Object.assign(elements['g-terms'], { value: 'T&Cs Apply' });
   context.OPERATOR_HEADERS.po = { pngData: 'assets/operator-logos/po-cruises-logo.png' };
   context.offers.splice(0, 4,
-    { name: 'One', operator: 'po', _img: 'hero-one.jpg', _utm: 'https://example.com/?utm_source=klaviyo' },
-    { name: 'Two' },
-    { name: 'Three' },
-    { name: 'Four' }
+    createCleanOffer('One'),
+    createCleanOffer('Two'),
+    createCleanOffer('Three'),
+    createCleanOffer('Four')
   );
   context.updateProductionStatus();
   assert.equal(elements['prod-status-summary'].innerHTML, '✓ Ready for Export<br><span class="prod-status-secondary">All checks passed</span>');

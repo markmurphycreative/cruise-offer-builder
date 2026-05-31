@@ -1791,12 +1791,16 @@ function checkPortsWarn(){
 // ═══════════════════════════════════════════════════════
 // STATUS DOTS
 // ═══════════════════════════════════════════════════════
+function isCleanOfferValid(o){
+  const required=["name","ship","price","day","month","ports","nights","board","boardlbl","_img","operator","tags","_utm"];
+  return !!(o&&required.every(field=>String(o[field]||"").trim())&&hasOperatorLogo(o));
+}
 function getOfferStatus(i){
   const o=offers[i];
   if(!o.name&&!o.price&&!o.day) return "";
-  const required=["name","price","day","nights","board"];
-  if(required.some(f=>!o[f])) return "red";
-  if(!o._img||!o.operator) return "amber";
+  const required=["name","ship","price","day","month","ports","nights","board","boardlbl","tags"];
+  if(required.some(field=>!String(o[field]||"").trim())) return "red";
+  if(!isCleanOfferValid(o)) return "amber";
   return "green";
 }
 function updateAllStatus(){
