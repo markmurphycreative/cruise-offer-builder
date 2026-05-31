@@ -1820,22 +1820,22 @@ function updateProductionStatus(){
   const value=id=>String(((document.getElementById(id)||{}).value)||"").trim();
   const groups=[
     {label:"Campaign",checks:[
-      {ok:!!value("g-campaign"),okLbl:"✓ Campaign name present",warnLbl:"⚠ Campaign name missing"},
-      {ok:!!value("g-date"),okLbl:"✓ Send date present",warnLbl:"⚠ Send date missing"},
-      {ok:!!value("g-airport"),okLbl:"✓ Departure airport present",warnLbl:"⚠ Departure airport missing"},
-      {ok:!!value("g-terms"),okLbl:"✓ Default T&Cs present",warnLbl:"⚠ Default T&Cs missing"}
+      {ok:!!value("g-campaign"),okLbl:"✓ Campaign name present",warnLbl:"⚠ Campaign name required"},
+      {ok:!!value("g-date"),okLbl:"✓ Send date present",warnLbl:"⚠ Send date required"},
+      {ok:!!value("g-airport"),okLbl:"✓ Departure airport present",warnLbl:"⚠ Departure airport required"},
+      {ok:!!value("g-terms"),okLbl:"✓ Default T&Cs present",warnLbl:"⚠ Default T&Cs required"}
     ]},
     {label:"Offers",checks:[
       {ok:loadedOffers>0,okLbl:"✓ At least one offer loaded",warnLbl:"⚠ No offers loaded"},
       {ok:loadedOffers===offers.length,okLbl:`✓ ${loadedOffers}/${offers.length} offers loaded`,warnLbl:`⚠ ${loadedOffers}/${offers.length} offers loaded`}
     ]},
     {label:"Assets",checks:[
-      {ok:!!o._img,okLbl:"✓ Hero image loaded",warnLbl:"⚠ Hero image missing",warningClass:"hero-warning"},
-      {ok:hasOperatorLogo(o),okLbl:"✓ Operator logo present",warnLbl:"⚠ Operator logo missing"},
+      {ok:!!o._img,okLbl:"✓ Hero image loaded",warnLbl:"⚠ Hero image required",warningClass:"hero-warning"},
+      {ok:hasOperatorLogo(o),okLbl:"✓ Operator logo present",warnLbl:"⚠ Operator logo required"},
       {ok:!!o.operator,okLbl:"✓ Operator selected",warnLbl:"⚠ Operator not selected"}
     ]},
     {label:"Marketing",checks:[
-      {ok:!!o._utm,okLbl:"✓ UTMs generated",warnLbl:"⚠ UTM missing"}
+      {ok:!!o._utm,okLbl:"✓ UTMs generated",warnLbl:"⚠ UTM required"}
     ]}
   ];
   if(o._img && String(o._img).startsWith("http")) groups[2].checks.push({ok:false,warnLbl:"⚠ External image URL may affect export"});
@@ -1844,7 +1844,7 @@ function updateProductionStatus(){
   const summary=document.getElementById("prod-status-summary");
   if(summary){
     summary.className=`prod-status-summary ${attentionCount?"warn":"ok"}`;
-    summary.textContent=attentionCount?`⚠ ${attentionCount} Item${attentionCount===1?"":"s"} Need Attention`:"✓ Ready for Export";
+    summary.innerHTML=attentionCount?`⚠ Campaign Not Ready<br>${attentionCount} item${attentionCount===1?"":"s"} need${attentionCount===1?"s":""} attention`:"✓ Ready for Export<br>All checks passed";
   }
   const host=document.getElementById("prod-status-list");
   if(!host) return;
