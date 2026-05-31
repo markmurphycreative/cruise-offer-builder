@@ -100,6 +100,7 @@ test('campaign health reports grouped required checks and updates to ready when 
   assert.equal(elements['prod-status-summary'].innerHTML, '✓ Ready for Export<br><span class="prod-status-secondary">All checks passed</span>');
   assert.equal(elements['prod-status-summary'].className, 'prod-status-summary ok');
   assert.match(elements['prod-status-list'].innerHTML, /4\/4 offers loaded/);
+  assert.doesNotMatch(elements['prod-status-list'].innerHTML, /At least one offer loaded/);
   assert.match(elements['prod-status-list'].innerHTML, /Hero image loaded/);
   assert.match(elements['prod-status-list'].innerHTML, /Operator logo present/);
   assert.match(elements['prod-status-list'].innerHTML, /Operator selected/);
@@ -115,7 +116,7 @@ test('campaign health count, hero, operator logo and operator checks react to cu
   context.updateProductionStatus();
   assert.equal(elements['prod-status-summary'].innerHTML, '⚠ Campaign Not Ready<br><span class="prod-status-secondary">5 items need attention</span>');
   assert.match(elements['prod-status-list'].innerHTML, /<div class="prod-status-item ok"><span>✓<\/span><span>1\/4 offers loaded<\/span><\/div>/);
-  assert.doesNotMatch(elements['prod-status-list'].innerHTML, /At least one offer loaded/);
+  assert.match(elements['prod-status-list'].innerHTML, /At least one offer loaded/);
 
   Object.assign(context.offers[0], { operator: 'custom', _logoCustom: 'data:image/png;base64,logo', _img: 'hero.jpg', _utm: 'https://example.com/utm' });
   context.updateProductionStatus();
@@ -133,13 +134,18 @@ test('campaign health count, hero, operator logo and operator checks react to cu
   assert.equal(elements['prod-status-summary'].innerHTML, '✓ Ready for Export<br><span class="prod-status-secondary">All checks passed</span>');
 });
 
-test('campaign health renders one positive offer-loading message for each non-empty offer count', () => {
+test('campaign health renders offer-loading progress without a redundant all-loaded message', () => {
   for (let loaded = 1; loaded <= 4; loaded += 1) {
     const offers = Array.from({ length: 4 }, (_, index) => index < loaded ? { name: `Offer ${index + 1}` } : {});
     const { context, elements } = createHarness({ offers });
     context.updateProductionStatus();
     assert.match(elements['prod-status-list'].innerHTML, new RegExp(`<div class="prod-status-item ok"><span>✓<\/span><span>${loaded}\/4 offers loaded<\/span><\/div>`));
-    assert.doesNotMatch(elements['prod-status-list'].innerHTML, /No offers loaded|At least one offer loaded/);
+    if (loaded < 4) {
+      assert.match(elements['prod-status-list'].innerHTML, /At least one offer loaded/);
+    } else {
+      assert.doesNotMatch(elements['prod-status-list'].innerHTML, /At least one offer loaded/);
+    }
+    assert.doesNotMatch(elements['prod-status-list'].innerHTML, /No offers loaded/);
   }
 });
 
