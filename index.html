@@ -344,6 +344,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .summary-body{background:#fff;padding:14px 16px 16px;max-height:min(76vh,700px);overflow-y:auto;display:grid;gap:8px;}
 .summary-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:6px;}
 .summary-chip{background:#f7f6f3;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:10px;line-height:1.35;}
+.summary-health{background:#f7f6f3;border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:6px;padding:7px 9px;font-size:10px;line-height:1.45;}
+.summary-health strong{color:var(--navy);}
 .summary-grid{display:grid;gap:8px;}
 .summary-offer-card{border:1px solid var(--border);border-radius:8px;padding:8px;background:#fdfdfc;}
 .summary-offer-title{font-size:10px;font-weight:700;color:var(--navy);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em;}
@@ -2795,37 +2797,69 @@ function copyHTML(){ save(); navigator.clipboard.writeText(renderCardHTML(offers
 // ═══════════════════════════════════════════════════════
 // SUMMARY HELPERS
 // ═══════════════════════════════════════════════════════
+function summaryDisplay(value,fallback="Missing"){
+  return String(value||"").trim()||fallback;
+}
+function summaryHtml(value,fallback="Missing"){
+  return summaryDisplay(value,fallback).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+}
+function getCampaignHealthReviewHtml(){
+  const summary=document.getElementById("prod-status-summary");
+  return summary&&summary.innerHTML?summary.innerHTML:"Campaign Health unavailable";
+}
+function getCampaignHealthReviewText(){
+  const summary=document.getElementById("prod-status-summary");
+  if(!(summary&&summary.innerHTML)) return "Campaign Health unavailable";
+  return summary.innerHTML.replace(/<br\s*\/?>/gi,"\n").replace(/<[^>]+>/g,"").trim();
+}
+function getSummaryOfferDetails(o,i){
+  const op=OPERATOR_HEADERS[o.operator];
+  const imageStatus=o._img?"Loaded":(o._imgNeedsReupload?"Needs re-upload":"Missing");
+  const board=[o.board,o.boardlbl].filter(Boolean).join(" / ");
+  const ready=getOfferStatus(i)==="green";
+  return [
+    ["Operator",op?op.name:"Missing"],
+    ["Ship",summaryDisplay(o.ship)],
+    ["Price",o.price?`£${o.price}pp`:"Missing"],
+    ["Date",summaryDisplay([o.day,o.month].filter(Boolean).join(" "))],
+    ["Duration",o.nights?`${o.nights} nights`:"Missing"],
+    ["Board",summaryDisplay(board)],
+    ["USP",summaryDisplay(o.tags)],
+    ["Ports",summaryDisplay(o.ports)],
+    ["Inclusions",summaryDisplay(o.incl)],
+    ["Price basis",summaryDisplay(o.basis)],
+    ["Destination URL",summaryDisplay(o.url)],
+    ["Hero image",imageStatus,o._img?"sum-ok":"sum-bad"],
+    ["UTM",o._utm?"Generated":"Missing",o._utm?"sum-ok":"sum-warn"],
+    ["Export readiness",ready?"Ready":"Needs checks",ready?"sum-ok":"sum-warn"]
+  ];
+}
 function openSummary(){
-  save();
   const modal=document.getElementById("summary-modal");
   const content=document.getElementById("summary-content");
   if(!modal||!content){
     console.warn("Summary modal unavailable: #summary-modal or #summary-content is missing.");
     return;
   }
-  const name=document.getElementById("g-campaign").value||"(unnamed)";
-  const date=document.getElementById("g-date").value||"(TBC)";
+  const name=summaryHtml(document.getElementById("g-campaign").value,"(unnamed)");
+  const date=summaryHtml(document.getElementById("g-date").value,"(TBC)");
   const offerCards=offers.map((o,i)=>{
-    const op=OPERATOR_HEADERS[o.operator];
-    const missing=["name","price","day","nights","board","ports"].filter(f=>!o[f]);
-    if(!o._img) missing.push("hero image");
-    if(!o.operator) missing.push("operator");
-    const ready=missing.length===0&&!!o._utm;
-    return `<div class="summary-offer-card"><div class="summary-offer-title">Offer ${i+1} ${o.name?`— ${o.name}`:"— Empty"}</div><div class="summary-list">
-      <div><strong>Operator</strong><span class="${o.operator?'sum-ok':'sum-bad'}">${op?op.name:"Missing"}</span></div>
-      <div><strong>Hero image</strong><span class="${o._img?'sum-ok':'sum-bad'}">${o._img?'Ready':(o._imgNeedsReupload?'Needs re-upload':'Missing')}</span></div>
-      <div><strong>Preset</strong><span class="${o.operator?'sum-ok':'sum-warn'}">${o.operator?'Applied':'Not set'}</span></div>
-      <div><strong>Export readiness</strong><span class="${ready?'sum-ok':'sum-warn'}">${ready?'Ready':'Needs checks'}</span></div>
-      <div><strong>Missing</strong><span class="${missing.length?'sum-bad':'sum-ok'}">${missing.length?missing.join(", "):"None"}</span></div>
-      <div><strong>UTM</strong><span class="${o._utm?'sum-ok':'sum-warn'}">${o._utm?'Generated':'Missing'}</span></div></div></div>`;
+    if(!isOfferLoaded(o)) return `<div class="summary-offer-card"><div class="summary-offer-title">Offer ${i+1} — Empty</div></div>`;
+    const rows=getSummaryOfferDetails(o,i).map(([label,value,statusClass])=>`<div><strong>${label}</strong><span${statusClass?` class="${statusClass}"`:""}>${summaryHtml(value)}</span></div>`).join("");
+    return `<div class="summary-offer-card"><div class="summary-offer-title">Offer ${i+1} — ${summaryHtml(o.name,"Unnamed offer")}</div><div class="summary-list">${rows}</div></div>`;
   }).join("");
-  const html=`<div class="summary-meta"><div class="summary-chip"><strong>Campaign</strong><br>${name}</div><div class="summary-chip"><strong>Send date</strong><br>${date}</div><div class="summary-chip"><strong>Export pack hints</strong><br>cards/, utms/all-utms.csv, summary/campaign-summary.txt</div></div><div class="summary-grid">${offerCards}</div>`;
+  const html=`<div class="summary-health"><strong>Campaign Health</strong><br>${getCampaignHealthReviewHtml()}</div><div class="summary-meta"><div class="summary-chip"><strong>Campaign</strong><br>${name}</div><div class="summary-chip"><strong>Send date</strong><br>${date}</div><div class="summary-chip"><strong>Export pack hints</strong><br>cards/, utms/all-utms.csv, summary/campaign-summary.txt</div></div><div class="summary-grid">${offerCards}</div>`;
   content.innerHTML=html;
   modal.classList.add("active");
 }
 function getSummaryText(){
-  let txt=`CAMPAIGN SUMMARY\nCampaign: ${document.getElementById("g-campaign").value||"(unnamed)"}\nSend Date: ${document.getElementById("g-date").value||"(TBC)"}\nGenerated: ${new Date().toLocaleString()}\n\n`;
-  offers.forEach((o,i)=>{const op=OPERATOR_HEADERS[o.operator];txt+=`Offer ${i+1}: ${o.name||"(empty)"}\nOperator: ${op?op.name:"(missing)"}\nHero: ${o._img?"ready":(o._imgNeedsReupload?"needs re-upload":"missing")}\nUTM: ${o._utm?"generated":"missing"}\n\n`;});
+  let txt=`CAMPAIGN SUMMARY\nCampaign Health: ${getCampaignHealthReviewText()}\nCampaign: ${document.getElementById("g-campaign").value||"(unnamed)"}\nSend Date: ${document.getElementById("g-date").value||"(TBC)"}\nGenerated: ${new Date().toLocaleString()}\n\n`;
+  offers.forEach((o,i)=>{
+    if(!isOfferLoaded(o)){ txt+=`Offer ${i+1} — Empty\n\n`; return; }
+    txt+=`Offer ${i+1} — ${summaryDisplay(o.name,"Unnamed offer")}\n`;
+    getSummaryOfferDetails(o,i).forEach(([label,value])=>{ txt+=`${label}: ${value}\n`; });
+    txt+="\n";
+  });
   return txt;
 }
 function copySummary(){ navigator.clipboard.writeText(getSummaryText()).then(()=>alert("Summary copied")); }
