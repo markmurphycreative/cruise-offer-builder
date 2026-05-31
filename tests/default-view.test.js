@@ -18,8 +18,8 @@ test('autosave persists and restore reapplies an existing valid view preference'
   assert.match(html, /function setView\(v\)\{[\s\S]*?renderPreviewMode\(true\);[\s\S]*?queueAutosave\(\);/);
 });
 
-test('preview mode switches fade in quickly without animating layout or zoom dimensions', () => {
-  assert.match(html, /#card-output\{opacity:1;transition:opacity \.15s ease-out;\}/);
+test('preview mode switches soft-fade within the premium transition window without animating layout or zoom dimensions', () => {
+  assert.match(html, /#card-output\{opacity:1;transition:opacity \.22s ease-out;\}/);
   assert.match(html, /#card-output\.preview-mode-transition\{opacity:0;\}/);
   assert.match(html, /@media \(prefers-reduced-motion:reduce\)\{#card-output,\.view-pill\{transition:none;\}\}/);
   assert.match(html, /function fadePreviewModeIn\(\)\{[\s\S]*?out\.classList\.add\('preview-mode-transition'\);[\s\S]*?requestAnimationFrame\(function\(\)\{[\s\S]*?out\.classList\.remove\('preview-mode-transition'\);/);
@@ -27,12 +27,28 @@ test('preview mode switches fade in quickly without animating layout or zoom dim
   assert.doesNotMatch(html, /#card-output[^}]*transition:[^;}]*(?:width|height|transform)/);
 });
 
-test('view selector uses a transform-driven sliding gold pill without changing button sizing', () => {
+test('view selector keeps a transform-driven sliding gold indicator with subtly rounded segmented-control corners', () => {
   assert.match(html, /<span class="view-pill" id="view-pill" aria-hidden="true"><\/span>/);
-  assert.match(html, /\.view-pill\{[^}]*background:var\(--gold\);[^}]*transform:translateX\(0\);[^}]*transition:transform \.18s ease,width \.18s ease;/);
+  assert.match(html, /\.view-btns\{[^}]*border-radius:6px;[^}]*\}/);
+  assert.match(html, /\.view-pill\{[^}]*border-radius:4px;[^}]*background:var\(--gold\);[^}]*transform:translateX\(0\);[^}]*transition:transform \.2s ease,width \.2s ease;/);
+  assert.doesNotMatch(html, /\.(?:view-btns|view-pill)\{[^}]*border-radius:999px;/);
   assert.match(html, /\.vbtn\.active\{color:var\(--navy\);\}/);
   assert.match(html, /function updateViewPill\(\)\{[\s\S]*?pill\.style\.width = activeButton\.offsetWidth \+ 'px';[\s\S]*?pill\.style\.transform = 'translateX\(' \+ activeButton\.offsetLeft \+ 'px\)';/);
   assert.match(html, /updateViewPill\(\);\s*renderPreviewMode\(true\);/);
   assert.match(html, /requestAnimationFrame\(updateViewPill\);/);
   assert.doesNotMatch(html, /\.vbtn\.active\{[^}]*background:/);
+});
+
+
+test('Single and Email previews display at 75% of their prior on-screen scale while All 4 retains its fit scale', () => {
+  assert.match(html, /const SINGLE_PREVIEW_SCALE = 0\.75;/);
+  assert.match(html, /const EMAIL_PREVIEW_SCALE = 0\.75;/);
+  assert.match(html, /const scale = \(zoomPct \/ 100\) \* SINGLE_PREVIEW_SCALE;/);
+  assert.match(html, /setScalerBox\(1200, out\.offsetHeight \|\| stackWrap\.offsetHeight, baseScale \* EMAIL_PREVIEW_SCALE\);/);
+  assert.match(html, /const fitScale = Math\.min\(pane\.w \/ gridW, pane\.h \/ fullH, 0\.32\);/);
+  assert.match(html, /setScalerBox\(gridW, fullH, Math\.max\(0\.08, fitScale\)\);/);
+});
+
+test('preview canvas uses a slightly darker warm neutral background across modes', () => {
+  assert.match(html, /\.preview-wrap\{[^}]*background:#dedad2;[^}]*\}/);
 });

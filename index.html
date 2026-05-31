@@ -288,16 +288,16 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .ptool span{font-size:9px;color:rgba(255,255,255,.6);white-space:nowrap;}
 .ptool input[type=range]{accent-color:var(--gold);width:70px;height:3px;}
 .ptool .pval{font-size:9px;color:rgba(255,255,255,.8);min-width:28px;}
-.view-btns{position:relative;display:flex;border:1px solid rgba(255,255,255,.2);border-radius:999px;overflow:hidden;isolation:isolate;}
-.view-pill{position:absolute;z-index:0;top:0;bottom:0;left:0;width:0;border-radius:999px;background:var(--gold);box-shadow:0 2px 5px rgba(0,0,0,.24);transform:translateX(0);transition:transform .18s ease,width .18s ease;pointer-events:none;}
+.view-btns{position:relative;display:flex;border:1px solid rgba(255,255,255,.26);border-radius:6px;overflow:hidden;isolation:isolate;}
+.view-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:4px;background:var(--gold);box-shadow:0 1px 3px rgba(0,0,0,.2);transform:translateX(0);transition:transform .2s ease,width .2s ease;pointer-events:none;}
 .vbtn{position:relative;z-index:1;padding:3px 8px;font-size:9px;font-weight:700;border:none;background:transparent;color:rgba(255,255,255,.5);letter-spacing:.04em;transition:color .18s ease;}
 .vbtn:hover:not(.active){color:rgba(255,255,255,.88);}
 .vbtn.active{color:var(--navy);}
 .tbtn{padding:3px 7px;font-size:9px;font-weight:700;border:1px solid rgba(255,255,255,.2);border-radius:3px;background:transparent;color:rgba(255,255,255,.6);margin-left:3px;}
 .tbtn.on{background:rgba(255,255,255,.15);color:#fff;}
-.preview-wrap{flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:stretch;}
-.preview-scaler{margin-block:auto;transform-origin:top center;transition:transform .1s;}
-#card-output{opacity:1;transition:opacity .15s ease-out;}
+.preview-wrap{flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:stretch;background:#dedad2;}
+.preview-scaler{margin-block:auto;transform-origin:top center;}
+#card-output{opacity:1;transition:opacity .22s ease-out;}
 #card-output.preview-mode-transition{opacity:0;}
 @media (prefers-reduced-motion:reduce){#card-output,.view-pill{transition:none;}}
 
@@ -3158,7 +3158,7 @@ function renderVisibleCard(){
   const scaler = document.getElementById('preview-scaler');
   const out = document.getElementById('card-output');
   if(!scaler || !out) return;
-  const scale = zoomPct / 100;
+  const scale = (zoomPct / 100) * SINGLE_PREVIEW_SCALE;
   const title = document.getElementById('preview-title');
   if(title) title.textContent = 'Live Preview — Offer ' + (cur + 1);
   out.innerHTML = renderCardHTML(visibleFieldsToData());
@@ -3358,6 +3358,8 @@ processSheetCSV = function(csv,status){
 // Email: full-width stacked preview, no horizontal clipping.
 // All 4: 2x2 grid, auto-scaled to fit the preview pane without scrolling.
 // ═══════════════════════════════════════════════════════
+const SINGLE_PREVIEW_SCALE = 0.75;
+const EMAIL_PREVIEW_SCALE = 0.75;
 let previewModeTransitionFrame = null;
 function fadePreviewModeIn(){
   const out = document.getElementById('card-output');
@@ -3444,7 +3446,7 @@ function renderPreviewMode(skipSave){
 
     out.innerHTML = '';
     out.appendChild(stackWrap);
-    setTimeout(function(){ setScalerBox(1200, out.offsetHeight || stackWrap.offsetHeight, baseScale); }, 80);
+    setTimeout(function(){ setScalerBox(1200, out.offsetHeight || stackWrap.offsetHeight, baseScale * EMAIL_PREVIEW_SCALE); }, 80);
     return;
   }
 
