@@ -60,7 +60,8 @@ test('campaign health reports grouped required checks and updates to ready when 
   assert.match(elements['prod-status-list'].innerHTML, /Send date missing/);
   assert.match(elements['prod-status-list'].innerHTML, /Departure airport missing/);
   assert.match(elements['prod-status-list'].innerHTML, /Default T&Cs missing/);
-  assert.match(elements['prod-status-list'].innerHTML, /0\/4 offers loaded/);
+  assert.match(elements['prod-status-list'].innerHTML, /No offers loaded/);
+  assert.doesNotMatch(elements['prod-status-list'].innerHTML, /0\/4 offers loaded/);
   assert.match(elements['prod-status-list'].innerHTML, /Hero image required for export/);
   assert.match(elements['prod-status-list'].innerHTML, /Operator logo missing/);
   assert.match(elements['prod-status-list'].innerHTML, /Operator not selected/);
@@ -95,7 +96,8 @@ test('campaign health count, hero, operator logo and operator checks react to cu
   });
   context.updateProductionStatus();
   assert.equal(elements['prod-status-summary'].innerHTML, '⚠ Campaign Not Ready<br><span class="prod-status-secondary">5 items need attention</span>');
-  assert.match(elements['prod-status-list'].innerHTML, /1\/4 offers loaded/);
+  assert.match(elements['prod-status-list'].innerHTML, /<div class="prod-status-item ok"><span>✓<\/span><span>1\/4 offers loaded<\/span><\/div>/);
+  assert.doesNotMatch(elements['prod-status-list'].innerHTML, /At least one offer loaded/);
 
   Object.assign(context.offers[0], { operator: 'custom', _logoCustom: 'data:image/png;base64,logo', _img: 'hero.jpg', _utm: 'https://example.com/utm' });
   context.updateProductionStatus();
@@ -111,6 +113,16 @@ test('campaign health count, hero, operator logo and operator checks react to cu
   context.offers.splice(1, 3);
   context.updateProductionStatus();
   assert.equal(elements['prod-status-summary'].innerHTML, '✓ Ready for Export<br><span class="prod-status-secondary">All checks passed</span>');
+});
+
+test('campaign health renders one positive offer-loading message for each non-empty offer count', () => {
+  for (let loaded = 1; loaded <= 4; loaded += 1) {
+    const offers = Array.from({ length: 4 }, (_, index) => index < loaded ? { name: `Offer ${index + 1}` } : {});
+    const { context, elements } = createHarness({ offers });
+    context.updateProductionStatus();
+    assert.match(elements['prod-status-list'].innerHTML, new RegExp(`<div class="prod-status-item ok"><span>✓<\/span><span>${loaded}\/4 offers loaded<\/span><\/div>`));
+    assert.doesNotMatch(elements['prod-status-list'].innerHTML, /No offers loaded|At least one offer loaded/);
+  }
 });
 
 test('campaign health refresh wiring is passive and does not introduce export blocking or alerts', () => {
