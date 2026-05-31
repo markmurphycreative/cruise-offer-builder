@@ -63,7 +63,7 @@ function createHarness({ globals = {}, offers = [{}, {}, {}, {}], cur = 0, heade
 test('export checklist is renamed in place and retains its existing panel styling', () => {
   assert.match(html, /<div class="prod-status" id="prod-status">\s*<div class="prod-status-title">Campaign Health<\/div>\s*<div class="prod-status-summary" id="prod-status-summary"><\/div>\s*<div class="prod-status-list" id="prod-status-list"><\/div>/);
   assert.doesNotMatch(html, /<div class="prod-status-title">Export Checklist<\/div>/);
-  assert.match(html, /\.prod-status-secondary\{font-size:8px;font-weight:500;opacity:\.72;\}/);
+  assert.match(html, /\.prod-status-secondary\{font-size:8px;font-weight:400;opacity:\.60;\}/);
 });
 
 test('campaign health reports grouped required checks and updates to ready when known campaign state is complete', () => {
