@@ -349,7 +349,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .summary-grid{display:grid;gap:6px;}
 .summary-offer-card{border:1px solid var(--border);border-radius:8px;padding:8px;background:#fdfdfc;}
 .summary-offer-head{display:flex;align-items:center;gap:7px;margin-bottom:4px;}
-.summary-offer-logo{width:32px;height:20px;object-fit:contain;object-position:center;flex:0 0 auto;}
+.summary-offer-logo-wrap{width:38px;height:24px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;padding:2px 3px;box-sizing:border-box;border-radius:4px;background:var(--navy);}
+.summary-offer-logo{display:block;max-width:32px;max-height:18px;width:auto;height:auto;object-fit:contain;object-position:center;}
 .summary-offer-title{font-size:11px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;}
 .summary-list{display:grid;gap:3px;font-size:10px;}
 .summary-list div{display:flex;justify-content:space-between;gap:8px;}
@@ -2814,12 +2815,15 @@ function getCampaignHealthReviewText(){
   return summary.innerHTML.replace(/<br\s*\/?>/gi,"\n").replace(/<[^>]+>/g,"").trim();
 }
 function getSummaryOperatorLogoHtml(o){
-  if(!hasOperatorLogo(o)) return "";
-  const op=OPERATOR_HEADERS[o.operator]||{};
+  if(!(o&&o.operator)) return "";
+  const operatorKey=detectOperatorKey(o.operator)||o.operator;
+  const resolvedOffer={...o,operator:operatorKey};
+  if(!hasOperatorLogo(resolvedOffer)) return "";
+  const op=OPERATOR_HEADERS[operatorKey]||{};
   const src=o._logoCustom||op.pngData||op.svgData;
   if(!src) return "";
   const alt=op.name?`${op.name} logo`:"Operator logo";
-  return `<img class="summary-offer-logo" src="${summaryHtml(src)}" alt="${summaryHtml(alt)}" onerror="this.remove()">`;
+  return `<span class="summary-offer-logo-wrap"><img class="summary-offer-logo" src="${summaryHtml(src)}" alt="${summaryHtml(alt)}" onerror="this.parentElement.remove()"></span>`;
 }
 function getSummaryOfferDetails(o,i){
   const op=OPERATOR_HEADERS[o.operator];
