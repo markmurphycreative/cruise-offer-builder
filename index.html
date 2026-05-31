@@ -1929,7 +1929,7 @@ async function fetchCsvUrl(url){
       const res=await fetch(testUrl,{cache:"no-store"});
       if(res.ok){
         const text=await res.text();
-        if(text && text.includes(",")) return text;
+        if(text) return text;
       }
     }catch(e){ lastErr=e; }
   }
