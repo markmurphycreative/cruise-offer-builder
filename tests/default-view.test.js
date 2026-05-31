@@ -73,15 +73,16 @@ test('Single preview uses a centred scaled footprint without changing card dimen
 });
 
 test('Single preview canvas height follows the scaled card footprint plus normal padding only', () => {
-  assert.match(html, /\.preview-wrap\.single-preview\{flex:0 1 auto;\}/);
-  assert.match(html, /function setSinglePreviewCanvasHeight\(renderedHeight, scale\)\{[\s\S]*?const verticalPadding = 24;[\s\S]*?wrap\.style\.height = Math\.ceil\(renderedHeight \* scale\) \+ verticalPadding \+ 'px';/);
+  assert.match(html, /\.preview-pane\.single-preview-pane\{background:#fff;\}/);
+  assert.match(html, /\.preview-wrap\.single-preview\{flex:0 1 auto;min-height:0;\}/);
+  assert.match(html, /function setSinglePreviewCanvasHeight\(renderedHeight, scale\)\{[\s\S]*?const verticalPadding = 24;[\s\S]*?const canvasHeight = Math\.ceil\(renderedHeight \* scale\) \+ verticalPadding;[\s\S]*?wrap\.style\.height = canvasHeight \+ 'px';[\s\S]*?wrap\.style\.flexBasis = canvasHeight \+ 'px';[\s\S]*?wrap\.style\.maxHeight = '100%';/);
   assert.match(html, /function renderVisibleCard\(\)\{\s*setPreviewWrapMode\('single'\);/);
   assert.match(html, /const renderedHeight = out\.offsetHeight;\s*setScalerBox\(1200, renderedHeight, scale\);\s*setSinglePreviewCanvasHeight\(renderedHeight, scale\);/);
 });
 
 test('preview scroll footprint ends naturally after Single, Email and All 4 rendered content', () => {
   assert.doesNotMatch(html, /\.preview-scaler\{[^}]*margin-block:auto;/);
-  assert.match(html, /function setPreviewWrapMode\(mode\)\{[\s\S]*?wrap\.classList\.toggle\('single-preview', isSingle\);[\s\S]*?if\(!isSingle\) wrap\.style\.height = '';/);
+  assert.match(html, /function setPreviewWrapMode\(mode\)\{[\s\S]*?wrap\.classList\.toggle\('single-preview', isSingle\);[\s\S]*?pane\.classList\.toggle\('single-preview-pane', isSingle\);[\s\S]*?if\(!isSingle\)\{[\s\S]*?wrap\.style\.height = '';[\s\S]*?wrap\.style\.flexBasis = '';[\s\S]*?wrap\.style\.maxHeight = '';/);
   assert.match(html, /syncViewSelector\(\);\s*setPreviewWrapMode\(viewMode\);/);
   assert.match(html, /scaler\.style\.width = Math\.ceil\(width \* scale\) \+ 'px';/);
   assert.match(html, /scaler\.style\.height = Math\.ceil\(renderedHeight \* scale\) \+ 'px';/);
