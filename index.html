@@ -297,7 +297,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .tbtn.on{background:rgba(255,255,255,.15);color:#fff;}
 .preview-wrap{flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:flex-start;background:#dedad2;}
 .preview-scaler{flex:0 0 auto;margin-block:0;}
-#card-output{opacity:1;transition:opacity .22s ease-out;transform-origin:top center;}
+#card-output{opacity:1;transition:opacity .22s ease-out;transform-origin:top left;}
 #card-output.preview-mode-transition{opacity:0;}
 @media (prefers-reduced-motion:reduce){#card-output,.view-pill{transition:none;}}
 
@@ -3414,8 +3414,9 @@ function setScalerBox(width, renderedHeight, scale){
   scaler.style.height = Math.ceil(renderedHeight * scale) + 'px';
   scaler.style.transform = 'none';
   out.style.width = width + 'px';
-  out.style.left = '50%';
-  out.style.transform = 'translateX(-50%) scale(' + scale + ')';
+  out.style.left = '';
+  out.style.transformOrigin = 'top left';
+  out.style.transform = 'scale(' + scale + ')';
 }
 
 function renderPreviewMode(skipSave){

@@ -63,8 +63,12 @@ test('preview canvas uses a slightly darker warm neutral background across modes
 test('Single preview uses a centred scaled footprint without changing card dimensions', () => {
   assert.match(html, /\.preview-wrap\{[^}]*justify-content:center;[^}]*align-items:flex-start;[^}]*\}/);
   assert.match(html, /\.preview-scaler\{flex:0 0 auto;margin-block:0;\}/);
-  assert.match(html, /out\.style\.left = '50%';/);
-  assert.match(html, /out\.style\.transform = 'translateX\(-50%\) scale\(' \+ scale \+ '\)';/);
+  assert.match(html, /#card-output\{[^}]*transform-origin:top left;[^}]*\}/);
+  assert.match(html, /out\.style\.left = '';/);
+  assert.match(html, /out\.style\.transformOrigin = 'top left';/);
+  assert.match(html, /out\.style\.transform = 'scale\(' \+ scale \+ '\)';/);
+  assert.doesNotMatch(html, /out\.style\.left = '50%';/);
+  assert.doesNotMatch(html, /out\.style\.transform = 'translateX\(-50%\) scale/);
   assert.match(html, /\.cc\{width:1200px;/);
 });
 
