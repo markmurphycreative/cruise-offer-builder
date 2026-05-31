@@ -238,6 +238,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .export-filenames{margin-top:5px;display:none;}
 .export-filenames.active{display:block;}
 .export-filename-item{font-size:9px;font-family:monospace;background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:3px 6px;margin-bottom:2px;color:var(--navy);display:flex;justify-content:space-between;align-items:center;}
+.export-toast{position:fixed;right:16px;bottom:16px;z-index:1200;display:flex;align-items:center;gap:8px;max-width:300px;padding:10px 12px;border:1px solid var(--gold);border-radius:var(--radius);background:var(--navy);color:var(--white);box-shadow:0 5px 16px rgba(14,27,42,.24);font-size:11px;font-weight:600;line-height:1.35;letter-spacing:.01em;opacity:0;visibility:hidden;transform:translateY(6px);transition:opacity .16s ease,transform .16s ease,visibility .16s ease;pointer-events:none;}
+.export-toast::before{content:'✓';display:grid;place-items:center;width:17px;height:17px;flex:0 0 17px;border-radius:50%;background:var(--gold);color:var(--navy);font-size:11px;font-weight:700;}
+.export-toast.error::before{content:'!';background:var(--white);color:var(--red);}
+.export-toast.active{opacity:1;visibility:visible;transform:translateY(0);}
 
 
 .csv-success{color:var(--green)!important;font-weight:700;}
@@ -789,6 +793,8 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     </div>
   </div>
 </div>
+
+<div class="export-toast" id="export-toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <!-- Off-screen export render area -->
 <div id="export-render-area"></div>
@@ -1558,13 +1564,25 @@ async function renderCardToPNG(offerData, filename){
   return true;
 }
 
+let exportToastTimer;
+function showExportToast(message,type='success'){
+  const toast=document.getElementById('export-toast');
+  if(!toast) return;
+  clearTimeout(exportToastTimer);
+  toast.className='export-toast';
+  void toast.offsetWidth;
+  toast.textContent=message;
+  toast.className=`export-toast ${type === 'error' ? 'error ' : ''}active`;
+  exportToastTimer=setTimeout(()=>{ toast.className='export-toast'; },2500);
+}
+
 function markExportComplete(id){
   const indicator=document.getElementById(id);
   if(indicator) indicator.classList.add("active");
 }
 
 async function exportCurrent(){
-  if(exportRunning) return;
+  if(exportRunning){ showExportToast('Export already in progress','error'); return; }
   save();
   const o=offers[cur];
   const btn=document.getElementById("exp-single-btn");
@@ -1586,18 +1604,20 @@ async function exportCurrent(){
     await renderCardToPNG(o, filename);
     prog.textContent="✓ Exported: "+filename;
     markExportComplete("exp-single-complete");
+    showExportToast("Card exported successfully");
     document.getElementById("exp-single-lbl").textContent="Export Current Card PNG";
   } catch(err){
     prog.textContent="⚠ Export failed — try using a locally uploaded image";
     warn.classList.add("active");
     console.error("Export error:",err);
+    showExportToast("Export failed","error");
     document.getElementById("exp-single-lbl").textContent="Export Current Card PNG";
   }
   exportRunning=false; btn.disabled=false;
 }
 
 async function exportAll(){
-  if(exportRunning) return;
+  if(exportRunning){ showExportToast('Export already in progress','error'); return; }
   save();
   const btn=document.getElementById("exp-all-btn");
   const prog=document.getElementById("export-progress");
@@ -1605,9 +1625,10 @@ async function exportAll(){
   warn.classList.remove("active");
 
   const toExport=offers.map((o,i)=>({o,i})).filter(({o})=>o.name||o._img);
-  if(!toExport.length){ prog.textContent="No offers to export — fill in at least one offer first"; return; }
+  if(!toExport.length){ prog.textContent="No offers to export — fill in at least one offer first"; showExportToast("No offer loaded","error"); return; }
   if(!(await ensureJSZipLoaded())){
     prog.textContent="⚠ ZIP export unavailable — JSZip did not load. Check your internet connection and try again.";
+    showExportToast("Export failed","error");
     return;
   }
 
@@ -1646,9 +1667,11 @@ async function exportAll(){
     document.body.removeChild(link);
     prog.textContent=`✓ ZIP exported — ${done} card(s) included`;
     markExportComplete("exp-all-complete");
+    showExportToast("ZIP exported successfully");
   } catch(err){
     prog.textContent="⚠ ZIP export failed";
     console.error("ZIP creation error:", err);
+    showExportToast("Export failed","error");
   }
 
   document.getElementById("exp-all-lbl").textContent="Export All 4 Cards ZIP";
@@ -3538,7 +3561,7 @@ function downloadBlob(blob, filename){
   document.body.removeChild(link);
 }
 async function exportCurrentJPG(){
-  if(exportRunning) return;
+  if(exportRunning){ showExportToast('Export already in progress','error'); return; }
   save();
   const o=offers[cur];
   const btn=document.getElementById('exp-single-jpg-btn');
@@ -3555,16 +3578,18 @@ async function exportCurrentJPG(){
     downloadBlob(blob,filename);
     if(prog) prog.textContent='✓ Exported: '+filename;
     markExportComplete('exp-single-jpg-complete');
+    showExportToast('JPG exported successfully');
   }catch(err){
     if(prog) prog.textContent='⚠ JPG export failed — try using a locally uploaded image';
     if(warn) warn.classList.add('active');
     console.error('JPG export error:',err);
+    showExportToast('Export failed','error');
   }
   if(lbl) lbl.textContent='Export Current Card JPG';
   exportRunning=false; if(btn) btn.disabled=false;
 }
 async function exportAllJPG(){
-  if(exportRunning) return;
+  if(exportRunning){ showExportToast('Export already in progress','error'); return; }
   save();
   const btn=document.getElementById('exp-all-jpg-btn');
   const lbl=document.getElementById('exp-all-jpg-lbl');
@@ -3572,8 +3597,8 @@ async function exportAllJPG(){
   const warn=document.getElementById('export-warn');
   if(warn) warn.classList.remove('active');
   const toExport=offers.map((o,i)=>({o,i})).filter(({o})=>o.name||o._img);
-  if(!toExport.length){ if(prog) prog.textContent='No offers to export — fill in at least one offer first'; return; }
-  if(!(await ensureJSZipLoaded())){ if(prog) prog.textContent='⚠ ZIP export unavailable — JSZip did not load. Check your internet connection and try again.'; return; }
+  if(!toExport.length){ if(prog) prog.textContent='No offers to export — fill in at least one offer first'; showExportToast('No offer loaded','error'); return; }
+  if(!(await ensureJSZipLoaded())){ if(prog) prog.textContent='⚠ ZIP export unavailable — JSZip did not load. Check your internet connection and try again.'; showExportToast('Export failed','error'); return; }
   if(toExport.some(({o})=>hasExternalImg(o)) && warn) warn.classList.add('active');
   exportRunning=true; if(btn) btn.disabled=true;
   const zip=new JSZip(); let done=0;
@@ -3593,9 +3618,11 @@ async function exportAllJPG(){
     downloadBlob(zipBlob,getCampaignZipFilenameExt('jpg'));
     if(prog) prog.textContent=`✓ JPG ZIP exported — ${done} card(s) included`;
     markExportComplete('exp-all-jpg-complete');
+    showExportToast('ZIP exported successfully');
   }catch(err){
     if(prog) prog.textContent='⚠ JPG ZIP export failed';
     console.error('JPG ZIP creation error:',err);
+    showExportToast('Export failed','error');
   }
   if(lbl) lbl.textContent='Export All 4 Cards JPG ZIP';
   exportRunning=false; if(btn) btn.disabled=false;
@@ -3606,9 +3633,9 @@ setTimeout(()=>{ try{ genStandardUtms(); }catch(e){} }, 250);
 
 
 async function exportCampaignPack(){
-  if(exportRunning) return;
+  if(exportRunning){ showExportToast('Export already in progress','error'); return; }
   save();
-  if(!(await ensureJSZipLoaded())) return;
+  if(!(await ensureJSZipLoaded())){ showExportToast('Export failed','error'); return; }
   const btn=document.getElementById('exp-pack-btn'); const lbl=document.getElementById('exp-pack-lbl'); const prog=document.getElementById('export-progress');
   exportRunning=true; if(btn) btn.disabled=true; if(lbl) lbl.textContent='Building Pack...';
   try{
@@ -3639,7 +3666,8 @@ Offers Included: ${combinedRows.filter(row=>row.type==='offer').length}`);
     downloadBlob(blob,'campaign-pack.zip');
     if(prog) prog.textContent='✓ Campaign pack exported';
     markExportComplete('exp-pack-complete');
-  }catch(err){ console.error(err); if(prog) prog.textContent='⚠ Campaign pack export failed'; }
+    showExportToast('Campaign pack exported successfully');
+  }catch(err){ console.error(err); if(prog) prog.textContent='⚠ Campaign pack export failed'; showExportToast('Export failed','error'); }
   exportRunning=false; if(btn) btn.disabled=false; if(lbl) lbl.textContent='Export Campaign Pack';
 }
 

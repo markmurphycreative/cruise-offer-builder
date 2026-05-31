@@ -31,6 +31,50 @@ test('successful export actions expose session-only green completion ticks', () 
 });
 
 
+test('export toasts replace the active notification and dismiss automatically after 2.5 seconds', () => {
+  assert.match(html, /id="export-toast" role="status" aria-live="polite" aria-atomic="true"/);
+  assert.match(html, /\.export-toast\{position:fixed;right:16px;bottom:16px;/);
+  assert.match(html, /\.export-toast\.active\{opacity:1;visibility:visible;transform:translateY\(0\);\}/);
+
+  const toast = { className: 'export-toast', textContent: '', offsetWidth: 0 };
+  const timers = new Map();
+  let timerId = 0;
+  const context = {
+    document: { getElementById: id => id === 'export-toast' ? toast : null },
+    clearTimeout: id => timers.delete(id),
+    setTimeout: (callback, delay) => { timerId += 1; timers.set(timerId, { callback, delay }); return timerId; }
+  };
+  vm.createContext(context);
+  vm.runInContext(`var exportToastTimer;\n${extractFunction('showExportToast')}`, context);
+
+  context.showExportToast('JPG exported successfully');
+  assert.equal(toast.textContent, 'JPG exported successfully');
+  assert.equal(toast.className, 'export-toast active');
+  assert.equal(timers.size, 1);
+  assert.equal([...timers.values()][0].delay, 2500);
+
+  context.showExportToast('Export failed', 'error');
+  assert.equal(toast.textContent, 'Export failed');
+  assert.equal(toast.className, 'export-toast error active');
+  assert.equal(timers.size, 1, 'replacing a toast clears its previous dismissal timer');
+
+  [...timers.values()][0].callback();
+  assert.equal(toast.className, 'export-toast');
+});
+
+test('all export entry points report their existing success and failure outcomes through toasts', () => {
+  assert.match(extractFunction('exportCurrent'), /showExportToast\("Card exported successfully"\)/);
+  assert.match(extractFunction('exportAll'), /showExportToast\("ZIP exported successfully"\)/);
+  assert.match(extractFunction('exportCurrentJPG'), /showExportToast\('JPG exported successfully'\)/);
+  assert.match(extractFunction('exportAllJPG'), /showExportToast\('ZIP exported successfully'\)/);
+  assert.match(extractFunction('exportCampaignPack'), /showExportToast\('Campaign pack exported successfully'\)/);
+  assert.match(extractFunction('exportAllJPG'), /showExportToast\('No offer loaded','error'\)/);
+  ['exportCurrent', 'exportAll', 'exportCurrentJPG', 'exportAllJPG', 'exportCampaignPack'].forEach(name => {
+    assert.match(extractFunction(name), /showExportToast\(['"]Export failed['"],["']error["']\)/);
+  });
+});
+
+
 test('export panel exposes only the streamlined JPG and campaign-pack actions while retaining internal PNG support', () => {
   assert.match(html, /class="export-actions single-action">\s*<button class="export-btn single" onclick="exportCurrentJPG\(\)" id="exp-single-jpg-btn"/);
   assert.match(html, /class="export-actions single-action">\s*<button class="export-btn all" onclick="exportAllJPG\(\)" id="exp-all-jpg-btn"/);
