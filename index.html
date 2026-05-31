@@ -295,11 +295,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .vbtn.active{color:var(--navy);}
 .tbtn{padding:3px 7px;font-size:9px;font-weight:700;border:1px solid rgba(255,255,255,.2);border-radius:3px;background:transparent;color:rgba(255,255,255,.6);margin-left:3px;}
 .tbtn.on{background:rgba(255,255,255,.15);color:#fff;}
-.preview-wrap{flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:flex-start;background:#dedad2;}
-.preview-pane.single-preview-pane{background:#fff;}
-.preview-wrap.single-preview{flex:0 1 auto;min-height:0;}
-.preview-scaler{flex:0 0 auto;margin-block:0;}
-#card-output{opacity:1;transition:opacity .22s ease-out;transform-origin:top left;}
+.preview-wrap{flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:stretch;background:#dedad2;}
+.preview-scaler{margin-block:auto;transform-origin:top center;}
+#card-output{opacity:1;transition:opacity .22s ease-out;}
 #card-output.preview-mode-transition{opacity:0;}
 @media (prefers-reduced-motion:reduce){#card-output,.view-pill{transition:none;}}
 
@@ -3153,7 +3151,6 @@ function commitVisibleFields(){
   offers[cur] = Object.assign({}, offers[cur] || {}, visibleFieldsToData());
 }
 function renderVisibleCard(){
-  setPreviewWrapMode('single');
   const scaler = document.getElementById('preview-scaler');
   const out = document.getElementById('card-output');
   if(!scaler || !out) return;
@@ -3161,9 +3158,10 @@ function renderVisibleCard(){
   const title = document.getElementById('preview-title');
   if(title) title.textContent = 'Live Preview — Offer ' + (cur + 1);
   out.innerHTML = renderCardHTML(visibleFieldsToData());
-  const renderedHeight = out.offsetHeight;
-  setScalerBox(1200, renderedHeight, scale);
-  setSinglePreviewCanvasHeight(renderedHeight, scale);
+  scaler.style.width = '1200px';
+  scaler.style.transform = 'scale(' + scale + ')';
+  scaler.style.transformOrigin = 'top center';
+  setTimeout(function(){ scaler.style.height = (out.offsetHeight * scale) + 'px'; }, 100);
 }
 function moveOfferState(fromIdx, toIdx){
   fromIdx = Number(fromIdx);
@@ -3411,41 +3409,13 @@ function getPreviewPaneSize(){
   };
 }
 
-function setPreviewWrapMode(mode){
-  const wrap = document.querySelector('.preview-wrap');
-  const pane = document.querySelector('.preview-pane');
-  if(!wrap) return;
-  const isSingle = mode === 'single';
-  wrap.classList.toggle('single-preview', isSingle);
-  if(pane) pane.classList.toggle('single-preview-pane', isSingle);
-  if(!isSingle){
-    wrap.style.height = '';
-    wrap.style.flexBasis = '';
-    wrap.style.maxHeight = '';
-  }
-}
-
-function setSinglePreviewCanvasHeight(renderedHeight, scale){
-  const wrap = document.querySelector('.preview-wrap');
-  if(!wrap) return;
-  const verticalPadding = 24;
-  const canvasHeight = Math.ceil(renderedHeight * scale) + verticalPadding;
-  wrap.style.height = canvasHeight + 'px';
-  wrap.style.flexBasis = canvasHeight + 'px';
-  wrap.style.maxHeight = '100%';
-}
-
 function setScalerBox(width, renderedHeight, scale){
   const scaler = document.getElementById('preview-scaler');
-  const out = document.getElementById('card-output');
-  if(!scaler || !out) return;
-  scaler.style.width = Math.ceil(width * scale) + 'px';
+  if(!scaler) return;
+  scaler.style.width = width + 'px';
+  scaler.style.transform = 'scale(' + scale + ')';
+  scaler.style.transformOrigin = 'top center';
   scaler.style.height = Math.ceil(renderedHeight * scale) + 'px';
-  scaler.style.transform = 'none';
-  out.style.width = width + 'px';
-  out.style.left = '';
-  out.style.transformOrigin = 'top left';
-  out.style.transform = 'scale(' + scale + ')';
 }
 
 function renderPreviewMode(skipSave){
@@ -3456,7 +3426,6 @@ function renderPreviewMode(skipSave){
   if(!scaler || !out) return;
 
   syncViewSelector();
-  setPreviewWrapMode(viewMode);
   const baseScale = zoomPct / 100;
 
   if(viewMode === 'email'){
@@ -3483,7 +3452,7 @@ function renderPreviewMode(skipSave){
 
     out.innerHTML = '';
     out.appendChild(stackWrap);
-    setScalerBox(1200, out.offsetHeight || stackWrap.offsetHeight, baseScale * EMAIL_PREVIEW_SCALE);
+    setTimeout(function(){ setScalerBox(1200, out.offsetHeight || stackWrap.offsetHeight, baseScale * EMAIL_PREVIEW_SCALE); }, 80);
     return;
   }
 
@@ -3508,10 +3477,12 @@ function renderPreviewMode(skipSave){
     out.innerHTML = '';
     out.appendChild(grid);
 
-    const pane = getPreviewPaneSize();
-    const fullH = grid.offsetHeight || out.offsetHeight || 4600;
-    const fitScale = Math.min(pane.w / gridW, pane.h / fullH, 0.32);
-    setScalerBox(gridW, fullH, Math.max(0.08, fitScale));
+    setTimeout(function(){
+      const pane = getPreviewPaneSize();
+      const fullH = grid.offsetHeight || out.offsetHeight || 4600;
+      const fitScale = Math.min(pane.w / gridW, pane.h / fullH, 0.32);
+      setScalerBox(gridW, fullH, Math.max(0.08, fitScale));
+    }, 120);
     return;
   }
 
