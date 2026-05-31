@@ -72,11 +72,20 @@ test('Single preview uses a centred scaled footprint without changing card dimen
   assert.match(html, /\.cc\{width:1200px;/);
 });
 
+test('Single preview canvas height follows the scaled card footprint plus normal padding only', () => {
+  assert.match(html, /\.preview-wrap\.single-preview\{flex:0 1 auto;\}/);
+  assert.match(html, /function setSinglePreviewCanvasHeight\(renderedHeight, scale\)\{[\s\S]*?const verticalPadding = 24;[\s\S]*?wrap\.style\.height = Math\.ceil\(renderedHeight \* scale\) \+ verticalPadding \+ 'px';/);
+  assert.match(html, /function renderVisibleCard\(\)\{\s*setPreviewWrapMode\('single'\);/);
+  assert.match(html, /const renderedHeight = out\.offsetHeight;\s*setScalerBox\(1200, renderedHeight, scale\);\s*setSinglePreviewCanvasHeight\(renderedHeight, scale\);/);
+});
+
 test('preview scroll footprint ends naturally after Single, Email and All 4 rendered content', () => {
   assert.doesNotMatch(html, /\.preview-scaler\{[^}]*margin-block:auto;/);
+  assert.match(html, /function setPreviewWrapMode\(mode\)\{[\s\S]*?wrap\.classList\.toggle\('single-preview', isSingle\);[\s\S]*?if\(!isSingle\) wrap\.style\.height = '';/);
+  assert.match(html, /syncViewSelector\(\);\s*setPreviewWrapMode\(viewMode\);/);
   assert.match(html, /scaler\.style\.width = Math\.ceil\(width \* scale\) \+ 'px';/);
   assert.match(html, /scaler\.style\.height = Math\.ceil\(renderedHeight \* scale\) \+ 'px';/);
-  assert.match(html, /setScalerBox\(1200, out\.offsetHeight, scale\);/);
+  assert.match(html, /const renderedHeight = out\.offsetHeight;\s*setScalerBox\(1200, renderedHeight, scale\);\s*setSinglePreviewCanvasHeight\(renderedHeight, scale\);/);
   assert.match(html, /setScalerBox\(1200, out\.offsetHeight \|\| stackWrap\.offsetHeight, baseScale \* EMAIL_PREVIEW_SCALE\);/);
   assert.match(html, /setScalerBox\(gridW, fullH, Math\.max\(0\.08, fitScale\)\);/);
 });
