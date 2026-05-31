@@ -64,6 +64,13 @@ test('the default sidebar keeps CSV Import as the only expanded section', () => 
   assert.deepEqual(sections.filter(([, , collapsed]) => !collapsed).map(([, key]) => key), ['csv-import']);
 });
 
+test('the expanded sidebar header receives the subtle palette-based highlight without layout changes', () => {
+  const rule = extract(/\.section-hdr:not\(\.collapsed\)\{[^}]+\}/, 'expanded sidebar header highlight');
+  assert.match(rule, /background:rgba\(160,146,103,\.12\)/);
+  assert.match(rule, /box-shadow:inset 2px 0 0 var\(--gold\)/);
+  assert.doesNotMatch(rule, /(?:padding|margin|border(?:-width)?|height):/);
+});
+
 test('every sidebar section opens normally and closes the previously expanded section', () => {
   const { context, sections, autosave } = createHarness();
   for (const section of [...sections.slice(1), sections[0]]) {

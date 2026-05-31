@@ -58,6 +58,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 /* ── SECTIONS ── */
 .section{margin-bottom:4px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
 .section-hdr{background:var(--panel);padding:5px 9px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+.section-hdr:not(.collapsed){background:rgba(160,146,103,.12);box-shadow:inset 2px 0 0 var(--gold);}
 .section-hdr h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);display:flex;align-items:center;gap:6px;}
 .section-icon{width:18px;height:18px;flex-shrink:0;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;}
 .section-toggle{font-size:10px;color:var(--muted);transition:transform .2s;display:inline-block;}
