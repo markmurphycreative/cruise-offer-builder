@@ -490,9 +490,17 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>CSV Import</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body">
+          <div class="field">
+            <label for="sheets-url">Google Sheet URL</label>
+            <input id="sheets-url" type="url" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
+          </div>
+          <div class="utm-btn-row">
+            <button class="abtn navy" onclick="loadFromSheets()">Load Sheet</button>
+            <button class="abtn" onclick="refreshOffers()">Refresh Offers</button>
+          </div>
           <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values" style="display:none">
-          <button class="abtn navy" onclick="document.getElementById(&#39;sheets-file&#39;).click()" style="width:100%;margin-top:4px;">Load Downloaded CSV File</button>
-          <div style="font-size:9px;color:var(--muted);margin-top:3px;" id="sheets-status">No CSV loaded</div>
+          <button class="abtn" onclick="document.getElementById(&#39;sheets-file&#39;).click()" style="width:100%;margin-top:4px;">Load Downloaded CSV File</button>
+          <div style="font-size:9px;color:var(--muted);margin-top:3px;" id="sheets-status" aria-live="polite">No saved source</div>
 
       </div>
     </div>
@@ -765,7 +773,6 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <button id="sz-btn" type="button">Show Safe Zones</button>
       <button id="lock-btn" type="button">🔒 Lock This Card</button>
       <input id="f-utm-content" value="">
-      <input id="sheets-url" value="">
     </div>
 
   </div><!-- end sb-body -->
@@ -1869,40 +1876,110 @@ function updateProductionStatus(){
 // ═══════════════════════════════════════════════════════
 // SHEETS
 // ═══════════════════════════════════════════════════════
-async function loadFromSheets(){
-  const url=(document.getElementById("sheets-url")||{}).value.trim();
+const GOOGLE_SHEET_SOURCE_KEY = "cobGoogleSheetSourceV1";
+
+function setSheetsStatus(message,type=""){
   const status=document.getElementById("sheets-status");
-  if(!url){status.textContent="⚠ Paste CSV URL first, or use Load Downloaded CSV File";return;}
-  status.className="";
-  status.textContent="Loading CSV URL...";
-
-  async function fetchCsv(u){
-    const urls=[
-      u,
-      "https://api.allorigins.win/raw?url="+encodeURIComponent(u),
-      "https://corsproxy.io/?"+encodeURIComponent(u)
-    ];
-    let lastErr=null;
-    for(const testUrl of urls){
-      try{
-        const res=await fetch(testUrl,{cache:"no-store"});
-        if(res.ok){
-          const text=await res.text();
-          if(text && text.includes(",")) return text;
-        }
-      }catch(e){ lastErr=e; }
-    }
-    throw lastErr || new Error("CSV fetch failed, likely CORS from local file");
-  }
-
+  if(!status) return;
+  status.className=type;
+  status.textContent=message;
+}
+function extractSpreadsheetId(sheetUrl){
   try{
-    const csv=await fetchCsv(url);
+    const parsed=new URL(String(sheetUrl||"").trim());
+    if(parsed.hostname!=="docs.google.com") return "";
+    const match=parsed.pathname.match(/^\/spreadsheets\/d\/([^/]+)/);
+    return match?match[1]:"";
+  }catch(e){ return ""; }
+}
+function googleSheetUrlToCsvUrl(sheetUrl){
+  const spreadsheetId=extractSpreadsheetId(sheetUrl);
+  if(!spreadsheetId) return "";
+  const parsed=new URL(String(sheetUrl||"").trim());
+  const csvUrl=new URL("https://docs.google.com/spreadsheets/d/"+spreadsheetId+"/export");
+  csvUrl.searchParams.set("format","csv");
+  const gid=parsed.searchParams.get("gid") || (parsed.hash.match(/(?:^#|[?&])gid=([^&]+)/)||[])[1];
+  if(gid) csvUrl.searchParams.set("gid",gid);
+  return csvUrl.toString();
+}
+function storeGoogleSheetSource(sheetUrl){
+  const source=String(sheetUrl||"").trim();
+  try{ localStorage.setItem(GOOGLE_SHEET_SOURCE_KEY,source); }catch(e){}
+  return source;
+}
+function getSavedGoogleSheetSource(){
+  try{ return localStorage.getItem(GOOGLE_SHEET_SOURCE_KEY)||""; }catch(e){ return ""; }
+}
+function restoreGoogleSheetSource(){
+  const source=getSavedGoogleSheetSource();
+  const input=document.getElementById("sheets-url");
+  if(input) input.value=source;
+  setSheetsStatus(source?"Connected to Google Sheet":"No saved source",source?"csv-success":"");
+  return source;
+}
+async function fetchCsvUrl(url){
+  const urls=[
+    url,
+    "https://api.allorigins.win/raw?url="+encodeURIComponent(url),
+    "https://corsproxy.io/?"+encodeURIComponent(url)
+  ];
+  let lastErr=null;
+  for(const testUrl of urls){
+    try{
+      const res=await fetch(testUrl,{cache:"no-store"});
+      if(res.ok){
+        const text=await res.text();
+        if(text && text.includes(",")) return text;
+      }
+    }catch(e){ lastErr=e; }
+  }
+  throw lastErr || new Error("CSV fetch failed, likely CORS from local file");
+}
+function importCsvPreservingOffersOnFailure(csv,status,successMessage){
+  const previousOffers=offers.slice();
+  const previousCur=cur;
+  const campaign=document.getElementById("g-campaign");
+  const previousCampaign=campaign?campaign.value:"";
+  try{
     processSheetCSV(csv,status);
+    if(status.className==="csv-error") throw new Error(status.textContent||"CSV import failed");
+    status.className="csv-success";
+    status.textContent=successMessage;
+    return true;
+  }catch(e){
+    offers=previousOffers;
+    cur=previousCur;
+    if(campaign) campaign.value=previousCampaign;
+    throw e;
+  }
+}
+async function loadSheetCsvUrl(csvUrl,successMessage){
+  const status=document.getElementById("sheets-status");
+  setSheetsStatus("Loading offers...");
+  try{
+    const csv=await fetchCsvUrl(csvUrl);
+    importCsvPreservingOffersOnFailure(csv,status,successMessage);
+    return true;
   }catch(e){
     console.error("Sheets import error:",e);
-    status.className="csv-error";
-    status.textContent="⚠ URL fetch blocked. Use Load Downloaded CSV File instead.";
+    setSheetsStatus("Failed to load","csv-error");
+    return false;
   }
+}
+async function loadFromSheets(){
+  const source=(document.getElementById("sheets-url")||{}).value.trim();
+  const csvUrl=googleSheetUrlToCsvUrl(source);
+  if(!csvUrl){ setSheetsStatus("Failed to load: paste a valid public Google Sheet URL","csv-error"); return false; }
+  storeGoogleSheetSource(source);
+  setSheetsStatus("Source saved","csv-success");
+  return loadSheetCsvUrl(csvUrl,"Offers loaded");
+}
+async function refreshOffers(){
+  const source=getSavedGoogleSheetSource();
+  if(!source){ setSheetsStatus("No saved source"); return false; }
+  const csvUrl=googleSheetUrlToCsvUrl(source);
+  if(!csvUrl){ setSheetsStatus("Failed to load","csv-error"); return false; }
+  return loadSheetCsvUrl(csvUrl,"Refresh complete");
 }
 
 function loadFromCSVFile(event){
@@ -2412,6 +2489,7 @@ function confirmClearSavedSession(){
   try{
     localStorage.removeItem(AUTOSAVE_KEY);
     localStorage.removeItem(LAST_SUCCESSFUL_CSV_KEY);
+    localStorage.removeItem(GOOGLE_SHEET_SOURCE_KEY);
     localStorage.removeItem(BUILDER_OPEN_STORAGE_KEY);
     sessionStorage.removeItem(BUILDER_OPEN_STORAGE_KEY);
   }catch(e){}
@@ -3927,7 +4005,7 @@ function initBuilderApp(){
   try{
     applySafeGlobalDefaults();
     load(0);
-    restoreLastSuccessfulCsv();
+    restoreGoogleSheetSource();
     refreshOfferUi({utm:true,spell:true,autosave:false});
     window.addEventListener("resize",rv);
     rv();

@@ -59,7 +59,7 @@ test('fresh users keep the normal startup state when no previous CSV exists', ()
 test('only successful imports persist CSV restore data and Clear Saved Session removes it', () => {
   assert.match(html, /if\(loaded && !restoringLastSuccessfulCsv\) storeLastSuccessfulCsv\(csv\);/);
   assert.match(html, /function confirmClearSavedSession\(\)[\s\S]*?localStorage\.removeItem\(LAST_SUCCESSFUL_CSV_KEY\);/);
-  assert.match(html, /function initBuilderApp\(\)[\s\S]*?load\(0\);\s*restoreLastSuccessfulCsv\(\);/);
+  assert.doesNotMatch(html, /function initBuilderApp\(\)[\s\S]*?load\(0\);\s*restoreLastSuccessfulCsv\(\);/);
 });
 
 test('restoring a four-offer CSV repopulates card fields, operator logos and the existing UTM refresh path', () => {
