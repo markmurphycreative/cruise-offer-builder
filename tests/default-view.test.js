@@ -60,35 +60,19 @@ test('preview canvas uses a slightly darker warm neutral background across modes
   assert.match(html, /\.preview-wrap\{[^}]*background:#dedad2;[^}]*\}/);
 });
 
-test('Single preview uses a centred scaled footprint without changing card dimensions', () => {
-  assert.match(html, /\.preview-wrap\{[^}]*justify-content:center;[^}]*align-items:flex-start;[^}]*\}/);
-  assert.match(html, /\.preview-scaler\{flex:0 0 auto;margin-block:0;\}/);
-  assert.match(html, /#card-output\{[^}]*transform-origin:top left;[^}]*\}/);
-  assert.match(html, /out\.style\.left = '';/);
-  assert.match(html, /out\.style\.transformOrigin = 'top left';/);
-  assert.match(html, /out\.style\.transform = 'scale\(' \+ scale \+ '\)';/);
-  assert.doesNotMatch(html, /out\.style\.left = '50%';/);
-  assert.doesNotMatch(html, /out\.style\.transform = 'translateX\(-50%\) scale/);
-  assert.match(html, /\.cc\{width:1200px;/);
+test('preview layout retains the stable shared canvas treatment without Single-only overrides', () => {
+  assert.match(html, /\.preview-wrap\{[^}]*justify-content:center;[^}]*align-items:stretch;[^}]*background:#dedad2;[^}]*\}/);
+  assert.match(html, /\.preview-scaler\{margin-block:auto;transform-origin:top center;\}/);
+  assert.doesNotMatch(html, /single-preview/);
+  assert.doesNotMatch(html, /setSinglePreviewCanvasHeight/);
+  assert.doesNotMatch(html, /setPreviewWrapMode/);
+  assert.match(html, /scaler\.style\.width = '1200px';[\s\S]*?scaler\.style\.transform = 'scale\(' \+ scale \+ '\)';[\s\S]*?scaler\.style\.transformOrigin = 'top center';[\s\S]*?setTimeout\(function\(\)\{ scaler\.style\.height = \(out\.offsetHeight \* scale\) \+ 'px'; \}, 100\);/);
 });
 
-test('Single preview canvas height follows the scaled card footprint plus normal padding only', () => {
-  assert.match(html, /\.preview-pane\.single-preview-pane\{background:#fff;\}/);
-  assert.match(html, /\.preview-wrap\.single-preview\{flex:0 1 auto;min-height:0;\}/);
-  assert.match(html, /function setSinglePreviewCanvasHeight\(renderedHeight, scale\)\{[\s\S]*?const verticalPadding = 24;[\s\S]*?const canvasHeight = Math\.ceil\(renderedHeight \* scale\) \+ verticalPadding;[\s\S]*?wrap\.style\.height = canvasHeight \+ 'px';[\s\S]*?wrap\.style\.flexBasis = canvasHeight \+ 'px';[\s\S]*?wrap\.style\.maxHeight = '100%';/);
-  assert.match(html, /function renderVisibleCard\(\)\{\s*setPreviewWrapMode\('single'\);/);
-  assert.match(html, /const renderedHeight = out\.offsetHeight;\s*setScalerBox\(1200, renderedHeight, scale\);\s*setSinglePreviewCanvasHeight\(renderedHeight, scale\);/);
-});
-
-test('preview scroll footprint ends naturally after Single, Email and All 4 rendered content', () => {
-  assert.doesNotMatch(html, /\.preview-scaler\{[^}]*margin-block:auto;/);
-  assert.match(html, /function setPreviewWrapMode\(mode\)\{[\s\S]*?wrap\.classList\.toggle\('single-preview', isSingle\);[\s\S]*?pane\.classList\.toggle\('single-preview-pane', isSingle\);[\s\S]*?if\(!isSingle\)\{[\s\S]*?wrap\.style\.height = '';[\s\S]*?wrap\.style\.flexBasis = '';[\s\S]*?wrap\.style\.maxHeight = '';/);
-  assert.match(html, /syncViewSelector\(\);\s*setPreviewWrapMode\(viewMode\);/);
-  assert.match(html, /scaler\.style\.width = Math\.ceil\(width \* scale\) \+ 'px';/);
-  assert.match(html, /scaler\.style\.height = Math\.ceil\(renderedHeight \* scale\) \+ 'px';/);
-  assert.match(html, /const renderedHeight = out\.offsetHeight;\s*setScalerBox\(1200, renderedHeight, scale\);\s*setSinglePreviewCanvasHeight\(renderedHeight, scale\);/);
-  assert.match(html, /setScalerBox\(1200, out\.offsetHeight \|\| stackWrap\.offsetHeight, baseScale \* EMAIL_PREVIEW_SCALE\);/);
-  assert.match(html, /setScalerBox\(gridW, fullH, Math\.max\(0\.08, fitScale\)\);/);
+test('shared preview scaler retains stable dimensions for Email and All 4 layouts', () => {
+  assert.match(html, /function setScalerBox\(width, renderedHeight, scale\)\{[\s\S]*?scaler\.style\.width = width \+ 'px';[\s\S]*?scaler\.style\.transform = 'scale\(' \+ scale \+ '\)';[\s\S]*?scaler\.style\.transformOrigin = 'top center';[\s\S]*?scaler\.style\.height = Math\.ceil\(renderedHeight \* scale\) \+ 'px';/);
+  assert.match(html, /setTimeout\(function\(\)\{ setScalerBox\(1200, out\.offsetHeight \|\| stackWrap\.offsetHeight, baseScale \* EMAIL_PREVIEW_SCALE\); \}, 80\);/);
+  assert.match(html, /setTimeout\(function\(\)\{[\s\S]*?const pane = getPreviewPaneSize\(\);[\s\S]*?setScalerBox\(gridW, fullH, Math\.max\(0\.08, fitScale\)\);[\s\S]*?\}, 120\);/);
 });
 
 test('preview-only scaling leaves export dimensions unchanged', () => {
