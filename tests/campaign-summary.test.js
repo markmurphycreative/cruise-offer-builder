@@ -41,9 +41,9 @@ test('campaign summary offer headers reuse available operator logos without chan
 
 test('campaign summary offer headings are compact and visually prominent', () => {
   assert.match(html, /\.summary-grid\{display:grid;gap:6px;\}/);
-  assert.match(html, /\.summary-offer-head\{display:flex;align-items:center;gap:7px;margin-bottom:4px;\}/);
-  assert.match(html, /\.summary-offer-logo-wrap\{width:38px;height:24px;[^}]*background:var\(--navy\);/);
-  assert.match(html, /\.summary-offer-logo\{display:block;max-width:32px;max-height:18px;width:auto;height:auto;object-fit:contain;/);
+  assert.match(html, /\.summary-offer-head\{display:flex;align-items:center;gap:10px;margin-bottom:4px;\}/);
+  assert.match(html, /\.summary-offer-logo-wrap\{width:70px;height:40px;[^}]*background:var\(--navy\);/);
+  assert.match(html, /\.summary-offer-logo\{display:block;max-width:62px;max-height:32px;width:auto;height:auto;object-fit:contain;/);
   assert.match(html, /\.summary-offer-title\{font-size:11px;font-weight:800;/);
 });
 
