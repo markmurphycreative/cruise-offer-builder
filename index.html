@@ -815,7 +815,6 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     <div class="summary-body" id="summary-content"></div>
     <div class="summary-actions">
       <button class="summary-btn primary" type="button" onclick="copySummary()">Copy Campaign Summary</button>
-      <button class="summary-btn" type="button" onclick="downloadSummaryTxt()">Download Summary TXT</button>
       <button class="summary-btn" type="button" onclick="copyAllUtms()">Copy All UTMs</button>
       <button class="summary-btn" type="button" onclick="closeModal('summary-modal')">Close</button>
     </div>
@@ -2863,10 +2862,6 @@ function getSummaryText(){
   return txt;
 }
 function copySummary(){ navigator.clipboard.writeText(getSummaryText()).then(()=>alert("Summary copied")); }
-function downloadSummaryTxt(){
-  const blob=new Blob([getSummaryText()],{type:"text/plain;charset=utf-8"});
-  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="campaign-summary.txt"; a.click(); URL.revokeObjectURL(a.href);
-}
 function copyChecklist(){
   let txt="PRODUCTION CHECKLIST\n"+new Date().toLocaleString()+"\n\n";
   offers.forEach((o,i)=>{ const n=i+1; txt+=`Offer ${n}:\n  [${o.operator?"✓":"✗"}] Operator\n  [${o.name?"✓":"✗"}] Cruise name\n  [${o.price?"✓":"✗"}] Price\n  [${o.day?"✓":"✗"}] Date\n  [${o._img?"✓":"✗"}] Hero image\n  [${o._utm?"✓":"✗"}] UTM\n\n`; });
