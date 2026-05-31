@@ -132,8 +132,8 @@ test('empty hero placeholder text is approximately 25% larger without changing t
   assert.match(html, /\.cc \.hph span\{font-size:28px;font-weight:300;color:#5a7a90;font-family:'Montserrat',sans-serif;\}/);
 });
 
-test('missing hero QA retains passive logic while adding a stronger warning treatment', () => {
-  assert.match(html, /warnLbl:"⚠ Hero image missing",warningClass:"hero-warning"/);
+test('required hero QA retains passive logic while adding a stronger warning treatment', () => {
+  assert.match(html, /warnLbl:"⚠ Hero image required",warningClass:"hero-warning"/);
   assert.match(html, /\.prod-status-item\.hero-warning\{color:var\(--red\);background:#fff0f0;border:1px solid #f0b0b0;/);
   assert.match(html, /Passive checks only — no auto-correction\. Export is never blocked\./);
 });

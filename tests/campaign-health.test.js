@@ -24,7 +24,7 @@ function createHarness({ globals = {}, offers = [{}, {}, {}, {}], cur = 0, heade
     'g-date': { value: globals.date || '' },
     'g-airport': { value: globals.airport || '' },
     'g-terms': { value: globals.terms || '' },
-    'prod-status-summary': { className: '', textContent: '' },
+    'prod-status-summary': { className: '', innerHTML: '' },
     'prod-status-list': { innerHTML: '' }
   };
   const context = {
@@ -47,20 +47,23 @@ test('export checklist is renamed in place and retains its existing panel stylin
   assert.doesNotMatch(html, /<div class="prod-status-title">Export Checklist<\/div>/);
 });
 
-test('campaign health reports grouped missing checks and updates to ready when known campaign state is complete', () => {
+test('campaign health reports grouped required checks and updates to ready when known campaign state is complete', () => {
   const { context, elements } = createHarness();
   context.updateProductionStatus();
-  assert.equal(elements['prod-status-summary'].textContent, '⚠ 10 Items Need Attention');
+  assert.equal(elements['prod-status-summary'].innerHTML, '⚠ Campaign Not Ready<br>10 items need attention');
   assert.equal(elements['prod-status-summary'].className, 'prod-status-summary warn');
   ['Campaign', 'Offers', 'Assets', 'Marketing'].forEach(group => {
     assert.match(elements['prod-status-list'].innerHTML, new RegExp(`<div class="prod-status-group">${group}<\\/div>`));
   });
-  assert.match(elements['prod-status-list'].innerHTML, /Campaign name missing/);
+  assert.match(elements['prod-status-list'].innerHTML, /Campaign name required/);
+  assert.match(elements['prod-status-list'].innerHTML, /Send date required/);
+  assert.match(elements['prod-status-list'].innerHTML, /Departure airport required/);
+  assert.match(elements['prod-status-list'].innerHTML, /Default T&Cs required/);
   assert.match(elements['prod-status-list'].innerHTML, /0\/4 offers loaded/);
-  assert.match(elements['prod-status-list'].innerHTML, /Hero image missing/);
-  assert.match(elements['prod-status-list'].innerHTML, /Operator logo missing/);
+  assert.match(elements['prod-status-list'].innerHTML, /Hero image required/);
+  assert.match(elements['prod-status-list'].innerHTML, /Operator logo required/);
   assert.match(elements['prod-status-list'].innerHTML, /Operator not selected/);
-  assert.match(elements['prod-status-list'].innerHTML, /UTM missing/);
+  assert.match(elements['prod-status-list'].innerHTML, /UTM required/);
 
   Object.assign(elements['g-campaign'], { value: 'summer-cruises' });
   Object.assign(elements['g-date'], { value: '16th May 2026' });
@@ -74,7 +77,7 @@ test('campaign health reports grouped missing checks and updates to ready when k
     { name: 'Four' }
   );
   context.updateProductionStatus();
-  assert.equal(elements['prod-status-summary'].textContent, '✓ Ready for Export');
+  assert.equal(elements['prod-status-summary'].innerHTML, '✓ Ready for Export<br>All checks passed');
   assert.equal(elements['prod-status-summary'].className, 'prod-status-summary ok');
   assert.match(elements['prod-status-list'].innerHTML, /4\/4 offers loaded/);
   assert.match(elements['prod-status-list'].innerHTML, /Hero image loaded/);
@@ -90,18 +93,23 @@ test('campaign health count, hero, operator logo and operator checks react to cu
     headers: { custom: { pngData: null, svgData: null } }
   });
   context.updateProductionStatus();
-  assert.equal(elements['prod-status-summary'].textContent, '⚠ 5 Items Need Attention');
+  assert.equal(elements['prod-status-summary'].innerHTML, '⚠ Campaign Not Ready<br>5 items need attention');
   assert.match(elements['prod-status-list'].innerHTML, /1\/4 offers loaded/);
 
   Object.assign(context.offers[0], { operator: 'custom', _logoCustom: 'data:image/png;base64,logo', _img: 'hero.jpg', _utm: 'https://example.com/utm' });
   context.updateProductionStatus();
-  assert.equal(elements['prod-status-summary'].textContent, '⚠ 1 Item Need Attention');
+  assert.equal(elements['prod-status-summary'].innerHTML, '⚠ Campaign Not Ready<br>1 item needs attention');
   assert.match(elements['prod-status-list'].innerHTML, /Operator logo present/);
+
+  elements['g-terms'].value = '';
+  context.updateProductionStatus();
+  assert.equal(elements['prod-status-summary'].innerHTML, '⚠ Campaign Not Ready<br>2 items need attention');
+  elements['g-terms'].value = 'T&Cs Apply';
 
   context.offers.push({ name: 'Two' }, { name: 'Three' }, { name: 'Four' });
   context.offers.splice(1, 3);
   context.updateProductionStatus();
-  assert.equal(elements['prod-status-summary'].textContent, '✓ Ready for Export');
+  assert.equal(elements['prod-status-summary'].innerHTML, '✓ Ready for Export<br>All checks passed');
 });
 
 test('campaign health refresh wiring is passive and does not introduce export blocking or alerts', () => {
