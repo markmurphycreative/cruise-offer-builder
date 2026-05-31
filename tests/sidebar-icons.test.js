@@ -48,3 +48,13 @@ test('hero drop zone reuses the Hero Image heading SVG instead of an emoji', () 
   assert.match(heroDropzone, new RegExp(heroImageSvg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.doesNotMatch(heroDropzone, /🖼/);
 });
+
+test('Load Offer button uses a document import SVG while preserving its handler and label', () => {
+  const loadOfferButton = html.match(/<button class="parse-btn" onclick="parseOffer\(\)">([\s\S]*?)<\/button>/)[0];
+  assert.match(loadOfferButton, /^<button class="parse-btn" onclick="parseOffer\(\)"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24">[\s\S]*<\/svg>Load Offer<\/button>$/);
+  assert.match(loadOfferButton, /<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"><\/path>/);
+  assert.match(loadOfferButton, /<path d="m9 15 3 3 3-3"><\/path>/);
+  assert.doesNotMatch(loadOfferButton, /⚡/);
+  assert.match(html, /\.parse-btn\{[^}]*display:flex;align-items:center;justify-content:center;gap:6px;\}/);
+  assert.match(html, /\.parse-btn \.section-icon\{margin:-3px 0;\}/);
+});
