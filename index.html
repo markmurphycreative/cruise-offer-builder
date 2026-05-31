@@ -1884,22 +1884,31 @@ function setSheetsStatus(message,type=""){
   status.className=type;
   status.textContent=message;
 }
-function extractSpreadsheetId(sheetUrl){
+function parseGoogleSheetSource(sheetUrl){
   try{
     const parsed=new URL(String(sheetUrl||"").trim());
-    if(parsed.hostname!=="docs.google.com") return "";
-    const match=parsed.pathname.match(/^\/spreadsheets\/d\/([^/]+)/);
-    return match?match[1]:"";
-  }catch(e){ return ""; }
+    if(parsed.hostname!=="docs.google.com") return null;
+    const publishedMatch=parsed.pathname.match(/^\/spreadsheets\/d\/e\/([^/]+)\/(?:pubhtml|pub)\/?$/);
+    if(publishedMatch) return {parsed,id:publishedMatch[1],type:"published"};
+    const spreadsheetMatch=parsed.pathname.match(/^\/spreadsheets\/d\/([^/]+)/);
+    if(spreadsheetMatch && spreadsheetMatch[1]!=="e") return {parsed,id:spreadsheetMatch[1],type:"normal"};
+    return null;
+  }catch(e){ return null; }
+}
+function extractSpreadsheetId(sheetUrl){
+  const source=parseGoogleSheetSource(sheetUrl);
+  return source?source.id:"";
 }
 function googleSheetUrlToCsvUrl(sheetUrl){
-  const spreadsheetId=extractSpreadsheetId(sheetUrl);
-  if(!spreadsheetId) return "";
-  const parsed=new URL(String(sheetUrl||"").trim());
-  const csvUrl=new URL("https://docs.google.com/spreadsheets/d/"+spreadsheetId+"/export");
-  csvUrl.searchParams.set("format","csv");
-  const gid=parsed.searchParams.get("gid") || (parsed.hash.match(/(?:^#|[?&])gid=([^&]+)/)||[])[1];
+  const source=parseGoogleSheetSource(sheetUrl);
+  if(!source) return "";
+  const csvUrl=source.type==="published"
+    ?new URL("https://docs.google.com/spreadsheets/d/e/"+source.id+"/pub")
+    :new URL("https://docs.google.com/spreadsheets/d/"+source.id+"/export");
+  csvUrl.searchParams.set(source.type==="published"?"output":"format","csv");
+  const gid=source.parsed.searchParams.get("gid") || (source.parsed.hash.match(/(?:^#|[?&])gid=([^&]+)/)||[])[1];
   if(gid) csvUrl.searchParams.set("gid",gid);
+  if(source.type==="published" && source.parsed.searchParams.get("single")==="true") csvUrl.searchParams.set("single","true");
   return csvUrl.toString();
 }
 function storeGoogleSheetSource(sheetUrl){
@@ -1953,7 +1962,7 @@ function importCsvPreservingOffersOnFailure(csv,status,successMessage){
     throw e;
   }
 }
-async function loadSheetCsvUrl(csvUrl,successMessage){
+async function loadSheetCsvUrl(csvUrl,successMessage,sourceType="published"){
   const status=document.getElementById("sheets-status");
   setSheetsStatus("Loading offers...");
   try{
@@ -1962,24 +1971,26 @@ async function loadSheetCsvUrl(csvUrl,successMessage){
     return true;
   }catch(e){
     console.error("Sheets import error:",e);
-    setSheetsStatus("Failed to load","csv-error");
+    setSheetsStatus(sourceType==="normal"?"Load failed. Try the published Google Sheet link from File > Share > Publish to web.":"Failed to load","csv-error");
     return false;
   }
 }
 async function loadFromSheets(){
   const source=(document.getElementById("sheets-url")||{}).value.trim();
+  const sheetSource=parseGoogleSheetSource(source);
   const csvUrl=googleSheetUrlToCsvUrl(source);
   if(!csvUrl){ setSheetsStatus("Failed to load: paste a valid public Google Sheet URL","csv-error"); return false; }
   storeGoogleSheetSource(source);
   setSheetsStatus("Source saved","csv-success");
-  return loadSheetCsvUrl(csvUrl,"Offers loaded");
+  return loadSheetCsvUrl(csvUrl,"Offers loaded",sheetSource.type);
 }
 async function refreshOffers(){
   const source=getSavedGoogleSheetSource();
   if(!source){ setSheetsStatus("No saved source"); return false; }
+  const sheetSource=parseGoogleSheetSource(source);
   const csvUrl=googleSheetUrlToCsvUrl(source);
   if(!csvUrl){ setSheetsStatus("Failed to load","csv-error"); return false; }
-  return loadSheetCsvUrl(csvUrl,"Refresh complete");
+  return loadSheetCsvUrl(csvUrl,"Refresh complete",sheetSource.type);
 }
 
 function loadFromCSVFile(event){

@@ -57,12 +57,16 @@ test('Google Sheet input and actions replace the CSV URL workflow', () => {
   assert.doesNotMatch(html, /Paste CSV URL first/);
 });
 
-test('spreadsheet IDs are extracted and converted to published CSV export URLs', () => {
+test('normal and published Google Sheet URLs are converted to their CSV endpoints', () => {
   const { context } = createHarness();
   assert.equal(context.extractSpreadsheetId('https://docs.google.com/spreadsheets/d/abc123/edit'), 'abc123');
   assert.equal(context.googleSheetUrlToCsvUrl('https://docs.google.com/spreadsheets/d/abc123/edit'), 'https://docs.google.com/spreadsheets/d/abc123/export?format=csv');
   assert.equal(context.googleSheetUrlToCsvUrl('https://docs.google.com/spreadsheets/d/abc123/edit?gid=42'), 'https://docs.google.com/spreadsheets/d/abc123/export?format=csv&gid=42');
   assert.equal(context.googleSheetUrlToCsvUrl('https://docs.google.com/spreadsheets/d/abc123/edit#gid=7'), 'https://docs.google.com/spreadsheets/d/abc123/export?format=csv&gid=7');
+  assert.equal(context.extractSpreadsheetId('https://docs.google.com/spreadsheets/d/e/published123/pubhtml'), 'published123');
+  assert.equal(context.googleSheetUrlToCsvUrl('https://docs.google.com/spreadsheets/d/e/published123/pubhtml'), 'https://docs.google.com/spreadsheets/d/e/published123/pub?output=csv');
+  assert.equal(context.googleSheetUrlToCsvUrl('https://docs.google.com/spreadsheets/d/e/published123/pubhtml?gid=42&single=true'), 'https://docs.google.com/spreadsheets/d/e/published123/pub?output=csv&gid=42&single=true');
+  assert.equal(context.googleSheetUrlToCsvUrl('https://docs.google.com/spreadsheets/d/e/published123/pub?output=csv&gid=42&single=true'), 'https://docs.google.com/spreadsheets/d/e/published123/pub?output=csv&gid=42&single=true');
   assert.equal(context.googleSheetUrlToCsvUrl('https://example.com/spreadsheets/d/abc123/edit'), '');
 });
 
@@ -89,6 +93,23 @@ test('Load Sheet uses the existing remote CSV fallback path and forwards success
   assert.deepEqual(fetched, [
     'https://docs.google.com/spreadsheets/d/abc123/export?format=csv',
     'https://api.allorigins.win/raw?url=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2Fabc123%2Fexport%3Fformat%3Dcsv'
+  ]);
+  assert.deepEqual(imported, [csv]);
+});
+
+test('published Sheet loads use the published CSV endpoint and proxy fallback after a blocked direct fetch', async () => {
+  const csv = 'operator,offer_name\nP&O,Published Caribbean';
+  const { context, input, fetched, imported } = createHarness({ csv });
+  input.value = 'https://docs.google.com/spreadsheets/d/e/published123/pubhtml?gid=7&single=true';
+  context.fetch = async url => {
+    fetched.push(url);
+    if (fetched.length === 1) throw new Error('direct published fetch blocked by CORS');
+    return { ok: true, text: async () => csv };
+  };
+  assert.equal(await context.loadFromSheets(), true);
+  assert.deepEqual(fetched, [
+    'https://docs.google.com/spreadsheets/d/e/published123/pub?output=csv&gid=7&single=true',
+    'https://api.allorigins.win/raw?url=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2Fe%2Fpublished123%2Fpub%3Foutput%3Dcsv%26gid%3D7%26single%3Dtrue'
   ]);
   assert.deepEqual(imported, [csv]);
 });
@@ -148,14 +169,16 @@ test('Refresh without a saved source is non-blocking and leaves offers unchanged
   assert.deepEqual(fetched, []);
 });
 
-test('failed fetch leaves existing campaign offers unchanged', async () => {
-  const { context, status } = createHarness({ savedSource: 'https://docs.google.com/spreadsheets/d/saved123/edit' });
+test('failed normal Sheet load shows publish guidance and leaves existing campaign offers unchanged', async () => {
+  const { context, status, input, campaign } = createHarness();
+  input.value = 'https://docs.google.com/spreadsheets/d/saved123/edit';
   context.fetch = async () => { throw new Error('network down'); };
   const before = context.offers;
-  assert.equal(await context.refreshOffers(), false);
-  assert.equal(status.textContent, 'Failed to load');
+  assert.equal(await context.loadFromSheets(), false);
+  assert.equal(status.textContent, 'Load failed. Try the published Google Sheet link from File > Share > Publish to web.');
   assert.equal(context.offers, before);
   assert.equal(context.offers[0].name, 'Existing offer');
+  assert.equal(campaign.value, 'Existing campaign');
 });
 
 test('failed import rolls back partially changed offers and campaign data', async () => {
@@ -169,7 +192,7 @@ test('failed import rolls back partially changed offers and campaign data', asyn
     }
   });
   assert.equal(await context.refreshOffers(), false);
-  assert.equal(status.textContent, 'Failed to load');
+  assert.equal(status.textContent, 'Load failed. Try the published Google Sheet link from File > Share > Publish to web.');
   assert.equal(context.offers[0].name, 'Existing offer');
   assert.equal(campaign.value, 'Existing campaign');
 });
