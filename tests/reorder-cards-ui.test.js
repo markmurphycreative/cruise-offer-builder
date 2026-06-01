@@ -18,15 +18,18 @@ test('Reorder Cards uses a native details disclosure that is collapsed by defaul
 
 test('Reorder Cards presents compact accessible arrow controls without changing handlers', () => {
   const reorderGroup = extract(/<details class="reorder-group"[\s\S]*?<\/details>/, 'Reorder Cards disclosure');
-  assert.match(reorderGroup, /id="move-left-btn" onclick="moveOfferLeft\(\)" aria-label="Move card left" title="Move card left">←<\/button>/);
-  assert.match(reorderGroup, /id="move-right-btn" onclick="moveOfferRight\(\)" aria-label="Move card right" title="Move card right">→<\/button>/);
+  assert.match(reorderGroup, /id="move-left-btn" onclick="moveOfferLeft\(\)" aria-label="Move card left" title="Move card left">◀<\/button>/);
+  assert.match(reorderGroup, /id="move-right-btn" onclick="moveOfferRight\(\)" aria-label="Move card right" title="Move card right">▶<\/button>/);
   assert.doesNotMatch(reorderGroup, /Move Left|Move Right/);
 });
 
-test('arrow controls retain the shared sidebar button treatment and compact dimensions', () => {
+test('arrow controls retain the shared sidebar button treatment with compact dimensions and deliberate icon weight', () => {
   const buttonRule = extract(/\.reorder-btn\{[^}]+\}/, 'compact reorder button rule');
   assert.match(buttonRule, /width:32px/);
   assert.match(buttonRule, /height:28px/);
+  assert.match(buttonRule, /font-size:18px/);
+  assert.match(buttonRule, /font-weight:700/);
+  assert.match(buttonRule, /display:flex;align-items:center;justify-content:center/);
   assert.match(html, /<button class="abtn reorder-btn" id="move-left-btn"/);
   assert.doesNotMatch(html, /\.abtn\.reorder-btn:hover/);
 });
