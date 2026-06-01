@@ -470,10 +470,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
   <!-- Offer tabs -->
   <div class="offer-tabs">
     <span class="offer-pill" id="offer-pill" aria-hidden="true"></span>
-    <button class="otab active" id="ot0" onclick="sv(0)" draggable="true" data-offer-tab="0"><span>Offer 1</span><span class="status-dot" id="sd0"></span></button>
-    <button class="otab" id="ot1" onclick="sv(1)" draggable="true" data-offer-tab="1"><span>Offer 2</span><span class="status-dot" id="sd1"></span></button>
-    <button class="otab" id="ot2" onclick="sv(2)" draggable="true" data-offer-tab="2"><span>Offer 3</span><span class="status-dot" id="sd2"></span></button>
-    <button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3"><span>Offer 4</span><span class="status-dot" id="sd3"></span></button>
+    <button class="otab active" id="ot0" onclick="sv(0)" draggable="true" data-offer-tab="0" title="No offer loaded" aria-label="Offer 1 status: No offer loaded"><span>Offer 1</span><span class="status-dot" id="sd0" title="No offer loaded"></span></button>
+    <button class="otab" id="ot1" onclick="sv(1)" draggable="true" data-offer-tab="1" title="No offer loaded" aria-label="Offer 2 status: No offer loaded"><span>Offer 2</span><span class="status-dot" id="sd1" title="No offer loaded"></span></button>
+    <button class="otab" id="ot2" onclick="sv(2)" draggable="true" data-offer-tab="2" title="No offer loaded" aria-label="Offer 3 status: No offer loaded"><span>Offer 3</span><span class="status-dot" id="sd2" title="No offer loaded"></span></button>
+    <button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3" title="No offer loaded" aria-label="Offer 4 status: No offer loaded"><span>Offer 4</span><span class="status-dot" id="sd3" title="No offer loaded"></span></button>
   </div>
   <details class="reorder-group">
     <summary class="reorder-label"><h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="m3 6 1 1 2-2"></path><path d="m3 12 1 1 2-2"></path><path d="m3 18 1 1 2-2"></path></svg>Reorder Cards</h3><span class="section-toggle">▾</span></summary>
@@ -1800,10 +1800,41 @@ function getOfferStatus(i){
   if(!readiness.ready) return "amber";
   return "green";
 }
+function getOfferStatusTooltip(i){
+  const o=offers[i]||{};
+  const readiness=getOfferReadiness(o);
+  const status=getOfferStatus(i);
+  if(!status) return "No offer loaded";
+  if(status==="green") return "Ready for export";
+  if(status==="red"){
+    const requiredFields=[
+      ["name","Offer name missing"],
+      ["ship","Ship name missing"],
+      ["price","Price missing"],
+      ["day","Date missing"],
+      ["month","Date missing"],
+      ["ports","Ports missing"],
+      ["nights","Nights missing"],
+      ["board","Board basis missing"],
+      ["boardlbl","Board basis label missing"]
+    ];
+    const blocker=requiredFields.find(([field])=>!String(o[field]||"").trim());
+    return blocker?blocker[1]:"Missing required offer data";
+  }
+  if(!readiness.heroLoaded) return "Hero image missing";
+  if(!readiness.operatorSelected) return "Operator not selected";
+  if(!readiness.operatorLogoPresent) return "Operator logo missing";
+  if(!readiness.utmGenerated) return "UTM missing";
+  return "Missing non-critical items";
+}
 function updateAllStatus(){
   for(let i=0;i<4;i++){
     const dot=document.getElementById("sd"+i); if(!dot) continue;
     const s=getOfferStatus(i); dot.className="status-dot"+(s?" "+s:"");
+    const tooltip=getOfferStatusTooltip(i);
+    dot.title=tooltip;
+    const tab=document.getElementById("ot"+i);
+    if(tab){ tab.title=tooltip; tab.setAttribute("aria-label","Offer "+(i+1)+" status: "+tooltip); }
   }
   updateProductionStatus();
 }

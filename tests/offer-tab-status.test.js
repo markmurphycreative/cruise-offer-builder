@@ -37,9 +37,11 @@ function createCleanOffer(name = 'Caribbean Escape') {
 }
 
 function createHarness(offers) {
-  const dots = Array.from({ length: 4 }, (_, index) => ({ id: `sd${index}`, className: '' }));
+  const dots = Array.from({ length: 4 }, (_, index) => ({ id: `sd${index}`, className: '', title: '' }));
+  const tabs = Array.from({ length: 4 }, (_, index) => ({ id: `ot${index}`, title: '', setAttribute(name, value) { this[name] = value; } }));
   const elements = {
     ...Object.fromEntries(dots.map(dot => [dot.id, dot])),
+    ...Object.fromEntries(tabs.map(tab => [tab.id, tab])),
     'g-campaign': { value: 'summer-cruises' },
     'g-date': { value: '16th May 2026' },
     'g-airport': { value: 'Newcastle' },
@@ -61,15 +63,16 @@ function createHarness(offers) {
     extractFunction('getOfferReadiness'),
     extractFunction('isCleanOfferValid'),
     extractFunction('getOfferStatus'),
+    extractFunction('getOfferStatusTooltip'),
     extractFunction('updateProductionStatus'),
     extractFunction('updateAllStatus')
   ].join('\n'), context);
-  return { context, dots, elements };
+  return { context, dots, tabs, elements };
 }
 
 test('offer tabs start grey instead of displaying a transient amber state before initial refresh', () => {
   for (let index = 0; index < 4; index += 1) {
-    assert.match(html, new RegExp(`<span class="status-dot" id="sd${index}"><\\/span>`));
+    assert.match(html, new RegExp(`<span class="status-dot" id="sd${index}" title="No offer loaded"><\\/span>`));
   }
 });
 
@@ -88,6 +91,45 @@ test('each offer tab dot independently maps empty, incomplete, invalid and expor
     'status-dot red',
     'status-dot'
   ]);
+});
+
+test('offer selector tooltips explain green, amber, red and grey status using readiness details', () => {
+  const offers = [
+    createCleanOffer('Ready'),
+    { ...createCleanOffer('Missing hero'), _img: '' },
+    { ...createCleanOffer('Missing cruise price'), price: '' },
+    {}
+  ];
+  const { context, dots, tabs } = createHarness(offers);
+
+  context.updateAllStatus();
+
+  assert.deepEqual(dots.map(dot => dot.title), [
+    'Ready for export',
+    'Hero image missing',
+    'Price missing',
+    'No offer loaded'
+  ]);
+  assert.deepEqual(tabs.map(tab => tab.title), dots.map(dot => dot.title));
+  assert.deepEqual(tabs.map(tab => tab['aria-label']), [
+    'Offer 1 status: Ready for export',
+    'Offer 2 status: Hero image missing',
+    'Offer 3 status: Price missing',
+    'Offer 4 status: No offer loaded'
+  ]);
+});
+
+test('amber tooltips use the most useful operator, logo and UTM blocker from existing readiness state', () => {
+  const { context } = createHarness([
+    { ...createCleanOffer('Missing operator'), operator: '' },
+    { ...createCleanOffer('Missing logo'), operator: 'custom' },
+    { ...createCleanOffer('Missing UTM'), _utm: '' },
+    {}
+  ]);
+
+  assert.equal(context.getOfferStatusTooltip(0), 'Operator not selected');
+  assert.equal(context.getOfferStatusTooltip(1), 'Operator logo missing');
+  assert.equal(context.getOfferStatusTooltip(2), 'UTM missing');
 });
 
 test('selector-only critical content status does not alter Campaign Health readiness rules', () => {
@@ -138,10 +180,12 @@ test('session-restored state and reordered state retain status colours derived f
 
   context.updateAllStatus();
   assert.deepEqual(dots.map(dot => dot.className), ['status-dot green', 'status-dot amber', 'status-dot red', 'status-dot']);
+  assert.deepEqual(dots.map(dot => dot.title), ['Ready for export', 'Hero image missing', 'Price missing', 'No offer loaded']);
 
   context.offers = [offers[3], offers[0], offers[2], offers[1]];
   context.updateAllStatus();
   assert.deepEqual(dots.map(dot => dot.className), ['status-dot', 'status-dot green', 'status-dot red', 'status-dot amber']);
+  assert.deepEqual(dots.map(dot => dot.title), ['No offer loaded', 'Ready for export', 'Price missing', 'Hero image missing']);
 });
 
 test('editing, Sheet or CSV loading, restore and reorder refresh dots after readiness mutations', () => {
