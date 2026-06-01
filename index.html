@@ -466,10 +466,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
   <!-- Offer tabs -->
   <div class="offer-tabs">
     <span class="offer-pill" id="offer-pill" aria-hidden="true"></span>
-    <button class="otab active" id="ot0" onclick="sv(0)" draggable="true" data-offer-tab="0"><span>Offer 1</span><span class="status-dot amber" id="sd0"></span></button>
-    <button class="otab" id="ot1" onclick="sv(1)" draggable="true" data-offer-tab="1"><span>Offer 2</span><span class="status-dot amber" id="sd1"></span></button>
-    <button class="otab" id="ot2" onclick="sv(2)" draggable="true" data-offer-tab="2"><span>Offer 3</span><span class="status-dot amber" id="sd2"></span></button>
-    <button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3"><span>Offer 4</span><span class="status-dot amber" id="sd3"></span></button>
+    <button class="otab active" id="ot0" onclick="sv(0)" draggable="true" data-offer-tab="0"><span>Offer 1</span><span class="status-dot" id="sd0"></span></button>
+    <button class="otab" id="ot1" onclick="sv(1)" draggable="true" data-offer-tab="1"><span>Offer 2</span><span class="status-dot" id="sd1"></span></button>
+    <button class="otab" id="ot2" onclick="sv(2)" draggable="true" data-offer-tab="2"><span>Offer 3</span><span class="status-dot" id="sd2"></span></button>
+    <button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3"><span>Offer 4</span><span class="status-dot" id="sd3"></span></button>
   </div>
   <div class="mode-toggle" id="builder-mode-toggle">
     <div class="mode-note" id="mode-note" aria-live="polite"></div>
@@ -1426,7 +1426,7 @@ function readFile(file,type){
       const b64=btoa(unescape(encodeURIComponent(ev.target.result)));
       const src="data:image/svg+xml;base64,"+b64;
       offers[cur]._logoCustom=src; if(!offers[cur]._logoSize) offers[cur]._logoSize=50;
-      setThumb("logo",src); document.getElementById("logo-size-row").style.display="flex"; rv();
+      setThumb("logo",src); document.getElementById("logo-size-row").style.display="flex"; refreshOfferUi({utm:false,spell:false});
     }; r.readAsText(file);
   } else {
     const r=new FileReader(); r.onload=ev=>{
@@ -1812,7 +1812,7 @@ function isCleanOfferValid(o){
 }
 function getOfferStatus(i){
   const o=offers[i];
-  if(!o.name&&!o.price&&!o.day) return "";
+  if(!isOfferLoaded(o)) return "";
   const required=["name","ship","price","day","month","ports","nights","board","boardlbl","tags"];
   if(required.some(field=>!String(o[field]||"").trim())) return "red";
   if(!isCleanOfferValid(o)) return "amber";
@@ -2391,10 +2391,10 @@ function applySessionPayload(data){
 }
 function refreshAfterRestore(){
   updateLockUI();
-  updateAllStatus();
   genUtm();
   genAllUtms(true);
   genStandardUtms();
+  updateAllStatus();
   updateExportFilenames();
   updateMoveOfferButtons();
   renderPreviewMode(true);
@@ -3228,10 +3228,10 @@ function refreshAfterOfferReorder(){
   document.querySelectorAll('.otab').forEach(function(t){ t.classList.remove('dragging','drag-over'); });
   try { loadOfferToEditor(cur); } catch(e) { try { load(cur); } catch(_e){} }
   try { updateLockUI(); } catch(e){}
-  try { updateAllStatus(); } catch(e){}
   try { genUtm(); } catch(e){}
   try { genAllUtms(true); } catch(e){}
   try { genStandardUtms(); } catch(e){}
+  try { updateAllStatus(); } catch(e){}
   try { updateExportFilenames(); } catch(e){}
   try { renderPreviewMode(true); } catch(e){ try { renderVisibleCard(); } catch(_e){} }
   try { updateMoveOfferButtons(); } catch(e){}
@@ -3300,9 +3300,9 @@ function sv(i){
 }
 function up(){
   try { commitVisibleFields(); } catch(e){}
-  try { updateAllStatus(); } catch(e){}
   try { genUtm(); } catch(e){}
   try { genStandardUtms(); } catch(e){}
+  try { updateAllStatus(); } catch(e){}
   try { checkPortsWarn(); } catch(e){}
   try { runSpellQA(); } catch(e){}
   try { updateExportFilenames(); } catch(e){}
@@ -3338,10 +3338,10 @@ processSheetCSV = function(csv,status){
   try { updateLockUI(); } catch(e){}
   try { updateMoveOfferButtons(); } catch(e){}
 
-  try { updateAllStatus(); } catch(e){}
   try { genAllUtms(true); } catch(e){}
   try { genUtm(); } catch(e){}
   try { genStandardUtms(); } catch(e){}
+  try { updateAllStatus(); } catch(e){}
   try { updateExportFilenames(); } catch(e){}
   try { runSpellQA(); } catch(e){}
 
