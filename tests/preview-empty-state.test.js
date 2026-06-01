@@ -46,11 +46,11 @@ function createHarness(offers) {
 
 test('fresh previews use a centred premium empty state in every view before rendering cards', () => {
   assert.match(html, /\.preview-scaler\.empty-preview\{[^}]*display:flex;[^}]*align-items:center;[^}]*justify-content:center;/);
-  assert.match(html, /\.preview-empty-state\{[^}]*width:min\(360px,calc\(100% - 40px\)\);[^}]*padding:22px 26px;[^}]*background:var\(--gold\);[^}]*border:none;[^}]*border-radius:0;[^}]*box-shadow:none;[^}]*font-family:'Montserrat',sans-serif;/);
+  assert.match(html, /\.preview-empty-state\{[^}]*width:min\(300px,calc\(100% - 40px\)\);[^}]*padding:22px 26px;[^}]*background:color-mix\(in srgb,var\(--gold\) 94%,black\);[^}]*border:none;[^}]*border-radius:0;[^}]*box-shadow:none;[^}]*font-family:'Montserrat',sans-serif;/);
   assert.match(html, /\.preview-empty-state h2\{[^}]*color:var\(--navy\);[^}]*font-family:'Montserrat',sans-serif;[^}]*font-size:20px;[^}]*font-weight:600;/);
   assert.match(html, /\.preview-empty-state p\{[^}]*color:#fff;[^}]*font-family:'Montserrat',sans-serif;[^}]*line-height:1\.5;/);
   assert.doesNotMatch(html, /preview-empty-rule/);
-  assert.match(html, /<h2>Ready to build cruise offers<\/h2><p>Load a Google Sheet or CSV to generate your cruise cards\.<\/p>/);
+  assert.match(html, /<h2>Ready to build<\/h2><p>Load a Google Sheet or CSV to generate your cruise cards\.<\/p>/);
 
   const renderPreviewMode = extractFunction('renderPreviewMode');
   assert.ok(renderPreviewMode.indexOf('if(renderEmptyPreviewIfNeeded()) return;') < renderPreviewMode.indexOf("if(viewMode === 'email')"));
@@ -62,7 +62,7 @@ test('fresh previews use a centred premium empty state in every view before rend
   assert.equal(elements['preview-title'].textContent, 'Preview Canvas');
   assert.equal(elements['preview-scaler'].classList.contains('empty-preview'), true);
   assert.equal(elements['card-output'].classList.contains('empty-preview-output'), true);
-  assert.match(elements['card-output'].innerHTML, /Ready to build cruise offers/);
+  assert.match(elements['card-output'].innerHTML, /Ready to build/);
 });
 
 test('loaded and session-restored offers bypass the empty state and keep normal preview rendering available', () => {
