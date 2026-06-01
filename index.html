@@ -284,6 +284,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .session-feedback{font-size:9px;color:var(--green);text-align:center;margin-top:3px;min-height:12px;opacity:0;transition:opacity .2s ease;}
 .session-feedback.warn{color:#8a5000;}
 .session-feedback.active{opacity:1;}
+.section.csv-core-section .section-hdr{background:var(--navy);}
+.section.csv-core-section .section-hdr h3{color:#fff;}
+.section.csv-core-section .section-toggle{color:var(--gold);}
 .section.summary-section .section-hdr{background:var(--navy);}
 .section.summary-section .section-hdr h3{color:#fff;}
 .section.summary-section .section-toggle{color:rgba(255,255,255,.85);}
@@ -1248,6 +1251,14 @@ function applySectionCollapseState(sectionState, preferredOpenKey){
       setSectionCollapsedByHeader(hdr, sec.dataset.sectionKey !== openKey);
     }
   });
+}
+function openCsvImportWhenNoOffersLoaded(){
+  if(offers.some(isOfferLoaded)) return false;
+  document.querySelectorAll(".section[data-section-key]").forEach(sec=>{
+    const hdr = sec.querySelector(".section-hdr");
+    if(hdr) setSectionCollapsedByHeader(hdr, sec.dataset.sectionKey !== "csv-import");
+  });
+  return true;
 }
 function toggleAdv(hdr){
   hdr.nextElementSibling.classList.toggle("open");
@@ -2443,6 +2454,7 @@ function applySessionPayload(data){
   document.querySelectorAll('.otab').forEach((t,idx)=>t.classList.toggle('active', idx===cur));
   updateOfferPill();
   autosaveHydrating = false;
+  openCsvImportWhenNoOffersLoaded();
   refreshAfterRestore();
 }
 function refreshAfterRestore(){
@@ -4140,6 +4152,7 @@ function initBuilderApp(){
     load(0);
     restoreGoogleSheetSource();
     refreshOfferUi({utm:true,spell:true,autosave:false});
+    openCsvImportWhenNoOffersLoaded();
     window.addEventListener("resize",rv);
     rv();
     updateAllStatus();
