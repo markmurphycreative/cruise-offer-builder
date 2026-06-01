@@ -1806,16 +1806,29 @@ function checkPortsWarn(){
 // ═══════════════════════════════════════════════════════
 // STATUS DOTS
 // ═══════════════════════════════════════════════════════
+function getOfferReadiness(o){
+  const loaded=isOfferLoaded(o);
+  const heroLoaded=!!(o&&o._img);
+  const operatorLogoPresent=hasOperatorLogo(o);
+  const operatorSelected=!!(o&&o.operator);
+  const utmGenerated=!!(o&&o._utm);
+  return {
+    loaded,
+    heroLoaded,
+    operatorLogoPresent,
+    operatorSelected,
+    utmGenerated,
+    ready:loaded&&heroLoaded&&operatorLogoPresent&&operatorSelected&&utmGenerated
+  };
+}
 function isCleanOfferValid(o){
-  const required=["name","ship","price","day","month","ports","nights","board","boardlbl","_img","operator","tags","_utm"];
-  return !!(o&&required.every(field=>String(o[field]||"").trim())&&hasOperatorLogo(o));
+  return getOfferReadiness(o).ready;
 }
 function getOfferStatus(i){
-  const o=offers[i];
-  if(!isOfferLoaded(o)) return "";
-  const required=["name","ship","price","day","month","ports","nights","board","boardlbl","tags"];
-  if(required.some(field=>!String(o[field]||"").trim())) return "red";
-  if(!isCleanOfferValid(o)) return "amber";
+  const readiness=getOfferReadiness(offers[i]);
+  if(!readiness.loaded) return "";
+  if(!readiness.heroLoaded) return "red";
+  if(!readiness.ready) return "amber";
   return "green";
 }
 function updateAllStatus(){
@@ -1836,6 +1849,7 @@ function hasOperatorLogo(o){
 }
 function updateProductionStatus(){
   const o=offers[cur]||{};
+  const readiness=getOfferReadiness(o);
   const loadedOffers=offers.filter(isOfferLoaded).length;
   const value=id=>String(((document.getElementById(id)||{}).value)||"").trim();
   const groups=[
@@ -1851,18 +1865,18 @@ function updateProductionStatus(){
       {ok:loadedOffers===offers.length,okLbl:`✓ Offers loaded (${loadedOffers}/${offers.length})`,render:loadedOffers>0,displayOk:true}
     ]},
     {label:"Assets",checks:[
-      {ok:!!o._img,okLbl:"✓ Hero image loaded",warnLbl:"⚠ Hero image required for export",warningClass:"hero-warning"},
-      {ok:hasOperatorLogo(o),okLbl:"✓ Operator logo present",warnLbl:"⚠ Operator logo missing"},
-      {ok:!!o.operator,okLbl:"✓ Operator selected",warnLbl:"⚠ Operator not selected"}
+      {ok:readiness.heroLoaded,okLbl:"✓ Hero image loaded",warnLbl:"⚠ Hero image required for export",warningClass:"hero-warning"},
+      {ok:readiness.operatorLogoPresent,okLbl:"✓ Operator logo present",warnLbl:"⚠ Operator logo missing"},
+      {ok:readiness.operatorSelected,okLbl:"✓ Operator selected",warnLbl:"⚠ Operator not selected"}
     ]},
     {label:"Marketing",checks:[
-      {ok:!!o._utm,okLbl:"✓ UTMs generated",warnLbl:"⚠ UTM missing"}
+      {ok:readiness.utmGenerated,okLbl:"✓ UTMs generated",warnLbl:"⚠ UTM missing"}
     ]}
   ];
   if(o._img && String(o._img).startsWith("http")) groups[2].checks.push({ok:false,warnLbl:"⚠ External image URL may affect export"});
   const checks=groups.flatMap(group=>group.checks);
   const attentionCount=checks.filter(check=>!check.ok).length;
-  const blockerCount=Number(!o._img);
+  const blockerCount=Number(!readiness.heroLoaded);
   const warningCount=Number(!value("g-campaign"))+Number(!value("g-date"));
   const summary=document.getElementById("prod-status-summary");
   if(summary){

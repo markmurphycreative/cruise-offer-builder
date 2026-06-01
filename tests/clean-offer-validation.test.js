@@ -22,9 +22,10 @@ function createHarness(offer, headers = { po: { pngData: 'assets/operator-logos/
   const context = { offers: [offer], OPERATOR_HEADERS: headers };
   vm.createContext(context);
   vm.runInContext([
-    extractFunction('hasOperatorLogo'),
-    extractFunction('isCleanOfferValid'),
     extractFunction('isOfferLoaded'),
+    extractFunction('hasOperatorLogo'),
+    extractFunction('getOfferReadiness'),
+    extractFunction('isCleanOfferValid'),
     extractFunction('getOfferStatus')
   ].join('\n'), context);
   return context;
@@ -54,40 +55,23 @@ test('clean-offer validation accepts a genuinely complete loaded offer', () => {
   assert.equal(context.getOfferStatus(0), 'green');
 });
 
-test('clean-offer validation rejects every missing required offer field', () => {
-  const requiredFields = [
-    'name',
-    'ship',
-    'price',
-    'day',
-    'month',
-    'ports',
-    'nights',
-    'board',
-    'boardlbl',
-    '_img',
-    'operator',
-    'tags',
-    '_utm'
-  ];
+test('offer readiness reuses Campaign Health export checks instead of selector-only card fields', () => {
+  const offer = createCleanOffer();
+  for (const field of ['ship', 'price', 'day', 'month', 'ports', 'nights', 'board', 'boardlbl', 'tags']) offer[field] = '';
 
-  for (const field of requiredFields) {
-    const offer = createCleanOffer();
-    offer[field] = '';
-    const context = createHarness(offer);
-    assert.equal(context.isCleanOfferValid(context.offers[0]), false, `${field} should be required`);
-    assert.notEqual(context.getOfferStatus(0), 'green', `${field} should prevent a valid status`);
-  }
+  const context = createHarness(offer);
+  assert.equal(context.isCleanOfferValid(context.offers[0]), true);
+  assert.equal(context.getOfferStatus(0), 'green');
 });
 
-test('offer status distinguishes required-content gaps from loaded-but-incomplete offers', () => {
-  const missingRequiredContent = createCleanOffer();
-  missingRequiredContent.ship = '';
-  assert.equal(createHarness(missingRequiredContent).getOfferStatus(0), 'red');
-
+test('offer status distinguishes a missing required hero from loaded-but-incomplete health checks', () => {
   const missingHeroImage = createCleanOffer();
   missingHeroImage._img = '';
-  assert.equal(createHarness(missingHeroImage).getOfferStatus(0), 'amber');
+  assert.equal(createHarness(missingHeroImage).getOfferStatus(0), 'red');
+
+  const missingUtm = createCleanOffer();
+  missingUtm._utm = '';
+  assert.equal(createHarness(missingUtm).getOfferStatus(0), 'amber');
 });
 
 test('clean-offer validation requires an available operator logo', () => {

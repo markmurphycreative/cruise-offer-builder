@@ -38,23 +38,32 @@ function createCleanOffer(name = 'Caribbean Escape') {
 
 function createHarness(offers) {
   const dots = Array.from({ length: 4 }, (_, index) => ({ id: `sd${index}`, className: '' }));
-  const elements = Object.fromEntries(dots.map(dot => [dot.id, dot]));
+  const elements = {
+    ...Object.fromEntries(dots.map(dot => [dot.id, dot])),
+    'g-campaign': { value: 'summer-cruises' },
+    'g-date': { value: '16th May 2026' },
+    'g-airport': { value: 'Newcastle' },
+    'g-terms': { value: 'T&Cs Apply' },
+    'prod-status-summary': { className: '', innerHTML: '' },
+    'prod-status-list': { innerHTML: '' }
+  };
   const context = {
     offers,
     cur: 0,
     OPERATOR_HEADERS: { po: { pngData: 'assets/operator-logos/po-cruises-logo.png' } },
-    document: { getElementById: id => elements[id] || null },
-    updateProductionStatus() {}
+    document: { getElementById: id => elements[id] || null }
   };
   vm.createContext(context);
   vm.runInContext([
-    extractFunction('hasOperatorLogo'),
-    extractFunction('isCleanOfferValid'),
     extractFunction('isOfferLoaded'),
+    extractFunction('hasOperatorLogo'),
+    extractFunction('getOfferReadiness'),
+    extractFunction('isCleanOfferValid'),
     extractFunction('getOfferStatus'),
+    extractFunction('updateProductionStatus'),
     extractFunction('updateAllStatus')
   ].join('\n'), context);
-  return { context, dots };
+  return { context, dots, elements };
 }
 
 test('offer tabs start grey instead of displaying a transient amber state before initial refresh', () => {
@@ -65,8 +74,8 @@ test('offer tabs start grey instead of displaying a transient amber state before
 
 test('each offer tab dot independently reflects the existing per-offer readiness status', () => {
   const green = createCleanOffer('Ready');
-  const amber = { ...createCleanOffer('Partial'), _img: '' };
-  const red = { ...createCleanOffer('Missing required'), ship: '' };
+  const amber = { ...createCleanOffer('Partial'), _utm: '' };
+  const red = { ...createCleanOffer('Missing required'), _img: '' };
   const grey = {};
   const { context, dots } = createHarness([green, amber, red, grey]);
 
@@ -80,13 +89,28 @@ test('each offer tab dot independently reflects the existing per-offer readiness
   ]);
 });
 
+test('Campaign Health ready regression: all loaded export-ready offers display green without selector-only field gates', () => {
+  const offers = Array.from({ length: 4 }, (_, index) => ({
+    name: `Imported Offer ${index + 1}`,
+    _img: `hero-${index + 1}.jpg`,
+    operator: 'po',
+    _utm: `https://example.com/${index + 1}?utm_source=klaviyo`
+  }));
+  const { context, dots, elements } = createHarness(offers);
+
+  context.updateAllStatus();
+
+  assert.equal(elements['prod-status-summary'].innerHTML, '✓ Ready for Export<br><span class="prod-status-secondary">No blockers found</span>');
+  assert.deepEqual(dots.map(dot => dot.className), Array(4).fill('status-dot green'));
+});
+
 test('empty detection for tab dots reuses Campaign Health offer-loading logic', () => {
   const { context } = createHarness([{}, { ship: 'Arvia' }, { price: '1669' }, { _img: 'hero.jpg' }]);
 
   assert.equal(context.getOfferStatus(0), '');
   assert.equal(context.getOfferStatus(1), 'red');
   assert.equal(context.getOfferStatus(2), 'red');
-  assert.equal(context.getOfferStatus(3), 'red');
+  assert.equal(context.getOfferStatus(3), 'amber');
 });
 
 test('editing, Sheet or CSV loading, restore and reorder refresh dots after readiness mutations', () => {
