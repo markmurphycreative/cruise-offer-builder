@@ -37,7 +37,7 @@ function createCleanOffer(name = 'Caribbean Escape') {
 }
 
 function createHarness(offers) {
-  const dots = Array.from({ length: 4 }, (_, index) => ({ id: `sd${index}`, className: '', title: '' }));
+  const dots = Array.from({ length: 4 }, (_, index) => ({ id: `sd${index}`, className: '', title: '', setAttribute(name, value) { this[name] = value; } }));
   const tabs = Array.from({ length: 4 }, (_, index) => ({ id: `ot${index}`, title: '', setAttribute(name, value) { this[name] = value; } }));
   const elements = {
     ...Object.fromEntries(dots.map(dot => [dot.id, dot])),
@@ -58,6 +58,7 @@ function createHarness(offers) {
   vm.createContext(context);
   vm.runInContext([
     extractFunction('isOfferLoaded'),
+    extractFunction('getMissingCriticalOfferFields'),
     extractFunction('hasCriticalOfferContent'),
     extractFunction('hasOperatorLogo'),
     extractFunction('getOfferReadiness'),
@@ -72,7 +73,7 @@ function createHarness(offers) {
 
 test('offer tabs start grey instead of displaying a transient amber state before initial refresh', () => {
   for (let index = 0; index < 4; index += 1) {
-    assert.match(html, new RegExp(`<span class="status-dot" id="sd${index}" title="No offer loaded"><\\/span>`));
+    assert.match(html, new RegExp(`<span class="status-dot" id="sd${index}" title="No offer loaded"[^>]*><\\/span>`));
   }
 });
 

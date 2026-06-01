@@ -47,7 +47,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .otab.drag-over{background:rgba(160,146,103,.18);box-shadow:inset 0 0 0 1px rgba(160,146,103,.42);}
 .otab.move-preflash{background:rgba(160,146,103,.14);box-shadow:inset 0 0 0 1px rgba(160,146,103,.32);}
 .otab.move-postflash{background:rgba(160,146,103,.16);box-shadow:inset 0 0 0 1px rgba(160,146,103,.34);}
-.status-dot{width:8px;height:8px;flex-shrink:0;border-radius:50%;background:var(--border);}
+.status-dot{width:8px;height:8px;flex-shrink:0;border-radius:50%;background:var(--border);cursor:pointer;}
+.status-dot:focus-visible{outline:2px solid var(--navy);outline-offset:2px;}
 .status-dot.green{background:var(--green);}
 .status-dot.amber{background:var(--amber);}
 .status-dot.red{background:var(--red);}
@@ -67,6 +68,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .section-hdr.collapsed .section-toggle{transform:rotate(-90deg);}
 .section-body{padding:6px 9px;}
 .section-body.hidden{display:none;}
+.status-dot-target{animation:statusDotTargetFlash 1s ease-out;}
+@keyframes statusDotTargetFlash{0%{outline:2px solid rgba(160,146,103,.9);outline-offset:2px;box-shadow:0 0 0 4px rgba(160,146,103,.16);}100%{outline:2px solid rgba(160,146,103,0);outline-offset:2px;box-shadow:0 0 0 4px rgba(160,146,103,0);}}
 .reorder-group{margin:4px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;overflow:hidden;}
 .reorder-label{display:flex;align-items:center;justify-content:space-between;padding:5px 9px;background:var(--panel);cursor:pointer;user-select:none;list-style:none;}
 .reorder-group[open] .reorder-label{background:rgba(160,146,103,.12);box-shadow:inset 2px 0 0 var(--gold);}
@@ -477,10 +480,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
   <!-- Offer tabs -->
   <div class="offer-tabs">
     <span class="offer-pill" id="offer-pill" aria-hidden="true"></span>
-    <button class="otab active" id="ot0" onclick="sv(0)" draggable="true" data-offer-tab="0" title="No offer loaded" aria-label="Offer 1 status: No offer loaded"><span>Offer 1</span><span class="status-dot" id="sd0" title="No offer loaded"></span></button>
-    <button class="otab" id="ot1" onclick="sv(1)" draggable="true" data-offer-tab="1" title="No offer loaded" aria-label="Offer 2 status: No offer loaded"><span>Offer 2</span><span class="status-dot" id="sd1" title="No offer loaded"></span></button>
-    <button class="otab" id="ot2" onclick="sv(2)" draggable="true" data-offer-tab="2" title="No offer loaded" aria-label="Offer 3 status: No offer loaded"><span>Offer 3</span><span class="status-dot" id="sd2" title="No offer loaded"></span></button>
-    <button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3" title="No offer loaded" aria-label="Offer 4 status: No offer loaded"><span>Offer 4</span><span class="status-dot" id="sd3" title="No offer loaded"></span></button>
+    <button class="otab active" id="ot0" onclick="sv(0)" draggable="true" data-offer-tab="0" title="No offer loaded" aria-label="Offer 1 status: No offer loaded"><span>Offer 1</span><span class="status-dot" id="sd0" title="No offer loaded" role="button" tabindex="0" aria-label="Navigate to Offer 1 issue: No offer loaded" onclick="navigateOfferStatus(event,0)" onkeydown="handleStatusDotKeydown(event,0)"></span></button>
+    <button class="otab" id="ot1" onclick="sv(1)" draggable="true" data-offer-tab="1" title="No offer loaded" aria-label="Offer 2 status: No offer loaded"><span>Offer 2</span><span class="status-dot" id="sd1" title="No offer loaded" role="button" tabindex="0" aria-label="Navigate to Offer 2 issue: No offer loaded" onclick="navigateOfferStatus(event,1)" onkeydown="handleStatusDotKeydown(event,1)"></span></button>
+    <button class="otab" id="ot2" onclick="sv(2)" draggable="true" data-offer-tab="2" title="No offer loaded" aria-label="Offer 3 status: No offer loaded"><span>Offer 3</span><span class="status-dot" id="sd2" title="No offer loaded" role="button" tabindex="0" aria-label="Navigate to Offer 3 issue: No offer loaded" onclick="navigateOfferStatus(event,2)" onkeydown="handleStatusDotKeydown(event,2)"></span></button>
+    <button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3" title="No offer loaded" aria-label="Offer 4 status: No offer loaded"><span>Offer 4</span><span class="status-dot" id="sd3" title="No offer loaded" role="button" tabindex="0" aria-label="Navigate to Offer 4 issue: No offer loaded" onclick="navigateOfferStatus(event,3)" onkeydown="handleStatusDotKeydown(event,3)"></span></button>
   </div>
   <details class="reorder-group">
     <summary class="reorder-label"><h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="m3 6 1 1 2-2"></path><path d="m3 12 1 1 2-2"></path><path d="m3 18 1 1 2-2"></path></svg>Reorder Cards</h3><span class="section-toggle">▾</span></summary>
@@ -1818,18 +1821,7 @@ function getOfferStatusTooltip(i){
   if(!status) return "No offer loaded";
   if(status==="green") return "Ready for export";
   if(status==="red"){
-    const requiredFields=[
-      ["name","Offer name missing"],
-      ["ship","Ship name missing"],
-      ["price","Price missing"],
-      ["day","Date missing"],
-      ["month","Date missing"],
-      ["ports","Ports missing"],
-      ["nights","Nights missing"],
-      ["board","Board basis missing"],
-      ["boardlbl","Board basis label missing"]
-    ];
-    const blocker=requiredFields.find(([field])=>!String(o[field]||"").trim());
+    const blocker=getMissingCriticalOfferFields(o)[0];
     return blocker?blocker[1]:"Missing required offer data";
   }
   if(!readiness.heroLoaded) return "Hero image missing";
@@ -1838,12 +1830,68 @@ function getOfferStatusTooltip(i){
   if(!readiness.utmGenerated) return "UTM missing";
   return "Missing non-critical items";
 }
+function getOfferStatusNavigationIssue(i){
+  const o=offers[i]||{};
+  const readiness=getOfferReadiness(o);
+  if(!readiness.loaded||(readiness.ready&&readiness.criticalContentPresent)) return "";
+  if(!readiness.heroLoaded) return "hero-image-missing";
+  if(readiness.operatorSelected&&!readiness.operatorLogoPresent) return "operator-logo-missing";
+  if(!readiness.operatorSelected) return "operator-not-selected";
+  const missingCriticalFields=getMissingCriticalOfferFields(o);
+  const missingFields=new Set(missingCriticalFields.map(([field])=>field));
+  if(missingFields.has("price")) return "price-missing";
+  if(missingFields.has("name")) return "cruise-name-missing";
+  if(missingFields.has("ship")) return "ship-name-missing";
+  if(missingFields.has("ports")) return "ports-missing";
+  if(missingCriticalFields.length) return "offer-details-missing";
+  if(!readiness.utmGenerated) return "utm-missing";
+  return "";
+}
+function getOfferStatusNavigationTarget(i){
+  const issue=getOfferStatusNavigationIssue(i);
+  if(issue==="hero-image-missing") return "hero-image";
+  if(issue==="operator-logo-missing"||issue==="operator-not-selected") return "operator-logo";
+  if(issue==="utm-missing") return "export-cards";
+  if(issue) return "offer-details";
+  return "";
+}
+let statusDotHighlightTimer;
+function getStatusNavigationSection(sectionKey){
+  if(sectionKey==="export-cards") return document.querySelector(".export-section");
+  return document.querySelector('.section[data-section-key="'+sectionKey+'"]');
+}
+function openStatusNavigationSection(section){
+  const hdr=section&&section.querySelector(".section-hdr");
+  if(!hdr||!hdr.classList.contains("collapsed")) return;
+  document.querySelectorAll(".section[data-section-key] .section-hdr").forEach(otherHdr=>{
+    if(otherHdr!==hdr) setSectionCollapsedByHeader(otherHdr,true);
+  });
+  setSectionCollapsedByHeader(hdr,false);
+  queueAutosave();
+}
+function navigateOfferStatus(event,i){
+  if(event){ event.preventDefault(); event.stopPropagation(); }
+  const section=getStatusNavigationSection(getOfferStatusNavigationTarget(i));
+  if(!section) return;
+  openStatusNavigationSection(section);
+  section.scrollIntoView({behavior:"smooth",block:"start"});
+  section.classList.remove("status-dot-target");
+  void section.offsetWidth;
+  section.classList.add("status-dot-target");
+  clearTimeout(statusDotHighlightTimer);
+  statusDotHighlightTimer=setTimeout(()=>section.classList.remove("status-dot-target"),1000);
+}
+function handleStatusDotKeydown(event,i){
+  if(event.key!=="Enter"&&event.key!==" ") return;
+  navigateOfferStatus(event,i);
+}
 function updateAllStatus(){
   for(let i=0;i<4;i++){
     const dot=document.getElementById("sd"+i); if(!dot) continue;
     const s=getOfferStatus(i); dot.className="status-dot"+(s?" "+s:"");
     const tooltip=getOfferStatusTooltip(i);
     dot.title=tooltip;
+    dot.setAttribute("aria-label","Navigate to Offer "+(i+1)+" issue: "+tooltip);
     const tab=document.getElementById("ot"+i);
     if(tab){ tab.title=tooltip; tab.setAttribute("aria-label","Offer "+(i+1)+" status: "+tooltip); }
   }
@@ -1875,6 +1923,20 @@ function updatePreviewTitle(){
   }
   const status=getPreviewOfferStatusLabel(cur);
   title.textContent=`LIVE PREVIEW — OFFER ${cur+1}`+(status?` • ${status}`:"");
+}
+function getMissingCriticalOfferFields(o){
+  const requiredFields=[
+    ["name","Offer name missing"],
+    ["ship","Ship name missing"],
+    ["price","Price missing"],
+    ["day","Date missing"],
+    ["month","Date missing"],
+    ["ports","Ports missing"],
+    ["nights","Nights missing"],
+    ["board","Board basis missing"],
+    ["boardlbl","Board basis label missing"]
+  ];
+  return requiredFields.filter(([field])=>!String((o&&o[field])||"").trim());
 }
 function hasCriticalOfferContent(o){
   return !!(o&&[o.name,o.ship,o.price,o.day,o.month,o.ports,o.nights,o.board,o.boardlbl].every(value=>String(value||"").trim()));
