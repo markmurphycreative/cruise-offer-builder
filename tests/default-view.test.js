@@ -28,7 +28,7 @@ test('Single, Email and All 4 switching normalises state and renders the selecte
 test('preview mode switches soft-fade within the premium transition window without animating layout or zoom dimensions', () => {
   assert.match(html, /#card-output\{[^}]*opacity:1;[^}]*transition:opacity \.22s ease-out;[^}]*\}/);
   assert.match(html, /#card-output\.preview-mode-transition\{opacity:0;\}/);
-  assert.match(html, /@media \(prefers-reduced-motion:reduce\)\{#card-output,\.view-pill\{transition:none;\}\}/);
+  assert.match(html, /@media \(prefers-reduced-motion:reduce\)\{#card-output,\.view-pill,\.offer-pill\{transition:none;\}\}/);
   assert.match(html, /function fadePreviewModeIn\(\)\{[\s\S]*?out\.classList\.add\('preview-mode-transition'\);[\s\S]*?requestAnimationFrame\(function\(\)\{[\s\S]*?out\.classList\.remove\('preview-mode-transition'\);/);
   assert.match(html, /renderPreviewMode\(true\);\s*if\(didChange\) fadePreviewModeIn\(\);\s*queueAutosave\(\);/);
   assert.doesNotMatch(html, /#card-output[^}]*transition:[^;}]*(?:width|height|transform)/);
@@ -40,12 +40,25 @@ test('view selector keeps a transform-driven sliding gold indicator with subtly 
   assert.match(html, /\.view-pill\{[^}]*border-radius:4px;[^}]*background:var\(--gold\);[^}]*transform:translateX\(0\);[^}]*transition:transform \.2s ease,width \.2s ease;/);
   assert.doesNotMatch(html, /\.(?:view-btns|view-pill)\{[^}]*border-radius:999px;/);
   assert.match(html, /\.vbtn\.active\{color:var\(--navy\);\}/);
-  assert.match(html, /function updateViewPill\(\)\{[\s\S]*?pill\.style\.width = activeButton\.offsetWidth \+ 'px';[\s\S]*?pill\.style\.transform = 'translateX\(' \+ activeButton\.offsetLeft \+ 'px\)';/);
+  assert.match(html, /function updateSegmentedPill\(pill, activeButton\)\{[\s\S]*?pill\.style\.width = activeButton\.offsetWidth \+ 'px';[\s\S]*?pill\.style\.transform = 'translateX\(' \+ activeButton\.offsetLeft \+ 'px\)';/);
   assert.match(html, /syncViewSelector\(\);\s*renderPreviewMode\(true\);/);
-  assert.match(html, /requestAnimationFrame\(updateViewPill\);/);
+  assert.match(html, /requestAnimationFrame\(function\(\)\{[\s\S]*?updateViewPill\(\);[\s\S]*?updateOfferPill\(\);/);
   assert.doesNotMatch(html, /\.vbtn\.active\{[^}]*background:/);
 });
 
+
+
+test('Offer 1–4 selector reuses the sliding segmented-control pill while retaining status dots and offer switching hooks', () => {
+  assert.match(html, /<div class="offer-tabs">\s*<span class="offer-pill" id="offer-pill" aria-hidden="true"><\/span>/);
+  assert.match(html, /\.offer-tabs\{[^}]*border:1px solid var\(--border\);[^}]*border-radius:6px;[^}]*overflow:hidden;[^}]*isolation:isolate;/);
+  assert.match(html, /\.offer-pill\{[^}]*border-radius:4px;[^}]*background:var\(--gold\);[^}]*transform:translateX\(0\);[^}]*transition:transform \.2s ease,width \.2s ease;/);
+  assert.doesNotMatch(html, /\.otab\.active\{[^}]*border-bottom/);
+  for(let i = 0; i < 4; i += 1){
+    assert.match(html, new RegExp('<button class="otab(?: active)?" id="ot' + i + '" onclick="sv\\(' + i + '\\)"[^>]*><span>Offer ' + (i + 1) + '<\\/span><span class="status-dot amber" id="sd' + i + '"><\\/span><\\/button>'));
+  }
+  assert.match(html, /function syncOfferSelector\(\)\{[\s\S]*?t\.classList\.toggle\('active', idx === activeIndex\);[\s\S]*?updateOfferPill\(\);/);
+  assert.match(html, /function updateOfferPill\(\)\{\s*updateSegmentedPill\(document\.getElementById\('offer-pill'\), document\.getElementById\('ot' \+ cur\)\);/);
+});
 
 test('Single and Email previews display at 75% of their prior on-screen scale while All 4 retains its fit scale', () => {
   assert.match(html, /const SINGLE_PREVIEW_SCALE = 0\.75;/);
