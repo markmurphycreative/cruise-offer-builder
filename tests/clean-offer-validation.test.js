@@ -24,6 +24,7 @@ function createHarness(offer, headers = { po: { pngData: 'assets/operator-logos/
   vm.runInContext([
     extractFunction('hasOperatorLogo'),
     extractFunction('isCleanOfferValid'),
+    extractFunction('isOfferLoaded'),
     extractFunction('getOfferStatus')
   ].join('\n'), context);
   return context;
