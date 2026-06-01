@@ -60,6 +60,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 
 /* ── SECTIONS ── */
 .section{margin-bottom:4px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.campaign-presets-hidden{display:none;}
 .section-hdr{background:var(--panel);padding:5px 9px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
 .section-hdr:not(.collapsed){background:rgba(160,146,103,.12);box-shadow:inset 2px 0 0 var(--gold);}
 .section-hdr h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);display:flex;align-items:center;gap:6px;}
@@ -520,7 +521,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 
 
     <!-- ── CAMPAIGN PRESETS ── -->
-    <div class="section" data-section-key="campaign-presets">
+    <div class="section campaign-presets-hidden" data-section-key="campaign-presets">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path><path d="M17 21v-8H7v8"></path><path d="M7 3v5h8"></path></svg>Campaign Presets</h3><span class="section-toggle">▾</span>
       </div>
