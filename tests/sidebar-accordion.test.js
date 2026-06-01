@@ -31,6 +31,8 @@ function createHarness(keys = ['csv-import', 'campaign-presets', 'paste-raw-offe
   });
   const context = {
     queueAutosave() { autosave.queued += 1; },
+    offers: [],
+    isOfferLoaded: offer => !!(offer && (offer.name || offer.ship || offer.price || offer._img)),
     document: {
       querySelectorAll(selector) {
         if (selector === '.section[data-section-key]') return sections;
@@ -44,7 +46,8 @@ function createHarness(keys = ['csv-import', 'campaign-presets', 'paste-raw-offe
     extract(/function setSectionCollapsedByHeader\(hdr, collapsed\)\{[\s\S]*?\n\}/, 'setSectionCollapsedByHeader'),
     extract(/function getSectionCollapseState\(\)\{[\s\S]*?\n\}/, 'getSectionCollapseState'),
     extract(/function getOpenSectionKey\(\)\{[\s\S]*?\n\}/, 'getOpenSectionKey'),
-    extract(/function applySectionCollapseState\(sectionState, preferredOpenKey\)\{[\s\S]*?\n\}/, 'applySectionCollapseState')
+    extract(/function applySectionCollapseState\(sectionState, preferredOpenKey\)\{[\s\S]*?\n\}/, 'applySectionCollapseState'),
+    extract(/function openCsvImportWhenNoOffersLoaded\(\)\{[\s\S]*?\n\}/, 'openCsvImportWhenNoOffersLoaded')
   ].join('\n');
   vm.createContext(context);
   vm.runInContext(source, context);
@@ -61,11 +64,36 @@ test('the default sidebar keeps CSV Import as the only expanded section', () => 
   assert.deepEqual(sections.filter(([, , collapsed]) => !collapsed).map(([, key]) => key), ['csv-import']);
 });
 
+test('CSV Import alone receives the primary navy header treatment with white content and a gold chevron', () => {
+  assert.match(html, /\.section\.csv-core-section \.section-hdr\{background:var\(--navy\);\}/);
+  assert.match(html, /\.section\.csv-core-section \.section-hdr h3\{color:#fff;\}/);
+  assert.match(html, /\.section\.csv-core-section \.section-toggle\{color:var\(--gold\);\}/);
+  assert.doesNotMatch(html, /\.section:not\(\.csv-core-section\) \.section-hdr\{background:var\(--navy\);\}/);
+});
+
 test('the expanded sidebar header receives the subtle palette-based highlight without layout changes', () => {
   const rule = extract(/\.section-hdr:not\(\.collapsed\)\{[^}]+\}/, 'expanded sidebar header highlight');
   assert.match(rule, /background:rgba\(160,146,103,\.12\)/);
   assert.match(rule, /box-shadow:inset 2px 0 0 var\(--gold\)/);
   assert.doesNotMatch(rule, /(?:padding|margin|border(?:-width)?|height):/);
+});
+
+test('an empty builder opens CSV Import and collapses every other section without overriding loaded-offer state', () => {
+  const { context, sections } = createHarness();
+  context.toggleSec(sections[4].hdr);
+  assert.deepEqual(openKeys(sections), ['hero-image']);
+  assert.equal(context.openCsvImportWhenNoOffersLoaded(), true);
+  assert.deepEqual(openKeys(sections), ['csv-import']);
+
+  context.toggleSec(sections[4].hdr);
+  context.offers = [{ name: 'Loaded cruise' }];
+  assert.equal(context.openCsvImportWhenNoOffersLoaded(), false);
+  assert.deepEqual(openKeys(sections), ['hero-image']);
+});
+
+test('startup and session hydration both apply the empty-builder CSV Import default', () => {
+  assert.match(html, /function applySessionPayload\(data\)\{[\s\S]*?autosaveHydrating = false;\s*openCsvImportWhenNoOffersLoaded\(\);\s*refreshAfterRestore\(\);/);
+  assert.match(html, /function initBuilderApp\(\)\{[\s\S]*?refreshOfferUi\(\{utm:true,spell:true,autosave:false\}\);\s*openCsvImportWhenNoOffersLoaded\(\);/);
 });
 
 test('every sidebar section opens normally and closes the previously expanded section', () => {
