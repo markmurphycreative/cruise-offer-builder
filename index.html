@@ -72,9 +72,13 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .mode-note.active{opacity:1;min-height:12px;}
 .mode-btn{padding:6px 8px;font-size:9px;font-weight:700;border:1px solid var(--border);border-radius:var(--radius);background:#fff;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
 .mode-btn.active{background:var(--navy);border-color:var(--navy);color:#fff;}
-.reorder-group{margin:5px 9px 3px;border:1px solid var(--border);border-radius:var(--radius);padding:5px;background:#fafaf8;}
-.reorder-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px;}
-.reorder-buttons{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.reorder-group{margin:5px 9px 3px;border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;overflow:hidden;}
+.reorder-label{display:flex;align-items:center;justify-content:space-between;padding:5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);cursor:pointer;user-select:none;list-style:none;}
+.reorder-label::-webkit-details-marker{display:none;}
+.reorder-label .section-toggle{transform:rotate(-90deg);}
+.reorder-group[open] .reorder-label .section-toggle{transform:none;}
+.reorder-buttons{display:flex;gap:5px;padding:0 5px 5px;}
+.reorder-btn{flex:0 0 32px;width:32px;height:28px;padding:0;font-size:15px;line-height:1;}
 .hero-hint{font-size:9px;color:var(--muted);margin:5px 0 2px;}
 .hero-source-block{margin-top:6px;padding-top:6px;border-top:1px solid var(--border);}
 .hero-dropzone{padding:14px 10px;min-height:92px;display:flex;align-items:center;justify-content:center;}
@@ -260,9 +264,6 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .act-row{display:flex;gap:4px;margin-bottom:4px;}
 .abtn{flex:1;padding:6px 6px;font-size:10px;font-weight:700;border-radius:var(--radius);border:1px solid var(--border);background:#fff;color:var(--text);letter-spacing:.02em;white-space:nowrap;transition:all .15s;}
 .abtn:hover{background:var(--panel);}
-.abtn.reorder-btn{transition:background-color .16s ease,box-shadow .16s ease,transform .16s ease,border-color .16s ease;}
-.abtn.reorder-btn:hover:not(:disabled){background:#dfe4ec;border-color:#9eabbd;box-shadow:inset 0 1px 0 rgba(255,255,255,.38),0 1px 4px rgba(14,27,42,.14);transform:translateY(-1px);}
-.abtn.reorder-btn:active:not(:disabled){transform:translateY(0);box-shadow:0 1px 2px rgba(14,27,42,.1);}
 .abtn.navy{background:var(--navy);color:#fff;border-color:var(--navy);}
 .abtn.gold{background:var(--gold);color:#fff;border-color:var(--gold);}
 .abtn.green{background:var(--green);color:#fff;border-color:var(--green);}
@@ -476,13 +477,13 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <button class="mode-btn active" id="mode-standard-btn" onclick="setBuilderMode('standard')">Standard Mode</button>
     <button class="mode-btn" id="mode-production-btn" onclick="setBuilderMode('production')">Production Mode</button>
   </div>
-  <div class="reorder-group" data-production-optional="true">
-    <div class="reorder-label">Reorder Cards</div>
+  <details class="reorder-group" data-production-optional="true">
+    <summary class="reorder-label">Reorder Cards<span class="section-toggle">▾</span></summary>
     <div class="reorder-buttons">
-      <button class="abtn reorder-btn" id="move-left-btn" onclick="moveOfferLeft()">← Move Left</button>
-      <button class="abtn reorder-btn" id="move-right-btn" onclick="moveOfferRight()">Move Right →</button>
+      <button class="abtn reorder-btn" id="move-left-btn" onclick="moveOfferLeft()" aria-label="Move card left" title="Move card left">←</button>
+      <button class="abtn reorder-btn" id="move-right-btn" onclick="moveOfferRight()" aria-label="Move card right" title="Move card right">→</button>
     </div>
-  </div>
+  </details>
 
   <div class="sb-body">
     <div class="lock-ind" id="lock-ind">🔒 CARD LOCKED — Click Unlock to edit</div>
