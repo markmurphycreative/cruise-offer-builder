@@ -73,8 +73,16 @@ function createHarness(offers) {
 
 test('offer tabs start grey instead of displaying a transient amber state before initial refresh', () => {
   for (let index = 0; index < 4; index += 1) {
-    assert.match(html, new RegExp(`<button class="status-dot" id="sd${index}" type="button" title="No offer loaded"[^>]*><\/button>`));
+    assert.match(html, new RegExp(`<span class="status-dot" id="sd${index}" title="No offer loaded" aria-hidden="true"><\/span>`));
   }
+});
+
+
+test('status dots remain diagnostic indicators inside the normal offer-tab buttons without navigation hooks', () => {
+  for (let index = 0; index < 4; index += 1) {
+    assert.match(html, new RegExp(`<button class="otab(?: active)?" id="ot${index}" onclick="sv\\(${index}\\)"[^>]*>[\\s\\S]*?<span class="status-dot" id="sd${index}" title="No offer loaded" aria-hidden="true"><\\/span><\\/button>`));
+  }
+  assert.doesNotMatch(html, /navigateOfferStatus|handleStatusDotKeydown|getOfferStatusNavigation|status-dot-target|scrollIntoView/);
 });
 
 test('each offer tab dot independently maps empty, incomplete, invalid and export-ready offers', () => {

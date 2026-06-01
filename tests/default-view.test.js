@@ -58,7 +58,7 @@ test('Offer 1–4 selector reuses the sliding segmented-control pill while retai
   assert.match(html, /\.status-dot\{[^}]*position:absolute;[^}]*width:8px;[^}]*height:8px;[^}]*border-radius:50%;/);
   assert.match(html, /\.status-dot\.green\{background:var\(--green\);\}\s*\.status-dot\.amber\{background:var\(--amber\);\}\s*\.status-dot\.red\{background:var\(--red\);\}/);
   for(let i = 0; i < 4; i += 1){
-    assert.match(html, new RegExp('<div class="offer-tab-item"><button class="otab(?: active)?" id="ot' + i + '" onclick="sv\\(' + i + '\\)"[^>]*><span>Offer ' + (i + 1) + '<\/span><\/button><button class="status-dot" id="sd' + i + '"[^>]*><\/button><\/div>'));
+    assert.match(html, new RegExp('<div class="offer-tab-item"><button class="otab(?: active)?" id="ot' + i + '" onclick="sv\\(' + i + '\\)"[^>]*><span>Offer ' + (i + 1) + '<\/span><span class="status-dot" id="sd' + i + '" title="No offer loaded" aria-hidden="true"><\/span><\/button><\/div>'));
   }
   assert.match(html, /function syncOfferSelector\(\)\{[\s\S]*?t\.classList\.toggle\('active', idx === activeIndex\);[\s\S]*?updateOfferPill\(\);/);
   assert.match(html, /function updateOfferPill\(\)\{\s*const activeTab=document\.getElementById\('ot' \+ cur\);\s*updateSegmentedPill\(document\.getElementById\('offer-pill'\), activeTab&&activeTab\.parentElement\);/);
