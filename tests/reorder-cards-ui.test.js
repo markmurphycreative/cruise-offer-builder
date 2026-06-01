@@ -16,20 +16,21 @@ test('Reorder Cards uses a native details disclosure that is collapsed by defaul
   assert.match(reorderGroup, /<summary class="reorder-label">Reorder Cards<span class="section-toggle">▾<\/span><\/summary>/);
 });
 
-test('Reorder Cards presents compact accessible arrow controls without changing handlers', () => {
+test('Reorder Cards presents compact accessible chevron controls without changing handlers', () => {
   const reorderGroup = extract(/<details class="reorder-group"[\s\S]*?<\/details>/, 'Reorder Cards disclosure');
-  assert.match(reorderGroup, /id="move-left-btn" onclick="moveOfferLeft\(\)" aria-label="Move card left" title="Move card left">◀<\/button>/);
-  assert.match(reorderGroup, /id="move-right-btn" onclick="moveOfferRight\(\)" aria-label="Move card right" title="Move card right">▶<\/button>/);
+  assert.match(reorderGroup, /id="move-left-btn" onclick="moveOfferLeft\(\)" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"><\/polyline><\/svg><\/button>/);
+  assert.match(reorderGroup, /id="move-right-btn" onclick="moveOfferRight\(\)" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"><\/polyline><\/svg><\/button>/);
+  assert.doesNotMatch(reorderGroup, /[◀▶]/);
   assert.doesNotMatch(reorderGroup, /Move Left|Move Right/);
 });
 
-test('arrow controls retain the shared sidebar button treatment with compact dimensions and deliberate icon weight', () => {
+test('chevron controls retain shared sidebar button treatment and outlined icon weight', () => {
   const buttonRule = extract(/\.reorder-btn\{[^}]+\}/, 'compact reorder button rule');
   assert.match(buttonRule, /width:32px/);
   assert.match(buttonRule, /height:28px/);
-  assert.match(buttonRule, /font-size:18px/);
-  assert.match(buttonRule, /font-weight:700/);
   assert.match(buttonRule, /display:flex;align-items:center;justify-content:center/);
+  assert.match(html, /\.reorder-btn \.section-icon\{width:16px;height:16px;\}/);
+  assert.match(html, /\.section-icon\{[^}]*stroke:currentColor;stroke-width:2;[^}]*fill:none;/);
   assert.match(html, /<button class="abtn reorder-btn" id="move-left-btn"/);
   assert.doesNotMatch(html, /\.abtn\.reorder-btn:hover/);
 });

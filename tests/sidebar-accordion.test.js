@@ -30,8 +30,6 @@ function createHarness(keys = ['csv-import', 'campaign-presets', 'paste-raw-offe
     return { dataset: { sectionKey: key }, hdr, querySelector: selector => selector === '.section-hdr' ? hdr : null };
   });
   const context = {
-    builderMode: 'standard',
-    preProductionSectionState: null,
     queueAutosave() { autosave.queued += 1; },
     document: {
       querySelectorAll(selector) {
@@ -46,8 +44,7 @@ function createHarness(keys = ['csv-import', 'campaign-presets', 'paste-raw-offe
     extract(/function setSectionCollapsedByHeader\(hdr, collapsed\)\{[\s\S]*?\n\}/, 'setSectionCollapsedByHeader'),
     extract(/function getSectionCollapseState\(\)\{[\s\S]*?\n\}/, 'getSectionCollapseState'),
     extract(/function getOpenSectionKey\(\)\{[\s\S]*?\n\}/, 'getOpenSectionKey'),
-    extract(/function applySectionCollapseState\(sectionState, preferredOpenKey\)\{[\s\S]*?\n\}/, 'applySectionCollapseState'),
-    extract(/function captureStandardSectionState\(\)\{[\s\S]*?\n\}/, 'captureStandardSectionState')
+    extract(/function applySectionCollapseState\(sectionState, preferredOpenKey\)\{[\s\S]*?\n\}/, 'applySectionCollapseState')
   ].join('\n');
   vm.createContext(context);
   vm.runInContext(source, context);

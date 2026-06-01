@@ -67,18 +67,14 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .section-hdr.collapsed .section-toggle{transform:rotate(-90deg);}
 .section-body{padding:6px 9px;}
 .section-body.hidden{display:none;}
-.mode-toggle{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:7px 10px;border-bottom:1px solid var(--border);background:#fafaf8;}
-.mode-note{grid-column:1 / -1;font-size:9px;color:var(--muted);line-height:1.3;opacity:0;min-height:0;transition:opacity .15s ease;}
-.mode-note.active{opacity:1;min-height:12px;}
-.mode-btn{padding:6px 8px;font-size:9px;font-weight:700;border:1px solid var(--border);border-radius:var(--radius);background:#fff;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
-.mode-btn.active{background:var(--navy);border-color:var(--navy);color:#fff;}
 .reorder-group{margin:5px 9px 3px;border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;overflow:hidden;}
 .reorder-label{display:flex;align-items:center;justify-content:space-between;padding:5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);cursor:pointer;user-select:none;list-style:none;}
 .reorder-label::-webkit-details-marker{display:none;}
 .reorder-label .section-toggle{transform:rotate(-90deg);}
 .reorder-group[open] .reorder-label .section-toggle{transform:none;}
 .reorder-buttons{display:flex;gap:5px;padding:0 5px 5px;}
-.reorder-btn{flex:0 0 32px;width:32px;height:28px;padding:0;font-size:18px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;}
+.reorder-btn{flex:0 0 32px;width:32px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;}
+.reorder-btn .section-icon{width:16px;height:16px;}
 .hero-hint{font-size:9px;color:var(--muted);margin:5px 0 2px;}
 .hero-source-block{margin-top:6px;padding-top:6px;border-top:1px solid var(--border);}
 .hero-dropzone{padding:14px 10px;min-height:92px;display:flex;align-items:center;justify-content:center;}
@@ -472,16 +468,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <button class="otab" id="ot2" onclick="sv(2)" draggable="true" data-offer-tab="2"><span>Offer 3</span><span class="status-dot" id="sd2"></span></button>
     <button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3"><span>Offer 4</span><span class="status-dot" id="sd3"></span></button>
   </div>
-  <div class="mode-toggle" id="builder-mode-toggle">
-    <div class="mode-note" id="mode-note" aria-live="polite"></div>
-    <button class="mode-btn active" id="mode-standard-btn" onclick="setBuilderMode('standard')">Standard Mode</button>
-    <button class="mode-btn" id="mode-production-btn" onclick="setBuilderMode('production')">Production Mode</button>
-  </div>
-  <details class="reorder-group" data-production-optional="true">
+  <details class="reorder-group">
     <summary class="reorder-label">Reorder Cards<span class="section-toggle">▾</span></summary>
     <div class="reorder-buttons">
-      <button class="abtn reorder-btn" id="move-left-btn" onclick="moveOfferLeft()" aria-label="Move card left" title="Move card left">◀</button>
-      <button class="abtn reorder-btn" id="move-right-btn" onclick="moveOfferRight()" aria-label="Move card right" title="Move card right">▶</button>
+      <button class="abtn reorder-btn" id="move-left-btn" onclick="moveOfferLeft()" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+      <button class="abtn reorder-btn" id="move-right-btn" onclick="moveOfferRight()" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
     </div>
   </details>
 
@@ -1190,9 +1181,6 @@ let offers = [{},{},{},{}];
 let cur = 0, viewMode = "all", zoomPct = 32;
 let lockedOffers = [false,false,false,false];
 let safeZoneOn = false, exportRunning = false;
-let builderMode = "standard";
-let preProductionSectionState = null;
-const BUILDER_MODE_STORAGE_KEY = "cruise-builder-mode";
 const FLDS = ["tags","name","ship","incl","price","basis","board","boardlbl","day","month","nights","ports","url","utm_content"];
 
 // ═══════════════════════════════════════════════════════
@@ -1206,7 +1194,6 @@ function toggleSec(hdr){
     });
   }
   setSectionCollapsedByHeader(hdr, !willOpen);
-  if(builderMode === "standard") captureStandardSectionState();
   queueAutosave();
 }
 function setSectionCollapsedByHeader(hdr, collapsed){
@@ -1242,34 +1229,6 @@ function applySectionCollapseState(sectionState, preferredOpenKey){
       setSectionCollapsedByHeader(hdr, sec.dataset.sectionKey !== openKey);
     }
   });
-}
-function captureStandardSectionState(){
-  if(builderMode !== "standard") return;
-  preProductionSectionState = getSectionCollapseState();
-}
-function setBuilderMode(mode,force=false){
-  const nextMode = mode === "production" ? "production" : "standard";
-  if(!force && nextMode === builderMode) return;
-  const optionalUiBlocks = Array.from(document.querySelectorAll("[data-production-optional]"));
-
-  if(nextMode === "production"){
-    captureStandardSectionState();
-    optionalUiBlocks.forEach(el=>{ el.style.display = "none"; });
-  } else if(preProductionSectionState){
-    applySectionCollapseState(Object.fromEntries(preProductionSectionState), getOpenSectionKey());
-    optionalUiBlocks.forEach(el=>{ el.style.display = ""; });
-  }
-
-  builderMode = nextMode;
-  document.getElementById("mode-standard-btn").classList.toggle("active", builderMode === "standard");
-  document.getElementById("mode-production-btn").classList.toggle("active", builderMode === "production");
-  const modeNote = document.getElementById("mode-note");
-  if(modeNote){
-    const productionActive = builderMode === "production";
-    modeNote.textContent = productionActive ? "Production Mode: streamlined workflow view" : "";
-    modeNote.classList.toggle("active", productionActive);
-  }
-  try{ localStorage.setItem(BUILDER_MODE_STORAGE_KEY,builderMode); }catch(e){}
 }
 function toggleAdv(hdr){
   hdr.nextElementSibling.classList.toggle("open");
@@ -2353,7 +2312,7 @@ function buildAutosavePayload(){
   });
   const sectionState = {};
   getSectionCollapseState().forEach((collapsed,key)=>{ sectionState[key]=!!collapsed; });
-  return {version:'1.0',savedAt:new Date().toISOString(),cur,viewMode,builderMode,lockedOffers,sectionState,openSectionKey:getOpenSectionKey(),campaign:{name:document.getElementById('g-campaign').value||'',date:document.getElementById('g-date').value||'',airport:document.getElementById('g-airport').value||'',terms:document.getElementById('g-terms').value||''},offers:clonedOffers};
+  return {version:'1.0',savedAt:new Date().toISOString(),cur,viewMode,lockedOffers,sectionState,openSectionKey:getOpenSectionKey(),campaign:{name:document.getElementById('g-campaign').value||'',date:document.getElementById('g-date').value||'',airport:document.getElementById('g-airport').value||'',terms:document.getElementById('g-terms').value||''},offers:clonedOffers};
 }
 function saveSessionNow(){
   if(autosaveHydrating || autosaveAwaitingRestoreDecision) return;
@@ -2400,9 +2359,7 @@ function applySessionPayload(data){
   syncViewSelector();
   if(data.sectionState && typeof data.sectionState === "object"){
     applySectionCollapseState(data.sectionState, data.openSectionKey);
-    if((data.builderMode||builderMode)==="standard") captureStandardSectionState();
   }
-  if(data.builderMode) setBuilderMode(data.builderMode, true);
   loadOfferToEditor(cur);
   document.querySelectorAll('.otab').forEach((t,idx)=>t.classList.toggle('active', idx===cur));
   updateOfferPill();
@@ -4077,10 +4034,6 @@ function initBuilderApp(){
     window.addEventListener("resize",rv);
     rv();
     updateAllStatus();
-    captureStandardSectionState();
-    let savedBuilderMode = "standard";
-    try{ savedBuilderMode = localStorage.getItem(BUILDER_MODE_STORAGE_KEY) || "standard"; }catch(e){}
-    setBuilderMode(savedBuilderMode,true);
     initOfferTabDragDrop();
     updateMoveOfferButtons();
     refreshPresetList();
