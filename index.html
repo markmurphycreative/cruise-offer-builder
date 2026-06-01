@@ -313,7 +313,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .preview-scaler.empty-preview{display:flex;align-items:center;justify-content:center;}
 #card-output{opacity:1;transition:opacity .22s ease-out;}
 #card-output.empty-preview-output{display:flex;align-items:center;justify-content:center;width:100%;height:100%;}
-.preview-empty-state{width:min(475px,calc(100% - 30px));text-align:center;background:none;border:none;border-radius:0;box-shadow:none;font-family:'Montserrat',sans-serif;color:var(--navy);}
+.preview-empty-state{width:min(475px,calc(100% - 30px));text-align:center;background:none;border:none;border-radius:0;box-shadow:none;font-family:'Montserrat',sans-serif;color:var(--navy);cursor:pointer;transition:opacity .18s ease;}
+.preview-empty-state:hover{opacity:.86;}
 .preview-empty-state h2{margin:0;padding:0;background:none;color:var(--navy);font-family:'Montserrat',sans-serif;font-size:16.5px;font-weight:400;letter-spacing:.025em;line-height:1.2;}
 .preview-empty-state p{margin:14px 0 0;padding:0;background:none;color:var(--navy);font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;line-height:1.5;opacity:.72;}
 #card-output.preview-mode-transition{opacity:0;}
@@ -513,7 +514,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
             <button class="abtn" onclick="refreshOffers()">Refresh Offers</button>
           </div>
           <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values" style="display:none">
-          <button class="abtn" onclick="document.getElementById(&#39;sheets-file&#39;).click()" style="width:100%;margin-top:4px;">Load Downloaded CSV File</button>
+          <button class="abtn" onclick="triggerCsvFilePicker()" style="width:100%;margin-top:4px;">Load Downloaded CSV File</button>
           <div style="font-size:9px;color:var(--muted);margin-top:3px;" id="sheets-status" aria-live="polite">No saved source</div>
 
       </div>
@@ -2068,6 +2069,11 @@ async function refreshOffers(){
   return loadSheetCsvUrl(csvUrl,"Refresh complete",sheetSource.type);
 }
 
+function triggerCsvFilePicker(){
+  const input=document.getElementById("sheets-file");
+  if(input) input.click();
+}
+
 function loadFromCSVFile(event){
   const file=event.target.files && event.target.files[0];
   const status=document.getElementById("sheets-status");
@@ -3524,7 +3530,7 @@ function renderEmptyPreviewIfNeeded(){
   out.classList.toggle('empty-preview-output', showEmptyState);
   if(!showEmptyState) return false;
   updatePreviewTitle();
-  out.innerHTML = '<div class="preview-empty-state" role="status"><h2>Ready to Build</h2><p>Load a Google Sheet or CSV to generate your cruise cards instantly.</p></div>';
+  out.innerHTML = '<div class="preview-empty-state" role="status" onclick="triggerCsvFilePicker()"><h2>Ready to Build</h2><p>Load a Google Sheet or CSV to generate your cruise cards instantly.</p></div>';
   scaler.style.width = '100%';
   scaler.style.height = '100%';
   scaler.style.transform = 'none';
