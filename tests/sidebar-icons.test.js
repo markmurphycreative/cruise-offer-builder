@@ -17,14 +17,14 @@ test('every sidebar section heading uses one inline monochrome SVG icon', () => 
   assert.match(html, /\.section-icon\{width:18px;height:18px;flex-shrink:0;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;\}/);
 });
 
-test('sidebar section names retain their order and rename Hero to Hero Image', () => {
+test('sidebar section names follow the primary workflow and use the requested display labels', () => {
   assert.deepEqual(headingLabels, [
     'CSV Import',
     'Campaign Presets',
-    'Paste Raw Offer',
     'Operator Logo',
     'Hero Image',
     'Offer Details',
+    'Paste Offer',
     'Summary',
     'UTM Link',
     'Standard UTMs',
@@ -32,7 +32,7 @@ test('sidebar section names retain their order and rename Hero to Hero Image', (
 });
 
 test('required workflow headings expose the requested icon shapes', () => {
-  const [upload, save, clipboardPaste, logoAsset, image, fileText] = sectionHeaders;
+  const [upload, save, logoAsset, image, fileText, clipboardPaste] = sectionHeaders;
   assert.match(upload, /<polyline points="17 8 12 3 7 8"><\/polyline>/);
   assert.match(save, /<path d="M17 21v-8H7v8"><\/path>/);
   assert.match(clipboardPaste, /<path d="m17 10 4 4-4 4"><\/path>/);
@@ -43,7 +43,7 @@ test('required workflow headings expose the requested icon shapes', () => {
 
 
 test('hero drop zone reuses the Hero Image heading SVG instead of an emoji', () => {
-  const heroImageSvg = sectionHeaders[4].match(/<svg[\s\S]*?<\/svg>/)[0];
+  const heroImageSvg = sectionHeaders[3].match(/<svg[\s\S]*?<\/svg>/)[0];
   const heroDropzone = html.match(/<div class="dropzone hero-dropzone"[\s\S]*?<img class="dz-thumb hero-t"/)[0];
   assert.match(heroDropzone, new RegExp(heroImageSvg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.doesNotMatch(heroDropzone, /🖼/);
