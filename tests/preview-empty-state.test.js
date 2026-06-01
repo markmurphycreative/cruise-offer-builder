@@ -47,9 +47,9 @@ function createHarness(offers) {
 
 test('fresh previews use a centred premium empty state in every view before rendering cards', () => {
   assert.match(html, /\.preview-scaler\.empty-preview\{[^}]*display:flex;[^}]*align-items:center;[^}]*justify-content:center;/);
-  assert.match(html, /\.preview-empty-state\{[^}]*width:min\(760px,calc\(100% - 48px\)\);[^}]*border:none;[^}]*border-radius:0;[^}]*box-shadow:none;[^}]*font-family:'Montserrat',sans-serif;/);
-  assert.match(html, /\.preview-empty-state h2\{[^}]*padding:30px 36px;[^}]*background:var\(--navy\);[^}]*color:#fff;[^}]*font-family:'Montserrat',sans-serif;[^}]*font-size:44px;[^}]*font-weight:400;/);
-  assert.match(html, /\.preview-empty-state p\{[^}]*padding:34px 56px 40px;[^}]*background:var\(--gold\);[^}]*color:#fff;[^}]*font-family:'Montserrat',sans-serif;[^}]*font-size:23px;[^}]*font-weight:400;[^}]*line-height:1\.5;/);
+  assert.match(html, /\.preview-empty-state\{[^}]*width:min\(475px,calc\(100% - 30px\)\);[^}]*border:none;[^}]*border-radius:0;[^}]*box-shadow:none;[^}]*font-family:'Montserrat',sans-serif;/);
+  assert.match(html, /\.preview-empty-state h2\{[^}]*padding:18\.75px 22\.5px;[^}]*background:var\(--navy\);[^}]*color:#fff;[^}]*font-family:'Montserrat',sans-serif;[^}]*font-size:27\.5px;[^}]*font-weight:400;/);
+  assert.match(html, /\.preview-empty-state p\{[^}]*padding:21\.25px 35px 25px;[^}]*background:var\(--gold\);[^}]*color:#fff;[^}]*font-family:'Montserrat',sans-serif;[^}]*font-size:14\.375px;[^}]*font-weight:400;[^}]*line-height:1\.5;/);
   assert.doesNotMatch(html, /preview-empty-rule/);
   assert.match(html, /<h2>Ready to Build<\/h2><p>Load a Google Sheet or CSV to generate your cruise cards instantly\.<\/p>/);
 
