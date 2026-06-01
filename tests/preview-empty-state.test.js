@@ -46,8 +46,10 @@ function createHarness(offers) {
 
 test('fresh previews use a centred premium empty state in every view before rendering cards', () => {
   assert.match(html, /\.preview-scaler\.empty-preview\{[^}]*display:flex;[^}]*align-items:center;[^}]*justify-content:center;/);
-  assert.match(html, /\.preview-empty-state\{[^}]*background:#f7f3ea;[^}]*border:1px solid rgba\(176,139,62,\.58\);/);
-  assert.match(html, /<h2>No offers loaded yet<\/h2><p>Load a Google Sheet or CSV to generate your cruise cards\.<\/p>/);
+  assert.match(html, /\.preview-empty-state\{[^}]*width:min\(388px,calc\(100% - 48px\)\);[^}]*padding:36px 33px;[^}]*background:#fbf6e8;[^}]*border:1px solid rgba\(176,139,62,\.42\);/);
+  assert.match(html, /\.preview-empty-state h2\{[^}]*font-family:'Montserrat',sans-serif;[^}]*font-size:22px;[^}]*font-weight:700;/);
+  assert.doesNotMatch(html, /preview-empty-rule/);
+  assert.match(html, /<h2>Ready to build cruise offers<\/h2><p>Load a Google Sheet or CSV to generate your cruise cards\.<\/p>/);
 
   const renderPreviewMode = extractFunction('renderPreviewMode');
   assert.ok(renderPreviewMode.indexOf('if(renderEmptyPreviewIfNeeded()) return;') < renderPreviewMode.indexOf("if(viewMode === 'email')"));
@@ -59,7 +61,7 @@ test('fresh previews use a centred premium empty state in every view before rend
   assert.equal(elements['preview-title'].textContent, 'Preview Canvas');
   assert.equal(elements['preview-scaler'].classList.contains('empty-preview'), true);
   assert.equal(elements['card-output'].classList.contains('empty-preview-output'), true);
-  assert.match(elements['card-output'].innerHTML, /No offers loaded yet/);
+  assert.match(elements['card-output'].innerHTML, /Ready to build cruise offers/);
 });
 
 test('loaded and session-restored offers bypass the empty state and keep normal preview rendering available', () => {

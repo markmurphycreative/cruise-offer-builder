@@ -299,9 +299,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .preview-scaler.empty-preview{display:flex;align-items:center;justify-content:center;}
 #card-output{opacity:1;transition:opacity .22s ease-out;}
 #card-output.empty-preview-output{display:flex;align-items:center;justify-content:center;width:100%;height:100%;}
-.preview-empty-state{width:min(430px,calc(100% - 48px));padding:42px 38px;text-align:center;background:#f7f3ea;border:1px solid rgba(176,139,62,.58);border-radius:8px;box-shadow:0 16px 36px rgba(14,27,42,.14);}
-.preview-empty-rule{width:52px;height:2px;margin:0 auto 20px;background:var(--gold);}
-.preview-empty-state h2{margin:0;color:var(--navy);font-family:Georgia,serif;font-size:24px;font-weight:600;letter-spacing:.01em;}
+.preview-empty-state{width:min(388px,calc(100% - 48px));padding:36px 33px;text-align:center;background:#fbf6e8;border:1px solid rgba(176,139,62,.42);border-radius:8px;box-shadow:0 16px 36px rgba(14,27,42,.14);}
+.preview-empty-state h2{margin:0;color:var(--navy);font-family:'Montserrat',sans-serif;font-size:22px;font-weight:700;letter-spacing:.01em;}
 .preview-empty-state p{max-width:330px;margin:12px auto 0;color:#52606c;font-size:13px;line-height:1.65;}
 #card-output.preview-mode-transition{opacity:0;}
 @media (prefers-reduced-motion:reduce){#card-output,.view-pill,.offer-pill{transition:none;}}
@@ -3428,7 +3427,7 @@ function renderEmptyPreviewIfNeeded(){
   if(!showEmptyState) return false;
   const title = document.getElementById('preview-title');
   if(title) title.textContent = 'Preview Canvas';
-  out.innerHTML = '<div class="preview-empty-state" role="status"><div class="preview-empty-rule" aria-hidden="true"></div><h2>No offers loaded yet</h2><p>Load a Google Sheet or CSV to generate your cruise cards.</p></div>';
+  out.innerHTML = '<div class="preview-empty-state" role="status"><h2>Ready to build cruise offers</h2><p>Load a Google Sheet or CSV to generate your cruise cards.</p></div>';
   scaler.style.width = '100%';
   scaler.style.height = '100%';
   scaler.style.transform = 'none';
