@@ -79,6 +79,16 @@ test('clean-offer validation rejects every missing required offer field', () => 
   }
 });
 
+test('offer status distinguishes required-content gaps from loaded-but-incomplete offers', () => {
+  const missingRequiredContent = createCleanOffer();
+  missingRequiredContent.ship = '';
+  assert.equal(createHarness(missingRequiredContent).getOfferStatus(0), 'red');
+
+  const missingHeroImage = createCleanOffer();
+  missingHeroImage._img = '';
+  assert.equal(createHarness(missingHeroImage).getOfferStatus(0), 'amber');
+});
+
 test('clean-offer validation requires an available operator logo', () => {
   const offer = createCleanOffer();
   const context = createHarness(offer, { po: { pngData: null, svgData: null } });
