@@ -301,7 +301,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .preview-scaler.empty-preview{display:flex;align-items:center;justify-content:center;}
 #card-output{opacity:1;transition:opacity .22s ease-out;}
 #card-output.empty-preview-output{display:flex;align-items:center;justify-content:center;width:100%;height:100%;}
-.preview-empty-state{width:min(360px,calc(100% - 40px));padding:22px 26px;text-align:center;background:var(--gold);border:none;border-radius:0;box-shadow:none;font-family:'Montserrat',sans-serif;}
+.preview-empty-state{width:min(300px,calc(100% - 40px));padding:22px 26px;text-align:center;background:color-mix(in srgb,var(--gold) 94%,black);border:none;border-radius:0;box-shadow:none;font-family:'Montserrat',sans-serif;}
 .preview-empty-state h2{margin:0;color:var(--navy);font-family:'Montserrat',sans-serif;font-size:20px;font-weight:600;letter-spacing:.01em;}
 .preview-empty-state p{max-width:308px;margin:10px auto 0;color:#fff;font-family:'Montserrat',sans-serif;font-size:13px;line-height:1.5;}
 #card-output.preview-mode-transition{opacity:0;}
@@ -3429,7 +3429,7 @@ function renderEmptyPreviewIfNeeded(){
   if(!showEmptyState) return false;
   const title = document.getElementById('preview-title');
   if(title) title.textContent = 'Preview Canvas';
-  out.innerHTML = '<div class="preview-empty-state" role="status"><h2>Ready to build cruise offers</h2><p>Load a Google Sheet or CSV to generate your cruise cards.</p></div>';
+  out.innerHTML = '<div class="preview-empty-state" role="status"><h2>Ready to build</h2><p>Load a Google Sheet or CSV to generate your cruise cards.</p></div>';
   scaler.style.width = '100%';
   scaler.style.height = '100%';
   scaler.style.transform = 'none';
