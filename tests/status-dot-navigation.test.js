@@ -123,7 +123,7 @@ function createEvent(key) {
 
 test('status dots retain tooltip titles while exposing click and keyboard navigation hooks', () => {
   for (let index = 0; index < 4; index += 1) {
-    assert.match(html, new RegExp(`<span class="status-dot" id="sd${index}" title="No offer loaded" role="button" tabindex="0" aria-label="Navigate to Offer ${index + 1} issue: No offer loaded" onclick="navigateOfferStatus\\(event,${index}\\)" onkeydown="handleStatusDotKeydown\\(event,${index}\\)"><\\/span>`));
+    assert.match(html, new RegExp(`<button class="status-dot" id="sd${index}" type="button" title="No offer loaded" aria-label="Navigate to Offer ${index + 1} issue: No offer loaded" onclick="navigateOfferStatus\\(event,${index}\\)"><\\/button>`));
   }
   assert.match(html, /\.status-dot\.green\{background:var\(--green\);\}/);
   assert.match(html, /\.status-dot\.amber\{background:var\(--amber\);\}/);

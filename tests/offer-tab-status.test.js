@@ -73,7 +73,7 @@ function createHarness(offers) {
 
 test('offer tabs start grey instead of displaying a transient amber state before initial refresh', () => {
   for (let index = 0; index < 4; index += 1) {
-    assert.match(html, new RegExp(`<span class="status-dot" id="sd${index}" title="No offer loaded"[^>]*><\\/span>`));
+    assert.match(html, new RegExp(`<button class="status-dot" id="sd${index}" type="button" title="No offer loaded"[^>]*><\/button>`));
   }
 });
 

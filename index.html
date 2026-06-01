@@ -40,14 +40,15 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 /* ── OFFER SEGMENTED CONTROL ── */
 .offer-tabs{position:relative;display:flex;margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:6px;background:#fafaf8;flex-shrink:0;overflow:hidden;isolation:isolate;}
 .offer-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:4px;background:var(--gold);box-shadow:0 1px 3px rgba(0,0,0,.2);transform:translateX(0);transition:transform .2s ease,width .2s ease;pointer-events:none;}
-.otab{position:relative;z-index:1;flex:1;min-width:0;padding:5px 4px;font-size:10px;font-weight:600;border:none;background:transparent;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:.05em;transition:color .18s ease,background .18s ease,box-shadow .18s ease;display:flex;flex-direction:column;align-items:center;gap:1px;}
+.offer-tab-item{position:relative;z-index:1;flex:1;min-width:0;}
+.otab{width:100%;height:100%;padding:5px 4px 14px;font-size:10px;font-weight:600;border:none;background:transparent;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:.05em;transition:color .18s ease,background .18s ease,box-shadow .18s ease;display:flex;align-items:flex-start;justify-content:center;}
 .otab:hover:not(.active){color:var(--navy);background:rgba(160,146,103,.1);}
 .otab.active{color:var(--navy);}
 .otab.dragging{opacity:.55;}
 .otab.drag-over{background:rgba(160,146,103,.18);box-shadow:inset 0 0 0 1px rgba(160,146,103,.42);}
 .otab.move-preflash{background:rgba(160,146,103,.14);box-shadow:inset 0 0 0 1px rgba(160,146,103,.32);}
 .otab.move-postflash{background:rgba(160,146,103,.16);box-shadow:inset 0 0 0 1px rgba(160,146,103,.34);}
-.status-dot{width:8px;height:8px;flex-shrink:0;border-radius:50%;background:var(--border);cursor:pointer;}
+.status-dot{position:absolute;z-index:2;left:50%;bottom:5px;width:8px;height:8px;padding:0;border:0;border-radius:50%;background:var(--border);cursor:pointer;transform:translateX(-50%);}
 .status-dot:focus-visible{outline:2px solid var(--navy);outline-offset:2px;}
 .status-dot.green{background:var(--green);}
 .status-dot.amber{background:var(--amber);}
@@ -480,10 +481,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
   <!-- Offer tabs -->
   <div class="offer-tabs">
     <span class="offer-pill" id="offer-pill" aria-hidden="true"></span>
-    <button class="otab active" id="ot0" onclick="sv(0)" draggable="true" data-offer-tab="0" title="No offer loaded" aria-label="Offer 1 status: No offer loaded"><span>Offer 1</span><span class="status-dot" id="sd0" title="No offer loaded" role="button" tabindex="0" aria-label="Navigate to Offer 1 issue: No offer loaded" onclick="navigateOfferStatus(event,0)" onkeydown="handleStatusDotKeydown(event,0)"></span></button>
-    <button class="otab" id="ot1" onclick="sv(1)" draggable="true" data-offer-tab="1" title="No offer loaded" aria-label="Offer 2 status: No offer loaded"><span>Offer 2</span><span class="status-dot" id="sd1" title="No offer loaded" role="button" tabindex="0" aria-label="Navigate to Offer 2 issue: No offer loaded" onclick="navigateOfferStatus(event,1)" onkeydown="handleStatusDotKeydown(event,1)"></span></button>
-    <button class="otab" id="ot2" onclick="sv(2)" draggable="true" data-offer-tab="2" title="No offer loaded" aria-label="Offer 3 status: No offer loaded"><span>Offer 3</span><span class="status-dot" id="sd2" title="No offer loaded" role="button" tabindex="0" aria-label="Navigate to Offer 3 issue: No offer loaded" onclick="navigateOfferStatus(event,2)" onkeydown="handleStatusDotKeydown(event,2)"></span></button>
-    <button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3" title="No offer loaded" aria-label="Offer 4 status: No offer loaded"><span>Offer 4</span><span class="status-dot" id="sd3" title="No offer loaded" role="button" tabindex="0" aria-label="Navigate to Offer 4 issue: No offer loaded" onclick="navigateOfferStatus(event,3)" onkeydown="handleStatusDotKeydown(event,3)"></span></button>
+    <div class="offer-tab-item"><button class="otab active" id="ot0" onclick="sv(0)" draggable="true" data-offer-tab="0" title="No offer loaded" aria-label="Offer 1 status: No offer loaded"><span>Offer 1</span></button><button class="status-dot" id="sd0" type="button" title="No offer loaded" aria-label="Navigate to Offer 1 issue: No offer loaded" onclick="navigateOfferStatus(event,0)"></button></div>
+    <div class="offer-tab-item"><button class="otab" id="ot1" onclick="sv(1)" draggable="true" data-offer-tab="1" title="No offer loaded" aria-label="Offer 2 status: No offer loaded"><span>Offer 2</span></button><button class="status-dot" id="sd1" type="button" title="No offer loaded" aria-label="Navigate to Offer 2 issue: No offer loaded" onclick="navigateOfferStatus(event,1)"></button></div>
+    <div class="offer-tab-item"><button class="otab" id="ot2" onclick="sv(2)" draggable="true" data-offer-tab="2" title="No offer loaded" aria-label="Offer 3 status: No offer loaded"><span>Offer 3</span></button><button class="status-dot" id="sd2" type="button" title="No offer loaded" aria-label="Navigate to Offer 3 issue: No offer loaded" onclick="navigateOfferStatus(event,2)"></button></div>
+    <div class="offer-tab-item"><button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3" title="No offer loaded" aria-label="Offer 4 status: No offer loaded"><span>Offer 4</span></button><button class="status-dot" id="sd3" type="button" title="No offer loaded" aria-label="Navigate to Offer 4 issue: No offer loaded" onclick="navigateOfferStatus(event,3)"></button></div>
   </div>
   <details class="reorder-group">
     <summary class="reorder-label"><h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="m3 6 1 1 2-2"></path><path d="m3 12 1 1 2-2"></path><path d="m3 18 1 1 2-2"></path></svg>Reorder Cards</h3><span class="section-toggle">▾</span></summary>
@@ -3504,7 +3505,8 @@ function syncOfferSelector(){
 }
 
 function updateOfferPill(){
-  updateSegmentedPill(document.getElementById('offer-pill'), document.getElementById('ot' + cur));
+  const activeTab=document.getElementById('ot' + cur);
+  updateSegmentedPill(document.getElementById('offer-pill'), activeTab&&activeTab.parentElement);
 }
 
 function syncViewSelector(){
