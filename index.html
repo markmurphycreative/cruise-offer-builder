@@ -545,26 +545,6 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       </div>
     </div>
 
-    <!-- ── 1. PASTE RAW OFFER ── -->
-    <div class="section" data-section-key="paste-raw-offer">
-      <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M11 14h10"></path><path d="m17 10 4 4-4 4"></path><path d="M9 5V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"></path><path d="M17 5h1a2 2 0 0 1 2 2v3"></path><path d="M9 18H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1"></path><rect width="8" height="5" x="8" y="4" rx="1"></rect></svg>Paste Raw Offer</h3><span class="section-toggle">▾</span>
-      </div>
-      <div class="section-body parse-area hidden">
-        <textarea id="raw-paste" spellcheck="true" placeholder="Paste Trello / operator copy here...
-
-P&amp;O Cruises | Arvia
-Eastern Caribbean Islands Fly-Cruise
-14 Nights · 20th November 2026
-FB / Full Board · £1669pp
-Newcastle Flights, Luggage &amp; Transfers Included
-Barbados • Martinique • St Kitts • Tortola"></textarea>
-        <button class="parse-btn" onclick="parseOffer()"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M12 18v-6"></path><path d="m9 15 3 3 3-3"></path></svg>Load Offer</button>
-        <div class="parse-result" id="parse-result"></div>
-        <div class="spell-warn" id="spell-warn-raw"></div>
-      </div>
-    </div>
-
     <!-- ── 2. OPERATOR ── -->
     <div class="section" data-section-key="operator-logo">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
@@ -683,6 +663,26 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         <div class="field"><label>Ports — separate with •</label><textarea id="f-ports" spellcheck="true" placeholder="Barbados • Martinique • St Kitts • Tortola • St Maarten • Antigua • St Lucia • Grenada" oninput="up();checkPortsWarn()"></textarea></div>
         <div class="warn-box" id="ports-warn"></div>
         <div class="spell-warn" id="spell-warn-ports"></div>
+      </div>
+    </div>
+
+    <!-- ── 5. PASTE OFFER ── -->
+    <div class="section" data-section-key="paste-raw-offer">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M11 14h10"></path><path d="m17 10 4 4-4 4"></path><path d="M9 5V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"></path><path d="M17 5h1a2 2 0 0 1 2 2v3"></path><path d="M9 18H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1"></path><rect width="8" height="5" x="8" y="4" rx="1"></rect></svg>Paste Offer</h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body parse-area hidden">
+        <textarea id="raw-paste" spellcheck="true" placeholder="Paste Trello / operator copy here...
+
+P&amp;O Cruises | Arvia
+Eastern Caribbean Islands Fly-Cruise
+14 Nights · 20th November 2026
+FB / Full Board · £1669pp
+Newcastle Flights, Luggage &amp; Transfers Included
+Barbados • Martinique • St Kitts • Tortola"></textarea>
+        <button class="parse-btn" onclick="parseOffer()"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M12 18v-6"></path><path d="m9 15 3 3 3-3"></path></svg>Load Offer</button>
+        <div class="parse-result" id="parse-result"></div>
+        <div class="spell-warn" id="spell-warn-raw"></div>
       </div>
     </div>
 
