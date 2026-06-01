@@ -79,10 +79,12 @@ test('offer tabs start grey instead of displaying a transient amber state before
 
 
 test('status dots remain diagnostic indicators inside the normal offer-tab buttons without navigation hooks', () => {
+  assert.match(html, /\.status-dot\{[^}]*pointer-events:none;/);
   for (let index = 0; index < 4; index += 1) {
     assert.match(html, new RegExp(`<button class="otab(?: active)?" id="ot${index}" onclick="sv\\(${index}\\)"[^>]*>[\\s\\S]*?<span class="status-dot" id="sd${index}" title="No offer loaded" aria-hidden="true"><\\/span><\\/button>`));
   }
-  assert.doesNotMatch(html, /navigateOfferStatus|handleStatusDotKeydown|getOfferStatusNavigation|status-dot-target|scrollIntoView/);
+  assert.doesNotMatch(html, /navigateOfferStatus|handleStatusDotKeydown|getOfferStatusNavigation|getStatusNavigationTarget|getStatusNavigationSection|openStatusNavigationSection|status-dot-target|scrollIntoView/);
+  assert.doesNotMatch(html, /<span class="status-dot"[^>]*(?:onclick|onkeydown|role="button"|tabindex=)/);
 });
 
 test('each offer tab dot independently maps empty, incomplete, invalid and export-ready offers', () => {
