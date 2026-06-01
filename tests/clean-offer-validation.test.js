@@ -23,6 +23,7 @@ function createHarness(offer, headers = { po: { pngData: 'assets/operator-logos/
   vm.createContext(context);
   vm.runInContext([
     extractFunction('isOfferLoaded'),
+    extractFunction('hasCriticalOfferContent'),
     extractFunction('hasOperatorLogo'),
     extractFunction('getOfferReadiness'),
     extractFunction('isCleanOfferValid'),
@@ -55,19 +56,20 @@ test('clean-offer validation accepts a genuinely complete loaded offer', () => {
   assert.equal(context.getOfferStatus(0), 'green');
 });
 
-test('offer readiness reuses Campaign Health export checks instead of selector-only card fields', () => {
-  const offer = createCleanOffer();
-  for (const field of ['ship', 'price', 'day', 'month', 'ports', 'nights', 'board', 'boardlbl', 'tags']) offer[field] = '';
-
-  const context = createHarness(offer);
-  assert.equal(context.isCleanOfferValid(context.offers[0]), true);
-  assert.equal(context.getOfferStatus(0), 'green');
+test('selector status marks every required cruise content field as critical without altering export readiness', () => {
+  for (const field of ['name', 'ship', 'price', 'day', 'month', 'ports', 'nights', 'board', 'boardlbl']) {
+    const offer = createCleanOffer();
+    offer[field] = '';
+    const context = createHarness(offer);
+    assert.equal(context.isCleanOfferValid(context.offers[0]), true);
+    assert.equal(context.getOfferStatus(0), 'red', `${field} should be critical for the selector dot`);
+  }
 });
 
-test('offer status distinguishes a missing required hero from loaded-but-incomplete health checks', () => {
+test('offer status maps non-critical readiness checks such as hero image and UTM to amber', () => {
   const missingHeroImage = createCleanOffer();
   missingHeroImage._img = '';
-  assert.equal(createHarness(missingHeroImage).getOfferStatus(0), 'red');
+  assert.equal(createHarness(missingHeroImage).getOfferStatus(0), 'amber');
 
   const missingUtm = createCleanOffer();
   missingUtm._utm = '';

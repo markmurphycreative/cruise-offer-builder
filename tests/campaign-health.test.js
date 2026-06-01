@@ -54,6 +54,7 @@ function createHarness({ globals = {}, offers = [{}, {}, {}, {}], cur = 0, heade
   vm.createContext(context);
   vm.runInContext([
     extractFunction('isOfferLoaded'),
+    extractFunction('hasCriticalOfferContent'),
     extractFunction('hasOperatorLogo'),
     extractFunction('getOfferReadiness'),
     extractFunction('updateProductionStatus')

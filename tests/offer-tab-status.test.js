@@ -56,6 +56,7 @@ function createHarness(offers) {
   vm.createContext(context);
   vm.runInContext([
     extractFunction('isOfferLoaded'),
+    extractFunction('hasCriticalOfferContent'),
     extractFunction('hasOperatorLogo'),
     extractFunction('getOfferReadiness'),
     extractFunction('isCleanOfferValid'),
@@ -72,10 +73,10 @@ test('offer tabs start grey instead of displaying a transient amber state before
   }
 });
 
-test('each offer tab dot independently reflects the existing per-offer readiness status', () => {
+test('each offer tab dot independently maps empty, incomplete, invalid and export-ready offers', () => {
   const green = createCleanOffer('Ready');
-  const amber = { ...createCleanOffer('Partial'), _utm: '' };
-  const red = { ...createCleanOffer('Missing required'), _img: '' };
+  const amber = { ...createCleanOffer('Incomplete'), _img: '' };
+  const red = { ...createCleanOffer('Invalid'), price: '' };
   const grey = {};
   const { context, dots } = createHarness([green, amber, red, grey]);
 
@@ -89,7 +90,7 @@ test('each offer tab dot independently reflects the existing per-offer readiness
   ]);
 });
 
-test('Campaign Health ready regression: all loaded export-ready offers display green without selector-only field gates', () => {
+test('selector-only critical content status does not alter Campaign Health readiness rules', () => {
   const offers = Array.from({ length: 4 }, (_, index) => ({
     name: `Imported Offer ${index + 1}`,
     _img: `hero-${index + 1}.jpg`,
@@ -101,7 +102,7 @@ test('Campaign Health ready regression: all loaded export-ready offers display g
   context.updateAllStatus();
 
   assert.equal(elements['prod-status-summary'].innerHTML, '✓ Ready for Export<br><span class="prod-status-secondary">No blockers found</span>');
-  assert.deepEqual(dots.map(dot => dot.className), Array(4).fill('status-dot green'));
+  assert.deepEqual(dots.map(dot => dot.className), Array(4).fill('status-dot red'));
 });
 
 test('empty detection for tab dots reuses Campaign Health offer-loading logic', () => {
@@ -110,7 +111,37 @@ test('empty detection for tab dots reuses Campaign Health offer-loading logic', 
   assert.equal(context.getOfferStatus(0), '');
   assert.equal(context.getOfferStatus(1), 'red');
   assert.equal(context.getOfferStatus(2), 'red');
-  assert.equal(context.getOfferStatus(3), 'amber');
+  assert.equal(context.getOfferStatus(3), 'red');
+});
+
+
+test('CSV-style loaded offers without images are amber and become green when images are added', () => {
+  const offers = Array.from({ length: 4 }, (_, index) => ({ ...createCleanOffer(`Imported ${index + 1}`), _img: '' }));
+  const { context, dots } = createHarness(offers);
+
+  context.updateAllStatus();
+  assert.deepEqual(dots.map(dot => dot.className), Array(4).fill('status-dot amber'));
+
+  offers.forEach((offer, index) => { offer._img = `hero-${index + 1}.jpg`; });
+  context.updateAllStatus();
+  assert.deepEqual(dots.map(dot => dot.className), Array(4).fill('status-dot green'));
+});
+
+test('session-restored state and reordered state retain status colours derived from offer content', () => {
+  const offers = [
+    { ...createCleanOffer('Ready') },
+    { ...createCleanOffer('Missing hero'), _img: '' },
+    { ...createCleanOffer('Missing cruise price'), price: '' },
+    {}
+  ];
+  const { context, dots } = createHarness(offers);
+
+  context.updateAllStatus();
+  assert.deepEqual(dots.map(dot => dot.className), ['status-dot green', 'status-dot amber', 'status-dot red', 'status-dot']);
+
+  context.offers = [offers[3], offers[0], offers[2], offers[1]];
+  context.updateAllStatus();
+  assert.deepEqual(dots.map(dot => dot.className), ['status-dot', 'status-dot green', 'status-dot red', 'status-dot amber']);
 });
 
 test('editing, Sheet or CSV loading, restore and reorder refresh dots after readiness mutations', () => {

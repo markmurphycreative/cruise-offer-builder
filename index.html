@@ -40,14 +40,14 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 /* ── OFFER SEGMENTED CONTROL ── */
 .offer-tabs{position:relative;display:flex;border:1px solid var(--border);border-radius:6px;background:#fafaf8;flex-shrink:0;overflow:hidden;isolation:isolate;}
 .offer-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:4px;background:var(--gold);box-shadow:0 1px 3px rgba(0,0,0,.2);transform:translateX(0);transition:transform .2s ease,width .2s ease;pointer-events:none;}
-.otab{position:relative;z-index:1;flex:1;min-width:0;padding:3px 2px 3px;font-size:10px;font-weight:600;border:none;background:transparent;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:.05em;transition:color .18s ease,background .18s ease,box-shadow .18s ease;display:flex;flex-direction:column;align-items:center;gap:1px;}
+.otab{position:relative;z-index:1;flex:1;min-width:0;padding:3px 4px;font-size:10px;font-weight:600;border:none;background:transparent;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:.05em;transition:color .18s ease,background .18s ease,box-shadow .18s ease;display:flex;flex-direction:column;align-items:center;gap:1px;}
 .otab:hover:not(.active){color:var(--navy);background:rgba(160,146,103,.1);}
 .otab.active{color:var(--navy);}
 .otab.dragging{opacity:.55;}
 .otab.drag-over{background:rgba(160,146,103,.18);box-shadow:inset 0 0 0 1px rgba(160,146,103,.42);}
 .otab.move-preflash{background:rgba(160,146,103,.14);box-shadow:inset 0 0 0 1px rgba(160,146,103,.32);}
 .otab.move-postflash{background:rgba(160,146,103,.16);box-shadow:inset 0 0 0 1px rgba(160,146,103,.34);}
-.status-dot{width:10px;height:10px;flex-shrink:0;border-radius:50%;background:var(--border);}
+.status-dot{width:8px;height:8px;flex-shrink:0;border-radius:50%;background:var(--border);}
 .status-dot.green{background:var(--green);}
 .status-dot.amber{background:var(--amber);}
 .status-dot.red{background:var(--red);}
@@ -1812,12 +1812,14 @@ function getOfferReadiness(o){
   const operatorLogoPresent=hasOperatorLogo(o);
   const operatorSelected=!!(o&&o.operator);
   const utmGenerated=!!(o&&o._utm);
+  const criticalContentPresent=hasCriticalOfferContent(o);
   return {
     loaded,
     heroLoaded,
     operatorLogoPresent,
     operatorSelected,
     utmGenerated,
+    criticalContentPresent,
     ready:loaded&&heroLoaded&&operatorLogoPresent&&operatorSelected&&utmGenerated
   };
 }
@@ -1827,7 +1829,7 @@ function isCleanOfferValid(o){
 function getOfferStatus(i){
   const readiness=getOfferReadiness(offers[i]);
   if(!readiness.loaded) return "";
-  if(!readiness.heroLoaded) return "red";
+  if(!readiness.criticalContentPresent) return "red";
   if(!readiness.ready) return "amber";
   return "green";
 }
@@ -1840,6 +1842,9 @@ function updateAllStatus(){
 }
 function isOfferLoaded(o){
   return !!(o&&(o.name||o.ship||o.price||o._img));
+}
+function hasCriticalOfferContent(o){
+  return !!(o&&[o.name,o.ship,o.price,o.day,o.month,o.ports,o.nights,o.board,o.boardlbl].every(value=>String(value||"").trim()));
 }
 function hasOperatorLogo(o){
   if(!(o&&o.operator)) return false;
