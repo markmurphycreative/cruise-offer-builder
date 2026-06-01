@@ -296,7 +296,13 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .tbtn.on{background:rgba(255,255,255,.15);color:#fff;}
 .preview-wrap{flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:stretch;background:#dedad2;}
 .preview-scaler{margin-block:auto;transform-origin:top center;}
+.preview-scaler.empty-preview{display:flex;align-items:center;justify-content:center;}
 #card-output{opacity:1;transition:opacity .22s ease-out;}
+#card-output.empty-preview-output{display:flex;align-items:center;justify-content:center;width:100%;height:100%;}
+.preview-empty-state{width:min(430px,calc(100% - 48px));padding:42px 38px;text-align:center;background:#f7f3ea;border:1px solid rgba(176,139,62,.58);border-radius:8px;box-shadow:0 16px 36px rgba(14,27,42,.14);}
+.preview-empty-rule{width:52px;height:2px;margin:0 auto 20px;background:var(--gold);}
+.preview-empty-state h2{margin:0;color:var(--navy);font-family:Georgia,serif;font-size:24px;font-weight:600;letter-spacing:.01em;}
+.preview-empty-state p{max-width:330px;margin:12px auto 0;color:#52606c;font-size:13px;line-height:1.65;}
 #card-output.preview-mode-transition{opacity:0;}
 @media (prefers-reduced-motion:reduce){#card-output,.view-pill,.offer-pill{transition:none;}}
 
@@ -3135,6 +3141,7 @@ function renderVisibleCard(){
   const scaler = document.getElementById('preview-scaler');
   const out = document.getElementById('card-output');
   if(!scaler || !out) return;
+  if(renderEmptyPreviewIfNeeded()) return;
   const scale = (zoomPct / 100) * SINGLE_PREVIEW_SCALE;
   const title = document.getElementById('preview-title');
   if(title) title.textContent = 'Live Preview — Offer ' + (cur + 1);
@@ -3411,6 +3418,24 @@ function setScalerBox(width, renderedHeight, scale){
   scaler.style.height = Math.ceil(renderedHeight * scale) + 'px';
 }
 
+function renderEmptyPreviewIfNeeded(){
+  const scaler = document.getElementById('preview-scaler');
+  const out = document.getElementById('card-output');
+  if(!scaler || !out) return false;
+  const showEmptyState = !offers.some(isOfferLoaded);
+  scaler.classList.toggle('empty-preview', showEmptyState);
+  out.classList.toggle('empty-preview-output', showEmptyState);
+  if(!showEmptyState) return false;
+  const title = document.getElementById('preview-title');
+  if(title) title.textContent = 'Preview Canvas';
+  out.innerHTML = '<div class="preview-empty-state" role="status"><div class="preview-empty-rule" aria-hidden="true"></div><h2>No offers loaded yet</h2><p>Load a Google Sheet or CSV to generate your cruise cards.</p></div>';
+  scaler.style.width = '100%';
+  scaler.style.height = '100%';
+  scaler.style.transform = 'none';
+  scaler.style.transformOrigin = 'center center';
+  return true;
+}
+
 function renderPreviewMode(skipSave){
   if(!skipSave){ try { commitVisibleFields(); } catch(e){} }
 
@@ -3419,6 +3444,7 @@ function renderPreviewMode(skipSave){
   if(!scaler || !out) return;
 
   syncViewSelector();
+  if(renderEmptyPreviewIfNeeded()) return;
   const baseScale = zoomPct / 100;
 
   if(viewMode === 'email'){
