@@ -46,8 +46,9 @@ function createHarness(offers) {
 
 test('fresh previews use a centred premium empty state in every view before rendering cards', () => {
   assert.match(html, /\.preview-scaler\.empty-preview\{[^}]*display:flex;[^}]*align-items:center;[^}]*justify-content:center;/);
-  assert.match(html, /\.preview-empty-state\{[^}]*width:min\(388px,calc\(100% - 48px\)\);[^}]*padding:36px 33px;[^}]*background:#fbf6e8;[^}]*border:1px solid rgba\(176,139,62,\.42\);/);
-  assert.match(html, /\.preview-empty-state h2\{[^}]*font-family:'Montserrat',sans-serif;[^}]*font-size:22px;[^}]*font-weight:700;/);
+  assert.match(html, /\.preview-empty-state\{[^}]*width:min\(360px,calc\(100% - 40px\)\);[^}]*padding:28px 26px;[^}]*background:var\(--gold\);[^}]*border:none;[^}]*box-shadow:none;[^}]*font-family:'Montserrat',sans-serif;/);
+  assert.match(html, /\.preview-empty-state h2\{[^}]*color:var\(--navy\);[^}]*font-family:'Montserrat',sans-serif;[^}]*font-size:20px;[^}]*font-weight:500;/);
+  assert.match(html, /\.preview-empty-state p\{[^}]*color:rgba\(255,255,255,\.9\);[^}]*font-family:'Montserrat',sans-serif;/);
   assert.doesNotMatch(html, /preview-empty-rule/);
   assert.match(html, /<h2>Ready to build cruise offers<\/h2><p>Load a Google Sheet or CSV to generate your cruise cards\.<\/p>/);
 
