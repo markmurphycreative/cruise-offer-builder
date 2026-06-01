@@ -13,7 +13,22 @@ function extract(pattern, label) {
 test('Reorder Cards uses a native details disclosure that is collapsed by default', () => {
   const reorderGroup = extract(/<details class="reorder-group"[\s\S]*?<\/details>/, 'Reorder Cards disclosure');
   assert.doesNotMatch(reorderGroup, /<details class="reorder-group"[^>]*\sopen(?:\s|>)/);
-  assert.match(reorderGroup, /<summary class="reorder-label">Reorder Cards<span class="section-toggle">▾<\/span><\/summary>/);
+  assert.match(reorderGroup, /<summary class="reorder-label"><h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24">[\s\S]*?<\/svg>Reorder Cards<\/h3><span class="section-toggle">▾<\/span><\/summary>/);
+});
+
+
+test('Offer selector and Reorder Cards share the sidebar section stack edges', () => {
+  assert.match(html, /\.offer-tabs\{[^}]*margin:5px 9px 0;[^}]*border:1px solid var\(--border\);/);
+  assert.match(html, /\.reorder-group\{[^}]*margin:4px 9px 0;[^}]*border:1px solid var\(--border\);[^}]*border-radius:var\(--radius\);/);
+  assert.match(html, /\.sb-body\{[^}]*padding:5px 9px 3px;/);
+});
+
+test('Reorder Cards disclosure matches normal collapsed section header styling and exposes a list icon', () => {
+  const reorderGroup = extract(/<details class="reorder-group"[\s\S]*?<\/details>/, 'Reorder Cards disclosure');
+  assert.match(reorderGroup, /<summary class="reorder-label"><h3><svg class="section-icon"[^>]*>[\s\S]*?<path d="M8 6h13"><\/path>[\s\S]*?<\/svg>Reorder Cards<\/h3><span class="section-toggle">▾<\/span><\/summary>/);
+  assert.match(html, /\.reorder-label\{[^}]*padding:5px 9px;[^}]*background:var\(--panel\);[^}]*cursor:pointer;[^}]*list-style:none;/);
+  assert.match(html, /\.reorder-label h3\{[^}]*font-size:10px;[^}]*font-weight:700;[^}]*text-transform:uppercase;[^}]*letter-spacing:\.08em;[^}]*color:var\(--navy\);[^}]*gap:6px;/);
+  assert.match(html, /\.reorder-group\[open\] \.reorder-label\{background:rgba\(160,146,103,\.12\);box-shadow:inset 2px 0 0 var\(--gold\);\}/);
 });
 
 test('Reorder Cards presents compact accessible chevron controls without changing handlers', () => {

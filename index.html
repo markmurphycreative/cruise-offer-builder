@@ -38,7 +38,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .clabel{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:2px;}
 
 /* ── OFFER SEGMENTED CONTROL ── */
-.offer-tabs{position:relative;display:flex;border:1px solid var(--border);border-radius:6px;background:#fafaf8;flex-shrink:0;overflow:hidden;isolation:isolate;}
+.offer-tabs{position:relative;display:flex;margin:5px 9px 0;border:1px solid var(--border);border-radius:6px;background:#fafaf8;flex-shrink:0;overflow:hidden;isolation:isolate;}
 .offer-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:4px;background:var(--gold);box-shadow:0 1px 3px rgba(0,0,0,.2);transform:translateX(0);transition:transform .2s ease,width .2s ease;pointer-events:none;}
 .otab{position:relative;z-index:1;flex:1;min-width:0;padding:5px 4px;font-size:10px;font-weight:600;border:none;background:transparent;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:.05em;transition:color .18s ease,background .18s ease,box-shadow .18s ease;display:flex;flex-direction:column;align-items:center;gap:1px;}
 .otab:hover:not(.active){color:var(--navy);background:rgba(160,146,103,.1);}
@@ -67,8 +67,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .section-hdr.collapsed .section-toggle{transform:rotate(-90deg);}
 .section-body{padding:6px 9px;}
 .section-body.hidden{display:none;}
-.reorder-group{margin:5px 9px 3px;border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;overflow:hidden;}
-.reorder-label{display:flex;align-items:center;justify-content:space-between;padding:5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);cursor:pointer;user-select:none;list-style:none;}
+.reorder-group{margin:4px 9px 0;border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;overflow:hidden;}
+.reorder-label{display:flex;align-items:center;justify-content:space-between;padding:5px 9px;background:var(--panel);cursor:pointer;user-select:none;list-style:none;}
+.reorder-group[open] .reorder-label{background:rgba(160,146,103,.12);box-shadow:inset 2px 0 0 var(--gold);}
+.reorder-label h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);display:flex;align-items:center;gap:6px;}
 .reorder-label::-webkit-details-marker{display:none;}
 .reorder-label .section-toggle{transform:rotate(-90deg);}
 .reorder-group[open] .reorder-label .section-toggle{transform:none;}
@@ -474,7 +476,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3"><span>Offer 4</span><span class="status-dot" id="sd3"></span></button>
   </div>
   <details class="reorder-group">
-    <summary class="reorder-label">Reorder Cards<span class="section-toggle">▾</span></summary>
+    <summary class="reorder-label"><h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="m3 6 1 1 2-2"></path><path d="m3 12 1 1 2-2"></path><path d="m3 18 1 1 2-2"></path></svg>Reorder Cards</h3><span class="section-toggle">▾</span></summary>
     <div class="reorder-buttons">
       <button class="abtn reorder-btn" id="move-left-btn" onclick="moveOfferLeft()" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
       <button class="abtn reorder-btn" id="move-right-btn" onclick="moveOfferRight()" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
