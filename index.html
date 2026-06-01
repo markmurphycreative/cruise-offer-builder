@@ -81,7 +81,14 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-source-block{margin-top:6px;padding-top:6px;border-top:1px solid var(--border);}
 .hero-dropzone{padding:14px 10px;min-height:92px;display:flex;align-items:center;justify-content:center;}
 .prod-status{margin-bottom:7px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;}
-.prod-status-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);margin-bottom:3px;}
+.prod-status-toggle{display:flex;align-items:center;gap:6px;cursor:pointer;list-style:none;}
+.prod-status-toggle::-webkit-details-marker{display:none;}
+.prod-status-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);}
+.prod-status-collapsed-summary{margin-left:auto;font-size:8px;font-weight:600;color:var(--muted);white-space:nowrap;}
+.prod-status-toggle .section-toggle{margin-left:2px;transform:rotate(-90deg);}
+.prod-status[open] .prod-status-toggle{margin-bottom:3px;}
+.prod-status[open] .prod-status-collapsed-summary{display:none;}
+.prod-status[open] .prod-status-toggle .section-toggle{transform:none;}
 .prod-status-summary{font-size:9px;line-height:1.35;font-weight:700;margin-bottom:4px;}
 .prod-status-secondary{font-size:8px;font-weight:400;opacity:.60;}
 .prod-status-summary.ok{color:var(--green);}
@@ -677,11 +684,15 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     <!-- ── 7. EXPORT ── -->
     <div class="export-section">
       <div class="export-title">⬇ Export Cards</div>
-      <div class="prod-status" id="prod-status">
-        <div class="prod-status-title">Campaign Health</div>
+      <details class="prod-status" id="prod-status">
+        <summary class="prod-status-toggle">
+          <span class="prod-status-title">Campaign Health</span>
+          <span class="prod-status-collapsed-summary" id="prod-status-collapsed-summary"></span>
+          <span class="section-toggle" aria-hidden="true">▾</span>
+        </summary>
         <div class="prod-status-summary" id="prod-status-summary"></div>
         <div class="prod-status-list" id="prod-status-list"></div>
-      </div>
+      </details>
       <div class="copy-qa-panel">
         <div class="copy-qa-title">Spellcheck / Copy QA</div>
         <div class="copy-qa-status" id="copy-qa-status">— QA not run yet</div>
@@ -793,7 +804,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 <!-- ══════════════════════ PREVIEW ══════════════════════ -->
 <div class="preview-pane">
   <div class="preview-toolbar">
-    <span class="preview-title" id="preview-title">Live Preview — Offer 1</span>
+    <span class="preview-title" id="preview-title">ALL 4 CARDS</span>
     <span class="autosave-status" id="autosave-status" aria-live="polite" hidden>Autosave paused</span>
     <div class="ptool">
       <span>Zoom</span>
@@ -1837,9 +1848,33 @@ function updateAllStatus(){
     if(tab){ tab.title=tooltip; tab.setAttribute("aria-label","Offer "+(i+1)+" status: "+tooltip); }
   }
   updateProductionStatus();
+  if(typeof updatePreviewTitle==="function") updatePreviewTitle();
 }
 function isOfferLoaded(o){
   return !!(o&&(o.name||o.ship||o.price||o._img));
+}
+function getPreviewOfferStatusLabel(i){
+  const readiness=getOfferReadiness(offers[i]||{});
+  if(!readiness.loaded) return "";
+  if(!readiness.criticalContentPresent) return "MISSING DATA";
+  if(readiness.ready) return "READY";
+  if(!readiness.heroLoaded) return "NEEDS IMAGE";
+  return "INCOMPLETE";
+}
+function updatePreviewTitle(){
+  const title=document.getElementById("preview-title");
+  if(!title) return;
+  const loadedOffers=offers.filter(isOfferLoaded).length;
+  if(viewMode==="all"){
+    title.textContent="ALL 4 CARDS"+(loadedOffers?` • ${loadedOffers}/${offers.length} LOADED`:"");
+    return;
+  }
+  if(viewMode==="email"){
+    title.textContent="EMAIL PREVIEW"+(loadedOffers?` • ${loadedOffers}/${offers.length} LOADED`:"");
+    return;
+  }
+  const status=getPreviewOfferStatusLabel(cur);
+  title.textContent=`LIVE PREVIEW — OFFER ${cur+1}`+(status?` • ${status}`:"");
 }
 function hasCriticalOfferContent(o){
   return !!(o&&[o.name,o.ship,o.price,o.day,o.month,o.ports,o.nights,o.board,o.boardlbl].every(value=>String(value||"").trim()));
@@ -1881,6 +1916,8 @@ function updateProductionStatus(){
   const attentionCount=checks.filter(check=>!check.ok).length;
   const blockerCount=Number(!readiness.heroLoaded);
   const warningCount=Number(!value("g-campaign"))+Number(!value("g-date"));
+  const collapsedSummary=document.getElementById("prod-status-collapsed-summary");
+  if(collapsedSummary) collapsedSummary.textContent=attentionCount?`${blockerCount} blockers · ${warningCount} warnings`:"Ready for export";
   const summary=document.getElementById("prod-status-summary");
   if(summary){
     summary.className=`prod-status-summary ${attentionCount?"warn":"ok"}`;
@@ -2850,7 +2887,7 @@ function renderSingleOffer(data){
   const scaler=document.getElementById("preview-scaler");
   const out=document.getElementById("card-output");
   const scale=zoomPct/100;
-  document.getElementById("preview-title").textContent=`Live Preview — Offer ${cur+1}`;
+  updatePreviewTitle();
   out.innerHTML=renderCardHTML(data||{});
   scaler.style.width="1200px";
   scaler.style.transform=`scale(${scale})`;
@@ -2867,7 +2904,7 @@ function rv(skipSave){
   const out=document.getElementById("card-output");
   const scale=zoomPct/100;
   if(viewMode==="email"){
-    document.getElementById("preview-title").textContent="Email Preview — All 4 Offers";
+    updatePreviewTitle();
     const wrap=document.createElement("div"); wrap.className="email-preview-wrap";
     const chrome=document.createElement("div"); chrome.className="email-chrome";
     const bar=document.createElement("div"); bar.className="email-chrome-bar";
@@ -2881,7 +2918,7 @@ function rv(skipSave){
     scaler.style.width="620px"; scaler.style.transform=`scale(${scale})`; scaler.style.transformOrigin="top center";
     setTimeout(()=>scaler.style.height=(out.offsetHeight*scale)+"px",200);
   } else if(viewMode==="all"){
-    document.getElementById("preview-title").textContent="All 4 Cards";
+    updatePreviewTitle();
     const grid=document.createElement("div"); grid.style.cssText="display:grid;grid-template-columns:1200px 1200px;width:2400px;background:#333;gap:2px;";
     offers.forEach(d=>{const c=document.createElement("div");c.innerHTML=renderCardHTML(d);grid.appendChild(c);});
     out.innerHTML=""; out.appendChild(grid);
@@ -3069,8 +3106,7 @@ function renderOfferIndex(i){
   const d=offers[i] || {};
   if(!scaler || !out) return;
   if(viewMode==='single'){
-    const title=document.getElementById('preview-title');
-    if(title) title.textContent='Live Preview — Offer '+(i+1);
+    updatePreviewTitle();
     out.innerHTML=renderCardHTML(d);
     scaler.style.width='1200px';
     scaler.style.transform='scale('+scale+')';
@@ -3175,8 +3211,7 @@ function renderVisibleCard(){
   if(!scaler || !out) return;
   if(renderEmptyPreviewIfNeeded()) return;
   const scale = (zoomPct / 100) * SINGLE_PREVIEW_SCALE;
-  const title = document.getElementById('preview-title');
-  if(title) title.textContent = 'Live Preview — Offer ' + (cur + 1);
+  updatePreviewTitle();
   out.innerHTML = renderCardHTML(visibleFieldsToData());
   scaler.style.width = '1200px';
   scaler.style.transform = 'scale(' + scale + ')';
@@ -3458,8 +3493,7 @@ function renderEmptyPreviewIfNeeded(){
   scaler.classList.toggle('empty-preview', showEmptyState);
   out.classList.toggle('empty-preview-output', showEmptyState);
   if(!showEmptyState) return false;
-  const title = document.getElementById('preview-title');
-  if(title) title.textContent = 'Preview Canvas';
+  updatePreviewTitle();
   out.innerHTML = '<div class="preview-empty-state" role="status"><h2>Ready to build</h2><p>Load a Google Sheet or CSV to generate your cruise cards.</p></div>';
   scaler.style.width = '100%';
   scaler.style.height = '100%';
@@ -3480,8 +3514,7 @@ function renderPreviewMode(skipSave){
   const baseScale = zoomPct / 100;
 
   if(viewMode === 'email'){
-    const title = document.getElementById('preview-title');
-    if(title) title.textContent = 'Email Preview — All 4 Offers';
+    updatePreviewTitle();
 
     // Clean campaign stack preview: same visual language as Single / All 4.
     // No fake browser chrome, no dark frame, no fake footer strip.
@@ -3508,8 +3541,7 @@ function renderPreviewMode(skipSave){
   }
 
   if(viewMode === 'all'){
-    const title = document.getElementById('preview-title');
-    if(title) title.textContent = 'All 4 Cards';
+    updatePreviewTitle();
 
     const gap = 64;
     const pad = 64;

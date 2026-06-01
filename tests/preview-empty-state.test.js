@@ -30,10 +30,11 @@ function createHarness(offers) {
   const elements = {
     'preview-scaler': { classList: createClassList(), style: {} },
     'card-output': { classList: createClassList(), innerHTML: '' },
-    'preview-title': { textContent: 'All 4 Cards' }
+    'preview-title': { textContent: 'ALL 4 CARDS' }
   };
   const context = {
     offers,
+    updatePreviewTitle: () => { elements['preview-title'].textContent = 'ALL 4 CARDS'; },
     document: { getElementById: id => elements[id] || null }
   };
   vm.createContext(context);
@@ -59,7 +60,7 @@ test('fresh previews use a centred premium empty state in every view before rend
 
   const { context, elements } = createHarness([{}, {}, {}, {}]);
   assert.equal(context.renderEmptyPreviewIfNeeded(), true);
-  assert.equal(elements['preview-title'].textContent, 'Preview Canvas');
+  assert.equal(elements['preview-title'].textContent, 'ALL 4 CARDS');
   assert.equal(elements['preview-scaler'].classList.contains('empty-preview'), true);
   assert.equal(elements['card-output'].classList.contains('empty-preview-output'), true);
   assert.match(elements['card-output'].innerHTML, /Ready to build/);
@@ -70,7 +71,7 @@ test('loaded and session-restored offers bypass the empty state and keep normal 
   elements['card-output'].innerHTML = '<div class="existing-card">Previously rendered card</div>';
 
   assert.equal(context.renderEmptyPreviewIfNeeded(), false);
-  assert.equal(elements['preview-title'].textContent, 'All 4 Cards');
+  assert.equal(elements['preview-title'].textContent, 'ALL 4 CARDS');
   assert.equal(elements['preview-scaler'].classList.contains('empty-preview'), false);
   assert.equal(elements['card-output'].classList.contains('empty-preview-output'), false);
   assert.equal(elements['card-output'].innerHTML, '<div class="existing-card">Previously rendered card</div>');

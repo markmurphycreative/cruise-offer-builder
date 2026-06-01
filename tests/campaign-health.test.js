@@ -42,6 +42,7 @@ function createHarness({ globals = {}, offers = [{}, {}, {}, {}], cur = 0, heade
     'g-date': { value: globals.date || '' },
     'g-airport': { value: globals.airport || '' },
     'g-terms': { value: globals.terms || '' },
+    'prod-status-collapsed-summary': { textContent: '' },
     'prod-status-summary': { className: '', innerHTML: '' },
     'prod-status-list': { innerHTML: '' }
   };
@@ -63,7 +64,9 @@ function createHarness({ globals = {}, offers = [{}, {}, {}, {}], cur = 0, heade
 }
 
 test('export checklist is renamed in place and retains its existing panel styling', () => {
-  assert.match(html, /<div class="prod-status" id="prod-status">\s*<div class="prod-status-title">Campaign Health<\/div>\s*<div class="prod-status-summary" id="prod-status-summary"><\/div>\s*<div class="prod-status-list" id="prod-status-list"><\/div>/);
+  assert.match(html, /<details class="prod-status" id="prod-status">\s*<summary class="prod-status-toggle">\s*<span class="prod-status-title">Campaign Health<\/span>\s*<span class="prod-status-collapsed-summary" id="prod-status-collapsed-summary"><\/span>[\s\S]*?<div class="prod-status-summary" id="prod-status-summary"><\/div>\s*<div class="prod-status-list" id="prod-status-list"><\/div>\s*<\/details>/);
+  assert.doesNotMatch(html, /<details class="prod-status" id="prod-status" open>/);
+  assert.match(html, /\.prod-status\[open\] \.prod-status-collapsed-summary\{display:none;\}/);
   assert.doesNotMatch(html, /<div class="prod-status-title">Export Checklist<\/div>/);
   assert.match(html, /\.prod-status-secondary\{font-size:8px;font-weight:400;opacity:\.60;\}/);
 });
@@ -71,6 +74,7 @@ test('export checklist is renamed in place and retains its existing panel stylin
 test('campaign health reports grouped required checks and updates to ready when known campaign state is complete', () => {
   const { context, elements } = createHarness();
   context.updateProductionStatus();
+  assert.equal(elements['prod-status-collapsed-summary'].textContent, '1 blockers · 2 warnings');
   assert.equal(elements['prod-status-summary'].innerHTML, '⚠ Campaign Not Ready<br><span class="prod-status-secondary">1 blocker • 2 warnings</span>');
   assert.equal(elements['prod-status-summary'].className, 'prod-status-summary warn');
   ['Campaign', 'Offers', 'Assets', 'Marketing'].forEach(group => {
@@ -99,6 +103,7 @@ test('campaign health reports grouped required checks and updates to ready when 
     createCleanOffer('Four')
   );
   context.updateProductionStatus();
+  assert.equal(elements['prod-status-collapsed-summary'].textContent, 'Ready for export');
   assert.equal(elements['prod-status-summary'].innerHTML, '✓ Ready for Export<br><span class="prod-status-secondary">No blockers found</span>');
   assert.equal(elements['prod-status-summary'].className, 'prod-status-summary ok');
   assert.match(elements['prod-status-list'].innerHTML, /Offers loaded \(4\/4\)/);
