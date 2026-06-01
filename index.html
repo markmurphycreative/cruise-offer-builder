@@ -2619,15 +2619,21 @@ function readCampaignPresets(){
   try{
     const raw = localStorage.getItem(CAMPAIGN_PRESETS_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
-    return parsed && typeof parsed === "object" ? parsed : {};
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
   }catch(e){
-    console.warn("Could not parse campaign presets", e);
+    console.warn("Could not read campaign presets", e);
     return {};
   }
 }
 
 function writeCampaignPresets(presets){
-  localStorage.setItem(CAMPAIGN_PRESETS_KEY, JSON.stringify(presets));
+  try{
+    localStorage.setItem(CAMPAIGN_PRESETS_KEY, JSON.stringify(presets));
+    return true;
+  }catch(e){
+    console.warn("Could not save campaign presets", e);
+    return false;
+  }
 }
 
 function refreshPresetList(selectedName){
@@ -2681,7 +2687,10 @@ function saveCampaignPreset(forceOverwrite){
     return;
   }
   presets[name] = { version:"1.0", savedAt:new Date().toISOString(), ...getCampaignSnapshot() };
-  writeCampaignPresets(presets);
+  if(!writeCampaignPresets(presets)){
+    if(status) status.textContent = "⚠ Preset could not be saved in this browser";
+    return;
+  }
   refreshPresetList(name);
   if(status) status.textContent = "✓ Preset saved";
 }
@@ -2724,7 +2733,10 @@ function deleteCampaignPreset(){
 function confirmDeleteCampaignPreset(name,status){
   const presets = readCampaignPresets();
   delete presets[name];
-  writeCampaignPresets(presets);
+  if(!writeCampaignPresets(presets)){
+    if(status) status.textContent = "⚠ Preset could not be deleted in this browser";
+    return;
+  }
   refreshPresetList();
   if(status) status.textContent = "✓ Preset deleted";
 }
@@ -4121,6 +4133,8 @@ if(document.readyState==="loading"){
 }
 
 function initBuilderApp(){
+  // Preset hydration is independent of the rest of builder startup so saved presets remain available after refresh.
+  refreshPresetList();
   try{
     applySafeGlobalDefaults();
     load(0);
@@ -4131,7 +4145,6 @@ function initBuilderApp(){
     updateAllStatus();
     initOfferTabDragDrop();
     updateMoveOfferButtons();
-    refreshPresetList();
     syncAutosaveStatus();
     promptRestoreSession();
     queueAutosave();
