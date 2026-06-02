@@ -303,6 +303,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .autosave-status.warn{color:#ffe2b0;border-color:rgba(255,203,129,.45);background:rgba(255,166,0,.12);}
 .hero-lock-toggle{display:flex;align-items:center;gap:6px;margin:0 0 6px;font-size:10px;font-weight:700;color:var(--navy);}
 .hero-lock-toggle input{width:auto;}
+.hero-lock-toggle.locked{color:var(--gold);}
+.hero-lock-state{display:inline-flex;align-items:center;gap:4px;}
 .production-panel{margin-bottom:4px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
 .production-hdr{background:var(--panel);padding:5px 9px;}
 .production-hdr h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);}
@@ -638,7 +640,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"></path></svg>Hero Image</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body hidden">
-        <label class="hero-lock-toggle"><input id="hero-lock-toggle" type="checkbox" onchange="toggleHeroImageLock()"> 🔒 Hero Image Locked</label>
+        <label class="hero-lock-toggle" id="hero-lock-label"><input id="hero-lock-toggle" type="checkbox" onchange="toggleHeroImageLock()"> <span class="hero-lock-state" id="hero-lock-state">🔓 Hero Image Unlocked</span></label>
         <div class="dz-wrap">
           <div class="dropzone hero-dropzone" id="dz-hero" ondragover="dzOver(event,&#39;dz-hero&#39;)" ondragleave="dzOut(&#39;dz-hero&#39;)" ondrop="dzDrop(event,&#39;hero&#39;)">
             <input type="file" accept="image/*" onchange="fileChosen(event,&#39;hero&#39;)">
@@ -1390,6 +1392,7 @@ function load(i){
   document.getElementById("cv-y").textContent=(offers[i]._cropY??50)+"%";
   if(!offers[i]._heroFitMode) offers[i]._heroFitMode="fill";
   syncHeroUi();
+  updateHeroImageLockUI();
   if(offers[i]._img) document.getElementById("crop-controls").classList.add("active");
   else document.getElementById("crop-controls").classList.remove("active");
   operatorChanged(true); genUtm(); genStandardUtms(); updateAllStatus(); updateExportFilenames();
@@ -1438,23 +1441,57 @@ function operatorChanged(silent){
 // ═══════════════════════════════════════════════════════
 // LOCK
 // ═══════════════════════════════════════════════════════
-function isHeroImageLocked(index=cur){ return !!(Array.isArray(lockedHeroImages) && lockedHeroImages[index]); }
+function normaliseHeroLockArray(source,sourceOffers){
+  const lockSource=Array.isArray(source) ? source : [];
+  const offerSource=Array.isArray(sourceOffers) ? sourceOffers : [];
+  return [0,1,2,3].map(index=>!!(lockSource[index] || (offerSource[index] && offerSource[index].heroLocked)));
+}
+function syncHeroLockMetadata(){
+  lockedHeroImages=normaliseHeroLockArray(lockedHeroImages,offers);
+  (offers||[]).slice(0,4).forEach((offer,index)=>{ if(offer) offer.heroLocked=!!lockedHeroImages[index]; });
+  return lockedHeroImages;
+}
+function isHeroImageLocked(index=cur){
+  if(typeof normaliseHeroLockArray==="function") return !!normaliseHeroLockArray(typeof lockedHeroImages!=="undefined"?lockedHeroImages:[],typeof offers!=="undefined"?offers:[])[index];
+  return !!(Array.isArray(typeof lockedHeroImages!=="undefined"?lockedHeroImages:[]) && lockedHeroImages[index]);
+}
+function setHeroImageLocked(index,locked){
+  if(!Array.isArray(lockedHeroImages)) lockedHeroImages=[false,false,false,false];
+  lockedHeroImages[index]=!!locked;
+  if(offers && offers[index]) offers[index].heroLocked=!!locked;
+}
 function toggleHeroImageLock(){
-  lockedHeroImages[cur]=!!(document.getElementById("hero-lock-toggle")||{}).checked;
+  setHeroImageLocked(cur,!!(document.getElementById("hero-lock-toggle")||{}).checked);
   updateHeroImageLockUI();
   queueAutosave();
 }
+function updateHeroTabLockIndicators(){
+  document.querySelectorAll(".otab").forEach((tab,index)=>{
+    const label=tab.querySelector("span");
+    if(label) label.textContent=`Offer ${index+1}${isHeroImageLocked(index)?" 🔒":""}`;
+    tab.classList.toggle("hero-locked",isHeroImageLocked(index));
+  });
+}
 function updateHeroImageLockUI(){
+  syncHeroLockMetadata();
+  const locked=isHeroImageLocked(cur);
   const toggle=document.getElementById("hero-lock-toggle");
-  if(toggle) toggle.checked=isHeroImageLocked(cur);
+  const label=document.getElementById("hero-lock-label");
+  const state=document.getElementById("hero-lock-state");
+  if(toggle) toggle.checked=locked;
+  if(label) label.classList.toggle("locked",locked);
+  if(state) state.textContent=locked?"🔒 Image Locked":"🔓 Hero Image Unlocked";
+  updateHeroTabLockIndicators();
 }
 function preserveLockedHeroImageData(nextOffer,index,previousOffer){
   if(!isHeroImageLocked(index)) return nextOffer;
-  const protectedKeys=["_img","_imgSource","_imgNeedsReupload","_cropZoom","_cropX","_cropY","_cropPosVersion","_heroFitMode"];
+  const protectedKeys=["_img","_imgSource","_imgNeedsReupload","_cropZoom","_cropX","_cropY","_cropPosVersion","_heroFitMode","heroLocked"];
   protectedKeys.forEach(key=>{
     if(previousOffer && Object.prototype.hasOwnProperty.call(previousOffer,key)) nextOffer[key]=previousOffer[key];
+    else if(key==="heroLocked") nextOffer[key]=true;
     else delete nextOffer[key];
   });
+  if(typeof setHeroImageLocked==="function") setHeroImageLocked(index,true);
   return nextOffer;
 }
 function toggleLock(){ lockedOffers[cur]=!lockedOffers[cur]; updateLockUI(); }
@@ -1493,7 +1530,7 @@ function resetAll(){
     message:"Reset ALL 4 offers? Cannot be undone.",
     confirmLabel:"Reset All",
     destructive:true,
-    onConfirm:()=>{ offers=[{},{},{},{}]; lockedOffers=[false,false,false,false]; load(cur); refreshOfferUi({utm:false,spell:false,autosave:false}); }
+    onConfirm:()=>{ offers=[{},{},{},{}]; lockedOffers=[false,false,false,false]; lockedHeroImages=[false,false,false,false]; load(cur); refreshOfferUi({utm:false,spell:false,autosave:false}); }
   });
 }
 
@@ -2659,9 +2696,11 @@ function markUnsavedChanges(){
 
 function buildAutosavePayload(){
   save();
+  if(typeof syncHeroLockMetadata==="function") syncHeroLockMetadata();
   const clonedOffers = JSON.parse(JSON.stringify(offers || [{},{},{},{}]));
   // Autosave flow: keep hero data URLs for restore; logo data URLs still require reupload.
-  clonedOffers.forEach(o=>{
+  clonedOffers.forEach((o,index)=>{
+    if(o) o.heroLocked=!!((typeof lockedHeroImages!=="undefined" && Array.isArray(lockedHeroImages)) ? lockedHeroImages[index] : o.heroLocked);
     if(o && o._logoCustom && String(o._logoCustom).startsWith('data:')){ delete o._logoCustom; o._logoNeedsReupload = true; }
   });
   const sectionState = {};
@@ -2713,7 +2752,8 @@ function applySessionPayload(data){
     return o;
   }); while(offers.length<4) offers.push({});
   lockedOffers = Array.isArray(data.lockedOffers) ? data.lockedOffers.slice(0,4) : [false,false,false,false];
-  lockedHeroImages = Array.isArray(data.lockedHeroImages) ? data.lockedHeroImages.slice(0,4) : [false,false,false,false];
+  lockedHeroImages = typeof normaliseHeroLockArray==="function" ? normaliseHeroLockArray(data.lockedHeroImages, offers) : (Array.isArray(data.lockedHeroImages) ? data.lockedHeroImages.slice(0,4) : offers.slice(0,4).map(o=>!!(o&&o.heroLocked)));
+  if(typeof syncHeroLockMetadata==="function") syncHeroLockMetadata();
   const c = data.campaign||{};
   document.getElementById('g-campaign').value = c.name || '';
   document.getElementById('g-date').value = c.date || '';
@@ -2868,7 +2908,9 @@ function buildCampaignFilename(){
 function makePortableCampaignOffers(sourceOffers){
   const cloned=JSON.parse(JSON.stringify(sourceOffers || [{},{},{},{}]));
   while(cloned.length<4) cloned.push({});
-  return cloned.slice(0,4).map((offer={})=>{
+  return cloned.slice(0,4).map((offer={},index)=>{
+    const heroLocks=(typeof lockedHeroImages!=="undefined" && Array.isArray(lockedHeroImages)) ? lockedHeroImages : [];
+    offer.heroLocked=!!(offer.heroLocked || heroLocks[index]);
     ["_img","_logoCustom"].forEach(key=>{
       const value=offer[key];
       if(typeof value !== "string" || !/^(?:blob:|file:)/i.test(value)) return;
@@ -2895,6 +2937,7 @@ function buildCampaignFilePayload(){
     terms:document.getElementById("g-terms").value||"",
     ...(typeof getCampaignNamingSnapshot==="function" ? getCampaignNamingSnapshot() : {})
   };
+  if(typeof syncHeroLockMetadata==="function") syncHeroLockMetadata();
   const portableOffers=makePortableCampaignOffers(offers);
   const googleSheetSource=getSavedGoogleSheetSource();
   return {
@@ -2917,7 +2960,7 @@ function buildCampaignFilePayload(){
     },
     operatorSettings:{source:"state.offers",byCard:portableOffers.map(({operator="",url="",tags="",_logoDisplay="operator"},cardIndex)=>({cardIndex,operator,url,tags,_logoDisplay}))},
     logoSettings:{source:"state.offers",byCard:portableOffers.map(({_logoDisplay="operator",_logoCustom="",_logoSize="",_logoNeedsReupload=false},cardIndex)=>({cardIndex,_logoDisplay,hasCustomLogo:!!_logoCustom,_logoSize,_logoNeedsReupload}))},
-    heroImages:{source:"state.offers",byCard:portableOffers.map(({_img="",_imgSource="",_imgNeedsReupload=false,_cropZoom=100,_cropX=50,_cropY=50,_cropPosVersion=2,_heroFitMode="fill"},cardIndex)=>({cardIndex,imageType:_img ? (/^data:/i.test(_img) ? "embedded-data-url" : "url") : (_imgSource ? "local-reference" : "none"),_img,_imgSource,_imgNeedsReupload,_cropZoom,_cropX,_cropY,_cropPosVersion,_heroFitMode,locked:isHeroImageLocked(cardIndex)}))},
+    heroImages:{source:"state.offers",byCard:portableOffers.map(({_img="",_imgSource="",_imgNeedsReupload=false,_cropZoom=100,_cropX=50,_cropY=50,_cropPosVersion=2,_heroFitMode="fill"},cardIndex)=>({cardIndex,imageType:_img ? (/^data:/i.test(_img) ? "embedded-data-url" : "url") : (_imgSource ? "local-reference" : "none"),_img,_imgSource,_imgNeedsReupload,_cropZoom,_cropX,_cropY,_cropPosVersion,_heroFitMode,locked:isHeroImageLocked(cardIndex),heroLocked:isHeroImageLocked(cardIndex)}))},
     utmData:portableOffers.map(({url="",_utm="",utm_content=""})=>({url,_utm,utm_content})),
     operatorLandingPages:portableOffers.map(({url=""})=>url),
     qa:getCampaignQaSnapshot(),
@@ -3053,6 +3096,10 @@ function campaignFileNeedsImageCheck(state){
 function restoreCampaignFilePayload(filePayload){
   const {parsed,state,isLegacyProject}=filePayload;
   const restored=JSON.parse(JSON.stringify(state));
+  if(!Array.isArray(restored.lockedHeroImages) && parsed.heroImages && Array.isArray(parsed.heroImages.byCard)){
+    restored.lockedHeroImages=[false,false,false,false];
+    parsed.heroImages.byCard.forEach(item=>{ if(item && Number.isInteger(item.cardIndex)) restored.lockedHeroImages[item.cardIndex]=!!(item.heroLocked||item.locked); });
+  }
   restored.cur=Number.isInteger(restored.activeOfferIndex) ? restored.activeOfferIndex : restored.cur;
   allowLargeEmbeddedImagesDuringRestore=true;
   try{ applySessionPayload(restored); }
@@ -3670,6 +3717,7 @@ function loadOfferToEditor(i){
   const cvy=document.getElementById('cv-y'); if(cvy) cvy.textContent=(o._cropY??50)+'%';
   if(!o._heroFitMode) o._heroFitMode='fill';
   syncHeroUi();
+  updateHeroImageLockUI();
   const logoArea=document.getElementById('logo-override-area'); if(logoArea) logoArea.style.display=(o.operator==='custom'||!o.operator)?'block':'none';
   updateHeroRestoreNote();
 }

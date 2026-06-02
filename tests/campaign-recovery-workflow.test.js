@@ -36,6 +36,8 @@ test('campaign backup payload includes recovery-critical state for offers, metad
     'cardOrder:[0,1,2,3]',
     'lockedOffers:Array.isArray(lockedOffers)',
     'lockedHeroImages:Array.isArray(lockedHeroImages)',
+    'heroLocked=!!',
+    'heroLocked:isHeroImageLocked(cardIndex)',
     'viewMode:["single","email","all"].includes(viewMode)',
     'heroImages:{source:"state.offers"',
     'sessionMetadata:{savedAt:exportedAt,autosaveKey:AUTOSAVE_KEY,autosave:readSavedSession()'
@@ -86,12 +88,56 @@ test('hero image lock preserves imagery and crop fields while allowing text refr
   assert.equal(merged.price, '1234');
   assert.equal(merged._img, previous._img);
   assert.deepEqual([merged._cropZoom, merged._cropX, merged._cropY, merged._heroFitMode], [155, 21, 72, 'fit']);
+  assert.equal(merged.heroLocked, true);
 });
 
 test('CSV and sheet import path checks hero locks before writing sheet image data', () => {
   assert.match(html, /if\(hero && !\(typeof isHeroImageLocked==="function" && isHeroImageLocked\(loaded\)\)\)\{ newOffer\._img=hero; \}/);
   assert.match(html, /if\(typeof preserveLockedHeroImageData==="function"\) preserveLockedHeroImageData\(newOffer, loaded, offers\[loaded\]\);/);
 });
+
+
+test('hero image lock metadata is stored on offers and normalised from restored offer data', () => {
+  const context = runFunctions(['normaliseHeroLockArray', 'syncHeroLockMetadata'], {
+    offers: [{ heroLocked: true }, { heroLocked: false }, {}, { heroLocked: true }],
+    lockedHeroImages: [false, false, true, false]
+  });
+  assert.deepEqual(Array.from(context.normaliseHeroLockArray(context.lockedHeroImages, context.offers)), [true, false, true, true]);
+  assert.deepEqual(Array.from(context.syncHeroLockMetadata()), [true, false, true, true]);
+  assert.deepEqual(Array.from(context.offers, offer => offer.heroLocked), [true, false, true, true]);
+});
+
+test('hero lock UI communicates active state and card-tab lock indicators', () => {
+  assert.match(html, /id="hero-lock-state">🔓 Hero Image Unlocked/);
+  assert.match(html, /state\.textContent=locked\?"🔒 Image Locked":"🔓 Hero Image Unlocked"/);
+  assert.match(html, /label\.textContent=`Offer \$\{index\+1\}\$\{isHeroImageLocked\(index\)\?" 🔒":""\}`/);
+});
+
+test('campaign restore can recover hero lock state from campaign-data heroImages entries', () => {
+  const calls = [];
+  const context = runFunctions(['restoreCampaignFilePayload'], {
+    APP_VERSION: 'v2.1.0',
+    GOOGLE_SHEET_SOURCE_KEY: 'cobGoogleSheetSourceV1',
+    autosaveTimer: null,
+    allowLargeEmbeddedImagesDuringRestore: false,
+    clearTimeout() {},
+    document: { getElementById: () => null },
+    localStorage: { removeItem() {} },
+    applySessionPayload: payload => calls.push(payload),
+    saveSessionNow() {},
+    showSessionFeedback() {},
+    resetShortcutFocusAfterImport() {},
+    campaignFileNeedsImageCheck: () => false,
+    buildCampaignHistoryEntryFromPayload: payload => payload
+  });
+  context.restoreCampaignFilePayload({
+    parsed: { heroImages: { byCard: [{ cardIndex: 0, heroLocked: true }, { cardIndex: 2, locked: true }] } },
+    state: { offers: [{ _img: 'one' }, { _img: 'two' }, { _img: 'three' }, {}] },
+    isLegacyProject: false
+  });
+  assert.deepEqual(Array.from(calls[0].lockedHeroImages), [true, false, true, false]);
+});
+
 
 test('campaign history stores recent saved and opened campaigns with Open, Delete and Pin controls', () => {
   assert.match(html, /const CAMPAIGN_HISTORY_KEY = "cobCampaignHistoryV1";/);

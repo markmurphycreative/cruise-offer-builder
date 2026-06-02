@@ -37,6 +37,7 @@ function makePayload(overrides = {}) {
     cur: 2,
     viewMode: 'email',
     lockedOffers: [false, true, false, false],
+    lockedHeroImages: [true, false, true, false],
     sectionState: { campaign: false, offers: true },
     openSectionKey: 'campaign',
     campaign: { name: 'June Cruise Campaign', date: '02/06/2026', airport: 'Newcastle', terms: 'T&Cs Apply' },
@@ -98,6 +99,7 @@ test('autosave payload stores all four current offers under the Session Status k
   const context = {
     offers: makePayload().offers,
     lockedOffers: [false, true, false, false],
+    lockedHeroImages: [true, false, true, false],
     cur: 2,
     viewMode: 'email',
     save() {},
@@ -111,6 +113,8 @@ test('autosave payload stores all four current offers under the Session Status k
   const payload = context.buildAutosavePayload();
   assert.equal(payload.offers.length, 4);
   assert.deepEqual(Array.from(payload.offers, offer => offer.name), ['First Offer', 'Second Offer', 'Third Offer', 'Fourth Offer']);
+  assert.deepEqual(Array.from(payload.lockedHeroImages), [true, false, true, false]);
+  assert.deepEqual(Array.from(payload.offers, offer => offer.heroLocked), [true, false, true, false]);
   assert.match(html, /const AUTOSAVE_KEY = "cobSessionAutosaveV1";/);
 });
 
