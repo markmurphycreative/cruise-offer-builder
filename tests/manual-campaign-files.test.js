@@ -96,7 +96,8 @@ test('restoring a four-card campaign preserves order, active offer and safe view
     storeGoogleSheetSource: url => { stored.set('sheet', url); return url; },
     applySessionPayload: payload => calls.push(['apply', payload]),
     saveSessionNow: () => calls.push('autosave'),
-    showSessionFeedback: (message, warning) => calls.push(['feedback', message, warning])
+    showSessionFeedback: (message, warning) => calls.push(['feedback', message, warning]),
+    resetShortcutFocusAfterImport: () => calls.push('focus')
   });
   const offers = [
     { name: 'First', operator: 'po', _img: 'data:image/png;base64,one', _cropX: 10 },
@@ -117,7 +118,7 @@ test('restoring a four-card campaign preserves order, active offer and safe view
   assert.ok(calls.includes('autosave'));
   assert.equal(result.imageWarning, false);
   assert.equal(result.compatibilityWarning, false);
-  assert.deepEqual(calls.at(-1), ['feedback', 'Campaign loaded', false]);
+  assert.deepEqual(calls.slice(-2), [['feedback', 'Campaign loaded', false], 'focus']);
 });
 
 test('restored image re-upload markers and older project files produce clear non-crashing warnings', () => {
@@ -131,7 +132,8 @@ test('restored image re-upload markers and older project files produce clear non
     localStorage: { removeItem() {} },
     applySessionPayload() {},
     saveSessionNow() {},
-    showSessionFeedback: (message, warning) => calls.push([message, warning])
+    showSessionFeedback: (message, warning) => calls.push([message, warning]),
+    resetShortcutFocusAfterImport() {}
   });
   const imageResult = context.restoreCampaignFilePayload({ parsed: {}, state: { offers: [{ _imgNeedsReupload: true }] }, isLegacyProject: false });
   assert.equal(imageResult.imageWarning, true);
@@ -159,7 +161,7 @@ test('campaign load reuses the existing restore refresh path for UTMs, preview, 
   for (const expected of ['genUtm();', 'genAllUtms(true);', 'genStandardUtms();', 'updateAllStatus();', 'updateExportFilenames();', 'renderPreviewMode(true);', 'runSpellQA();']) {
     assert.match(restoreSource, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
-  assert.match(extractFunction('restoreCampaignFilePayload'), /allowLargeEmbeddedImagesDuringRestore=true;[\s\S]*?applySessionPayload\(restored\);[\s\S]*?allowLargeEmbeddedImagesDuringRestore=false;[\s\S]*?saveSessionNow\(\);/);
+  assert.match(extractFunction('restoreCampaignFilePayload'), /allowLargeEmbeddedImagesDuringRestore=true;[\s\S]*?applySessionPayload\(restored\);[\s\S]*?allowLargeEmbeddedImagesDuringRestore=false;[\s\S]*?saveSessionNow\(\);[\s\S]*?resetShortcutFocusAfterImport\(\);/);
 });
 
 
