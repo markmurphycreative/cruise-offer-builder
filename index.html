@@ -301,6 +301,17 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .preview-title{color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .autosave-status{font-size:9px;color:rgba(255,255,255,.72);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:2px 7px;line-height:1.2;white-space:nowrap;}
 .autosave-status.warn{color:#ffe2b0;border-color:rgba(255,203,129,.45);background:rgba(255,166,0,.12);}
+.hero-lock-toggle{display:flex;align-items:center;gap:6px;margin:0 0 6px;font-size:10px;font-weight:700;color:var(--navy);}
+.hero-lock-toggle input{width:auto;}
+.production-panel{margin-bottom:4px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.production-hdr{background:var(--panel);padding:5px 9px;}
+.production-hdr h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);}
+.production-body{padding:6px;background:#fafaf8;}
+.recent-campaign-list,.campaign-library-list{display:grid;gap:5px;}
+.recent-campaign-item,.campaign-library-item{border:1px solid var(--border);border-radius:var(--radius);padding:6px;background:#fff;}
+.recent-campaign-title,.campaign-library-title{font-size:10px;font-weight:700;color:var(--navy);line-height:1.3;}
+.recent-campaign-meta,.campaign-library-meta{font-size:9px;color:var(--muted);margin-top:2px;}
+.recent-campaign-actions,.campaign-library-actions{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap;}
 .ptool{display:flex;align-items:center;gap:4px;}
 .ptool span{font-size:9px;color:rgba(255,255,255,.6);white-space:nowrap;}
 .ptool input[type=range]{accent-color:var(--gold);width:70px;height:3px;}
@@ -627,6 +638,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"></path></svg>Hero Image</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body hidden">
+        <label class="hero-lock-toggle"><input id="hero-lock-toggle" type="checkbox" onchange="toggleHeroImageLock()"> 🔒 Hero Image Locked</label>
         <div class="dz-wrap">
           <div class="dropzone hero-dropzone" id="dz-hero" ondragover="dzOver(event,&#39;dz-hero&#39;)" ondragleave="dzOut(&#39;dz-hero&#39;)" ondrop="dzDrop(event,&#39;hero&#39;)">
             <input type="file" accept="image/*" onchange="fileChosen(event,&#39;hero&#39;)">
@@ -774,6 +786,20 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       </div>
     </div>
 
+    <div class="production-panel" id="recent-campaigns-panel">
+      <div class="production-hdr"><h3>Recent Campaigns</h3></div>
+      <div class="production-body">
+        <div id="recent-campaign-list" class="recent-campaign-list"></div>
+      </div>
+    </div>
+
+    <div class="production-panel" id="campaign-library-panel">
+      <div class="production-hdr"><h3>Campaign Library</h3></div>
+      <div class="production-body">
+        <div id="campaign-library-list" class="campaign-library-list"></div>
+      </div>
+    </div>
+
     <!-- ── 5. UTM ── -->
     <div class="section" data-section-key="utm-link">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
@@ -819,7 +845,9 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     <div class="act-row">
       <button class="abtn gold" type="button" onclick="saveCampaignFile()">Save Campaign</button>
       <button class="abtn navy" type="button" onclick="triggerLoadCampaignFile()">Load Campaign</button>
+      <button class="abtn" type="button" onclick="triggerLoadCampaignBackup()">Load Campaign Backup</button>
       <input id="campaign-file-input" type="file" accept=".json,application/json" style="display:none" onchange="loadCampaignFile(event)">
+      <input id="campaign-backup-input" type="file" accept=".json,application/json" style="display:none" onchange="loadCampaignBackup(event)">
     </div>
     <div class="act-row">
       <button class="abtn" onclick="clearSavedSession()">Clear Saved Session</button>
@@ -1246,6 +1274,7 @@ function autoBoardLabel(){
 let offers = [{},{},{},{}];
 let cur = 0, viewMode = "all", zoomPct = 32;
 let lockedOffers = [false,false,false,false];
+let lockedHeroImages = [false,false,false,false];
 let safeZoneOn = false, exportRunning = false;
 const FLDS = ["tags","name","ship","incl","price","basis","board","boardlbl","day","month","nights","ports","url","utm_content"];
 
@@ -1409,12 +1438,32 @@ function operatorChanged(silent){
 // ═══════════════════════════════════════════════════════
 // LOCK
 // ═══════════════════════════════════════════════════════
+function isHeroImageLocked(index=cur){ return !!(Array.isArray(lockedHeroImages) && lockedHeroImages[index]); }
+function toggleHeroImageLock(){
+  lockedHeroImages[cur]=!!(document.getElementById("hero-lock-toggle")||{}).checked;
+  updateHeroImageLockUI();
+  queueAutosave();
+}
+function updateHeroImageLockUI(){
+  const toggle=document.getElementById("hero-lock-toggle");
+  if(toggle) toggle.checked=isHeroImageLocked(cur);
+}
+function preserveLockedHeroImageData(nextOffer,index,previousOffer){
+  if(!isHeroImageLocked(index)) return nextOffer;
+  const protectedKeys=["_img","_imgSource","_imgNeedsReupload","_cropZoom","_cropX","_cropY","_cropPosVersion","_heroFitMode"];
+  protectedKeys.forEach(key=>{
+    if(previousOffer && Object.prototype.hasOwnProperty.call(previousOffer,key)) nextOffer[key]=previousOffer[key];
+    else delete nextOffer[key];
+  });
+  return nextOffer;
+}
 function toggleLock(){ lockedOffers[cur]=!lockedOffers[cur]; updateLockUI(); }
 function updateLockUI(){
   const locked=lockedOffers[cur];
   document.getElementById("lock-btn").textContent=locked?"🔓 Unlock Card":"🔒 Lock This Card";
-  document.getElementById("lock-ind").classList.toggle("active",locked);
-  document.querySelectorAll(".sb-body input,.sb-body textarea,.sb-body select").forEach(el=>el.disabled=locked);
+  const lockInd=document.getElementById("lock-ind"); if(lockInd) lockInd.classList.toggle("active",locked);
+  document.querySelectorAll(".sb-body input,.sb-body textarea,.sb-body select").forEach(el=>{ if(el.id!=="hero-lock-toggle") el.disabled=locked; });
+  updateHeroImageLockUI();
   document.querySelector(".parse-btn").disabled=locked;
 }
 
@@ -2314,7 +2363,8 @@ function processSheetCSV(csv,status){
       tags: offers[loaded].tags
     };
 
-    if(hero){ newOffer._img=hero; }
+    if(hero && !(typeof isHeroImageLocked==="function" && isHeroImageLocked(loaded))){ newOffer._img=hero; }
+    if(typeof preserveLockedHeroImageData==="function") preserveLockedHeroImageData(newOffer, loaded, offers[loaded]);
     const hdr=val(row,headers,["operator_header","header"]);
     if(hdr){
       const hdrKey=opKey(hdr);
@@ -2616,7 +2666,7 @@ function buildAutosavePayload(){
   });
   const sectionState = {};
   getSectionCollapseState().forEach((collapsed,key)=>{ sectionState[key]=!!collapsed; });
-  return {version:'1.0',savedAt:new Date().toISOString(),cur,viewMode,lockedOffers,sectionState,openSectionKey:getOpenSectionKey(),campaign:{name:document.getElementById('g-campaign').value||'',date:document.getElementById('g-date').value||'',airport:document.getElementById('g-airport').value||'',terms:document.getElementById('g-terms').value||'',...(typeof getCampaignNamingSnapshot==="function" ? getCampaignNamingSnapshot() : {})},offers:clonedOffers};
+  return {version:'1.0',savedAt:new Date().toISOString(),cur,viewMode,lockedOffers,lockedHeroImages:(typeof lockedHeroImages!=="undefined" && Array.isArray(lockedHeroImages) ? lockedHeroImages.slice(0,4) : [false,false,false,false]),sectionState,openSectionKey:getOpenSectionKey(),campaign:{name:document.getElementById('g-campaign').value||'',date:document.getElementById('g-date').value||'',airport:document.getElementById('g-airport').value||'',terms:document.getElementById('g-terms').value||'',...(typeof getCampaignNamingSnapshot==="function" ? getCampaignNamingSnapshot() : {})},offers:clonedOffers};
 }
 function saveSessionNow(){
   if(autosaveHydrating || autosaveAwaitingRestoreDecision) return;
@@ -2663,6 +2713,7 @@ function applySessionPayload(data){
     return o;
   }); while(offers.length<4) offers.push({});
   lockedOffers = Array.isArray(data.lockedOffers) ? data.lockedOffers.slice(0,4) : [false,false,false,false];
+  lockedHeroImages = Array.isArray(data.lockedHeroImages) ? data.lockedHeroImages.slice(0,4) : [false,false,false,false];
   const c = data.campaign||{};
   document.getElementById('g-campaign').value = c.name || '';
   document.getElementById('g-date').value = c.date || '';
@@ -2860,29 +2911,117 @@ function buildCampaignFilePayload(){
       activeOfferIndex:cur,
       viewMode:["single","email","all"].includes(viewMode) ? viewMode : "all",
       lockedOffers:Array.isArray(lockedOffers) ? lockedOffers.slice(0,4) : [false,false,false,false],
+      lockedHeroImages:Array.isArray(lockedHeroImages) ? lockedHeroImages.slice(0,4) : [false,false,false,false],
       sectionState,
       openSectionKey:getOpenSectionKey()
     },
     operatorSettings:{source:"state.offers",byCard:portableOffers.map(({operator="",url="",tags="",_logoDisplay="operator"},cardIndex)=>({cardIndex,operator,url,tags,_logoDisplay}))},
     logoSettings:{source:"state.offers",byCard:portableOffers.map(({_logoDisplay="operator",_logoCustom="",_logoSize="",_logoNeedsReupload=false},cardIndex)=>({cardIndex,_logoDisplay,hasCustomLogo:!!_logoCustom,_logoSize,_logoNeedsReupload}))},
-    heroImages:{source:"state.offers",byCard:portableOffers.map(({_img="",_imgSource="",_imgNeedsReupload=false,_cropZoom=100,_cropX=50,_cropY=50,_cropPosVersion=2},cardIndex)=>({cardIndex,imageType:_img ? (/^data:/i.test(_img) ? "embedded-data-url" : "url") : (_imgSource ? "local-reference" : "none"),_imgNeedsReupload,_cropZoom,_cropX,_cropY,_cropPosVersion}))},
+    heroImages:{source:"state.offers",byCard:portableOffers.map(({_img="",_imgSource="",_imgNeedsReupload=false,_cropZoom=100,_cropX=50,_cropY=50,_cropPosVersion=2,_heroFitMode="fill"},cardIndex)=>({cardIndex,imageType:_img ? (/^data:/i.test(_img) ? "embedded-data-url" : "url") : (_imgSource ? "local-reference" : "none"),_img,_imgSource,_imgNeedsReupload,_cropZoom,_cropX,_cropY,_cropPosVersion,_heroFitMode,locked:isHeroImageLocked(cardIndex)}))},
     utmData:portableOffers.map(({url="",_utm="",utm_content=""})=>({url,_utm,utm_content})),
     operatorLandingPages:portableOffers.map(({url=""})=>url),
     qa:getCampaignQaSnapshot(),
     sourceInfo:{googleSheetUrl:googleSheetSource},
-    sessionMetadata:{savedAt:exportedAt,autosaveKey:AUTOSAVE_KEY,lockedOffers:Array.isArray(lockedOffers) ? lockedOffers.slice(0,4) : [],sectionState,openSectionKey:getOpenSectionKey()}
+    sessionMetadata:{savedAt:exportedAt,autosaveKey:AUTOSAVE_KEY,autosave:readSavedSession(),lockedOffers:Array.isArray(lockedOffers) ? lockedOffers.slice(0,4) : [],lockedHeroImages:Array.isArray(lockedHeroImages) ? lockedHeroImages.slice(0,4) : [],sectionState,openSectionKey:getOpenSectionKey()}
   };
 }
+
+const CAMPAIGN_HISTORY_KEY = "cobCampaignHistoryV1";
+const CAMPAIGN_LIBRARY_MAX = 12;
+
+function readCampaignHistory(){
+  try{
+    const list=JSON.parse(localStorage.getItem(CAMPAIGN_HISTORY_KEY)||"[]");
+    return Array.isArray(list) ? list : [];
+  }catch(e){ return []; }
+}
+function writeCampaignHistory(list){
+  try{ localStorage.setItem(CAMPAIGN_HISTORY_KEY, JSON.stringify((Array.isArray(list)?list:[]).slice(0,CAMPAIGN_LIBRARY_MAX))); return true; }
+  catch(e){ return false; }
+}
+function campaignHistoryTitleFromPayload(payload){
+  const campaign=(payload&&payload.campaign) || (payload&&payload.state&&payload.state.campaign) || {};
+  return campaign.name || document.getElementById("g-campaign").value || "Untitled Campaign";
+}
+function buildCampaignHistoryEntryFromPayload(payload,type="saved"){
+  const title=campaignHistoryTitleFromPayload(payload);
+  return {
+    id:`${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+    title,
+    type,
+    updatedAt:new Date().toISOString(),
+    pinned:false,
+    payload:JSON.parse(JSON.stringify(payload||buildCampaignFilePayload()))
+  };
+}
+function sortCampaignHistory(list){
+  return (Array.isArray(list)?list:[]).sort((a,b)=>{
+    if(!!a.pinned!==!!b.pinned) return a.pinned ? -1 : 1;
+    return new Date(b.updatedAt||0)-new Date(a.updatedAt||0);
+  });
+}
+function addCampaignHistoryEntry(entry){
+  if(!entry || !entry.payload) return false;
+  const list=readCampaignHistory().filter(item=>item.title!==entry.title || item.type!==entry.type);
+  list.unshift(entry);
+  return writeCampaignHistory(sortCampaignHistory(list).slice(0,CAMPAIGN_LIBRARY_MAX));
+}
+function restoreCampaignHistoryEntry(id){
+  const entry=readCampaignHistory().find(item=>item.id===id);
+  if(!entry || !entry.payload) return false;
+  restoreCampaignFilePayload(parseCampaignFileText(JSON.stringify(entry.payload)));
+  return true;
+}
+function deleteCampaignHistoryEntry(id){
+  writeCampaignHistory(readCampaignHistory().filter(item=>item.id!==id));
+  refreshCampaignHistoryUI();
+}
+function togglePinCampaignHistoryEntry(id){
+  const list=readCampaignHistory().map(item=>item.id===id ? {...item,pinned:!item.pinned,updatedAt:item.updatedAt||new Date().toISOString()} : item);
+  writeCampaignHistory(sortCampaignHistory(list));
+  refreshCampaignHistoryUI();
+}
+function campaignHistoryMeta(item){
+  const date=item.updatedAt ? formatCampaignDate(new Date(item.updatedAt)) : "Saved campaign";
+  const type=item.type ? item.type.charAt(0).toUpperCase()+item.type.slice(1) : "Campaign";
+  return `${date} · ${type}${item.pinned ? " · Pinned" : ""}`;
+}
+function renderCampaignHistoryList(targetId,items,emptyLabel){
+  const el=document.getElementById(targetId);
+  if(!el) return;
+  if(!items.length){ el.innerHTML=`<div class="recent-campaign-meta">${emptyLabel}</div>`; return; }
+  el.innerHTML=items.map(item=>{
+    const safeTitle=String(item.title||"Untitled Campaign").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const safeMeta=campaignHistoryMeta(item).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    return `<div class="recent-campaign-item"><div class="recent-campaign-title">${safeTitle}</div><div class="recent-campaign-meta">${safeMeta}</div><div class="recent-campaign-actions"><button class="abtn btn-compact" onclick="restoreCampaignHistoryEntry('${item.id}')">Open</button><button class="abtn btn-compact" onclick="togglePinCampaignHistoryEntry('${item.id}')">${item.pinned?'Unpin':'Pin'}</button><button class="abtn red btn-compact" onclick="deleteCampaignHistoryEntry('${item.id}')">Delete</button></div></div>`;
+  }).join("");
+}
+function refreshCampaignHistoryUI(){
+  const list=sortCampaignHistory(readCampaignHistory());
+  renderCampaignHistoryList("recent-campaign-list", list.slice(0,3), "No recent campaigns yet");
+  renderCampaignHistoryList("campaign-library-list", list, "No saved campaigns or backups yet");
+}
+function triggerLoadCampaignBackup(){
+  const input=document.getElementById("campaign-backup-input");
+  if(input) input.click();
+}
+function loadCampaignBackup(event){
+  return loadCampaignFile(event);
+}
+
 function saveCampaignFile(){
   try{
     const fileName=buildCampaignFilename();
-    const blob=new Blob([JSON.stringify(buildCampaignFilePayload(),null,2)],{type:"application/json"});
+    const payload=buildCampaignFilePayload();
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
     const a=document.createElement("a");
     a.href=URL.createObjectURL(blob);
     a.download=fileName;
     a.click();
     URL.revokeObjectURL(a.href);
     showSessionFeedback("Campaign saved",false);
+    addCampaignHistoryEntry(buildCampaignHistoryEntryFromPayload(payload, "saved"));
+    refreshCampaignHistoryUI();
   }catch(e){
     console.error("Campaign save failed",e);
     showSessionFeedback("Campaign could not be saved",true);
@@ -2931,6 +3070,8 @@ function restoreCampaignFilePayload(filePayload){
   if(imageWarning) showSessionFeedback("Campaign loaded, images may need checking",true);
   else if(compatibilityWarning) showSessionFeedback("Campaign loaded with compatibility warning",true);
   else showSessionFeedback("Campaign loaded",false);
+  if(typeof addCampaignHistoryEntry==="function") addCampaignHistoryEntry(buildCampaignHistoryEntryFromPayload(parsed, "backup"));
+  if(typeof refreshCampaignHistoryUI==="function") refreshCampaignHistoryUI();
   resetShortcutFocusAfterImport();
   return {imageWarning,compatibilityWarning};
 }
@@ -4384,6 +4525,7 @@ async function exportCampaignPack(){
       ...combinedRows.map(row => [row.type,row.label,row.utm].map(csvCell).join(','))
     ].join('\n'));
     const stamp=new Date();
+    summaryFolder.file('campaign-data.json', JSON.stringify(buildCampaignFilePayload(), null, 2));
     summaryFolder.file('campaign-summary.txt',`Campaign: ${document.getElementById('g-campaign').value||'untitled'}
 Send Date: ${document.getElementById('g-date').value||''}
 Exported: ${stamp.toISOString()}
@@ -4547,6 +4689,7 @@ function hydrateSplashRecentSession(){
 }
 function initStandaloneApp(){
   initStartScreenActions();
+  refreshCampaignHistoryUI();
   initBuilderApp();
   hydrateSplashRecentSession();
 }
