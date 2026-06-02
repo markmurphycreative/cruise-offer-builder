@@ -2537,7 +2537,6 @@ const AUTOSAVE_KEY = "cobSessionAutosaveV1";
 let autosaveTimer = null;
 let autosaveHydrating = false;
 let autosaveAwaitingRestoreDecision = false;
-const DISABLE_AUTORESTORE_SESSION = true;
 let autosaveLastSavedAt = null;
 let allowLargeEmbeddedImagesDuringRestore = false;
 
@@ -2632,6 +2631,16 @@ function queueAutosave(){
 function readSavedSession(){
   try{ const raw=localStorage.getItem(AUTOSAVE_KEY); return raw?JSON.parse(raw):null; }catch(e){ return null; }
 }
+function restoreSavedSessionOnStartup(){
+  const saved=readSavedSession();
+  if(!(saved && Array.isArray(saved.offers))) return false;
+  applySessionPayload(saved);
+  autosaveLastSavedAt=saved.savedAt || autosaveLastSavedAt;
+  syncAutosaveStatus();
+  const partial=sessionHasMissingHeroImages(saved);
+  showSessionFeedback(partial ? "Session restored, but hero images need re-uploading" : "Previous session restored", partial);
+  return true;
+}
 function applySessionPayload(data){
   if(!data || !Array.isArray(data.offers)) return;
   // Restore bugfix: avoid calling save()/commit during hydration; hydrate UI first, then refresh once.
@@ -2721,12 +2730,6 @@ function chooseStartFreshSession(){
   showSessionFeedback("",false);
 }
 function promptRestoreSession(){
-  if(DISABLE_AUTORESTORE_SESSION){
-    autosaveAwaitingRestoreDecision = false;
-    pendingRestoreSession = null;
-    setAutosaveStatus("Autosave paused");
-    return;
-  }
   const saved = readSavedSession();
   autosaveAwaitingRestoreDecision = !!(saved && saved.offers);
   if(!saved || !saved.offers) return;
@@ -4522,12 +4525,6 @@ function initStartScreenActions(){
 }
 function hydrateSplashRecentSession(){
   const wrap=document.getElementById("splash-recent-session");
-  if(DISABLE_AUTORESTORE_SESSION){
-    const continueBtn=document.getElementById("splash-continue-session-btn");
-    if(wrap) wrap.classList.remove("active");
-    if(continueBtn) continueBtn.style.display="none";
-    return;
-  }
   const name=document.getElementById("splash-recent-name");
   const time=document.getElementById("splash-recent-time");
   const continueBtn=document.getElementById("splash-continue-session-btn");
@@ -4538,13 +4535,9 @@ function hydrateSplashRecentSession(){
   name.textContent="Recovered Session";
   time.textContent=formatRelativeAutosave(saved.savedAt) || "Autosaved recently";
 }
-if(document.readyState==="loading"){
-  document.addEventListener("DOMContentLoaded",()=>{
-    initStartScreenActions();
-    hydrateSplashRecentSession();
-  },{once:true});
-}else{
+function initStandaloneApp(){
   initStartScreenActions();
+  initBuilderApp();
   hydrateSplashRecentSession();
 }
 
@@ -4556,15 +4549,17 @@ function initBuilderApp(){
     initialiseCampaignNamingDefaults();
     load(0);
     restoreGoogleSheetSource();
-    refreshOfferUi({utm:true,spell:true,autosave:false});
-    openCsvImportWhenNoOffersLoaded();
+    const restoredSession=restoreSavedSessionOnStartup();
+    if(!restoredSession){
+      refreshOfferUi({utm:true,spell:true,autosave:false});
+      openCsvImportWhenNoOffersLoaded();
+    }
     window.addEventListener("resize",rv);
     rv();
     updateAllStatus();
     initOfferTabDragDrop();
     updateMoveOfferButtons();
     syncAutosaveStatus();
-    promptRestoreSession();
     queueAutosave();
     // Ensure preview is initialised through the same path as clicking the active offer tab.
     sv(cur);
@@ -4572,7 +4567,8 @@ function initBuilderApp(){
     console.error("[init] Builder app initialisation failed.", err);
   }
 }
-initBuilderApp();
+if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",initStandaloneApp,{once:true});
+else initStandaloneApp();
 
 // ═══════════════════════════════════════════════════════
 
