@@ -4369,9 +4369,13 @@ function closeShortcutsModal(){
 function isShortcutBlockedTarget(target){
   return !!(target && target.closest && target.closest('input,textarea,select,button,[contenteditable]'));
 }
+function selectOfferShortcut(index){
+  sv(index);
+  if(offers.some(isOfferLoaded)) setView('single');
+}
 function cycleOfferShortcut(direction){
   const active=Number.isInteger(Number(cur)) ? Number(cur) : 0;
-  sv((active + direction + 4) % 4);
+  selectOfferShortcut((active + direction + 4) % 4);
 }
 function handleKeyboardShortcut(event){
   if(event.defaultPrevented) return;
@@ -4403,7 +4407,7 @@ function handleKeyboardShortcut(event){
   if(event.shiftKey && event.key !== '?') return;
 
   const key=event.key.toLowerCase();
-  if(/^[1-4]$/.test(key)){ sv(Number(key)-1); event.preventDefault(); return; }
+  if(/^[1-4]$/.test(key)){ selectOfferShortcut(Number(key)-1); event.preventDefault(); return; }
   if(key === 's'){ setView('single'); event.preventDefault(); return; }
   if(key === 'e'){ setView('email'); event.preventDefault(); return; }
   if(key === 'a'){ setView('all'); event.preventDefault(); return; }

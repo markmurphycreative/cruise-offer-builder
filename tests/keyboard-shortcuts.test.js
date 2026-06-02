@@ -15,7 +15,7 @@ function setup(){
     getElementById(id){ return id === 'shortcuts-modal' ? modal : id === 'shortcuts-close' ? close : null; },
     addEventListener(type,handler){ this.handler=handler; }
   };
-  const context={document,cur:0,sv:i=>{ context.cur=i; calls.push(['sv',i]); },setView:v=>calls.push(['view',v]),exportCurrentJPG:()=>calls.push(['jpg']),exportAllJPG:()=>calls.push(['zip']),refreshOffers:()=>calls.push(['refresh'])};
+  const context={document,cur:0,offers:[{name:'One'},{name:'Two'},{name:'Three'},{name:'Four'}],isOfferLoaded:offer=>!!offer.name,sv:i=>{ context.cur=i; calls.push(['sv',i]); },setView:v=>calls.push(['view',v]),exportCurrentJPG:()=>calls.push(['jpg']),exportAllJPG:()=>calls.push(['zip']),refreshOffers:()=>calls.push(['refresh'])};
   vm.runInNewContext(shortcuts,context);
   return {calls,context,document,modal};
 }
@@ -36,9 +36,9 @@ test('shortcuts modal and small toolbar trigger list the supported keyboard shor
 
 test('card, view, export, refresh, help, and Escape shortcuts reuse existing actions', () => {
   const {calls,context,document,modal}=setup();
-  for(const [key,index] of [['1',0],['2',1],['3',2],['4',3]]){ assert.equal(fire(document,key),true); assert.deepEqual(calls.pop(),['sv',index]); }
-  context.cur=3; fire(document,'Tab'); assert.deepEqual(calls.pop(),['sv',0]);
-  fire(document,'Tab',{shiftKey:true}); assert.deepEqual(calls.pop(),['sv',3]);
+  for(const [key,index] of [['1',0],['2',1],['3',2],['4',3]]){ assert.equal(fire(document,key),true); assert.deepEqual(calls.splice(-2),[['sv',index],['view','single']]); }
+  context.cur=3; fire(document,'Tab'); assert.deepEqual(calls.splice(-2),[['sv',0],['view','single']]);
+  fire(document,'Tab',{shiftKey:true}); assert.deepEqual(calls.splice(-2),[['sv',3],['view','single']]);
   for(const [key,view] of [['s','single'],['E','email'],['a','all']]){ fire(document,key); assert.deepEqual(calls.pop(),['view',view]); }
   fire(document,'s',{ctrlKey:true}); assert.deepEqual(calls.pop(),['jpg']);
   fire(document,'S',{metaKey:true,shiftKey:true}); assert.deepEqual(calls.pop(),['zip']);
@@ -46,6 +46,15 @@ test('card, view, export, refresh, help, and Escape shortcuts reuse existing act
   fire(document,'?',{shiftKey:true}); assert.equal(modal.classList.active,true); assert.deepEqual(calls.pop(),['focus-close']);
   assert.equal(fire(document,'Tab'),false); assert.deepEqual(calls,[]);
   assert.equal(fire(document,'Escape',{target:{closest:()=>true}}),true); assert.equal(modal.classList.active,false);
+});
+
+test('card navigation does not force Single view before any offers are loaded', () => {
+  const {calls,context,document}=setup();
+  context.offers=[{},{},{},{}];
+  fire(document,'2');
+  assert.deepEqual(calls,[['sv',1]]);
+  fire(document,'Tab');
+  assert.deepEqual(calls,[['sv',1],['sv',2]]);
 });
 
 test('typing targets and unrelated browser or editing commands retain native behavior', () => {
