@@ -19,11 +19,18 @@ function createUtmHarness({ offers, cur = 0, editor = {} } = {}) {
     'g-date': { value: '16 May 2026', getAttribute: () => '' },
     'f-name': { value: editor.name ?? activeOffer.name ?? '' },
     'f-url': { value: editor.url ?? activeOffer.url ?? '' },
-    'f-operator': { value: editor.operator ?? activeOffer.operator ?? '' }
+    'f-operator': { value: editor.operator ?? activeOffer.operator ?? '' },
+    'utm-visible-output': { value: '' },
+    'utm-out': { textContent: '', style: {} },
+    'utm-copy-btn': { disabled: false, textContent: 'Copy Current UTM' }
   };
+  const copied = [];
   const context = {
     console: { log() {} },
     document: { getElementById: id => elements[id] || null },
+    navigator: { clipboard: { writeText(value) { copied.push(value); return Promise.resolve(); } } },
+    alert() {},
+    setTimeout() {},
     OPERATOR_HEADERS: {},
     offers,
     cur
@@ -34,7 +41,7 @@ function createUtmHarness({ offers, cur = 0, editor = {} } = {}) {
   const utm = extractBlock('// CLEAN UTM MODULE', '\nconst STANDARD_UTM_LINKS =')
     .replace('const DANDS_OPERATOR_UTM', 'var DANDS_OPERATOR_UTM');
   vm.runInContext(`${config}\n${utm}`, context);
-  return { context, elements };
+  return { context, elements, copied };
 }
 
 function utmContent(url) {
@@ -148,8 +155,93 @@ test('Campaign Pack export rebuilds offer UTMs instead of reusing cached stale v
   const exportCampaignPack = html.slice(exportStart, exportEnd);
   assert.match(exportCampaignPack, /utm:\(buildUtmForOffer\(i\)\.url\|\|''\)\.replace/);
   assert.doesNotMatch(exportCampaignPack, /o\._utm\|\|buildUtmForOffer/);
+
+  const { context } = createUtmHarness({
+    cur: 2,
+    offers: [{}, {}, {
+      operator: 'msc',
+      ship: 'MSC Virtuosa',
+      name: 'Mediterranean Explorer',
+      _utm: 'https://example.test/?utm_content=160526_norwegian_mediterranean_explorer_card3'
+    }]
+  });
+  assert.equal(utmContent(context.buildUtmForOffer(2).url), '160526_msc_mediterranean_explorer_card3');
 });
 
 test('Google Sheet refresh regenerates all imported offer UTMs before the active-card UTM', () => {
   assert.match(html, /processSheetCSV = function\(csv,status\)\{[\s\S]*?processSheetCSVStable\(csv,status\);[\s\S]*?genAllUtms\(true\);[\s\S]*?genUtm\(\);/);
+});
+
+
+test('visible Generated UTM panel rebuilds selected Card 3 after Norwegian is replaced with MSC', async () => {
+  const { context, elements, copied } = createUtmHarness({
+    cur: 2,
+    offers: [
+      { operator: 'princess', name: 'Greek Islands' },
+      { operator: 'cunard', name: 'Northern Lights' },
+      { operator: 'ncl', ship: 'Norwegian Prima', name: 'Mediterranean Explorer' }
+    ]
+  });
+
+  context.genUtm();
+  assert.match(elements['utm-visible-output'].value, /utm_content=160526_norwegian_mediterranean_explorer_card3/);
+
+  Object.assign(context.offers[2], {
+    operator: 'msc',
+    ship: 'MSC Virtuosa',
+    name: 'Mediterranean Explorer'
+  });
+  elements['f-operator'].value = 'msc';
+  elements['f-name'].value = 'Mediterranean Explorer';
+
+  context.genUtm();
+  assert.match(elements['utm-visible-output'].value, /utm_content=160526_msc_mediterranean_explorer_card3/);
+  assert.doesNotMatch(elements['utm-visible-output'].value, /norwegian|ncl/i);
+
+  const all = context.genAllUtms(true);
+  assert.match(all, /utm_content=160526_msc_mediterranean_explorer_card3/);
+  assert.doesNotMatch(all, /norwegian|ncl/i);
+
+  context.copyUtm();
+  await Promise.resolve();
+  assert.match(copied.at(-1), /utm_content=160526_msc_mediterranean_explorer_card3/);
+  assert.doesNotMatch(copied.at(-1), /norwegian|ncl/i);
+});
+
+test('session-style restored MSC card regenerates instead of retaining a cached Norwegian UTM', () => {
+  const { context, elements } = createUtmHarness({
+    cur: 2,
+    offers: [
+      {},
+      {},
+      {
+        operator: 'msc',
+        ship: 'MSC Virtuosa',
+        name: 'Mediterranean Explorer',
+        _utm: 'https://example.test/?utm_content=160526_norwegian_mediterranean_explorer_card3'
+      }
+    ]
+  });
+
+  context.genUtm();
+  context.genAllUtms(true);
+  assert.match(elements['utm-visible-output'].value, /utm_content=160526_msc_mediterranean_explorer_card3/);
+  assert.equal(utmContent(context.offers[2]._utm), '160526_msc_mediterranean_explorer_card3');
+  assert.doesNotMatch(context.offers[2]._utm, /norwegian|ncl/i);
+});
+
+test('shared generic cruises landing page cannot preserve a previous operator when selection is unresolved', () => {
+  const { context, elements } = createUtmHarness({
+    offers: [{
+      operator: '',
+      name: 'Mediterranean Explorer',
+      url: 'https://www.dawsonandsanderson.co.uk/cruises',
+      _utm: 'https://example.test/?utm_content=160526_norwegian_mediterranean_explorer_card1'
+    }]
+  });
+
+  assert.equal(context.genUtm(), '');
+  assert.equal(context.offers[0]._utm, '');
+  assert.match(elements['utm-visible-output'].value, /needs operator\/operator URL/);
+  assert.doesNotMatch(elements['utm-visible-output'].value, /norwegian|ncl|msc|princess/i);
 });

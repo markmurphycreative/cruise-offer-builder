@@ -3726,11 +3726,16 @@ function getUtmOfferData(i){
   return o;
 }
 function getBaseOperatorConfig(o){
-  const key = detectOperatorKey(o.operator) || detectOperatorKey(o.url) || detectOperatorKey(o.operator_name) || detectOperatorKey(o.line);
+  // The operator selected for the rendered offer is authoritative. Do not infer
+  // it from the landing page: MSC, NCL, Princess, and Virgin share /cruises.
+  const key = detectOperatorKey(o.operator);
   const cfg = key ? DANDS_OPERATOR_UTM[key] : null;
   return cfg ? Object.assign({key}, cfg) : null;
 }
 function buildUtmForOffer(i){
+  // Invalidate first: every consumer must rebuild from the current offer state,
+  // never reuse a generated URL carrying a previous operator slug.
+  if(offers[i]) offers[i]._utm = "";
   const o = getUtmOfferData(i);
   const dateEl = document.getElementById("g-date");
   const dateCode = parseSendDateToDDMMYY((dateEl && (dateEl.value || dateEl.getAttribute("placeholder"))) || "");
@@ -3738,9 +3743,7 @@ function buildUtmForOffer(i){
   const offerSlug = cleanUtmSlug(o.name || "");
   console.log("UTM debug", {card:i+1, operator:o.operator, detectedOperator:cfg && cfg.key, operatorSlug:cfg && cfg.slug, offerName:o.name, sendDate:dateCode, baseUrl:cfg && cfg.url});
   if(!cfg || !offerSlug || !dateCode){
-    // Never leave a previously generated UTM attached to an offer that can no
-    // longer be generated from its current card state.
-    if(offers[i]) offers[i]._utm = "";
+    // The invalidated cache stays blank when current card state is incomplete.
     const missing = [];
     if(!cfg) missing.push("operator/operator URL");
     if(!offerSlug) missing.push("offer name");
