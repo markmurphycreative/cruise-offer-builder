@@ -2808,10 +2808,22 @@ function parseOffer(){
 function setParseStatus(msg,level){const el=document.getElementById('parse-result'); if(!el) return; el.textContent=msg; el.className='parse-result '+(level||'');}
 function showParsePreview(){const modal=document.getElementById('parse-preview-modal'); if(!modal||!pendingParseResult) return; const {parsed,confidence,score}=pendingParseResult; const body=document.getElementById('parse-preview-body'); const conf=document.getElementById('parse-confidence-badge'); const label=confidence==='high'?'High Confidence':confidence==='partial'?'Partial Match':'Needs Review'; conf.className='parse-result '+confidence; conf.textContent=`${label} (${score})`; const keys=['operatorKey','name','ship','day','month','nights','price','board','boardlbl','incl','ports']; body.innerHTML=keys.filter(k=>parsed[k]).map(k=>{const typos=getLikelyTypos(parsed[k]); return `<div class="parse-preview-item ${typos.length?'spell-flag':''}"><strong>${k}</strong>${parsed[k]}</div>`;}).join('')||'<div class="parse-preview-item">No fields confidently detected.</div>'; const parseTypos=Object.values(parsed).flatMap(v=>getLikelyTypos(v)); setSpellWarn("spell-warn-parse-preview",parseTypos.length?`Spelling QA: ${[...new Set(parseTypos)].slice(0,6).join(", ")}`:""); modal.classList.add('active'); runSpellQA();}
 function cancelParsedOffer(){const m=document.getElementById('parse-preview-modal'); if(m) m.classList.remove('active'); pendingParseResult=null;}
-function applyParsedOffer(){if(!pendingParseResult) return; const {parsed,confidence}=pendingParseResult; const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
+function prepareOfferSlotForParsedOffer(parsed){
+  const hasParsedFields=Object.keys(PARSE_FIELD_MAP).some(k=>parsed[k]!==undefined&&parsed[k]!=='');
+  if(!hasParsedFields) return false;
+  if(!offers.some(isOfferLoaded)){
+    while(offers.length<4) offers.push({});
+    cur=0;
+    document.querySelectorAll(".otab").forEach((t,idx)=>t.classList.toggle("active",idx===cur));
+    load(cur);
+  }
+  if(!offers[cur]) offers[cur]={};
+  return true;
+}
+function applyParsedOffer(){if(!pendingParseResult) return; const {parsed,confidence}=pendingParseResult; prepareOfferSlotForParsedOffer(parsed); const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
   touched.forEach(el=>{el.classList.remove('parse-field-flash'); void el.offsetWidth; el.classList.add('parse-field-flash'); setTimeout(()=>el.classList.remove('parse-field-flash'),1700);});
   const applied=touched.length; const label=confidence==='high'?'High Confidence':confidence==='partial'?'Partial Match':'Needs Review';
-  setParseStatus(`✓ Parsed ${applied} fields — ${label}`,confidence); cancelParsedOffer(); rv(); updateAllStatus(); genUtm(); checkPortsWarn(); updateExportFilenames(); runSpellQA();}
+  setParseStatus(`✓ Parsed ${applied} fields — ${label}`,confidence); cancelParsedOffer(); rv(); updateAllStatus(); genUtm(); checkPortsWarn(); updateExportFilenames(); runSpellQA(); if(applied) queueAutosave();}
 
 // ═══════════════════════════════════════════════════════
 // CARD BUILDER
