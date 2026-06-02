@@ -2764,6 +2764,7 @@ function restoreCampaignFilePayload(filePayload){
   if(imageWarning) showSessionFeedback("Campaign loaded, images may need checking",true);
   else if(compatibilityWarning) showSessionFeedback("Campaign loaded with compatibility warning",true);
   else showSessionFeedback("Campaign loaded",false);
+  resetShortcutFocusAfterImport();
   return {imageWarning,compatibilityWarning};
 }
 function loadCampaignFile(event){
