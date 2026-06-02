@@ -144,7 +144,7 @@ test('saved source repopulates on startup without automatically loading offers',
   const { context, status, input, fetched, imported } = createHarness({ savedSource });
   assert.equal(context.restoreGoogleSheetSource(), savedSource);
   assert.equal(input.value, savedSource);
-  assert.equal(status.textContent, 'Connected to Google Sheet');
+  assert.equal(status.textContent, 'Sheet URL saved');
   assert.deepEqual(fetched, []);
   assert.deepEqual(imported, []);
   assert.match(html, /function initBuilderApp\(\)[\s\S]*?load\(0\);\s*restoreGoogleSheetSource\(\);/);
