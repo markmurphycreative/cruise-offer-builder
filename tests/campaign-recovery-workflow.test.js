@@ -107,10 +107,12 @@ test('hero image lock metadata is stored on offers and normalised from restored 
   assert.deepEqual(Array.from(context.offers, offer => offer.heroLocked), [true, false, true, true]);
 });
 
-test('hero lock UI communicates active state and card-tab lock indicators', () => {
-  assert.match(html, /id="hero-lock-state">🔓 Hero Image Unlocked/);
-  assert.match(html, /state\.textContent=locked\?"🔒 Image Locked":"🔓 Hero Image Unlocked"/);
-  assert.match(html, /label\.textContent=`Offer \$\{index\+1\}\$\{isHeroImageLocked\(index\)\?" 🔒":""\}`/);
+test('hero image protection UI uses consistent user-facing copy without state labels', () => {
+  assert.match(html, /id="hero-lock-state">Protect Hero Image/);
+  assert.match(html, /state\.textContent="Protect Hero Image"/);
+  assert.match(html, /label\.textContent=`Offer \$\{index\+1\}`/);
+  assert.doesNotMatch(html, /Hero Image (?:Locked|Unlocked)/);
+  assert.doesNotMatch(html, /Image Locked/);
 });
 
 test('campaign restore can recover hero lock state from campaign-data heroImages entries', () => {
