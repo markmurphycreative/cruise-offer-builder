@@ -105,6 +105,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
   vm.createContext(context);
   vm.runInContext([
     'let pendingParseResult=null;',
+    extractFunction('cleanParsedPorts'),
     extractFunction('parseOffer'),
     extractFunction('setParseStatus'),
     extractFunction('showParsePreview'),
@@ -190,10 +191,30 @@ test('real Load Offer runtime path applies the supplied Celebrity offer when the
   assert.equal(harness.context.offers[0].board, 'FB');
   assert.equal(harness.context.offers[0].boardlbl, 'Full Board');
   assert.match(harness.context.offers[0].ports, /Fort Lauderdale/);
+  assert.doesNotMatch(harness.context.offers[0].ports, /At Sea/i);
   assert.deepEqual(JSON.parse(JSON.stringify(harness.context.offers.slice(1))), [{}, {}, {}]);
   assert.equal(harness.calls.rv, 1);
   assert.equal(harness.calls.status, 1);
   assert.equal(harness.calls.autosave, 1);
+});
+
+
+test('Paste Offer itinerary cleanup excludes sea days and overnight labels while retaining genuine destinations', () => {
+  const harness = createHarness([], 0, { hasParsePreviewModal: false });
+  harness.parse(`${CELEBRITY_CRUISES_OFFER}
+Overnight Port Stay - overnight stay - Overnight - AT SEA`);
+
+  const ports = harness.context.offers[0].ports.split(' • ');
+  assert.equal(ports.includes('Fort Lauderdale'), true);
+  assert.equal(ports.includes('Cartagena'), true);
+  assert.equal(ports.includes('Panama Canal (Cruising)'), true);
+  assert.equal(ports.includes('Colon'), true);
+  assert.equal(ports.includes('Oranjestad'), true);
+  assert.equal(ports.includes('Willemstad'), true);
+  assert.equal(ports.includes('Curacao'), true);
+  assert.equal(ports.includes('Kralendijk'), true);
+  assert.equal(ports.includes('Bonaire'), true);
+  assert.equal(ports.some(port => /^(?:at sea|overnight port stay|overnight stay|overnight)$/i.test(port)), false);
 });
 
 test('live Load Offer button click handler reaches the supplied Celebrity offer apply path', () => {
@@ -230,4 +251,65 @@ test('real Load Offer runtime path does not create slots for clearly unparseable
 test('Load Offer button reaches parseOffer and parseOffer applies directly when no preview modal exists', () => {
   assert.match(html, /<button class="parse-btn" onclick="parseOffer\(\)">/);
   assert.match(extractFunction('parseOffer'), /if\(!showParsePreview\(\)\) applyParsedOffer\(\);/);
+});
+
+
+test('offer tab switches clear Paste Offer textarea and parse status without storing raw paste on offers', () => {
+  const sv = extractFunction('sv');
+  const reset = extractFunction('resetPasteOfferState');
+
+  assert.match(sv, /const next=Number\(i\); const switched=next!==cur;/);
+  assert.match(sv, /if\(switched\) resetPasteOfferState\(\);/);
+  assert.match(reset, /raw\.value=""/);
+  assert.match(reset, /status\.textContent=""/);
+  assert.match(reset, /cancelParsedOffer\(\)/);
+  assert.doesNotMatch(reset, /offers\[/);
+});
+
+test('switching selected offers clears only transient Paste Offer state and preserves loaded Offer Details', () => {
+  const rawPaste = { value: 'Offer 1 pasted text' };
+  const status = { textContent: '✓ Parsed 6 fields — High Confidence', className: 'parse-result high' };
+  const modal = { classList: createClassList() };
+  const fields = { 'f-name': { value: 'Loaded Offer 1' } };
+  const tabs = Array.from({ length: 4 }, () => ({ classList: createClassList() }));
+  const context = {
+    console,
+    document: {
+      getElementById(id) {
+        if(id === 'raw-paste') return rawPaste;
+        if(id === 'parse-result') return status;
+        if(id === 'parse-preview-modal') return modal;
+        return fields[id] || null;
+      },
+      querySelectorAll(selector) { return selector === '.otab' ? tabs : []; }
+    },
+    updateLockUI() {},
+    rv() {},
+    setTimeout(callback) { callback(); },
+    load(index) { fields['f-name'].value = context.offers[index].name || ''; }
+  };
+  context.offers = [{ name: 'Loaded Offer 1' }, { name: 'Loaded Offer 2' }, {}, {}];
+  vm.createContext(context);
+  vm.runInContext([
+    'const FLDS=["name"]; let offers=globalThis.offers; let cur=0; let pendingParseResult={parsed:{name:"Loaded Offer 1"}};',
+    extractFunction('save'),
+    extractFunction('cancelParsedOffer'),
+    extractFunction('resetPasteOfferState'),
+    extractFunction('sv')
+  ].join('\n'), context);
+
+  vm.runInContext('sv(0);', context);
+  assert.equal(rawPaste.value, 'Offer 1 pasted text');
+  assert.equal(status.textContent, '✓ Parsed 6 fields — High Confidence');
+
+  vm.runInContext('sv(1);', context);
+  assert.equal(rawPaste.value, '');
+  assert.equal(status.textContent, '');
+  assert.equal(status.className, 'parse-result');
+  assert.equal(fields['f-name'].value, 'Loaded Offer 2');
+  assert.equal(context.offers[0].name, 'Loaded Offer 1');
+
+  vm.runInContext('sv(0);', context);
+  assert.equal(rawPaste.value, '');
+  assert.equal(fields['f-name'].value, 'Loaded Offer 1');
 });
