@@ -1517,6 +1517,10 @@ function getExportFilename(i){
   return ddmmyy + "_" + opSlug + "_" + nameSlug + "_card" + (i+1) + ".png";
 }
 
+// Retained as a compatibility hook for existing refresh paths. Export actions
+// generate their filenames at download time via getExportFilename().
+function updateExportFilenames(){}
+
 
 function loadScriptOnce(url, globalName){
   return new Promise((resolve, reject) => {

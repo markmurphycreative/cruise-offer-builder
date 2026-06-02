@@ -36,6 +36,12 @@ function extractFunction(name) {
   throw new Error(`Could not extract ${name}`);
 }
 
+function extractLoadOfferClickHandler() {
+  const match = html.match(/<button class="parse-btn" onclick="([^"]+)">/);
+  assert.ok(match, 'Could not find the live Load Offer button');
+  return match[1];
+}
+
 function createClassList() {
   const classes = new Set();
   return {
@@ -188,6 +194,28 @@ test('real Load Offer runtime path applies the supplied Celebrity offer when the
   assert.equal(harness.calls.rv, 1);
   assert.equal(harness.calls.status, 1);
   assert.equal(harness.calls.autosave, 1);
+});
+
+test('live Load Offer button click handler reaches the supplied Celebrity offer apply path', () => {
+  const harness = createHarness([], 2, { hasParsePreviewModal: false });
+  harness.context.__celebrityOffer = CELEBRITY_CRUISES_OFFER;
+  harness.context.document.getElementById('raw-paste').value = harness.context.__celebrityOffer;
+
+  vm.runInContext(extractLoadOfferClickHandler(), harness.context);
+
+  assert.equal(harness.context.cur, 0);
+  assert.equal(harness.context.offers.length, 4);
+  assert.equal(harness.context.offers[0].name, 'Panama Canal & Southern Caribbean');
+  assert.equal(harness.context.offers[0].ship, 'Celebrity Ascent');
+  assert.equal(harness.context.offers[0].price, '2849');
+  assert.equal(harness.context.isOfferLoaded(harness.context.offers[0]), true);
+  assert.equal(harness.calls.rv, 1);
+  assert.equal(harness.calls.status, 1);
+  assert.equal(harness.calls.autosave, 1);
+});
+
+test('refresh paths retain the export-filename compatibility hook used by load', () => {
+  assert.match(html, /function updateExportFilenames\(\)\{\}/);
 });
 
 test('real Load Offer runtime path does not create slots for clearly unparseable text', () => {
