@@ -400,3 +400,35 @@ test('effective tab switch handler saves the old card and clears transient Paste
   assert.equal(Object.hasOwn(context.offers[1], 'rawPaste'), false);
   assert.equal(Object.hasOwn(context.offers[2], 'rawPaste'), false);
 });
+
+
+test('offer storage sanitizer removes transient Paste Offer aliases without losing loaded card data', () => {
+  const context = {
+    offers: [
+      { name: 'Loaded Offer 1', rawPaste: 'raw 1' },
+      { name: 'Loaded Offer 2', pasteText: 'raw 2' },
+      { parsedRaw: 'raw 3' },
+      {}
+    ]
+  };
+  vm.createContext(context);
+  vm.runInContext([
+    'const TRANSIENT_PASTE_OFFER_KEYS=["rawPaste","pasteText","parsedRaw"];',
+    extractFunction('stripTransientPasteOfferFields'),
+    'offers.forEach(stripTransientPasteOfferFields);'
+  ].join('\n'), context);
+
+  assert.deepEqual(JSON.parse(JSON.stringify(context.offers)), [
+    { name: 'Loaded Offer 1' },
+    { name: 'Loaded Offer 2' },
+    {},
+    {}
+  ]);
+});
+
+test('canonical editor save and reload paths strip transient Paste Offer aliases', () => {
+  assert.match(extractFunction('saveEditorToOffer'), /stripTransientPasteOfferFields\(offers\[cur\]/);
+  assert.match(extractFunction('loadOfferToEditor'), /stripTransientPasteOfferFields\(offers\[i\]/);
+  assert.match(extractFunction('visibleFieldsToData'), /stripTransientPasteOfferFields\(Object\.assign/);
+  assert.match(extractFunction('commitVisibleFields'), /offers\[cur\] = stripTransientPasteOfferFields\(Object\.assign/);
+});
