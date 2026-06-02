@@ -2794,6 +2794,12 @@ function cleanParsedPorts(lines){
   const ignored=new Set(["at sea","overnight port stay","overnight stay","overnight"]);
   return lines.flatMap(line=>line.split(/(?:[•·,]|\s+-\s+|-\s*$)/)).map(item=>item.trim()).filter(item=>item&&!ignored.has(item.toLowerCase())).join(" • ");
 }
+const TRANSIENT_PASTE_OFFER_KEYS=["rawPaste","pasteText","parsedRaw"];
+function stripTransientPasteOfferFields(offer){
+  if(!offer) return offer;
+  TRANSIENT_PASTE_OFFER_KEYS.forEach(key=>{ delete offer[key]; });
+  return offer;
+}
 function resetPasteOfferState(){
   const raw=document.getElementById("raw-paste"); if(raw) raw.value="";
   const status=document.getElementById("parse-result"); if(status){status.textContent="";status.className="parse-result";}
@@ -3114,7 +3120,7 @@ function fillEx(){
 // ═══════════════════════════════════════════════════════
 function saveEditorToOffer(){
   try { autoBoardLabel(); } catch(e){}
-  const o = offers[cur] || (offers[cur] = {});
+  const o = stripTransientPasteOfferFields(offers[cur] || (offers[cur] = {}));
   FLDS.forEach(f=>{
     const e=document.getElementById('f-'+f);
     if(e) o[f]=e.value;
@@ -3134,7 +3140,7 @@ function saveEditorToOffer(){
 }
 
 function loadOfferToEditor(i){
-  const o = offers[i] || {};
+  const o = stripTransientPasteOfferFields(offers[i] || {});
   normalizeCropPositionForOffer(o);
   FLDS.forEach(f=>{
     const e=document.getElementById('f-'+f);
@@ -3246,7 +3252,7 @@ processSheetCSV = function(csv,status){
 // offer data after CSV imports.
 // ═══════════════════════════════════════════════════════
 function visibleFieldsToData(){
-  const base = Object.assign({}, offers[cur] || {});
+  const base = stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}));
   FLDS.forEach(function(f){
     const e = document.getElementById('f-' + f);
     if(e) base[f] = e.value || '';
@@ -3266,7 +3272,7 @@ function visibleFieldsToData(){
 }
 function commitVisibleFields(){
   try { autoBoardLabel(); } catch(e){}
-  offers[cur] = Object.assign({}, offers[cur] || {}, visibleFieldsToData());
+  offers[cur] = stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}, visibleFieldsToData()));
 }
 function renderVisibleCard(){
   const scaler = document.getElementById('preview-scaler');
