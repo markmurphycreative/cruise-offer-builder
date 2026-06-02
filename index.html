@@ -1161,6 +1161,7 @@ const OPERATOR_CONFIG = {
   cunard:{displayName:"Cunard",key:"cunard",url:"https://www.dawsonandsanderson.co.uk/cunard",defaultBoard:"HB",utmSlug:"cunard",logoAsset:"header",aliases:[/\bcunard\b/i]},
   fred:{displayName:"Fred. Olsen Cruise Lines",key:"fred",url:"https://www.dawsonandsanderson.co.uk/fred-olsen-cruise-lines",defaultBoard:"HB",utmSlug:"fred_olsen",logoAsset:"header",aliases:[/\bfred\b/i,/\bfred\.?\s*olsen\b/i]},
   marella:{displayName:"Marella Cruises",key:"marella",url:"https://www.dawsonandsanderson.co.uk/marella-cruises",defaultBoard:"AI",utmSlug:"marella",logoAsset:"header",aliases:[/\bmarella\b/i,/\bmarella\s+cruises\b/i]},
+  msc:{displayName:"MSC Cruises",key:"msc",url:"https://www.dawsonandsanderson.co.uk/cruises",defaultBoard:"SC",utmSlug:"msc",logoAsset:"header",aliases:[/\bmsc\b/i,/\bmsc\s+cruises\b/i]},
   ncl:{displayName:"Norwegian Cruise Line",key:"ncl",url:"https://www.dawsonandsanderson.co.uk/cruises",defaultBoard:"SC",utmSlug:"norwegian",logoAsset:"header",aliases:[/\bncl\b/i,/\bnorwegian(?:\s+cruise\s+line)?\b/i]},
   princess:{displayName:"Princess Cruises",key:"princess",url:"https://www.dawsonandsanderson.co.uk/cruises",defaultBoard:"FB",utmSlug:"princess",logoAsset:"header",aliases:[/\bprincess\b/i,/\bprincess\s+cruises\b/i]},
   po:{displayName:"P&O Cruises",key:"po",url:"https://www.dawsonandsanderson.co.uk/p-and-o-cruises",defaultBoard:"FB",utmSlug:"pando",logoAsset:"header",aliases:[/\bp\s*&\s*o\b/i,/\bp\s*and\s*o\b/i,/\bp&o\s+cruises\b/i]},
@@ -3715,10 +3716,12 @@ function detectOperatorKey(input){
 function getUtmOfferData(i){
   const o = Object.assign({}, offers[i] || {});
   if(i === cur){
+    // The active preview renders from the live editor values. Overlay those same
+    // values exactly so an old per-card value cannot survive a cleared or changed field.
     const ids = {name:"f-name",url:"f-url",operator:"f-operator"};
-    const n = document.getElementById(ids.name); if(n) o.name = n.value || o.name;
-    const u = document.getElementById(ids.url); if(u) o.url = u.value || o.url;
-    const op = document.getElementById(ids.operator); if(op) o.operator = op.value || o.operator;
+    const n = document.getElementById(ids.name); if(n) o.name = n.value;
+    const u = document.getElementById(ids.url); if(u) o.url = u.value;
+    const op = document.getElementById(ids.operator); if(op) o.operator = op.value;
   }
   return o;
 }
@@ -3735,6 +3738,9 @@ function buildUtmForOffer(i){
   const offerSlug = cleanUtmSlug(o.name || "");
   console.log("UTM debug", {card:i+1, operator:o.operator, detectedOperator:cfg && cfg.key, operatorSlug:cfg && cfg.slug, offerName:o.name, sendDate:dateCode, baseUrl:cfg && cfg.url});
   if(!cfg || !offerSlug || !dateCode){
+    // Never leave a previously generated UTM attached to an offer that can no
+    // longer be generated from its current card state.
+    if(offers[i]) offers[i]._utm = "";
     const missing = [];
     if(!cfg) missing.push("operator/operator URL");
     if(!offerSlug) missing.push("offer name");
