@@ -3399,8 +3399,11 @@ function initOfferTabDragDrop(){
 }
 
 function sv(i){
+  const next = Number(i) || 0;
+  const switched = next !== cur;
   try { commitVisibleFields(); } catch(e) { console.warn('Could not save current offer before tab switch', e); }
-  cur = Number(i) || 0;
+  cur = next;
+  if(switched) resetPasteOfferState();
   syncOfferSelector();
   try { loadOfferToEditor(cur); } catch(e) { try { load(cur); } catch(_e){} }
   try { updateLockUI(); } catch(e){}

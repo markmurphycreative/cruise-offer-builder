@@ -36,6 +36,19 @@ function extractFunction(name) {
   throw new Error(`Could not extract ${name}`);
 }
 
+function extractLastFunction(name) {
+  const start = html.lastIndexOf(`function ${name}(`);
+  assert.notEqual(start, -1, `Could not find ${name}`);
+  const open = html.indexOf('{', start);
+  let depth = 0;
+  for (let index = open; index < html.length; index += 1) {
+    if (html[index] === '{') depth += 1;
+    if (html[index] === '}') depth -= 1;
+    if (depth === 0) return html.slice(start, index + 1);
+  }
+  throw new Error(`Could not extract ${name}`);
+}
+
 function extractLoadOfferClickHandler() {
   const match = html.match(/<button class="parse-btn" onclick="([^"]+)">/);
   assert.ok(match, 'Could not find the live Load Offer button');
@@ -312,4 +325,78 @@ test('switching selected offers clears only transient Paste Offer state and pres
   vm.runInContext('sv(0);', context);
   assert.equal(rawPaste.value, '');
   assert.equal(fields['f-name'].value, 'Loaded Offer 1');
+});
+
+test('effective tab switch handler saves the old card and clears transient Paste Offer state before loading a blank card', () => {
+  const rawPaste = { value: 'Offer 1 pasted text' };
+  const status = { textContent: '✓ Parsed 6 fields — High Confidence', className: 'parse-result high' };
+  const modal = { classList: createClassList() };
+  const fields = { 'f-name': { value: 'Loaded Offer 1' } };
+  const calls = [];
+  const context = {
+    console,
+    offers: [{ name: 'Loaded Offer 1' }, {}, {}, {}],
+    document: {
+      getElementById(id) {
+        if(id === 'raw-paste') return rawPaste;
+        if(id === 'parse-result') return status;
+        if(id === 'parse-preview-modal') return modal;
+        return fields[id] || null;
+      }
+    },
+    commitVisibleFields() {
+      const index = context.getCur();
+      calls.push(`save:${index}`);
+      context.offers[index].name = fields['f-name'].value;
+    },
+    syncOfferSelector() {},
+    loadOfferToEditor(index) {
+      calls.push(`load:${index}`);
+      fields['f-name'].value = context.offers[index].name || '';
+    },
+    updateLockUI() {},
+    genUtm() {},
+    genStandardUtms() {},
+    updateAllStatus() {},
+    updateExportFilenames() {},
+    updateMoveOfferButtons() {},
+    renderPreviewMode() {},
+    queueAutosave() {}
+  };
+  vm.createContext(context);
+  vm.runInContext([
+    'let cur=0; let pendingParseResult={parsed:{name:"Loaded Offer 1"}};',
+    extractFunction('cancelParsedOffer'),
+    extractFunction('resetPasteOfferState'),
+    extractLastFunction('sv'),
+    'globalThis.runSwitch=()=>sv(1); globalThis.getCur=()=>cur;'
+  ].join('\n'), context);
+
+  context.runSwitch();
+
+  assert.deepEqual(calls, ['save:0', 'load:1']);
+  assert.equal(context.getCur(), 1);
+  assert.equal(rawPaste.value, '');
+  assert.equal(status.textContent, '');
+  assert.equal(status.className, 'parse-result');
+  assert.equal(fields['f-name'].value, '');
+  assert.equal(context.offers[0].name, 'Loaded Offer 1');
+  assert.deepEqual(context.offers[1], {});
+
+  vm.runInContext('sv(0);', context);
+  assert.equal(fields['f-name'].value, 'Loaded Offer 1');
+  assert.equal(rawPaste.value, '');
+
+  vm.runInContext('sv(1);', context);
+  fields['f-name'].value = 'Loaded Offer 2';
+  rawPaste.value = 'Offer 2 pasted text';
+  vm.runInContext('sv(2);', context);
+
+  assert.equal(rawPaste.value, '');
+  assert.equal(fields['f-name'].value, '');
+  assert.equal(context.offers[1].name, 'Loaded Offer 2');
+  assert.deepEqual(context.offers[2], {});
+  assert.equal(Object.hasOwn(context.offers[0], 'rawPaste'), false);
+  assert.equal(Object.hasOwn(context.offers[1], 'rawPaste'), false);
+  assert.equal(Object.hasOwn(context.offers[2], 'rawPaste'), false);
 });
