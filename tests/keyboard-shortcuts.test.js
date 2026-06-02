@@ -25,6 +25,10 @@ function fire(document,key,overrides={}){
   return prevented;
 }
 
+test('the global keyboard shortcut listener is attached exactly once', () => {
+  assert.equal((html.match(/document\.addEventListener\('keydown',handleKeyboardShortcut\);/g) || []).length, 1);
+});
+
 test('shortcuts modal and small toolbar trigger list the supported keyboard shortcuts', () => {
   assert.match(html, /<button class="shortcuts-trigger"[^>]*onclick="openShortcutsModal\(\)"[^>]*>Shortcuts<\/button>/);
   assert.match(html, /id="shortcuts-modal"[\s\S]*?Keyboard Shortcuts[\s\S]*?<kbd>1<\/kbd>[\s\S]*?<kbd>Tab<\/kbd>[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>S<\/kbd>[\s\S]*?<kbd>R<\/kbd>[\s\S]*?<kbd>\?<\/kbd>[\s\S]*?<kbd>Esc<\/kbd>/);
