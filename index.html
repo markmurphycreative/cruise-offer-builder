@@ -1604,6 +1604,16 @@ function hasExternalImg(o){
   return o._img && (o._img.startsWith("http://") || o._img.startsWith("https://"));
 }
 
+function getCampaignPackFolderName(){
+  const campaignName = String(document.getElementById("g-campaign").value || "")
+    .replace(/[\u0000-\u001f\u007f<>:"/\\|?*]/g, "");
+  return `${campaignName.trim() ? campaignName : "Untitled Campaign"} - CP`;
+}
+
+function getCampaignPackFilename(){
+  return `${getCampaignPackFolderName()}.zip`;
+}
+
 function getCampaignZipFilename(){
   const cleanSlug = v => String(v||"").toLowerCase().replace(/&/g,"and").replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"");
   const campaign = cleanSlug(document.getElementById("g-campaign").value || "cruise_cards") || "cruise_cards";
@@ -4378,9 +4388,9 @@ async function exportCampaignPack(){
 Send Date: ${document.getElementById('g-date').value||''}
 Exported: ${stamp.toISOString()}
 Offers Included: ${combinedRows.filter(row=>row.type==='offer').length}`);
-    if(prog) prog.textContent='Compressing campaign-pack.zip...';
+    if(prog) prog.textContent=`Compressing ${getCampaignPackFilename()}...`;
     const blob=await zip.generateAsync({type:'blob'});
-    downloadBlob(blob,'campaign-pack.zip');
+    downloadBlob(blob,getCampaignPackFilename());
     if(prog) prog.textContent='✓ Campaign pack exported';
     markExportComplete('exp-pack-complete');
     showExportToast('Campaign pack exported successfully');
