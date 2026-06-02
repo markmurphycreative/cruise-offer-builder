@@ -2005,7 +2005,7 @@ function restoreGoogleSheetSource(){
   const source=getSavedGoogleSheetSource();
   const input=document.getElementById("sheets-url");
   if(input) input.value=source;
-  setSheetsStatus(source?"Connected to Google Sheet":"No saved source",source?"csv-success":"");
+  setSheetsStatus(source?"Sheet URL saved":"No saved source",source?"csv-success":"");
   return source;
 }
 async function fetchCsvUrl(url){
