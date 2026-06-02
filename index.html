@@ -847,14 +847,16 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     <div class="act-row">
       <button class="abtn gold" type="button" onclick="saveCampaignFile()">Save Campaign</button>
       <button class="abtn navy" type="button" onclick="triggerLoadCampaignFile()">Load Campaign</button>
-      <button class="abtn" type="button" onclick="triggerLoadCampaignBackup()">Load Campaign Backup</button>
       <input id="campaign-file-input" type="file" accept=".json,application/json" style="display:none" onchange="loadCampaignFile(event)">
+    </div>
+    <div class="act-row">
+      <button class="abtn" type="button" onclick="triggerLoadCampaignBackup()">Load Campaign Backup</button>
       <input id="campaign-backup-input" type="file" accept=".json,application/json" style="display:none" onchange="loadCampaignBackup(event)">
     </div>
     <div class="act-row">
       <button class="abtn" onclick="clearSavedSession()">Clear Saved Session</button>
     </div>
-    <div class="session-hint">Campaign files are reusable backups. Autosave remains available for everyday recovery.</div>
+    <div class="session-hint">Campaign files are reusable backups. Autosave handles day-to-day recovery.</div>
     <div class="session-feedback" id="session-feedback" aria-live="polite"></div>
   </div>
 </div>
