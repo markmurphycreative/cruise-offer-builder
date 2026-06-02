@@ -23,6 +23,28 @@ Willemstad, Curacao - Kralendijk, Bonaire - At Sea -
 At Sea - Fort Lauderdale, Florida
 Luggage & Transfers included.`;
 
+const PATAGONIA_AND_ARGENTINA_OFFER = `Celebrity Cruises
+Patagonia & Argentina
+12th January 2027
+14 nights Cruise
+Celebrity Ascent
+Flights included from Newcastle
+Full Board
+£3499 per person based on 2 sharing
+You'll Visit
+Buenos Aires
+Montevideo - At Sea
+Port Stanley, Falkland Islands
+Cape Horn, Chile
+Ushuaia
+Strait of Magellan
+Punta Arenas
+At Sea
+Puerto Madryn
+Punta Del Este
+Overnight Port Stay
+Luggage & Transfers Included.`;
+
 function extractFunction(name) {
   const start = html.indexOf(`function ${name}(`);
   assert.notEqual(start, -1, `Could not find ${name}`);
@@ -118,6 +140,9 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
   vm.createContext(context);
   vm.runInContext([
     'let pendingParseResult=null;',
+    `const ITINERARY_SECTION_LABEL=/^(?:itinerary|ports|you(?:'|’)?ll visit)\\s*:?\\s*(.*)$/i;`,
+    `const ITINERARY_FOOTER_LABEL=/^(?:luggage\\s*(?:&|and)\\s*transfers?\\s+included|flights?\\s+included|inclusions?|what(?:'|’)?s included|price|from £|terms(?:\\s*&\\s*conditions)?|book now|call to book|cabin|accommodation)\\b/i;`,
+    extractFunction('getItineraryLines'),
     extractFunction('cleanParsedPorts'),
     extractFunction('parseOffer'),
     extractFunction('setParseStatus'),
@@ -211,6 +236,40 @@ test('real Load Offer runtime path applies the supplied Celebrity offer when the
   assert.equal(harness.calls.autosave, 1);
 });
 
+
+test("Paste Offer recognises Itinerary, Ports, and You'll Visit labels with line and bullet-separated destinations", () => {
+  for (const label of ['Itinerary', 'Ports', "You'll Visit"]) {
+    const harness = createHarness([], 0, { hasParsePreviewModal: false });
+    harness.parse(`${label}
+- Buenos Aires
+• Montevideo
+- At Sea
+Luggage & Transfers Included`);
+
+    assert.equal(harness.context.offers[0].ports, 'Buenos Aires • Montevideo');
+  }
+});
+
+test('Paste Offer captures every Patagonia & Argentina destination across the full labelled itinerary section', () => {
+  const harness = createHarness([], 0, { hasParsePreviewModal: false });
+  harness.parse(PATAGONIA_AND_ARGENTINA_OFFER);
+
+  assert.equal(harness.context.offers[0].ports, [
+    'Buenos Aires', 'Montevideo', 'Port Stanley', 'Falkland Islands', 'Cape Horn', 'Chile', 'Ushuaia',
+    'Strait of Magellan', 'Punta Arenas', 'Puerto Madryn', 'Punta Del Este'
+  ].join(' • '));
+  assert.doesNotMatch(harness.context.offers[0].ports, /At Sea|Overnight|Luggage|Transfers/i);
+});
+
+test('Paste Offer keeps the existing Panama Canal & Southern Caribbean parser output unchanged', () => {
+  const harness = createHarness([], 0, { hasParsePreviewModal: false });
+  harness.parse(CELEBRITY_CRUISES_OFFER);
+
+  assert.equal(harness.context.offers[0].ports, [
+    'Fort Lauderdale', 'Florida', 'Cartagena', 'Colombia', 'Panama Canal (Cruising)', 'Colon', 'Panama',
+    'Oranjestad', 'Aruba', 'Willemstad', 'Curacao', 'Kralendijk', 'Bonaire', 'Fort Lauderdale', 'Florida'
+  ].join(' • '));
+});
 
 test('Paste Offer itinerary cleanup excludes sea days and overnight labels while retaining genuine destinations', () => {
   const harness = createHarness([], 0, { hasParsePreviewModal: false });

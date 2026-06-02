@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
+import vm from 'node:vm';
 
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
@@ -32,4 +33,29 @@ test('white information panel narrows editorial copy, grows naturally, and centr
   );
   assert.match(html, /\.cc \.price-block\{max-width:1000px;\}/);
   assert.doesNotMatch(html, /\.cc \.isec\{[^}]*(?:max-)?height:\d+px/);
+});
+
+function extractFunction(name) {
+  const start = html.indexOf(`function ${name}(`);
+  assert.notEqual(start, -1, `Could not find ${name}`);
+  const open = html.indexOf('{', start);
+  let depth = 0;
+  for (let index = open; index < html.length; index += 1) {
+    if (html[index] === '{') depth += 1;
+    if (html[index] === '}') depth -= 1;
+    if (depth === 0) return html.slice(start, index + 1);
+  }
+  throw new Error(`Could not extract ${name}`);
+}
+
+test("card preview preserves every parsed destination without first-N port truncation", () => {
+  const context = {};
+  vm.createContext(context);
+  vm.runInContext([extractFunction('cleanPortsDisplay'), extractFunction('chunkBullets')].join('\n'), context);
+  const ports = [
+    'Buenos Aires', 'Montevideo', 'Port Stanley', 'Falkland Islands', 'Cape Horn', 'Chile', 'Ushuaia',
+    'Strait of Magellan', 'Punta Arenas', 'Puerto Madryn', 'Punta Del Este'
+  ];
+
+  assert.equal(context.chunkBullets(ports.join(' • '), 4).replaceAll('<br>', ' • '), ports.join(' • '));
 });
