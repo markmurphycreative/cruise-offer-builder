@@ -308,6 +308,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .vbtn.active{color:var(--navy);}
 .tbtn{padding:3px 7px;font-size:9px;font-weight:700;border:1px solid rgba(255,255,255,.2);border-radius:3px;background:transparent;color:rgba(255,255,255,.6);margin-left:3px;}
 .tbtn.on{background:rgba(255,255,255,.15);color:#fff;}
+.shortcuts-trigger{padding:3px 7px;font-size:9px;font-weight:700;border:1px solid rgba(255,255,255,.2);border-radius:3px;background:transparent;color:rgba(255,255,255,.72);}
+.shortcuts-trigger:hover{color:#fff;border-color:rgba(255,255,255,.42);}
 .preview-wrap{flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:stretch;background:#dedad2;}
 .preview-scaler{margin-block:auto;transform-origin:top center;}
 .preview-scaler.empty-preview{display:flex;align-items:center;justify-content:center;}
@@ -342,6 +344,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .modal h2{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;}
 .modal pre{font-size:10px;font-family:monospace;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:8px;white-space:pre-wrap;word-break:break-word;max-height:45vh;overflow-y:auto;}
 .modal-close{position:absolute;top:10px;right:12px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted);}
+.shortcuts-modal{max-width:520px;}
+.shortcuts-list{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px 18px;margin:0;padding:0;}
+.shortcuts-list dt{font-size:11px;color:var(--navy);}
+.shortcuts-list dd{margin:0;text-align:right;font-size:10px;color:var(--muted);}
+.shortcuts-list kbd{display:inline-block;min-width:20px;padding:2px 5px;border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;background:var(--panel);color:var(--navy);font-family:monospace;font-size:10px;text-align:center;}
 .modal-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
 .modal-btn{padding:5px 10px;font-size:11px;font-weight:600;border-radius:var(--radius);border:1px solid var(--border);background:#fff;cursor:pointer;}
 .modal-btn.primary{background:var(--navy);color:#fff;border-color:var(--navy);}
@@ -823,6 +830,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <button class="vbtn" id="vb-email" onclick="setView(&#39;email&#39;)">Email</button>
       <button class="vbtn active" id="vb-all" onclick="setView(&#39;all&#39;)">All 4</button>
     </div>
+    <button class="shortcuts-trigger" type="button" onclick="openShortcutsModal()" aria-haspopup="dialog">Shortcuts</button>
   </div>
   <div class="preview-wrap">
     <div class="preview-scaler" id="preview-scaler" style="width: 1200px; transform: scale(0.32); transform-origin: center top; height: 885.44px;">
@@ -836,6 +844,23 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 <!-- Off-screen export render area -->
 <div id="export-render-area"></div>
 
+
+<div class="modal-overlay" id="shortcuts-modal" onclick="if(event.target===this) closeShortcutsModal()">
+  <div class="modal shortcuts-modal" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">
+    <button class="modal-close" id="shortcuts-close" type="button" aria-label="Close keyboard shortcuts" onclick="closeShortcutsModal()">×</button>
+    <h2 id="shortcuts-title">Keyboard Shortcuts</h2>
+    <dl class="shortcuts-list">
+      <dt>Select an offer</dt><dd><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd></dd>
+      <dt>Next / previous offer</dt><dd><kbd>Tab</kbd> / <kbd>Shift</kbd> + <kbd>Tab</kbd></dd>
+      <dt>Single / Email / All 4 view</dt><dd><kbd>S</kbd> / <kbd>E</kbd> / <kbd>A</kbd></dd>
+      <dt>Export current JPG</dt><dd><kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>S</kbd></dd>
+      <dt>Export JPG ZIP</dt><dd><kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd></dd>
+      <dt>Refresh offers</dt><dd><kbd>R</kbd></dd>
+      <dt>Open this help</dt><dd><kbd>?</kbd></dd>
+      <dt>Close this help</dt><dd><kbd>Esc</kbd></dd>
+    </dl>
+  </div>
+</div>
 
 <div class="modal-overlay" id="summary-modal" onclick="if(event.target===this) closeModal('summary-modal')">
   <div class="summary-modal" role="dialog" aria-modal="true" aria-labelledby="summary-title">
@@ -4315,6 +4340,70 @@ function syncSailDateFromHidden(){
   });
   refreshStandardUtmsSafe();
 })();
+
+
+// Lightweight global shortcuts: keep native editing and browser commands intact.
+let shortcutsPreviousFocus = null;
+function openShortcutsModal(){
+  const modal=document.getElementById('shortcuts-modal');
+  if(!modal) return;
+  shortcutsPreviousFocus=document.activeElement;
+  modal.classList.add('active');
+  const close=document.getElementById('shortcuts-close');
+  if(close) close.focus();
+}
+function closeShortcutsModal(){
+  const modal=document.getElementById('shortcuts-modal');
+  if(!modal) return;
+  modal.classList.remove('active');
+  if(shortcutsPreviousFocus && typeof shortcutsPreviousFocus.focus === 'function') shortcutsPreviousFocus.focus();
+  shortcutsPreviousFocus=null;
+}
+function isShortcutBlockedTarget(target){
+  return !!(target && target.closest && target.closest('input,textarea,select,button,[contenteditable]'));
+}
+function cycleOfferShortcut(direction){
+  const active=Number.isInteger(Number(cur)) ? Number(cur) : 0;
+  sv((active + direction + 4) % 4);
+}
+function handleKeyboardShortcut(event){
+  if(event.defaultPrevented) return;
+  const shortcutsModal=document.getElementById('shortcuts-modal');
+  if(event.key === 'Escape' && shortcutsModal && shortcutsModal.classList.contains('active')){
+    closeShortcutsModal();
+    event.preventDefault();
+    return;
+  }
+  if(shortcutsModal && shortcutsModal.classList.contains('active')) return;
+  if(isShortcutBlockedTarget(event.target)) return;
+
+  const commandKey=event.metaKey || event.ctrlKey;
+  if(commandKey){
+    if(!event.altKey && event.key.toLowerCase() === 's'){
+      event.preventDefault();
+      if(event.shiftKey) exportAllJPG();
+      else exportCurrentJPG();
+    }
+    return;
+  }
+  if(event.altKey) return;
+
+  if(event.key === 'Tab'){
+    event.preventDefault();
+    cycleOfferShortcut(event.shiftKey ? -1 : 1);
+    return;
+  }
+  if(event.shiftKey && event.key !== '?') return;
+
+  const key=event.key.toLowerCase();
+  if(/^[1-4]$/.test(key)){ sv(Number(key)-1); event.preventDefault(); return; }
+  if(key === 's'){ setView('single'); event.preventDefault(); return; }
+  if(key === 'e'){ setView('email'); event.preventDefault(); return; }
+  if(key === 'a'){ setView('all'); event.preventDefault(); return; }
+  if(key === 'r'){ refreshOffers(); event.preventDefault(); return; }
+  if(event.key === '?'){ openShortcutsModal(); event.preventDefault(); }
+}
+document.addEventListener('keydown',handleKeyboardShortcut);
 
 window.addEventListener('resize', function(){
   updateViewPill();
