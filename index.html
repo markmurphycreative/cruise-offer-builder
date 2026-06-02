@@ -807,9 +807,14 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
   <div class="sb-actions">
     <div class="session-status" id="saved-session-status" aria-live="polite"><strong>Session Status</strong>No saved session</div>
     <div class="act-row">
+      <button class="abtn gold" type="button" onclick="saveCampaignFile()">Save Campaign</button>
+      <button class="abtn navy" type="button" onclick="triggerLoadCampaignFile()">Load Campaign</button>
+      <input id="campaign-file-input" type="file" accept=".json,application/json" style="display:none" onchange="loadCampaignFile(event)">
+    </div>
+    <div class="act-row">
       <button class="abtn" onclick="clearSavedSession()">Clear Saved Session</button>
     </div>
-    <div class="session-hint">Use autosave/Continue Last Session for everyday recovery.</div>
+    <div class="session-hint">Campaign files are reusable backups. Autosave remains available for everyday recovery.</div>
     <div class="session-feedback" id="session-feedback" aria-live="polite"></div>
   </div>
 </div>
@@ -879,7 +884,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.0.2";
+const APP_VERSION = "v2.1.0";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -2382,6 +2387,7 @@ let autosaveHydrating = false;
 let autosaveAwaitingRestoreDecision = false;
 const DISABLE_AUTORESTORE_SESSION = true;
 let autosaveLastSavedAt = null;
+let allowLargeEmbeddedImagesDuringRestore = false;
 
 function formatAutosaveTime(ts){
   if(!ts) return "";
@@ -2479,7 +2485,7 @@ function applySessionPayload(data){
   // Restore bugfix: avoid calling save()/commit during hydration; hydrate UI first, then refresh once.
   autosaveHydrating = true;
   offers = data.offers.slice(0,4).map((o={})=>{
-    if(o._img && typeof o._img === "string" && o._img.startsWith("data:") && o._img.length > 6_000_000){
+    if(!allowLargeEmbeddedImagesDuringRestore && o._img && typeof o._img === "string" && o._img.startsWith("data:") && o._img.length > 6_000_000){
       delete o._img;
       o._imgNeedsReupload = true;
     }
@@ -2631,6 +2637,149 @@ function confirmClearSavedSession(){
 
 function slugifyCampaignName(name){
   return String(name||"campaign").trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"") || "campaign";
+}
+
+const CAMPAIGN_FILE_TYPE = "cruise-offer-builder-campaign";
+const CAMPAIGN_FILE_SCHEMA_VERSION = "1.0";
+
+function buildCampaignFilename(){
+  const campaignName=slugifyCampaignName(document.getElementById("g-campaign").value);
+  const dateEl=document.getElementById("g-date");
+  const dateCode=parseSendDateToDDMMYY((dateEl && (dateEl.value || dateEl.getAttribute("placeholder"))) || "") || "undated";
+  return `DAS_campaign_${campaignName}_${dateCode}.json`;
+}
+function makePortableCampaignOffers(sourceOffers){
+  const cloned=JSON.parse(JSON.stringify(sourceOffers || [{},{},{},{}]));
+  while(cloned.length<4) cloned.push({});
+  return cloned.slice(0,4).map((offer={})=>{
+    ["_img","_logoCustom"].forEach(key=>{
+      const value=offer[key];
+      if(typeof value !== "string" || !/^(?:blob:|file:)/i.test(value)) return;
+      offer[`${key}Source`]=value;
+      delete offer[key];
+      offer[key === "_img" ? "_imgNeedsReupload" : "_logoNeedsReupload"]=true;
+    });
+    return offer;
+  });
+}
+function getCampaignQaSnapshot(){
+  const qa=document.getElementById("copy-qa-status");
+  return {copyQaStatus:qa ? qa.textContent || "" : "", capturedForReferenceOnly:true};
+}
+function buildCampaignFilePayload(){
+  save();
+  const exportedAt=new Date().toISOString();
+  const sectionState={};
+  getSectionCollapseState().forEach((collapsed,key)=>{ sectionState[key]=!!collapsed; });
+  const campaign={
+    name:document.getElementById("g-campaign").value||"",
+    date:document.getElementById("g-date").value||"",
+    airport:document.getElementById("g-airport").value||"",
+    terms:document.getElementById("g-terms").value||""
+  };
+  const portableOffers=makePortableCampaignOffers(offers);
+  const googleSheetSource=getSavedGoogleSheetSource();
+  return {
+    fileType:CAMPAIGN_FILE_TYPE,
+    schemaVersion:CAMPAIGN_FILE_SCHEMA_VERSION,
+    appVersion:APP_VERSION,
+    exportedAt,
+    campaign,
+    state:{
+      campaign,
+      offers:portableOffers,
+      cardOrder:[0,1,2,3],
+      cur,
+      activeOfferIndex:cur,
+      viewMode:["single","email","all"].includes(viewMode) ? viewMode : "all",
+      lockedOffers:Array.isArray(lockedOffers) ? lockedOffers.slice(0,4) : [false,false,false,false],
+      sectionState,
+      openSectionKey:getOpenSectionKey()
+    },
+    operatorSettings:{source:"state.offers",byCard:portableOffers.map(({operator="",url="",tags="",_logoDisplay="operator"},cardIndex)=>({cardIndex,operator,url,tags,_logoDisplay}))},
+    logoSettings:{source:"state.offers",byCard:portableOffers.map(({_logoDisplay="operator",_logoCustom="",_logoSize="",_logoNeedsReupload=false},cardIndex)=>({cardIndex,_logoDisplay,hasCustomLogo:!!_logoCustom,_logoSize,_logoNeedsReupload}))},
+    heroImages:{source:"state.offers",byCard:portableOffers.map(({_img="",_imgSource="",_imgNeedsReupload=false,_cropZoom=100,_cropX=50,_cropY=50,_cropPosVersion=2},cardIndex)=>({cardIndex,imageType:_img ? (/^data:/i.test(_img) ? "embedded-data-url" : "url") : (_imgSource ? "local-reference" : "none"),_imgNeedsReupload,_cropZoom,_cropX,_cropY,_cropPosVersion}))},
+    utmData:portableOffers.map(({url="",_utm="",utm_content=""})=>({url,_utm,utm_content})),
+    operatorLandingPages:portableOffers.map(({url=""})=>url),
+    qa:getCampaignQaSnapshot(),
+    sourceInfo:{googleSheetUrl:googleSheetSource},
+    sessionMetadata:{savedAt:exportedAt,autosaveKey:AUTOSAVE_KEY,lockedOffers:Array.isArray(lockedOffers) ? lockedOffers.slice(0,4) : [],sectionState,openSectionKey:getOpenSectionKey()}
+  };
+}
+function saveCampaignFile(){
+  try{
+    const fileName=buildCampaignFilename();
+    const blob=new Blob([JSON.stringify(buildCampaignFilePayload(),null,2)],{type:"application/json"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download=fileName;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showSessionFeedback("Campaign saved",false);
+  }catch(e){
+    console.error("Campaign save failed",e);
+    showSessionFeedback("Campaign could not be saved",true);
+  }
+}
+function triggerLoadCampaignFile(){
+  const input=document.getElementById("campaign-file-input");
+  if(input) input.click();
+}
+function parseCampaignFileText(text){
+  let parsed;
+  try{ parsed=JSON.parse(String(text||"")); }
+  catch(e){ throw new Error("Invalid JSON"); }
+  if(!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Invalid campaign file");
+  const isCurrent=parsed.fileType === CAMPAIGN_FILE_TYPE;
+  const isLegacyProject=parsed.projectType === "cruise-offer-builder-project";
+  if(!isCurrent && !isLegacyProject) throw new Error("Not a Cruise Offer Builder campaign file");
+  if(isCurrent){
+    const major=String(parsed.schemaVersion||"").split(".")[0];
+    if(major !== String(CAMPAIGN_FILE_SCHEMA_VERSION).split(".")[0]) throw new Error("Incompatible campaign file version");
+  }
+  const state=isCurrent ? parsed.state : parsed;
+  if(!state || !Array.isArray(state.offers)) throw new Error("Campaign file is missing offer cards");
+  return {parsed,state,isLegacyProject};
+}
+function campaignFileNeedsImageCheck(state){
+  return !!((state&&state.offers)||[]).find(o=>o&&(o._imgNeedsReupload||o._logoNeedsReupload));
+}
+function restoreCampaignFilePayload(filePayload){
+  const {parsed,state,isLegacyProject}=filePayload;
+  const restored=JSON.parse(JSON.stringify(state));
+  restored.cur=Number.isInteger(restored.activeOfferIndex) ? restored.activeOfferIndex : restored.cur;
+  allowLargeEmbeddedImagesDuringRestore=true;
+  try{ applySessionPayload(restored); }
+  finally{ allowLargeEmbeddedImagesDuringRestore=false; }
+  const sheetUrl=parsed.sourceInfo && typeof parsed.sourceInfo.googleSheetUrl === "string" ? parsed.sourceInfo.googleSheetUrl : "";
+  const sheetsInput=document.getElementById("sheets-url");
+  if(sheetsInput) sheetsInput.value=sheetUrl;
+  if(sheetUrl) storeGoogleSheetSource(sheetUrl);
+  else try{ localStorage.removeItem(GOOGLE_SHEET_SOURCE_KEY); }catch(e){}
+  clearTimeout(autosaveTimer);
+  saveSessionNow();
+  const differentAppVersion=!!(parsed.appVersion && parsed.appVersion !== APP_VERSION);
+  const imageWarning=campaignFileNeedsImageCheck(restored);
+  const compatibilityWarning=isLegacyProject || differentAppVersion;
+  if(imageWarning) showSessionFeedback("Campaign loaded, images may need checking",true);
+  else if(compatibilityWarning) showSessionFeedback("Campaign loaded with compatibility warning",true);
+  else showSessionFeedback("Campaign loaded",false);
+  return {imageWarning,compatibilityWarning};
+}
+function loadCampaignFile(event){
+  const input=event && event.target;
+  const file=input && input.files && input.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{ restoreCampaignFilePayload(parseCampaignFileText(reader.result)); }
+    catch(e){
+      console.warn("Campaign load rejected",e);
+      showSessionFeedback(`Invalid campaign file: ${e.message}`,true);
+    }finally{ input.value=""; }
+  };
+  reader.onerror=()=>{ input.value=""; showSessionFeedback("Invalid campaign file: could not read file",true); };
+  reader.readAsText(file);
 }
 function buildProjectFilename(){
   const now = new Date();
