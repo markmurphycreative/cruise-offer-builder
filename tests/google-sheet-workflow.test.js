@@ -19,6 +19,7 @@ function createHarness({ savedSource = '', csv = 'operator,offer_name\nP&O,Carib
   const status = { className: '', textContent: '' };
   const input = { value: '' };
   const campaign = { value: 'Existing campaign' };
+  const app = { focusOptions: null, focus(options) { this.focusOptions = options; context.document.activeElement = this; } };
   const fetched = [];
   const imported = [];
   const context = {
@@ -30,7 +31,8 @@ function createHarness({ savedSource = '', csv = 'operator,offer_name\nP&O,Carib
       setItem: (key, value) => storage.set(key, value)
     },
     document: {
-      getElementById: id => id === 'sheets-status' ? status : id === 'sheets-url' ? input : id === 'g-campaign' ? campaign : null
+      activeElement: input,
+      getElementById: id => id === 'sheets-status' ? status : id === 'sheets-url' ? input : id === 'g-campaign' ? campaign : id === 'builder-app' ? app : null
     },
     fetch: async url => {
       fetched.push(url);
@@ -47,7 +49,7 @@ function createHarness({ savedSource = '', csv = 'operator,offer_name\nP&O,Carib
   };
   vm.createContext(context);
   vm.runInContext(workflowSource, context);
-  return { context, storage, status, input, campaign, fetched, imported };
+  return { context, storage, status, input, campaign, app, fetched, imported };
 }
 
 test('Google Sheet input and actions replace the CSV URL workflow', () => {
@@ -78,6 +80,24 @@ test('loading a Sheet stores the original source and routes generated CSV throug
   assert.deepEqual(fetched, ['https://docs.google.com/spreadsheets/d/abc123/export?format=csv&gid=42']);
   assert.deepEqual(imported, ['operator,offer_name\nP&O,Caribbean']);
   assert.equal(status.textContent, 'Offers loaded');
+});
+
+test('successful Sheet loads move focus from the action control to the shortcut-safe app container', async () => {
+  const { context, input, app } = createHarness();
+  const loadButton = { tagName: 'BUTTON' };
+  context.document.activeElement = loadButton;
+  input.value = 'https://docs.google.com/spreadsheets/d/abc123/edit';
+  assert.equal(await context.loadFromSheets(), true);
+  assert.equal(context.document.activeElement, app);
+  assert.equal(app.focusOptions.preventScroll, true);
+  assert.match(html, /<div class="app start-hidden" id="builder-app" aria-hidden="true" tabindex="-1">/);
+});
+
+test('successful Refresh Offers also moves focus to the shortcut-safe app container', async () => {
+  const { context, app } = createHarness({ savedSource: 'https://docs.google.com/spreadsheets/d/saved123/edit' });
+  context.document.activeElement = { tagName: 'BUTTON' };
+  assert.equal(await context.refreshOffers(), true);
+  assert.equal(context.document.activeElement, app);
 });
 
 test('Load Sheet uses the existing remote CSV fallback path and forwards successful response text to processSheetCSV', async () => {
@@ -119,10 +139,13 @@ test('manual downloaded CSV file import still forwards FileReader text to proces
   const status = { className: '', textContent: '' };
   const imported = [];
   const file = { name: 'offers.csv' };
-  const event = { target: { files: [file], value: 'offers.csv' } };
+  const order = [];
+  const app = { focus() { order.push('focus'); context.document.activeElement = this; } };
+  const event = { target: { files: [file], value: 'offers.csv' }, _onSuccess: () => order.push('success') };
   const context = {
     console,
-    document: { getElementById: id => id === 'sheets-status' ? status : null },
+    document: { activeElement: event.target, getElementById: id => id === 'sheets-status' ? status : id === 'builder-app' ? app : null },
+    resetShortcutFocusAfterImport: () => app.focus(),
     FileReader: class {
       readAsText(loadedFile) {
         assert.equal(loadedFile, file);
@@ -137,6 +160,8 @@ test('manual downloaded CSV file import still forwards FileReader text to proces
   context.loadFromCSVFile(event);
   assert.deepEqual(imported, [{ csv, status }]);
   assert.equal(event.target.value, '');
+  assert.deepEqual(order, ['success', 'focus']);
+  assert.equal(context.document.activeElement, app);
 });
 
 test('saved source repopulates on startup without automatically loading offers', () => {

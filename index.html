@@ -470,7 +470,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     </div>
   </div>
 </div>
-<div class="app start-hidden" id="builder-app" aria-hidden="true">
+<div class="app start-hidden" id="builder-app" aria-hidden="true" tabindex="-1">
 
 <!-- ══════════════════════ SIDEBAR ══════════════════════ -->
 <div class="sidebar">
@@ -2053,6 +2053,11 @@ async function fetchCsvUrl(url){
   }
   throw lastErr || new Error("CSV fetch failed, likely CORS from local file");
 }
+function resetShortcutFocusAfterImport(){
+  const target=document.getElementById("builder-app");
+  if(!target || typeof target.focus!=="function") return;
+  try{ target.focus({preventScroll:true}); }catch(e){ target.focus(); }
+}
 function importCsvPreservingOffersOnFailure(csv,status,successMessage){
   const previousOffers=offers.slice();
   const previousCur=cur;
@@ -2063,6 +2068,7 @@ function importCsvPreservingOffersOnFailure(csv,status,successMessage){
     if(status.className==="csv-error") throw new Error(status.textContent||"CSV import failed");
     status.className="csv-success";
     status.textContent=successMessage;
+    resetShortcutFocusAfterImport();
     return true;
   }catch(e){
     offers=previousOffers;
@@ -2118,6 +2124,7 @@ function loadFromCSVFile(event){
     try{
       processSheetCSV(reader.result,status);
       if(typeof event._onSuccess==="function") event._onSuccess();
+      if(status.className!=="csv-error" && typeof resetShortcutFocusAfterImport==="function") resetShortcutFocusAfterImport();
     }catch(e){
       console.error("CSV file import error:",e);
       status.className="csv-error";
