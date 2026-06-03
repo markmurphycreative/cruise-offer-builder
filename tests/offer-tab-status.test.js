@@ -146,11 +146,11 @@ test('offer tab labels fall back cleanly when ship or operator details are missi
   ]);
 });
 
-test('offer tab label layout keeps fixed tab widths and uses ellipsis truncation for both lines', () => {
+test('offer tab label layout keeps fixed tab widths, truncation, and a lighter ship hierarchy', () => {
   assert.match(html, /\.offer-tab-item\{[^}]*flex:1;min-width:0;/);
   assert.match(html, /\.offer-tab-label\{[^}]*flex-direction:column;[^}]*width:100%;min-width:0;[^}]*text-align:center;/);
   assert.match(html, /\.offer-tab-primary,\.offer-tab-ship\{[^}]*overflow:hidden;text-overflow:ellipsis;white-space:nowrap;/);
-  assert.match(html, /\.offer-tab-ship\{[^}]*font-size:9px;/);
+  assert.match(html, /\.offer-tab-ship\{[^}]*font-size:8px;[^}]*font-weight:400;[^}]*color:var\(--muted\);/);
 });
 
 test('each offer tab dot independently maps empty, incomplete, invalid and export-ready offers', () => {
