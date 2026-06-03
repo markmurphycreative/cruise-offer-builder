@@ -110,7 +110,8 @@ test('hero image lock metadata is stored on offers and normalised from restored 
 test('hero image protection UI uses consistent user-facing copy without state labels', () => {
   assert.match(html, /id="hero-lock-state">Protect Hero Image/);
   assert.match(html, /state\.textContent="Protect Hero Image"/);
-  assert.match(html, /label\.textContent=`Offer \$\{index\+1\}`/);
+  assert.match(html, /if\(typeof updateOfferTabLabels==="function"\) updateOfferTabLabels\(\);/);
+  assert.doesNotMatch(html, /label\.textContent=`Offer \$\{index\+1\}`/);
   assert.doesNotMatch(html, /Hero Image (?:Locked|Unlocked)/);
   assert.doesNotMatch(html, /Image Locked/);
 });

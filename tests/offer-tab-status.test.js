@@ -87,6 +87,72 @@ test('status dots remain diagnostic indicators inside the normal offer-tab butto
   assert.doesNotMatch(html, /<span class="status-dot"[^>]*(?:onclick|onkeydown|role="button"|tabindex=)/);
 });
 
+
+test('offer tab labels switch from fallback text to operator and ship identifiers for loaded offers', () => {
+  const context = {
+    offers: [
+      { operator: 'celebrity', ship: 'Celebrity Apex' },
+      { operator: 'cunard', ship: 'Queen Anne' },
+      { operator: 'royal', ship: 'Icon of the Seas' },
+      {}
+    ],
+    OPERATOR_HEADERS: {
+      celebrity: { name: 'Celebrity Cruises' },
+      cunard: { name: 'Cunard' },
+      royal: { name: 'Royal Caribbean' }
+    },
+    OFFER_TAB_OPERATOR_LABELS: {
+      celebrity: 'Celebrity'
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext([
+    extractFunction('isOfferLoaded'),
+    extractFunction('getOfferTabOperatorLabel'),
+    extractFunction('getOfferTabLabelParts')
+  ].join('\n'), context);
+
+  assert.deepEqual(JSON.parse(JSON.stringify([0, 1, 2, 3].map(index => context.getOfferTabLabelParts(index)))), [
+    { primary: '1 • Celebrity', ship: 'Celebrity Apex' },
+    { primary: '2 • Cunard', ship: 'Queen Anne' },
+    { primary: '3 • Royal Caribbean', ship: 'Icon of the Seas' },
+    { primary: 'Offer 4', ship: '' }
+  ]);
+});
+
+test('offer tab labels fall back cleanly when ship or operator details are missing', () => {
+  const context = {
+    offers: [
+      { operator: 'fred', ship: '', name: 'Norwegian Fjords' },
+      { ship: 'Bolette' },
+      { operator: '', ship: 'Sky Princess' },
+      {}
+    ],
+    OPERATOR_HEADERS: { fred: { name: 'Fred. Olsen Cruise Lines' } },
+    OFFER_TAB_OPERATOR_LABELS: { fred: 'Fred. Olsen' }
+  };
+  vm.createContext(context);
+  vm.runInContext([
+    extractFunction('isOfferLoaded'),
+    extractFunction('getOfferTabOperatorLabel'),
+    extractFunction('getOfferTabLabelParts')
+  ].join('\n'), context);
+
+  assert.deepEqual(JSON.parse(JSON.stringify([0, 1, 2, 3].map(index => context.getOfferTabLabelParts(index)))), [
+    { primary: '1 • Fred. Olsen', ship: '' },
+    { primary: 'Offer 2', ship: '' },
+    { primary: 'Offer 3', ship: '' },
+    { primary: 'Offer 4', ship: '' }
+  ]);
+});
+
+test('offer tab label layout keeps fixed tab widths and uses ellipsis truncation for both lines', () => {
+  assert.match(html, /\.offer-tab-item\{[^}]*flex:1;min-width:0;/);
+  assert.match(html, /\.offer-tab-label\{[^}]*flex-direction:column;[^}]*width:100%;min-width:0;[^}]*text-align:center;/);
+  assert.match(html, /\.offer-tab-primary,\.offer-tab-ship\{[^}]*overflow:hidden;text-overflow:ellipsis;white-space:nowrap;/);
+  assert.match(html, /\.offer-tab-ship\{[^}]*font-size:9px;/);
+});
+
 test('each offer tab dot independently maps empty, incomplete, invalid and export-ready offers', () => {
   const green = createCleanOffer('Ready');
   const amber = { ...createCleanOffer('Incomplete'), _img: '' };

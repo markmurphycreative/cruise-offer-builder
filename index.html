@@ -45,7 +45,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .offer-tabs{position:relative;display:flex;margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:6px;background:#fafaf8;flex-shrink:0;overflow:hidden;isolation:isolate;}
 .offer-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:4px;background:var(--gold);box-shadow:0 1px 3px rgba(0,0,0,.2);transform:translateX(0);transition:transform .2s ease,width .2s ease;pointer-events:none;}
 .offer-tab-item{position:relative;z-index:1;flex:1;min-width:0;}
-.otab{width:100%;height:100%;padding:5px 4px 14px;font-size:10px;font-weight:600;border:none;background:transparent;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:.05em;transition:color .18s ease,background .18s ease,box-shadow .18s ease;display:flex;align-items:flex-start;justify-content:center;}
+.otab{width:100%;height:100%;padding:5px 4px 14px;font-size:10px;font-weight:600;border:none;background:transparent;color:var(--muted);cursor:pointer;letter-spacing:.05em;transition:color .18s ease,background .18s ease,box-shadow .18s ease;display:flex;align-items:flex-start;justify-content:center;}
+.offer-tab-label{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:1px;width:100%;min-width:0;line-height:1.1;text-align:center;}
+.offer-tab-primary,.offer-tab-ship{display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.offer-tab-primary{text-transform:none;}
+.offer-tab-ship{font-size:9px;font-weight:500;letter-spacing:.02em;color:inherit;opacity:.82;}
 .otab:hover:not(.active){color:var(--navy);background:rgba(160,146,103,.1);}
 .otab.active{color:var(--navy);}
 .otab.dragging{opacity:.55;}
@@ -1469,10 +1473,9 @@ function toggleHeroImageLock(){
 }
 function updateHeroTabLockIndicators(){
   document.querySelectorAll(".otab").forEach((tab,index)=>{
-    const label=tab.querySelector("span");
-    if(label) label.textContent=`Offer ${index+1}`;
     tab.classList.toggle("hero-locked",isHeroImageLocked(index));
   });
+  if(typeof updateOfferTabLabels==="function") updateOfferTabLabels();
 }
 function updateHeroImageLockUI(){
   syncHeroLockMetadata();
@@ -1987,7 +1990,72 @@ function getOfferStatusTooltip(i){
   if(!readiness.utmGenerated) return "UTM missing";
   return "Missing non-critical items";
 }
+const OFFER_TAB_OPERATOR_LABELS = {
+  po: "P&O",
+  marella: "Marella",
+  celebrity: "Celebrity",
+  fred: "Fred. Olsen",
+  msc: "MSC",
+  ncl: "Norwegian",
+  princess: "Princess"
+};
+function getOfferTabOperatorLabel(o){
+  const key=String((o&&o.operator)||"").trim();
+  if(!key) return "";
+  if(Object.prototype.hasOwnProperty.call(OFFER_TAB_OPERATOR_LABELS,key)) return OFFER_TAB_OPERATOR_LABELS[key];
+  const meta=(typeof OPERATOR_HEADERS!=="undefined"&&OPERATOR_HEADERS&&OPERATOR_HEADERS[key])||null;
+  return String((meta&&meta.name)||key).trim();
+}
+function getOfferTabLabelParts(i){
+  const o=offers[i]||{};
+  const fallback="Offer "+(i+1);
+  if(!isOfferLoaded(o)) return {primary:fallback,ship:""};
+  const operatorLabel=getOfferTabOperatorLabel(o);
+  if(!operatorLabel) return {primary:fallback,ship:""};
+  return {primary:(i+1)+" • "+operatorLabel,ship:String(o.ship||"").trim()};
+}
+function updateOfferTabLabels(){
+  for(let i=0;i<4;i++){
+    const tab=document.getElementById("ot"+i);
+    if(!tab) continue;
+    const parts=getOfferTabLabelParts(i);
+    let label=tab.querySelector&&tab.querySelector(".offer-tab-label");
+    if(!label){
+      label=tab.querySelector&&tab.querySelector("span:not(.status-dot)");
+      if(label){
+        label.className="offer-tab-label";
+        label.textContent="";
+      }else{
+        if(!(document.createElement&&tab.insertBefore)) continue;
+        label=document.createElement("span");
+        label.className="offer-tab-label";
+        const dot=document.getElementById("sd"+i);
+        if(dot&&dot.parentNode===tab) tab.insertBefore(label,dot);
+        else tab.insertBefore(label,tab.firstChild);
+      }
+    }
+    let primary=label.querySelector&&label.querySelector(".offer-tab-primary");
+    if(!primary){
+      primary=document.createElement("span");
+      primary.className="offer-tab-primary";
+      label.appendChild(primary);
+    }
+    primary.textContent=parts.primary;
+    let ship=label.querySelector&&label.querySelector(".offer-tab-ship");
+    if(parts.ship){
+      if(!ship){
+        ship=document.createElement("span");
+        ship.className="offer-tab-ship";
+        label.appendChild(ship);
+      }
+      ship.textContent=parts.ship;
+    }else if(ship){
+      ship.remove();
+    }
+  }
+}
 function updateAllStatus(){
+  if(typeof updateOfferTabLabels==="function") updateOfferTabLabels();
   for(let i=0;i<4;i++){
     const dot=document.getElementById("sd"+i); if(!dot) continue;
     const s=getOfferStatus(i); dot.className="status-dot"+(s?" "+s:"");
