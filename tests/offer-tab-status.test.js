@@ -18,6 +18,14 @@ function extractFunction(name, fromIndex = 0) {
   throw new Error(`Could not extract ${name}`);
 }
 
+function extractBlock(startText, endText) {
+  const start = html.indexOf(startText);
+  assert.notEqual(start, -1, `Could not locate ${startText}`);
+  const end = html.indexOf(endText, start);
+  assert.notEqual(end, -1, `Could not locate ${endText}`);
+  return html.slice(start, end);
+}
+
 function createCleanOffer(name = 'Caribbean Escape') {
   return {
     name,
@@ -65,6 +73,7 @@ function createHarness(offers) {
     extractFunction('isCleanOfferValid'),
     extractFunction('getOfferStatus'),
     extractFunction('getOfferStatusTooltip'),
+    extractBlock('const CAMPAIGN_HEALTH_ACTIONS=', 'function updateProductionStatus'),
     extractFunction('updateProductionStatus'),
     extractFunction('updateAllStatus')
   ].join('\n'), context);
@@ -83,7 +92,7 @@ test('status dots remain diagnostic indicators inside the normal offer-tab butto
   for (let index = 0; index < 4; index += 1) {
     assert.match(html, new RegExp(`<button class="otab(?: active)?" id="ot${index}" onclick="sv\\(${index}\\)"[^>]*>[\\s\\S]*?<span class="status-dot" id="sd${index}" title="No offer loaded" aria-hidden="true"><\\/span><\\/button>`));
   }
-  assert.doesNotMatch(html, /navigateOfferStatus|handleStatusDotKeydown|getOfferStatusNavigation|getStatusNavigationTarget|getStatusNavigationSection|openStatusNavigationSection|status-dot-target|scrollIntoView/);
+  assert.doesNotMatch(html, /navigateOfferStatus|handleStatusDotKeydown|getOfferStatusNavigation|getStatusNavigationTarget|getStatusNavigationSection|openStatusNavigationSection|status-dot-target/);
   assert.doesNotMatch(html, /<span class="status-dot"[^>]*(?:onclick|onkeydown|role="button"|tabindex=)/);
 });
 

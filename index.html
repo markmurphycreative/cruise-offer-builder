@@ -501,7 +501,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
   </div>
 
   <!-- Campaign globals -->
-  <div class="campaign-bar">
+  <div class="campaign-bar" data-section-key="campaign-details">
     <div><span class="clabel">Campaign Name</span><input id="g-campaign" placeholder="3rd June 2026 - Wednesday - Cruise Worldwide Mixed (Mark)" oninput="genAllUtms();updateAllStatus()"></div>
     <div><span class="clabel">Send Date</span><input id="g-date" placeholder="16th May 2026" oninput="genUtm();genStandardUtms();updateAllStatus()"></div>
     <div><span class="clabel">Campaign Description</span><input id="g-description" placeholder="Cruise Worldwide Mixed" oninput="handleCampaignNamingFieldInput()"></div>
@@ -2116,6 +2116,86 @@ function hasOperatorLogo(o){
   const header=OPERATOR_HEADERS[o.operator]||{};
   return !!(header.pngData||header.svgData);
 }
+const CAMPAIGN_HEALTH_ACTIONS={
+  missingHeroImage:{sectionKey:"hero-image",focusId:"dz-hero"},
+  missingOperatorLogo:{sectionKey:"operator-logo",focusId:"f-operator"},
+  operatorNotSelected:{sectionKey:"operator-logo",focusId:"f-operator"},
+  missingUtm:{sectionKey:"utm-link",focusId:"f-url"},
+  missingTerms:{sectionKey:"campaign-details",focusId:"g-terms"},
+  missingAirport:{sectionKey:"campaign-details",focusId:"g-airport"},
+  missingDate:{sectionKey:"campaign-details",focusId:"g-date"},
+  missingCampaignName:{sectionKey:"campaign-details",focusId:"g-campaign"}
+};
+function campaignHealthEscapeHtml(value){
+  return String(value==null?"":value).replace(/[&<>"]/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[char]));
+}
+function getCampaignHealthOperatorLabel(o){
+  const key=String((o&&o.operator)||"").trim();
+  if(!key) return "";
+  const cfg=(typeof OPERATOR_CONFIG!=="undefined"&&OPERATOR_CONFIG[key])||{};
+  const header=(typeof OPERATOR_HEADERS!=="undefined"&&OPERATOR_HEADERS[key])||{};
+  const rawLabel=String(cfg.displayName||header.name||key).trim();
+  const label=rawLabel===key?rawLabel.replace(/[-_]+/g," ").replace(/\b\w/g,char=>char.toUpperCase()):rawLabel;
+  return label.replace(/\s+Cruises?$/i,"").replace(/\s+Cruise Lines?$/i,"").trim();
+}
+function getCampaignHealthOfferLabel(index,o){
+  const base=`Offer ${Number(index)+1}`;
+  const detail=String((o&&o.ship)||"").trim()||getCampaignHealthOperatorLabel(o);
+  return detail?`${base} (${detail})`:base;
+}
+function getCampaignHealthMissingHeroLabel(index,o){
+  return `${getCampaignHealthOfferLabel(index,o)} missing hero image`;
+}
+function getCampaignHealthActionConfig(action){
+  return CAMPAIGN_HEALTH_ACTIONS[action]||null;
+}
+function getCampaignHealthActionTarget(action,offerIndex){
+  const cfg=getCampaignHealthActionConfig(action);
+  if(!cfg) return null;
+  const parsedOfferIndex=offerIndex===null||offerIndex===undefined||offerIndex===""?null:Number(offerIndex);
+  return {action,offerIndex:Number.isInteger(parsedOfferIndex)?parsedOfferIndex:null,sectionKey:cfg.sectionKey,focusId:cfg.focusId};
+}
+function openCampaignHealthSection(sectionKey){
+  if(!sectionKey||sectionKey==="campaign-details") return document.querySelector(".campaign-bar")||null;
+  const section=document.querySelector(`.section[data-section-key="${sectionKey}"]`);
+  const hdr=section&&section.querySelector(".section-hdr");
+  if(hdr) setSectionCollapsedByHeader(hdr,false);
+  document.querySelectorAll(".section[data-section-key] .section-hdr").forEach(otherHdr=>{
+    if(otherHdr!==hdr) setSectionCollapsedByHeader(otherHdr,true);
+  });
+  return section;
+}
+function focusCampaignHealthTarget(focusId){
+  const target=focusId&&document.getElementById(focusId);
+  if(!target||typeof target.focus!=="function") return;
+  try{ target.focus({preventScroll:true}); }catch(e){ target.focus(); }
+}
+function handleCampaignHealthAction(action,offerIndex){
+  const target=getCampaignHealthActionTarget(action,offerIndex);
+  if(!target) return;
+  if(target.offerIndex!==null&&target.offerIndex!==cur&&typeof sv==="function") sv(target.offerIndex);
+  const run=()=>{
+    const section=openCampaignHealthSection(target.sectionKey);
+    if(section&&typeof section.scrollIntoView==="function") section.scrollIntoView({block:"start"});
+    focusCampaignHealthTarget(target.focusId);
+  };
+  if(typeof setTimeout==="function") setTimeout(run,0); else run();
+}
+function handleCampaignHealthKeydown(event,action,offerIndex){
+  const key=event&&event.key;
+  if(key!=="Enter"&&key!==" ") return;
+  if(event&&typeof event.preventDefault==="function") event.preventDefault();
+  handleCampaignHealthAction(action,offerIndex);
+}
+function renderCampaignHealthItem(check,displayOk){
+  const label=(displayOk?(check.okLbl||""):(check.warnLbl||"")).replace(/^[✓⚠]\s*/,"");
+  const classes=`prod-status-item ${displayOk?"ok":`warn ${check.warningClass||""}`}`;
+  const icon=displayOk?"✓":"⚠";
+  const action=!displayOk&&check.action;
+  const offerAttr=Number.isInteger(check.offerIndex)?`,${check.offerIndex}`:",null";
+  const attrs=action?` role="button" tabindex="0" onclick="handleCampaignHealthAction('${action}'${offerAttr})" onkeydown="handleCampaignHealthKeydown(event,'${action}'${offerAttr})"`:"";
+  return `<div class="${classes}"${attrs}><span>${icon}</span><span>${campaignHealthEscapeHtml(label)}</span></div>`;
+}
 function updateProductionStatus(){
   const o=offers[cur]||{};
   const readiness=getOfferReadiness(o);
@@ -2123,10 +2203,10 @@ function updateProductionStatus(){
   const value=id=>String(((document.getElementById(id)||{}).value)||"").trim();
   const groups=[
     {label:"Campaign",checks:[
-      {ok:!!value("g-campaign"),okLbl:"✓ Campaign name present",warnLbl:"⚠ Campaign name missing"},
-      {ok:!!value("g-date"),okLbl:"✓ Send date present",warnLbl:"⚠ Send date missing"},
-      {ok:!!value("g-airport"),okLbl:"✓ Departure airport present",warnLbl:"⚠ Departure airport missing"},
-      {ok:!!value("g-terms"),okLbl:"✓ Default T&Cs present",warnLbl:"⚠ Default T&Cs missing"}
+      {ok:!!value("g-campaign"),okLbl:"✓ Campaign name present",warnLbl:"⚠ Campaign name missing",action:"missingCampaignName"},
+      {ok:!!value("g-date"),okLbl:"✓ Send date present",warnLbl:"⚠ Send date missing",action:"missingDate"},
+      {ok:!!value("g-airport"),okLbl:"✓ Departure airport present",warnLbl:"⚠ Departure airport missing",action:"missingAirport"},
+      {ok:!!value("g-terms"),okLbl:"✓ Default T&Cs present",warnLbl:"⚠ Default T&Cs missing",action:"missingTerms"}
     ]},
     {label:"Offers",checks:[
       {ok:loadedOffers>0,okLbl:"✓ At least one offer loaded",warnLbl:"⚠ No offers loaded",render:loadedOffers<offers.length},
@@ -2134,12 +2214,12 @@ function updateProductionStatus(){
       {ok:loadedOffers===offers.length,okLbl:`✓ Offers loaded (${loadedOffers}/${offers.length})`,render:loadedOffers>0,displayOk:true}
     ]},
     {label:"Assets",checks:[
-      {ok:readiness.heroLoaded,okLbl:"✓ Hero image loaded",warnLbl:"⚠ Hero image required for export",warningClass:"hero-warning"},
-      {ok:readiness.operatorLogoPresent,okLbl:"✓ Operator logo present",warnLbl:"⚠ Operator logo missing"},
-      {ok:readiness.operatorSelected,okLbl:"✓ Operator selected",warnLbl:"⚠ Operator not selected"}
+      {ok:readiness.heroLoaded,okLbl:"✓ Hero image loaded",warnLbl:`⚠ ${getCampaignHealthMissingHeroLabel(cur,o)}`,warningClass:"hero-warning",action:"missingHeroImage",offerIndex:cur},
+      {ok:readiness.operatorLogoPresent,okLbl:"✓ Operator logo present",warnLbl:"⚠ Operator logo missing",action:"missingOperatorLogo",offerIndex:cur},
+      {ok:readiness.operatorSelected,okLbl:"✓ Operator selected",warnLbl:"⚠ Operator not selected",action:"operatorNotSelected",offerIndex:cur}
     ]},
     {label:"Marketing",checks:[
-      {ok:readiness.utmGenerated,okLbl:"✓ UTMs generated",warnLbl:"⚠ UTM missing"}
+      {ok:readiness.utmGenerated,okLbl:"✓ UTMs generated",warnLbl:"⚠ UTM missing",action:"missingUtm",offerIndex:cur}
     ]}
   ];
   if(o._img && String(o._img).startsWith("http")) groups[2].checks.push({ok:false,warnLbl:"⚠ External image URL may affect export"});
@@ -2156,7 +2236,7 @@ function updateProductionStatus(){
   }
   const host=document.getElementById("prod-status-list");
   if(!host) return;
-  host.innerHTML=groups.map(group=>`<div class="prod-status-group">${group.label}</div>${group.checks.filter(c=>c.render!==false).map(c=>{const displayOk=c.displayOk===undefined?c.ok:c.displayOk;return `<div class="prod-status-item ${displayOk?"ok":`warn ${c.warningClass||""}`}"><span>${displayOk?"✓":"⚠"}</span><span>${displayOk?(c.okLbl||"").replace(/^✓\s*/,""):(c.warnLbl||"").replace(/^⚠\s*/,"")}</span></div>`}).join("")}`).join("");
+  host.innerHTML=groups.map(group=>`<div class="prod-status-group">${group.label}</div>${group.checks.filter(c=>c.render!==false).map(c=>{const displayOk=c.displayOk===undefined?c.ok:c.displayOk;return renderCampaignHealthItem(c,displayOk)}).join("")}`).join("");
 }
 
 // ═══════════════════════════════════════════════════════

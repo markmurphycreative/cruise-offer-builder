@@ -18,6 +18,14 @@ function extractFunction(name) {
   throw new Error(`Could not extract ${name}`);
 }
 
+function extractBlock(startText, endText) {
+  const start = html.indexOf(startText);
+  assert.notEqual(start, -1, `Could not locate ${startText}`);
+  const end = html.indexOf(endText, start);
+  assert.notEqual(end, -1, `Could not locate ${endText}`);
+  return html.slice(start, end);
+}
+
 function createCleanOffer(name) {
   return {
     name,
@@ -37,27 +45,74 @@ function createCleanOffer(name) {
 }
 
 function createHarness({ globals = {}, offers = [{}, {}, {}, {}], cur = 0, headers = {} } = {}) {
+  const focused = [];
+  const scrolled = [];
+  const makeClassList = (initial = []) => {
+    const set = new Set(initial);
+    return {
+      contains: cls => set.has(cls),
+      toggle(cls, force) {
+        const enabled = force === undefined ? !set.has(cls) : !!force;
+        if (enabled) set.add(cls); else set.delete(cls);
+      }
+    };
+  };
   const elements = {
-    'g-campaign': { value: globals.campaign || '' },
-    'g-date': { value: globals.date || '' },
-    'g-airport': { value: globals.airport || '' },
-    'g-terms': { value: globals.terms || '' },
+    'g-campaign': { value: globals.campaign || '', focus(options) { focused.push(['g-campaign', options]); } },
+    'g-date': { value: globals.date || '', focus(options) { focused.push(['g-date', options]); } },
+    'g-airport': { value: globals.airport || '', focus(options) { focused.push(['g-airport', options]); } },
+    'g-terms': { value: globals.terms || '', focus(options) { focused.push(['g-terms', options]); } },
+    'f-operator': { focus(options) { focused.push(['f-operator', options]); } },
+    'f-url': { focus(options) { focused.push(['f-url', options]); } },
+    'dz-hero': { focus(options) { focused.push(['dz-hero', options]); } },
     'prod-status-collapsed-summary': { textContent: '' },
     'prod-status-summary': { className: '', innerHTML: '' },
     'prod-status-list': { innerHTML: '' }
   };
+  const headersByKey = new Map();
+  const sections = ['operator-logo', 'hero-image', 'utm-link'].map(key => {
+    const body = { classList: makeClassList(['section-body', 'hidden']) };
+    const header = { classList: makeClassList(['collapsed']), nextElementSibling: body };
+    const section = {
+      dataset: { sectionKey: key },
+      querySelector(selector) { return selector === '.section-hdr' ? header : null; },
+      scrollIntoView(options) { scrolled.push([key, options]); }
+    };
+    headersByKey.set(key, header);
+    return section;
+  });
+  const campaignBar = { scrollIntoView(options) { scrolled.push(['campaign-details', options]); } };
   const context = {
     offers,
     cur,
     OPERATOR_HEADERS: headers,
-    document: { getElementById: id => elements[id] || null }
+    document: {
+      getElementById: id => elements[id] || null,
+      querySelector(selector) {
+        if (selector === '.campaign-bar') return campaignBar;
+        const sectionMatch = selector.match(/\.section\[data-section-key="([^"]+)"\]/);
+        if (sectionMatch) return sections.find(section => section.dataset.sectionKey === sectionMatch[1]) || null;
+        return null;
+      },
+      querySelectorAll(selector) {
+        if (selector === '.section[data-section-key] .section-hdr') return Array.from(headersByKey.values());
+        return [];
+      }
+    },
+    setTimeout(fn) { fn(); },
+    sv(i) { context.switchedTo = i; context.cur = i; },
+    focused,
+    scrolled,
+    headersByKey
   };
   vm.createContext(context);
   vm.runInContext([
+    extractFunction('setSectionCollapsedByHeader'),
     extractFunction('isOfferLoaded'),
     extractFunction('hasCriticalOfferContent'),
     extractFunction('hasOperatorLogo'),
     extractFunction('getOfferReadiness'),
+    extractBlock('const CAMPAIGN_HEALTH_ACTIONS=', 'function updateProductionStatus'),
     extractFunction('updateProductionStatus')
   ].join('\n'), context);
   return { context, elements };
@@ -83,10 +138,10 @@ test('campaign health reports grouped required checks and updates to ready when 
   assert.match(elements['prod-status-list'].innerHTML, /Campaign name missing/);
   assert.match(elements['prod-status-list'].innerHTML, /Send date missing/);
   assert.match(elements['prod-status-list'].innerHTML, /Departure airport missing/);
-  assert.match(elements['prod-status-list'].innerHTML, /Default T&Cs missing/);
+  assert.match(elements['prod-status-list'].innerHTML, /Default T&amp;Cs missing/);
   assert.match(elements['prod-status-list'].innerHTML, /No offers loaded/);
   assert.doesNotMatch(elements['prod-status-list'].innerHTML, /0\/4 offers loaded/);
-  assert.match(elements['prod-status-list'].innerHTML, /Hero image required for export/);
+  assert.match(elements['prod-status-list'].innerHTML, /Offer 1 missing hero image/);
   assert.match(elements['prod-status-list'].innerHTML, /Operator logo missing/);
   assert.match(elements['prod-status-list'].innerHTML, /Operator not selected/);
   assert.match(elements['prod-status-list'].innerHTML, /UTM missing/);
@@ -160,6 +215,84 @@ test('campaign health renders offer-loading progress without a redundant all-loa
     }
     assert.doesNotMatch(elements['prod-status-list'].innerHTML, /No offers loaded/);
   }
+});
+
+test('campaign health missing hero labels prefer ship, then operator, then generic offer', () => {
+  let harness = createHarness({ offers: [{ ship: 'Celebrity Apex', operator: 'celebrity' }, {}, {}, {}] });
+  harness.context.updateProductionStatus();
+  assert.match(harness.elements['prod-status-list'].innerHTML, /Offer 1 \(Celebrity Apex\) missing hero image/);
+
+  harness = createHarness({ offers: [{ operator: 'celebrity' }, {}, {}, {}] });
+  harness.context.updateProductionStatus();
+  assert.match(harness.elements['prod-status-list'].innerHTML, /Offer 1 \(Celebrity\) missing hero image/);
+
+  harness = createHarness();
+  harness.context.updateProductionStatus();
+  assert.match(harness.elements['prod-status-list'].innerHTML, /Offer 1 missing hero image/);
+});
+
+test('campaign health action mappings open the correct sections and focus repair fields', () => {
+  const { context } = createHarness({ offers: [{ name: 'One' }, {}, {}, {}], cur: 0 });
+  context.handleCampaignHealthAction('missingHeroImage', 0);
+  assert.equal(context.scrolled.at(-1)[0], 'hero-image');
+  assert.equal(context.scrolled.at(-1)[1].block, 'start');
+  assert.equal(context.headersByKey.get('hero-image').classList.contains('collapsed'), false);
+  assert.equal(context.focused.at(-1)[0], 'dz-hero');
+  assert.equal(context.focused.at(-1)[1].preventScroll, true);
+
+  context.handleCampaignHealthAction('missingOperatorLogo', 0);
+  assert.equal(context.scrolled.at(-1)[0], 'operator-logo');
+  assert.equal(context.scrolled.at(-1)[1].block, 'start');
+  assert.equal(context.headersByKey.get('operator-logo').classList.contains('collapsed'), false);
+  assert.equal(context.focused.at(-1)[0], 'f-operator');
+  assert.equal(context.focused.at(-1)[1].preventScroll, true);
+
+  context.handleCampaignHealthAction('operatorNotSelected', 0);
+  assert.equal(context.scrolled.at(-1)[0], 'operator-logo');
+  assert.equal(context.scrolled.at(-1)[1].block, 'start');
+  assert.equal(context.focused.at(-1)[0], 'f-operator');
+  assert.equal(context.focused.at(-1)[1].preventScroll, true);
+
+  context.handleCampaignHealthAction('missingUtm', 0);
+  assert.equal(context.scrolled.at(-1)[0], 'utm-link');
+  assert.equal(context.scrolled.at(-1)[1].block, 'start');
+  assert.equal(context.focused.at(-1)[0], 'f-url');
+  assert.equal(context.focused.at(-1)[1].preventScroll, true);
+
+  context.handleCampaignHealthAction('missingTerms', null);
+  assert.equal(context.scrolled.at(-1)[0], 'campaign-details');
+  assert.equal(context.scrolled.at(-1)[1].block, 'start');
+  assert.equal(context.focused.at(-1)[0], 'g-terms');
+  assert.equal(context.focused.at(-1)[1].preventScroll, true);
+});
+
+test('campaign health switches offer before navigating offer-specific issues', () => {
+  const { context } = createHarness({ offers: [{}, { ship: 'Queen Anne' }, {}, {}], cur: 0 });
+  context.handleCampaignHealthAction('missingHeroImage', 1);
+  assert.equal(context.switchedTo, 1);
+  assert.equal(context.cur, 1);
+  assert.equal(context.scrolled.at(-1)[0], 'hero-image');
+  assert.equal(context.scrolled.at(-1)[1].block, 'start');
+});
+
+test('campaign health rows support keyboard activation and leave non-actionable rows plain', () => {
+  const { context, elements } = createHarness();
+  context.updateProductionStatus();
+  assert.match(elements['prod-status-list'].innerHTML, /role="button" tabindex="0" onclick="handleCampaignHealthAction\('missingHeroImage',0\)"/);
+  assert.match(elements['prod-status-list'].innerHTML, /onkeydown="handleCampaignHealthKeydown\(event,'missingHeroImage',0\)"/);
+  assert.match(elements['prod-status-list'].innerHTML, /<div class="prod-status-item warn "><span>⚠<\/span><span>No offers loaded<\/span><\/div>/);
+
+  let prevented = false;
+  context.handleCampaignHealthKeydown({ key: 'Enter', preventDefault() { prevented = true; } }, 'missingUtm', 0);
+  assert.equal(prevented, true);
+  assert.equal(context.scrolled.at(-1)[0], 'utm-link');
+  assert.equal(context.scrolled.at(-1)[1].block, 'start');
+
+  prevented = false;
+  context.handleCampaignHealthKeydown({ key: ' ', preventDefault() { prevented = true; } }, 'missingDate', null);
+  assert.equal(prevented, true);
+  assert.equal(context.focused.at(-1)[0], 'g-date');
+  assert.equal(context.focused.at(-1)[1].preventScroll, true);
 });
 
 test('campaign health refresh wiring is passive and does not introduce export blocking or alerts', () => {
