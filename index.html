@@ -323,7 +323,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .ptool input[type=range]{accent-color:var(--gold);width:70px;height:3px;}
 .ptool .pval{font-size:9px;color:rgba(255,255,255,.8);min-width:28px;}
 .view-btns{position:relative;display:flex;border:1px solid rgba(255,255,255,.26);border-radius:6px;overflow:hidden;isolation:isolate;}
-.view-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:4px;background:var(--gold);box-shadow:0 1px 3px rgba(0,0,0,.2);transform:translateX(0);transition:transform .2s ease,width .2s ease;pointer-events:none;}
+.view-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:4px;background:var(--gold);box-shadow:0 1px 3px rgba(0,0,0,.2);transform:translateX(0);pointer-events:none;}
 .vbtn{position:relative;z-index:1;padding:3px 8px;font-size:9px;font-weight:700;border:none;background:transparent;color:rgba(255,255,255,.5);letter-spacing:.04em;transition:color .18s ease;}
 .vbtn:hover:not(.active){color:rgba(255,255,255,.88);}
 .vbtn.active{color:var(--navy);}
@@ -334,14 +334,13 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .preview-wrap{flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:stretch;background:#dedad2;}
 .preview-scaler{margin-block:auto;transform-origin:top center;}
 .preview-scaler.empty-preview{display:flex;align-items:center;justify-content:center;}
-#card-output{opacity:1;transition:opacity .22s ease-out;}
+#card-output{opacity:1;}
 #card-output.empty-preview-output{display:flex;align-items:center;justify-content:center;width:100%;height:100%;}
 .preview-empty-state{width:min(475px,calc(100% - 30px));text-align:center;background:none;border:none;border-radius:0;box-shadow:none;font-family:'Montserrat',sans-serif;color:var(--navy);cursor:pointer;transition:opacity .18s ease;}
 .preview-empty-state:hover{opacity:.86;}
 .preview-empty-state h2{margin:0;padding:0;background:none;color:var(--navy);font-family:'Montserrat',sans-serif;font-size:16.5px;font-weight:400;letter-spacing:.025em;line-height:1.2;}
 .preview-empty-state p{margin:14px 0 0;padding:0;background:none;color:var(--navy);font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;line-height:1.5;opacity:.72;}
-#card-output.preview-mode-transition{opacity:0;}
-@media (prefers-reduced-motion:reduce){#card-output,.view-pill,.offer-pill{transition:none;}}
+@media (prefers-reduced-motion:reduce){.offer-pill{transition:none;}}
 
 /* ── EMAIL PREVIEW ── */
 .email-preview-wrap{background:#2a2a2a;padding:20px;min-width:fit-content;}
@@ -1359,7 +1358,7 @@ function sv(i){
   document.querySelectorAll(".otab").forEach((t,idx)=>t.classList.toggle("active",idx===cur));
   load(cur);
   updateLockUI();
-  setTimeout(()=>rv(true),0);
+  rv(true);
 }
 function save(){
   FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e) offers[cur][f]=e.value; });
@@ -3584,7 +3583,7 @@ function renderSingleOffer(data){
   scaler.style.width="1200px";
   scaler.style.transform=`scale(${scale})`;
   scaler.style.transformOrigin="top center";
-  setTimeout(()=>scaler.style.height=(out.offsetHeight*scale)+"px",150);
+  scaler.style.height=Math.ceil(out.offsetHeight*scale)+"px";
 }
 
 function rv(skipSave){
@@ -3608,14 +3607,14 @@ function rv(skipSave){
     chrome.appendChild(stack); chrome.appendChild(footer); wrap.appendChild(chrome);
     out.innerHTML=""; out.appendChild(wrap);
     scaler.style.width="620px"; scaler.style.transform=`scale(${scale})`; scaler.style.transformOrigin="top center";
-    setTimeout(()=>scaler.style.height=(out.offsetHeight*scale)+"px",200);
+    scaler.style.height=Math.ceil(out.offsetHeight*scale)+"px";
   } else if(viewMode==="all"){
     updatePreviewTitle();
     const grid=document.createElement("div"); grid.style.cssText="display:grid;grid-template-columns:1200px 1200px;width:2400px;background:#333;gap:2px;";
     offers.forEach(d=>{const c=document.createElement("div");c.innerHTML=renderCardHTML(d);grid.appendChild(c);});
     out.innerHTML=""; out.appendChild(grid);
     scaler.style.width="2400px"; scaler.style.transform=`scale(${scale})`; scaler.style.transformOrigin="top center";
-    setTimeout(()=>scaler.style.height=(out.offsetHeight*scale)+"px",200);
+    scaler.style.height=Math.ceil(out.offsetHeight*scale)+"px";
   } else {
     renderSingleOffer(liveData);
   }
@@ -3804,7 +3803,7 @@ function renderOfferIndex(i){
     scaler.style.width='1200px';
     scaler.style.transform='scale('+scale+')';
     scaler.style.transformOrigin='top center';
-    setTimeout(()=>{ scaler.style.height=(out.offsetHeight*scale)+'px'; },100);
+    scaler.style.height=Math.ceil(out.offsetHeight*scale)+'px';
   }else{
     // keep the existing multi views, but make sure current offer is saved first
     oldRvNoPatch(true);
@@ -3909,7 +3908,7 @@ function renderVisibleCard(){
   scaler.style.width = '1200px';
   scaler.style.transform = 'scale(' + scale + ')';
   scaler.style.transformOrigin = 'top center';
-  setTimeout(function(){ scaler.style.height = (out.offsetHeight * scale) + 'px'; }, 100);
+  scaler.style.height = Math.ceil(out.offsetHeight * scale) + 'px';
 }
 function moveOfferState(fromIdx, toIdx){
   fromIdx = Number(fromIdx);
@@ -4105,20 +4104,6 @@ processSheetCSV = function(csv,status){
 // ═══════════════════════════════════════════════════════
 const SINGLE_PREVIEW_SCALE = 0.75;
 const EMAIL_PREVIEW_SCALE = 0.75;
-let previewModeTransitionFrame = null;
-function fadePreviewModeIn(){
-  const out = document.getElementById('card-output');
-  if(!out) return;
-  if(previewModeTransitionFrame !== null) cancelAnimationFrame(previewModeTransitionFrame);
-  out.classList.remove('preview-mode-transition');
-  out.classList.add('preview-mode-transition');
-  void out.offsetWidth;
-  previewModeTransitionFrame = requestAnimationFrame(function(){
-    out.classList.remove('preview-mode-transition');
-    previewModeTransitionFrame = null;
-  });
-}
-
 function normalisePreviewMode(v){
   return ['single','email','all'].includes(v) ? v : 'single';
 }
@@ -4157,11 +4142,9 @@ function updateViewPill(){
 
 function setView(v){
   const nextViewMode = normalisePreviewMode(v);
-  const didChange = nextViewMode !== viewMode;
   viewMode = nextViewMode;
   syncViewSelector();
   renderPreviewMode(true);
-  if(didChange) fadePreviewModeIn();
   queueAutosave();
 }
 
@@ -4233,7 +4216,7 @@ function renderPreviewMode(skipSave){
 
     out.innerHTML = '';
     out.appendChild(stackWrap);
-    setTimeout(function(){ setScalerBox(1200, out.offsetHeight || stackWrap.offsetHeight, baseScale * EMAIL_PREVIEW_SCALE); }, 80);
+    setScalerBox(1200, out.offsetHeight || stackWrap.offsetHeight, baseScale * EMAIL_PREVIEW_SCALE);
     return;
   }
 
@@ -4257,12 +4240,10 @@ function renderPreviewMode(skipSave){
     out.innerHTML = '';
     out.appendChild(grid);
 
-    setTimeout(function(){
-      const pane = getPreviewPaneSize();
-      const fullH = grid.offsetHeight || out.offsetHeight || 4600;
-      const fitScale = Math.min(pane.w / gridW, pane.h / fullH, 0.32);
-      setScalerBox(gridW, fullH, Math.max(0.08, fitScale));
-    }, 120);
+    const pane = getPreviewPaneSize();
+    const fullH = grid.offsetHeight || out.offsetHeight || 4600;
+    const fitScale = Math.min(pane.w / gridW, pane.h / fullH, 0.32);
+    setScalerBox(gridW, fullH, Math.max(0.08, fitScale));
     return;
   }
 
@@ -4712,17 +4693,13 @@ function closeSplash(){
     splash.remove();
   },520);
 }
-function renderActiveOfferAfterBuilderVisible(){
-  window.requestAnimationFrame(()=>{
-    window.requestAnimationFrame(()=>{
-      try{
-        if(typeof sv==="function") sv(cur);
-        else if(typeof rv==="function") rv();
-      }catch(err){
-        console.error("[splash] Active offer render failed after builder reveal.", err);
-      }
-    });
-  });
+function renderActiveOfferImmediately(){
+  try{
+    if(typeof sv==="function") sv(cur);
+    else if(typeof rv==="function") rv();
+  }catch(err){
+    console.error("[splash] Active offer render failed.", err);
+  }
 }
 function dismissSplashAndShowBuilder(){
   markBuilderOpenState(true);
@@ -4731,7 +4708,7 @@ function dismissSplashAndShowBuilder(){
     if(typeof refreshOfferUi==="function") refreshOfferUi({utm:true,spell:true,autosave:false});
     if(typeof rv==="function") rv();
     if(typeof updateAllStatus==="function") updateAllStatus();
-    renderActiveOfferAfterBuilderVisible();
+    renderActiveOfferImmediately();
   }catch(err){
     console.error("[splash] Builder UI refresh failed after splash dismissal.", err);
   }
@@ -4765,7 +4742,7 @@ function initStartScreenActions(){
     }
     splashClosed=true;
     hideSplashImmediately();
-    renderActiveOfferAfterBuilderVisible();
+    renderActiveOfferImmediately();
   }
 
   if(openBtn){
