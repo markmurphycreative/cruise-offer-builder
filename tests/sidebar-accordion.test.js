@@ -91,9 +91,9 @@ test('an empty builder opens CSV Import and collapses every other section withou
   assert.deepEqual(openKeys(sections), ['hero-image']);
 });
 
-test('startup and session hydration both apply the empty-builder CSV Import default', () => {
+test('session hydration and first-run startup apply the empty-builder CSV Import default', () => {
   assert.match(html, /function applySessionPayload\(data\)\{[\s\S]*?autosaveHydrating = false;\s*openCsvImportWhenNoOffersLoaded\(\);\s*refreshAfterRestore\(\);/);
-  assert.match(html, /function initBuilderApp\(\)\{[\s\S]*?refreshOfferUi\(\{utm:true,spell:true,autosave:false\}\);\s*openCsvImportWhenNoOffersLoaded\(\);/);
+  assert.match(html, /function initBuilderApp\(\)\{[\s\S]*?refreshOfferUi\(\{utm:true,spell:true,autosave:false\}\);\s*if\(!savedSessionAvailable\) openCsvImportWhenNoOffersLoaded\(\);/);
 });
 
 test('every sidebar section opens normally and closes the previously expanded section', () => {
