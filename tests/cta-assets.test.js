@@ -28,8 +28,16 @@ test('CTA asset controls are additive and default to disabled with Dawson & Sand
 test('CTA preview renders as a separate flush asset after the card and uses operator accent colour', () => {
   assert.match(extractFunction('renderOfferWithOptionalCtaHTML'), /return `<div class="cta-preview-group">\$\{card\}\$\{renderCtaHTML\(offerData \|\| \{\}, s\)\}<\/div>`;/);
   assert.match(extractFunction('renderCtaHTML'), /getOperatorAccentColor\(offerData\)/);
-  assert.match(html, /\.cta-preview-asset\{width:1200px;height:220px;background:#fff;display:flex;align-items:center;justify-content:center/);
-  assert.match(html, /\.cta-preview-button\{[^}]*color:#fff;[^}]*font-size:38px;[^}]*font-weight:700/);
+  assert.match(html, /\.cta-preview-asset\{width:1200px;height:338px;background:#fff;position:relative/);
+  assert.match(html, /\.cta-preview-button\{[^}]*left:73px;top:72px;width:1054px;height:197px/);
+  assert.match(html, /\.cta-preview-button\{[^}]*color:#fff;[^}]*font-size:43px;[^}]*font-weight:300/);
+});
+
+test('CTA phone numbers are stored cleanly while generated links keep the tel prefix', () => {
+  assert.match(extractFunction('normaliseCtaPhone'), /replace\(\/\^tel:\/i, \"\"\)/);
+  assert.match(extractFunction('normaliseCtaSettings'), /phone: normaliseCtaPhone\(source\.phone\)/);
+  assert.match(extractFunction('ctaSettingsChanged'), /if\(phoneEl && phoneEl\.value !== ctaSettings\.phone\) phoneEl\.value=ctaSettings\.phone;/);
+  assert.match(extractFunction('getCtaLink'), /return 'tel:' \+ s\.phone;/);
 });
 
 test('CTA exports are separate JPG files and are only added when CTA is enabled', () => {
