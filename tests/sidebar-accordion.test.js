@@ -60,7 +60,7 @@ function openKeys(sections) {
 
 test('the default sidebar keeps CSV Import as the only expanded section', () => {
   const sections = [...html.matchAll(/<div class="section(?: [^"]*)?" data-section-key="([^"]+)">\s*<div class="section-hdr( collapsed)?"/g)];
-  assert.equal(sections.length, 9);
+  assert.equal(sections.length, 10);
   assert.deepEqual(sections.filter(([, , collapsed]) => !collapsed).map(([, key]) => key), ['csv-import']);
 });
 

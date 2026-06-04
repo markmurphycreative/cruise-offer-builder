@@ -9,7 +9,7 @@ const sectionHeaders = [...html.matchAll(/<div class="section-hdr(?: collapsed)?
 const headingLabels = sectionHeaders.map(heading => heading.replace(/<svg[\s\S]*?<\/svg>/, ''));
 
 test('every sidebar section heading uses one inline monochrome SVG icon', () => {
-  assert.equal(sectionHeaders.length, 9);
+  assert.equal(sectionHeaders.length, 10);
   sectionHeaders.forEach(heading => {
     assert.match(heading, /^<svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24">[\s\S]*<\/svg>[^<]+$/);
     assert.doesNotMatch(heading, /\p{Extended_Pictographic}/u);
@@ -24,6 +24,7 @@ test('sidebar section names follow the primary workflow and use the requested di
     'Operator Logo',
     'Hero Image',
     'Offer Details',
+    'CTA Assets',
     'Paste Offer',
     'Summary',
     'UTM Link',
@@ -32,9 +33,10 @@ test('sidebar section names follow the primary workflow and use the requested di
 });
 
 test('required workflow headings expose the requested icon shapes', () => {
-  const [upload, save, logoAsset, image, fileText, clipboardPaste] = sectionHeaders;
+  const [upload, save, logoAsset, image, fileText, ctaAssets, clipboardPaste] = sectionHeaders;
   assert.match(upload, /<polyline points="17 8 12 3 7 8"><\/polyline>/);
   assert.match(save, /<path d="M17 21v-8H7v8"><\/path>/);
+  assert.match(ctaAssets, /<rect width="18" height="10" x="3" y="7" rx="2"><\/rect>/);
   assert.match(clipboardPaste, /<path d="m17 10 4 4-4 4"><\/path>/);
   assert.match(logoAsset, /<circle cx="10" cy="13" r="2"><\/circle>/);
   assert.match(image, /<circle cx="9" cy="9" r="2"><\/circle>/);

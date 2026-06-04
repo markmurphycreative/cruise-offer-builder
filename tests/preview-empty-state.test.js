@@ -86,7 +86,7 @@ test('loaded and session-restored offers bypass the empty state and keep normal 
   assert.match(extractFunction('renderEmptyPreviewIfNeeded'), /const showEmptyState = !offers\.some\(isOfferLoaded\);/);
   assert.match(extractFunction('refreshAfterRestore'), /renderPreviewMode\(true\);/);
   assert.match(extractFunction('renderPreviewMode'), /c\.innerHTML = bc\(d \|\| \{\}\);/);
-  assert.match(extractFunction('renderVisibleCard'), /out\.innerHTML = renderCardHTML\(visibleFieldsToData\(\)\);/);
+  assert.match(extractFunction('renderVisibleCard'), /out\.innerHTML = renderOfferWithOptionalCtaHTML\(visibleFieldsToData\(\), getCtaSettingsFromUI\(\)\);/);
 });
 
 
