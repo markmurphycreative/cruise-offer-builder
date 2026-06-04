@@ -172,9 +172,11 @@ test('invalid autosave JSON and autosave without offers are ignored gracefully',
   assert.equal(missingOffers.context.restoreSavedSessionOnStartup(), false);
 });
 
-test('standalone initialization is registered after DOM ready and uses startup autosave restore', () => {
+test('standalone initialization is registered after DOM ready and keeps autosave restore on the Continue Last Session path', () => {
   assert.match(html, /if\(document\.readyState==="loading"\) document\.addEventListener\("DOMContentLoaded",initStandaloneApp,\{once:true\}\);/);
   assert.match(extractFunction('initStandaloneApp'), /initStartScreenActions\(\);[\s\S]*?initBuilderApp\(\);[\s\S]*?hydrateSplashRecentSession\(\);/);
-  assert.match(extractFunction('initBuilderApp'), /restoreGoogleSheetSource\(\);\s*const restoredSession=restoreSavedSessionOnStartup\(\);/);
+  assert.match(extractFunction('initBuilderApp'), /restoreGoogleSheetSource\(\);[\s\S]*?const shouldRestoreSession=builderStartupBypassMode && builderStartupBypassMode !== "fresh";[\s\S]*?const restoredSession=shouldRestoreSession \? restoreSavedSessionOnStartup\(\) : false;/);
+  assert.match(extractFunction('hydrateSplashRecentSession'), /pendingRestoreSession = saved;[\s\S]*?autosaveAwaitingRestoreDecision = !builderStartupBypassMode;/);
+  assert.match(html, /window\.openBuilderFromSplash = function\(event\)\{[\s\S]*?resetBuilderToBlankSession\(\);[\s\S]*?dismissSplashAndShowBuilder\("fresh"\);/);
   assert.doesNotMatch(html, /DISABLE_AUTORESTORE_SESSION/);
 });

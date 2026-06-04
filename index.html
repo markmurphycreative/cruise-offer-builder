@@ -1360,6 +1360,12 @@ function openCsvImportWhenNoOffersLoaded(){
   });
   return true;
 }
+function collapseBuilderSections(){
+  document.querySelectorAll(".section[data-section-key]").forEach(sec=>{
+    const hdr = sec.querySelector(".section-hdr");
+    if(hdr) setSectionCollapsedByHeader(hdr, true);
+  });
+}
 function toggleAdv(hdr){
   hdr.nextElementSibling.classList.toggle("open");
   hdr.querySelector(".section-toggle").style.transform = hdr.nextElementSibling.classList.contains("open") ? "" : "rotate(-90deg)";
@@ -2991,6 +2997,34 @@ function sessionHasMissingHeroImages(payload){
   return !!(((payload&&payload.offers)||[]).find(o=>o&&o._imgNeedsReupload));
 }
 let pendingRestoreSession = null;
+
+function resetBuilderToBlankSession(){
+  autosaveHydrating = true;
+  try{
+    offers = [{},{},{},{}];
+    lockedOffers = [false,false,false,false];
+    lockedHeroImages = [false,false,false,false];
+    cur = 0;
+    viewMode = "all";
+    ["g-campaign","g-date","g-description","g-owner","g-airport","g-terms"].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.value="";
+    });
+    applySafeGlobalDefaults();
+    if(typeof applyCtaSettings === "function") applyCtaSettings(CTA_DEFAULTS);
+    if(typeof initialiseCampaignNamingDefaults === "function") initialiseCampaignNamingDefaults();
+    if(typeof syncViewSelector === "function") syncViewSelector();
+    load(0);
+    document.querySelectorAll('.otab').forEach((t,idx)=>t.classList.toggle('active', idx===0));
+    if(typeof updateOfferPill === "function") updateOfferPill();
+    collapseBuilderSections();
+    refreshAfterRestore();
+    showSessionFeedback("",false);
+  }finally{
+    autosaveHydrating = false;
+  }
+  syncAutosaveStatus();
+}
 
 // ═══════════════════════════════════════════════════════
 // MODAL HELPERS
@@ -4802,19 +4836,22 @@ CTA Assets: ${ctaRows.map(row=>row.filename+' -> '+row.utm).join(', ') || 'None'
 // ═══════════════════════════════════════════════════════
 
 const BUILDER_OPEN_STORAGE_KEY = "builderOpen";
-function markBuilderOpenState(isOpen){
+let builderStartupBypassMode = "";
+function markBuilderOpenState(isOpen,mode="open"){
   try{
-    if(isOpen) sessionStorage.setItem(BUILDER_OPEN_STORAGE_KEY,"true");
+    if(isOpen) sessionStorage.setItem(BUILDER_OPEN_STORAGE_KEY,mode);
     else sessionStorage.removeItem(BUILDER_OPEN_STORAGE_KEY);
     localStorage.removeItem(BUILDER_OPEN_STORAGE_KEY);
   }catch(e){}
 }
 function shouldBypassSplashOnLoad(){
   try{
-    const isOpen=sessionStorage.getItem(BUILDER_OPEN_STORAGE_KEY)==="true";
+    const stored=sessionStorage.getItem(BUILDER_OPEN_STORAGE_KEY);
+    const isOpen=!!stored;
     localStorage.removeItem(BUILDER_OPEN_STORAGE_KEY);
+    builderStartupBypassMode = isOpen ? (stored === "true" ? "open" : stored) : "";
     return isOpen;
-  }catch(e){ return false; }
+  }catch(e){ builderStartupBypassMode=""; return false; }
 }
 function applySafeGlobalDefaults(){
   const airport = document.getElementById("g-airport");
@@ -4859,8 +4896,8 @@ function renderActiveOfferImmediately(){
     console.error("[splash] Active offer render failed.", err);
   }
 }
-function dismissSplashAndShowBuilder(){
-  markBuilderOpenState(true);
+function dismissSplashAndShowBuilder(mode="open"){
+  markBuilderOpenState(true,mode);
   closeSplash();
   try{
     if(typeof refreshOfferUi==="function") refreshOfferUi({utm:true,spell:true,autosave:false});
@@ -4873,14 +4910,17 @@ function dismissSplashAndShowBuilder(){
 }
 window.openBuilderFromSplash = function(event){
   if(event) event.preventDefault();
-  dismissSplashAndShowBuilder();
+  autosaveAwaitingRestoreDecision = false;
+  pendingRestoreSession = null;
+  resetBuilderToBlankSession();
+  dismissSplashAndShowBuilder("fresh");
 };
 window.loadCsvFromSplash = function(event){
   if(event) event.preventDefault();
   const temp=document.createElement("input");
   temp.type="file";
   temp.accept=".csv,text/csv,.tsv,text/tab-separated-values";
-  temp.onchange=(e)=>loadFromCSVFile(Object.assign(e,{_onSuccess:dismissSplashAndShowBuilder}));
+  temp.onchange=(e)=>loadFromCSVFile(Object.assign(e,{_onSuccess:()=>dismissSplashAndShowBuilder("csv")}));
   temp.click();
 };
 function initStartScreenActions(){
@@ -4912,9 +4952,9 @@ function initStartScreenActions(){
     continueBtn.removeAttribute("onclick");
     continueBtn.addEventListener("click",(e)=>{
       if(e) e.preventDefault();
-      markBuilderOpenState(true);
+      markBuilderOpenState(true,"restored");
       chooseRestoreSession();
-      dismissSplashAndShowBuilder();
+      dismissSplashAndShowBuilder("restored");
     });
   }
   if(csvBtn){
@@ -4925,7 +4965,7 @@ function initStartScreenActions(){
   const sheetsFile=document.getElementById("sheets-file");
   if(sheetsFile){
     sheetsFile.removeAttribute("onchange");
-    sheetsFile.addEventListener("change",(e)=>loadFromCSVFile(Object.assign(e,{_onSuccess:dismissSplashAndShowBuilder})));
+    sheetsFile.addEventListener("change",(e)=>loadFromCSVFile(Object.assign(e,{_onSuccess:()=>dismissSplashAndShowBuilder("csv")})));
   }
 }
 function hydrateSplashRecentSession(){
@@ -4935,6 +4975,9 @@ function hydrateSplashRecentSession(){
   const continueBtn=document.getElementById("splash-continue-session-btn");
   const saved=readSavedSession();
   if(!(wrap&&name&&time&&continueBtn&&saved&&saved.offers)) return;
+  pendingRestoreSession = saved;
+  autosaveAwaitingRestoreDecision = !builderStartupBypassMode;
+  syncAutosaveStatus();
   wrap.classList.add("active");
   continueBtn.style.display="block";
   name.textContent="Recovered Session";
@@ -4956,10 +4999,12 @@ function initBuilderApp(){
     initialiseCampaignNamingDefaults();
     load(0);
     restoreGoogleSheetSource();
-    const restoredSession=restoreSavedSessionOnStartup();
+    const savedSessionAvailable=!!(readSavedSession()&&readSavedSession().offers);
+    const shouldRestoreSession=builderStartupBypassMode && builderStartupBypassMode !== "fresh";
+    const restoredSession=shouldRestoreSession ? restoreSavedSessionOnStartup() : false;
     if(!restoredSession){
       refreshOfferUi({utm:true,spell:true,autosave:false});
-      openCsvImportWhenNoOffersLoaded();
+      if(!savedSessionAvailable) openCsvImportWhenNoOffersLoaded();
     }
     window.addEventListener("resize",rv);
     rv();
@@ -4967,7 +5012,7 @@ function initBuilderApp(){
     initOfferTabDragDrop();
     updateMoveOfferButtons();
     syncAutosaveStatus();
-    queueAutosave();
+    if(restoredSession || !savedSessionAvailable) queueAutosave();
     // Ensure preview is initialised through the same path as clicking the active offer tab.
     sv(cur);
   }catch(err){
