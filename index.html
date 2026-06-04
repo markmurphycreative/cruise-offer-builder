@@ -1934,7 +1934,7 @@ async function exportAll(){
     document.getElementById("exp-all-lbl").textContent=`Zipping ${done+1}/${toExport.length}...`;
     try{
       const blob = await renderCardToBlob(o);
-      zip.file(filename, blob);
+      zip.folder('offer-cards').file(filename, blob);
       done++;
     } catch(err){
       prog.textContent="⚠ Card "+(i+1)+" failed — try using locally uploaded images";
@@ -3857,7 +3857,7 @@ function openSummary(){
     const rows=getSummaryOfferDetails(o,i).map(([label,value,statusClass])=>`<div><strong>${label}</strong><span${statusClass?` class="${statusClass}"`:""}>${summaryHtml(value)}</span></div>`).join("");
     return `<div class="summary-offer-card"><div class="summary-offer-head">${getSummaryOperatorLogoHtml(o)}<div class="summary-offer-title">Offer ${i+1} — ${summaryHtml(o.name,"Unnamed offer")}</div></div><div class="summary-list">${rows}</div></div>`;
   }).join("");
-  const html=`<div class="summary-health"><strong>Campaign Health</strong><br>${getCampaignHealthReviewHtml()}</div><div class="summary-meta"><div class="summary-chip"><strong>Campaign</strong><br>${name}</div><div class="summary-chip"><strong>Send date</strong><br>${date}</div><div class="summary-chip"><strong>Export pack hints</strong><br>cards/, utms/all-utms.csv, summary/campaign-summary.txt</div></div><div class="summary-grid">${offerCards}</div>`;
+  const html=`<div class="summary-health"><strong>Campaign Health</strong><br>${getCampaignHealthReviewHtml()}</div><div class="summary-meta"><div class="summary-chip"><strong>Campaign</strong><br>${name}</div><div class="summary-chip"><strong>Send date</strong><br>${date}</div><div class="summary-chip"><strong>Export pack hints</strong><br>offer-cards/, utms/all-utms.csv, summary/campaign-summary.txt, summary/utm_lookup.csv</div></div><div class="summary-grid">${offerCards}</div>`;
   content.innerHTML=html;
   modal.classList.add("active");
 }
@@ -4616,6 +4616,12 @@ function csvCell(value){
   const text = String(value == null ? "" : value);
   return /[",\n]/.test(text) ? `"${text.replace(/"/g,'""')}"` : text;
 }
+function buildUtmLookupCsv(rows){
+  return [
+    'filename,utm',
+    ...rows.map(row => [row.filename,row.utm].map(csvCell).join(','))
+  ].join('\n');
+}
 function getCampaignZipFilenameExt(ext){
   return getCampaignZipFilename().replace(/_cards\.zip$/i, '_' + ext + '_cards.zip').replace(/\.zip$/i, '_' + ext + '_cards.zip');
 }
@@ -4736,7 +4742,7 @@ async function exportAllJPG(){
   if(!(await ensureJSZipLoaded())){ if(prog) prog.textContent='⚠ ZIP export unavailable — JSZip did not load. Check your internet connection and try again.'; showExportToast('Export failed','error'); return; }
   if(toExport.some(({o})=>hasExternalImg(o)) && warn) warn.classList.add('active');
   exportRunning=true; if(btn) btn.disabled=true;
-  const zip=new JSZip(); let done=0;
+  const zip=new JSZip(); const offerCardsFolder=zip.folder('offer-cards'); let done=0;
   const cta=getCtaSettingsFromUI();
   ctaSettings=cta;
   for(const {o,i} of toExport){
@@ -4745,12 +4751,12 @@ async function exportAllJPG(){
     if(lbl) lbl.textContent=`Zipping ${done+1}/${toExport.length}...`;
     try{
       const blob=await renderCardToImageBlob(o,'image/jpeg',0.92);
-      zip.file(filename,blob);
+      offerCardsFolder.file(filename,blob);
       if(cta.enabled){
         const ctaFilename=getCtaFilename(i,'jpg');
         if(prog) prog.textContent=`Rendering CTA ${done+1} of ${toExport.length}: ${ctaFilename}`;
         const ctaBlob=await renderCtaToImageBlob(o,'image/jpeg',0.92);
-        zip.file(ctaFilename,ctaBlob);
+        offerCardsFolder.file(ctaFilename,ctaBlob);
       }
       done++;
     }catch(err){ console.error('JPG ZIP export error card '+(i+1),err); }
@@ -4784,25 +4790,29 @@ async function exportCampaignPack(){
   exportRunning=true; if(btn) btn.disabled=true; if(lbl) lbl.textContent='Building Pack...';
   try{
     // Export pack flow: render assets through canonical renderCardToImageBlob path, then zip once complete.
-    const zip=new JSZip(); const cardsFolder=zip.folder('cards'); const utmFolder=zip.folder('utms'); const summaryFolder=zip.folder('summary');
+    const zip=new JSZip(); const cardsFolder=zip.folder('offer-cards'); const utmFolder=zip.folder('utms'); const summaryFolder=zip.folder('summary');
     const cta=getCtaSettingsFromUI();
     ctaSettings=cta;
-    const ctaCardsFolder=cta.enabled ? zip.folder('assets').folder('cards') : null;
     const combinedRows=[];
     const ctaRows=[];
+    const utmLookupRows=[];
     for(let i=0;i<4;i++){
       const o=offers[i]||{};
       if(!(o.name||o.ship||o.price)) continue;
       if(prog) prog.textContent=`Rendering card ${i+1}/4...`;
       const blob=await renderCardToImageBlob(o,'image/png',1.0);
-      cardsFolder.file(filenameWithExt(i,'png'), blob);
-      combinedRows.push({type:'offer',label:`Card ${i+1} UTM`,utm:(buildUtmForOffer(i).url||'').replace(/\n/g,' ')});
-      if(cta.enabled && ctaCardsFolder){
+      const cardFilename=filenameWithExt(i,'png');
+      cardsFolder.file(cardFilename, blob);
+      const cardUtm=(buildUtmForOffer(i).url||'').replace(/\n/g,' ');
+      combinedRows.push({type:'offer',label:`Card ${i+1} UTM`,utm:cardUtm});
+      utmLookupRows.push({filename:cardFilename,utm:cardUtm});
+      if(cta.enabled){
         const ctaFilename=getCtaFilename(i,'jpg');
         if(prog) prog.textContent=`Rendering CTA ${i+1}/4...`;
         const ctaBlob=await renderCtaToImageBlob(o,'image/jpeg',0.92);
-        ctaCardsFolder.file(ctaFilename, ctaBlob);
+        cardsFolder.file(ctaFilename, ctaBlob);
         ctaRows.push({type:'cta',label:`CTA ${i+1} Link`,utm:getCtaLink(cta),filename:ctaFilename});
+        utmLookupRows.push({filename:ctaFilename,utm:getCtaLink(cta)});
       }
     }
     const standardUtmRows = buildAllStandardUtmRows();
@@ -4812,6 +4822,7 @@ async function exportCampaignPack(){
       'type,label,utm',
       ...combinedRows.map(row => [row.type,row.label,row.utm].map(csvCell).join(','))
     ].join('\n'));
+    summaryFolder.file('utm_lookup.csv', buildUtmLookupCsv(utmLookupRows));
     const stamp=new Date();
     summaryFolder.file('campaign-data.json', JSON.stringify(buildCampaignFilePayload(), null, 2));
     summaryFolder.file('campaign-summary.txt',`Campaign: ${document.getElementById('g-campaign').value||'untitled'}

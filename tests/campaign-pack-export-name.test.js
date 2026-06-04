@@ -68,7 +68,7 @@ test('Campaign Pack folder naming reads the live Campaign Name field whenever ex
 
 test('Campaign Pack export keeps the existing archive structure and downloads using the generated filename', () => {
   const exportCampaignPack = extractFunction('exportCampaignPack');
-  assert.match(exportCampaignPack, /const cardsFolder=zip\.folder\('cards'\); const utmFolder=zip\.folder\('utms'\); const summaryFolder=zip\.folder\('summary'\)/);
+  assert.match(exportCampaignPack, /const cardsFolder=zip\.folder\('offer-cards'\); const utmFolder=zip\.folder\('utms'\); const summaryFolder=zip\.folder\('summary'\)/);
   assert.match(exportCampaignPack, /downloadBlob\(blob,getCampaignPackFilename\(\)\)/);
   assert.doesNotMatch(exportCampaignPack, /zip\.folder\(getCampaignPackFolderName\(\)\)/);
 });
