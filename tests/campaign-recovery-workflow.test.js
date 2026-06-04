@@ -26,7 +26,7 @@ function runFunctions(names, context = {}) {
 
 test('Campaign Pack export writes a portable campaign-data.json backup inside the summary folder without changing pack naming', () => {
   assert.match(html, /summaryFolder\.file\('campaign-data\.json', JSON\.stringify\(buildCampaignFilePayload\(\), null, 2\)\);/);
-  assert.match(html, /const cardsFolder=zip\.folder\('cards'\); const utmFolder=zip\.folder\('utms'\); const summaryFolder=zip\.folder\('summary'\)/);
+  assert.match(html, /const cardsFolder=zip\.folder\('offer-cards'\); const utmFolder=zip\.folder\('utms'\); const summaryFolder=zip\.folder\('summary'\)/);
   assert.match(html, /downloadBlob\(blob,getCampaignPackFilename\(\)\)/);
 });
 

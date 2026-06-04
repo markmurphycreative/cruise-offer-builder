@@ -80,6 +80,7 @@ test('campaign pack export continues to generate summary/campaign-summary.txt', 
   const exportCampaignPack = extractFunction('exportCampaignPack');
   assert.match(exportCampaignPack, /const summaryFolder=zip\.folder\('summary'\)/);
   assert.match(exportCampaignPack, /summaryFolder\.file\('campaign-summary\.txt'/);
+  assert.match(exportCampaignPack, /summaryFolder\.file\('utm_lookup\.csv', buildUtmLookupCsv\(utmLookupRows\)\)/);
 });
 
 

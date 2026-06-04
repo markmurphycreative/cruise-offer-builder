@@ -43,13 +43,16 @@ test('CTA phone numbers are stored cleanly while generated links keep the tel pr
 test('CTA exports are separate JPG files and are only added when CTA is enabled', () => {
   assert.match(extractFunction('getCtaFilename'), /_cta\$1\./);
   assert.match(extractFunction('exportCurrentJPG'), /if\(cta\.enabled\)\{[\s\S]*renderCtaToImageBlob\(o,'image\/jpeg',0\.92\)[\s\S]*downloadBlob\(ctaBlob,ctaFilename\);/);
-  assert.match(extractFunction('exportAllJPG'), /if\(cta\.enabled\)\{[\s\S]*zip\.file\(ctaFilename,ctaBlob\);/);
+  assert.match(extractFunction('exportAllJPG'), /const zip=new JSZip\(\); const offerCardsFolder=zip\.folder\('offer-cards'\);/);
+  assert.match(extractFunction('exportAllJPG'), /offerCardsFolder\.file\(filename,blob\);/);
+  assert.match(extractFunction('exportAllJPG'), /if\(cta\.enabled\)\{[\s\S]*offerCardsFolder\.file\(ctaFilename,ctaBlob\);/);
   assert.doesNotMatch(extractFunction('renderCardToImageBlob'), /renderCtaHTML|cta-preview/);
 });
 
-test('Campaign Pack records CTA settings and places CTA JPGs under assets/cards', () => {
+test('Campaign Pack records CTA settings and places CTA JPGs under offer-cards', () => {
   assert.match(extractFunction('buildCampaignFilePayload'), /ctaSettings:currentCtaSettings/);
   assert.match(extractFunction('buildCampaignFilePayload'), /ctaData:getCtaSummaryRows\(\)/);
-  assert.match(extractFunction('exportCampaignPack'), /const ctaCardsFolder=cta\.enabled \? zip\.folder\('assets'\)\.folder\('cards'\) : null;/);
+  assert.match(extractFunction('exportCampaignPack'), /const zip=new JSZip\(\); const cardsFolder=zip\.folder\('offer-cards'\); const utmFolder=zip\.folder\('utms'\); const summaryFolder=zip\.folder\('summary'\)/);
+  assert.match(extractFunction('exportCampaignPack'), /cardsFolder\.file\(ctaFilename, ctaBlob\);/);
   assert.match(extractFunction('exportCampaignPack'), /CTA Link: \$\{cta\.enabled \? getCtaLink\(cta\) : 'N\/A'\}/);
 });

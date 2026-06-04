@@ -153,7 +153,8 @@ test('Campaign Pack export rebuilds offer UTMs instead of reusing cached stale v
   const exportEnd = html.indexOf('\nfunction ', exportStart + 1);
   assert.ok(exportStart >= 0 && exportEnd > exportStart, 'Could not locate exportCampaignPack');
   const exportCampaignPack = html.slice(exportStart, exportEnd);
-  assert.match(exportCampaignPack, /utm:\(buildUtmForOffer\(i\)\.url\|\|''\)\.replace/);
+  assert.match(exportCampaignPack, /const cardUtm=\(buildUtmForOffer\(i\)\.url\|\|''\)\.replace/);
+  assert.match(exportCampaignPack, /combinedRows\.push\(\{type:'offer',label:`Card \$\{i\+1\} UTM`,utm:cardUtm\}\)/);
   assert.doesNotMatch(exportCampaignPack, /o\._utm\|\|buildUtmForOffer/);
 
   const { context } = createUtmHarness({
