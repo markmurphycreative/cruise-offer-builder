@@ -151,6 +151,7 @@ test('offer tab label layout keeps fixed tab widths, truncation, and a lighter s
   assert.match(html, /\.offer-tab-label\{[^}]*flex-direction:column;[^}]*width:100%;min-width:0;[^}]*text-align:center;/);
   assert.match(html, /\.offer-tab-primary,\.offer-tab-ship\{[^}]*overflow:hidden;text-overflow:ellipsis;white-space:nowrap;/);
   assert.match(html, /\.offer-tab-ship\{[^}]*font-size:8px;[^}]*font-weight:400;[^}]*color:var\(--muted\);/);
+  assert.match(html, /\.otab\.active \.offer-tab-ship\{color:var\(--white\);opacity:1;\}/);
 });
 
 test('each offer tab dot independently maps empty, incomplete, invalid and export-ready offers', () => {
