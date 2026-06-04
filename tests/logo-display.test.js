@@ -67,15 +67,15 @@ test('Dawson & Sanderson logo uses the operator-specific centered scaling approa
 
 test('Single, Email and All 4 previews share the canonical card renderer used by exports', () => {
   assert.match(html, /function bc\(d\)\{ return renderCardHTML\(d\); \}/);
-  assert.match(html, /out\.innerHTML = renderCardHTML\(visibleFieldsToData\(\)\);/);
-  assert.match(html, /cardWrap\.innerHTML = bc\(d\);/);
+  assert.match(html, /out\.innerHTML = renderOfferWithOptionalCtaHTML\(visibleFieldsToData\(\), getCtaSettingsFromUI\(\)\);/);
+  assert.match(html, /cardWrap\.innerHTML = renderOfferWithOptionalCtaHTML\(d, getCtaSettingsFromUI\(\)\);/);
   assert.match(html, /c\.innerHTML = bc\(d \|\| \{\}\);/);
   assert.match(html, /wrap\.innerHTML = renderCardHTML\(offerData\);/);
 });
 
 test('PNG and JPG exports use the same card renderer as previews', () => {
   assert.match(html, /wrap\.innerHTML = renderCardHTML\(offerData\);/);
-  assert.match(html, /out\.innerHTML = renderCardHTML\(visibleFieldsToData\(\)\);/);
+  assert.match(html, /out\.innerHTML = renderOfferWithOptionalCtaHTML\(visibleFieldsToData\(\), getCtaSettingsFromUI\(\)\);/);
   assert.match(html, /renderCardToImageBlob\(o,'image\/jpeg',0\.92\)/);
   assert.match(html, /renderCardToBlob\(offerData\)/);
 });
