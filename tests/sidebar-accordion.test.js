@@ -22,7 +22,7 @@ function createClassList(initial = []) {
   };
 }
 
-function createHarness(keys = ['csv-import', 'campaign-presets', 'paste-raw-offer', 'operator-logo', 'hero-image', 'offer-details', 'summary-tools', 'utm-link', 'standard-utms']) {
+function createHarness(keys = ['csv-import', 'campaign-presets', 'paste-raw-offer', 'operator-logo', 'hero-image', 'offer-details', 'export-cards', 'summary-tools', 'utm-link', 'standard-utms']) {
   const autosave = { queued: 0 };
   const sections = keys.map((key, index) => {
     const body = { classList: createClassList(index === 0 ? ['section-body'] : ['section-body', 'hidden']) };
@@ -60,7 +60,7 @@ function openKeys(sections) {
 
 test('the default sidebar keeps CSV Import as the only expanded section', () => {
   const sections = [...html.matchAll(/<div class="section(?: [^"]*)?" data-section-key="([^"]+)">\s*<div class="section-hdr( collapsed)?"/g)];
-  assert.equal(sections.length, 10);
+  assert.equal(sections.length, 11);
   assert.deepEqual(sections.filter(([, , collapsed]) => !collapsed).map(([, key]) => key), ['csv-import']);
 });
 

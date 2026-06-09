@@ -6,12 +6,12 @@ const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const sectionHeaders = [...html.matchAll(/<div class="section-hdr(?: collapsed)?" onclick="toggleSec\(this\)">\s*<h3>([\s\S]*?)<\/h3><span class="section-toggle">▾<\/span>/g)]
   .map(([, heading]) => heading);
 
-const headingLabels = sectionHeaders.map(heading => heading.replace(/<svg[\s\S]*?<\/svg>/, ''));
+const headingLabels = sectionHeaders.map(heading => heading.replace(/<svg[\s\S]*?<\/svg>/, '').replace(/<span class="export-health-count ready" id="export-health-count">Ready<\/span>/, '').trim());
 
 test('every sidebar section heading uses one inline monochrome SVG icon', () => {
-  assert.equal(sectionHeaders.length, 10);
+  assert.equal(sectionHeaders.length, 11);
   sectionHeaders.forEach(heading => {
-    assert.match(heading, /^<svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24">[\s\S]*<\/svg>[^<]+$/);
+    assert.match(heading, /^<svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24">[\s\S]*<\/svg>[^<]+(?:<span class="export-health-count ready" id="export-health-count">Ready<\/span>)?$/);
     assert.doesNotMatch(heading, /\p{Extended_Pictographic}/u);
   });
   assert.match(html, /\.section-icon\{width:18px;height:18px;flex-shrink:0;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;\}/);
@@ -26,6 +26,7 @@ test('sidebar section names follow the primary workflow and use the requested di
     'Offer Details',
     'CTA Assets',
     'Paste Offer',
+    'Export Cards',
     'Summary',
     'UTM Link',
     'Standard UTMs',

@@ -223,8 +223,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 #utm-out{display:none!important;}
 
 /* ── UTM OUTPUT PANEL ── */
-.utm-visible-output{width:100%;min-height:76px;font-size:9px;font-family:monospace;line-height:1.45;color:var(--navy);background:#fafaf8;border:1px solid var(--border);border-radius:var(--radius);padding:6px 7px;resize:vertical;margin-top:4px;}
+.utm-current-card{margin-top:6px;}
+.utm-visible-output{min-height:0;font-size:9px;font-family:monospace;line-height:1.4;color:var(--navy);word-break:break-all;white-space:pre-wrap;}
 .utm-btn-row{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:5px;}
+.std-utm-actions{grid-template-columns:1fr;}
 .std-utm-list{display:grid;gap:6px;margin-top:4px;}
 .std-utm-item{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:6px;}
 .std-utm-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:3px;}
@@ -243,8 +245,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .warn-box.active{display:block;}
 
 /* ── EXPORT SECTION ── */
-.export-section{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:6px;}
+.export-section{background:var(--panel);}
+.export-section .section-body{padding:8px 10px;}
 .export-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin-bottom:6px;}
+.export-health-count{margin-left:6px;font-size:8px;font-weight:700;text-transform:none;letter-spacing:.03em;color:var(--amber);white-space:nowrap;}
+.export-health-count.ready{color:var(--green);}
 .export-group{margin-top:8px;}
 .export-group-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;}
 .export-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
@@ -743,23 +748,26 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     </div>
 
     <!-- ── 7. EXPORT ── -->
-    <div class="export-section">
-      <div class="export-title">⬇ Export Cards</div>
-      <details class="prod-status" id="prod-status">
-        <summary class="prod-status-toggle">
-          <span class="prod-status-title">Campaign Health</span>
-          <span class="prod-status-collapsed-summary" id="prod-status-collapsed-summary"></span>
-          <span class="section-toggle" aria-hidden="true">▾</span>
-        </summary>
-        <div class="prod-status-summary" id="prod-status-summary"></div>
-        <div class="prod-status-list" id="prod-status-list"></div>
-      </details>
-      <div class="copy-qa-panel">
-        <div class="copy-qa-title">Spellcheck / Copy QA</div>
-        <div class="copy-qa-status" id="copy-qa-status">— QA not run yet</div>
-        <div class="copy-qa-checklist" id="copy-qa-checklist"></div>
-        <div class="copy-qa-note" id="copy-qa-note">Passive checks only — no auto-correction. Export is never blocked.</div>
+    <div class="section export-section" data-section-key="export-cards">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>Export Cards <span class="export-health-count ready" id="export-health-count">Ready</span></h3><span class="section-toggle">▾</span>
       </div>
+      <div class="section-body hidden">
+        <details class="prod-status" id="prod-status">
+          <summary class="prod-status-toggle">
+            <span class="prod-status-title">Campaign Health</span>
+            <span class="prod-status-collapsed-summary" id="prod-status-collapsed-summary"></span>
+            <span class="section-toggle" aria-hidden="true">▾</span>
+          </summary>
+          <div class="prod-status-summary" id="prod-status-summary"></div>
+          <div class="prod-status-list" id="prod-status-list"></div>
+        </details>
+        <div class="copy-qa-panel">
+          <div class="copy-qa-title">Spellcheck / Copy QA</div>
+          <div class="copy-qa-status" id="copy-qa-status">— QA not run yet</div>
+          <div class="copy-qa-checklist" id="copy-qa-checklist"></div>
+          <div class="copy-qa-note" id="copy-qa-note">Passive checks only — no auto-correction. Export is never blocked.</div>
+        </div>
       <div class="export-group">
         <div class="export-group-title">Current Card</div>
         <div class="export-actions single-action">
@@ -790,9 +798,10 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         One or more cards uses an external image URL which may not render in the export due to browser CORS restrictions.<br><br>
         <strong>For best results:</strong> Upload images directly using the drag-and-drop area, or download your Adobe Stock image and drop it in locally.
       </div>
-      <div class="export-filenames" id="export-filenames">
-        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px;">Export filenames:</div>
-        <div id="filename-list"></div>
+        <div class="export-filenames" id="export-filenames">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px;">Export filenames:</div>
+          <div id="filename-list"></div>
+        </div>
       </div>
     </div>
 
@@ -846,12 +855,9 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <div class="section-body hidden">
         <div class="field"><label>Operator Landing Page</label><input id="f-url" placeholder="https://dawsonandsanderson.co.uk/cruises" oninput="genUtm()"></div>
         <div class="utm-out" id="utm-out" aria-hidden="true"></div>
-        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-top:4px;">Generated UTM</label>
-        <textarea id="utm-visible-output" class="utm-visible-output" readonly="" placeholder="Generate or enter a destination URL + campaign name"></textarea>
-        <div class="utm-btn-row">
-          <button class="abtn navy btn-compact" onclick="genAllUtms()">Generate All UTMs</button>
-          <button class="abtn btn-compact" id="utm-copy-btn" onclick="copyUtm()">Copy Current UTM</button>
-          <button class="abtn btn-compact" onclick="copyAllUtms()">Copy All UTMs</button>
+        <div class="std-utm-item utm-current-card">
+          <div class="std-utm-head"><strong>Generated UTM</strong><button class="abtn" id="utm-copy-btn" onclick="copyUtm()" style="font-size:9px;padding:3px 6px;flex:0 0 auto;">Copy</button></div>
+          <div id="utm-visible-output" class="utm-visible-output" role="status" aria-live="polite">Generate or enter a destination URL + campaign name</div>
         </div>
       </div>
     </div>
@@ -865,6 +871,9 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       </div>
       <div class="section-body hidden">
         <div class="std-utm-list" id="std-utm-list"></div>
+        <div class="utm-btn-row std-utm-actions">
+          <button class="abtn btn-compact" onclick="copyAllUtms()">Copy All UTMs</button>
+        </div>
       </div>
     </div>
 
@@ -2293,6 +2302,11 @@ function updateProductionStatus(){
   const warningCount=Number(!value("g-campaign"))+Number(!value("g-date"));
   const collapsedSummary=document.getElementById("prod-status-collapsed-summary");
   if(collapsedSummary) collapsedSummary.textContent=attentionCount?`${blockerCount} blockers · ${warningCount} warnings`:"Ready for export";
+  const exportHealthCount=document.getElementById("export-health-count");
+  if(exportHealthCount){
+    exportHealthCount.textContent=attentionCount?`${blockerCount} blocker${blockerCount===1?"":"s"} · ${warningCount} warning${warningCount===1?"":"s"}`:"Ready";
+    exportHealthCount.classList.toggle("ready", !attentionCount);
+  }
   const summary=document.getElementById("prod-status-summary");
   if(summary){
     summary.className=`prod-status-summary ${attentionCount?"warn":"ok"}`;
@@ -4782,6 +4796,11 @@ function buildUtmForOffer(i){
   }
   return {url:full, message:`Card ${i+1}: ${full}`};
 }
+function setUtmVisibleOutput(el, value){
+  if(!el) return;
+  if("value" in el) el.value = value;
+  el.textContent = value;
+}
 function updateUtmOutput(showAll){
   try{ save(); }catch(e){}
   const visible = document.getElementById("utm-visible-output");
@@ -4789,13 +4808,13 @@ function updateUtmOutput(showAll){
   const btn = document.getElementById("utm-copy-btn");
   if(showAll){
     const lines = [0,1,2,3].map(i => buildUtmForOffer(i).message);
-    if(visible) visible.value = lines.join("\n");
+    setUtmVisibleOutput(visible, lines.join("\n"));
     if(legacy){ legacy.textContent = lines.join("\n"); legacy.style.display = "none"; }
     if(btn) btn.disabled = false;
     return lines.join("\n");
   }
   const result = buildUtmForOffer(cur);
-  if(visible) visible.value = result.url || result.message;
+  setUtmVisibleOutput(visible, result.url || result.message);
   if(legacy){ legacy.textContent = result.url || ""; legacy.style.display = result.url ? "block" : "none"; }
   if(btn) btn.disabled = !result.url;
   return result.url;
@@ -4818,7 +4837,7 @@ function copyAllUtms(){
   genAllUtms(true);
   const lines = [0,1,2,3].map(i => (offers[i] && offers[i]._utm) ? `Card ${i+1}: ${offers[i]._utm}` : buildUtmForOffer(i).message).join("\n");
   const visible = document.getElementById("utm-visible-output");
-  if(visible) visible.value = lines;
+  setUtmVisibleOutput(visible, lines);
   navigator.clipboard.writeText(lines).then(()=>alert("All UTMs copied"));
 }
 

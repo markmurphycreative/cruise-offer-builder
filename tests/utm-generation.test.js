@@ -48,6 +48,18 @@ function utmContent(url) {
   return new URL(url).searchParams.get('utm_content');
 }
 
+
+test('UTM Link renders generated output as a compact copyable card instead of a textarea', () => {
+  assert.match(html, /<div class="std-utm-item utm-current-card">[\s\S]*?<strong>Generated UTM<\/strong><button class="abtn" id="utm-copy-btn" onclick="copyUtm\(\)"[\s\S]*?>Copy<\/button>[\s\S]*?<div id="utm-visible-output" class="utm-visible-output" role="status" aria-live="polite">/);
+  assert.doesNotMatch(html, /<textarea id="utm-visible-output"/);
+});
+
+test('Standard UTMs keeps Copy All and the redundant Generate All button is not rendered', () => {
+  const standardSection = html.match(/<div class="section" data-section-key="standard-utms">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/)[0];
+  assert.match(standardSection, /onclick="copyAllUtms\(\)">Copy All UTMs<\/button>/);
+  assert.doesNotMatch(html, />Generate All UTMs<\/button>/);
+});
+
 test('Generate Current UTM resolves every Norwegian alias to the norwegian UTM slug', () => {
   for (const operator of ['ncl', 'NCL', 'Norwegian Cruise Line', 'Norwegian']) {
     const { context } = createUtmHarness({
