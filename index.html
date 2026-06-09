@@ -310,15 +310,17 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-lock-toggle input{width:auto;}
 .hero-lock-toggle.locked{color:var(--gold);}
 .hero-lock-state{display:inline-flex;align-items:center;gap:4px;}
-.production-panel{margin-bottom:4px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
-.production-hdr{background:var(--panel);padding:5px 9px;}
-.production-hdr h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);}
-.production-body{padding:6px;background:#fafaf8;}
-.recent-campaign-list,.campaign-library-list{display:grid;gap:5px;}
-.recent-campaign-item,.campaign-library-item{border:1px solid var(--border);border-radius:var(--radius);padding:6px;background:#fff;}
-.recent-campaign-title,.campaign-library-title{font-size:10px;font-weight:700;color:var(--navy);line-height:1.3;}
-.recent-campaign-meta,.campaign-library-meta{font-size:9px;color:var(--muted);margin-top:2px;}
-.recent-campaign-actions,.campaign-library-actions{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap;}
+.campaign-library-section .section-body{padding:5px;background:#fafaf8;}
+.campaign-library-categories{display:grid;gap:4px;}
+.campaign-library-category{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:#fff;}
+.campaign-library-category .section-hdr{padding:5px 7px;}
+.campaign-library-category .section-hdr h4{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);}
+.campaign-library-category .section-body{padding:5px;background:#fafaf8;}
+.campaign-history-list{display:grid;gap:4px;}
+.campaign-history-item{border:1px solid var(--border);border-radius:var(--radius);padding:5px;background:#fff;}
+.campaign-history-title{font-size:10px;font-weight:700;color:var(--navy);line-height:1.25;}
+.campaign-history-meta{font-size:9px;color:var(--muted);margin-top:2px;}
+.campaign-history-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin-top:5px;}
 .ptool{display:flex;align-items:center;gap:4px;}
 .ptool span{font-size:9px;color:rgba(255,255,255,.6);white-space:nowrap;}
 .ptool input[type=range]{accent-color:var(--gold);width:70px;height:3px;}
@@ -810,17 +812,37 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       </div>
     </div>
 
-    <div class="production-panel" id="recent-campaigns-panel">
-      <div class="production-hdr"><h3>Recent Campaigns</h3></div>
-      <div class="production-body">
-        <div id="recent-campaign-list" class="recent-campaign-list"></div>
+    <div class="section campaign-library-section" id="campaign-library-panel">
+      <div class="section-hdr" onclick="toggleCampaignLibraryMain(this)">
+        <h3>Campaign Library</h3><span class="section-toggle">▾</span>
       </div>
-    </div>
-
-    <div class="production-panel" id="campaign-library-panel">
-      <div class="production-hdr"><h3>Campaign Library</h3></div>
-      <div class="production-body">
-        <div id="campaign-library-list" class="campaign-library-list"></div>
+      <div class="section-body">
+        <div class="campaign-library-categories">
+          <div class="campaign-library-category" data-campaign-category="pinned">
+            <div class="section-hdr" onclick="toggleCampaignLibraryCategory(this)">
+              <h4>Pinned Campaigns</h4><span class="section-toggle">▾</span>
+            </div>
+            <div class="section-body">
+              <div id="pinned-campaign-list" class="campaign-history-list"></div>
+            </div>
+          </div>
+          <div class="campaign-library-category" data-campaign-category="recent">
+            <div class="section-hdr collapsed" onclick="toggleCampaignLibraryCategory(this)">
+              <h4>Recent Campaigns</h4><span class="section-toggle">▾</span>
+            </div>
+            <div class="section-body hidden">
+              <div id="recent-campaign-list" class="campaign-history-list"></div>
+            </div>
+          </div>
+          <div class="campaign-library-category" data-campaign-category="saved">
+            <div class="section-hdr" onclick="toggleCampaignLibraryCategory(this)">
+              <h4>Saved Campaigns</h4><span class="section-toggle">▾</span>
+            </div>
+            <div class="section-body">
+              <div id="saved-campaign-list" class="campaign-history-list"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -3408,7 +3430,7 @@ function buildCampaignFilePayload(){
 }
 
 const CAMPAIGN_HISTORY_KEY = "cobCampaignHistoryV1";
-const CAMPAIGN_LIBRARY_MAX = 12;
+const CAMPAIGN_RECENT_MAX = 10;
 
 function readCampaignHistory(){
   try{
@@ -3417,7 +3439,7 @@ function readCampaignHistory(){
   }catch(e){ return []; }
 }
 function writeCampaignHistory(list){
-  try{ localStorage.setItem(CAMPAIGN_HISTORY_KEY, JSON.stringify((Array.isArray(list)?list:[]).slice(0,CAMPAIGN_LIBRARY_MAX))); return true; }
+  try{ localStorage.setItem(CAMPAIGN_HISTORY_KEY, JSON.stringify(Array.isArray(list)?list:[])); return true; }
   catch(e){ return false; }
 }
 function campaignHistoryTitleFromPayload(payload){
@@ -3426,31 +3448,47 @@ function campaignHistoryTitleFromPayload(payload){
 }
 function buildCampaignHistoryEntryFromPayload(payload,type="saved"){
   const title=campaignHistoryTitleFromPayload(payload);
+  const now=new Date().toISOString();
   return {
     id:`${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
     title,
     type,
-    updatedAt:new Date().toISOString(),
+    savedAt:now,
+    updatedAt:now,
+    recentAt:now,
     pinned:false,
     payload:JSON.parse(JSON.stringify(payload||buildCampaignFilePayload()))
   };
 }
+function campaignHistoryTime(item,field){
+  return new Date((item&&item[field]) || (item&&item.updatedAt) || 0).getTime() || 0;
+}
 function sortCampaignHistory(list){
-  return (Array.isArray(list)?list:[]).sort((a,b)=>{
+  return (Array.isArray(list)?list:[]).slice().sort((a,b)=>{
     if(!!a.pinned!==!!b.pinned) return a.pinned ? -1 : 1;
-    return new Date(b.updatedAt||0)-new Date(a.updatedAt||0);
+    if(a.pinned && b.pinned) return campaignHistoryTime(a,"pinnedAt")-campaignHistoryTime(b,"pinnedAt");
+    return campaignHistoryTime(b,"updatedAt")-campaignHistoryTime(a,"updatedAt");
   });
+}
+function sortCampaignHistoryNewest(list,field="updatedAt"){
+  return (Array.isArray(list)?list:[]).slice().sort((a,b)=>campaignHistoryTime(b,field)-campaignHistoryTime(a,field));
 }
 function addCampaignHistoryEntry(entry){
   if(!entry || !entry.payload) return false;
-  const list=readCampaignHistory().filter(item=>item.title!==entry.title || item.type!==entry.type);
-  list.unshift(entry);
-  return writeCampaignHistory(sortCampaignHistory(list).slice(0,CAMPAIGN_LIBRARY_MAX));
+  const previous=readCampaignHistory().find(item=>item.title===entry.title && item.type===entry.type);
+  const merged=previous ? {...entry,id:previous.id,pinned:!!previous.pinned,pinnedAt:previous.pinnedAt} : entry;
+  const list=readCampaignHistory().filter(item=>item.id!==merged.id && (item.title!==entry.title || item.type!==entry.type));
+  list.unshift(merged);
+  return writeCampaignHistory(sortCampaignHistory(list));
 }
 function restoreCampaignHistoryEntry(id){
-  const entry=readCampaignHistory().find(item=>item.id===id);
+  const list=readCampaignHistory();
+  const entry=list.find(item=>item.id===id);
   if(!entry || !entry.payload) return false;
+  const now=new Date().toISOString();
+  if(typeof writeCampaignHistory==="function") writeCampaignHistory(list.map(item=>item.id===id ? {...item,recentAt:now,lastOpenedAt:now} : item));
   restoreCampaignFilePayload(parseCampaignFileText(JSON.stringify(entry.payload)));
+  if(typeof refreshCampaignHistoryUI==="function") refreshCampaignHistoryUI();
   return true;
 }
 function deleteCampaignHistoryEntry(id){
@@ -3458,29 +3496,57 @@ function deleteCampaignHistoryEntry(id){
   refreshCampaignHistoryUI();
 }
 function togglePinCampaignHistoryEntry(id){
-  const list=readCampaignHistory().map(item=>item.id===id ? {...item,pinned:!item.pinned,updatedAt:item.updatedAt||new Date().toISOString()} : item);
+  const now=new Date().toISOString();
+  const list=readCampaignHistory().map(item=>{
+    if(item.id!==id) return item;
+    const pinned=!item.pinned;
+    return {...item,pinned,pinnedAt:pinned ? now : ""};
+  });
   writeCampaignHistory(sortCampaignHistory(list));
   refreshCampaignHistoryUI();
 }
+function campaignHistoryDisplayType(item){
+  return item && item.type === "backup" ? "Backup" : "Campaign";
+}
 function campaignHistoryMeta(item){
-  const date=item.updatedAt ? formatCampaignDate(new Date(item.updatedAt)) : "Saved campaign";
-  const type=item.type ? item.type.charAt(0).toUpperCase()+item.type.slice(1) : "Campaign";
-  return `${date} · ${type}${item.pinned ? " · Pinned" : ""}`;
+  const dateValue=(item&&item.savedAt) || (item&&item.updatedAt) || "";
+  const date=dateValue ? formatCampaignDate(new Date(dateValue)) : "Date saved unavailable";
+  return `${date} · ${campaignHistoryDisplayType(item)}`;
+}
+function escapeCampaignHistoryText(value){
+  return String(value||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
 function renderCampaignHistoryList(targetId,items,emptyLabel){
   const el=document.getElementById(targetId);
   if(!el) return;
-  if(!items.length){ el.innerHTML=`<div class="recent-campaign-meta">${emptyLabel}</div>`; return; }
+  if(!items.length){ el.innerHTML=`<div class="campaign-history-meta">${emptyLabel}</div>`; return; }
   el.innerHTML=items.map(item=>{
-    const safeTitle=String(item.title||"Untitled Campaign").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    const safeMeta=campaignHistoryMeta(item).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    return `<div class="recent-campaign-item"><div class="recent-campaign-title">${safeTitle}</div><div class="recent-campaign-meta">${safeMeta}</div><div class="recent-campaign-actions"><button class="abtn btn-compact" onclick="restoreCampaignHistoryEntry('${item.id}')">Open</button><button class="abtn btn-compact" onclick="togglePinCampaignHistoryEntry('${item.id}')">${item.pinned?'Unpin':'Pin'}</button><button class="abtn red btn-compact" onclick="deleteCampaignHistoryEntry('${item.id}')">Delete</button></div></div>`;
+    const safeId=escapeCampaignHistoryText(item.id);
+    const safeTitle=escapeCampaignHistoryText(item.title||"Untitled Campaign");
+    const safeMeta=escapeCampaignHistoryText(campaignHistoryMeta(item));
+    return `<div class="campaign-history-item"><div class="campaign-history-title">${safeTitle}</div><div class="campaign-history-meta">${safeMeta}</div><div class="campaign-history-actions"><button class="abtn btn-compact" onclick="restoreCampaignHistoryEntry('${safeId}')">Open</button><button class="abtn btn-compact" onclick="togglePinCampaignHistoryEntry('${safeId}')">${item.pinned?'Unpin':'Pin'}</button><button class="abtn red btn-compact" onclick="deleteCampaignHistoryEntry('${safeId}')">Delete</button></div></div>`;
   }).join("");
 }
+function getCampaignLibraryBuckets(){
+  const list=readCampaignHistory();
+  const pinned=sortCampaignHistory(list.filter(item=>item.pinned));
+  const unpinned=list.filter(item=>!item.pinned);
+  const recent=sortCampaignHistoryNewest(unpinned,"recentAt").slice(0,CAMPAIGN_RECENT_MAX);
+  const recentIds=new Set(recent.map(item=>item.id));
+  const saved=sortCampaignHistoryNewest(unpinned.filter(item=>!recentIds.has(item.id)),"updatedAt");
+  return {pinned,recent,saved};
+}
 function refreshCampaignHistoryUI(){
-  const list=sortCampaignHistory(readCampaignHistory());
-  renderCampaignHistoryList("recent-campaign-list", list.slice(0,3), "No recent campaigns yet");
-  renderCampaignHistoryList("campaign-library-list", list, "No saved campaigns or backups yet");
+  const buckets=getCampaignLibraryBuckets();
+  renderCampaignHistoryList("pinned-campaign-list", buckets.pinned, "No pinned campaigns yet.");
+  renderCampaignHistoryList("recent-campaign-list", buckets.recent, "No recent campaigns.");
+  renderCampaignHistoryList("saved-campaign-list", buckets.saved, "No saved campaigns.");
+}
+function toggleCampaignLibraryMain(hdr){
+  setSectionCollapsedByHeader(hdr, !hdr.classList.contains("collapsed") );
+}
+function toggleCampaignLibraryCategory(hdr){
+  setSectionCollapsedByHeader(hdr, !hdr.classList.contains("collapsed") );
 }
 function triggerLoadCampaignBackup(){
   const input=document.getElementById("campaign-backup-input");
