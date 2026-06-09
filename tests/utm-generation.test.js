@@ -15,12 +15,16 @@ function extractBlock(startMarker, endMarker) {
 function createUtmHarness({ offers, cur = 0, editor = {} } = {}) {
   offers ||= [{}, {}, {}, {}];
   const activeOffer = offers[cur] || {};
+  const createStyle = () => ({ values: {}, setProperty(name, value) { this.values[name] = value; } });
   const elements = {
     'g-date': { value: '16 May 2026', getAttribute: () => '' },
     'f-name': { value: editor.name ?? activeOffer.name ?? '' },
     'f-url': { value: editor.url ?? activeOffer.url ?? '' },
     'f-operator': { value: editor.operator ?? activeOffer.operator ?? '' },
     'utm-visible-output': { value: '' },
+    'utm-context-id': { style: createStyle() },
+    'utm-context-meta': { textContent: '' },
+    'utm-context-title': { textContent: '' },
     'utm-out': { textContent: '', style: {} },
     'utm-copy-btn': { disabled: false, textContent: 'Copy Current UTM' }
   };
@@ -50,8 +54,34 @@ function utmContent(url) {
 
 
 test('UTM Link renders generated output as a compact copyable card instead of a textarea', () => {
-  assert.match(html, /<div class="std-utm-item utm-current-card">[\s\S]*?<strong>Generated UTM<\/strong><button class="abtn" id="utm-copy-btn" onclick="copyUtm\(\)"[\s\S]*?>Copy<\/button>[\s\S]*?<div id="utm-visible-output" class="utm-visible-output" role="status" aria-live="polite">/);
+  assert.match(html, /<div class="std-utm-item utm-current-card">[\s\S]*?<strong>Generated UTM<\/strong><button class="abtn" id="utm-copy-btn" onclick="copyUtm\(\)"[\s\S]*?>Copy<\/button>[\s\S]*?<div id="utm-context-id" class="utm-context-id"[\s\S]*?<strong id="utm-context-meta">CARD 1<\/strong><span id="utm-context-title">Untitled Offer<\/span><\/div>[\s\S]*?<div id="utm-visible-output" class="utm-visible-output" role="status" aria-live="polite">/);
+  assert.match(html, /\.utm-context-id\{[^}]*border-left:3px solid var\(--utm-accent\);[^}]*background:var\(--utm-accent-tint\);/);
+  assert.match(html, /\.utm-visible-output\{[^}]*font-family:monospace;[^}]*color:var\(--navy\);/);
   assert.doesNotMatch(html, /<textarea id="utm-visible-output"/);
+});
+
+
+test('Generated UTM context identifier follows the active operator, card number and offer name without changing the URL', () => {
+  const { context, elements } = createUtmHarness({
+    cur: 2,
+    offers: [{}, {}, { operator: 'msc', name: 'Mediterranean Explorer' }]
+  });
+
+  const url = context.genUtm();
+  assert.equal(elements['utm-context-meta'].textContent, 'MSC Cruises • CARD 3');
+  assert.equal(elements['utm-context-title'].textContent, 'Mediterranean Explorer');
+  assert.match(url, /utm_content=160526_msc_mediterranean_explorer_card3/);
+  assert.equal(elements['utm-visible-output'].value, url);
+});
+
+test('Generated UTM context identifier falls back safely when operator and offer name are missing', () => {
+  const { context, elements } = createUtmHarness({ offers: [{}] });
+
+  context.genUtm();
+  assert.equal(elements['utm-context-meta'].textContent, 'CARD 1');
+  assert.equal(elements['utm-context-title'].textContent, 'Untitled Offer');
+  assert.equal(elements['utm-context-id'].style.values['--utm-accent'], '#a09267');
+  assert.equal(elements['utm-context-id'].style.values['--utm-accent-tint'], 'rgba(160,146,103,0.06)');
 });
 
 test('Standard UTMs keeps Copy All and the redundant Generate All button is not rendered', () => {
