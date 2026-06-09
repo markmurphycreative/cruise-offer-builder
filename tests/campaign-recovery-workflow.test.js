@@ -142,26 +142,52 @@ test('campaign restore can recover hero lock state from campaign-data heroImages
 });
 
 
-test('campaign history renders one unified campaign library with expandable pinned, recent and saved buckets', () => {
+test('campaign history renders one unified campaign library with expandable pinned and recent buckets', () => {
   assert.match(html, /const CAMPAIGN_HISTORY_KEY = "cobCampaignHistoryV1";/);
-  assert.match(html, /const CAMPAIGN_RECENT_MAX = 10;/);
+  assert.match(html, /const CAMPAIGN_RECENT_MAX = 20;/);
   assert.doesNotMatch(html, /id="recent-campaigns-panel"/);
   assert.match(html, /id="campaign-library-panel"/);
   assert.match(html, /<h3>Campaign Library<\/h3><span class="section-toggle">▾<\/span>/);
   assert.match(html, /<h4>Pinned Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
   assert.match(html, /<h4>Recent Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
-  assert.match(html, /<h4>Saved Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
+  assert.doesNotMatch(html, /<h4>Saved Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
   assert.match(html, /id="pinned-campaign-list" class="campaign-history-list"/);
   assert.match(html, /id="recent-campaign-list" class="campaign-history-list"/);
-  assert.match(html, /id="saved-campaign-list" class="campaign-history-list"/);
+  assert.doesNotMatch(html, /id="saved-campaign-list" class="campaign-history-list"/);
   assert.match(html, /renderCampaignHistoryList\("pinned-campaign-list", buckets\.pinned, "No pinned campaigns yet\."\)/);
   assert.match(html, /renderCampaignHistoryList\("recent-campaign-list", buckets\.recent, "No recent campaigns\."\)/);
-  assert.match(html, /renderCampaignHistoryList\("saved-campaign-list", buckets\.saved, "No saved campaigns\."\)/);
+  assert.doesNotMatch(html, /renderCampaignHistoryList\("saved-campaign-list", buckets\.saved, "No saved campaigns\."\)/);
   assert.match(html, /restoreCampaignHistoryEntry\('\$\{safeId\}'\)">Open<\/button>/);
   assert.match(html, /togglePinCampaignHistoryEntry\('\$\{safeId\}'\)">\$\{item\.pinned\?'Unpin':'Pin'\}<\/button>/);
   assert.match(html, /deleteCampaignHistoryEntry\('\$\{safeId\}'\)">Delete<\/button>/);
   assert.match(html, /const payload=buildCampaignFilePayload\(\);[\s\S]*?addCampaignHistoryEntry\(buildCampaignHistoryEntryFromPayload\(payload, "saved"\)\)/);
   assert.match(html, /addCampaignHistoryEntry\(buildCampaignHistoryEntryFromPayload\(parsed, "backup"\)\)/);
+});
+
+test('campaign library buckets keep pinned first and show the last 20 recent campaigns including pinned entries', () => {
+  const now = Date.parse('2026-06-09T12:00:00.000Z');
+  const history = Array.from({ length: 25 }, (_, index) => ({
+    id: `campaign-${index}`,
+    title: `Campaign ${index}`,
+    type: 'saved',
+    pinned: index === 3 || index === 22,
+    pinnedAt: index === 3 ? '2026-06-01T09:00:00.000Z' : index === 22 ? '2026-06-02T09:00:00.000Z' : '',
+    updatedAt: new Date(now - index * 60000).toISOString(),
+    recentAt: new Date(now - index * 60000).toISOString(),
+    payload: { id: index }
+  }));
+  const context = runFunctions(['campaignHistoryTime', 'sortCampaignHistory', 'sortCampaignHistoryNewest', 'getCampaignLibraryBuckets'], {
+    CAMPAIGN_RECENT_MAX: 20,
+    readCampaignHistory: () => history
+  });
+
+  const buckets = context.getCampaignLibraryBuckets();
+
+  assert.deepEqual(buckets.pinned.map(item => item.id), ['campaign-3', 'campaign-22']);
+  assert.equal(buckets.recent.length, 20);
+  assert.deepEqual(buckets.recent.map(item => item.id), history.slice(0, 20).map(item => item.id));
+  assert.ok(buckets.recent.some(item => item.pinned), 'recent bucket should include pinned campaigns');
+  assert.equal(Object.hasOwn(buckets, 'saved'), false);
 });
 
 test('campaign library reopens a stored campaign through the same backup restore pipeline', () => {

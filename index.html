@@ -834,14 +834,6 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
               <div id="recent-campaign-list" class="campaign-history-list"></div>
             </div>
           </div>
-          <div class="campaign-library-category" data-campaign-category="saved">
-            <div class="section-hdr" onclick="toggleCampaignLibraryCategory(this)">
-              <h4>Saved Campaigns</h4><span class="section-toggle">▾</span>
-            </div>
-            <div class="section-body">
-              <div id="saved-campaign-list" class="campaign-history-list"></div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -3430,7 +3422,7 @@ function buildCampaignFilePayload(){
 }
 
 const CAMPAIGN_HISTORY_KEY = "cobCampaignHistoryV1";
-const CAMPAIGN_RECENT_MAX = 10;
+const CAMPAIGN_RECENT_MAX = 20;
 
 function readCampaignHistory(){
   try{
@@ -3530,17 +3522,13 @@ function renderCampaignHistoryList(targetId,items,emptyLabel){
 function getCampaignLibraryBuckets(){
   const list=readCampaignHistory();
   const pinned=sortCampaignHistory(list.filter(item=>item.pinned));
-  const unpinned=list.filter(item=>!item.pinned);
-  const recent=sortCampaignHistoryNewest(unpinned,"recentAt").slice(0,CAMPAIGN_RECENT_MAX);
-  const recentIds=new Set(recent.map(item=>item.id));
-  const saved=sortCampaignHistoryNewest(unpinned.filter(item=>!recentIds.has(item.id)),"updatedAt");
-  return {pinned,recent,saved};
+  const recent=sortCampaignHistoryNewest(list,"recentAt").slice(0,CAMPAIGN_RECENT_MAX);
+  return {pinned,recent};
 }
 function refreshCampaignHistoryUI(){
   const buckets=getCampaignLibraryBuckets();
   renderCampaignHistoryList("pinned-campaign-list", buckets.pinned, "No pinned campaigns yet.");
   renderCampaignHistoryList("recent-campaign-list", buckets.recent, "No recent campaigns.");
-  renderCampaignHistoryList("saved-campaign-list", buckets.saved, "No saved campaigns.");
 }
 function toggleCampaignLibraryMain(hdr){
   setSectionCollapsedByHeader(hdr, !hdr.classList.contains("collapsed") );
