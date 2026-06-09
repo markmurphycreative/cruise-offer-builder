@@ -74,6 +74,32 @@ test('automatic campaign name tracks send date, description and owner changes', 
   assert.equal(elements['g-campaign'].value, '30th May 2026 - Saturday - Celebrity Cruises - Cruise Worldwide (Alex)');
 });
 
+test('send date input listener derives the weekday immediately while auto naming is enabled', () => {
+  const { context, elements } = createHarness();
+  context.initialiseCampaignNamingDefaults(new Date('2026-06-03T12:00:00'));
+
+  elements['g-date'].value = '9th June 2026';
+  elements['g-date'].listener.fn();
+  assert.equal(elements['g-campaign'].value, '9th June 2026 - Tuesday - Cruise Worldwide Mixed (Mark)');
+
+  elements['g-date'].value = '12th June 2026';
+  elements['g-date'].listener.fn();
+  assert.equal(elements['g-campaign'].value, '12th June 2026 - Friday - Cruise Worldwide Mixed (Mark)');
+});
+
+test('send date changes do not overwrite manual campaign names when auto naming is disabled', () => {
+  const { context, elements } = createHarness();
+  context.initialiseCampaignNamingDefaults(new Date('2026-06-03T12:00:00'));
+  elements['g-campaign'].value = 'Do not overwrite me';
+  context.handleCampaignNameInput();
+
+  elements['g-date'].value = '12th June 2026';
+  elements['g-date'].listener.fn();
+
+  assert.equal(elements['g-campaign'].value, 'Do not overwrite me');
+  assert.equal(elements['g-auto-campaign'].checked, false);
+});
+
 test('manual campaign name disables overwrites until regenerate is requested', () => {
   const { context, elements } = createHarness();
   context.initialiseCampaignNamingDefaults(new Date('2026-06-03T12:00:00'));
