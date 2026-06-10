@@ -43,21 +43,25 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 
 /* ── OFFER SEGMENTED CONTROL ── */
 .offer-tabs{position:relative;display:flex;margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:0;background:#fafaf8;flex-shrink:0;overflow:hidden;isolation:isolate;}
-.offer-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:0;background:var(--gold);box-shadow:0 1px 3px rgba(0,0,0,.2);transform:translateX(0);transition:transform .2s ease,width .2s ease;pointer-events:none;}
+.offer-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:0;background:linear-gradient(180deg,#b2a374 0%,var(--gold) 100%);box-shadow:0 1px 4px rgba(14,27,42,.22),inset 0 0 0 1px rgba(255,255,255,.18);transform:translateX(0);transition:transform .2s ease,width .2s ease;pointer-events:none;}
 .offer-tab-item{position:relative;z-index:1;flex:1;min-width:0;}
-.otab{width:100%;height:100%;padding:5px 4px 14px;font-size:10px;font-weight:600;border:none;background:transparent;color:var(--muted);cursor:pointer;letter-spacing:.05em;transition:color .18s ease,background .18s ease,box-shadow .18s ease;display:flex;align-items:flex-start;justify-content:center;}
-.offer-tab-label{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:1px;width:100%;min-width:0;line-height:1.1;text-align:center;}
-.offer-tab-primary,.offer-tab-ship{display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.offer-tab-primary{text-transform:none;}
-.offer-tab-ship{font-size:8px;font-weight:400;letter-spacing:.02em;color:var(--muted);opacity:.86;}
-.otab.active .offer-tab-ship{color:var(--white);opacity:1;}
-.otab:hover:not(.active){color:var(--navy);background:rgba(160,146,103,.1);}
-.otab.active{color:var(--navy);border-radius:0;}
+.otab{width:100%;height:100%;padding:4px 4px 13px;font-size:10px;font-weight:600;border:none;background:transparent;color:var(--muted);cursor:pointer;letter-spacing:.04em;transition:color .18s ease,background .18s ease,box-shadow .18s ease,opacity .18s ease;display:flex;align-items:flex-start;justify-content:center;}
+.offer-tab-label{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:0;width:100%;min-width:0;line-height:1.05;text-align:center;}
+.offer-tab-number,.offer-tab-operator,.offer-tab-ship{display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.offer-tab-number{font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);opacity:.72;}
+.offer-tab-operator{font-size:9px;font-weight:700;letter-spacing:.01em;color:var(--text);opacity:.72;}
+.offer-tab-ship{font-size:8px;font-weight:500;letter-spacing:.01em;color:var(--muted);opacity:.64;}
+.otab:hover:not(.active){color:var(--navy);background:rgba(160,146,103,.07);}
+.otab:hover:not(.active) .offer-tab-operator{opacity:.88;color:var(--navy);}
+.otab.active{color:var(--navy);border-radius:0;box-shadow:inset 0 -2px 0 rgba(14,27,42,.18);}
+.otab.active .offer-tab-number{color:rgba(14,27,42,.70);opacity:1;}
+.otab.active .offer-tab-operator{color:var(--navy);opacity:1;}
+.otab.active .offer-tab-ship{color:rgba(14,27,42,.76);opacity:1;}
 .otab.dragging{opacity:.55;}
 .otab.drag-over{background:rgba(160,146,103,.18);box-shadow:inset 0 0 0 1px rgba(160,146,103,.42);}
 .otab.move-preflash{background:rgba(160,146,103,.14);box-shadow:inset 0 0 0 1px rgba(160,146,103,.32);}
 .otab.move-postflash{background:rgba(160,146,103,.16);box-shadow:inset 0 0 0 1px rgba(160,146,103,.34);}
-.status-dot{position:absolute;z-index:2;left:50%;bottom:5px;width:6.4px;height:6.4px;border-radius:50%;background:var(--border);transform:translateX(-50%);pointer-events:none;}
+.status-dot{position:absolute;z-index:2;left:50%;bottom:4px;width:5.8px;height:5.8px;border-radius:50%;background:var(--border);transform:translateX(-50%);pointer-events:none;box-shadow:0 0 0 1px rgba(255,255,255,.5);}
 .status-dot.green{background:var(--green);}
 .status-dot.amber{background:var(--amber);}
 .status-dot.red{background:var(--red);}
@@ -73,9 +77,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .section-hdr{background:var(--panel);padding:5px 9px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
 .section-hdr:not(.collapsed){background:rgba(160,146,103,.12);box-shadow:inset 2px 0 0 var(--gold);}
 .section-hdr h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);display:flex;align-items:center;gap:6px;}
-.section-icon{width:18px;height:18px;flex-shrink:0;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;}
-.section-complete{display:none;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(42,122,74,.12);color:var(--green);font-size:10px;font-weight:800;line-height:1;margin-left:2px;}
-.section-complete.active{display:inline-flex;}
+.section-icon{width:18px;height:18px;flex-shrink:0;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;transition:color .18s ease,opacity .18s ease;}
+.section-hdr.complete .section-icon{color:var(--green);}
+.section-hdr.complete:not(.collapsed) .section-icon{color:var(--green);}
 .section-toggle{font-size:10px;color:var(--muted);transition:transform .2s;display:inline-block;}
 .section-hdr.collapsed .section-toggle{transform:rotate(-90deg);}
 .section-body{padding:7px 9px;}
@@ -104,12 +108,12 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .prod-status[open] .prod-status-toggle .section-toggle{transform:none;}
 .prod-status-summary{font-size:9px;line-height:1.35;font-weight:700;margin-bottom:4px;}
 .prod-status-secondary{font-size:8px;font-weight:400;opacity:.60;}
-.prod-status-summary.ok{color:var(--green);}
+.prod-status-summary.ok{color:var(--navy);}
 .prod-status-summary.warn{color:var(--amber);}
 .prod-status-list{display:grid;gap:3px;}
 .prod-status-group{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:2px;}
 .prod-status-item{font-size:9px;line-height:1.35;color:var(--text);display:flex;align-items:flex-start;gap:5px;}
-.prod-status-item.ok{color:var(--green);}
+.prod-status-item.ok{color:var(--muted);}
 .prod-status-item.warn{color:var(--amber);font-weight:600;}
 .prod-status-item.hero-warning{color:var(--red);background:#fff0f0;border:1px solid #f0b0b0;border-radius:3px;padding:4px 5px;font-weight:700;}
 .copy-qa-panel{margin-top:6px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;}
@@ -261,7 +265,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .export-section .section-body{padding:8px 10px;}
 .export-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin-bottom:6px;}
 .export-health-count{margin-left:6px;font-size:8px;font-weight:700;text-transform:none;letter-spacing:.03em;color:var(--amber);white-space:nowrap;}
-.export-health-count.ready{color:var(--green);}
+.export-health-count.ready{color:var(--muted);}
 .export-group{margin-top:8px;}
 .export-group-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;}
 .export-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
@@ -328,6 +332,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-lock-toggle.locked{color:var(--gold);}
 .hero-lock-state{display:inline-flex;align-items:center;gap:4px;}
 .campaign-library-section .section-body{padding:6px;background:#fafaf8;}
+.campaign-library-title{display:flex;flex-direction:column;gap:1px;}
+.campaign-library-title-main{display:flex;align-items:center;gap:3px;}
+.campaign-library-subtitle{font-size:9px;font-weight:500;text-transform:none;letter-spacing:.02em;color:var(--muted);line-height:1.15;}
 .campaign-library-categories{display:grid;gap:5px;}
 .campaign-library-category{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:#fff;}
 .campaign-library-category .section-hdr{padding:5px 7px;}
@@ -617,7 +624,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <!-- ── 2. OPERATOR ── -->
     <div class="section" data-section-key="operator-logo">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><circle cx="10" cy="13" r="2"></circle><path d="m20 17-1.1-1.1a2 2 0 0 0-2.8 0L12 20"></path></svg>Operator Logo<span class="section-complete" id="section-complete-operator-logo" title="Operator logo complete" aria-label="Operator logo complete">✓</span></h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><circle cx="10" cy="13" r="2"></circle><path d="m20 17-1.1-1.1a2 2 0 0 0-2.8 0L12 20"></path></svg>Operator Logo</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body hidden">
         <div class="field">
@@ -675,7 +682,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <!-- ── 3. HERO IMAGE ── -->
     <div class="section" data-section-key="hero-image">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"></path></svg>Hero Image<span class="section-complete" id="section-complete-hero-image" title="Hero image complete" aria-label="Hero image complete">✓</span></h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"></path></svg>Hero Image</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body hidden">
         <label class="hero-lock-toggle" id="hero-lock-label"><input id="hero-lock-toggle" type="checkbox" onchange="toggleHeroImageLock()"> <span class="hero-lock-state" id="hero-lock-state">Protect Hero Image</span></label>
@@ -713,7 +720,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <!-- ── 4. OFFER DETAILS ── -->
     <div class="section" data-section-key="offer-details">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M16 13H8"></path><path d="M16 17H8"></path><path d="M10 9H8"></path></svg>Offer Details<span class="section-complete" id="section-complete-offer-details" title="Offer details complete" aria-label="Offer details complete">✓</span></h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M16 13H8"></path><path d="M16 17H8"></path><path d="M10 9H8"></path></svg>Offer Details</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body hidden">
         <div class="fg2">
@@ -739,7 +746,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <!-- ── CTA ASSETS ── -->
     <div class="section" data-section-key="cta-assets">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect width="18" height="10" x="3" y="7" rx="2"></rect><path d="M8 12h8"></path></svg>CTA Assets<span class="section-complete" id="section-complete-cta-assets" title="CTA assets complete" aria-label="CTA assets complete">✓</span></h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect width="18" height="10" x="3" y="7" rx="2"></rect><path d="M8 12h8"></path></svg>CTA Assets</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body hidden">
         <label class="hero-lock-toggle"><input id="cta-enabled" type="checkbox" onchange="ctaSettingsChanged()"> <span>Enable CTA</span></label>
@@ -845,7 +852,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
     <div class="section campaign-library-section" id="campaign-library-panel">
       <div class="section-hdr collapsed" onclick="toggleCampaignLibraryMain(this)">
-        <h3>CAMPAIGN LIBRARY <span class="count-badge" id="campaign-library-count">0</span></h3><span class="section-toggle">▾</span>
+        <h3 class="campaign-library-title"><span class="campaign-library-title-main">CAMPAIGN LIBRARY <span class="count-badge" id="campaign-library-count">0</span></span><span class="campaign-library-subtitle">Saved campaigns and backups</span></h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body hidden">
         <div class="campaign-library-dashboard" id="campaign-library-dashboard" aria-live="polite"></div>
@@ -2192,10 +2199,10 @@ function getOfferTabOperatorLabel(o){
 function getOfferTabLabelParts(i){
   const o=offers[i]||{};
   const fallback="Offer "+(i+1);
-  if(!isOfferLoaded(o)) return {primary:fallback,ship:""};
+  if(!isOfferLoaded(o)) return {number:fallback,operator:"",ship:""};
   const operatorLabel=getOfferTabOperatorLabel(o);
-  if(!operatorLabel) return {primary:fallback,ship:""};
-  return {primary:(i+1)+" • "+operatorLabel,ship:String(o.ship||"").trim()};
+  if(!operatorLabel) return {number:fallback,operator:"",ship:""};
+  return {number:"Offer "+(i+1),operator:operatorLabel,ship:String(o.ship||"").trim()};
 }
 function updateOfferTabLabels(){
   for(let i=0;i<4;i++){
@@ -2217,13 +2224,26 @@ function updateOfferTabLabels(){
         else tab.insertBefore(label,tab.firstChild);
       }
     }
-    let primary=label.querySelector&&label.querySelector(".offer-tab-primary");
-    if(!primary){
-      primary=document.createElement("span");
-      primary.className="offer-tab-primary";
-      label.appendChild(primary);
+    const legacy=label.querySelector&&label.querySelector(".offer-tab-primary");
+    if(legacy) legacy.remove();
+    let number=label.querySelector&&label.querySelector(".offer-tab-number");
+    if(!number){
+      number=document.createElement("span");
+      number.className="offer-tab-number";
+      label.appendChild(number);
     }
-    primary.textContent=parts.primary;
+    number.textContent=parts.number;
+    let operator=label.querySelector&&label.querySelector(".offer-tab-operator");
+    if(parts.operator){
+      if(!operator){
+        operator=document.createElement("span");
+        operator.className="offer-tab-operator";
+        label.appendChild(operator);
+      }
+      operator.textContent=parts.operator;
+    }else if(operator){
+      operator.remove();
+    }
     let ship=label.querySelector&&label.querySelector(".offer-tab-ship");
     if(parts.ship){
       if(!ship){
@@ -2238,9 +2258,10 @@ function updateOfferTabLabels(){
   }
 }
 function setSectionCompletionIndicator(sectionKey, complete){
-  const indicator=document.getElementById("section-complete-"+sectionKey);
-  if(!indicator) return;
-  indicator.classList.toggle("active", !!complete);
+  const section=document.querySelector(`[data-section-key="${sectionKey}"]`);
+  const header=section&&section.querySelector(".section-hdr");
+  if(!header) return;
+  header.classList.toggle("complete", !!complete);
 }
 function getCurrentSectionCompletionState(){
   const o=offers[cur]||{};
@@ -2360,11 +2381,11 @@ function updateProductionStatus(){
   const summary=document.getElementById("prod-status-summary");
   if(summary){
     summary.className=`prod-status-summary ${attentionCount?"warn":"ok"}`;
-    summary.innerHTML=attentionCount?`⚠ Campaign Not Ready<br><span class="prod-status-secondary">${blockerCount} blocker${blockerCount===1?"":"s"} • ${warningCount} warning${warningCount===1?"":"s"}</span>`:`✓ Ready for Export<br><span class="prod-status-secondary">No blockers found</span>`;
+    summary.innerHTML=attentionCount?`⚠ Campaign Not Ready<br><span class="prod-status-secondary">${blockerCount} blocker${blockerCount===1?"":"s"} • ${warningCount} warning${warningCount===1?"":"s"}</span>`:`Ready for Export<br><span class="prod-status-secondary">No blockers found</span>`;
   }
   const host=document.getElementById("prod-status-list");
   if(!host) return;
-  host.innerHTML=groups.map(group=>`<div class="prod-status-group">${group.label}</div>${group.checks.filter(c=>c.render!==false).map(c=>{const displayOk=c.displayOk===undefined?c.ok:c.displayOk;return `<div class="prod-status-item ${displayOk?"ok":`warn ${c.warningClass||""}`}"><span>${displayOk?"✓":"⚠"}</span><span>${displayOk?(c.okLbl||"").replace(/^✓\s*/,""):(c.warnLbl||"").replace(/^⚠\s*/,"")}</span></div>`}).join("")}`).join("");
+  host.innerHTML=groups.map(group=>`<div class="prod-status-group">${group.label}</div>${group.checks.filter(c=>c.render!==false).map(c=>{const displayOk=c.displayOk===undefined?c.ok:c.displayOk;return `<div class="prod-status-item ${displayOk?"ok":`warn ${c.warningClass||""}`}"><span>${displayOk?"•":"⚠"}</span><span>${displayOk?(c.okLbl||"").replace(/^✓\s*/,""):(c.warnLbl||"").replace(/^⚠\s*/,"")}</span></div>`}).join("")}`).join("");
 }
 
 // ═══════════════════════════════════════════════════════
