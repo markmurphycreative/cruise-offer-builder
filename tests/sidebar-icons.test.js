@@ -6,12 +6,16 @@ const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const sectionHeaders = [...html.matchAll(/<div class="section-hdr(?: collapsed)?" onclick="toggleSec\(this\)">\s*<h3>([\s\S]*?)<\/h3><span class="section-toggle">▾<\/span>/g)]
   .map(([, heading]) => heading);
 
-const headingLabels = sectionHeaders.map(heading => heading.replace(/<svg[\s\S]*?<\/svg>/, '').replace(/<span class="export-health-count ready" id="export-health-count">Ready<\/span>/, '').trim());
+const headingLabels = sectionHeaders.map(heading => heading
+  .replace(/<svg[\s\S]*?<\/svg>/, '')
+  .replace(/<span class="section-complete"[\s\S]*?<\/span>/g, '')
+  .replace(/<span class="export-health-count ready" id="export-health-count">Ready<\/span>/, '')
+  .trim());
 
 test('every sidebar section heading uses one inline monochrome SVG icon', () => {
   assert.equal(sectionHeaders.length, 11);
   sectionHeaders.forEach(heading => {
-    assert.match(heading, /^<svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24">[\s\S]*<\/svg>[^<]+(?:<span class="export-health-count ready" id="export-health-count">Ready<\/span>)?$/);
+    assert.match(heading, /^<svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24">[\s\S]*<\/svg>[^<]+(?:<span class="section-complete"[^>]*>✓<\/span>)?(?:<span class="export-health-count ready" id="export-health-count">Ready<\/span>)?$/);
     assert.doesNotMatch(heading, /\p{Extended_Pictographic}/u);
   });
   assert.match(html, /\.section-icon\{width:18px;height:18px;flex-shrink:0;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;\}/);
@@ -31,6 +35,16 @@ test('sidebar section names follow the primary workflow and use the requested di
     'UTM Link',
     'Standard UTMs',
   ]);
+});
+
+
+
+test('completion indicators are positive-only and limited to reliably evaluated workflow sections', () => {
+  assert.match(html, /\.section-complete\{display:none;/);
+  assert.match(html, /\.section-complete\.active\{display:inline-flex;\}/);
+  const indicatorIds = [...html.matchAll(/id="section-complete-([^"]+)"/g)].map(([, id]) => id);
+  assert.deepEqual(indicatorIds, ['operator-logo', 'hero-image', 'offer-details', 'cta-assets']);
+  assert.doesNotMatch(html, /section-(?:warning|error|missing|incomplete)/);
 });
 
 test('required workflow headings expose the requested icon shapes', () => {

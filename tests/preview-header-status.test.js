@@ -104,7 +104,8 @@ test('Single preview header reuses readiness state for the selected offer status
 
 test('existing status refresh path also refreshes the preview title without changing status-dot logic', () => {
   const statusRefresh = extractFunction('updateAllStatus');
-  assert.match(statusRefresh, /updateProductionStatus\(\);\s*if\(typeof updatePreviewTitle===\"function\"\) updatePreviewTitle\(\);/);
+  assert.match(statusRefresh, /updateProductionStatus\(\);[\s\S]*if\(typeof updatePreviewTitle===\"function\"\) updatePreviewTitle\(\);/);
+  assert.match(statusRefresh, /if\(typeof updateSectionCompletionIndicators===\"function\"\) updateSectionCompletionIndicators\(\);/);
   assert.match(extractFunction('renderEmptyPreviewIfNeeded'), /updatePreviewTitle\(\);/);
   assert.match(extractFunction('renderVisibleCard'), /updatePreviewTitle\(\);/);
   assert.match(extractFunction('renderPreviewMode'), /if\(viewMode === 'email'\)\{\s*updatePreviewTitle\(\);/);
