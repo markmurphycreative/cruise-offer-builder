@@ -142,16 +142,18 @@ test('campaign restore can recover hero lock state from campaign-data heroImages
 });
 
 
-test('campaign history renders one unified campaign library with expandable pinned and recent buckets', () => {
+test('campaign history renders the live campaign library sidebar with required labels and actions', () => {
   assert.match(html, /const CAMPAIGN_HISTORY_KEY = "cobCampaignHistoryV1";/);
   assert.match(html, /const CAMPAIGN_RECENT_MAX = 20;/);
   assert.doesNotMatch(html, /id="recent-campaigns-panel"/);
   assert.match(html, /id="campaign-library-panel"/);
-  assert.match(html, /<h3>Campaign Library <span class="count-badge" id="campaign-library-count">0<\/span><\/h3><span class="section-toggle">▾<\/span>/);
+  assert.match(html, /<h3>CAMPAIGN LIBRARY <span class="count-badge" id="campaign-library-count">0<\/span><\/h3><span class="section-toggle">▾<\/span>/);
+  assert.doesNotMatch(html, /<h3>SAVED CAMPAIGNS <span class="count-badge" id="campaign-library-count">0<\/span><\/h3>/);
   assert.match(html, /<h4>Pinned Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
-  assert.match(html, /<h4>Saved Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
+  assert.match(html, /<h4>SAVED CAMPAIGNS<\/h4><span class="section-toggle">▾<\/span>/);
   assert.doesNotMatch(html, /<h4>Recent Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
   assert.match(html, /id="campaign-library-dashboard" aria-live="polite"/);
+  assert.doesNotMatch(html, /\["Recent",/);
   assert.match(html, /id="pinned-campaign-list" class="campaign-history-list"/);
   assert.match(html, /id="recent-campaign-list" class="campaign-history-list"/);
   assert.doesNotMatch(html, /id="saved-campaign-list" class="campaign-history-list"/);
@@ -159,8 +161,11 @@ test('campaign history renders one unified campaign library with expandable pinn
   assert.match(html, /renderCampaignHistoryList\("recent-campaign-list", buckets\.recent, "No saved campaigns yet\."\)/);
   assert.doesNotMatch(html, /renderCampaignHistoryList\("saved-campaign-list", buckets\.saved, "No saved campaigns\."\)/);
   assert.match(html, /restoreCampaignHistoryEntry\('\$\{safeId\}'\)">Load<\/button>/);
-  assert.match(html, /togglePinCampaignHistoryEntry\('\$\{safeId\}'\)">\$\{item\.pinned\?'Unpin':'Pin'\}<\/button>/);
+  assert.match(html, /togglePinCampaignHistoryEntry\('\$\{safeId\}'\)">Pin<\/button>/);
   assert.match(html, /deleteCampaignHistoryEntry\('\$\{safeId\}'\)">Delete<\/button>/);
+  assert.doesNotMatch(html, /restoreCampaignHistoryEntry\('\$\{safeId\}'\)">Open<\/button>/);
+  assert.doesNotMatch(html, /<div class="act-row">[\s\S]*?Clear Saved Session[\s\S]*?<\/div>/);
+  assert.match(html, /<h4>Campaign Actions<\/h4><span class="section-toggle">▾<\/span>[\s\S]*?onclick="clearSavedSession\(\)">Clear Current Session<\/button>/);
   assert.match(html, /const payload=buildCampaignFilePayload\(\);[\s\S]*?addCampaignHistoryEntry\(buildCampaignHistoryEntryFromPayload\(payload, "saved"\)\)/);
   assert.match(html, /addCampaignHistoryEntry\(buildCampaignHistoryEntryFromPayload\(parsed, "backup"\)\)/);
 });

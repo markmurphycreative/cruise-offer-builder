@@ -845,7 +845,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
     <div class="section campaign-library-section" id="campaign-library-panel">
       <div class="section-hdr collapsed" onclick="toggleCampaignLibraryMain(this)">
-        <h3>Campaign Library <span class="count-badge" id="campaign-library-count">0</span></h3><span class="section-toggle">▾</span>
+        <h3>CAMPAIGN LIBRARY <span class="count-badge" id="campaign-library-count">0</span></h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body hidden">
         <div class="campaign-library-dashboard" id="campaign-library-dashboard" aria-live="polite"></div>
@@ -860,7 +860,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
           </div>
           <div class="campaign-library-category" data-campaign-category="recent">
             <div class="section-hdr collapsed" onclick="toggleCampaignLibraryCategory(this)">
-              <h4>Saved Campaigns</h4><span class="section-toggle">▾</span>
+              <h4>SAVED CAMPAIGNS</h4><span class="section-toggle">▾</span>
             </div>
             <div class="section-body hidden">
               <div id="recent-campaign-list" class="campaign-history-list"></div>
@@ -3599,7 +3599,7 @@ function renderCampaignHistoryList(targetId,items,emptyLabel){
     const safeId=escapeCampaignHistoryText(item.id);
     const safeTitle=escapeCampaignHistoryText(item.title||"Untitled Campaign");
     const safeMeta=escapeCampaignHistoryText(campaignHistoryMeta(item));
-    return `<div class="campaign-history-item"><div class="campaign-history-title">${safeTitle}</div><div class="campaign-history-meta">${safeMeta}</div><div class="campaign-history-actions"><button class="abtn btn-compact" onclick="restoreCampaignHistoryEntry('${safeId}')">Load</button><button class="abtn btn-compact" onclick="togglePinCampaignHistoryEntry('${safeId}')">${item.pinned?'Unpin':'Pin'}</button><button class="abtn red btn-compact" onclick="deleteCampaignHistoryEntry('${safeId}')">Delete</button></div></div>`;
+    return `<div class="campaign-history-item"><div class="campaign-history-title">${safeTitle}</div><div class="campaign-history-meta">${safeMeta}</div><div class="campaign-history-actions"><button class="abtn btn-compact" onclick="restoreCampaignHistoryEntry('${safeId}')">Load</button><button class="abtn btn-compact" onclick="togglePinCampaignHistoryEntry('${safeId}')">Pin</button><button class="abtn red btn-compact" onclick="deleteCampaignHistoryEntry('${safeId}')">Delete</button></div></div>`;
   }).join("");
 }
 function getCampaignLibraryBuckets(){
@@ -3626,7 +3626,7 @@ function renderCampaignLibraryDashboard(buckets){
     ["Pinned", (buckets&&buckets.pinned ? buckets.pinned.length : 0)]
   ];
   const lastSaved=campaignHistoryLastSaved(list);
-  if(lastSaved) stats.push(["Last Saved", lastSaved]);
+  if(lastSaved) stats.push(["Last saved", lastSaved]);
   dashboard.innerHTML=stats.map(([label,value])=>`<div class="campaign-library-stat"><strong>${escapeCampaignHistoryText(value)}</strong>${escapeCampaignHistoryText(label)}</div>`).join("");
 }
 function refreshCampaignHistoryUI(){
