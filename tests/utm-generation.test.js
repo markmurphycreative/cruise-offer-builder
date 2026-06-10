@@ -22,6 +22,7 @@ function createUtmHarness({ offers, cur = 0, editor = {} } = {}) {
     'f-url': { value: editor.url ?? activeOffer.url ?? '' },
     'f-operator': { value: editor.operator ?? activeOffer.operator ?? '' },
     'utm-visible-output': { value: '' },
+    'utm-current-card': { style: createStyle() },
     'utm-context-id': { style: createStyle() },
     'utm-context-meta': { textContent: '' },
     'utm-context-title': { textContent: '' },
@@ -54,7 +55,8 @@ function utmContent(url) {
 
 
 test('UTM Link renders generated output as a compact copyable card instead of a textarea', () => {
-  assert.match(html, /<div class="std-utm-item utm-current-card">[\s\S]*?<strong>Generated UTM<\/strong><button class="abtn" id="utm-copy-btn" onclick="copyUtm\(\)"[\s\S]*?>Copy<\/button>[\s\S]*?<div id="utm-context-id" class="utm-context-id"[\s\S]*?<strong id="utm-context-meta">CARD 1<\/strong><span id="utm-context-title">Untitled Offer<\/span><\/div>[\s\S]*?<div id="utm-visible-output" class="utm-visible-output" role="status" aria-live="polite">/);
+  assert.match(html, /<div id="utm-current-card" class="std-utm-item utm-current-card">[\s\S]*?<strong>Generated UTM<\/strong><button class="abtn" id="utm-copy-btn" onclick="copyUtm\(\)"[\s\S]*?>Copy<\/button>[\s\S]*?<div id="utm-context-id" class="utm-context-id"[\s\S]*?<strong id="utm-context-meta">CARD 1<\/strong><span id="utm-context-title">Untitled Offer<\/span><\/div>[\s\S]*?<div id="utm-visible-output" class="utm-visible-output" role="status" aria-live="polite">/);
+  assert.match(html, /\.std-utm-item\.utm-current-card\{[^}]*background:var\(--utm-operator-tint\);[^}]*border-left:3px solid var\(--utm-operator-accent\);/);
   assert.match(html, /\.utm-context-id\{[^}]*border-left:3px solid var\(--utm-accent\);[^}]*background:var\(--utm-accent-tint\);/);
   assert.match(html, /\.utm-visible-output\{[^}]*font-family:monospace;[^}]*color:var\(--navy\);/);
   assert.doesNotMatch(html, /<textarea id="utm-visible-output"/);
@@ -80,8 +82,69 @@ test('Generated UTM context identifier falls back safely when operator and offer
   context.genUtm();
   assert.equal(elements['utm-context-meta'].textContent, 'CARD 1');
   assert.equal(elements['utm-context-title'].textContent, 'Untitled Offer');
+  assert.equal(elements['utm-current-card'].style.values['--utm-operator-accent'], '#a09267');
+  assert.equal(elements['utm-current-card'].style.values['--utm-operator-tint'], 'rgba(160,146,103,0.04)');
   assert.equal(elements['utm-context-id'].style.values['--utm-accent'], '#a09267');
-  assert.equal(elements['utm-context-id'].style.values['--utm-accent-tint'], 'rgba(160,146,103,0.06)');
+  assert.equal(elements['utm-context-id'].style.values['--utm-accent-tint'], 'rgba(160,146,103,0.025)');
+});
+
+test('Generated UTM card applies the subtle configured operator colour mapping', () => {
+  const expected = {
+    celebrity: { accent: '#071f3d', tint: 'rgba(7,31,61,0.04)' },
+    cunard: { accent: '#8b0000', tint: 'rgba(139,0,0,0.04)' },
+    msc: { accent: '#003399', tint: 'rgba(0,51,153,0.04)' },
+    princess: { accent: '#7fb6d9', tint: 'rgba(127,182,217,0.04)' },
+    fred: { accent: '#a09267', tint: 'rgba(160,146,103,0.04)' },
+    marella: { accent: '#008c95', tint: 'rgba(0,140,149,0.04)' },
+    royal: { accent: '#003087', tint: 'rgba(0,48,135,0.04)' },
+    ambassador: { accent: '#6f1d46', tint: 'rgba(111,29,70,0.04)' }
+  };
+
+  for (const [operator, colours] of Object.entries(expected)) {
+    const { context, elements } = createUtmHarness({
+      offers: [{ operator, name: 'Premium Escape' }]
+    });
+    const url = context.genUtm();
+    assert.equal(elements['utm-current-card'].style.values['--utm-operator-accent'], colours.accent, operator);
+    assert.equal(elements['utm-current-card'].style.values['--utm-operator-tint'], colours.tint, operator);
+    assert.match(url, new RegExp(`utm_content=160526_${context.OPERATOR_CONFIG[operator].utmSlug}_premium_escape_card1`));
+  }
+});
+
+test('Generated UTM card colour updates instantly when the active offer changes without altering output or copy', async () => {
+  const { context, elements, copied } = createUtmHarness({
+    cur: 0,
+    offers: [
+      { operator: 'celebrity', name: 'Northern Lights' },
+      { operator: 'cunard', name: 'Grand Voyage' },
+      { operator: 'msc', name: 'Mediterranean Explorer' },
+      { operator: 'princess', name: 'Greek Islands' }
+    ]
+  });
+  const states = [
+    { index: 0, operator: 'celebrity', name: 'Northern Lights', accent: '#071f3d', content: /utm_content=160526_celebrity_northern_lights_card1/ },
+    { index: 1, operator: 'cunard', name: 'Grand Voyage', accent: '#8b0000', content: /utm_content=160526_cunard_grand_voyage_card2/ },
+    { index: 2, operator: 'msc', name: 'Mediterranean Explorer', accent: '#003399', content: /utm_content=160526_msc_mediterranean_explorer_card3/ },
+    { index: 3, operator: 'princess', name: 'Greek Islands', accent: '#7fb6d9', content: /utm_content=160526_princess_greek_islands_card4/ }
+  ];
+  const generated = [];
+
+  for (const state of states) {
+    context.cur = state.index;
+    elements['f-operator'].value = state.operator;
+    elements['f-name'].value = state.name;
+    const url = context.genUtm();
+    generated.push(url);
+    assert.equal(elements['utm-current-card'].style.values['--utm-operator-accent'], state.accent);
+    assert.match(elements['utm-visible-output'].value, state.content);
+    assert.equal(elements['utm-visible-output'].value, url);
+  }
+
+  assert.equal(new Set(generated).size, states.length);
+  context.copyUtm();
+  await Promise.resolve();
+  assert.equal(copied.at(-1), generated.at(-1));
+  assert.match(copied.at(-1), /utm_content=160526_princess_greek_islands_card4/);
 });
 
 test('Standard UTMs keeps Copy All and the redundant Generate All button is not rendered', () => {
