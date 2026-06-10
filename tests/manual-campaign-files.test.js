@@ -34,8 +34,9 @@ test('manual campaign save/load controls separate primary workflows from recover
   assert.match(html, /<div class="campaign-library-category" data-campaign-category="utility">[\s\S]*?<button class="abtn btn-compact" type="button" onclick="triggerLoadCampaignBackup\(\)">Load Campaign Backup<\/button>\s*<input id="campaign-backup-input" type="file" accept="\.json,application\/json"[^>]+onchange="loadCampaignBackup\(event\)"/);
   assert.doesNotMatch(html, /<div class="act-row">\s*<button class="abtn" type="button" onclick="triggerLoadCampaignBackup\(\)">Load Campaign Backup<\/button>/);
   assert.match(html, /id="campaign-file-input" type="file" accept="\.json,application\/json"[^>]+onchange="loadCampaignFile\(event\)"/);
-  assert.match(html, /Campaign files are reusable backups\. Autosave handles day-to-day recovery\./);
-  assert.match(html, /onclick="clearSavedSession\(\)">Clear Saved Session<\/button>/);
+  assert.doesNotMatch(html, /Campaign files are reusable backups\. Autosave handles day-to-day recovery\./);
+  assert.match(html, /<h4>Campaign Actions<\/h4><span class="section-toggle">▾<\/span>/);
+  assert.match(html, /onclick="clearSavedSession\(\)">Clear Current Session<\/button>/);
 });
 
 test('campaign filenames use the DAS campaign naming convention and parsed send date', () => {

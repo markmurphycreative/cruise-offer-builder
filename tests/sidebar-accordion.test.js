@@ -123,7 +123,7 @@ test('restoring persisted sidebar state keeps its recorded last-open section onl
 
 
 test('campaign library is collapsed in the shipped builder markup so nested campaign lists stay hidden on first paint', () => {
-  assert.match(html, /<div class="section campaign-library-section" id="campaign-library-panel">\s*<div class="section-hdr collapsed" onclick="toggleCampaignLibraryMain\(this\)">[\s\S]*?<\/div>\s*<div class="section-body hidden">[\s\S]*?<h4>Pinned Campaigns<\/h4>[\s\S]*?<h4>Recent Campaigns<\/h4>/);
+  assert.match(html, /<div class="section campaign-library-section" id="campaign-library-panel">\s*<div class="section-hdr collapsed" onclick="toggleCampaignLibraryMain\(this\)">[\s\S]*?<\/div>\s*<div class="section-body hidden">[\s\S]*?<h4>Pinned Campaigns<\/h4>[\s\S]*?<h4>Saved Campaigns<\/h4>/);
 });
 
 test('campaign library startup reset forces the parent closed without changing nested category state', () => {
@@ -229,5 +229,5 @@ test('saved campaign count badge and dashboard are refreshed from existing campa
   assert.equal(elements['campaign-library-count'].textContent, '3');
   assert.match(elements['campaign-library-dashboard'].innerHTML, /<strong>3<\/strong>Saved/);
   assert.match(elements['campaign-library-dashboard'].innerHTML, /<strong>1<\/strong>Pinned/);
-  assert.match(elements['campaign-library-dashboard'].innerHTML, /Last saved/);
+  assert.match(elements['campaign-library-dashboard'].innerHTML, /Last Saved/);
 });

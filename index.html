@@ -845,7 +845,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
     <div class="section campaign-library-section" id="campaign-library-panel">
       <div class="section-hdr collapsed" onclick="toggleCampaignLibraryMain(this)">
-        <h3>Saved Campaigns <span class="count-badge" id="campaign-library-count">0</span></h3><span class="section-toggle">▾</span>
+        <h3>Campaign Library <span class="count-badge" id="campaign-library-count">0</span></h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body hidden">
         <div class="campaign-library-dashboard" id="campaign-library-dashboard" aria-live="polite"></div>
@@ -860,15 +860,19 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
           </div>
           <div class="campaign-library-category" data-campaign-category="recent">
             <div class="section-hdr collapsed" onclick="toggleCampaignLibraryCategory(this)">
-              <h4>Recent Campaigns</h4><span class="section-toggle">▾</span>
+              <h4>Saved Campaigns</h4><span class="section-toggle">▾</span>
             </div>
             <div class="section-body hidden">
               <div id="recent-campaign-list" class="campaign-history-list"></div>
             </div>
           </div>
           <div class="campaign-library-category" data-campaign-category="utility">
+            <div class="section-hdr" onclick="toggleCampaignLibraryCategory(this)">
+              <h4>Campaign Actions</h4><span class="section-toggle">▾</span>
+            </div>
             <div class="section-body">
               <div class="campaign-library-utility">
+                <button class="abtn btn-compact" type="button" onclick="clearSavedSession()">Clear Current Session</button>
                 <button class="abtn btn-compact" type="button" onclick="triggerLoadCampaignBackup()">Load Campaign Backup</button>
                 <input id="campaign-backup-input" type="file" accept=".json,application/json" style="display:none" onchange="loadCampaignBackup(event)">
               </div>
@@ -927,10 +931,6 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <button class="abtn navy" type="button" onclick="triggerLoadCampaignFile()">Load Campaign</button>
       <input id="campaign-file-input" type="file" accept=".json,application/json" style="display:none" onchange="loadCampaignFile(event)">
     </div>
-    <div class="act-row">
-      <button class="abtn" onclick="clearSavedSession()">Clear Saved Session</button>
-    </div>
-    <div class="session-hint">Campaign files are reusable backups. Autosave handles day-to-day recovery.</div>
     <div class="session-feedback" id="session-feedback" aria-live="polite"></div>
   </div>
 </div>
@@ -3599,7 +3599,7 @@ function renderCampaignHistoryList(targetId,items,emptyLabel){
     const safeId=escapeCampaignHistoryText(item.id);
     const safeTitle=escapeCampaignHistoryText(item.title||"Untitled Campaign");
     const safeMeta=escapeCampaignHistoryText(campaignHistoryMeta(item));
-    return `<div class="campaign-history-item"><div class="campaign-history-title">${safeTitle}</div><div class="campaign-history-meta">${safeMeta}</div><div class="campaign-history-actions"><button class="abtn btn-compact" onclick="restoreCampaignHistoryEntry('${safeId}')">Open</button><button class="abtn btn-compact" onclick="togglePinCampaignHistoryEntry('${safeId}')">${item.pinned?'Unpin':'Pin'}</button><button class="abtn red btn-compact" onclick="deleteCampaignHistoryEntry('${safeId}')">Delete</button></div></div>`;
+    return `<div class="campaign-history-item"><div class="campaign-history-title">${safeTitle}</div><div class="campaign-history-meta">${safeMeta}</div><div class="campaign-history-actions"><button class="abtn btn-compact" onclick="restoreCampaignHistoryEntry('${safeId}')">Load</button><button class="abtn btn-compact" onclick="togglePinCampaignHistoryEntry('${safeId}')">${item.pinned?'Unpin':'Pin'}</button><button class="abtn red btn-compact" onclick="deleteCampaignHistoryEntry('${safeId}')">Delete</button></div></div>`;
   }).join("");
 }
 function getCampaignLibraryBuckets(){
@@ -3623,11 +3623,10 @@ function renderCampaignLibraryDashboard(buckets){
   if(!dashboard) return;
   const stats=[
     ["Saved", list.length],
-    ["Recent", (buckets&&buckets.recent ? buckets.recent.length : 0)],
     ["Pinned", (buckets&&buckets.pinned ? buckets.pinned.length : 0)]
   ];
   const lastSaved=campaignHistoryLastSaved(list);
-  if(lastSaved) stats.push(["Last saved", lastSaved]);
+  if(lastSaved) stats.push(["Last Saved", lastSaved]);
   dashboard.innerHTML=stats.map(([label,value])=>`<div class="campaign-library-stat"><strong>${escapeCampaignHistoryText(value)}</strong>${escapeCampaignHistoryText(label)}</div>`).join("");
 }
 function refreshCampaignHistoryUI(){
