@@ -375,6 +375,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .preview-scaler.empty-preview{display:flex;align-items:center;justify-content:center;}
 #card-output{opacity:1;}
 #card-output.empty-preview-output{display:flex;align-items:center;justify-content:center;width:100%;height:100%;}
+.all-preview-card{cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,outline-color .16s ease;outline:0 solid transparent;outline-offset:10px;}
+.all-preview-card:hover,.all-preview-card:focus-visible{transform:translateY(-10px);box-shadow:0 18px 42px rgba(0,0,0,.28);outline:3px solid rgba(160,146,103,.55);}
 .preview-empty-state{width:min(475px,calc(100% - 30px));text-align:center;background:none;border:none;border-radius:0;box-shadow:none;font-family:'Montserrat',sans-serif;color:var(--navy);cursor:pointer;transition:opacity .18s ease;}
 .preview-empty-state:hover{opacity:.86;}
 .preview-empty-state h2{margin:0;padding:0;background:none;color:var(--navy);font-family:'Montserrat',sans-serif;font-size:16.5px;font-weight:400;letter-spacing:.025em;line-height:1.2;}
@@ -4721,6 +4723,34 @@ function setView(v){
   queueAutosave();
 }
 
+function editOfferFromAllPreview(index){
+  const next = Number(index);
+  if(!Number.isInteger(next) || next < 0 || next > 3) return;
+  cur = next;
+  viewMode = 'single';
+  try { resetPasteOfferState(); } catch(e){}
+  syncOfferSelector();
+  syncViewSelector();
+  try { loadOfferToEditor(cur); } catch(e) { try { load(cur); } catch(_e){} }
+  try { updateLockUI(); } catch(e){}
+  try { genUtm(); } catch(e){}
+  try { genStandardUtms(); } catch(e){}
+  try { updateAllStatus(); } catch(e){}
+  try { updateExportFilenames(); } catch(e){}
+  try { updateMoveOfferButtons(); } catch(e){}
+  renderPreviewMode(true);
+  queueAutosave();
+}
+
+function handleAllPreviewCardKeydown(event, index){
+  if(!event) return;
+  const key = event.key || event.code;
+  if(key === 'Enter' || key === ' ' || key === 'Spacebar'){
+    event.preventDefault();
+    editOfferFromAllPreview(index);
+  }
+}
+
 function getPreviewPaneSize(){
   const wrap = document.querySelector('.preview-wrap');
   return {
@@ -4803,9 +4833,16 @@ function renderPreviewMode(skipSave){
     const grid = document.createElement('div');
     grid.style.cssText = 'display:grid;grid-template-columns:1200px 1200px;gap:' + gap + 'px;width:' + gridW + 'px;background:transparent;padding:' + pad + 'px;align-items:start;justify-content:center;';
 
-    offers.forEach(function(d){
+    offers.forEach(function(d, index){
       const c = document.createElement('div');
+      c.className = 'all-preview-card';
       c.style.cssText = 'width:1200px;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.22);overflow:hidden;';
+      c.setAttribute('role', 'button');
+      c.setAttribute('tabindex', '0');
+      c.setAttribute('title', 'Edit Offer ' + (index + 1));
+      c.setAttribute('aria-label', 'Edit Offer ' + (index + 1));
+      c.addEventListener('click', function(){ editOfferFromAllPreview(index); });
+      c.addEventListener('keydown', function(event){ handleAllPreviewCardKeydown(event, index); });
       c.innerHTML = bc(d || {});
       if(getCtaSettingsFromUI().enabled) c.innerHTML = renderOfferWithOptionalCtaHTML(d || {}, getCtaSettingsFromUI());
       grid.appendChild(c);
