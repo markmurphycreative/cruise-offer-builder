@@ -346,6 +346,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .campaign-library-dashboard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin-bottom:5px;}
 .campaign-library-stat{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:4px 5px;font-size:9px;color:var(--muted);line-height:1.25;}
 .campaign-library-stat strong{display:block;font-size:10px;color:var(--navy);font-weight:700;font-variant-numeric:tabular-nums;}
+.campaign-library-stat strong.campaign-library-stat-value--saved{color:var(--gold-d);}
+.campaign-library-stat strong.campaign-library-stat-value--pinned{color:var(--navy);}
+.campaign-library-stat strong.campaign-library-stat-value--last-saved{color:var(--green);}
 .empty-state{border:1px dashed var(--border);border-radius:var(--radius);background:#fff;padding:6px;color:var(--muted);font-size:9px;line-height:1.35;}
 .empty-state strong{display:block;color:var(--navy);font-size:10px;margin-bottom:1px;}
 #sheets-status.empty-state{margin-top:5px;white-space:normal;}
@@ -3643,12 +3646,12 @@ function renderCampaignLibraryDashboard(buckets){
   const dashboard=document.getElementById("campaign-library-dashboard");
   if(!dashboard) return;
   const stats=[
-    ["Saved", list.length],
-    ["Pinned", (buckets&&buckets.pinned ? buckets.pinned.length : 0)]
+    {label:"Saved", value:list.length, valueClass:"campaign-library-stat-value--saved"},
+    {label:"Pinned", value:(buckets&&buckets.pinned ? buckets.pinned.length : 0), valueClass:"campaign-library-stat-value--pinned"}
   ];
   const lastSaved=campaignHistoryLastSaved(list);
-  if(lastSaved) stats.push(["Last saved", lastSaved]);
-  dashboard.innerHTML=stats.map(([label,value])=>`<div class="campaign-library-stat"><strong>${escapeCampaignHistoryText(value)}</strong>${escapeCampaignHistoryText(label)}</div>`).join("");
+  if(lastSaved) stats.push({label:"Last saved", value:lastSaved, valueClass:"campaign-library-stat-value--last-saved"});
+  dashboard.innerHTML=stats.map(({label,value,valueClass})=>`<div class="campaign-library-stat"><strong class="${valueClass}">${escapeCampaignHistoryText(value)}</strong>${escapeCampaignHistoryText(label)}</div>`).join("");
 }
 function refreshCampaignHistoryUI(){
   const buckets=getCampaignLibraryBuckets();

@@ -227,8 +227,8 @@ test('saved campaign count badge and dashboard are refreshed from existing campa
 
   context.renderCampaignLibraryDashboard({ pinned: [history[0]], recent: history });
   assert.equal(elements['campaign-library-count'].textContent, '3');
-  assert.match(elements['campaign-library-dashboard'].innerHTML, /<strong>3<\/strong>Saved/);
-  assert.match(elements['campaign-library-dashboard'].innerHTML, /<strong>1<\/strong>Pinned/);
-  assert.match(elements['campaign-library-dashboard'].innerHTML, /Last saved/);
+  assert.match(elements['campaign-library-dashboard'].innerHTML, /<strong class="campaign-library-stat-value--saved">3<\/strong>Saved/);
+  assert.match(elements['campaign-library-dashboard'].innerHTML, /<strong class="campaign-library-stat-value--pinned">1<\/strong>Pinned/);
+  assert.match(elements['campaign-library-dashboard'].innerHTML, /<strong class="campaign-library-stat-value--last-saved">[^<]+<\/strong>Last saved/);
   assert.doesNotMatch(elements['campaign-library-dashboard'].innerHTML, /Recent/);
 });
