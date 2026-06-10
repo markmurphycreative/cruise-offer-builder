@@ -49,6 +49,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .offer-tab-label{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:1px;width:100%;min-width:0;line-height:1.1;text-align:center;}
 .offer-tab-primary,.offer-tab-ship{display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .offer-tab-primary{text-transform:none;}
+.offer-tab-number{color:inherit;}
+.otab.active .offer-tab-number{color:var(--offer-tab-accent,var(--gold));font-weight:700;}
 .offer-tab-ship{font-size:8px;font-weight:400;letter-spacing:.02em;color:var(--muted);opacity:.86;}
 .otab.active .offer-tab-ship{color:var(--white);opacity:1;}
 .otab:hover:not(.active){color:var(--navy);background:rgba(160,146,103,.1);}
@@ -73,6 +75,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .section-hdr{background:var(--panel);padding:5px 9px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
 .section-hdr:not(.collapsed){background:rgba(160,146,103,.12);box-shadow:inset 2px 0 0 var(--gold);}
 .section-hdr h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);display:flex;align-items:center;gap:6px;}
+.section-hdr.workflow-complete h3::before{content:"✓";color:var(--green);font-weight:700;}
+.csv-import-loaded-status{color:var(--green);font-weight:700;letter-spacing:.02em;text-transform:none;white-space:nowrap;}
 .section-icon{width:18px;height:18px;flex-shrink:0;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;}
 .section-toggle{font-size:10px;color:var(--muted);transition:transform .2s;display:inline-block;}
 .section-hdr.collapsed .section-toggle{transform:rotate(-90deg);}
@@ -559,7 +563,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <!-- ── CSV IMPORT (CORE WORKFLOW) ── -->
     <div class="section csv-core-section" data-section-key="csv-import">
       <div class="section-hdr" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>CSV Import</h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>CSV Import <span class="csv-import-loaded-status" id="csv-import-loaded-status"></span></h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body">
           <div class="field">
@@ -834,7 +838,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
     <div class="section campaign-library-section" id="campaign-library-panel">
       <div class="section-hdr collapsed" onclick="toggleCampaignLibraryMain(this)">
-        <h3>Campaign Library</h3><span class="section-toggle">▾</span>
+        <h3 id="campaign-library-title">Saved Campaigns (0)</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body hidden">
         <div class="campaign-library-categories">
@@ -858,6 +862,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
             <div class="section-body">
               <div class="campaign-library-utility">
                 <button class="abtn btn-compact" type="button" onclick="triggerLoadCampaignBackup()">Load Campaign Backup</button>
+                <button class="abtn btn-compact" type="button" onclick="clearSavedSession()">Clear Saved Session</button>
                 <input id="campaign-backup-input" type="file" accept=".json,application/json" style="display:none" onchange="loadCampaignBackup(event)">
               </div>
             </div>
@@ -914,9 +919,6 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <button class="abtn gold" type="button" onclick="saveCampaignFile()">Save Campaign</button>
       <button class="abtn navy" type="button" onclick="triggerLoadCampaignFile()">Load Campaign</button>
       <input id="campaign-file-input" type="file" accept=".json,application/json" style="display:none" onchange="loadCampaignFile(event)">
-    </div>
-    <div class="act-row">
-      <button class="abtn" onclick="clearSavedSession()">Clear Saved Session</button>
     </div>
     <div class="session-hint">Campaign files are reusable backups. Autosave handles day-to-day recovery.</div>
     <div class="session-feedback" id="session-feedback" aria-live="polite"></div>
@@ -1461,6 +1463,7 @@ function ctaSettingsChanged(){
   const phoneEl=document.getElementById('cta-phone');
   if(phoneEl && phoneEl.value !== ctaSettings.phone) phoneEl.value=ctaSettings.phone;
   syncCtaLinkOutput();
+  try { updateWorkflowCompletionIndicators(); } catch(e){}
   try { renderPreviewMode(true); } catch(e){}
   queueAutosave();
 }
@@ -2210,7 +2213,18 @@ function updateOfferTabLabels(){
       primary.className="offer-tab-primary";
       label.appendChild(primary);
     }
-    primary.textContent=parts.primary;
+    tab.style.setProperty("--offer-tab-accent", getOperatorAccentColor(offers[i]||{}));
+    primary.textContent="";
+    const primaryMatch=String(parts.primary||"").match(/^(\d+)(\s+•\s+)(.+)$/);
+    if(primaryMatch){
+      const numberSpan=document.createElement("span");
+      numberSpan.className="offer-tab-number";
+      numberSpan.textContent=primaryMatch[1];
+      primary.appendChild(numberSpan);
+      primary.appendChild(document.createTextNode(primaryMatch[2]+primaryMatch[3]));
+    }else{
+      primary.textContent=parts.primary;
+    }
     let ship=label.querySelector&&label.querySelector(".offer-tab-ship");
     if(parts.ship){
       if(!ship){
@@ -2224,6 +2238,25 @@ function updateOfferTabLabels(){
     }
   }
 }
+function setWorkflowSectionComplete(sectionKey, complete){
+  const hdr=document.querySelector(`.section[data-section-key="${sectionKey}"] .section-hdr`);
+  if(hdr) hdr.classList.toggle("workflow-complete", !!complete);
+}
+function updateWorkflowCompletionIndicators(){
+  const o=offers[cur]||{};
+  const hasValue=id=>!!String(((document.getElementById(id)||{}).value)||"").trim();
+  setWorkflowSectionComplete("operator-logo", typeof hasOperatorLogo==="function" ? hasOperatorLogo(o) : !!o.operator);
+  setWorkflowSectionComplete("hero-image", !!(o&&o._img));
+  setWorkflowSectionComplete("offer-details", typeof hasCriticalOfferContent==="function" ? hasCriticalOfferContent(o) : false);
+  const ctaEnabled=!!((document.getElementById("cta-enabled")||{}).checked);
+  setWorkflowSectionComplete("cta-assets", ctaEnabled && hasValue("cta-text") && hasValue("cta-phone"));
+}
+function updateCsvImportHeaderStatus(count){
+  const el=document.getElementById("csv-import-loaded-status");
+  if(!el) return;
+  const n=Math.max(0, Number(count)||0);
+  el.textContent=n ? `✓ ${n} Offers Loaded` : "";
+}
 function updateAllStatus(){
   if(typeof updateOfferTabLabels==="function") updateOfferTabLabels();
   for(let i=0;i<4;i++){
@@ -2235,6 +2268,7 @@ function updateAllStatus(){
     if(tab){ tab.title=tooltip; tab.setAttribute("aria-label","Offer "+(i+1)+" status: "+tooltip); }
   }
   updateProductionStatus();
+  if(typeof updateWorkflowCompletionIndicators==="function") updateWorkflowCompletionIndicators();
   if(typeof updatePreviewTitle==="function") updatePreviewTitle();
 }
 function isOfferLoaded(o){
@@ -2676,6 +2710,7 @@ function processSheetCSV(csv,status){
   try{ updateExportFilenames(); }catch(e){ console.error("CSV filename update error",e); }
   status.className=loaded?"csv-success":"csv-error";
   status.textContent=loaded?"✓ Loaded "+loaded+" offer(s)":"⚠ CSV read, but no offer rows found. Headers found: "+headers.join(", ");
+  if(typeof updateCsvImportHeaderStatus==="function") updateCsvImportHeaderStatus(loaded);
   if(loaded && !restoringLastSuccessfulCsv) storeLastSuccessfulCsv(csv);
 }
 
@@ -3562,10 +3597,18 @@ function getCampaignLibraryBuckets(){
   const recent=sortCampaignHistoryNewest(list,"recentAt").slice(0,CAMPAIGN_RECENT_MAX);
   return {pinned,recent};
 }
+function updateCampaignLibraryTitle(){
+  const title=document.getElementById("campaign-library-title");
+  const hdr=getCampaignLibraryHeader();
+  if(!title) return;
+  const count=readCampaignHistory().length;
+  title.textContent=(hdr&&hdr.classList.contains("collapsed")) ? `Saved Campaigns (${count})` : "Saved Campaigns";
+}
 function refreshCampaignHistoryUI(){
   const buckets=getCampaignLibraryBuckets();
   renderCampaignHistoryList("pinned-campaign-list", buckets.pinned, "No pinned campaigns yet.");
   renderCampaignHistoryList("recent-campaign-list", buckets.recent, "No recent campaigns.");
+  updateCampaignLibraryTitle();
 }
 function getCampaignLibraryHeader(){
   const panel=document.getElementById("campaign-library-panel");
@@ -3574,12 +3617,14 @@ function getCampaignLibraryHeader(){
 function setCampaignLibraryCollapsed(collapsed=true){
   const hdr=getCampaignLibraryHeader();
   if(hdr) setSectionCollapsedByHeader(hdr, collapsed);
+  if(typeof updateCampaignLibraryTitle==="function") updateCampaignLibraryTitle();
 }
 function resetCampaignLibraryStartupState(){
   setCampaignLibraryCollapsed(true);
 }
 function toggleCampaignLibraryMain(hdr){
   setSectionCollapsedByHeader(hdr, !hdr.classList.contains("collapsed") );
+  if(typeof updateCampaignLibraryTitle==="function") updateCampaignLibraryTitle();
 }
 function toggleCampaignLibraryCategory(hdr){
   setSectionCollapsedByHeader(hdr, !hdr.classList.contains("collapsed") );
@@ -4565,6 +4610,7 @@ processSheetCSV = function(csv,status){
   try { updateAllStatus(); } catch(e){}
   try { updateExportFilenames(); } catch(e){}
   try { runSpellQA(); } catch(e){}
+  if(status && status.className==="csv-success" && typeof updateCsvImportHeaderStatus==="function") updateCsvImportHeaderStatus(offers.filter(isOfferLoaded).length);
 
   try { renderPreviewMode(true); } catch(e){ try { renderVisibleCard(); } catch(_e){} }
 };

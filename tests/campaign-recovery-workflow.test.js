@@ -147,7 +147,7 @@ test('campaign history renders one unified campaign library with expandable pinn
   assert.match(html, /const CAMPAIGN_RECENT_MAX = 20;/);
   assert.doesNotMatch(html, /id="recent-campaigns-panel"/);
   assert.match(html, /id="campaign-library-panel"/);
-  assert.match(html, /<h3>Campaign Library<\/h3><span class="section-toggle">▾<\/span>/);
+  assert.match(html, /<h3 id="campaign-library-title">Saved Campaigns \(0\)<\/h3><span class="section-toggle">▾<\/span>/);
   assert.match(html, /<h4>Pinned Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
   assert.match(html, /<h4>Recent Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
   assert.doesNotMatch(html, /<h4>Saved Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
