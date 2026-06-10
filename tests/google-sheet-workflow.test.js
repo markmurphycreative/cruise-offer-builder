@@ -16,7 +16,7 @@ const localFileImportSource = html.slice(localFileImportStart, localFileImportEn
 function createHarness({ savedSource = '', csv = 'operator,offer_name\nP&O,Caribbean', processSheetCSV } = {}) {
   const storage = new Map();
   if (savedSource) storage.set('cobGoogleSheetSourceV1', savedSource);
-  const status = { className: '', textContent: '' };
+  const status = { className: '', _textContent: '', _innerHTML: '', get textContent() { return this._textContent; }, set textContent(value) { this._textContent = String(value); this._innerHTML = String(value); }, get innerHTML() { return this._innerHTML; }, set innerHTML(value) { this._innerHTML = String(value); this._textContent = String(value).replace(/<[^>]+>/g, ''); } };
   const input = { value: '' };
   const campaign = { value: 'Existing campaign' };
   const app = { focusOptions: null, focus(options) { this.focusOptions = options; context.document.activeElement = this; } };
@@ -136,7 +136,7 @@ test('published Sheet loads use the published CSV endpoint and proxy fallback af
 
 test('manual downloaded CSV file import still forwards FileReader text to processSheetCSV', () => {
   const csv = 'operator,offer_name\nP&O,Caribbean';
-  const status = { className: '', textContent: '' };
+  const status = { className: '', _textContent: '', _innerHTML: '', get textContent() { return this._textContent; }, set textContent(value) { this._textContent = String(value); this._innerHTML = String(value); }, get innerHTML() { return this._innerHTML; }, set innerHTML(value) { this._innerHTML = String(value); this._textContent = String(value).replace(/<[^>]+>/g, ''); } };
   const imported = [];
   const file = { name: 'offers.csv' };
   const order = [];
@@ -189,7 +189,8 @@ test('Refresh without a saved source is non-blocking and leaves offers unchanged
   const { context, status, fetched } = createHarness();
   const before = context.offers;
   assert.equal(await context.refreshOffers(), false);
-  assert.equal(status.textContent, 'No saved source');
+  assert.equal(status.className, 'empty-state');
+  assert.equal(status.textContent, 'No CSV loadedImport a campaign CSV to begin.');
   assert.equal(context.offers, before);
   assert.deepEqual(fetched, []);
 });
