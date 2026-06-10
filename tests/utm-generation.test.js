@@ -58,7 +58,7 @@ function utmContent(url) {
 
 test('UTM Link renders generated output as a stacked Generated UTMs panel instead of a textarea', () => {
   assert.match(html, /<div id="utm-current-card" class="generated-utm-panel utm-current-card">[\s\S]*?<strong id="utm-panel-title">Generated UTMs<\/strong>[\s\S]*?<div id="utm-generated-list" class="generated-utm-list" role="list" aria-live="polite">[\s\S]*?<div id="utm-visible-output" class="generated-utm-empty" role="status">/);
-  assert.match(html, /\.generated-utm-list\{[^}]*display:grid;[^}]*gap:8px;/);
+  assert.match(html, /\.generated-utm-list\{[^}]*display:grid;[^}]*gap:7px;/);
   assert.match(html, /\.utm-offer-card\{[^}]*background:var\(--panel\);[^}]*border:1px solid var\(--border\);[^}]*border-left:3px solid var\(--border\);/);
   assert.match(html, /\.utm-offer-card\.utm-current-card\{[^}]*background:var\(--utm-operator-tint\);[^}]*border-left-color:var\(--utm-operator-accent\);/);
   assert.match(html, /\.utm-visible-output\{[^}]*font-family:monospace;[^}]*color:var\(--navy\);/);

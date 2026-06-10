@@ -223,18 +223,18 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 #utm-out{display:none!important;}
 
 /* ── UTM OUTPUT PANEL ── */
-.generated-utm-panel{margin-top:6px;display:grid;gap:8px;}
+.generated-utm-panel{margin-top:6px;display:grid;gap:7px;}
 .generated-utm-title{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
-.generated-utm-list{display:grid;gap:8px;}
+.generated-utm-list{display:grid;gap:7px;}
 .utm-current-card{--utm-operator-accent:var(--gold);--utm-operator-tint:rgba(160,146,103,.04);}
-.utm-offer-card{--utm-operator-accent:var(--gold);--utm-operator-tint:rgba(160,146,103,.04);background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--border);border-radius:var(--radius);padding:7px;display:grid;gap:5px;}
+.utm-offer-card{--utm-operator-accent:var(--gold);--utm-operator-tint:rgba(160,146,103,.04);background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--border);border-radius:var(--radius);padding:6px;display:grid;gap:4px;}
 .utm-offer-card.utm-current-card{background:var(--utm-operator-tint);border-left-color:var(--utm-operator-accent);}
-.utm-context-id{--utm-accent:var(--gold);--utm-accent-tint:rgba(160,146,103,.025);padding:5px 7px 5px 8px;border-left:3px solid var(--utm-accent);border-radius:4px;background:var(--utm-accent-tint);line-height:1.25;}
+.utm-context-id{--utm-accent:var(--gold);--utm-accent-tint:rgba(160,146,103,.025);padding:4px 6px 4px 7px;border-left:3px solid var(--utm-accent);border-radius:4px;background:var(--utm-accent-tint);line-height:1.25;}
 .utm-offer-card:not(.utm-current-card) .utm-context-id{border-left-color:var(--border);background:#fff;}
 .utm-context-id strong{display:block;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);}
-.utm-context-id span{display:block;margin-top:2px;font-size:10px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.utm-context-id span{display:block;margin-top:1px;font-size:10px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .utm-visible-output{min-height:0;font-size:9px;font-family:monospace;line-height:1.4;color:var(--navy);word-break:break-all;white-space:pre-wrap;}
-.generated-utm-empty{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:7px;font-size:9px;color:var(--muted);line-height:1.4;}
+.generated-utm-empty{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:6px;font-size:9px;color:var(--muted);line-height:1.4;}
 .utm-btn-row{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:5px;}
 .std-utm-actions{grid-template-columns:1fr;}
 .std-utm-list{display:grid;gap:6px;margin-top:4px;}
@@ -303,8 +303,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .btn-compact{font-size:9px;padding:4px;}
 .lock-ind{display:none;font-size:9px;color:var(--amber);font-weight:700;text-align:center;margin-bottom:4px;padding:3px;background:#fff8e0;border-radius:3px;}
 .lock-ind.active{display:block;}
-.session-status{font-size:9px;color:var(--muted);background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:3px 7px;margin-bottom:4px;line-height:1.2;text-align:center;}
-.session-status strong{display:block;color:var(--navy);font-size:8px;font-weight:600;line-height:1.1;margin-bottom:1px;text-transform:uppercase;letter-spacing:.05em;}
+.session-status{font-size:9px;color:var(--muted);background:#fff;border:1px solid var(--border);border-radius:999px;padding:3px 8px;margin-bottom:4px;line-height:1.2;text-align:center;}
 .session-status-summary{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .session-hint{font-size:9px;color:var(--muted);text-align:center;margin-top:3px;line-height:1.35;}
 .session-feedback{font-size:9px;color:var(--green);text-align:center;margin-top:3px;min-height:12px;opacity:0;transition:opacity .2s ease;}
@@ -337,6 +336,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .campaign-history-title{font-size:10px;font-weight:700;color:var(--navy);line-height:1.25;}
 .campaign-history-meta{font-size:9px;color:var(--muted);margin-top:2px;}
 .campaign-history-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin-top:5px;}
+.campaign-library-utility{display:grid;gap:4px;}
 .ptool{display:flex;align-items:center;gap:4px;}
 .ptool span{font-size:9px;color:rgba(255,255,255,.6);white-space:nowrap;}
 .ptool input[type=range]{accent-color:var(--gold);width:70px;height:3px;}
@@ -854,6 +854,14 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
               <div id="recent-campaign-list" class="campaign-history-list"></div>
             </div>
           </div>
+          <div class="campaign-library-category" data-campaign-category="utility">
+            <div class="section-body">
+              <div class="campaign-library-utility">
+                <button class="abtn btn-compact" type="button" onclick="triggerLoadCampaignBackup()">Load Campaign Backup</button>
+                <input id="campaign-backup-input" type="file" accept=".json,application/json" style="display:none" onchange="loadCampaignBackup(event)">
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -901,15 +909,11 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
   <!-- Actions -->
   <div class="sb-actions">
-    <div class="session-status" id="saved-session-status" aria-live="polite"><strong>Session Status</strong><span class="session-status-summary">No saved session</span></div>
+    <div class="session-status" id="saved-session-status" aria-live="polite"><span class="session-status-summary">No saved session</span></div>
     <div class="act-row">
       <button class="abtn gold" type="button" onclick="saveCampaignFile()">Save Campaign</button>
       <button class="abtn navy" type="button" onclick="triggerLoadCampaignFile()">Load Campaign</button>
       <input id="campaign-file-input" type="file" accept=".json,application/json" style="display:none" onchange="loadCampaignFile(event)">
-    </div>
-    <div class="act-row">
-      <button class="abtn" type="button" onclick="triggerLoadCampaignBackup()">Load Campaign Backup</button>
-      <input id="campaign-backup-input" type="file" accept=".json,application/json" style="display:none" onchange="loadCampaignBackup(event)">
     </div>
     <div class="act-row">
       <button class="abtn" onclick="clearSavedSession()">Clear Saved Session</button>
@@ -2918,12 +2922,12 @@ function updateSavedSessionStatus(payload){
   if(!el) return;
   const saved=payload||readSavedSession();
   if(!(saved&&saved.offers)){
-    el.innerHTML='<strong>Session Status</strong><span class="session-status-summary">No saved session</span>';
+    el.innerHTML='<span class="session-status-summary">No saved session</span>';
     return;
   }
   const loaded=countLoadedSessionOffers(saved);
   const updated=formatAutosaveTime(saved.savedAt)||"—";
-  el.innerHTML=`<strong>Session Status</strong><span class="session-status-summary">✓ Session saved • ${loaded} offer${loaded===1?"":"s"} • ${updated}</span>`;
+  el.innerHTML=`<span class="session-status-summary">✓ Session saved • ${loaded} offer${loaded===1?"":"s"} • ${updated}</span>`;
 }
 function setAutosaveStatus(label,isWarn=false){
   const el=document.getElementById("autosave-status");
