@@ -51,9 +51,9 @@ test('view selector indicator updates instantly while retaining segmented-contro
 
 test('Offer 1–4 selector reuses the sliding segmented-control pill while retaining status dots and offer switching hooks', () => {
   assert.match(html, /<div class="offer-tabs">\s*<span class="offer-pill" id="offer-pill" aria-hidden="true"><\/span>/);
-  assert.match(html, /\.offer-tabs\{[^}]*border:1px solid var\(--border\);[^}]*border-radius:6px;[^}]*overflow:hidden;[^}]*isolation:isolate;/);
-  assert.match(html, /\.offer-pill\{[^}]*border-radius:4px;[^}]*background:var\(--gold\);[^}]*transform:translateX\(0\);[^}]*transition:transform \.2s ease,width \.2s ease;/);
-  assert.match(html, /\.otab\.active\{color:var\(--navy\);border-radius:4px;\}/);
+  assert.match(html, /\.offer-tabs\{[^}]*border:1px solid var\(--border\);[^}]*border-radius:4px;[^}]*overflow:hidden;[^}]*isolation:isolate;/);
+  assert.match(html, /\.offer-pill\{[^}]*border-radius:2px;[^}]*background:var\(--gold\);[^}]*transform:translateX\(0\);[^}]*transition:transform \.2s ease,width \.2s ease;/);
+  assert.match(html, /\.otab\.active\{color:var\(--navy\);border-radius:2px;\}/);
   assert.doesNotMatch(html, /\.otab\.active\{[^}]*border-bottom/);
   assert.match(html, /\.offer-tab-item\{[^}]*position:relative;[^}]*flex:1;[^}]*min-width:0;/);
   assert.match(html, /\.otab\{[^}]*width:100%;[^}]*padding:5px 4px 14px;[^}]*font-size:10px;/);
