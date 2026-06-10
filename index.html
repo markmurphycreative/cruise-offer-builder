@@ -296,8 +296,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .btn-compact{font-size:9px;padding:4px;}
 .lock-ind{display:none;font-size:9px;color:var(--amber);font-weight:700;text-align:center;margin-bottom:4px;padding:3px;background:#fff8e0;border-radius:3px;}
 .lock-ind.active{display:block;}
-.session-status{font-size:9px;color:var(--muted);background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:5px 7px;margin-bottom:5px;line-height:1.4;text-align:center;}
-.session-status strong{display:block;color:var(--navy);font-size:9px;}
+.session-status{font-size:9px;color:var(--muted);background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:3px 7px;margin-bottom:4px;line-height:1.2;text-align:center;}
+.session-status strong{display:block;color:var(--navy);font-size:8px;font-weight:600;line-height:1.1;margin-bottom:1px;text-transform:uppercase;letter-spacing:.05em;}
+.session-status-summary{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .session-hint{font-size:9px;color:var(--muted);text-align:center;margin-top:3px;line-height:1.35;}
 .session-feedback{font-size:9px;color:var(--green);text-align:center;margin-top:3px;min-height:12px;opacity:0;transition:opacity .2s ease;}
 .session-feedback.warn{color:#8a5000;}
@@ -892,7 +893,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
   <!-- Actions -->
   <div class="sb-actions">
-    <div class="session-status" id="saved-session-status" aria-live="polite"><strong>Session Status</strong>No saved session</div>
+    <div class="session-status" id="saved-session-status" aria-live="polite"><strong>Session Status</strong><span class="session-status-summary">No saved session</span></div>
     <div class="act-row">
       <button class="abtn gold" type="button" onclick="saveCampaignFile()">Save Campaign</button>
       <button class="abtn navy" type="button" onclick="triggerLoadCampaignFile()">Load Campaign</button>
@@ -2909,12 +2910,12 @@ function updateSavedSessionStatus(payload){
   if(!el) return;
   const saved=payload||readSavedSession();
   if(!(saved&&saved.offers)){
-    el.innerHTML="<strong>Session Status</strong>No saved session";
+    el.innerHTML='<strong>Session Status</strong><span class="session-status-summary">No saved session</span>';
     return;
   }
   const loaded=countLoadedSessionOffers(saved);
   const updated=formatAutosaveTime(saved.savedAt)||"—";
-  el.innerHTML=`<strong>Session Status</strong>Session saved<br>${loaded} offer${loaded===1?"":"s"} loaded<br>Last updated ${updated}`;
+  el.innerHTML=`<strong>Session Status</strong><span class="session-status-summary">✓ Session saved • ${loaded} offer${loaded===1?"":"s"} • ${updated}</span>`;
 }
 function setAutosaveStatus(label,isWarn=false){
   const el=document.getElementById("autosave-status");

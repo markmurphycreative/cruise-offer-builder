@@ -139,7 +139,7 @@ test('required hero QA retains passive logic while adding a stronger warning tre
 });
 
 test('saved-session panel uses the Session Status heading before autosave hydration', () => {
-  assert.match(html, /<div class="session-status" id="saved-session-status" aria-live="polite"><strong>Session Status<\/strong>No saved session<\/div>/);
+  assert.match(html, /<div class="session-status" id="saved-session-status" aria-live="polite"><strong>Session Status<\/strong><span class="session-status-summary">No saved session<\/span><\/div>/);
 });
 
 test('saved-session summary reports the existing autosave payload without changing storage', () => {
@@ -156,9 +156,9 @@ test('saved-session summary reports the existing autosave payload without changi
   ].join('\n'), context);
 
   context.updateSavedSessionStatus();
-  assert.equal(status.innerHTML, '<strong>Session Status</strong>No saved session');
+  assert.equal(status.innerHTML, '<strong>Session Status</strong><span class="session-status-summary">No saved session</span>');
 
   context.updateSavedSessionStatus({ savedAt: '2026-05-30T09:24:00Z', offers: [{ name: 'One' }, { price: '999' }, {}, { _img: 'hero.jpg' }] });
-  assert.match(status.innerHTML, /^<strong>Session Status<\/strong>Session saved<br>3 offers loaded<br>Last updated \d{2}:\d{2}$/);
+  assert.match(status.innerHTML, /^<strong>Session Status<\/strong><span class="session-status-summary">✓ Session saved • 3 offers • \d{2}:\d{2}<\/span>$/);
   assert.doesNotMatch(extractFunction('updateSavedSessionStatus'), /setItem|removeItem/);
 });
