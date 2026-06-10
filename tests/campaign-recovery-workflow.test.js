@@ -147,10 +147,10 @@ test('campaign history renders one unified campaign library with expandable pinn
   assert.match(html, /const CAMPAIGN_RECENT_MAX = 20;/);
   assert.doesNotMatch(html, /id="recent-campaigns-panel"/);
   assert.match(html, /id="campaign-library-panel"/);
-  assert.match(html, /<h3>Saved Campaigns <span class="count-badge" id="campaign-library-count">0<\/span><\/h3><span class="section-toggle">▾<\/span>/);
+  assert.match(html, /<h3>Campaign Library <span class="count-badge" id="campaign-library-count">0<\/span><\/h3><span class="section-toggle">▾<\/span>/);
   assert.match(html, /<h4>Pinned Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
-  assert.match(html, /<h4>Recent Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
-  assert.doesNotMatch(html, /<h4>Saved Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
+  assert.match(html, /<h4>Saved Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
+  assert.doesNotMatch(html, /<h4>Recent Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
   assert.match(html, /id="campaign-library-dashboard" aria-live="polite"/);
   assert.match(html, /id="pinned-campaign-list" class="campaign-history-list"/);
   assert.match(html, /id="recent-campaign-list" class="campaign-history-list"/);
@@ -158,7 +158,7 @@ test('campaign history renders one unified campaign library with expandable pinn
   assert.match(html, /renderCampaignHistoryList\("pinned-campaign-list", buckets\.pinned, "No pinned campaigns yet\."\)/);
   assert.match(html, /renderCampaignHistoryList\("recent-campaign-list", buckets\.recent, "No saved campaigns yet\."\)/);
   assert.doesNotMatch(html, /renderCampaignHistoryList\("saved-campaign-list", buckets\.saved, "No saved campaigns\."\)/);
-  assert.match(html, /restoreCampaignHistoryEntry\('\$\{safeId\}'\)">Open<\/button>/);
+  assert.match(html, /restoreCampaignHistoryEntry\('\$\{safeId\}'\)">Load<\/button>/);
   assert.match(html, /togglePinCampaignHistoryEntry\('\$\{safeId\}'\)">\$\{item\.pinned\?'Unpin':'Pin'\}<\/button>/);
   assert.match(html, /deleteCampaignHistoryEntry\('\$\{safeId\}'\)">Delete<\/button>/);
   assert.match(html, /const payload=buildCampaignFilePayload\(\);[\s\S]*?addCampaignHistoryEntry\(buildCampaignHistoryEntryFromPayload\(payload, "saved"\)\)/);
