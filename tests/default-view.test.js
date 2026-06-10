@@ -57,7 +57,7 @@ test('Offer 1–4 selector reuses the sliding segmented-control pill while retai
   assert.doesNotMatch(html, /\.otab\.active\{[^}]*border-bottom/);
   assert.match(html, /\.offer-tab-item\{[^}]*position:relative;[^}]*flex:1;[^}]*min-width:0;/);
   assert.match(html, /\.otab\{[^}]*width:100%;[^}]*padding:5px 4px 14px;[^}]*font-size:10px;/);
-  assert.match(html, /\.status-dot\{[^}]*position:absolute;[^}]*width:8px;[^}]*height:8px;[^}]*border-radius:50%;/);
+  assert.match(html, /\.status-dot\{[^}]*position:absolute;[^}]*width:6\.4px;[^}]*height:6\.4px;[^}]*border-radius:50%;/);
   assert.match(html, /\.status-dot\.green\{background:var\(--green\);\}\s*\.status-dot\.amber\{background:var\(--amber\);\}\s*\.status-dot\.red\{background:var\(--red\);\}/);
   for(let i = 0; i < 4; i += 1){
     assert.match(html, new RegExp('<div class="offer-tab-item"><button class="otab(?: active)?" id="ot' + i + '" onclick="sv\\(' + i + '\\)"[^>]*><span>Offer ' + (i + 1) + '<\/span><span class="status-dot" id="sd' + i + '" title="No offer loaded" aria-hidden="true"><\/span><\/button><\/div>'));
