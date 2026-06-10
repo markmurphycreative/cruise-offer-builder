@@ -121,6 +121,55 @@ test('restoring persisted sidebar state keeps its recorded last-open section onl
   assert.deepEqual(openKeys(sections), ['hero-image']);
 });
 
+
+test('campaign library is collapsed in the shipped builder markup so nested campaign lists stay hidden on first paint', () => {
+  assert.match(html, /<div class="section campaign-library-section" id="campaign-library-panel">\s*<div class="section-hdr collapsed" onclick="toggleCampaignLibraryMain\(this\)">[\s\S]*?<\/div>\s*<div class="section-body hidden">[\s\S]*?<h4>Pinned Campaigns<\/h4>[\s\S]*?<h4>Recent Campaigns<\/h4>/);
+});
+
+test('campaign library startup reset forces the parent closed without changing nested category state', () => {
+  const parentBody = { classList: createClassList(['section-body']) };
+  const parentHdr = { classList: createClassList([]), nextElementSibling: parentBody };
+  const pinnedBody = { classList: createClassList(['section-body']) };
+  const pinnedHdr = { classList: createClassList([]), nextElementSibling: pinnedBody };
+  const panel = { firstElementChild: parentHdr };
+  const context = {
+    document: { getElementById: id => (id === 'campaign-library-panel' ? panel : null) }
+  };
+  const source = [
+    extract(/function setSectionCollapsedByHeader\(hdr, collapsed\)\{[\s\S]*?\n\}/, 'setSectionCollapsedByHeader'),
+    extract(/function getCampaignLibraryHeader\(\)\{[\s\S]*?\n\}/, 'getCampaignLibraryHeader'),
+    extract(/function setCampaignLibraryCollapsed\(collapsed=true\)\{[\s\S]*?\n\}/, 'setCampaignLibraryCollapsed'),
+    extract(/function resetCampaignLibraryStartupState\(\)\{[\s\S]*?\n\}/, 'resetCampaignLibraryStartupState'),
+    extract(/function toggleCampaignLibraryMain\(hdr\)\{[\s\S]*?\n\}/, 'toggleCampaignLibraryMain'),
+    extract(/function toggleCampaignLibraryCategory\(hdr\)\{[\s\S]*?\n\}/, 'toggleCampaignLibraryCategory')
+  ].join('\n');
+  vm.createContext(context);
+  vm.runInContext(source, context);
+
+  context.resetCampaignLibraryStartupState();
+  assert.equal(parentHdr.classList.contains('collapsed'), true);
+  assert.equal(parentBody.classList.contains('hidden'), true);
+  assert.equal(pinnedHdr.classList.contains('collapsed'), false);
+  assert.equal(pinnedBody.classList.contains('hidden'), false);
+
+  context.toggleCampaignLibraryMain(parentHdr);
+  assert.equal(parentHdr.classList.contains('collapsed'), false);
+  assert.equal(parentBody.classList.contains('hidden'), false);
+
+  context.toggleCampaignLibraryCategory(pinnedHdr);
+  assert.equal(pinnedHdr.classList.contains('collapsed'), true);
+  assert.equal(pinnedBody.classList.contains('hidden'), true);
+});
+
+test('builder startup, splash dismissal, session restore, and campaign file restore all force campaign library collapsed', () => {
+  assert.match(html, /function initStandaloneApp\(\)\{\s*resetCampaignLibraryStartupState\(\);[\s\S]*?initBuilderApp\(\);/);
+  assert.match(html, /function initBuilderApp\(\)\{\s*\/\/[^\n]+\n\s*refreshPresetList\(\);\s*try\{\s*resetCampaignLibraryStartupState\(\);[\s\S]*?sv\(cur\);\s*initCampaignHistoryListeners\(\);\s*resetCampaignLibraryStartupState\(\);/);
+  assert.match(html, /function dismissSplashAndShowBuilder\(mode="open"\)\{\s*markBuilderOpenState\(true,mode\);\s*resetCampaignLibraryStartupState\(\);/);
+  assert.match(html, /function initStartScreenActions\(\)\{[\s\S]*?if\(shouldBypassSplashOnLoad\(\)\)\{\s*resetCampaignLibraryStartupState\(\);/);
+  assert.match(html, /function applySessionPayload\(data\)\{[\s\S]*?applySectionCollapseState\(data\.sectionState, data\.openSectionKey\);[\s\S]*?if\(typeof resetCampaignLibraryStartupState==="function"\) resetCampaignLibraryStartupState\(\);\s*loadOfferToEditor\(cur\);/);
+  assert.match(html, /function restoreCampaignFilePayload\(filePayload\)\{[\s\S]*?clearTimeout\(autosaveTimer\);\s*if\(typeof resetCampaignLibraryStartupState==="function"\) resetCampaignLibraryStartupState\(\);/);
+});
+
 test('accordion changes stay isolated from preview, upload, crop, logo, ordering, and UTM handlers', () => {
   const toggleSource = extract(/function toggleSec\(hdr\)\{[\s\S]*?\n\}/, 'toggleSec');
   assert.doesNotMatch(toggleSource, /(?:render|preview|upload|drop|crop|logo|offer|utm|gen)/i);
