@@ -22,6 +22,8 @@ function createUtmHarness({ offers, cur = 0, editor = {} } = {}) {
     'f-url': { value: editor.url ?? activeOffer.url ?? '' },
     'f-operator': { value: editor.operator ?? activeOffer.operator ?? '' },
     'utm-visible-output': { value: '' },
+    'utm-generated-list': { innerHTML: '' },
+    'utm-panel-title': { textContent: 'Generated UTMs' },
     'utm-current-card': { style: createStyle() },
     'utm-context-id': { style: createStyle() },
     'utm-context-meta': { textContent: '' },
@@ -54,10 +56,11 @@ function utmContent(url) {
 }
 
 
-test('UTM Link renders generated output as a compact copyable card instead of a textarea', () => {
-  assert.match(html, /<div id="utm-current-card" class="std-utm-item utm-current-card">[\s\S]*?<strong>Generated UTM<\/strong><button class="abtn" id="utm-copy-btn" onclick="copyUtm\(\)"[\s\S]*?>Copy<\/button>[\s\S]*?<div id="utm-context-id" class="utm-context-id"[\s\S]*?<strong id="utm-context-meta">CARD 1<\/strong><span id="utm-context-title">Untitled Offer<\/span><\/div>[\s\S]*?<div id="utm-visible-output" class="utm-visible-output" role="status" aria-live="polite">/);
-  assert.match(html, /\.std-utm-item\.utm-current-card\{[^}]*background:var\(--utm-operator-tint\);[^}]*border-left:3px solid var\(--utm-operator-accent\);/);
-  assert.match(html, /\.utm-context-id\{[^}]*border-left:3px solid var\(--utm-accent\);[^}]*background:var\(--utm-accent-tint\);/);
+test('UTM Link renders generated output as a stacked Generated UTMs panel instead of a textarea', () => {
+  assert.match(html, /<div id="utm-current-card" class="generated-utm-panel utm-current-card">[\s\S]*?<strong id="utm-panel-title">Generated UTMs<\/strong>[\s\S]*?<div id="utm-generated-list" class="generated-utm-list" role="list" aria-live="polite">[\s\S]*?<div id="utm-visible-output" class="generated-utm-empty" role="status">/);
+  assert.match(html, /\.generated-utm-list\{[^}]*display:grid;[^}]*gap:8px;/);
+  assert.match(html, /\.utm-offer-card\{[^}]*background:var\(--panel\);[^}]*border:1px solid var\(--border\);[^}]*border-left:3px solid var\(--border\);/);
+  assert.match(html, /\.utm-offer-card\.utm-current-card\{[^}]*background:var\(--utm-operator-tint\);[^}]*border-left-color:var\(--utm-operator-accent\);/);
   assert.match(html, /\.utm-visible-output\{[^}]*font-family:monospace;[^}]*color:var\(--navy\);/);
   assert.doesNotMatch(html, /<textarea id="utm-visible-output"/);
 });
@@ -74,6 +77,32 @@ test('Generated UTM context identifier follows the active operator, card number 
   assert.equal(elements['utm-context-title'].textContent, 'Mediterranean Explorer');
   assert.match(url, /utm_content=160526_msc_mediterranean_explorer_card3/);
   assert.equal(elements['utm-visible-output'].value, url);
+});
+
+test('Generated UTMs panel displays every populated offer UTM with independent copy buttons and hides empty offers', () => {
+  const { context, elements } = createUtmHarness({
+    cur: 1,
+    offers: [
+      { operator: 'royal', name: 'Barcelona to Rome' },
+      { operator: 'msc', name: 'Greek Isles' },
+      {},
+      { operator: 'cunard', name: 'Northern Lights' }
+    ]
+  });
+
+  context.genUtm();
+  const markup = elements['utm-generated-list'].innerHTML;
+  assert.equal(elements['utm-panel-title'].textContent, 'Generated UTMs (3)');
+  assert.match(markup, /Royal Caribbean • CARD 1/);
+  assert.match(markup, /MSC Cruises • CARD 2/);
+  assert.doesNotMatch(markup, /CARD 3/);
+  assert.match(markup, /Cunard • CARD 4/);
+  assert.match(markup, /copyUtm\(0, this\)/);
+  assert.match(markup, /copyUtm\(1, this\)/);
+  assert.match(markup, /copyUtm\(3, this\)/);
+  assert.match(markup, /utm_content=160526_royal_caribbean_barcelona_to_rome_card1/);
+  assert.match(markup, /utm_content=160526_msc_greek_isles_card2/);
+  assert.match(markup, /utm_content=160526_cunard_northern_lights_card4/);
 });
 
 test('Generated UTM context identifier falls back safely when operator and offer name are missing', () => {

@@ -223,12 +223,18 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 #utm-out{display:none!important;}
 
 /* ── UTM OUTPUT PANEL ── */
-.utm-current-card{--utm-operator-accent:var(--gold);--utm-operator-tint:rgba(160,146,103,.04);margin-top:6px;}
-.std-utm-item.utm-current-card{background:var(--utm-operator-tint);border-left:3px solid var(--utm-operator-accent);}
-.utm-context-id{--utm-accent:var(--gold);--utm-accent-tint:rgba(160,146,103,.025);margin-bottom:5px;padding:5px 7px 5px 8px;border-left:3px solid var(--utm-accent);border-radius:4px;background:var(--utm-accent-tint);line-height:1.25;}
+.generated-utm-panel{margin-top:6px;display:grid;gap:8px;}
+.generated-utm-title{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.generated-utm-list{display:grid;gap:8px;}
+.utm-current-card{--utm-operator-accent:var(--gold);--utm-operator-tint:rgba(160,146,103,.04);}
+.utm-offer-card{--utm-operator-accent:var(--gold);--utm-operator-tint:rgba(160,146,103,.04);background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--border);border-radius:var(--radius);padding:7px;display:grid;gap:5px;}
+.utm-offer-card.utm-current-card{background:var(--utm-operator-tint);border-left-color:var(--utm-operator-accent);}
+.utm-context-id{--utm-accent:var(--gold);--utm-accent-tint:rgba(160,146,103,.025);padding:5px 7px 5px 8px;border-left:3px solid var(--utm-accent);border-radius:4px;background:var(--utm-accent-tint);line-height:1.25;}
+.utm-offer-card:not(.utm-current-card) .utm-context-id{border-left-color:var(--border);background:#fff;}
 .utm-context-id strong{display:block;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);}
 .utm-context-id span{display:block;margin-top:2px;font-size:10px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .utm-visible-output{min-height:0;font-size:9px;font-family:monospace;line-height:1.4;color:var(--navy);word-break:break-all;white-space:pre-wrap;}
+.generated-utm-empty{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:7px;font-size:9px;color:var(--muted);line-height:1.4;}
 .utm-btn-row{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:5px;}
 .std-utm-actions{grid-template-columns:1fr;}
 .std-utm-list{display:grid;gap:6px;margin-top:4px;}
@@ -860,10 +866,11 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <div class="section-body hidden">
         <div class="field"><label>Operator Landing Page</label><input id="f-url" placeholder="https://dawsonandsanderson.co.uk/cruises" oninput="genUtm()"></div>
         <div class="utm-out" id="utm-out" aria-hidden="true"></div>
-        <div id="utm-current-card" class="std-utm-item utm-current-card">
-          <div class="std-utm-head"><strong>Generated UTM</strong><button class="abtn" id="utm-copy-btn" onclick="copyUtm()" style="font-size:9px;padding:3px 6px;flex:0 0 auto;">Copy</button></div>
-          <div id="utm-context-id" class="utm-context-id" aria-label="Active UTM context"><strong id="utm-context-meta">CARD 1</strong><span id="utm-context-title">Untitled Offer</span></div>
-          <div id="utm-visible-output" class="utm-visible-output" role="status" aria-live="polite">Generate or enter a destination URL + campaign name</div>
+        <div id="utm-current-card" class="generated-utm-panel utm-current-card">
+          <div class="generated-utm-title"><strong id="utm-panel-title">Generated UTMs</strong></div>
+          <div id="utm-generated-list" class="generated-utm-list" role="list" aria-live="polite">
+            <div id="utm-visible-output" class="generated-utm-empty" role="status">Generate or enter a destination URL + campaign name</div>
+          </div>
         </div>
       </div>
     </div>
@@ -4829,22 +4836,24 @@ function getUtmContextParts(i){
   };
 }
 function updateUtmContextIdentifier(i){
+  const panel = document.getElementById('utm-current-card');
+  const parts = getUtmContextParts(i);
+  const subtleTint = operatorAccentTint(parts.accent, 0.04);
+  if(panel){
+    panel.style.setProperty('--utm-operator-accent', parts.accent);
+    panel.style.setProperty('--utm-operator-tint', subtleTint);
+  }
+  // Keep the previous context nodes updated for lightweight tests and any saved
+  // browser state created before the stacked Generated UTMs panel existed.
   const box = document.getElementById('utm-context-id');
-  const card = document.getElementById('utm-current-card');
   const meta = document.getElementById('utm-context-meta');
   const title = document.getElementById('utm-context-title');
-  if(!box || !meta || !title) return;
-  const parts = getUtmContextParts(i);
-  meta.textContent = parts.meta;
-  title.textContent = parts.title;
-  const subtleTint = operatorAccentTint(parts.accent, 0.04);
-  const contextTint = operatorAccentTint(parts.accent, 0.025);
-  if(card){
-    card.style.setProperty('--utm-operator-accent', parts.accent);
-    card.style.setProperty('--utm-operator-tint', subtleTint);
+  if(meta) meta.textContent = parts.meta;
+  if(title) title.textContent = parts.title;
+  if(box){
+    box.style.setProperty('--utm-accent', parts.accent);
+    box.style.setProperty('--utm-accent-tint', operatorAccentTint(parts.accent, 0.025));
   }
-  box.style.setProperty('--utm-accent', parts.accent);
-  box.style.setProperty('--utm-accent-tint', contextTint);
 }
 function buildUtmForOffer(i){
   // Invalidate first: every consumer must rebuild from the current offer state,
@@ -4883,24 +4892,55 @@ function setUtmVisibleOutput(el, value){
   if("value" in el) el.value = value;
   el.textContent = value;
 }
+function escapeUtmHtml(value){
+  return String(value == null ? '' : value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function renderGeneratedUtmCards(results){
+  const list = document.getElementById('utm-generated-list');
+  const title = document.getElementById('utm-panel-title');
+  const legacyVisible = document.getElementById('utm-visible-output');
+  const valid = results.filter(item => item && item.result && item.result.url);
+  if(title) title.textContent = `Generated UTMs${valid.length ? ` (${valid.length})` : ''}`;
+  const current = results.find(item => item.index === cur) || {result:{url:'',message:''}};
+  if(!list){
+    setUtmVisibleOutput(legacyVisible, current.result.url || current.result.message || 'Generate or enter a destination URL + campaign name');
+    return;
+  }
+  if(!valid.length){
+    const emptyMessage = current.result.message || 'Generate or enter a destination URL + campaign name';
+    list.innerHTML = `<div id="utm-visible-output" class="generated-utm-empty" role="status">${escapeUtmHtml(emptyMessage)}</div>`;
+    const empty = document.getElementById('utm-visible-output');
+    setUtmVisibleOutput(empty, emptyMessage);
+    return;
+  }
+  list.innerHTML = valid.map(item => {
+    const parts = getUtmContextParts(item.index);
+    const isCurrent = item.index === cur;
+    const accent = parts.accent;
+    const tint = operatorAccentTint(accent, 0.04);
+    const contextTint = operatorAccentTint(accent, 0.025);
+    return `<div class="utm-offer-card${isCurrent ? ' utm-current-card' : ''}" role="listitem" style="--utm-operator-accent:${escapeUtmHtml(accent)};--utm-operator-tint:${escapeUtmHtml(tint)};">
+      <div class="utm-context-id" aria-label="${isCurrent ? 'Active' : 'Generated'} UTM context" style="--utm-accent:${escapeUtmHtml(accent)};--utm-accent-tint:${escapeUtmHtml(contextTint)};"><strong>${escapeUtmHtml(parts.meta)}</strong><span>${escapeUtmHtml(parts.title)}</span></div>
+      <div class="utm-visible-output"${isCurrent ? ' id="utm-visible-output" role="status"' : ''}>${escapeUtmHtml(item.result.url)}</div>
+      <button class="abtn" type="button" onclick="copyUtm(${item.index}, this)" style="font-size:9px;padding:3px 6px;justify-self:end;">Copy</button>
+    </div>`;
+  }).join('');
+  const activeOutput = document.getElementById('utm-visible-output');
+  if(activeOutput) setUtmVisibleOutput(activeOutput, (valid.find(item => item.index === cur) || valid[0]).result.url);
+}
+function buildAllGeneratedUtmResults(){
+  return [0,1,2,3].map(i => ({index:i, result:buildUtmForOffer(i)}));
+}
 function updateUtmOutput(showAll){
   try{ save(); }catch(e){}
-  const visible = document.getElementById("utm-visible-output");
-  const legacy = document.getElementById("utm-out");
   updateUtmContextIdentifier(cur);
-  const btn = document.getElementById("utm-copy-btn");
-  if(showAll){
-    const lines = [0,1,2,3].map(i => buildUtmForOffer(i).message);
-    setUtmVisibleOutput(visible, lines.join("\n"));
-    if(legacy){ legacy.textContent = lines.join("\n"); legacy.style.display = "none"; }
-    if(btn) btn.disabled = false;
-    return lines.join("\n");
-  }
-  const result = buildUtmForOffer(cur);
-  setUtmVisibleOutput(visible, result.url || result.message);
-  if(legacy){ legacy.textContent = result.url || ""; legacy.style.display = result.url ? "block" : "none"; }
-  if(btn) btn.disabled = !result.url;
-  return result.url;
+  const results = buildAllGeneratedUtmResults();
+  renderGeneratedUtmCards(results);
+  const legacy = document.getElementById("utm-out");
+  const current = results.find(item => item.index === cur) || {result:{url:'',message:''}};
+  if(legacy){ legacy.textContent = current.result.url || ""; legacy.style.display = current.result.url ? "block" : "none"; }
+  const allText = results.map(item => item.result.message).join("\n");
+  return showAll ? allText : current.result.url;
 }
 function genUtm(){ return updateUtmOutput(false); }
 function genAllUtms(silent){
@@ -4908,11 +4948,13 @@ function genAllUtms(silent){
   if(!silent) console.log("All UTMs generated", txt);
   return txt;
 }
-function copyUtm(){
-  const u = updateUtmOutput(false);
-  if(!u || u.indexOf("http") !== 0) return alert("This card is missing operator/operator URL, offer name, or send date.");
-  navigator.clipboard.writeText(u).then(()=>{
-    const b=document.getElementById("utm-copy-btn");
+function copyUtm(index, btn){
+  const cardIndex = Number.isInteger(index) ? index : cur;
+  const result = buildUtmForOffer(cardIndex);
+  if(!result.url || result.url.indexOf("http") !== 0) return alert("This card is missing operator/operator URL, offer name, or send date.");
+  renderGeneratedUtmCards(buildAllGeneratedUtmResults());
+  navigator.clipboard.writeText(result.url).then(()=>{
+    const b=btn || (document.querySelector ? document.querySelector(`#utm-generated-list button[onclick="copyUtm(${cardIndex}, this)"]`) : null);
     if(b){ const t=b.textContent; b.textContent="✓ Copied"; setTimeout(()=>b.textContent=t,1600); }
   });
 }
