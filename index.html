@@ -43,7 +43,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 
 /* ── OFFER SEGMENTED CONTROL ── */
 .offer-tabs{position:relative;display:flex;margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:6px;background:#fafaf8;flex-shrink:0;overflow:hidden;isolation:isolate;}
-.offer-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:3px;background:var(--gold);box-shadow:0 1px 3px rgba(0,0,0,.2);transform:translateX(0);transition:transform .2s ease,width .2s ease;pointer-events:none;}
+.offer-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:4px;background:var(--gold);box-shadow:0 1px 3px rgba(0,0,0,.2);transform:translateX(0);transition:transform .2s ease,width .2s ease;pointer-events:none;}
 .offer-tab-item{position:relative;z-index:1;flex:1;min-width:0;}
 .otab{width:100%;height:100%;padding:5px 4px 14px;font-size:10px;font-weight:600;border:none;background:transparent;color:var(--muted);cursor:pointer;letter-spacing:.05em;transition:color .18s ease,background .18s ease,box-shadow .18s ease;display:flex;align-items:flex-start;justify-content:center;}
 .offer-tab-label{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:1px;width:100%;min-width:0;line-height:1.1;text-align:center;}
@@ -52,7 +52,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .offer-tab-ship{font-size:8px;font-weight:400;letter-spacing:.02em;color:var(--muted);opacity:.86;}
 .otab.active .offer-tab-ship{color:var(--white);opacity:1;}
 .otab:hover:not(.active){color:var(--navy);background:rgba(160,146,103,.1);}
-.otab.active{color:var(--navy);border-radius:3px;}
+.otab.active{color:var(--navy);border-radius:4px;}
 .otab.dragging{opacity:.55;}
 .otab.drag-over{background:rgba(160,146,103,.18);box-shadow:inset 0 0 0 1px rgba(160,146,103,.42);}
 .otab.move-preflash{background:rgba(160,146,103,.14);box-shadow:inset 0 0 0 1px rgba(160,146,103,.32);}
@@ -825,10 +825,10 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     </div>
 
     <div class="section campaign-library-section" id="campaign-library-panel">
-      <div class="section-hdr" onclick="toggleCampaignLibraryMain(this)">
+      <div class="section-hdr collapsed" onclick="toggleCampaignLibraryMain(this)">
         <h3>Campaign Library</h3><span class="section-toggle">▾</span>
       </div>
-      <div class="section-body">
+      <div class="section-body hidden">
         <div class="campaign-library-categories">
           <div class="campaign-library-category" data-campaign-category="pinned">
             <div class="section-hdr" onclick="toggleCampaignLibraryCategory(this)">
@@ -3007,6 +3007,7 @@ function applySessionPayload(data){
   if(data.sectionState && typeof data.sectionState === "object"){
     applySectionCollapseState(data.sectionState, data.openSectionKey);
   }
+  if(typeof resetCampaignLibraryStartupState==="function") resetCampaignLibraryStartupState();
   loadOfferToEditor(cur);
   document.querySelectorAll('.otab').forEach((t,idx)=>t.classList.toggle('active', idx===cur));
   updateOfferPill();
@@ -3553,6 +3554,17 @@ function refreshCampaignHistoryUI(){
   renderCampaignHistoryList("pinned-campaign-list", buckets.pinned, "No pinned campaigns yet.");
   renderCampaignHistoryList("recent-campaign-list", buckets.recent, "No recent campaigns.");
 }
+function getCampaignLibraryHeader(){
+  const panel=document.getElementById("campaign-library-panel");
+  return panel ? panel.firstElementChild : null;
+}
+function setCampaignLibraryCollapsed(collapsed=true){
+  const hdr=getCampaignLibraryHeader();
+  if(hdr) setSectionCollapsedByHeader(hdr, collapsed);
+}
+function resetCampaignLibraryStartupState(){
+  setCampaignLibraryCollapsed(true);
+}
 function toggleCampaignLibraryMain(hdr){
   setSectionCollapsedByHeader(hdr, !hdr.classList.contains("collapsed") );
 }
@@ -3626,6 +3638,7 @@ function restoreCampaignFilePayload(filePayload){
   if(sheetUrl) storeGoogleSheetSource(sheetUrl);
   else try{ localStorage.removeItem(GOOGLE_SHEET_SOURCE_KEY); }catch(e){}
   clearTimeout(autosaveTimer);
+  if(typeof resetCampaignLibraryStartupState==="function") resetCampaignLibraryStartupState();
   if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Campaign load");
   saveSessionNow();
   const differentAppVersion=!!(parsed.appVersion && parsed.appVersion !== APP_VERSION);
@@ -5241,6 +5254,7 @@ function renderActiveOfferImmediately(){
 }
 function dismissSplashAndShowBuilder(mode="open"){
   markBuilderOpenState(true,mode);
+  resetCampaignLibraryStartupState();
   closeSplash();
   try{
     if(typeof refreshOfferUi==="function") refreshOfferUi({utm:true,spell:true,autosave:false});
@@ -5276,6 +5290,7 @@ function initStartScreenActions(){
   if(!csvBtn) console.warn("[splash] Missing Load CSV button; action not bound.");
 
   if(shouldBypassSplashOnLoad()){
+    resetCampaignLibraryStartupState();
     const app=document.getElementById("builder-app");
     if(app){
       app.classList.remove("start-hidden");
@@ -5327,6 +5342,7 @@ function hydrateSplashRecentSession(){
   time.textContent=formatRelativeAutosave(saved.savedAt) || "Autosaved recently";
 }
 function initStandaloneApp(){
+  resetCampaignLibraryStartupState();
   initStartScreenActions();
   refreshCampaignHistoryUI();
   initBuilderApp();
@@ -5337,6 +5353,7 @@ function initBuilderApp(){
   // Preset hydration is independent of the rest of builder startup so saved presets remain available after refresh.
   refreshPresetList();
   try{
+    resetCampaignLibraryStartupState();
     applySafeGlobalDefaults();
     applyCtaSettings(ctaSettings);
     initialiseCampaignNamingDefaults();
@@ -5359,6 +5376,7 @@ function initBuilderApp(){
     // Ensure preview is initialised through the same path as clicking the active offer tab.
     sv(cur);
     initCampaignHistoryListeners();
+    resetCampaignLibraryStartupState();
     resetCampaignHistoryBaseline();
   }catch(err){
     console.error("[init] Builder app initialisation failed.", err);
