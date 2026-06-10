@@ -42,8 +42,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .clabel{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:2px;}
 
 /* ── OFFER SEGMENTED CONTROL ── */
-.offer-tabs{position:relative;display:flex;margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:4px;background:#fafaf8;flex-shrink:0;overflow:hidden;isolation:isolate;}
-.offer-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:2px;background:var(--gold);box-shadow:0 1px 3px rgba(0,0,0,.2);transform:translateX(0);transition:transform .2s ease,width .2s ease;pointer-events:none;}
+.offer-tabs{position:relative;display:flex;margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:0;background:#fafaf8;flex-shrink:0;overflow:hidden;isolation:isolate;}
+.offer-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:0;background:var(--gold);box-shadow:0 1px 3px rgba(0,0,0,.2);transform:translateX(0);transition:transform .2s ease,width .2s ease;pointer-events:none;}
 .offer-tab-item{position:relative;z-index:1;flex:1;min-width:0;}
 .otab{width:100%;height:100%;padding:5px 4px 14px;font-size:10px;font-weight:600;border:none;background:transparent;color:var(--muted);cursor:pointer;letter-spacing:.05em;transition:color .18s ease,background .18s ease,box-shadow .18s ease;display:flex;align-items:flex-start;justify-content:center;}
 .offer-tab-label{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:1px;width:100%;min-width:0;line-height:1.1;text-align:center;}
@@ -52,7 +52,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .offer-tab-ship{font-size:8px;font-weight:400;letter-spacing:.02em;color:var(--muted);opacity:.86;}
 .otab.active .offer-tab-ship{color:var(--white);opacity:1;}
 .otab:hover:not(.active){color:var(--navy);background:rgba(160,146,103,.1);}
-.otab.active{color:var(--navy);border-radius:2px;}
+.otab.active{color:var(--navy);border-radius:0;}
 .otab.dragging{opacity:.55;}
 .otab.drag-over{background:rgba(160,146,103,.18);box-shadow:inset 0 0 0 1px rgba(160,146,103,.42);}
 .otab.move-preflash{background:rgba(160,146,103,.14);box-shadow:inset 0 0 0 1px rgba(160,146,103,.32);}

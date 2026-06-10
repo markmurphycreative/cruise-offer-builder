@@ -146,10 +146,11 @@ test('offer tab labels fall back cleanly when ship or operator details are missi
   ]);
 });
 
-test('active offer tab uses nearly rectangular 2px corners on the actual selected tab and gold pill', () => {
-  assert.match(html, /\.otab\.active\{[^}]*border-radius:2px;/);
-  assert.match(html, /\.offer-pill\{[^}]*border-radius:2px;[^}]*background:var\(--gold\);/);
-  assert.doesNotMatch(html, /\.otab\.active\{[^}]*border-radius:[3-9]px;/);
+test('active offer tab and gold pill use fully square corners', () => {
+  assert.match(html, /\.otab\.active\{[^}]*border-radius:0;/);
+  assert.match(html, /\.offer-pill\{[^}]*border-radius:0;[^}]*background:var\(--gold\);/);
+  assert.doesNotMatch(html, /\.otab\.active\{[^}]*border-radius:[1-9]px;/);
+  assert.doesNotMatch(html, /\.offer-pill\{[^}]*border-radius:[1-9]px;/);
 });
 
 test('offer tab label layout keeps fixed tab widths, truncation, and a lighter ship hierarchy', () => {
