@@ -223,8 +223,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 #utm-out{display:none!important;}
 
 /* ── UTM OUTPUT PANEL ── */
-.utm-current-card{margin-top:6px;}
-.utm-context-id{--utm-accent:var(--gold);--utm-accent-tint:rgba(160,146,103,.06);margin-bottom:5px;padding:5px 7px 5px 8px;border-left:3px solid var(--utm-accent);border-radius:4px;background:var(--utm-accent-tint);line-height:1.25;}
+.utm-current-card{--utm-operator-accent:var(--gold);--utm-operator-tint:rgba(160,146,103,.04);margin-top:6px;}
+.std-utm-item.utm-current-card{background:var(--utm-operator-tint);border-left:3px solid var(--utm-operator-accent);}
+.utm-context-id{--utm-accent:var(--gold);--utm-accent-tint:rgba(160,146,103,.025);margin-bottom:5px;padding:5px 7px 5px 8px;border-left:3px solid var(--utm-accent);border-radius:4px;background:var(--utm-accent-tint);line-height:1.25;}
 .utm-context-id strong{display:block;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);}
 .utm-context-id span{display:block;margin-top:2px;font-size:10px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .utm-visible-output{min-height:0;font-size:9px;font-family:monospace;line-height:1.4;color:var(--navy);word-break:break-all;white-space:pre-wrap;}
@@ -859,7 +860,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <div class="section-body hidden">
         <div class="field"><label>Operator Landing Page</label><input id="f-url" placeholder="https://dawsonandsanderson.co.uk/cruises" oninput="genUtm()"></div>
         <div class="utm-out" id="utm-out" aria-hidden="true"></div>
-        <div class="std-utm-item utm-current-card">
+        <div id="utm-current-card" class="std-utm-item utm-current-card">
           <div class="std-utm-head"><strong>Generated UTM</strong><button class="abtn" id="utm-copy-btn" onclick="copyUtm()" style="font-size:9px;padding:3px 6px;flex:0 0 auto;">Copy</button></div>
           <div id="utm-context-id" class="utm-context-id" aria-label="Active UTM context"><strong id="utm-context-meta">CARD 1</strong><span id="utm-context-title">Untitled Offer</span></div>
           <div id="utm-visible-output" class="utm-visible-output" role="status" aria-live="polite">Generate or enter a destination URL + campaign name</div>
@@ -4794,7 +4795,21 @@ function operatorAccentTint(color, alpha){
   let parts = null;
   if(short) parts = short[1].split('').map(ch => parseInt(ch + ch, 16));
   if(long) parts = [long[1].slice(0,2), long[1].slice(2,4), long[1].slice(4,6)].map(v => parseInt(v, 16));
-  return parts ? `rgba(${parts[0]},${parts[1]},${parts[2]},${alpha})` : 'rgba(160,146,103,.06)';
+  return parts ? `rgba(${parts[0]},${parts[1]},${parts[2]},${alpha})` : `rgba(160,146,103,${alpha})`;
+}
+const UTM_OPERATOR_COLOURS = {
+  ambassador: '#6f1d46',
+  celebrity: '#071f3d',
+  cunard: '#8b0000',
+  fred: '#a09267',
+  marella: '#008c95',
+  msc: '#003399',
+  princess: '#7fb6d9',
+  royal: '#003087'
+};
+function getUtmOperatorColour(o){
+  const key = detectOperatorKey((o && o.operator) || '');
+  return (key && UTM_OPERATOR_COLOURS[key]) || '#a09267';
 }
 function getUtmContextOperatorLabel(o){
   const raw = String((o && o.operator) || '').trim();
@@ -4810,19 +4825,26 @@ function getUtmContextParts(i){
   return {
     meta: `${operatorLabel ? operatorLabel + ' • ' : ''}CARD ${i + 1}`,
     title: String((o && (o.name || o.title)) || '').trim() || 'Untitled Offer',
-    accent: (typeof getOperatorAccentColor === 'function' ? getOperatorAccentColor(o) : ((OPERATOR_HEADERS[(o && o.operator) || ''] || {}).color || '#a09267'))
+    accent: getUtmOperatorColour(o)
   };
 }
 function updateUtmContextIdentifier(i){
   const box = document.getElementById('utm-context-id');
+  const card = document.getElementById('utm-current-card');
   const meta = document.getElementById('utm-context-meta');
   const title = document.getElementById('utm-context-title');
   if(!box || !meta || !title) return;
   const parts = getUtmContextParts(i);
   meta.textContent = parts.meta;
   title.textContent = parts.title;
+  const subtleTint = operatorAccentTint(parts.accent, 0.04);
+  const contextTint = operatorAccentTint(parts.accent, 0.025);
+  if(card){
+    card.style.setProperty('--utm-operator-accent', parts.accent);
+    card.style.setProperty('--utm-operator-tint', subtleTint);
+  }
   box.style.setProperty('--utm-accent', parts.accent);
-  box.style.setProperty('--utm-accent-tint', operatorAccentTint(parts.accent, 0.06));
+  box.style.setProperty('--utm-accent-tint', contextTint);
 }
 function buildUtmForOffer(i){
   // Invalidate first: every consumer must rebuild from the current offer state,
