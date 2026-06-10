@@ -175,3 +175,59 @@ test('accordion changes stay isolated from preview, upload, crop, logo, ordering
   assert.doesNotMatch(toggleSource, /(?:render|preview|upload|drop|crop|logo|offer|utm|gen)/i);
   assert.match(html, /openSectionKey:getOpenSectionKey\(\)/);
 });
+
+function extractFunction(name) {
+  const start = html.indexOf(`function ${name}(`);
+  assert.notEqual(start, -1, `Expected ${name} to exist`);
+  const bodyStart = html.indexOf('{', start);
+  let depth = 0;
+  for (let i = bodyStart; i < html.length; i += 1) {
+    if (html[i] === '{') depth += 1;
+    if (html[i] === '}') depth -= 1;
+    if (depth === 0) return html.slice(start, i + 1);
+  }
+  throw new Error(`Could not extract ${name}`);
+}
+
+test('sidebar polish adds subtle spacing, compact active-offer context and professional empty states', () => {
+  assert.match(html, /\.section\{margin-bottom:6px;border:1px solid var\(--border\);/);
+  assert.match(html, /\.section-body\{padding:7px 9px;\}/);
+  assert.match(html, /id="active-offer-label" aria-live="polite">Editing Offer 1 of 4/);
+  assert.match(html, /function updateActiveOfferLabel\(\)\{[\s\S]*?label\.textContent=`Editing Offer \$\{cur\+1\} of 4`;/);
+  assert.match(html, /<div class="empty-state" id="sheets-status" aria-live="polite"><strong>No CSV loaded<\/strong>Import a campaign CSV to begin\.<\/div>/);
+  assert.match(html, /<div id="utm-visible-output" class="generated-utm-empty empty-state" role="status"><strong>No UTMs generated yet\.<\/strong>Add offer details and a landing page to generate tracking links\.<\/div>/);
+});
+
+test('saved campaign count badge and dashboard are refreshed from existing campaign history data', () => {
+  assert.match(html, /<span class="count-badge" id="campaign-library-count">0<\/span>/);
+  assert.match(html, /<div class="campaign-library-dashboard" id="campaign-library-dashboard" aria-live="polite"><\/div>/);
+  assert.match(html, /function refreshCampaignHistoryUI\(\)\{[\s\S]*?renderCampaignLibraryDashboard\(buckets\);/);
+
+  const history = [
+    { id: 'one', title: 'One', savedAt: '2026-06-10T09:15:00.000Z', updatedAt: '2026-06-10T09:15:00.000Z', recentAt: '2026-06-10T09:15:00.000Z', pinned: true },
+    { id: 'two', title: 'Two', savedAt: '2026-06-10T13:47:00.000Z', updatedAt: '2026-06-10T13:47:00.000Z', recentAt: '2026-06-10T13:47:00.000Z', pinned: false },
+    { id: 'three', title: 'Three', savedAt: '2026-06-09T12:00:00.000Z', updatedAt: '2026-06-09T12:00:00.000Z', recentAt: '2026-06-09T12:00:00.000Z', pinned: false }
+  ];
+  const elements = {
+    'campaign-library-count': { textContent: '' },
+    'campaign-library-dashboard': { innerHTML: '' }
+  };
+  const context = {
+    document: { getElementById: id => elements[id] || null },
+    readCampaignHistory: () => history
+  };
+  vm.createContext(context);
+  vm.runInContext([
+    extractFunction('campaignHistoryTime'),
+    extractFunction('sortCampaignHistoryNewest'),
+    extractFunction('escapeCampaignHistoryText'),
+    extractFunction('campaignHistoryLastSaved'),
+    extractFunction('renderCampaignLibraryDashboard')
+  ].join('\n'), context);
+
+  context.renderCampaignLibraryDashboard({ pinned: [history[0]], recent: history });
+  assert.equal(elements['campaign-library-count'].textContent, '3');
+  assert.match(elements['campaign-library-dashboard'].innerHTML, /<strong>3<\/strong>Saved/);
+  assert.match(elements['campaign-library-dashboard'].innerHTML, /<strong>1<\/strong>Pinned/);
+  assert.match(elements['campaign-library-dashboard'].innerHTML, /Last saved/);
+});

@@ -68,7 +68,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .sb-body::-webkit-scrollbar-thumb{background:var(--border);}
 
 /* ── SECTIONS ── */
-.section{margin-bottom:4px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.section{margin-bottom:6px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
 .campaign-presets-hidden{display:none;}
 .section-hdr{background:var(--panel);padding:5px 9px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
 .section-hdr:not(.collapsed){background:rgba(160,146,103,.12);box-shadow:inset 2px 0 0 var(--gold);}
@@ -78,9 +78,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .section-complete.active{display:inline-flex;}
 .section-toggle{font-size:10px;color:var(--muted);transition:transform .2s;display:inline-block;}
 .section-hdr.collapsed .section-toggle{transform:rotate(-90deg);}
-.section-body{padding:6px 9px;}
+.section-body{padding:7px 9px;}
 .section-body.hidden{display:none;}
-.reorder-group{margin:4px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;overflow:hidden;}
+.reorder-group{margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;overflow:hidden;}
 .reorder-label{display:flex;align-items:center;justify-content:space-between;padding:5px 9px;background:var(--panel);cursor:pointer;user-select:none;list-style:none;}
 .reorder-group[open] .reorder-label{background:rgba(160,146,103,.12);box-shadow:inset 2px 0 0 var(--gold);}
 .reorder-label h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);display:flex;align-items:center;gap:6px;}
@@ -327,13 +327,21 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-lock-toggle input{width:auto;}
 .hero-lock-toggle.locked{color:var(--gold);}
 .hero-lock-state{display:inline-flex;align-items:center;gap:4px;}
-.campaign-library-section .section-body{padding:5px;background:#fafaf8;}
-.campaign-library-categories{display:grid;gap:4px;}
+.campaign-library-section .section-body{padding:6px;background:#fafaf8;}
+.campaign-library-categories{display:grid;gap:5px;}
 .campaign-library-category{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:#fff;}
 .campaign-library-category .section-hdr{padding:5px 7px;}
 .campaign-library-category .section-hdr h4{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);}
 .campaign-library-category .section-body{padding:5px;background:#fafaf8;}
 .campaign-history-list{display:grid;gap:4px;}
+.offer-context-label{margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);line-height:1.2;}
+.count-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:16px;padding:0 5px;border-radius:999px;background:rgba(160,146,103,.16);border:1px solid rgba(160,146,103,.34);color:var(--navy);font-size:9px;font-weight:700;line-height:1;margin-left:2px;font-variant-numeric:tabular-nums;}
+.campaign-library-dashboard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin-bottom:5px;}
+.campaign-library-stat{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:4px 5px;font-size:9px;color:var(--muted);line-height:1.25;}
+.campaign-library-stat strong{display:block;font-size:10px;color:var(--navy);font-weight:700;font-variant-numeric:tabular-nums;}
+.empty-state{border:1px dashed var(--border);border-radius:var(--radius);background:#fff;padding:6px;color:var(--muted);font-size:9px;line-height:1.35;}
+.empty-state strong{display:block;color:var(--navy);font-size:10px;margin-bottom:1px;}
+#sheets-status.empty-state{margin-top:5px;white-space:normal;}
 .campaign-history-item{border:1px solid var(--border);border-radius:var(--radius);padding:5px;background:#fff;}
 .campaign-history-title{font-size:10px;font-weight:700;color:var(--navy);line-height:1.25;}
 .campaign-history-meta{font-size:9px;color:var(--muted);margin-top:2px;}
@@ -547,6 +555,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <div class="offer-tab-item"><button class="otab" id="ot2" onclick="sv(2)" draggable="true" data-offer-tab="2" title="No offer loaded" aria-label="Offer 3 status: No offer loaded"><span>Offer 3</span><span class="status-dot" id="sd2" title="No offer loaded" aria-hidden="true"></span></button></div>
     <div class="offer-tab-item"><button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3" title="No offer loaded" aria-label="Offer 4 status: No offer loaded"><span>Offer 4</span><span class="status-dot" id="sd3" title="No offer loaded" aria-hidden="true"></span></button></div>
   </div>
+  <div class="offer-context-label" id="active-offer-label" aria-live="polite">Editing Offer 1 of 4</div>
   <details class="reorder-group">
     <summary class="reorder-label"><h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="m3 6 1 1 2-2"></path><path d="m3 12 1 1 2-2"></path><path d="m3 18 1 1 2-2"></path></svg>Reorder Cards</h3><span class="section-toggle">▾</span></summary>
     <div class="reorder-buttons">
@@ -574,7 +583,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
           </div>
           <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values" style="display:none">
           <button class="abtn" onclick="triggerCsvFilePicker()" style="width:100%;margin-top:4px;">Load Downloaded CSV File</button>
-          <div style="font-size:9px;color:var(--muted);margin-top:3px;" id="sheets-status" aria-live="polite">No saved source</div>
+          <div class="empty-state" id="sheets-status" aria-live="polite"><strong>No CSV loaded</strong>Import a campaign CSV to begin.</div>
 
       </div>
     </div>
@@ -836,9 +845,10 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
     <div class="section campaign-library-section" id="campaign-library-panel">
       <div class="section-hdr collapsed" onclick="toggleCampaignLibraryMain(this)">
-        <h3>Campaign Library</h3><span class="section-toggle">▾</span>
+        <h3>Saved Campaigns <span class="count-badge" id="campaign-library-count">0</span></h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body hidden">
+        <div class="campaign-library-dashboard" id="campaign-library-dashboard" aria-live="polite"></div>
         <div class="campaign-library-categories">
           <div class="campaign-library-category" data-campaign-category="pinned">
             <div class="section-hdr" onclick="toggleCampaignLibraryCategory(this)">
@@ -879,7 +889,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         <div id="utm-current-card" class="generated-utm-panel utm-current-card">
           <div class="generated-utm-title"><strong id="utm-panel-title">Generated UTMs</strong></div>
           <div id="utm-generated-list" class="generated-utm-list" role="list" aria-live="polite">
-            <div id="utm-visible-output" class="generated-utm-empty" role="status">Generate or enter a destination URL + campaign name</div>
+            <div id="utm-visible-output" class="generated-utm-empty empty-state" role="status"><strong>No UTMs generated yet.</strong>Add offer details and a landing page to generate tracking links.</div>
           </div>
         </div>
       </div>
@@ -2366,9 +2376,17 @@ function updateProductionStatus(){
 // ═══════════════════════════════════════════════════════
 const GOOGLE_SHEET_SOURCE_KEY = "cobGoogleSheetSourceV1";
 
+function csvEmptyStateHtml(){
+  return '<strong>No CSV loaded</strong>Import a campaign CSV to begin.';
+}
 function setSheetsStatus(message,type=""){
   const status=document.getElementById("sheets-status");
   if(!status) return;
+  if(!type && (message === "No saved source" || message === "No CSV loaded")){
+    status.className="empty-state";
+    status.innerHTML=csvEmptyStateHtml();
+    return;
+  }
   status.className=type;
   status.textContent=message;
 }
@@ -3568,10 +3586,15 @@ function campaignHistoryMeta(item){
 function escapeCampaignHistoryText(value){
   return String(value||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
+function renderCampaignHistoryEmptyState(emptyLabel){
+  const label=String(emptyLabel||"No saved campaigns yet.").trim();
+  const detail=label === "No pinned campaigns yet." ? "Pin a saved campaign to keep it here." : "Save a campaign to see it here.";
+  return `<div class="empty-state"><strong>${escapeCampaignHistoryText(label)}</strong>${escapeCampaignHistoryText(detail)}</div>`;
+}
 function renderCampaignHistoryList(targetId,items,emptyLabel){
   const el=document.getElementById(targetId);
   if(!el) return;
-  if(!items.length){ el.innerHTML=`<div class="campaign-history-meta">${emptyLabel}</div>`; return; }
+  if(!items.length){ el.innerHTML=renderCampaignHistoryEmptyState(emptyLabel); return; }
   el.innerHTML=items.map(item=>{
     const safeId=escapeCampaignHistoryText(item.id);
     const safeTitle=escapeCampaignHistoryText(item.title||"Untitled Campaign");
@@ -3585,10 +3608,33 @@ function getCampaignLibraryBuckets(){
   const recent=sortCampaignHistoryNewest(list,"recentAt").slice(0,CAMPAIGN_RECENT_MAX);
   return {pinned,recent};
 }
+function campaignHistoryLastSaved(list){
+  const latest=sortCampaignHistoryNewest((Array.isArray(list)?list:[]).filter(item=>item&&(item.savedAt||item.updatedAt)),"savedAt")[0];
+  const time=latest && ((latest.savedAt)||latest.updatedAt);
+  if(!time) return "";
+  try{ return new Date(time).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}); }
+  catch(e){ return ""; }
+}
+function renderCampaignLibraryDashboard(buckets){
+  const list=readCampaignHistory();
+  const count=document.getElementById("campaign-library-count");
+  if(count) count.textContent=String(list.length);
+  const dashboard=document.getElementById("campaign-library-dashboard");
+  if(!dashboard) return;
+  const stats=[
+    ["Saved", list.length],
+    ["Recent", (buckets&&buckets.recent ? buckets.recent.length : 0)],
+    ["Pinned", (buckets&&buckets.pinned ? buckets.pinned.length : 0)]
+  ];
+  const lastSaved=campaignHistoryLastSaved(list);
+  if(lastSaved) stats.push(["Last saved", lastSaved]);
+  dashboard.innerHTML=stats.map(([label,value])=>`<div class="campaign-library-stat"><strong>${escapeCampaignHistoryText(value)}</strong>${escapeCampaignHistoryText(label)}</div>`).join("");
+}
 function refreshCampaignHistoryUI(){
   const buckets=getCampaignLibraryBuckets();
+  renderCampaignLibraryDashboard(buckets);
   renderCampaignHistoryList("pinned-campaign-list", buckets.pinned, "No pinned campaigns yet.");
-  renderCampaignHistoryList("recent-campaign-list", buckets.recent, "No recent campaigns.");
+  renderCampaignHistoryList("recent-campaign-list", buckets.recent, "No saved campaigns yet.");
 }
 function getCampaignLibraryHeader(){
   const panel=document.getElementById("campaign-library-panel");
@@ -4612,11 +4658,17 @@ function updateSegmentedPill(pill, activeButton){
   pill.style.transform = 'translateX(' + activeButton.offsetLeft + 'px)';
 }
 
+function updateActiveOfferLabel(){
+  const label=document.getElementById("active-offer-label");
+  if(!label) return;
+  label.textContent=`Editing Offer ${cur+1} of 4`;
+}
 function syncOfferSelector(){
   const activeIndex = cur;
   document.querySelectorAll('.otab').forEach(function(t, idx){
     t.classList.toggle('active', idx === activeIndex);
   });
+  updateActiveOfferLabel();
   updateOfferPill();
 }
 
@@ -4934,10 +4986,13 @@ function renderGeneratedUtmCards(results){
     return;
   }
   if(!valid.length){
-    const emptyMessage = current.result.message || 'Generate or enter a destination URL + campaign name';
-    list.innerHTML = `<div id="utm-visible-output" class="generated-utm-empty" role="status">${escapeUtmHtml(emptyMessage)}</div>`;
+    const emptyMessage = current.result.message || 'No UTMs generated yet. Add offer details and a landing page to generate tracking links.';
+    list.innerHTML = `<div id="utm-visible-output" class="generated-utm-empty empty-state" role="status"><strong>No UTMs generated yet.</strong>Add offer details and a landing page to generate tracking links.</div>`;
     const empty = document.getElementById('utm-visible-output');
-    setUtmVisibleOutput(empty, emptyMessage);
+    if(empty){
+      if("value" in empty) empty.value = emptyMessage;
+      else empty.setAttribute("data-empty-message", emptyMessage);
+    }
     return;
   }
   list.innerHTML = valid.map(item => {
