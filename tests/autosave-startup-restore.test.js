@@ -129,7 +129,7 @@ test('Session Status reports four loaded offers from the autosave payload', () =
 ${extractFunction('countLoadedSessionOffers')}
 ${extractFunction('updateSavedSessionStatus')}`, context);
   context.updateSavedSessionStatus(makePayload());
-  assert.match(status.innerHTML, /^<strong>Session Status<\/strong>Session saved<br>4 offers loaded<br>Last updated \d{2}:\d{2}$/);
+  assert.match(status.innerHTML, /^<strong>Session Status<\/strong><span class="session-status-summary">✓ Session saved • 4 offers • \d{2}:\d{2}<\/span>$/);
 });
 
 test('fresh startup hydrates four autosaved offers, active card, view mode and a non-empty preview', () => {
