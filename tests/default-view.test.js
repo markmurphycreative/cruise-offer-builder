@@ -52,12 +52,12 @@ test('view selector indicator updates instantly while retaining segmented-contro
 test('Offer 1–4 selector reuses the sliding segmented-control pill while retaining status dots and offer switching hooks', () => {
   assert.match(html, /<div class="offer-tabs">\s*<span class="offer-pill" id="offer-pill" aria-hidden="true"><\/span>/);
   assert.match(html, /\.offer-tabs\{[^}]*border:1px solid var\(--border\);[^}]*border-radius:0;[^}]*overflow:hidden;[^}]*isolation:isolate;/);
-  assert.match(html, /\.offer-pill\{[^}]*border-radius:0;[^}]*background:var\(--gold\);[^}]*transform:translateX\(0\);[^}]*transition:transform \.2s ease,width \.2s ease;/);
-  assert.match(html, /\.otab\.active\{color:var\(--navy\);border-radius:0;\}/);
+  assert.match(html, /\.offer-pill\{[^}]*border-radius:0;[^}]*background:linear-gradient\(180deg,#b2a374 0%,var\(--gold\) 100%\);[^}]*transform:translateX\(0\);[^}]*transition:transform \.2s ease,width \.2s ease;/);
+  assert.match(html, /\.otab\.active\{color:var\(--navy\);border-radius:0;box-shadow:inset 0 -2px 0 rgba\(14,27,42,\.18\);\}/);
   assert.doesNotMatch(html, /\.otab\.active\{[^}]*border-bottom/);
   assert.match(html, /\.offer-tab-item\{[^}]*position:relative;[^}]*flex:1;[^}]*min-width:0;/);
-  assert.match(html, /\.otab\{[^}]*width:100%;[^}]*padding:5px 4px 14px;[^}]*font-size:10px;/);
-  assert.match(html, /\.status-dot\{[^}]*position:absolute;[^}]*width:6\.4px;[^}]*height:6\.4px;[^}]*border-radius:50%;/);
+  assert.match(html, /\.otab\{[^}]*width:100%;[^}]*padding:4px 4px 13px;[^}]*font-size:10px;/);
+  assert.match(html, /\.status-dot\{[^}]*position:absolute;[^}]*width:5\.8px;[^}]*height:5\.8px;[^}]*border-radius:50%;/);
   assert.match(html, /\.status-dot\.green\{background:var\(--green\);\}\s*\.status-dot\.amber\{background:var\(--amber\);\}\s*\.status-dot\.red\{background:var\(--red\);\}/);
   for(let i = 0; i < 4; i += 1){
     assert.match(html, new RegExp('<div class="offer-tab-item"><button class="otab(?: active)?" id="ot' + i + '" onclick="sv\\(' + i + '\\)"[^>]*><span>Offer ' + (i + 1) + '<\/span><span class="status-dot" id="sd' + i + '" title="No offer loaded" aria-hidden="true"><\/span><\/button><\/div>'));

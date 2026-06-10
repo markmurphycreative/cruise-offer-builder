@@ -104,7 +104,7 @@ test('campaign health reports grouped required checks and updates to ready when 
   );
   context.updateProductionStatus();
   assert.equal(elements['prod-status-collapsed-summary'].textContent, 'Ready for export');
-  assert.equal(elements['prod-status-summary'].innerHTML, '✓ Ready for Export<br><span class="prod-status-secondary">No blockers found</span>');
+  assert.equal(elements['prod-status-summary'].innerHTML, 'Ready for Export<br><span class="prod-status-secondary">No blockers found</span>');
   assert.equal(elements['prod-status-summary'].className, 'prod-status-summary ok');
   assert.match(elements['prod-status-list'].innerHTML, /Offers loaded \(4\/4\)/);
   assert.doesNotMatch(elements['prod-status-list'].innerHTML, /At least one offer loaded/);
@@ -128,7 +128,7 @@ test('campaign health count, hero, operator logo and operator checks react to cu
   });
   context.updateProductionStatus();
   assert.equal(elements['prod-status-summary'].innerHTML, '⚠ Campaign Not Ready<br><span class="prod-status-secondary">1 blocker • 0 warnings</span>');
-  assert.match(elements['prod-status-list'].innerHTML, /<div class="prod-status-item ok"><span>✓<\/span><span>Offers loaded \(1\/4\)<\/span><\/div>/);
+  assert.match(elements['prod-status-list'].innerHTML, /<div class="prod-status-item ok"><span>•<\/span><span>Offers loaded \(1\/4\)<\/span><\/div>/);
   assert.match(elements['prod-status-list'].innerHTML, /At least one offer loaded/);
 
   Object.assign(context.offers[0], { operator: 'custom', _logoCustom: 'data:image/png;base64,logo', _img: 'hero.jpg', _utm: 'https://example.com/utm' });
@@ -144,7 +144,7 @@ test('campaign health count, hero, operator logo and operator checks react to cu
   context.offers.push({ name: 'Two' }, { name: 'Three' }, { name: 'Four' });
   context.offers.splice(1, 3);
   context.updateProductionStatus();
-  assert.equal(elements['prod-status-summary'].innerHTML, '✓ Ready for Export<br><span class="prod-status-secondary">No blockers found</span>');
+  assert.equal(elements['prod-status-summary'].innerHTML, 'Ready for Export<br><span class="prod-status-secondary">No blockers found</span>');
 });
 
 test('campaign health renders offer-loading progress without a redundant all-loaded message', () => {
@@ -152,7 +152,7 @@ test('campaign health renders offer-loading progress without a redundant all-loa
     const offers = Array.from({ length: 4 }, (_, index) => index < loaded ? { name: `Offer ${index + 1}` } : {});
     const { context, elements } = createHarness({ offers });
     context.updateProductionStatus();
-    assert.match(elements['prod-status-list'].innerHTML, new RegExp(`<div class="prod-status-item ok"><span>✓<\/span><span>Offers loaded \\(${loaded}\/4\\)<\/span><\/div>`));
+    assert.match(elements['prod-status-list'].innerHTML, new RegExp(`<div class="prod-status-item ok"><span>•<\/span><span>Offers loaded \\(${loaded}\/4\\)<\/span><\/div>`));
     if (loaded < 4) {
       assert.match(elements['prod-status-list'].innerHTML, /At least one offer loaded/);
     } else {

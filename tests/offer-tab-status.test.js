@@ -113,10 +113,10 @@ test('offer tab labels switch from fallback text to operator and ship identifier
   ].join('\n'), context);
 
   assert.deepEqual(JSON.parse(JSON.stringify([0, 1, 2, 3].map(index => context.getOfferTabLabelParts(index)))), [
-    { primary: '1 • Celebrity', ship: 'Celebrity Apex' },
-    { primary: '2 • Cunard', ship: 'Queen Anne' },
-    { primary: '3 • Royal Caribbean', ship: 'Icon of the Seas' },
-    { primary: 'Offer 4', ship: '' }
+    { number: 'Offer 1', operator: 'Celebrity', ship: 'Celebrity Apex' },
+    { number: 'Offer 2', operator: 'Cunard', ship: 'Queen Anne' },
+    { number: 'Offer 3', operator: 'Royal Caribbean', ship: 'Icon of the Seas' },
+    { number: 'Offer 4', operator: '', ship: '' }
   ]);
 });
 
@@ -139,26 +139,28 @@ test('offer tab labels fall back cleanly when ship or operator details are missi
   ].join('\n'), context);
 
   assert.deepEqual(JSON.parse(JSON.stringify([0, 1, 2, 3].map(index => context.getOfferTabLabelParts(index)))), [
-    { primary: '1 • Fred. Olsen', ship: '' },
-    { primary: 'Offer 2', ship: '' },
-    { primary: 'Offer 3', ship: '' },
-    { primary: 'Offer 4', ship: '' }
+    { number: 'Offer 1', operator: 'Fred. Olsen', ship: '' },
+    { number: 'Offer 2', operator: '', ship: '' },
+    { number: 'Offer 3', operator: '', ship: '' },
+    { number: 'Offer 4', operator: '', ship: '' }
   ]);
 });
 
 test('active offer tab and gold pill use fully square corners', () => {
   assert.match(html, /\.otab\.active\{[^}]*border-radius:0;/);
-  assert.match(html, /\.offer-pill\{[^}]*border-radius:0;[^}]*background:var\(--gold\);/);
+  assert.match(html, /\.offer-pill\{[^}]*border-radius:0;[^}]*background:linear-gradient\(180deg,#b2a374 0%,var\(--gold\) 100%\);/);
   assert.doesNotMatch(html, /\.otab\.active\{[^}]*border-radius:[1-9]px;/);
   assert.doesNotMatch(html, /\.offer-pill\{[^}]*border-radius:[1-9]px;/);
 });
 
-test('offer tab label layout keeps fixed tab widths, truncation, and a lighter ship hierarchy', () => {
+test('offer tab label layout keeps fixed tab widths, truncation, and clearer hierarchy', () => {
   assert.match(html, /\.offer-tab-item\{[^}]*flex:1;min-width:0;/);
   assert.match(html, /\.offer-tab-label\{[^}]*flex-direction:column;[^}]*width:100%;min-width:0;[^}]*text-align:center;/);
-  assert.match(html, /\.offer-tab-primary,\.offer-tab-ship\{[^}]*overflow:hidden;text-overflow:ellipsis;white-space:nowrap;/);
-  assert.match(html, /\.offer-tab-ship\{[^}]*font-size:8px;[^}]*font-weight:400;[^}]*color:var\(--muted\);/);
-  assert.match(html, /\.otab\.active \.offer-tab-ship\{color:var\(--white\);opacity:1;\}/);
+  assert.match(html, /\.offer-tab-number,\.offer-tab-operator,\.offer-tab-ship\{[^}]*overflow:hidden;text-overflow:ellipsis;white-space:nowrap;/);
+  assert.match(html, /\.offer-tab-number\{[^}]*font-size:7px;[^}]*text-transform:uppercase;[^}]*color:var\(--muted\);/);
+  assert.match(html, /\.offer-tab-operator\{[^}]*font-size:9px;[^}]*font-weight:700;[^}]*color:var\(--text\);/);
+  assert.match(html, /\.offer-tab-ship\{[^}]*font-size:8px;[^}]*font-weight:500;[^}]*color:var\(--muted\);/);
+  assert.match(html, /\.otab\.active \.offer-tab-operator\{color:var\(--navy\);opacity:1;\}/);
 });
 
 test('each offer tab dot independently maps empty, incomplete, invalid and export-ready offers', () => {
@@ -228,7 +230,7 @@ test('selector-only critical content status does not alter Campaign Health readi
 
   context.updateAllStatus();
 
-  assert.equal(elements['prod-status-summary'].innerHTML, '✓ Ready for Export<br><span class="prod-status-secondary">No blockers found</span>');
+  assert.equal(elements['prod-status-summary'].innerHTML, 'Ready for Export<br><span class="prod-status-secondary">No blockers found</span>');
   assert.deepEqual(dots.map(dot => dot.className), Array(4).fill('status-dot red'));
 });
 
