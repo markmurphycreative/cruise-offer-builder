@@ -319,10 +319,57 @@ test('campaign history list keeps existing actions while inserting reusable thum
     payload: { state: { offers: [{ operator: 'royal', name: 'Loaded offer' }] } }
   }], 'No saved campaigns yet.');
 
-  assert.match(writes[0], /class="campaign-thumbnail"/);
+  assert.match(writes[0], /class="campaign-thumbnail" role="button" tabindex="0" title="Load campaign" aria-label="Load campaign" onclick="restoreCampaignHistoryEntry\('abc'\)"/);
+  assert.match(writes[0], /onkeydown="if\(event\.key==='Enter'\|\|event\.key===' '\)\{event\.preventDefault\(\);restoreCampaignHistoryEntry\('abc'\);\}"/);
   assert.match(writes[0], /restoreCampaignHistoryEntry\('abc'\)">Load<\/button>/);
   assert.match(writes[0], /togglePinCampaignHistoryEntry\('abc'\)">Pin<\/button>/);
   assert.match(writes[0], /deleteCampaignHistoryEntry\('abc'\)">Delete<\/button>/);
+});
+
+test('campaign library thumbnail uses the same restore handler as the Load button without changing other actions', () => {
+  const writes = [];
+  const context = runFunctions([
+    'campaignHistoryDisplayType',
+    'campaignHistoryMeta',
+    'escapeCampaignHistoryText',
+    'renderCampaignHistoryEmptyState',
+    'getCampaignThumbnailPayload',
+    'getCampaignThumbnailName',
+    'getCampaignThumbnailOffers',
+    'isCampaignThumbnailOfferPresent',
+    'getCampaignOperatorShortLabel',
+    'getCampaignThumbnailOperatorLabels',
+    'getCampaignThumbnailOperatorEntries',
+    'getCampaignThumbnailOperatorKey',
+    'campaignThumbnailRgba',
+    'getCampaignThumbnailOperatorColour',
+    'getCampaignThumbnailPillStyle',
+    'getCampaignThumbnailOfferCount',
+    'getCampaignThumbnailSavedTime',
+    'renderCampaignThumbnail',
+    'renderCampaignHistoryList'
+  ], {
+    formatCampaignDate: () => '09 Jun 2026',
+    document: { getElementById: () => ({ set innerHTML(value) { writes.push(value); } }) }
+  });
+
+  context.renderCampaignHistoryList('recent-campaign-list', [{
+    id: 'abc',
+    title: 'Clickable Thumbnail Campaign',
+    savedAt: '2026-06-09T12:00:00.000Z',
+    payload: { state: { offers: [{ operator: 'royal', name: 'Loaded offer' }] } }
+  }], 'No saved campaigns yet.');
+
+  const markup = writes[0];
+  const thumbnailRestoreCalls = markup.match(/class="campaign-thumbnail"[\s\S]*?onclick="restoreCampaignHistoryEntry\('abc'\)"/g) || [];
+  const loadButtonRestoreCalls = markup.match(/<button class="abtn btn-compact" onclick="restoreCampaignHistoryEntry\('abc'\)">Load<\/button>/g) || [];
+
+  assert.equal(thumbnailRestoreCalls.length, 1);
+  assert.equal(loadButtonRestoreCalls.length, 1);
+  assert.match(markup, /<button class="abtn btn-compact" onclick="togglePinCampaignHistoryEntry\('abc'\)">Pin<\/button>/);
+  assert.match(markup, /<button class="abtn red btn-compact" onclick="deleteCampaignHistoryEntry\('abc'\)">Delete<\/button>/);
+  assert.doesNotMatch(markup, /togglePinCampaignHistoryEntry\('abc'\)[\s\S]*class="campaign-thumbnail"/);
+  assert.doesNotMatch(markup, /deleteCampaignHistoryEntry\('abc'\)[\s\S]*class="campaign-thumbnail"/);
 });
 
 test('campaign thumbnail data is generated at render time and not persisted to history entries', () => {
