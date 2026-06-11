@@ -129,7 +129,25 @@ test('hero crop save and load values remain the existing zoom, horizontal and ve
   assert.match(extractFunction('saveEditorToOffer'), /o\._cropZoom=parseInt\(z\.value\|\|100,10\)/);
   assert.match(extractFunction('saveEditorToOffer'), /o\._cropX=parseInt\(x\.value\|\|50,10\)/);
   assert.match(extractFunction('saveEditorToOffer'), /o\._cropY=parseInt\(y\.value\|\|50,10\)/);
-  assert.match(extractFunction('loadOfferToEditor'), /cz\) cz\.value=o\._cropZoom\|\|100/);
-  assert.match(extractFunction('loadOfferToEditor'), /cx\) cx\.value=o\._cropX\?\?50/);
-  assert.match(extractFunction('loadOfferToEditor'), /cy\) cy\.value=o\._cropY\?\?50/);
+  assert.match(extractFunction('loadOfferToEditor'), /setCropControlValue\('zoom', o\._cropZoom\|\|100\)/);
+  assert.match(extractFunction('loadOfferToEditor'), /setCropControlValue\('x', o\._cropX\?\?50\)/);
+  assert.match(extractFunction('loadOfferToEditor'), /setCropControlValue\('y', o\._cropY\?\?50\)/);
+});
+
+test('hero crop controls expose synced numeric percentage inputs without changing crop ranges', () => {
+  assert.match(html, /id="crop-zoom" min="100" max="200" value="100" oninput="updateCrop\(\)"/);
+  assert.match(html, /id="crop-zoom-input" min="100" max="200" value="100"[^>]+oninput="updateCropFromInput\('zoom'\)"/);
+  assert.match(html, /id="crop-x" min="0" max="100" value="50" oninput="updateCrop\(\)"/);
+  assert.match(html, /id="crop-x-input" min="0" max="100" value="50"[^>]+oninput="updateCropFromInput\('x'\)"/);
+  assert.match(html, /id="crop-y" min="0" max="100" value="50" oninput="updateCrop\(\)"/);
+  assert.match(html, /id="crop-y-input" min="0" max="100" value="50"[^>]+oninput="updateCropFromInput\('y'\)"/);
+  assert.match(extractFunction('updateCrop'), /_cropZoom=setCropControlValue\("zoom"/);
+  assert.match(extractFunction('updateCropFromInput'), /setCropControlValue\(axis,input\.value\)/);
+});
+
+test('hero upload thumbnail shows the full source image and helper metadata', () => {
+  assert.match(html, /\.dz-thumb\.hero-t\{object-fit:contain/);
+  assert.doesNotMatch(html, /\.dz-thumb\.hero-t\{object-fit:cover/);
+  assert.match(html, /Thumbnail shows full source image\. Card preview shows cropped result\./);
+  assert.match(extractFunction('updateHeroThumbInfo'), /dims\.textContent="Image: "\+w\+" × "\+h\+"px"/);
 });
