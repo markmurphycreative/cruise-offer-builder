@@ -492,7 +492,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cc .operator-png-logo.operator-png-logo--dands{max-width:760px;max-height:250px;transform:scale(.75);transform-origin:center center;}
 .cc .operator-logo-fallback{font-family:'Montserrat',sans-serif;font-size:58px;font-weight:500;letter-spacing:.12em;line-height:1.15;color:#fff;text-align:center;}
 .cc .hero-wrap{width:1200px;height:849px;overflow:hidden;position:relative;background:var(--operator-bg,var(--navy));line-height:0;}
-.cc .hero{width:100%;height:100%;display:block;background-repeat:no-repeat;background-position:50% 50%;background-size:cover;}
+.cc .hero{width:100%;height:calc(100% + 1px);object-fit:cover;display:block;position:absolute;top:-1px;left:0;transform-origin:center center;}
 .cc .hph{width:1200px;height:849px;background:#b8ccd8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
 .cc .hph span{font-size:28px;font-weight:300;color:#5a7a90;font-family:'Montserrat',sans-serif;}
 .cc .isec{width:1200px;height:auto;min-height:0;overflow:visible;background:#fff;padding:80px 62px 112px;text-align:center;}
@@ -1839,28 +1839,19 @@ function calculateHeroCropLayout(frameWidth, frameHeight, naturalWidth, naturalH
   const nw=Math.max(0,Number(naturalWidth)||0);
   const nh=Math.max(0,Number(naturalHeight)||0);
   const zoom=Math.max(0.01,(Number(cropZoom)||100)/100);
-  const x=clampHeroCropValue(cropX,50);
-  const y=clampHeroCropValue(cropY,50);
+  const xPct=clampHeroCropValue(cropX,50)/100;
+  const yPct=clampHeroCropValue(cropY,50)/100;
   if(!fw||!fh||!nw||!nh){
-    return {width:fw,height:fh,backgroundSize:(fitMode==="fit"?"contain":"cover"),backgroundPositionX:'50%',backgroundPositionY:'50%',overflowX:0,overflowY:0};
+    return {width:fw,height:fh,left:0,top:0,overflowX:0,overflowY:0};
   }
   const baseScale=(fitMode==="fit") ? Math.min(fw/nw,fh/nh) : Math.max(fw/nw,fh/nh);
   const width=nw*baseScale*zoom;
   const height=nh*baseScale*zoom;
   const overflowX=Math.max(0,width-fw);
   const overflowY=Math.max(0,height-fh);
-  return {
-    width,
-    height,
-    backgroundSize:width+'px '+height+'px',
-    backgroundPositionX:(overflowX>0?x:50)+'%',
-    backgroundPositionY:(overflowY>0?y:50)+'%',
-    overflowX,
-    overflowY
-  };
-}
-function cssUrl(value){
-  return 'url(\"'+String(value||'').split('\\').join('\\\\').split('\"').join('\\\"').split('\n').join('')+'\")';
+  const left=overflowX>0 ? -overflowX*xPct : (fw-width)/2;
+  const top=overflowY>0 ? -overflowY*yPct : (fh-height)/2;
+  return {width,height,left,top,overflowX,overflowY};
 }
 function escapeAttr(value){
   return String(value||'').replace(/&/g,'&amp;').replace(/\"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'');
@@ -1874,55 +1865,41 @@ function renderHeroHTML(d, heroPlaceholder){
   const heroFitMode=d._heroFitMode==="fit"?"fit":"fill";
   if(heroSrc){
     const heroBg=heroFitMode==="fit"?"background:#0e1b2a;":"";
-    return `<div class="hero-wrap" style="${heroBg}"><div class="hero" role="img" aria-label="Hero image" data-hero-src="${escapeAttr(heroSrc)}" data-crop-x="${cx}" data-crop-y="${cy}" data-crop-zoom="${cz}" data-fit-mode="${heroFitMode}" style="background-image:${cssUrl(heroSrc)};"></div></div>`;
+    return `<div class="hero-wrap" style="${heroBg}"><img class="hero" src="${escapeAttr(heroSrc)}" data-hero-src="${escapeAttr(heroSrc)}" data-crop-x="${cx}" data-crop-y="${cy}" data-crop-zoom="${cz}" data-fit-mode="${heroFitMode}" style="object-fit:fill;object-position:50% 50%;transform:none;left:0;top:0;width:100%;height:100%;" onload="if(typeof applyHeroCropPositions==='function') applyHeroCropPositions(document)" onerror="this.parentElement.innerHTML='<div class=hph><span>Image failed to load</span></div>'"></div>`;
   }
   return heroPlaceholder
     ? `<div class="hph"><span>${heroPlaceholder[0]}</span><span>${heroPlaceholder[1]}</span></div>`
     : `<div class="hph"><span></span></div>`;
 }
-function setHeroImageFailedFallback(hero){
-  const wrap=hero&&hero.closest?hero.closest('.hero-wrap'):null;
-  if(wrap) wrap.innerHTML='<div class=hph><span>Image failed to load</span></div>';
-}
-function ensureHeroBackgroundImage(hero){
-  const src=hero.dataset.heroSrc||'';
-  if(!src) return;
-  if(!hero.style.backgroundImage || hero.style.backgroundImage==='none') hero.style.backgroundImage=cssUrl(src);
-  if(hero.dataset.heroLoadChecked===src) return;
-  hero.dataset.heroLoadChecked=src;
-  const probe=new Image();
-  probe.onload=()=>{
-    hero.dataset.naturalWidth=probe.naturalWidth||hero.dataset.naturalWidth||'';
-    hero.dataset.naturalHeight=probe.naturalHeight||hero.dataset.naturalHeight||'';
-    applyHeroCropPositions(hero.closest('.hero-wrap')||document);
-  };
-  probe.onerror=()=>setHeroImageFailedFallback(hero);
-  probe.src=src;
-}
 function applyHeroCropPositions(root){
   const scope=root&&root.querySelectorAll?root:document;
-  scope.querySelectorAll('.hero-wrap .hero').forEach(hero=>{
-    const wrap=hero.closest('.hero-wrap');
+  scope.querySelectorAll('.hero-wrap img.hero').forEach(img=>{
+    const wrap=img.closest('.hero-wrap');
     if(!wrap) return;
-    ensureHeroBackgroundImage(hero);
     const frame=wrap.getBoundingClientRect ? wrap.getBoundingClientRect() : {width:0,height:0};
     const frameWidth=wrap.offsetWidth||wrap.clientWidth||frame.width||1200;
     const frameHeight=wrap.offsetHeight||wrap.clientHeight||frame.height||849;
-    const naturalWidth=parseFloat(hero.dataset.naturalWidth)||frameWidth;
-    const naturalHeight=parseFloat(hero.dataset.naturalHeight)||frameHeight;
+    const naturalWidth=img.naturalWidth||parseFloat(img.getAttribute('width'))||frameWidth;
+    const naturalHeight=img.naturalHeight||parseFloat(img.getAttribute('height'))||frameHeight;
+    if(!naturalWidth||!naturalHeight) return;
     const layout=calculateHeroCropLayout(
       frameWidth,
       frameHeight,
       naturalWidth,
       naturalHeight,
-      hero.dataset.cropX,
-      hero.dataset.cropY,
-      hero.dataset.cropZoom,
-      hero.dataset.fitMode
+      img.dataset.cropX,
+      img.dataset.cropY,
+      img.dataset.cropZoom,
+      img.dataset.fitMode
     );
-    hero.style.backgroundRepeat='no-repeat';
-    hero.style.backgroundSize=layout.backgroundSize;
-    hero.style.backgroundPosition=layout.backgroundPositionX+' '+layout.backgroundPositionY;
+    img.style.objectFit='fill';
+    img.style.objectPosition='50% 50%';
+    img.style.transform='none';
+    img.style.transformOrigin='center center';
+    img.style.width=layout.width+'px';
+    img.style.height=layout.height+'px';
+    img.style.left=layout.left+'px';
+    img.style.top=layout.top+'px';
   });
 }
 function scheduleHeroCropPositions(root){
@@ -5443,24 +5420,6 @@ async function renderCardToImageBlob(offerData, mimeType, quality){
       };
       img.onerror = res;
     })));
-    const heroBackgrounds = Array.from(wrap.querySelectorAll('.hero-wrap .hero[data-hero-src]'));
-    await Promise.all(heroBackgrounds.map(hero => new Promise(res => {
-      const src=hero.dataset.heroSrc||'';
-      if(!src) return res();
-      const probe=new Image();
-      probe.onload=()=>{
-        hero.dataset.naturalWidth=probe.naturalWidth||'';
-        hero.dataset.naturalHeight=probe.naturalHeight||'';
-        applyHeroCropPositions(wrap);
-        res();
-      };
-      probe.onerror=()=>{
-        setHeroImageFailedFallback(hero);
-        res();
-      };
-      probe.src=src;
-    })));
-
     applyHeroCropPositions(wrap);
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
     applyHeroCropPositions(wrap);
