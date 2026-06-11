@@ -32,7 +32,7 @@ function assertClose(actual, expected, message) {
   assert.ok(Math.abs(actual - expected) < 0.000001, message || `${actual} should equal ${expected}`);
 }
 
-test('wide hero images map horizontal slider from full-left to full-right crop', () => {
+test('wide hero images use true background-position from full-left to full-right crop', () => {
   const { calculateHeroCropLayout } = cropContext();
   const frame = [1200, 849];
   const natural = [3000, 849];
@@ -42,13 +42,13 @@ test('wide hero images map horizontal slider from full-left to full-right crop',
   const right = calculateHeroCropLayout(...frame, ...natural, 100, 50, 100, 'fill');
 
   assertClose(left.overflowX, 1800);
-  assertClose(left.left, 0);
-  assertClose(centre.left, -900);
-  assertClose(right.left, -1800);
-  assertClose(left.top, 0);
+  assert.equal(left.backgroundPositionX, '0%');
+  assert.equal(centre.backgroundPositionX, '50%');
+  assert.equal(right.backgroundPositionX, '100%');
+  assert.equal(left.backgroundPositionY, '50%');
 });
 
-test('tall hero images map vertical slider from top to bottom crop', () => {
+test('tall hero images use true background-position from top to bottom crop', () => {
   const { calculateHeroCropLayout } = cropContext();
   const frame = [1200, 849];
   const natural = [1200, 2400];
@@ -58,13 +58,13 @@ test('tall hero images map vertical slider from top to bottom crop', () => {
   const bottom = calculateHeroCropLayout(...frame, ...natural, 50, 100, 100, 'fill');
 
   assertClose(top.overflowY, 1551);
-  assertClose(top.top, 0);
-  assertClose(centre.top, -775.5);
-  assertClose(bottom.top, -1551);
-  assertClose(top.left, 0);
+  assert.equal(top.backgroundPositionY, '0%');
+  assert.equal(centre.backgroundPositionY, '50%');
+  assert.equal(bottom.backgroundPositionY, '100%');
+  assert.equal(top.backgroundPositionX, '50%');
 });
 
-test('fill frame and zoom use rendered overflow instead of a fixed nudge range', () => {
+test('fill frame behaves like cover and zoom increases background-size and pan range', () => {
   const { calculateHeroCropLayout } = cropContext();
   const frame = [1200, 849];
   const natural = [1600, 900];
@@ -72,13 +72,17 @@ test('fill frame and zoom use rendered overflow instead of a fixed nudge range',
   const unzoomed = calculateHeroCropLayout(...frame, ...natural, 100, 50, 100, 'fill');
   const zoomed = calculateHeroCropLayout(...frame, ...natural, 100, 50, 150, 'fill');
 
-  assertClose(unzoomed.left, -unzoomed.overflowX);
-  assertClose(zoomed.left, -zoomed.overflowX);
+  assertClose(unzoomed.width, 1509.3333333333333);
+  assertClose(unzoomed.height, 849);
+  assert.equal(unzoomed.backgroundSize, `${unzoomed.width}px ${unzoomed.height}px`);
+  assert.equal(unzoomed.backgroundPositionX, '100%');
+  assert.ok(zoomed.width > unzoomed.width);
+  assert.ok(zoomed.height > unzoomed.height);
   assert.ok(zoomed.overflowX > unzoomed.overflowX);
   assert.ok(zoomed.overflowY > unzoomed.overflowY);
 });
 
-test('fit image centres non-overflowing axes and pans overflowing axes', () => {
+test('fit image behaves like contain while non-overflowing axes stay centred', () => {
   const { calculateHeroCropLayout } = cropContext();
   const frame = [1200, 849];
   const natural = [3000, 1000];
@@ -88,19 +92,37 @@ test('fit image centres non-overflowing axes and pans overflowing axes', () => {
   const zoomedRight = calculateHeroCropLayout(...frame, ...natural, 100, 100, 150, 'fit');
 
   assertClose(fitLeft.width, 1200);
-  assertClose(fitLeft.left, 0);
-  assertClose(fitRight.left, 0, 'slider should not move when there is no horizontal overflow');
-  assert.equal(fitLeft.top, fitRight.top, 'letterboxed vertical axis stays centred without overflow');
-  assertClose(zoomedRight.left, -zoomedRight.overflowX);
-  assertClose(zoomedRight.top, (frame[1] - zoomedRight.height) / 2, 'non-overflowing vertical axis stays centred after fit zoom');
+  assertClose(fitLeft.height, 400);
+  assert.equal(fitLeft.backgroundPositionX, '50%', 'slider should not move when there is no horizontal overflow');
+  assert.equal(fitRight.backgroundPositionX, '50%', 'slider should not move when there is no horizontal overflow');
+  assert.equal(fitLeft.backgroundPositionY, '50%', 'letterboxed vertical axis stays centred without overflow');
+  assert.equal(zoomedRight.backgroundPositionX, '100%');
+  assert.equal(zoomedRight.backgroundPositionY, '50%', 'non-overflowing vertical axis stays centred after fit zoom');
 });
 
-test('preview and export share the same hero crop application path', () => {
+test('hero crop rendering uses background-image, background-size and background-position instead of object crop controls', () => {
+  const css = html.match(/\.cc \.hero\{[^}]+\}/)[0];
+  const renderCard = extractFunction('renderCardHTML');
+  const applyCrop = extractFunction('applyHeroCropPositions');
+
+  assert.match(renderCard, /<div class="hero"/);
+  assert.match(renderCard, /background-image:\$\{heroImageCss\}/);
+  assert.doesNotMatch(renderCard, /<img class="hero"|object-fit|object-position|transform:none/);
+  assert.match(css, /background-repeat:no-repeat/);
+  assert.match(css, /background-position:50% 50%/);
+  assert.match(css, /background-size:cover/);
+  assert.doesNotMatch(css, /object-fit|object-position|transform/);
+  assert.match(applyCrop, /hero\.style\.backgroundSize=layout\.backgroundSize/);
+  assert.match(applyCrop, /hero\.style\.backgroundPosition=layout\.backgroundPositionX\+' '\+layout\.backgroundPositionY/);
+  assert.doesNotMatch(applyCrop, /objectFit|objectPosition|style\.left|style\.top|style\.transform/);
+});
+
+test('preview and export share the same background crop application path', () => {
   assert.match(extractFunction('renderCardHTML'), /data-crop-x="\$\{cx\}"/);
   assert.match(extractFunction('renderCardHTML'), /data-fit-mode="\$\{heroFitMode\}"/);
-  assert.doesNotMatch(extractFunction('renderCardHTML'), /transform:scale|object-position:\$\{cx\}%/);
   assert.match(extractFunction('renderVisibleCard'), /scheduleHeroCropPositions\(out\)/);
   assert.match(extractFunction('renderCardToImageBlob'), /scheduleHeroCropPositions\(wrap\)/);
+  assert.match(extractFunction('renderCardToImageBlob'), /heroBackgrounds = Array\.from\(wrap\.querySelectorAll\('\.hero-wrap \.hero\[data-hero-src\]'\)\)/);
   assert.match(extractFunction('renderCardToImageBlob'), /applyHeroCropPositions\(wrap\)[\s\S]*requestAnimationFrame[\s\S]*applyHeroCropPositions\(wrap\)/);
 });
 
