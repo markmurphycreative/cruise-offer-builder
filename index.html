@@ -3722,8 +3722,16 @@ function getCampaignThumbnailOperatorColour(operator){
   return (skinFirst[key] && skinColour) || header.color || skinColour || "#a09267";
 }
 function getCampaignThumbnailPillStyle(operator){
+  const key=getCampaignThumbnailOperatorKey(operator);
   const colour=getCampaignThumbnailOperatorColour(operator);
-  return `background:${campaignThumbnailRgba(colour,.14)};border-color:${campaignThumbnailRgba(colour,.36)};`;
+  const lighterOperatorBalance={
+    po: {tint: .20, border: .52},
+    marella: {tint: .20, border: .52},
+    fred: {tint: .24, border: .58},
+    princess: {tint: .24, border: .58}
+  };
+  const balance=lighterOperatorBalance[key] || {tint: .14, border: .36};
+  return `background:${campaignThumbnailRgba(colour,balance.tint)};border-color:${campaignThumbnailRgba(colour,balance.border)};`;
 }
 function getCampaignThumbnailOfferCount(item){
   return getCampaignThumbnailOffers(item).filter(isCampaignThumbnailOfferPresent).length;
