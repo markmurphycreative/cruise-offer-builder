@@ -1828,6 +1828,66 @@ function syncHeroUi(){
   if(fillBtn) fillBtn.classList.toggle("navy",mode==="fill");
   if(fitBtn) fitBtn.classList.toggle("navy",mode==="fit");
 }
+function clampHeroCropValue(value, fallback){
+  const num=parseFloat(value);
+  if(!Number.isFinite(num)) return fallback;
+  return Math.max(0,Math.min(100,num));
+}
+function calculateHeroCropLayout(frameWidth, frameHeight, naturalWidth, naturalHeight, cropX, cropY, cropZoom, fitMode){
+  const fw=Math.max(0,Number(frameWidth)||0);
+  const fh=Math.max(0,Number(frameHeight)||0);
+  const nw=Math.max(0,Number(naturalWidth)||0);
+  const nh=Math.max(0,Number(naturalHeight)||0);
+  const zoom=Math.max(0.01,(Number(cropZoom)||100)/100);
+  const xPct=clampHeroCropValue(cropX,50)/100;
+  const yPct=clampHeroCropValue(cropY,50)/100;
+  if(!fw||!fh||!nw||!nh){
+    return {width:fw,height:fh,left:0,top:0,overflowX:0,overflowY:0};
+  }
+  const baseScale=(fitMode==="fit") ? Math.min(fw/nw,fh/nh) : Math.max(fw/nw,fh/nh);
+  const width=nw*baseScale*zoom;
+  const height=nh*baseScale*zoom;
+  const overflowX=Math.max(0,width-fw);
+  const overflowY=Math.max(0,height-fh);
+  const left=overflowX>0 ? -overflowX*xPct : (fw-width)/2;
+  const top=overflowY>0 ? -overflowY*yPct : (fh-height)/2;
+  return {width,height,left,top,overflowX,overflowY};
+}
+function applyHeroCropPositions(root){
+  const scope=root&&root.querySelectorAll?root:document;
+  scope.querySelectorAll('.hero-wrap img.hero').forEach(img=>{
+    const wrap=img.closest('.hero-wrap');
+    if(!wrap) return;
+    const frame=wrap.getBoundingClientRect ? wrap.getBoundingClientRect() : {width:0,height:0};
+    const frameWidth=wrap.offsetWidth||wrap.clientWidth||frame.width||1200;
+    const frameHeight=wrap.offsetHeight||wrap.clientHeight||frame.height||849;
+    const naturalWidth=img.naturalWidth||parseFloat(img.getAttribute('width'))||frameWidth;
+    const naturalHeight=img.naturalHeight||parseFloat(img.getAttribute('height'))||frameHeight;
+    if(!naturalWidth||!naturalHeight) return;
+    const layout=calculateHeroCropLayout(
+      frameWidth,
+      frameHeight,
+      naturalWidth,
+      naturalHeight,
+      img.dataset.cropX,
+      img.dataset.cropY,
+      img.dataset.cropZoom,
+      img.dataset.fitMode
+    );
+    img.style.objectFit='fill';
+    img.style.objectPosition='50% 50%';
+    img.style.transform='none';
+    img.style.transformOrigin='center center';
+    img.style.width=layout.width+'px';
+    img.style.height=layout.height+'px';
+    img.style.left=layout.left+'px';
+    img.style.top=layout.top+'px';
+  });
+}
+function scheduleHeroCropPositions(root){
+  applyHeroCropPositions(root);
+  if(typeof requestAnimationFrame==='function') requestAnimationFrame(()=>applyHeroCropPositions(root));
+}
 
 // ═══════════════════════════════════════════════════════
 // UTM
@@ -4262,7 +4322,7 @@ function renderCardHTML(d){
     ? `<div class="hph"><span>${heroPlaceholder[0]}</span><span>${heroPlaceholder[1]}</span></div>`
     : `<div class="hph"><span></span></div>`;
   const heroHTML=d._img
-    ? `<div class="hero-wrap" style="${heroBg}"><img class="hero" src="${d._img}" style="object-fit:${heroObjectFit};object-position:${cx}% ${cy}%;transform:scale(${cz/100});transform-origin:center center;" onerror="this.parentElement.innerHTML='<div class=hph><span>Image failed to load</span></div>'"></div>`
+    ? `<div class="hero-wrap" style="${heroBg}"><img class="hero" src="${d._img}" data-crop-x="${cx}" data-crop-y="${cy}" data-crop-zoom="${cz}" data-fit-mode="${heroFitMode}" style="object-fit:${heroObjectFit};object-position:${cx}% ${cy}%;transform:scale(${cz/100});transform-origin:center center;" onload="if(typeof applyHeroCropPositions==='function') applyHeroCropPositions(document)" onerror="this.parentElement.innerHTML='<div class=hph><span>Image failed to load</span></div>'"></div>`
     : emptyHeroHTML;
   const shipLine=ship?`Sailing on ${ship}`:"";
   const priceHTML=price?`<div class="pfrom">From</div><div class="pmain">£${price}<span class="ppp">pp</span></div>`:`<div class="pfrom"></div><div class="pmain"></div>`;
@@ -4295,6 +4355,7 @@ function renderSingleOffer(data){
   const scale=zoomPct/100;
   updatePreviewTitle();
   out.innerHTML=renderCardHTML(data||{});
+  scheduleHeroCropPositions(out);
   scaler.style.width="1200px";
   scaler.style.transform=`scale(${scale})`;
   scaler.style.transformOrigin="top center";
@@ -4515,6 +4576,7 @@ function renderOfferIndex(i){
   if(viewMode==='single'){
     updatePreviewTitle();
     out.innerHTML=renderCardHTML(d);
+    scheduleHeroCropPositions(out);
     scaler.style.width='1200px';
     scaler.style.transform='scale('+scale+')';
     scaler.style.transformOrigin='top center';
@@ -4620,6 +4682,7 @@ function renderVisibleCard(){
   const scale = (zoomPct / 100) * SINGLE_PREVIEW_SCALE;
   updatePreviewTitle();
   out.innerHTML = renderOfferWithOptionalCtaHTML(visibleFieldsToData(), getCtaSettingsFromUI());
+  scheduleHeroCropPositions(out);
   scaler.style.width = '1200px';
   scaler.style.transform = 'scale(' + scale + ')';
   scaler.style.transformOrigin = 'top center';
@@ -4962,6 +5025,7 @@ function renderPreviewMode(skipSave){
       cardWrap.style.cssText = 'width:1200px;background:#fff;overflow:hidden;';
       cardWrap.innerHTML = renderOfferWithOptionalCtaHTML(d, getCtaSettingsFromUI());
       stackWrap.appendChild(cardWrap);
+      scheduleHeroCropPositions(cardWrap);
     }
 
     out.innerHTML = '';
@@ -4993,6 +5057,7 @@ function renderPreviewMode(skipSave){
       c.innerHTML = bc(d || {});
       if(getCtaSettingsFromUI().enabled) c.innerHTML = renderOfferWithOptionalCtaHTML(d || {}, getCtaSettingsFromUI());
       grid.appendChild(c);
+      scheduleHeroCropPositions(c);
     });
 
     out.innerHTML = '';
@@ -5330,6 +5395,7 @@ async function renderCardToImageBlob(offerData, mimeType, quality){
     wrap.style.cssText = 'position:fixed;left:-99999px;top:0;width:1200px;min-width:1200px;max-width:1200px;background:#fff;z-index:-999;pointer-events:none;overflow:visible;transform:none;';
     wrap.innerHTML = renderCardHTML(offerData);
     document.body.appendChild(wrap);
+    scheduleHeroCropPositions(wrap);
 
     const target = wrap.querySelector('.cc') || wrap;
     const imgs = Array.from(wrap.querySelectorAll('img'));
@@ -5346,7 +5412,9 @@ async function renderCardToImageBlob(offerData, mimeType, quality){
       img.onerror = res;
     })));
 
+    applyHeroCropPositions(wrap);
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    applyHeroCropPositions(wrap);
 
     const exportWidth = 1200;
     const exportHeight = Math.max(1, Math.ceil(target.scrollHeight || target.getBoundingClientRect().height || wrap.scrollHeight || 1));
