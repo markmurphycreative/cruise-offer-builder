@@ -405,18 +405,22 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .tbtn.on{background:rgba(255,255,255,.15);color:#fff;}
 .shortcuts-trigger{padding:3px 7px;font-size:9px;font-weight:700;border:1px solid rgba(255,255,255,.2);border-radius:3px;background:transparent;color:rgba(255,255,255,.72);}
 .shortcuts-trigger:hover{color:#fff;border-color:rgba(255,255,255,.42);}
-.preview-wrap{flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:stretch;background:#dedad2;}
+.preview-wrap{flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:stretch;background:#dedad2;transition:background-color .18s ease,box-shadow .18s ease;}
+.preview-wrap.empty-upload-zone{cursor:pointer;}
+.preview-wrap.empty-upload-zone:hover,.preview-wrap.empty-upload-zone.drag-over{background:#d4d0c7;box-shadow:inset 0 0 0 2px rgba(160,146,103,.48),inset 0 0 0 5px rgba(255,255,255,.28);}
 .preview-scaler{margin-block:auto;transform-origin:top center;}
 .preview-scaler.empty-preview{display:flex;align-items:center;justify-content:center;}
 #card-output{opacity:1;}
 #card-output.empty-preview-output{display:flex;align-items:center;justify-content:center;width:100%;height:100%;}
 .all-preview-card{cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,outline-color .16s ease;outline:0 solid transparent;outline-offset:10px;}
 .all-preview-card:hover,.all-preview-card:focus-visible{transform:translateY(-10px);box-shadow:0 18px 42px rgba(0,0,0,.28);outline:3px solid rgba(160,146,103,.55);}
-.preview-empty-state{width:min(475px,calc(100% - 30px));text-align:center;background:none;border:none;border-radius:0;box-shadow:none;font-family:'Montserrat',sans-serif;color:var(--navy);cursor:pointer;transition:opacity .18s ease;}
-.preview-empty-state:hover{opacity:.86;}
+.preview-empty-state{width:min(475px,calc(100% - 30px));text-align:center;background:none;border:none;border-radius:0;box-shadow:none;font-family:'Montserrat',sans-serif;color:var(--navy);cursor:pointer;transition:opacity .18s ease,transform .18s ease;}
+.preview-empty-state::before{content:'⇧';display:block;width:34px;height:34px;margin:0 auto 15px;border:1px dashed rgba(21,39,63,.42);border-radius:999px;color:rgba(21,39,63,.62);font-size:17px;font-weight:300;line-height:32px;transition:transform .18s ease,border-color .18s ease,color .18s ease;}
+.preview-wrap.empty-upload-zone:hover .preview-empty-state,.preview-wrap.empty-upload-zone.drag-over .preview-empty-state{opacity:.9;transform:translateY(-2px);}
+.preview-wrap.empty-upload-zone:hover .preview-empty-state::before,.preview-wrap.empty-upload-zone.drag-over .preview-empty-state::before{transform:translateY(-3px);border-color:rgba(160,146,103,.72);color:var(--gold);}
 .preview-empty-state h2{margin:0;padding:0;background:none;color:var(--navy);font-family:'Montserrat',sans-serif;font-size:16.5px;font-weight:400;letter-spacing:.025em;line-height:1.2;}
 .preview-empty-state p{margin:14px 0 0;padding:0;background:none;color:var(--navy);font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;line-height:1.5;opacity:.72;}
-@media (prefers-reduced-motion:reduce){.offer-pill{transition:none;}}
+@media (prefers-reduced-motion:reduce){.offer-pill,.preview-wrap,.preview-empty-state,.preview-empty-state::before{transition:none;}}
 
 /* ── EMAIL PREVIEW ── */
 .email-preview-wrap{background:#2a2a2a;padding:20px;min-width:fit-content;}
@@ -2782,6 +2786,22 @@ function triggerCsvFilePicker(){
   if(input) input.click();
 }
 
+function isCsvUploadFile(file){
+  if(!file) return false;
+  const name = String(file.name || '').toLowerCase();
+  const type = String(file.type || '').toLowerCase();
+  return name.endsWith('.csv') || name.endsWith('.tsv') || type === 'text/csv' || type === 'text/tab-separated-values';
+}
+
+function loadDroppedCSVFile(file){
+  if(!isCsvUploadFile(file)){
+    setSheetsStatus('Drop a CSV file to load offers','csv-error');
+    return false;
+  }
+  loadFromCSVFile({target:{files:[file],value:''},_onSuccess:()=>dismissSplashAndShowBuilder('csv')});
+  return true;
+}
+
 function loadFromCSVFile(event){
   const file=event.target.files && event.target.files[0];
   const status=document.getElementById("sheets-status");
@@ -4920,6 +4940,45 @@ function refreshAfterOfferReorder(){
   queueAutosave();
 }
 
+
+function initEmptyWorkspaceUploadZone(){
+  const wrap = document.querySelector('.preview-wrap');
+  if(!wrap || wrap.dataset.emptyUploadBound === 'true') return;
+  wrap.dataset.emptyUploadBound = 'true';
+
+  function isEmptyWorkspaceActive(){
+    return wrap.classList.contains('empty-upload-zone') && !offers.some(isOfferLoaded);
+  }
+
+  wrap.addEventListener('click', function(e){
+    if(!isEmptyWorkspaceActive()) return;
+    e.preventDefault();
+    triggerCsvFilePicker();
+  });
+
+  wrap.addEventListener('dragover', function(e){
+    if(!isEmptyWorkspaceActive()) return;
+    e.preventDefault();
+    wrap.classList.add('drag-over');
+    if(e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+  });
+
+  wrap.addEventListener('dragleave', function(e){
+    if(!isEmptyWorkspaceActive()) return;
+    if(e.relatedTarget && wrap.contains(e.relatedTarget)) return;
+    wrap.classList.remove('drag-over');
+  });
+
+  wrap.addEventListener('drop', function(e){
+    if(!isEmptyWorkspaceActive()) return;
+    e.preventDefault();
+    wrap.classList.remove('drag-over');
+    const files = e.dataTransfer && e.dataTransfer.files ? Array.from(e.dataTransfer.files) : [];
+    const csvFile = files.find(isCsvUploadFile) || files[0];
+    if(csvFile) loadDroppedCSVFile(csvFile);
+  });
+}
+
 function initOfferTabDragDrop(){
   const tabs = Array.from(document.querySelectorAll('.otab'));
   if(!tabs.length) return;
@@ -5141,13 +5200,18 @@ function setScalerBox(width, renderedHeight, scale){
 function renderEmptyPreviewIfNeeded(){
   const scaler = document.getElementById('preview-scaler');
   const out = document.getElementById('card-output');
+  const wrap = document.querySelector('.preview-wrap');
   if(!scaler || !out) return false;
   const showEmptyState = !offers.some(isOfferLoaded);
   scaler.classList.toggle('empty-preview', showEmptyState);
   out.classList.toggle('empty-preview-output', showEmptyState);
+  if(wrap){
+    wrap.classList.toggle('empty-upload-zone', showEmptyState);
+    if(!showEmptyState) wrap.classList.remove('drag-over');
+  }
   if(!showEmptyState) return false;
   updatePreviewTitle();
-  out.innerHTML = '<div class="preview-empty-state" role="status" onclick="triggerCsvFilePicker()"><h2>Ready to Build</h2><p>Load a Google Sheet or CSV to generate your cruise cards instantly.</p></div>';
+  out.innerHTML = '<div class="preview-empty-state" role="status" aria-label="CSV upload zone"><h2>Ready To Build</h2><p>Load a Google Sheet or CSV to generate your cruise cards instantly.</p><p>Click anywhere or drag a CSV file into this workspace.</p></div>';
   scaler.style.width = '100%';
   scaler.style.height = '100%';
   scaler.style.transform = 'none';
@@ -5951,6 +6015,7 @@ function initBuilderApp(){
     rv();
     updateAllStatus();
     initOfferTabDragDrop();
+    initEmptyWorkspaceUploadZone();
     updateMoveOfferButtons();
     syncAutosaveStatus();
     if(restoredSession || !savedSessionAvailable) queueAutosave();

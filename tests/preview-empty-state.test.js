@@ -21,41 +21,61 @@ function extractFunction(name) {
 function createClassList() {
   const classes = new Set();
   return {
+    add(name) { classes.add(name); },
+    remove(name) { classes.delete(name); },
     toggle(name, enabled) { enabled ? classes.add(name) : classes.delete(name); },
     contains(name) { return classes.has(name); }
   };
 }
 
 function createHarness(offers) {
+  const listeners = {};
   const elements = {
     'preview-scaler': { classList: createClassList(), style: {} },
     'card-output': { classList: createClassList(), innerHTML: '' },
     'preview-title': { textContent: 'ALL 4 CARDS' },
-    'sheets-file': { clickCount: 0, click() { this.clickCount += 1; } }
+    'sheets-file': { clickCount: 0, click() { this.clickCount += 1; } },
+    'preview-wrap': {
+      classList: createClassList(),
+      dataset: {},
+      addEventListener(type, handler) { listeners[type] = handler; },
+      contains(node) { return node === this; }
+    }
   };
   const context = {
     offers,
     updatePreviewTitle: () => { elements['preview-title'].textContent = 'ALL 4 CARDS'; },
-    document: { getElementById: id => elements[id] || null }
+    setSheetsStatus: (message, className) => { elements.status = { message, className }; },
+    dismissSplashAndShowBuilder: () => { elements.dismissedSplash = true; },
+    loadFromCSVFile: event => { elements.loadedFile = event.target.files[0]; if (event._onSuccess) event._onSuccess(); },
+    document: {
+      getElementById: id => elements[id] || null,
+      querySelector: selector => selector === '.preview-wrap' ? elements['preview-wrap'] : null
+    }
   };
   vm.createContext(context);
   vm.runInContext([
     extractFunction('isOfferLoaded'),
     extractFunction('triggerCsvFilePicker'),
+    extractFunction('isCsvUploadFile'),
+    extractFunction('loadDroppedCSVFile'),
+    extractFunction('initEmptyWorkspaceUploadZone'),
     extractFunction('renderEmptyPreviewIfNeeded')
   ].join('\n'), context);
-  return { context, elements };
+  return { context, elements, listeners };
 }
 
-test('fresh previews use centred, subtle helper text in every view before rendering cards', () => {
+test('fresh previews use the whole blank workspace as a subtle upload zone before rendering cards', () => {
   assert.match(html, /\.preview-scaler\.empty-preview\{[^}]*display:flex;[^}]*align-items:center;[^}]*justify-content:center;/);
-  assert.match(html, /\.preview-empty-state\{[^}]*width:min\(475px,calc\(100% - 30px\)\);[^}]*text-align:center;[^}]*background:none;[^}]*border:none;[^}]*border-radius:0;[^}]*box-shadow:none;[^}]*font-family:'Montserrat',sans-serif;[^}]*color:var\(--navy\);[^}]*cursor:pointer;[^}]*transition:opacity \.18s ease;/);
-  assert.match(html, /\.preview-empty-state:hover\{opacity:\.86;\}/);
+  assert.match(html, /\.preview-wrap\.empty-upload-zone\{cursor:pointer;\}/);
+  assert.match(html, /\.preview-wrap\.empty-upload-zone:hover,\.preview-wrap\.empty-upload-zone\.drag-over\{[^}]*background:#d4d0c7;[^}]*box-shadow:inset 0 0 0 2px rgba\(160,146,103,\.48\)/);
+  assert.match(html, /\.preview-empty-state\{[^}]*width:min\(475px,calc\(100% - 30px\)\);[^}]*text-align:center;[^}]*background:none;[^}]*border:none;[^}]*border-radius:0;[^}]*box-shadow:none;[^}]*font-family:'Montserrat',sans-serif;[^}]*color:var\(--navy\);[^}]*cursor:pointer;[^}]*transition:opacity \.18s ease,transform \.18s ease;/);
+  assert.match(html, /\.preview-empty-state::before\{[^}]*content:'⇧';[^}]*border:1px dashed rgba\(21,39,63,\.42\);/);
   assert.match(html, /\.preview-empty-state h2\{[^}]*padding:0;[^}]*background:none;[^}]*color:var\(--navy\);[^}]*font-family:'Montserrat',sans-serif;[^}]*font-size:16\.5px;[^}]*font-weight:400;/);
   assert.match(html, /\.preview-empty-state p\{[^}]*margin:14px 0 0;[^}]*padding:0;[^}]*background:none;[^}]*color:var\(--navy\);[^}]*font-family:'Montserrat',sans-serif;[^}]*font-size:9px;[^}]*font-weight:300;[^}]*line-height:1\.5;[^}]*opacity:\.72;/);
   assert.doesNotMatch(html, /\.preview-empty-state(?: h2| p)?\{[^}]*background:var\(--(?:navy|gold)\)/);
   assert.doesNotMatch(html, /preview-empty-rule/);
-  assert.match(html, /<h2>Ready to Build<\/h2><p>Load a Google Sheet or CSV to generate your cruise cards instantly\.<\/p>/);
+  assert.match(html, /<h2>Ready To Build<\/h2><p>Load a Google Sheet or CSV to generate your cruise cards instantly\.<\/p><p>Click anywhere or drag a CSV file into this workspace\.<\/p>/);
 
   const renderPreviewMode = extractFunction('renderPreviewMode');
   assert.ok(renderPreviewMode.indexOf('if(renderEmptyPreviewIfNeeded()) return;') < renderPreviewMode.indexOf("if(viewMode === 'email')"));
@@ -67,20 +87,24 @@ test('fresh previews use centred, subtle helper text in every view before render
   assert.equal(elements['preview-title'].textContent, 'ALL 4 CARDS');
   assert.equal(elements['preview-scaler'].classList.contains('empty-preview'), true);
   assert.equal(elements['card-output'].classList.contains('empty-preview-output'), true);
-  assert.match(elements['card-output'].innerHTML, /Ready to Build/);
-  assert.match(elements['card-output'].innerHTML, /onclick=\"triggerCsvFilePicker\(\)\"/);
+  assert.equal(elements['preview-wrap'].classList.contains('empty-upload-zone'), true);
+  assert.match(elements['card-output'].innerHTML, /Ready To Build/);
+  assert.match(elements['card-output'].innerHTML, /Click anywhere or drag a CSV file into this workspace\./);
   context.triggerCsvFilePicker();
   assert.equal(elements['sheets-file'].clickCount, 1);
 });
 
-test('loaded and session-restored offers bypass the empty state and keep normal preview rendering available', () => {
+test('loaded and session-restored offers bypass the empty upload zone and keep normal preview rendering available', () => {
   const { context, elements } = createHarness([{ name: 'Caribbean Escape' }, {}, {}, {}]);
   elements['card-output'].innerHTML = '<div class="existing-card">Previously rendered card</div>';
+  elements['preview-wrap'].classList.add('drag-over');
 
   assert.equal(context.renderEmptyPreviewIfNeeded(), false);
   assert.equal(elements['preview-title'].textContent, 'ALL 4 CARDS');
   assert.equal(elements['preview-scaler'].classList.contains('empty-preview'), false);
   assert.equal(elements['card-output'].classList.contains('empty-preview-output'), false);
+  assert.equal(elements['preview-wrap'].classList.contains('empty-upload-zone'), false);
+  assert.equal(elements['preview-wrap'].classList.contains('drag-over'), false);
   assert.equal(elements['card-output'].innerHTML, '<div class="existing-card">Previously rendered card</div>');
 
   assert.match(extractFunction('renderEmptyPreviewIfNeeded'), /const showEmptyState = !offers\.some\(isOfferLoaded\);/);
@@ -90,9 +114,42 @@ test('loaded and session-restored offers bypass the empty state and keep normal 
 });
 
 
-test('CSV import button and zero-offer empty state share the existing hidden file input click path', () => {
+test('CSV import button and zero-offer workspace share the existing hidden file input click path', () => {
   assert.equal((html.match(/id="sheets-file"/g) || []).length, 1);
   assert.match(html, /<button class="abtn" onclick="triggerCsvFilePicker\(\)"[^>]*>Load Downloaded CSV File<\/button>/);
   assert.match(extractFunction('triggerCsvFilePicker'), /const input=document\.getElementById\("sheets-file"\);[\s\S]*if\(input\) input\.click\(\);/);
-  assert.match(extractFunction('renderEmptyPreviewIfNeeded'), /const showEmptyState = !offers\.some\(isOfferLoaded\);[\s\S]*onclick="triggerCsvFilePicker\(\)"/);
+  assert.match(extractFunction('renderEmptyPreviewIfNeeded'), /const showEmptyState = !offers\.some\(isOfferLoaded\);[\s\S]*wrap\.classList\.toggle\('empty-upload-zone', showEmptyState\);/);
+  assert.match(extractFunction('initEmptyWorkspaceUploadZone'), /wrap\.addEventListener\('click',[\s\S]*triggerCsvFilePicker\(\);/);
+});
+
+test('empty workspace click and CSV drag/drop are active only while no offers are loaded', () => {
+  const csvFile = { name: 'offers.csv', type: 'text/csv' };
+  const blank = createHarness([{}, {}, {}, {}]);
+
+  blank.context.renderEmptyPreviewIfNeeded();
+  blank.context.initEmptyWorkspaceUploadZone();
+  blank.listeners.click({ preventDefault() { blank.elements.clickPrevented = true; } });
+  assert.equal(blank.elements.clickPrevented, true);
+  assert.equal(blank.elements['sheets-file'].clickCount, 1);
+
+  blank.listeners.dragover({ preventDefault() { blank.elements.dragPrevented = true; }, dataTransfer: {} });
+  assert.equal(blank.elements.dragPrevented, true);
+  assert.equal(blank.elements['preview-wrap'].classList.contains('drag-over'), true);
+
+  blank.listeners.drop({
+    preventDefault() { blank.elements.dropPrevented = true; },
+    dataTransfer: { files: [csvFile] }
+  });
+  assert.equal(blank.elements.dropPrevented, true);
+  assert.equal(blank.elements.loadedFile, csvFile);
+  assert.equal(blank.elements.dismissedSplash, true);
+
+  const loaded = createHarness([{ name: 'Loaded offer' }, {}, {}, {}]);
+  loaded.context.renderEmptyPreviewIfNeeded();
+  loaded.context.initEmptyWorkspaceUploadZone();
+  loaded.listeners.click({ preventDefault() { loaded.elements.clickPrevented = true; } });
+  loaded.listeners.drop({ preventDefault() { loaded.elements.dropPrevented = true; }, dataTransfer: { files: [csvFile] } });
+  assert.equal(loaded.elements.clickPrevented, undefined);
+  assert.equal(loaded.elements.dropPrevented, undefined);
+  assert.equal(loaded.elements.loadedFile, undefined);
 });
