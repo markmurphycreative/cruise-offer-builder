@@ -1862,6 +1862,24 @@ function calculateHeroCropLayout(frameWidth, frameHeight, naturalWidth, naturalH
 function cssUrl(value){
   return 'url(\"'+String(value||'').split('\\').join('\\\\').split('\"').join('\\\"').split('\n').join('')+'\")';
 }
+function escapeAttr(value){
+  return String(value||'').replace(/&/g,'&amp;').replace(/\"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'');
+}
+function getHeroImageSource(offer){
+  return String((offer && offer._img) || '').trim();
+}
+function renderHeroHTML(d, heroPlaceholder){
+  const heroSrc=getHeroImageSource(d);
+  const cz=d._cropZoom||100; const cx=d._cropX??50; const cy=d._cropY??50;
+  const heroFitMode=d._heroFitMode==="fit"?"fit":"fill";
+  if(heroSrc){
+    const heroBg=heroFitMode==="fit"?"background:#0e1b2a;":"";
+    return `<div class="hero-wrap" style="${heroBg}"><div class="hero" role="img" aria-label="Hero image" data-hero-src="${escapeAttr(heroSrc)}" data-crop-x="${cx}" data-crop-y="${cy}" data-crop-zoom="${cz}" data-fit-mode="${heroFitMode}" style="background-image:${cssUrl(heroSrc)};"></div></div>`;
+  }
+  return heroPlaceholder
+    ? `<div class="hph"><span>${heroPlaceholder[0]}</span><span>${heroPlaceholder[1]}</span></div>`
+    : `<div class="hph"><span></span></div>`;
+}
 function setHeroImageFailedFallback(hero){
   const wrap=hero&&hero.closest?hero.closest('.hero-wrap'):null;
   if(wrap) wrap.innerHTML='<div class=hph><span>Image failed to load</span></div>';
@@ -4336,17 +4354,8 @@ function renderCardHTML(d){
   const ports=(d.ports||"").trim();
   const portsHTML=ports?chunkBullets(ports,3):"";
   const terms=document.getElementById("g-terms").value||"T&Cs Apply";
-  const cz=d._cropZoom||100; const cx=d._cropX??50; const cy=d._cropY??50;
-  const heroFitMode=d._heroFitMode==="fit"?"fit":"fill";
-  const heroBg=heroFitMode==="fit"?"background:#0e1b2a;":"";
-  const heroImageCss='url(\"'+String(d._img||'').split('\\').join('\\\\').split('\"').join('\\\"').split('\n').join('')+'\")';
   const heroPlaceholder=OPERATOR_HERO_PLACEHOLDERS[d.operator];
-  const emptyHeroHTML=heroPlaceholder
-    ? `<div class="hph"><span>${heroPlaceholder[0]}</span><span>${heroPlaceholder[1]}</span></div>`
-    : `<div class="hph"><span></span></div>`;
-  const heroHTML=d._img
-    ? `<div class="hero-wrap" style="${heroBg}"><div class="hero" role="img" aria-label="Hero image" data-hero-src="${d._img}" data-crop-x="${cx}" data-crop-y="${cy}" data-crop-zoom="${cz}" data-fit-mode="${heroFitMode}" style="background-image:${heroImageCss};"></div></div>`
-    : emptyHeroHTML;
+  const heroHTML=renderHeroHTML(d, heroPlaceholder);
   const shipLine=ship?`Sailing on ${ship}`:"";
   const priceHTML=price?`<div class="pfrom">From</div><div class="pmain">£${price}<span class="ppp">pp</span></div>`:`<div class="pfrom"></div><div class="pmain"></div>`;
   const dateHTML=(day||month)?`${day}`:"";

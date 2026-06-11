@@ -103,11 +103,13 @@ test('fit image behaves like contain while non-overflowing axes stay centred', (
 test('hero crop rendering uses background-image, background-size and background-position instead of object crop controls', () => {
   const css = html.match(/\.cc \.hero\{[^}]+\}/)[0];
   const renderCard = extractFunction('renderCardHTML');
+  const renderHero = extractFunction('renderHeroHTML');
   const applyCrop = extractFunction('applyHeroCropPositions');
 
-  assert.match(renderCard, /<div class="hero"/);
-  assert.match(renderCard, /background-image:\$\{heroImageCss\}/);
-  assert.doesNotMatch(renderCard, /<img class="hero"|object-fit|object-position|transform:none/);
+  assert.match(renderCard, /renderHeroHTML\(d, heroPlaceholder\)/);
+  assert.match(renderHero, /<div class="hero"/);
+  assert.match(renderHero, /background-image:\$\{cssUrl\(heroSrc\)\}/);
+  assert.doesNotMatch(renderCard + renderHero, /<img class="hero"|object-fit|object-position|transform:none/);
   assert.match(css, /background-repeat:no-repeat/);
   assert.match(css, /background-position:50% 50%/);
   assert.match(css, /background-size:cover/);
@@ -118,8 +120,9 @@ test('hero crop rendering uses background-image, background-size and background-
 });
 
 test('preview and export share the same background crop application path', () => {
-  assert.match(extractFunction('renderCardHTML'), /data-crop-x="\$\{cx\}"/);
-  assert.match(extractFunction('renderCardHTML'), /data-fit-mode="\$\{heroFitMode\}"/);
+  assert.match(extractFunction('renderCardHTML'), /renderHeroHTML\(d, heroPlaceholder\)/);
+  assert.match(extractFunction('renderHeroHTML'), /data-crop-x="\$\{cx\}"/);
+  assert.match(extractFunction('renderHeroHTML'), /data-fit-mode="\$\{heroFitMode\}"/);
   assert.match(extractFunction('renderVisibleCard'), /scheduleHeroCropPositions\(out\)/);
   assert.match(extractFunction('renderCardToImageBlob'), /scheduleHeroCropPositions\(wrap\)/);
   assert.match(extractFunction('renderCardToImageBlob'), /heroBackgrounds = Array\.from\(wrap\.querySelectorAll\('\.hero-wrap \.hero\[data-hero-src\]'\)\)/);
