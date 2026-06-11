@@ -122,15 +122,15 @@ test('restoring persisted sidebar state keeps its recorded last-open section onl
 });
 
 
-test('campaign library is collapsed in the shipped builder markup so nested campaign lists stay hidden on first paint', () => {
-  assert.match(html, /<div class="section campaign-library-section" id="campaign-library-panel">\s*<div class="section-hdr collapsed" onclick="toggleCampaignLibraryMain\(this\)">[\s\S]*?<\/div>\s*<div class="section-body hidden">[\s\S]*?<h4>Pinned Campaigns<\/h4>[\s\S]*?<h4>SAVED CAMPAIGNS<\/h4>/);
+test('campaign library is collapsed in the shipped builder markup while saved campaigns are the default open nested list', () => {
+  assert.match(html, /<div class="section campaign-library-section" id="campaign-library-panel">\s*<div class="section-hdr collapsed" onclick="toggleCampaignLibraryMain\(this\)">[\s\S]*?<\/div>\s*<div class="section-body hidden">[\s\S]*?data-campaign-category="pinned">\s*<div class="section-hdr collapsed"[\s\S]*?<h4>Pinned Campaigns<\/h4>[\s\S]*?<div class="section-body hidden">[\s\S]*?data-campaign-category="recent">\s*<div class="section-hdr"[\s\S]*?<h4>SAVED CAMPAIGNS <span class="count-badge count-badge--saved" id="saved-campaign-count">0<\/span><\/h4>[\s\S]*?<div class="section-body">/);
 });
 
 test('campaign library startup reset forces the parent closed without changing nested category state', () => {
   const parentBody = { classList: createClassList(['section-body']) };
   const parentHdr = { classList: createClassList([]), nextElementSibling: parentBody };
-  const pinnedBody = { classList: createClassList(['section-body']) };
-  const pinnedHdr = { classList: createClassList([]), nextElementSibling: pinnedBody };
+  const pinnedBody = { classList: createClassList(['section-body', 'hidden']) };
+  const pinnedHdr = { classList: createClassList(['collapsed']), nextElementSibling: pinnedBody };
   const panel = { firstElementChild: parentHdr };
   const context = {
     document: { getElementById: id => (id === 'campaign-library-panel' ? panel : null) }
@@ -149,16 +149,16 @@ test('campaign library startup reset forces the parent closed without changing n
   context.resetCampaignLibraryStartupState();
   assert.equal(parentHdr.classList.contains('collapsed'), true);
   assert.equal(parentBody.classList.contains('hidden'), true);
-  assert.equal(pinnedHdr.classList.contains('collapsed'), false);
-  assert.equal(pinnedBody.classList.contains('hidden'), false);
+  assert.equal(pinnedHdr.classList.contains('collapsed'), true);
+  assert.equal(pinnedBody.classList.contains('hidden'), true);
 
   context.toggleCampaignLibraryMain(parentHdr);
   assert.equal(parentHdr.classList.contains('collapsed'), false);
   assert.equal(parentBody.classList.contains('hidden'), false);
 
   context.toggleCampaignLibraryCategory(pinnedHdr);
-  assert.equal(pinnedHdr.classList.contains('collapsed'), true);
-  assert.equal(pinnedBody.classList.contains('hidden'), true);
+  assert.equal(pinnedHdr.classList.contains('collapsed'), false);
+  assert.equal(pinnedBody.classList.contains('hidden'), false);
 });
 
 test('builder startup, splash dismissal, session restore, and campaign file restore all force campaign library collapsed', () => {
@@ -210,6 +210,7 @@ test('saved campaign count badge and dashboard are refreshed from existing campa
   ];
   const elements = {
     'campaign-library-count': { textContent: '' },
+    'saved-campaign-count': { textContent: '' },
     'campaign-library-dashboard': { innerHTML: '' }
   };
   const context = {
@@ -227,8 +228,18 @@ test('saved campaign count badge and dashboard are refreshed from existing campa
 
   context.renderCampaignLibraryDashboard({ pinned: [history[0]], recent: history });
   assert.equal(elements['campaign-library-count'].textContent, '3');
+  assert.equal(elements['saved-campaign-count'].textContent, '3');
   assert.match(elements['campaign-library-dashboard'].innerHTML, /<strong class="campaign-library-stat-value--saved">3<\/strong>Saved/);
   assert.match(elements['campaign-library-dashboard'].innerHTML, /<strong class="campaign-library-stat-value--pinned">1<\/strong>Pinned/);
   assert.match(elements['campaign-library-dashboard'].innerHTML, /<strong class="campaign-library-stat-value--last-saved">[^<]+<\/strong>Last saved/);
   assert.doesNotMatch(elements['campaign-library-dashboard'].innerHTML, /Recent/);
+});
+
+
+test('campaign library saved and pinned categories use distinct understated visual identities', () => {
+  assert.match(html, /\.campaign-library-category\[data-campaign-category="recent"\]\{border-left:2px solid rgba\(42,122,74,\.46\);\}/);
+  assert.match(html, /\.campaign-library-category\[data-campaign-category="recent"\] \.section-hdr\{background:rgba\(42,122,74,\.07\);\}/);
+  assert.match(html, /\.campaign-library-category\[data-campaign-category="recent"\] \.section-hdr:not\(\.collapsed\)\{background:rgba\(42,122,74,\.10\);box-shadow:inset 2px 0 0 var\(--green\);\}/);
+  assert.match(html, /\.campaign-library-category\[data-campaign-category="pinned"\] \.section-hdr:not\(\.collapsed\)\{background:rgba\(160,146,103,\.12\);box-shadow:inset 2px 0 0 var\(--gold\);\}/);
+  assert.match(html, /\.count-badge--saved\{background:rgba\(42,122,74,\.12\);border-color:rgba\(42,122,74,\.34\);color:var\(--green\);\}/);
 });
