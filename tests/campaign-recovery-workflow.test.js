@@ -225,7 +225,7 @@ test('campaign thumbnails render synthetic identity cards from saved campaign da
   assert.match(markup, /style="background:rgba\(198,104,40,0\.14\);border-color:rgba\(198,104,40,0\.36\);"/);
   assert.match(markup, /style="background:rgba\(139,0,0,0\.14\);border-color:rgba\(139,0,0,0\.36\);"/);
   assert.match(markup, /style="background:rgba\(0,51,153,0\.14\);border-color:rgba\(0,51,153,0\.36\);"/);
-  assert.match(markup, /style="background:rgba\(167,194,198,0\.14\);border-color:rgba\(167,194,198,0\.36\);"/);
+  assert.match(markup, /style="background:rgba\(167,194,198,0\.24\);border-color:rgba\(167,194,198,0\.58\);"/);
   assert.match(markup, /June Cruise Mixed/);
   assert.match(markup, /4 Offers · Saved/);
   assert.doesNotMatch(markup, /<img\b|canvas|data:image|base64|html2canvas/i);
@@ -257,6 +257,22 @@ test('campaign thumbnail operator abbreviations and missing data fall back safel
   assert.equal(context.getCampaignOperatorShortLabel('Some Unknown Operator'), 'SOM');
   assert.equal(context.getCampaignOperatorShortLabel(''), '—');
 
+  assert.equal(
+    context.getCampaignThumbnailPillStyle('P&O Cruises'),
+    'background:rgba(160,146,103,0.2);border-color:rgba(160,146,103,0.52);'
+  );
+  assert.equal(
+    context.getCampaignThumbnailPillStyle('Marella Cruises'),
+    'background:rgba(160,146,103,0.2);border-color:rgba(160,146,103,0.52);'
+  );
+  assert.equal(
+    context.getCampaignThumbnailPillStyle('Fred. Olsen Cruise Lines'),
+    'background:rgba(160,146,103,0.24);border-color:rgba(160,146,103,0.58);'
+  );
+  assert.equal(
+    context.getCampaignThumbnailPillStyle('Cunard'),
+    'background:rgba(160,146,103,0.14);border-color:rgba(160,146,103,0.36);'
+  );
   const missing = { payload: { state: { campaign: {}, offers: [{ operator: '', heroLocked: true }] } } };
   assert.equal(context.getCampaignThumbnailName(missing), 'Untitled Campaign');
   assert.deepEqual(context.getCampaignThumbnailOperatorLabels(missing), ['—']);
