@@ -338,11 +338,16 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .campaign-library-categories{display:grid;gap:5px;}
 .campaign-library-category{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:#fff;}
 .campaign-library-category .section-hdr{padding:5px 7px;}
-.campaign-library-category .section-hdr h4{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);}
+.campaign-library-category .section-hdr h4{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);display:flex;align-items:center;gap:4px;}
 .campaign-library-category .section-body{padding:5px;background:#fafaf8;}
+.campaign-library-category[data-campaign-category="recent"]{border-left:2px solid rgba(42,122,74,.46);}
+.campaign-library-category[data-campaign-category="recent"] .section-hdr{background:rgba(42,122,74,.07);}
+.campaign-library-category[data-campaign-category="recent"] .section-hdr:not(.collapsed){background:rgba(42,122,74,.10);box-shadow:inset 2px 0 0 var(--green);}
+.campaign-library-category[data-campaign-category="pinned"] .section-hdr:not(.collapsed){background:rgba(160,146,103,.12);box-shadow:inset 2px 0 0 var(--gold);}
 .campaign-history-list{display:grid;gap:4px;}
 .offer-context-label{margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);line-height:1.2;}
 .count-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:16px;padding:0 5px;border-radius:999px;background:rgba(160,146,103,.16);border:1px solid rgba(160,146,103,.34);color:var(--navy);font-size:9px;font-weight:700;line-height:1;margin-left:2px;font-variant-numeric:tabular-nums;}
+.count-badge--saved{background:rgba(42,122,74,.12);border-color:rgba(42,122,74,.34);color:var(--green);}
 .campaign-library-dashboard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin-bottom:5px;}
 .campaign-library-stat{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:4px 5px;font-size:9px;color:var(--muted);line-height:1.25;}
 .campaign-library-stat strong{display:block;font-size:10px;color:var(--navy);font-weight:700;font-variant-numeric:tabular-nums;}
@@ -868,18 +873,18 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         <div class="campaign-library-dashboard" id="campaign-library-dashboard" aria-live="polite"></div>
         <div class="campaign-library-categories">
           <div class="campaign-library-category" data-campaign-category="pinned">
-            <div class="section-hdr" onclick="toggleCampaignLibraryCategory(this)">
+            <div class="section-hdr collapsed" onclick="toggleCampaignLibraryCategory(this)">
               <h4>Pinned Campaigns</h4><span class="section-toggle">▾</span>
             </div>
-            <div class="section-body">
+            <div class="section-body hidden">
               <div id="pinned-campaign-list" class="campaign-history-list"></div>
             </div>
           </div>
           <div class="campaign-library-category" data-campaign-category="recent">
-            <div class="section-hdr collapsed" onclick="toggleCampaignLibraryCategory(this)">
-              <h4>SAVED CAMPAIGNS</h4><span class="section-toggle">▾</span>
+            <div class="section-hdr" onclick="toggleCampaignLibraryCategory(this)">
+              <h4>SAVED CAMPAIGNS <span class="count-badge count-badge--saved" id="saved-campaign-count">0</span></h4><span class="section-toggle">▾</span>
             </div>
-            <div class="section-body hidden">
+            <div class="section-body">
               <div id="recent-campaign-list" class="campaign-history-list"></div>
             </div>
           </div>
@@ -3731,7 +3736,7 @@ function getCampaignThumbnailPillStyle(operator){
     princess: {tint: .24, border: .58}
   };
   const balance=lighterOperatorBalance[key] || {tint: .14, border: .36};
-  return `background:${campaignThumbnailRgba(colour,balance.tint)};border-color:${campaignThumbnailRgba(colour,balance.border)};`;
+  return `background:${campaignThumbnailRgba(colour,balance.tint)};border-color:${campaignThumbnailRgba(colour,balance.border)};color:${campaignThumbnailRgba(colour,.68)};`;
 }
 function getCampaignThumbnailOfferCount(item){
   return getCampaignThumbnailOffers(item).filter(isCampaignThumbnailOfferPresent).length;
@@ -3781,6 +3786,8 @@ function renderCampaignLibraryDashboard(buckets){
   const list=readCampaignHistory();
   const count=document.getElementById("campaign-library-count");
   if(count) count.textContent=String(list.length);
+  const savedCount=document.getElementById("saved-campaign-count");
+  if(savedCount) savedCount.textContent=String(list.length);
   const dashboard=document.getElementById("campaign-library-dashboard");
   if(!dashboard) return;
   const stats=[

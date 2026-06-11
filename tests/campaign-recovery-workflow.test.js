@@ -150,7 +150,7 @@ test('campaign history renders the live campaign library sidebar with required l
   assert.match(html, /<h3 class="campaign-library-title"><span class="campaign-library-title-main">CAMPAIGN LIBRARY <span class="count-badge" id="campaign-library-count">0<\/span><\/span><span class="campaign-library-subtitle">Saved campaigns and backups<\/span><\/h3><span class="section-toggle">▾<\/span>/);
   assert.doesNotMatch(html, /<h3>SAVED CAMPAIGNS <span class="count-badge" id="campaign-library-count">0<\/span><\/h3>/);
   assert.match(html, /<h4>Pinned Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
-  assert.match(html, /<h4>SAVED CAMPAIGNS<\/h4><span class="section-toggle">▾<\/span>/);
+  assert.match(html, /<h4>SAVED CAMPAIGNS <span class="count-badge count-badge--saved" id="saved-campaign-count">0<\/span><\/h4><span class="section-toggle">▾<\/span>/);
   assert.doesNotMatch(html, /<h4>Recent Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
   assert.match(html, /id="campaign-library-dashboard" aria-live="polite"/);
   assert.doesNotMatch(html, /\["Recent",/);
@@ -222,10 +222,10 @@ test('campaign thumbnails render synthetic identity cards from saved campaign da
   assert.match(markup, />CUN<\/span>/);
   assert.match(markup, />MSC<\/span>/);
   assert.match(markup, />PRN<\/span>/);
-  assert.match(markup, /style="background:rgba\(198,104,40,0\.14\);border-color:rgba\(198,104,40,0\.36\);"/);
-  assert.match(markup, /style="background:rgba\(139,0,0,0\.14\);border-color:rgba\(139,0,0,0\.36\);"/);
-  assert.match(markup, /style="background:rgba\(0,51,153,0\.14\);border-color:rgba\(0,51,153,0\.36\);"/);
-  assert.match(markup, /style="background:rgba\(167,194,198,0\.24\);border-color:rgba\(167,194,198,0\.58\);"/);
+  assert.match(markup, /style="background:rgba\(198,104,40,0\.14\);border-color:rgba\(198,104,40,0\.36\);color:rgba\(198,104,40,0\.68\);"/);
+  assert.match(markup, /style="background:rgba\(139,0,0,0\.14\);border-color:rgba\(139,0,0,0\.36\);color:rgba\(139,0,0,0\.68\);"/);
+  assert.match(markup, /style="background:rgba\(0,51,153,0\.14\);border-color:rgba\(0,51,153,0\.36\);color:rgba\(0,51,153,0\.68\);"/);
+  assert.match(markup, /style="background:rgba\(167,194,198,0\.24\);border-color:rgba\(167,194,198,0\.58\);color:rgba\(167,194,198,0\.68\);"/);
   assert.match(markup, /June Cruise Mixed/);
   assert.match(markup, /4 Offers · Saved/);
   assert.doesNotMatch(markup, /<img\b|canvas|data:image|base64|html2canvas/i);
@@ -259,19 +259,19 @@ test('campaign thumbnail operator abbreviations and missing data fall back safel
 
   assert.equal(
     context.getCampaignThumbnailPillStyle('P&O Cruises'),
-    'background:rgba(160,146,103,0.2);border-color:rgba(160,146,103,0.52);'
+    'background:rgba(160,146,103,0.2);border-color:rgba(160,146,103,0.52);color:rgba(160,146,103,0.68);'
   );
   assert.equal(
     context.getCampaignThumbnailPillStyle('Marella Cruises'),
-    'background:rgba(160,146,103,0.2);border-color:rgba(160,146,103,0.52);'
+    'background:rgba(160,146,103,0.2);border-color:rgba(160,146,103,0.52);color:rgba(160,146,103,0.68);'
   );
   assert.equal(
     context.getCampaignThumbnailPillStyle('Fred. Olsen Cruise Lines'),
-    'background:rgba(160,146,103,0.24);border-color:rgba(160,146,103,0.58);'
+    'background:rgba(160,146,103,0.24);border-color:rgba(160,146,103,0.58);color:rgba(160,146,103,0.68);'
   );
   assert.equal(
     context.getCampaignThumbnailPillStyle('Cunard'),
-    'background:rgba(160,146,103,0.14);border-color:rgba(160,146,103,0.36);'
+    'background:rgba(160,146,103,0.14);border-color:rgba(160,146,103,0.36);color:rgba(160,146,103,0.68);'
   );
   const missing = { payload: { state: { campaign: {}, offers: [{ operator: '', heroLocked: true }] } } };
   assert.equal(context.getCampaignThumbnailName(missing), 'Untitled Campaign');
@@ -280,7 +280,7 @@ test('campaign thumbnail operator abbreviations and missing data fall back safel
   const markup = context.renderCampaignThumbnail(missing);
   assert.match(markup, /Untitled Campaign/);
   assert.match(markup, />—<\/span>/);
-  assert.match(markup, /style="background:rgba\(160,146,103,0\.14\);border-color:rgba\(160,146,103,0\.36\);"/);
+  assert.match(markup, /style="background:rgba\(160,146,103,0\.14\);border-color:rgba\(160,146,103,0\.36\);color:rgba\(160,146,103,0\.68\);"/);
   assert.match(markup, /0 Offers/);
   assert.doesNotMatch(markup, /Saved \d/);
 });
