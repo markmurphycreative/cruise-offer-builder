@@ -179,10 +179,26 @@ test('campaign thumbnails render synthetic identity cards from saved campaign da
     'isCampaignThumbnailOfferPresent',
     'getCampaignOperatorShortLabel',
     'getCampaignThumbnailOperatorLabels',
+    'getCampaignThumbnailOperatorEntries',
+    'getCampaignThumbnailOperatorKey',
+    'campaignThumbnailRgba',
+    'getCampaignThumbnailOperatorColour',
+    'getCampaignThumbnailPillStyle',
     'getCampaignThumbnailOfferCount',
     'getCampaignThumbnailSavedTime',
     'renderCampaignThumbnail'
-  ]);
+  ], {
+    OPERATOR_HEADERS: {
+      celebrity: { color: '#1a1a1a' },
+      cunard: { color: '#8b0000' },
+      msc: { color: '#003399' },
+      princess: { color: '#1a3a5c' }
+    },
+    OPERATOR_SKINS: {
+      celebrity: { infoBar: '#c66828' },
+      princess: { infoBar: '#a7c2c6' }
+    }
+  });
   const item = {
     title: 'June Cruise Mixed',
     savedAt: '2026-06-09T19:21:00.000Z',
@@ -206,6 +222,10 @@ test('campaign thumbnails render synthetic identity cards from saved campaign da
   assert.match(markup, />CUN<\/span>/);
   assert.match(markup, />MSC<\/span>/);
   assert.match(markup, />PRN<\/span>/);
+  assert.match(markup, /style="background:rgba\(198,104,40,0\.14\);border-color:rgba\(198,104,40,0\.36\);"/);
+  assert.match(markup, /style="background:rgba\(139,0,0,0\.14\);border-color:rgba\(139,0,0,0\.36\);"/);
+  assert.match(markup, /style="background:rgba\(0,51,153,0\.14\);border-color:rgba\(0,51,153,0\.36\);"/);
+  assert.match(markup, /style="background:rgba\(167,194,198,0\.14\);border-color:rgba\(167,194,198,0\.36\);"/);
   assert.match(markup, /June Cruise Mixed/);
   assert.match(markup, /4 Offers · Saved/);
   assert.doesNotMatch(markup, /<img\b|canvas|data:image|base64|html2canvas/i);
@@ -220,6 +240,11 @@ test('campaign thumbnail operator abbreviations and missing data fall back safel
     'isCampaignThumbnailOfferPresent',
     'getCampaignOperatorShortLabel',
     'getCampaignThumbnailOperatorLabels',
+    'getCampaignThumbnailOperatorEntries',
+    'getCampaignThumbnailOperatorKey',
+    'campaignThumbnailRgba',
+    'getCampaignThumbnailOperatorColour',
+    'getCampaignThumbnailPillStyle',
     'getCampaignThumbnailOfferCount',
     'getCampaignThumbnailSavedTime',
     'renderCampaignThumbnail'
@@ -239,6 +264,7 @@ test('campaign thumbnail operator abbreviations and missing data fall back safel
   const markup = context.renderCampaignThumbnail(missing);
   assert.match(markup, /Untitled Campaign/);
   assert.match(markup, />—<\/span>/);
+  assert.match(markup, /style="background:rgba\(160,146,103,0\.14\);border-color:rgba\(160,146,103,0\.36\);"/);
   assert.match(markup, /0 Offers/);
   assert.doesNotMatch(markup, /Saved \d/);
 });
@@ -256,6 +282,11 @@ test('campaign history list keeps existing actions while inserting reusable thum
     'isCampaignThumbnailOfferPresent',
     'getCampaignOperatorShortLabel',
     'getCampaignThumbnailOperatorLabels',
+    'getCampaignThumbnailOperatorEntries',
+    'getCampaignThumbnailOperatorKey',
+    'campaignThumbnailRgba',
+    'getCampaignThumbnailOperatorColour',
+    'getCampaignThumbnailPillStyle',
     'getCampaignThumbnailOfferCount',
     'getCampaignThumbnailSavedTime',
     'renderCampaignThumbnail',

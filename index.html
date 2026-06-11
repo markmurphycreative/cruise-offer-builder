@@ -355,8 +355,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .campaign-history-item{border:1px solid var(--border);border-radius:var(--radius);padding:5px;background:#fff;display:grid;gap:5px;}
 .campaign-thumbnail{border:1px solid rgba(160,146,103,.28);border-radius:var(--radius);background:linear-gradient(135deg,#fff 0%,#f8f7f3 62%,rgba(160,146,103,.12) 100%);padding:5px;display:grid;gap:4px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.55);}
 .campaign-thumbnail-operators{display:flex;align-items:center;gap:3px;min-width:0;overflow:hidden;}
-.campaign-thumbnail-pill{display:inline-flex;align-items:center;justify-content:center;min-width:25px;max-width:46px;height:17px;padding:0 5px;border-radius:999px;background:var(--navy);border:1px solid rgba(14,27,42,.08);color:#fff;font-size:8px;font-weight:700;line-height:1;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.campaign-thumbnail-pill:nth-child(even){background:var(--gold);color:var(--navy);}
+.campaign-thumbnail-pill{display:inline-flex;align-items:center;justify-content:center;min-width:25px;max-width:46px;height:17px;padding:0 5px;border-radius:999px;background:rgba(160,146,103,.14);border:1px solid rgba(160,146,103,.34);color:var(--navy);font-size:8px;font-weight:700;line-height:1;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .campaign-thumbnail-name{font-size:10px;font-weight:700;color:var(--navy);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .campaign-thumbnail-meta{font-size:9px;font-weight:600;color:var(--muted);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .campaign-history-title{font-size:10px;font-weight:700;color:var(--navy);line-height:1.25;}
@@ -3677,6 +3676,55 @@ function getCampaignThumbnailOperatorLabels(item){
   const labels=(offers.length ? offers : getCampaignThumbnailOffers(item).slice(0,1)).map(offer=>getCampaignOperatorShortLabel(offer&&offer.operator));
   return (labels.length ? labels : ["—"]).slice(0,4);
 }
+function getCampaignThumbnailOperatorEntries(item){
+  const offers=getCampaignThumbnailOffers(item).filter(isCampaignThumbnailOfferPresent);
+  const source=offers.length ? offers : getCampaignThumbnailOffers(item).slice(0,1);
+  const entries=source.map(offer=>({operator:(offer&&offer.operator)||"",label:getCampaignOperatorShortLabel(offer&&offer.operator)}));
+  return (entries.length ? entries : [{operator:"",label:"—"}]).slice(0,4);
+}
+function getCampaignThumbnailOperatorKey(operator){
+  const raw=String(operator||"").trim();
+  if(!raw) return "";
+  if(typeof detectOperatorKey==="function"){
+    const detected=detectOperatorKey(raw);
+    if(detected) return detected;
+  }
+  const normalised=raw.toLowerCase().replace(/&amp;/g,"&").replace(/[^a-z0-9&]+/g," ").trim();
+  const compact=normalised.replace(/\s+/g,"");
+  const aliases={po:"po",pando:"po","p&o":"po","p&o cruises":"po",marella:"marella","marella cruises":"marella",royal:"royal","royal caribbean":"royal",ambassador:"ambassador","ambassador cruise line":"ambassador",ambassadorcruiseline:"ambassador",ambassadorcruises:"ambassador",celebrity:"celebrity","celebrity cruises":"celebrity",fred:"fred","fred olsen":"fred","fred. olsen cruise lines":"fred","fred olsen cruise lines":"fred",msc:"msc","msc cruises":"msc",cunard:"cunard",princess:"princess","princess cruises":"princess",virgin:"virgin","virgin voyages":"virgin",ncl:"ncl",norwegian:"ncl","norwegian cruise line":"ncl"};
+  if(Object.prototype.hasOwnProperty.call(aliases,normalised)) return aliases[normalised];
+  if(Object.prototype.hasOwnProperty.call(aliases,compact)) return aliases[compact];
+  if(typeof OPERATOR_HEADERS!=="undefined" && OPERATOR_HEADERS){
+    for(const [key,op] of Object.entries(OPERATOR_HEADERS)){
+      const configured=String((op&&op.name)||"").toLowerCase().replace(/[^a-z0-9&]+/g," ").trim();
+      if(configured && (configured===normalised || configured.replace(/\s+/g,"")===compact)) return key;
+    }
+  }
+  return raw;
+}
+function campaignThumbnailRgba(color,alpha){
+  const hex=String(color||"").trim();
+  const short=hex.match(/^#([0-9a-f]{3})$/i);
+  const long=hex.match(/^#([0-9a-f]{6})$/i);
+  let parts=null;
+  if(short) parts=short[1].split("").map(ch=>parseInt(ch+ch,16));
+  if(long) parts=[long[1].slice(0,2),long[1].slice(2,4),long[1].slice(4,6)].map(v=>parseInt(v,16));
+  return parts ? `rgba(${parts[0]},${parts[1]},${parts[2]},${alpha})` : `rgba(160,146,103,${alpha})`;
+}
+function getCampaignThumbnailOperatorColour(operator){
+  const key=getCampaignThumbnailOperatorKey(operator);
+  const headers=(typeof OPERATOR_HEADERS!=="undefined" && OPERATOR_HEADERS) ? OPERATOR_HEADERS : {};
+  const skins=(typeof OPERATOR_SKINS!=="undefined" && OPERATOR_SKINS) ? OPERATOR_SKINS : {};
+  const header=headers[key]||{};
+  const skin=skins[key]||{};
+  const skinFirst={celebrity:true,fred:true,marella:true,princess:true};
+  const skinColour=skin.infoBar || skin.accentStrip || "";
+  return (skinFirst[key] && skinColour) || header.color || skinColour || "#a09267";
+}
+function getCampaignThumbnailPillStyle(operator){
+  const colour=getCampaignThumbnailOperatorColour(operator);
+  return `background:${campaignThumbnailRgba(colour,.14)};border-color:${campaignThumbnailRgba(colour,.36)};`;
+}
 function getCampaignThumbnailOfferCount(item){
   return getCampaignThumbnailOffers(item).filter(isCampaignThumbnailOfferPresent).length;
 }
@@ -3690,7 +3738,7 @@ function getCampaignThumbnailSavedTime(item){
 }
 function renderCampaignThumbnail(item){
   const name=escapeCampaignHistoryText(getCampaignThumbnailName(item));
-  const operators=getCampaignThumbnailOperatorLabels(item).map(label=>`<span class="campaign-thumbnail-pill">${escapeCampaignHistoryText(label)}</span>`).join("");
+  const operators=getCampaignThumbnailOperatorEntries(item).map(entry=>`<span class="campaign-thumbnail-pill" style="${escapeCampaignHistoryText(getCampaignThumbnailPillStyle(entry.operator))}">${escapeCampaignHistoryText(entry.label)}</span>`).join("");
   const offerCount=getCampaignThumbnailOfferCount(item);
   const savedTime=getCampaignThumbnailSavedTime(item);
   const offerLabel=`${offerCount} ${offerCount===1 ? "Offer" : "Offers"}`;
