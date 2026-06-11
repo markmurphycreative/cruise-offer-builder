@@ -4315,14 +4315,13 @@ function renderCardHTML(d){
   const terms=document.getElementById("g-terms").value||"T&Cs Apply";
   const cz=d._cropZoom||100; const cx=d._cropX??50; const cy=d._cropY??50;
   const heroFitMode=d._heroFitMode==="fit"?"fit":"fill";
-  const heroObjectFit=heroFitMode==="fit"?"contain":"cover";
   const heroBg=heroFitMode==="fit"?"background:#0e1b2a;":"";
   const heroPlaceholder=OPERATOR_HERO_PLACEHOLDERS[d.operator];
   const emptyHeroHTML=heroPlaceholder
     ? `<div class="hph"><span>${heroPlaceholder[0]}</span><span>${heroPlaceholder[1]}</span></div>`
     : `<div class="hph"><span></span></div>`;
   const heroHTML=d._img
-    ? `<div class="hero-wrap" style="${heroBg}"><img class="hero" src="${d._img}" data-crop-x="${cx}" data-crop-y="${cy}" data-crop-zoom="${cz}" data-fit-mode="${heroFitMode}" style="object-fit:${heroObjectFit};object-position:${cx}% ${cy}%;transform:scale(${cz/100});transform-origin:center center;" onload="if(typeof applyHeroCropPositions==='function') applyHeroCropPositions(document)" onerror="this.parentElement.innerHTML='<div class=hph><span>Image failed to load</span></div>'"></div>`
+    ? `<div class="hero-wrap" style="${heroBg}"><img class="hero" src="${d._img}" data-crop-x="${cx}" data-crop-y="${cy}" data-crop-zoom="${cz}" data-fit-mode="${heroFitMode}" style="object-fit:fill;object-position:50% 50%;transform:none;left:0;top:0;width:100%;height:100%;" onload="if(typeof applyHeroCropPositions==='function') applyHeroCropPositions(document)" onerror="this.parentElement.innerHTML='<div class=hph><span>Image failed to load</span></div>'"></div>`
     : emptyHeroHTML;
   const shipLine=ship?`Sailing on ${ship}`:"";
   const priceHTML=price?`<div class="pfrom">From</div><div class="pmain">£${price}<span class="ppp">pp</span></div>`:`<div class="pfrom"></div><div class="pmain"></div>`;

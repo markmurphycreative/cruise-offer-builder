@@ -41,24 +41,26 @@ test('wide hero images map horizontal slider from full-left to full-right crop',
   const centre = calculateHeroCropLayout(...frame, ...natural, 50, 50, 100, 'fill');
   const right = calculateHeroCropLayout(...frame, ...natural, 100, 50, 100, 'fill');
 
+  assertClose(left.overflowX, 1800);
   assertClose(left.left, 0);
-  assertClose(right.left, -right.overflowX);
-  assertClose(centre.left, -centre.overflowX / 2);
+  assertClose(centre.left, -900);
+  assertClose(right.left, -1800);
   assertClose(left.top, 0);
 });
 
 test('tall hero images map vertical slider from top to bottom crop', () => {
   const { calculateHeroCropLayout } = cropContext();
   const frame = [1200, 849];
-  const natural = [1200, 2600];
+  const natural = [1200, 2400];
 
   const top = calculateHeroCropLayout(...frame, ...natural, 50, 0, 100, 'fill');
   const centre = calculateHeroCropLayout(...frame, ...natural, 50, 50, 100, 'fill');
   const bottom = calculateHeroCropLayout(...frame, ...natural, 50, 100, 100, 'fill');
 
+  assertClose(top.overflowY, 1551);
   assertClose(top.top, 0);
-  assertClose(bottom.top, -bottom.overflowY);
-  assertClose(centre.top, -centre.overflowY / 2);
+  assertClose(centre.top, -775.5);
+  assertClose(bottom.top, -1551);
   assertClose(top.left, 0);
 });
 
@@ -96,6 +98,7 @@ test('fit image centres non-overflowing axes and pans overflowing axes', () => {
 test('preview and export share the same hero crop application path', () => {
   assert.match(extractFunction('renderCardHTML'), /data-crop-x="\$\{cx\}"/);
   assert.match(extractFunction('renderCardHTML'), /data-fit-mode="\$\{heroFitMode\}"/);
+  assert.doesNotMatch(extractFunction('renderCardHTML'), /transform:scale|object-position:\$\{cx\}%/);
   assert.match(extractFunction('renderVisibleCard'), /scheduleHeroCropPositions\(out\)/);
   assert.match(extractFunction('renderCardToImageBlob'), /scheduleHeroCropPositions\(wrap\)/);
   assert.match(extractFunction('renderCardToImageBlob'), /applyHeroCropPositions\(wrap\)[\s\S]*requestAnimationFrame[\s\S]*applyHeroCropPositions\(wrap\)/);
