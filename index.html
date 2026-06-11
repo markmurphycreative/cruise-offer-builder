@@ -180,7 +180,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .dz-lbl{font-size:10px;font-weight:600;color:var(--text);}
 .dz-sub{font-size:9px;color:var(--muted);margin-top:1px;}
 .dz-thumb{width:100%;height:36px;object-fit:contain;border-radius:3px;margin-top:4px;display:none;background:var(--navy);padding:2px;}
-.dz-thumb.hero-t{object-fit:cover;background:transparent;padding:0;height:44px;}
+.dz-thumb.hero-t{object-fit:contain;background:#fafaf8;padding:2px;height:64px;}
+.hero-thumb-helper,.hero-thumb-dimensions{display:none;margin-top:4px;font-size:9px;color:var(--muted);line-height:1.35;}
+.hero-thumb-helper.active,.hero-thumb-dimensions.active{display:block;}
 .sz-row{display:flex;align-items:center;gap:5px;margin-top:4px;}
 .sz-row span{font-size:9px;color:var(--muted);white-space:nowrap;}
 .sz-row input[type=range]{flex:1;accent-color:var(--gold);height:3px;}
@@ -191,10 +193,12 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .crop-controls.active{display:block;}
 .hero-actions{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:5px;}
 .hero-fit-toggle{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:5px;}
-.crop-row{display:flex;align-items:center;gap:5px;margin-bottom:3px;}
-.crop-row label{font-size:9px;color:var(--muted);width:68px;flex-shrink:0;}
-.crop-row input[type=range]{flex:1;accent-color:var(--gold);height:3px;}
-.crop-row span{font-size:9px;color:var(--navy);min-width:26px;text-align:right;}
+.crop-row{display:grid;grid-template-columns:68px minmax(0,1fr) 58px;align-items:center;gap:6px;margin-bottom:5px;}
+.crop-row label{font-size:9px;color:var(--muted);}
+.crop-row input[type=range]{width:100%;accent-color:var(--gold);height:3px;}
+.crop-value{display:flex;align-items:center;gap:2px;}
+.crop-value input{width:44px;font-size:10px;padding:3px 4px;border:1px solid var(--border);border-radius:var(--radius);background:#fff;color:var(--navy);text-align:right;}
+.crop-value span{font-size:9px;color:var(--navy);}
 
 /* ── SPLASH ── */
 .splash{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:1;visibility:visible;}
@@ -710,6 +714,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
             <div class="dz-inner"><div class="dz-icon"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"></path></svg></div><div class="dz-lbl">Drop hero image here</div><div class="dz-sub">JPG/PNG · Adobe Stock or local file</div></div>
             <img class="dz-thumb hero-t" id="hero-thumb" alt="hero" style="display: none;">
           </div>
+          <div class="hero-thumb-helper" id="hero-thumb-helper">Thumbnail shows full source image. Card preview shows cropped result.</div>
+          <div class="hero-thumb-dimensions" id="hero-image-dimensions"></div>
         </div>
         <div class="hero-restore-note" id="hero-restore-note">Hero image needs re-uploading</div>
         <div class="crop-controls" id="crop-controls">
@@ -724,9 +730,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
             <button id="hero-mode-fit" class="abtn btn-compact" onclick="setHeroFitMode('fit')">Fit Image</button>
           </div>
           <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;">Crop & Position</div>
-          <div class="crop-row"><label>Zoom</label><input type="range" id="crop-zoom" min="100" max="200" value="100" oninput="updateCrop()"><span id="cv-zoom">100%</span></div>
-          <div class="crop-row"><label>Horizontal</label><input type="range" id="crop-x" min="0" max="100" value="50" oninput="updateCrop()"><span id="cv-x">50%</span></div>
-          <div class="crop-row"><label>Vertical</label><input type="range" id="crop-y" min="0" max="100" value="50" oninput="updateCrop()"><span id="cv-y">50%</span></div>
+          <div class="crop-row"><label for="crop-zoom">Zoom</label><input type="range" id="crop-zoom" min="100" max="200" value="100" oninput="updateCrop()"><div class="crop-value"><input type="number" id="crop-zoom-input" min="100" max="200" value="100" inputmode="numeric" oninput="updateCropFromInput('zoom')"><span>%</span></div></div>
+          <div class="crop-row"><label for="crop-x">Horizontal</label><input type="range" id="crop-x" min="0" max="100" value="50" oninput="updateCrop()"><div class="crop-value"><input type="number" id="crop-x-input" min="0" max="100" value="50" inputmode="numeric" oninput="updateCropFromInput('x')"><span>%</span></div></div>
+          <div class="crop-row"><label for="crop-y">Vertical</label><input type="range" id="crop-y" min="0" max="100" value="50" oninput="updateCrop()"><div class="crop-value"><input type="number" id="crop-y-input" min="0" max="100" value="50" inputmode="numeric" oninput="updateCropFromInput('y')"><span>%</span></div></div>
         </div>
         <div class="hero-source-block">
           <div class="field"><label>Image URL (Optional)</label><input id="f-img-url" placeholder="https://..." oninput="imgUrlCh()"></div>
@@ -1594,12 +1600,9 @@ function load(i){
   const lsr=document.getElementById("logo-size-row"); if(lsr) lsr.style.display=offers[i]._logoCustom?"flex":"none";
   const lsz=document.getElementById("logo-size"); if(lsz) lsz.value=sz;
   const lsv=document.getElementById("logo-size-val"); if(lsv) lsv.textContent=sz+"%";
-  document.getElementById("crop-zoom").value=offers[i]._cropZoom||100;
-  document.getElementById("crop-x").value=offers[i]._cropX??50;
-  document.getElementById("crop-y").value=offers[i]._cropY??50;
-  document.getElementById("cv-zoom").textContent=(offers[i]._cropZoom||100)+"%";
-  document.getElementById("cv-x").textContent=(offers[i]._cropX??50)+"%";
-  document.getElementById("cv-y").textContent=(offers[i]._cropY??50)+"%";
+  setCropControlValue("zoom",offers[i]._cropZoom||100);
+  setCropControlValue("x",offers[i]._cropX??50);
+  setCropControlValue("y",offers[i]._cropY??50);
   if(!offers[i]._heroFitMode) offers[i]._heroFitMode="fill";
   syncHeroUi();
   updateHeroImageLockUI();
@@ -1768,36 +1771,91 @@ function readFile(file,type){
     }; r.readAsDataURL(file);
   }
 }
-function setThumb(type,src){ const el=document.getElementById(type==="logo"?"logo-thumb":"hero-thumb"); if(!el) return; if(src){el.src=src;el.style.display="block";}else el.style.display="none"; }
+function setThumb(type,src){
+  const el=document.getElementById(type==="logo"?"logo-thumb":"hero-thumb");
+  if(!el) return;
+  if(src){
+    el.src=src;
+    el.style.display="block";
+  }else{
+    el.removeAttribute("src");
+    el.style.display="none";
+  }
+  if(type==="hero"&&typeof updateHeroThumbInfo==="function") updateHeroThumbInfo(el,src);
+}
+function updateHeroThumbInfo(imgEl,src){
+  const helper=document.getElementById("hero-thumb-helper");
+  const dims=document.getElementById("hero-image-dimensions");
+  if(helper) helper.classList.toggle("active",!!src);
+  if(dims){ dims.textContent=""; dims.classList.remove("active"); }
+  if(!src||!imgEl||!dims) return;
+  const showDims=()=>{
+    const w=imgEl.naturalWidth;
+    const h=imgEl.naturalHeight;
+    if(w&&h){
+      dims.textContent="Image: "+w+" × "+h+"px";
+      dims.classList.add("active");
+    }
+  };
+  imgEl.onload=showDims;
+  imgEl.onerror=()=>{ dims.textContent=""; dims.classList.remove("active"); };
+  if(imgEl.complete) showDims();
+}
 function logoSz(val){ offers[cur]._logoSize=parseInt(val); document.getElementById("logo-size-val").textContent=val+"%"; refreshOfferUi({status:false,utm:false,spell:false}); }
 function imgUrlCh(){ offers[cur]._img=document.getElementById("f-img-url").value; setThumb("hero",offers[cur]._img); syncHeroUi(); refreshOfferUi({utm:false,spell:false}); }
 
 // ═══════════════════════════════════════════════════════
 // CROP
 // ═══════════════════════════════════════════════════════
+const CROP_CONTROLS={
+  zoom:{slider:"crop-zoom",input:"crop-zoom-input",fallback:100},
+  x:{slider:"crop-x",input:"crop-x-input",fallback:50},
+  y:{slider:"crop-y",input:"crop-y-input",fallback:50}
+};
+function clampCropControlValue(axis,value){
+  const cfg=CROP_CONTROLS[axis];
+  if(!cfg) return 0;
+  const slider=document.getElementById(cfg.slider);
+  const min=slider?parseInt(slider.min,10):0;
+  const max=slider?parseInt(slider.max,10):100;
+  const parsed=parseInt(value,10);
+  const safe=Number.isFinite(parsed)?parsed:cfg.fallback;
+  return Math.max(min,Math.min(max,safe));
+}
+function setCropControlValue(axis,value){
+  const cfg=CROP_CONTROLS[axis];
+  if(!cfg) return 0;
+  const safe=clampCropControlValue(axis,value);
+  const slider=document.getElementById(cfg.slider);
+  const input=document.getElementById(cfg.input);
+  if(slider) slider.value=safe;
+  if(input) input.value=safe;
+  return safe;
+}
+function updateCropFromInput(axis){
+  const cfg=CROP_CONTROLS[axis];
+  const input=cfg&&document.getElementById(cfg.input);
+  if(input) setCropControlValue(axis,input.value);
+  updateCrop();
+}
 function updateCrop(){
-  offers[cur]._cropZoom=parseInt(document.getElementById("crop-zoom").value);
-  offers[cur]._cropX=parseInt(document.getElementById("crop-x").value);
-  offers[cur]._cropY=parseInt(document.getElementById("crop-y").value);
+  offers[cur]._cropZoom=setCropControlValue("zoom",document.getElementById("crop-zoom").value);
+  offers[cur]._cropX=setCropControlValue("x",document.getElementById("crop-x").value);
+  offers[cur]._cropY=setCropControlValue("y",document.getElementById("crop-y").value);
   offers[cur]._cropPosVersion=2;
-  document.getElementById("cv-zoom").textContent=offers[cur]._cropZoom+"%";
-  document.getElementById("cv-x").textContent=offers[cur]._cropX+"%";
-  document.getElementById("cv-y").textContent=offers[cur]._cropY+"%";
   refreshOfferUi({status:false,utm:false,spell:false});
 }
 function resetCrop(){
   offers[cur]._heroFitMode="fill";
   offers[cur]._cropZoom=100; offers[cur]._cropX=50; offers[cur]._cropY=50; offers[cur]._cropPosVersion=2;
-  document.getElementById("crop-zoom").value=100; document.getElementById("crop-x").value=50; document.getElementById("crop-y").value=50;
-  document.getElementById("cv-zoom").textContent="100%"; document.getElementById("cv-x").textContent="50%"; document.getElementById("cv-y").textContent="50%";
+  setCropControlValue("zoom",100); setCropControlValue("x",50); setCropControlValue("y",50);
   syncHeroUi();
   refreshOfferUi({status:false,utm:false,spell:false});
   if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Hero crop reset");
 }
 function centreHeroImage(){
   offers[cur]._cropX=50; offers[cur]._cropY=50; offers[cur]._cropPosVersion=2;
-  document.getElementById("crop-x").value=50; document.getElementById("crop-y").value=50;
-  document.getElementById("cv-x").textContent="50%"; document.getElementById("cv-y").textContent="50%";
+  setCropControlValue("x",50); setCropControlValue("y",50);
   refreshOfferUi({status:false,utm:false,spell:false});
   if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Hero crop change");
 }
@@ -4563,12 +4621,9 @@ function loadOfferToEditor(i){
   const lsr=document.getElementById('logo-size-row'); if(lsr) lsr.style.display=o._logoCustom?'flex':'none';
   const lsz=document.getElementById('logo-size'); if(lsz) lsz.value=sz;
   const lsv=document.getElementById('logo-size-val'); if(lsv) lsv.textContent=sz+'%';
-  const cz=document.getElementById('crop-zoom'); if(cz) cz.value=o._cropZoom||100;
-  const cx=document.getElementById('crop-x'); if(cx) cx.value=o._cropX??50;
-  const cy=document.getElementById('crop-y'); if(cy) cy.value=o._cropY??50;
-  const cvz=document.getElementById('cv-zoom'); if(cvz) cvz.textContent=(o._cropZoom||100)+'%';
-  const cvx=document.getElementById('cv-x'); if(cvx) cvx.textContent=(o._cropX??50)+'%';
-  const cvy=document.getElementById('cv-y'); if(cvy) cvy.textContent=(o._cropY??50)+'%';
+  setCropControlValue('zoom', o._cropZoom||100);
+  setCropControlValue('x', o._cropX??50);
+  setCropControlValue('y', o._cropY??50);
   if(!o._heroFitMode) o._heroFitMode='fill';
   syncHeroUi();
   updateHeroImageLockUI();
