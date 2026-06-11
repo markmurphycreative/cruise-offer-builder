@@ -32,6 +32,13 @@ function assertClose(actual, expected, message) {
   assert.ok(Math.abs(actual - expected) < 0.000001, message || `${actual} should equal ${expected}`);
 }
 
+function assertEdgeOffsets(layout, expectedX, expectedY) {
+  assertClose(layout.offsetX, expectedX, `offsetX should be ${expectedX}`);
+  assertClose(layout.offsetY, expectedY, `offsetY should be ${expectedY}`);
+  assert.equal(layout.backgroundPositionX, `${layout.offsetX}px`);
+  assert.equal(layout.backgroundPositionY, `${layout.offsetY}px`);
+}
+
 test('wide hero images use true background-position from full-left to full-right crop', () => {
   const { calculateHeroCropLayout } = cropContext();
   const frame = [1200, 849];
@@ -42,10 +49,11 @@ test('wide hero images use true background-position from full-left to full-right
   const right = calculateHeroCropLayout(...frame, ...natural, 100, 50, 100, 'fill');
 
   assertClose(left.overflowX, 1800);
-  assert.equal(left.backgroundPositionX, '0%');
-  assert.equal(centre.backgroundPositionX, '50%');
-  assert.equal(right.backgroundPositionX, '100%');
-  assert.equal(left.backgroundPositionY, '50%');
+  assertEdgeOffsets(left, 0, 0);
+  assertEdgeOffsets(centre, -900, 0);
+  assertEdgeOffsets(right, -1800, 0);
+  assertClose(left.offsetX + left.overflowX, 1800, 'left crop must touch the left image edge');
+  assertClose(right.offsetX + right.overflowX, 0, 'right crop must touch the right image edge');
 });
 
 test('tall hero images use true background-position from top to bottom crop', () => {
@@ -58,10 +66,11 @@ test('tall hero images use true background-position from top to bottom crop', ()
   const bottom = calculateHeroCropLayout(...frame, ...natural, 50, 100, 100, 'fill');
 
   assertClose(top.overflowY, 1551);
-  assert.equal(top.backgroundPositionY, '0%');
-  assert.equal(centre.backgroundPositionY, '50%');
-  assert.equal(bottom.backgroundPositionY, '100%');
-  assert.equal(top.backgroundPositionX, '50%');
+  assertEdgeOffsets(top, 0, 0);
+  assertEdgeOffsets(centre, 0, -775.5);
+  assertEdgeOffsets(bottom, 0, -1551);
+  assertClose(top.offsetY + top.overflowY, 1551, 'top crop must touch the top image edge');
+  assertClose(bottom.offsetY + bottom.overflowY, 0, 'bottom crop must touch the bottom image edge');
 });
 
 test('fill frame behaves like cover and zoom increases background-size and pan range', () => {
@@ -75,7 +84,8 @@ test('fill frame behaves like cover and zoom increases background-size and pan r
   assertClose(unzoomed.width, 1509.3333333333333);
   assertClose(unzoomed.height, 849);
   assert.equal(unzoomed.backgroundSize, `${unzoomed.width}px ${unzoomed.height}px`);
-  assert.equal(unzoomed.backgroundPositionX, '100%');
+  assert.equal(unzoomed.backgroundPositionX, `${unzoomed.offsetX}px`);
+  assertClose(unzoomed.offsetX, -unzoomed.overflowX);
   assert.ok(zoomed.width > unzoomed.width);
   assert.ok(zoomed.height > unzoomed.height);
   assert.ok(zoomed.overflowX > unzoomed.overflowX);
@@ -93,11 +103,12 @@ test('fit image behaves like contain while non-overflowing axes stay centred', (
 
   assertClose(fitLeft.width, 1200);
   assertClose(fitLeft.height, 400);
-  assert.equal(fitLeft.backgroundPositionX, '50%', 'slider should not move when there is no horizontal overflow');
-  assert.equal(fitRight.backgroundPositionX, '50%', 'slider should not move when there is no horizontal overflow');
-  assert.equal(fitLeft.backgroundPositionY, '50%', 'letterboxed vertical axis stays centred without overflow');
-  assert.equal(zoomedRight.backgroundPositionX, '100%');
-  assert.equal(zoomedRight.backgroundPositionY, '50%', 'non-overflowing vertical axis stays centred after fit zoom');
+  assertEdgeOffsets(fitLeft, 0, 224.5);
+  assertEdgeOffsets(fitRight, 0, 224.5);
+  assert.equal(fitLeft.backgroundPositionX, '0px', 'slider should not move when there is no horizontal overflow');
+  assert.equal(fitLeft.backgroundPositionY, '224.5px', 'letterboxed vertical axis stays centred without overflow');
+  assertClose(zoomedRight.offsetX, -600);
+  assertClose(zoomedRight.offsetY, 124.5, 'non-overflowing vertical axis stays centred after fit zoom');
 });
 
 test('hero crop rendering uses background-image, background-size and background-position instead of object crop controls', () => {
@@ -114,6 +125,7 @@ test('hero crop rendering uses background-image, background-size and background-
   assert.doesNotMatch(css, /object-fit|object-position|transform/);
   assert.match(applyCrop, /hero\.style\.backgroundSize=layout\.backgroundSize/);
   assert.match(applyCrop, /hero\.style\.backgroundPosition=layout\.backgroundPositionX\+' '\+layout\.backgroundPositionY/);
+  assert.match(extractFunction('calculateHeroCropLayout'), /const offsetX=overflowX>0 \? -overflowX\*\(x\/100\) : \(fw-width\)\/2/);
   assert.doesNotMatch(applyCrop, /objectFit|objectPosition|style\.left|style\.top|style\.transform/);
 });
 

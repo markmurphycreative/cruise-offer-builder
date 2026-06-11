@@ -1842,19 +1842,25 @@ function calculateHeroCropLayout(frameWidth, frameHeight, naturalWidth, naturalH
   const x=clampHeroCropValue(cropX,50);
   const y=clampHeroCropValue(cropY,50);
   if(!fw||!fh||!nw||!nh){
-    return {width:fw,height:fh,backgroundSize:(fitMode==="fit"?"contain":"cover"),backgroundPositionX:'50%',backgroundPositionY:'50%',overflowX:0,overflowY:0};
+    return {width:fw,height:fh,backgroundSize:(fitMode==="fit"?"contain":"cover"),backgroundPositionX:'0px',backgroundPositionY:'0px',offsetX:0,offsetY:0,overflowX:0,overflowY:0};
   }
   const baseScale=(fitMode==="fit") ? Math.min(fw/nw,fh/nh) : Math.max(fw/nw,fh/nh);
   const width=nw*baseScale*zoom;
   const height=nh*baseScale*zoom;
   const overflowX=Math.max(0,width-fw);
   const overflowY=Math.max(0,height-fh);
+  // Use measured rendered-image overflow, not unverified CSS percentage panning,
+  // so crop 0 and 100 always resolve to the true image edges.
+  const offsetX=overflowX>0 ? -overflowX*(x/100) : (fw-width)/2;
+  const offsetY=overflowY>0 ? -overflowY*(y/100) : (fh-height)/2;
   return {
     width,
     height,
     backgroundSize:width+'px '+height+'px',
-    backgroundPositionX:(overflowX>0?x:50)+'%',
-    backgroundPositionY:(overflowY>0?y:50)+'%',
+    backgroundPositionX:offsetX+'px',
+    backgroundPositionY:offsetY+'px',
+    offsetX,
+    offsetY,
     overflowX,
     overflowY
   };
