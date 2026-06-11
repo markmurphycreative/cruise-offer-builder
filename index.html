@@ -352,10 +352,16 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .empty-state{border:1px dashed var(--border);border-radius:var(--radius);background:#fff;padding:6px;color:var(--muted);font-size:9px;line-height:1.35;}
 .empty-state strong{display:block;color:var(--navy);font-size:10px;margin-bottom:1px;}
 #sheets-status.empty-state{margin-top:5px;white-space:normal;}
-.campaign-history-item{border:1px solid var(--border);border-radius:var(--radius);padding:5px;background:#fff;}
+.campaign-history-item{border:1px solid var(--border);border-radius:var(--radius);padding:5px;background:#fff;display:grid;gap:5px;}
+.campaign-thumbnail{border:1px solid rgba(160,146,103,.28);border-radius:var(--radius);background:linear-gradient(135deg,#fff 0%,#f8f7f3 62%,rgba(160,146,103,.12) 100%);padding:5px;display:grid;gap:4px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.55);}
+.campaign-thumbnail-operators{display:flex;align-items:center;gap:3px;min-width:0;overflow:hidden;}
+.campaign-thumbnail-pill{display:inline-flex;align-items:center;justify-content:center;min-width:25px;max-width:46px;height:17px;padding:0 5px;border-radius:999px;background:var(--navy);border:1px solid rgba(14,27,42,.08);color:#fff;font-size:8px;font-weight:700;line-height:1;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.campaign-thumbnail-pill:nth-child(even){background:var(--gold);color:var(--navy);}
+.campaign-thumbnail-name{font-size:10px;font-weight:700;color:var(--navy);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.campaign-thumbnail-meta{font-size:9px;font-weight:600;color:var(--muted);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .campaign-history-title{font-size:10px;font-weight:700;color:var(--navy);line-height:1.25;}
-.campaign-history-meta{font-size:9px;color:var(--muted);margin-top:2px;}
-.campaign-history-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin-top:5px;}
+.campaign-history-meta{font-size:9px;color:var(--muted);margin-top:-3px;}
+.campaign-history-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin-top:0;}
 .campaign-library-utility{display:grid;gap:4px;}
 .ptool{display:flex;align-items:center;gap:4px;}
 .ptool span{font-size:9px;color:rgba(255,255,255,.6);white-space:nowrap;}
@@ -3617,6 +3623,80 @@ function renderCampaignHistoryEmptyState(emptyLabel){
   const detail=label === "No pinned campaigns yet." ? "Pin a saved campaign to keep it here." : "Save a campaign to see it here.";
   return `<div class="empty-state"><strong>${escapeCampaignHistoryText(label)}</strong>${escapeCampaignHistoryText(detail)}</div>`;
 }
+function getCampaignThumbnailPayload(item){
+  return (item&&item.payload) || item || {};
+}
+function getCampaignThumbnailName(item){
+  const payload=getCampaignThumbnailPayload(item);
+  const campaign=(payload&&payload.campaign) || (payload&&payload.state&&payload.state.campaign) || {};
+  return String((item&&item.title) || campaign.name || "Untitled Campaign").trim() || "Untitled Campaign";
+}
+function getCampaignThumbnailOffers(item){
+  const payload=getCampaignThumbnailPayload(item);
+  const offers=(payload&&payload.state&&payload.state.offers) || (payload&&payload.offers) || [];
+  return Array.isArray(offers) ? offers : [];
+}
+function isCampaignThumbnailOfferPresent(offer){
+  if(!offer || typeof offer!=="object") return false;
+  return Object.keys(offer).some(key=>{
+    if(["heroLocked","_imgNeedsReupload","_cropPosVersion"].includes(key)) return false;
+    const value=offer[key];
+    if(Array.isArray(value)) return value.length>0;
+    if(value && typeof value==="object") return Object.keys(value).length>0;
+    return value!==undefined && value!==null && String(value).trim()!=="";
+  });
+}
+function getCampaignOperatorShortLabel(operator){
+  const raw=String(operator||"").trim();
+  if(!raw) return "—";
+  const direct={
+    po:"P&O",pando:"P&O","p&o":"P&O","p&o cruises":"P&O",
+    marella:"MAR","marella cruises":"MAR",
+    royal:"RC","royal caribbean":"RC",
+    ambassador:"AMB","ambassador cruise line":"AMB",ambassadorcruiseline:"AMB",ambassadorcruises:"AMB",
+    celebrity:"CX","celebrity cruises":"CX",
+    fred:"FOL","fred olsen":"FOL","fred. olsen cruise lines":"FOL","fred olsen cruise lines":"FOL",
+    msc:"MSC","msc cruises":"MSC",
+    cunard:"CUN",
+    princess:"PRN","princess cruises":"PRN"
+  };
+  const normalised=raw.toLowerCase().replace(/&amp;/g,"&").replace(/[^a-z0-9&]+/g," ").trim();
+  const compact=normalised.replace(/\s+/g,"");
+  if(Object.prototype.hasOwnProperty.call(direct,normalised)) return direct[normalised];
+  if(Object.prototype.hasOwnProperty.call(direct,compact)) return direct[compact];
+  if(typeof OPERATOR_HEADERS!=="undefined" && OPERATOR_HEADERS && OPERATOR_HEADERS[raw] && OPERATOR_HEADERS[raw].name){
+    const configured=String(OPERATOR_HEADERS[raw].name).toLowerCase().replace(/[^a-z0-9&]+/g," ").trim();
+    const configuredCompact=configured.replace(/\s+/g,"");
+    if(Object.prototype.hasOwnProperty.call(direct,configured)) return direct[configured];
+    if(Object.prototype.hasOwnProperty.call(direct,configuredCompact)) return direct[configuredCompact];
+  }
+  return raw.replace(/[^a-z0-9&]/gi,"").slice(0,3).toUpperCase() || "—";
+}
+function getCampaignThumbnailOperatorLabels(item){
+  const offers=getCampaignThumbnailOffers(item).filter(isCampaignThumbnailOfferPresent);
+  const labels=(offers.length ? offers : getCampaignThumbnailOffers(item).slice(0,1)).map(offer=>getCampaignOperatorShortLabel(offer&&offer.operator));
+  return (labels.length ? labels : ["—"]).slice(0,4);
+}
+function getCampaignThumbnailOfferCount(item){
+  return getCampaignThumbnailOffers(item).filter(isCampaignThumbnailOfferPresent).length;
+}
+function getCampaignThumbnailSavedTime(item){
+  const dateValue=(item&&item.savedAt) || (item&&item.updatedAt) || "";
+  if(!dateValue) return "";
+  const date=new Date(dateValue);
+  if(Number.isNaN(date.getTime())) return "";
+  try{ return date.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}); }
+  catch(e){ return ""; }
+}
+function renderCampaignThumbnail(item){
+  const name=escapeCampaignHistoryText(getCampaignThumbnailName(item));
+  const operators=getCampaignThumbnailOperatorLabels(item).map(label=>`<span class="campaign-thumbnail-pill">${escapeCampaignHistoryText(label)}</span>`).join("");
+  const offerCount=getCampaignThumbnailOfferCount(item);
+  const savedTime=getCampaignThumbnailSavedTime(item);
+  const offerLabel=`${offerCount} ${offerCount===1 ? "Offer" : "Offers"}`;
+  const meta=savedTime ? `${offerLabel} · Saved ${savedTime}` : offerLabel;
+  return `<div class="campaign-thumbnail" aria-label="${name} campaign thumbnail"><div class="campaign-thumbnail-operators">${operators}</div><div class="campaign-thumbnail-name">${name}</div><div class="campaign-thumbnail-meta">${escapeCampaignHistoryText(meta)}</div></div>`;
+}
 function renderCampaignHistoryList(targetId,items,emptyLabel){
   const el=document.getElementById(targetId);
   if(!el) return;
@@ -3625,7 +3705,7 @@ function renderCampaignHistoryList(targetId,items,emptyLabel){
     const safeId=escapeCampaignHistoryText(item.id);
     const safeTitle=escapeCampaignHistoryText(item.title||"Untitled Campaign");
     const safeMeta=escapeCampaignHistoryText(campaignHistoryMeta(item));
-    return `<div class="campaign-history-item"><div class="campaign-history-title">${safeTitle}</div><div class="campaign-history-meta">${safeMeta}</div><div class="campaign-history-actions"><button class="abtn btn-compact" onclick="restoreCampaignHistoryEntry('${safeId}')">Load</button><button class="abtn btn-compact" onclick="togglePinCampaignHistoryEntry('${safeId}')">Pin</button><button class="abtn red btn-compact" onclick="deleteCampaignHistoryEntry('${safeId}')">Delete</button></div></div>`;
+    return `<div class="campaign-history-item">${renderCampaignThumbnail(item)}<div class="campaign-history-title">${safeTitle}</div><div class="campaign-history-meta">${safeMeta}</div><div class="campaign-history-actions"><button class="abtn btn-compact" onclick="restoreCampaignHistoryEntry('${safeId}')">Load</button><button class="abtn btn-compact" onclick="togglePinCampaignHistoryEntry('${safeId}')">Pin</button><button class="abtn red btn-compact" onclick="deleteCampaignHistoryEntry('${safeId}')">Delete</button></div></div>`;
   }).join("");
 }
 function getCampaignLibraryBuckets(){
