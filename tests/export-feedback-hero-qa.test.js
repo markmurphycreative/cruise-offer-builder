@@ -111,7 +111,6 @@ test('supported cruise operators receive their recommended empty hero imagery pl
     'function getHeaderHTML(){ return ""; }',
     extractFunction('cleanPortsDisplay'),
     extractFunction('chunkBullets'),
-    extractFunction('cssUrl'),
     extractFunction('escapeAttr'),
     extractFunction('getHeroImageSource'),
     extractFunction('renderHeroHTML'),

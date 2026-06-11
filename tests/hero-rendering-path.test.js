@@ -33,7 +33,6 @@ function createRenderContext(extra = {}) {
   };
   vm.createContext(context);
   vm.runInContext([
-    extractFunction('cssUrl'),
     extractFunction('escapeAttr'),
     extractFunction('getHeroImageSource'),
     extractFunction('renderHeroHTML'),
@@ -43,12 +42,12 @@ function createRenderContext(extra = {}) {
 }
 
 function renderedHero(htmlString) {
-  const heroMatch = htmlString.match(/<div class="hero"[^>]+>/);
-  assert.ok(heroMatch, `Expected rendered hero element in ${htmlString}`);
+  const heroMatch = htmlString.match(/<img class="hero"[^>]+>/);
+  assert.ok(heroMatch, `Expected rendered hero image in ${htmlString}`);
   return heroMatch[0];
 }
 
-test('uploading an image stores the hero source and renders a valid background-image hero element', () => {
+test('uploading an image stores the hero source and renders a real hero image element', () => {
   let rendered = '';
   const context = createRenderContext({
     offers: [{ operator: 'ncl' }],
@@ -72,8 +71,9 @@ test('uploading an image stores the hero source and renders a valid background-i
 
   assert.equal(context.offers[0]._img, dataUrl);
   const hero = renderedHero(rendered);
+  assert.match(hero, /src="data:image\/png;base64,iVBOR/);
   assert.match(hero, /data-hero-src="data:image\/png;base64,iVBOR/);
-  assert.match(hero, /style="background-image:url\("data:image\/png;base64,iVBOR/);
+  assert.doesNotMatch(hero, /background-image/);
   assert.doesNotMatch(rendered, /<div class="hph"/);
 });
 
@@ -85,6 +85,7 @@ test('placeholder panel is removed when a hero image source exists', () => {
   assert.match(emptyCard, /<div class="hph"><span>Norwegian Cruise Line<\/span>/);
   assert.doesNotMatch(heroCard, /<div class="hph"/);
   assert.match(heroCard, /<div class="hero-wrap"/);
+  assert.match(heroCard, /<img class="hero" src="data:image\/jpeg;base64,hero"/);
 });
 
 test('preview and export use renderCardHTML as the same hero source path', () => {
@@ -95,7 +96,8 @@ test('preview and export use renderCardHTML as the same hero source path', () =>
   assert.match(renderOfferWithCta, /const card=bc\(offerData \|\| \{\}\);/);
   assert.match(previewRenderer, /out\.innerHTML = renderOfferWithOptionalCtaHTML\(visibleFieldsToData\(\), getCtaSettingsFromUI\(\)\);/);
   assert.match(exportRenderer, /wrap\.innerHTML = renderCardHTML\(offerData\);/);
-  assert.match(exportRenderer, /const heroBackgrounds = Array\.from\(wrap\.querySelectorAll\('\.hero-wrap \.hero\[data-hero-src\]'\)\);/);
+  assert.match(exportRenderer, /const imgs = Array\.from\(wrap\.querySelectorAll\('img'\)\);/);
+  assert.doesNotMatch(exportRenderer, /heroBackgrounds|background-image/);
 });
 
 test('existing campaign offers containing hero images render with the saved hero source', () => {
@@ -114,6 +116,7 @@ test('existing campaign offers containing hero images render with the saved hero
   const rendered = renderCardHTML(savedOffer);
   const hero = renderedHero(rendered);
 
+  assert.match(hero, /src="data:image\/png;base64,restoredHero"/);
   assert.match(hero, /data-hero-src="data:image\/png;base64,restoredHero"/);
   assert.match(hero, /data-crop-x="22"/);
   assert.match(hero, /data-crop-y="64"/);
@@ -121,4 +124,18 @@ test('existing campaign offers containing hero images render with the saved hero
   assert.match(hero, /data-fit-mode="fit"/);
   assert.match(rendered, /<div class="hero-wrap" style="background:#0e1b2a;">/);
   assert.doesNotMatch(rendered, /<div class="hph"/);
+});
+
+
+test('campaign save and load paths preserve hero image data', () => {
+  const payloadBuilder = extractFunction('buildCampaignFilePayload');
+  const restorePayload = extractFunction('restoreCampaignFilePayload');
+  const loadEditor = extractFunction('loadOfferToEditor');
+
+  assert.match(payloadBuilder, /offers:portableOffers/);
+  assert.match(payloadBuilder, /heroImages:\{source:"state\.offers"/);
+  assert.match(payloadBuilder, /\{_img="",_imgSource="",_imgNeedsReupload=false/);
+  assert.match(restorePayload, /const restored=JSON\.parse\(JSON\.stringify\(state\)\)/);
+  assert.match(restorePayload, /applySessionPayload\(restored\)/);
+  assert.match(loadEditor, /setThumb\('hero', o\._img \|\| ''\)/);
 });
