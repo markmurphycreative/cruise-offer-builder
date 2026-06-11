@@ -111,6 +111,10 @@ test('supported cruise operators receive their recommended empty hero imagery pl
     'function getHeaderHTML(){ return ""; }',
     extractFunction('cleanPortsDisplay'),
     extractFunction('chunkBullets'),
+    extractFunction('cssUrl'),
+    extractFunction('escapeAttr'),
+    extractFunction('getHeroImageSource'),
+    extractFunction('renderHeroHTML'),
     extractFunction('renderCardHTML'),
     'result = Object.fromEntries(Object.keys(OPERATOR_HERO_PLACEHOLDERS).map(operator => [operator, { empty: renderCardHTML({operator}), image: renderCardHTML({operator, _img:"hero.jpg"}) }]));',
     'result.other = { empty: renderCardHTML({operator:"custom"}) };'
