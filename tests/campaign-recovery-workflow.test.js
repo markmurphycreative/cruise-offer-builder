@@ -170,6 +170,131 @@ test('campaign history renders the live campaign library sidebar with required l
   assert.match(html, /addCampaignHistoryEntry\(buildCampaignHistoryEntryFromPayload\(parsed, "backup"\)\)/);
 });
 
+test('campaign thumbnails render synthetic identity cards from saved campaign data without images', () => {
+  const context = runFunctions([
+    'escapeCampaignHistoryText',
+    'getCampaignThumbnailPayload',
+    'getCampaignThumbnailName',
+    'getCampaignThumbnailOffers',
+    'isCampaignThumbnailOfferPresent',
+    'getCampaignOperatorShortLabel',
+    'getCampaignThumbnailOperatorLabels',
+    'getCampaignThumbnailOfferCount',
+    'getCampaignThumbnailSavedTime',
+    'renderCampaignThumbnail'
+  ]);
+  const item = {
+    title: 'June Cruise Mixed',
+    savedAt: '2026-06-09T19:21:00.000Z',
+    payload: {
+      state: {
+        offers: [
+          { operator: 'celebrity', name: 'Celebrity offer' },
+          { operator: 'cunard', name: 'Cunard offer' },
+          { operator: 'msc', name: 'MSC offer' },
+          { operator: 'princess', name: 'Princess offer' }
+        ]
+      }
+    }
+  };
+
+  assert.deepEqual(context.getCampaignThumbnailOperatorLabels(item), ['CX', 'CUN', 'MSC', 'PRN']);
+  assert.equal(context.getCampaignThumbnailOfferCount(item), 4);
+  const markup = context.renderCampaignThumbnail(item);
+  assert.match(markup, /class="campaign-thumbnail"/);
+  assert.match(markup, />CX<\/span>/);
+  assert.match(markup, />CUN<\/span>/);
+  assert.match(markup, />MSC<\/span>/);
+  assert.match(markup, />PRN<\/span>/);
+  assert.match(markup, /June Cruise Mixed/);
+  assert.match(markup, /4 Offers · Saved/);
+  assert.doesNotMatch(markup, /<img\b|canvas|data:image|base64|html2canvas/i);
+});
+
+test('campaign thumbnail operator abbreviations and missing data fall back safely', () => {
+  const context = runFunctions([
+    'escapeCampaignHistoryText',
+    'getCampaignThumbnailPayload',
+    'getCampaignThumbnailName',
+    'getCampaignThumbnailOffers',
+    'isCampaignThumbnailOfferPresent',
+    'getCampaignOperatorShortLabel',
+    'getCampaignThumbnailOperatorLabels',
+    'getCampaignThumbnailOfferCount',
+    'getCampaignThumbnailSavedTime',
+    'renderCampaignThumbnail'
+  ]);
+
+  assert.equal(context.getCampaignOperatorShortLabel('P&O Cruises'), 'P&O');
+  assert.equal(context.getCampaignOperatorShortLabel('Marella Cruises'), 'MAR');
+  assert.equal(context.getCampaignOperatorShortLabel('Fred. Olsen Cruise Lines'), 'FOL');
+  assert.equal(context.getCampaignOperatorShortLabel('Royal Caribbean'), 'RC');
+  assert.equal(context.getCampaignOperatorShortLabel('Some Unknown Operator'), 'SOM');
+  assert.equal(context.getCampaignOperatorShortLabel(''), '—');
+
+  const missing = { payload: { state: { campaign: {}, offers: [{ operator: '', heroLocked: true }] } } };
+  assert.equal(context.getCampaignThumbnailName(missing), 'Untitled Campaign');
+  assert.deepEqual(context.getCampaignThumbnailOperatorLabels(missing), ['—']);
+  assert.equal(context.getCampaignThumbnailOfferCount(missing), 0);
+  const markup = context.renderCampaignThumbnail(missing);
+  assert.match(markup, /Untitled Campaign/);
+  assert.match(markup, />—<\/span>/);
+  assert.match(markup, /0 Offers/);
+  assert.doesNotMatch(markup, /Saved \d/);
+});
+
+test('campaign history list keeps existing actions while inserting reusable thumbnails', () => {
+  const writes = [];
+  const context = runFunctions([
+    'campaignHistoryDisplayType',
+    'campaignHistoryMeta',
+    'escapeCampaignHistoryText',
+    'renderCampaignHistoryEmptyState',
+    'getCampaignThumbnailPayload',
+    'getCampaignThumbnailName',
+    'getCampaignThumbnailOffers',
+    'isCampaignThumbnailOfferPresent',
+    'getCampaignOperatorShortLabel',
+    'getCampaignThumbnailOperatorLabels',
+    'getCampaignThumbnailOfferCount',
+    'getCampaignThumbnailSavedTime',
+    'renderCampaignThumbnail',
+    'renderCampaignHistoryList'
+  ], {
+    formatCampaignDate: () => '09 Jun 2026',
+    document: { getElementById: () => ({ set innerHTML(value) { writes.push(value); } }) }
+  });
+
+  context.renderCampaignHistoryList('recent-campaign-list', [{
+    id: 'abc',
+    title: 'Action Safe Campaign',
+    savedAt: '2026-06-09T12:00:00.000Z',
+    payload: { state: { offers: [{ operator: 'royal', name: 'Loaded offer' }] } }
+  }], 'No saved campaigns yet.');
+
+  assert.match(writes[0], /class="campaign-thumbnail"/);
+  assert.match(writes[0], /restoreCampaignHistoryEntry\('abc'\)">Load<\/button>/);
+  assert.match(writes[0], /togglePinCampaignHistoryEntry\('abc'\)">Pin<\/button>/);
+  assert.match(writes[0], /deleteCampaignHistoryEntry\('abc'\)">Delete<\/button>/);
+});
+
+test('campaign thumbnail data is generated at render time and not persisted to history entries', () => {
+  const context = runFunctions(['campaignHistoryTitleFromPayload', 'buildCampaignHistoryEntryFromPayload'], {
+    document: { getElementById: () => ({ value: '' }) }
+  });
+  const entry = context.buildCampaignHistoryEntryFromPayload({
+    campaign: { name: 'No Stored Preview' },
+    state: { offers: [{ operator: 'msc', name: 'Offer' }] }
+  }, 'saved');
+
+  assert.equal(entry.title, 'No Stored Preview');
+  assert.equal(Object.hasOwn(entry, 'thumbnail'), false);
+  assert.equal(Object.hasOwn(entry, 'thumbnailData'), false);
+  assert.equal(Object.hasOwn(entry, 'screenshot'), false);
+  assert.doesNotMatch(JSON.stringify(entry), /data:image|base64|html2canvas|thumbnail/i);
+});
+
+
 test('campaign library buckets keep pinned first and show the last 20 recent campaigns including pinned entries', () => {
   const now = Date.parse('2026-06-09T12:00:00.000Z');
   const history = Array.from({ length: 25 }, (_, index) => ({
