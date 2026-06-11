@@ -151,3 +151,98 @@ test('hero upload thumbnail shows the full source image and helper metadata', ()
   assert.match(html, /Thumbnail shows full source image\. Card preview shows cropped result\./);
   assert.match(extractFunction('updateHeroThumbInfo'), /dims\.textContent="Image: "\+w\+" × "\+h\+"px"/);
 });
+
+test('hero image panel exposes larger source thumbnail, status, quick position and crop preset controls', () => {
+  assert.match(html, /\.dz-thumb\.hero-t\{object-fit:contain[^}]+height:170px[^}]+width:100%/);
+  assert.doesNotMatch(html, /\.dz-thumb\.hero-t\{object-fit:cover/);
+  assert.match(html, /id="hero-crop-status"/);
+  assert.match(html, /id="hero-crop-status-zoom">100%/);
+  assert.match(html, /id="hero-crop-status-mode">Fill Frame/);
+  assert.match(html, /id="hero-mode-fill" class="abtn btn-compact hero-mode-btn"/);
+  assert.match(html, /onclick="setHeroCropAxis\('x',0\)">Left 0%/);
+  assert.match(html, /onclick="setHeroCropAxis\('x',50\)">Centre 50%/);
+  assert.match(html, /onclick="setHeroCropAxis\('x',100\)">Right 100%/);
+  assert.match(html, /onclick="setHeroCropAxis\('y',0\)">Top 0%/);
+  assert.match(html, /onclick="setHeroCropAxis\('y',50\)">Centre 50%/);
+  assert.match(html, /onclick="setHeroCropAxis\('y',100\)">Bottom 100%/);
+  assert.match(html, /onclick="copyHeroCrop\(\)">Copy Crop/);
+  assert.match(html, /onclick="pasteHeroCrop\(\)">Paste Crop/);
+});
+
+function extractCropWorkflowScript() {
+  const start = html.indexOf('const CROP_CONTROLS=');
+  const end = html.indexOf('function clampHeroCropValue', start);
+  assert.notEqual(start, -1, 'Could not locate crop workflow start');
+  assert.notEqual(end, -1, 'Could not locate crop workflow end');
+  return html.slice(start, end);
+}
+
+function createCropWorkflowContext() {
+  const elements = {};
+  const makeInput = (id, value, min = '0', max = '100') => ({
+    id,
+    value: String(value),
+    min,
+    max,
+    textContent: '',
+    classList: { toggle() {} },
+    setAttribute() {}
+  });
+  elements['crop-zoom'] = makeInput('crop-zoom', 125, '100', '200');
+  elements['crop-zoom-input'] = makeInput('crop-zoom-input', 125, '100', '200');
+  elements['crop-x'] = makeInput('crop-x', 22);
+  elements['crop-x-input'] = makeInput('crop-x-input', 22);
+  elements['crop-y'] = makeInput('crop-y', 64);
+  elements['crop-y-input'] = makeInput('crop-y-input', 64);
+  ['hero-crop-status-zoom', 'hero-crop-status-x', 'hero-crop-status-y', 'hero-crop-status-mode', 'hero-crop-preset-feedback'].forEach(id => {
+    elements[id] = { id, textContent: '', classList: { toggle() {} }, setAttribute() {} };
+  });
+  ['crop-controls', 'hero-crop-status', 'hero-actions-panel', 'hero-quick-position', 'hero-crop-presets', 'hero-mode-fill', 'hero-mode-fit'].forEach(id => {
+    elements[id] ||= { id, textContent: '', classList: { toggle() {} }, setAttribute() {} };
+  });
+
+  const context = {
+    offers: [{ _img: 'hero-a', _cropZoom: 125, _cropX: 22, _cropY: 64, _cropPosVersion: 2, _heroFitMode: 'fit' }, { _img: 'hero-b' }],
+    cur: 0,
+    refreshes: 0,
+    document: { getElementById: id => elements[id] || null, querySelector: () => null },
+    refreshOfferUi: () => { context.refreshes += 1; },
+    recordCampaignHistoryAfterAsyncChange: () => {}
+  };
+  context.elements = elements;
+  vm.createContext(context);
+  vm.runInContext(extractCropWorkflowScript(), context);
+  return context;
+}
+
+test('quick position buttons update existing crop values without changing crop ranges', () => {
+  const context = createCropWorkflowContext();
+  context.setHeroCropAxis('x', 100);
+  context.setHeroCropAxis('y', 0);
+
+  assert.equal(context.offers[0]._cropX, 100);
+  assert.equal(context.offers[0]._cropY, 0);
+  assert.equal(context.offers[0]._cropPosVersion, 2);
+  assert.equal(context.elements['crop-x'].value, 100);
+  assert.equal(context.elements['crop-y'].value, 0);
+  assert.equal(context.elements['hero-crop-status-x'].textContent, '100%');
+  assert.equal(context.elements['hero-crop-status-y'].textContent, '0%');
+});
+
+test('copy and paste crop transfers zoom, position and fill fit mode between offers', () => {
+  const context = createCropWorkflowContext();
+  context.copyHeroCrop();
+  context.cur = 1;
+  context.elements['crop-zoom'].value = '100';
+  context.elements['crop-x'].value = '50';
+  context.elements['crop-y'].value = '50';
+  context.pasteHeroCrop();
+
+  assert.equal(context.offers[1]._cropZoom, 125);
+  assert.equal(context.offers[1]._cropX, 22);
+  assert.equal(context.offers[1]._cropY, 64);
+  assert.equal(context.offers[1]._cropPosVersion, 2);
+  assert.equal(context.offers[1]._heroFitMode, 'fit');
+  assert.equal(context.elements['hero-crop-status-zoom'].textContent, '125%');
+  assert.equal(context.elements['hero-crop-status-mode'].textContent, 'Fit Image');
+});
