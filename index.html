@@ -359,6 +359,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 #sheets-status.empty-state{margin-top:5px;white-space:normal;}
 .campaign-history-item{border:1px solid var(--border);border-radius:var(--radius);padding:5px;background:#fff;display:grid;gap:5px;}
 .campaign-thumbnail{border:1px solid rgba(160,146,103,.28);border-radius:var(--radius);background:linear-gradient(135deg,#fff 0%,#f8f7f3 62%,rgba(160,146,103,.12) 100%);padding:5px;display:grid;gap:4px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.55);}
+.campaign-thumbnail[role="button"]{cursor:pointer;transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease;}
+.campaign-thumbnail[role="button"]:hover{border-color:rgba(160,146,103,.46);box-shadow:inset 0 0 0 1px rgba(255,255,255,.7),0 2px 8px rgba(21,39,63,.08);transform:translateY(-1px);}
+.campaign-thumbnail[role="button"]:focus-visible{outline:2px solid rgba(160,146,103,.62);outline-offset:2px;}
 .campaign-thumbnail-operators{display:flex;align-items:center;gap:3px;min-width:0;overflow:hidden;}
 .campaign-thumbnail-pill{display:inline-flex;align-items:center;justify-content:center;min-width:25px;max-width:46px;height:17px;padding:0 5px;border-radius:999px;background:rgba(160,146,103,.14);border:1px solid rgba(160,146,103,.34);color:var(--navy);font-size:8px;font-weight:700;line-height:1;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .campaign-thumbnail-name{font-size:10px;font-weight:700;color:var(--navy);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -3749,14 +3752,15 @@ function getCampaignThumbnailSavedTime(item){
   try{ return date.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}); }
   catch(e){ return ""; }
 }
-function renderCampaignThumbnail(item){
+function renderCampaignThumbnail(item,loadId){
   const name=escapeCampaignHistoryText(getCampaignThumbnailName(item));
   const operators=getCampaignThumbnailOperatorEntries(item).map(entry=>`<span class="campaign-thumbnail-pill" style="${escapeCampaignHistoryText(getCampaignThumbnailPillStyle(entry.operator))}">${escapeCampaignHistoryText(entry.label)}</span>`).join("");
   const offerCount=getCampaignThumbnailOfferCount(item);
   const savedTime=getCampaignThumbnailSavedTime(item);
   const offerLabel=`${offerCount} ${offerCount===1 ? "Offer" : "Offers"}`;
   const meta=savedTime ? `${offerLabel} · Saved ${savedTime}` : offerLabel;
-  return `<div class="campaign-thumbnail" aria-label="${name} campaign thumbnail"><div class="campaign-thumbnail-operators">${operators}</div><div class="campaign-thumbnail-name">${name}</div><div class="campaign-thumbnail-meta">${escapeCampaignHistoryText(meta)}</div></div>`;
+  const loadAttrs=loadId ? ` role="button" tabindex="0" title="Load campaign" aria-label="Load campaign" onclick="restoreCampaignHistoryEntry('${loadId}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();restoreCampaignHistoryEntry('${loadId}');}"` : ` aria-label="${name} campaign thumbnail"`;
+  return `<div class="campaign-thumbnail"${loadAttrs}><div class="campaign-thumbnail-operators">${operators}</div><div class="campaign-thumbnail-name">${name}</div><div class="campaign-thumbnail-meta">${escapeCampaignHistoryText(meta)}</div></div>`;
 }
 function renderCampaignHistoryList(targetId,items,emptyLabel){
   const el=document.getElementById(targetId);
@@ -3766,7 +3770,7 @@ function renderCampaignHistoryList(targetId,items,emptyLabel){
     const safeId=escapeCampaignHistoryText(item.id);
     const safeTitle=escapeCampaignHistoryText(item.title||"Untitled Campaign");
     const safeMeta=escapeCampaignHistoryText(campaignHistoryMeta(item));
-    return `<div class="campaign-history-item">${renderCampaignThumbnail(item)}<div class="campaign-history-title">${safeTitle}</div><div class="campaign-history-meta">${safeMeta}</div><div class="campaign-history-actions"><button class="abtn btn-compact" onclick="restoreCampaignHistoryEntry('${safeId}')">Load</button><button class="abtn btn-compact" onclick="togglePinCampaignHistoryEntry('${safeId}')">Pin</button><button class="abtn red btn-compact" onclick="deleteCampaignHistoryEntry('${safeId}')">Delete</button></div></div>`;
+    return `<div class="campaign-history-item">${renderCampaignThumbnail(item,safeId)}<div class="campaign-history-title">${safeTitle}</div><div class="campaign-history-meta">${safeMeta}</div><div class="campaign-history-actions"><button class="abtn btn-compact" onclick="restoreCampaignHistoryEntry('${safeId}')">Load</button><button class="abtn btn-compact" onclick="togglePinCampaignHistoryEntry('${safeId}')">Pin</button><button class="abtn red btn-compact" onclick="deleteCampaignHistoryEntry('${safeId}')">Delete</button></div></div>`;
   }).join("");
 }
 function getCampaignLibraryBuckets(){
