@@ -45,8 +45,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .offer-tabs{position:relative;display:flex;margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:0;background:#fafaf8;flex-shrink:0;overflow:hidden;isolation:isolate;}
 .offer-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:0;background:linear-gradient(180deg,#b2a374 0%,var(--gold) 100%);box-shadow:0 1px 4px rgba(14,27,42,.22),inset 0 0 0 1px rgba(255,255,255,.18);transform:translateX(0);transition:transform .2s ease,width .2s ease;pointer-events:none;}
 .offer-tab-item{position:relative;z-index:1;flex:1;min-width:0;}
-.otab{width:100%;height:100%;padding:4px 4px 13px;font-size:10px;font-weight:600;border:none;background:transparent;color:var(--muted);cursor:pointer;letter-spacing:.04em;transition:color .18s ease,background .18s ease,box-shadow .18s ease,opacity .18s ease;display:flex;align-items:flex-start;justify-content:center;}
-.offer-tab-label{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:0;width:100%;min-width:0;line-height:1.05;text-align:center;}
+.otab{width:100%;height:100%;min-height:47px;padding:7px 4px 15px;font-size:10px;font-weight:600;border:none;background:transparent;color:var(--muted);cursor:pointer;letter-spacing:.04em;transition:color .18s ease,background .18s ease,box-shadow .18s ease,opacity .18s ease;display:flex;align-items:flex-start;justify-content:center;}
+.offer-tab-label{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;width:100%;min-width:0;line-height:1.12;text-align:center;}
 .offer-tab-number,.offer-tab-operator,.offer-tab-ship{display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .offer-tab-number{font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);opacity:.72;}
 .offer-tab-operator{font-size:9px;font-weight:700;letter-spacing:.01em;color:var(--text);opacity:.72;}
@@ -61,7 +61,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .otab.drag-over{background:rgba(160,146,103,.18);box-shadow:inset 0 0 0 1px rgba(160,146,103,.42);}
 .otab.move-preflash{background:rgba(160,146,103,.14);box-shadow:inset 0 0 0 1px rgba(160,146,103,.32);}
 .otab.move-postflash{background:rgba(160,146,103,.16);box-shadow:inset 0 0 0 1px rgba(160,146,103,.34);}
-.status-dot{position:absolute;z-index:2;left:50%;bottom:4px;width:5.8px;height:5.8px;border-radius:50%;background:var(--border);transform:translateX(-50%);pointer-events:none;box-shadow:0 0 0 1px rgba(255,255,255,.5);}
+.status-dot{position:absolute;z-index:2;left:50%;bottom:5px;width:5.8px;height:5.8px;border-radius:50%;background:var(--border);transform:translateX(-50%);pointer-events:none;box-shadow:0 0 0 1px rgba(255,255,255,.5);}
 .status-dot.green{background:var(--green);}
 .status-dot.amber{background:var(--amber);}
 .status-dot.red{background:var(--red);}
@@ -331,6 +331,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .abtn.green{background:var(--green);color:#fff;border-color:var(--green);}
 .abtn.red{background:var(--red);color:#fff;border-color:var(--red);}
 .abtn.amber{background:var(--amber);color:#fff;border-color:var(--amber);}
+.sb-actions .act-row{align-items:stretch;gap:5px;}
+.sb-actions .abtn{min-height:28px;padding:4px 7px;border:none;border-radius:3px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(14,27,42,.24);}
+.sb-actions .abtn.gold{box-shadow:0 2px 6px rgba(160,146,103,.35);}
+.sb-actions .abtn:hover{opacity:.88;transform:translateY(-1px);}
 .btn-compact{font-size:9px;padding:4px;}
 .lock-ind{display:none;font-size:9px;color:var(--amber);font-weight:700;text-align:center;margin-bottom:4px;padding:3px;background:#fff8e0;border-radius:3px;}
 .lock-ind.active{display:block;}
@@ -1074,7 +1078,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.1.7";
+const APP_VERSION = "v2.1.8";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
