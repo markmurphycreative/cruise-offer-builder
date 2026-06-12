@@ -2873,6 +2873,19 @@ function loadFromCSVFile(event){
   event.target.value="";
 }
 
+function parseFamilyPassengerBasis(text){
+  const value=String(text||"").replace(/\u00a0/g," ");
+  const adultPattern="(?:2|two)\\s+adults";
+  const childPattern="([1-4])\\s+(child|children)";
+  const familyPattern=new RegExp("\\bfamily\\b[\\s\\S]{0,80}"+adultPattern+"[\\s\\S]{0,40}"+childPattern,"i");
+  const passengerPattern=new RegExp(adultPattern+"[\\s\\S]{0,40}"+childPattern,"i");
+  const match=value.match(familyPattern)||value.match(passengerPattern);
+  if(!match) return "";
+  const childCount=parseInt(match[1],10);
+  if(!childCount || childCount<1 || childCount>4) return "";
+  return `Based On 2 Adults & ${childCount} ${childCount===1?"Child":"Children"} Sharing`;
+}
+
 const LAST_SUCCESSFUL_CSV_KEY = "cobLastSuccessfulCsvV1";
 let restoringLastSuccessfulCsv = false;
 function storeLastSuccessfulCsv(csv){
@@ -3025,7 +3038,11 @@ function processSheetCSV(csv,status){
       boardlbl: boardParts.label,
       incl: val(row,headers,["inclusions","inclusion","included"]),
       ports: val(row,headers,["ports","port_list","itinerary"]),
-      basis: val(row,headers,["price_basis","basis"]) || "Based On 2 Adults Sharing",
+      basis: parseFamilyPassengerBasis([
+        val(row,headers,["price_basis","basis"]),
+        val(row,headers,["price"]),
+        row.map(cell=>norm(cell)).join(" ")
+      ].join(" ")) || val(row,headers,["price_basis","basis"]) || "Based On 2 Adults Sharing",
       url: val(row,headers,["url","destination_url"]) || offers[loaded].url || "https://dawsonandsanderson.co.uk/cruises",
       tags: offers[loaded].tags
     };
@@ -4413,7 +4430,7 @@ function exportJSON(){
 // ═══════════════════════════════════════════════════════
 function getOrdinal(n){ const s=["th","st","nd","rd"],v=n%100; return s[(v-20)%10]||s[v]||s[0]; }
 let pendingParseResult=null;
-const PARSE_FIELD_MAP={operatorKey:"f-operator",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};
+const PARSE_FIELD_MAP={operatorKey:"f-operator",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};
 const OPERATOR_ALIASES={po:[/\bp\s*&\s*o\b/i,/\bp\s*and\s*o\b/i,/\bp&o\s+cruises\b/i],royal:[/\broyal\b/i,/\brci\b/i,/\broyal\s+caribbean\b/i],marella:[/\bmarella\b/i,/\bmarella\s+cruises\b/i],celebrity:[/\bcelebrity\b/i,/\bcelebrity\s+cruises\b/i],fred:[/\bfred\s+olsen\b/i,/\bfred\.?\s*olsen\b/i],cunard:[/\bcunard\b/i],msc:[/\bmsc\b/i],ncl:[/\bnorwegian\b/i,/\bncl\b/i],princess:[/\bprincess\b/i],ambassador:[/\bambassador\b/i],virgin:[/\bvirgin\b/i]};
 const AIRPORT_WORDS=["newcastle","manchester","heathrow","gatwick","birmingham","bristol","glasgow","edinburgh","london"];
 const ITINERARY_SECTION_LABEL=/^(?:itinerary|ports|you(?:'|’)?ll visit)\s*:?\s*(.*)$/i;
@@ -4463,6 +4480,7 @@ function parseOffer(){
   const pipe=lines.find(l=>l.includes('|')); if(pipe){const parts=pipe.split('|').map(s=>s.trim()); if(!parsed.operatorKey&&parts[0]){for(const[k,arr]of Object.entries(OPERATOR_ALIASES)){if(arr.some(r=>r.test(parts[0]))){parsed.operatorKey=k;score+=18;break;}}} if(parts[1]){parsed.ship=parts[1];score+=8;} }
   const nm=txt.match(/\b(\d{1,2})\s*(?:nights?|nts?)\b/i); if(nm){parsed.nights=nm[1];score+=14;}
   const pm=txt.match(/(?:from\s*)?£?\s*(\d{3,5}(?:,\d{3})?)\s*pp?\b|(?:from\s*)?£\s*(\d{3,5}(?:,\d{3})?)/i); if(pm){parsed.price=(pm[1]||pm[2]||'').replace(/,/g,'');score+=14;}
+  const familyBasis=parseFamilyPassengerBasis(txt); if(familyBasis){parsed.basis=familyBasis;}
   const bm=txt.match(/\b(AI|FB|HB|SC|ALL INCLUSIVE|FULL BOARD|HALF BOARD|SELF CATERING)\b/i); if(bm&&BOARD_MAP[bm[1].toUpperCase()]){const mappedBoard=BOARD_MAP[bm[1].toUpperCase()];parsed.board=mappedBoard[0];parsed.boardlbl=mappedBoard[1];score+=10;}
   const months='january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec';
   let dm=txt.match(new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${months})\\s+(\\d{2,4})\\b`,'i'))||txt.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);
