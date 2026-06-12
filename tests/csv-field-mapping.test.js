@@ -58,7 +58,7 @@ function createImportHarness() {
 function importCSV(csv) {
   const harness = createImportHarness();
   harness.context.processSheetCSV(csv, harness.status);
-  assert.equal(harness.status.textContent, '✓ Loaded 1 offer(s)');
+  assert.equal(harness.status.textContent, '✓ 1 offer loaded');
   return harness.context.offers[0];
 }
 

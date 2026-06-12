@@ -313,6 +313,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 
 
 .csv-success{color:var(--green)!important;font-weight:700;}
+#sheets-status.csv-loaded-status{display:block;margin-top:10px;color:var(--green)!important;font-size:9px;font-weight:600;line-height:1.35;letter-spacing:.01em;}
 .csv-error{color:var(--red)!important;font-weight:700;}
 .experimental-box{margin-top:8px;border-top:1px solid var(--border);padding-top:8px;}
 .experimental-summary{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);cursor:pointer;user-select:none;margin-bottom:6px;}
@@ -3211,8 +3212,8 @@ function processSheetCSV(csv,status){
   try{ updateAllStatus(); }catch(e){ console.error("CSV status update error",e); }
   try{ genAllUtms(true); }catch(e){ console.error("CSV UTM update error",e); }
   try{ updateExportFilenames(); }catch(e){ console.error("CSV filename update error",e); }
-  status.className=loaded?"csv-success":"csv-error";
-  status.textContent=loaded?"✓ Loaded "+loaded+" offer(s)":"⚠ CSV read, but no offer rows found. Headers found: "+headers.join(", ");
+  status.className=loaded?"csv-success csv-loaded-status":"csv-error";
+  status.textContent=loaded?"✓ "+loaded+" offer"+(loaded===1?"":"s")+" loaded":"⚠ CSV read, but no offer rows found. Headers found: "+headers.join(", ");
   if(loaded && !restoringLastSuccessfulCsv) storeLastSuccessfulCsv(csv);
 }
 
