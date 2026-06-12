@@ -54,8 +54,8 @@ test('export toasts replace the active notification and dismiss automatically af
   vm.createContext(context);
   vm.runInContext(`var exportToastTimer;\n${extractFunction('showExportToast')}`, context);
 
-  context.showExportToast('JPG exported successfully');
-  assert.equal(toast.textContent, 'JPG exported successfully');
+  context.showExportToast('Card exported successfully');
+  assert.equal(toast.textContent, 'Card exported successfully');
   assert.equal(toast.className, 'export-toast active');
   assert.equal(timers.size, 1);
   assert.equal([...timers.values()][0].delay, 2500);
@@ -72,8 +72,8 @@ test('export toasts replace the active notification and dismiss automatically af
 test('all export entry points report their existing success and failure outcomes through toasts', () => {
   assert.match(extractFunction('exportCurrent'), /showExportToast\("Card exported successfully"\)/);
   assert.match(extractFunction('exportAll'), /showExportToast\("ZIP exported successfully"\)/);
-  assert.match(extractFunction('exportCurrentJPG'), /showExportToast\('JPG exported successfully'\)/);
-  assert.match(extractFunction('exportAllJPG'), /showExportToast\('ZIP exported successfully'\)/);
+  assert.match(extractFunction('exportCurrentJPG'), /showExportToast\('Card exported successfully'\)/);
+  assert.match(extractFunction('exportAllJPG'), /showExportToast\('All cards exported successfully'\)/);
   assert.match(extractFunction('exportCampaignPack'), /showExportToast\('Campaign pack exported successfully'\)/);
   assert.match(extractFunction('exportAllJPG'), /showExportToast\('No offer loaded','error'\)/);
   ['exportCurrent', 'exportAll', 'exportCurrentJPG', 'exportAllJPG', 'exportCampaignPack'].forEach(name => {
@@ -82,11 +82,13 @@ test('all export entry points report their existing success and failure outcomes
 });
 
 
-test('export panel exposes only the streamlined JPG and campaign-pack actions while retaining internal PNG support', () => {
-  assert.match(html, /class="export-actions single-action">\s*<button class="export-btn single" onclick="exportCurrentJPG\(\)" id="exp-single-jpg-btn"/);
-  assert.match(html, /class="export-actions single-action">\s*<button class="export-btn all" onclick="exportAllJPG\(\)" id="exp-all-jpg-btn"/);
-  assert.match(html, /class="export-actions single-action">\s*<button class="export-btn all" onclick="exportCampaignPack\(\)" id="exp-pack-btn"/);
-  assert.match(html, /id="exp-pack-lbl">Export Campaign Pack<\/span><span aria-hidden="true">Export Campaign Pack<\/span>/);
+test('export panel exposes a compact toolbar while retaining export entry points and render formats', () => {
+  assert.match(html, /<div class="export-title">Exports<\/div>\s*<div class="export-actions export-toolbar" role="group" aria-label="Exports">/);
+  assert.match(html, /<button class="export-btn secondary" onclick="exportCurrentJPG\(\)" id="exp-single-jpg-btn">[\s\S]*?<span aria-hidden="true">Card<\/span>/);
+  assert.match(html, /<button class="export-btn secondary" onclick="exportAllJPG\(\)" id="exp-all-jpg-btn">[\s\S]*?<span aria-hidden="true">All Cards<\/span>/);
+  assert.match(html, /<button class="export-btn primary" onclick="exportCampaignPack\(\)" id="exp-pack-btn">[\s\S]*?<span aria-hidden="true">Campaign Pack<\/span>/);
+  assert.doesNotMatch(html, /class="export-actions single-action"/);
+  assert.doesNotMatch(html, /class="export-group-title">(?:Current Card|All 4 Cards|Campaign Pack)<\/div>/);
   assert.doesNotMatch(html, /id="exp-single-btn"/);
   assert.doesNotMatch(html, /id="exp-all-btn"/);
   assert.match(html, /function exportCurrent\(\)/);
