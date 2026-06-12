@@ -87,7 +87,7 @@ test('restoring a four-offer CSV repopulates card fields, operator logos and the
   const start = html.indexOf('const LAST_SUCCESSFUL_CSV_KEY =');
   const end = html.indexOf('\nfunction currentSheetTemplateTSV()', start);
   assert.ok(start >= 0 && end > start, 'Could not locate CSV persistence/import block');
-  const source = html.slice(start, end)
+  const source = [extract(/function parseFamilyPassengerBasis\(text\)\{[\s\S]*?\n\}/, 'family passenger basis parser'), html.slice(start, end)].join('\n')
     .replace('const LAST_SUCCESSFUL_CSV_KEY', 'var LAST_SUCCESSFUL_CSV_KEY')
     .replace('let restoringLastSuccessfulCsv', 'var restoringLastSuccessfulCsv');
   const context = {
@@ -149,7 +149,7 @@ test('CSV import recognises AmaWaterways ships when the operator column is blank
   const start = html.indexOf('const LAST_SUCCESSFUL_CSV_KEY =');
   const end = html.indexOf('\nfunction currentSheetTemplateTSV()', start);
   assert.ok(start >= 0 && end > start, 'Could not locate CSV persistence/import block');
-  const source = html.slice(start, end)
+  const source = [extract(/function parseFamilyPassengerBasis\(text\)\{[\s\S]*?\n\}/, 'family passenger basis parser'), html.slice(start, end)].join('\n')
     .replace('const LAST_SUCCESSFUL_CSV_KEY', 'var LAST_SUCCESSFUL_CSV_KEY')
     .replace('let restoringLastSuccessfulCsv', 'var restoringLastSuccessfulCsv');
   const context = {
@@ -185,4 +185,57 @@ test('CSV import recognises AmaWaterways ships when the operator column is blank
       { operator: 'amawaterways', ship: 'Zambezi Queen' }
     ]
   );
+});
+
+test('CSV import derives the family passenger basis from family offer price text', () => {
+  const csv = [
+    'operator,offer_name,ship_name,price,price_basis,nights,date,ports,url',
+    'P&O Cruises,Family Caribbean,Arvia,£1689,for a family of two adults & 1 child,7,12 November 2026,Barbados • Martinique,https://example.com/family-one',
+    'Marella Cruises,Family Mediterranean,Marella Explorer,£2499,for a family of 2 adults & 2 children,7,4 April 2027,Tenerife • Corfu,https://example.com/family-two',
+    'Cunard,Standard Cruise,Queen Anne,£1249,,7,8 February 2027,Southampton • Tromso,https://example.com/standard'
+  ].join('\n');
+  const storage = new Map();
+  const status = {};
+  const campaign = { value: '' };
+  const start = html.indexOf('const LAST_SUCCESSFUL_CSV_KEY =');
+  const end = html.indexOf('\nfunction currentSheetTemplateTSV()', start);
+  assert.ok(start >= 0 && end > start, 'Could not locate CSV persistence/import block');
+  const source = [extract(/function parseFamilyPassengerBasis\(text\)\{[\s\S]*?\n\}/, 'family passenger basis parser'), html.slice(start, end)].join('\n')
+    .replace('const LAST_SUCCESSFUL_CSV_KEY', 'var LAST_SUCCESSFUL_CSV_KEY')
+    .replace('let restoringLastSuccessfulCsv', 'var restoringLastSuccessfulCsv');
+  const context = {
+    console,
+    offers: [{}, {}, {}, {}],
+    cur: 0,
+    OPERATOR_CONFIG: {
+      po: { aliases: [/\bp\s*&\s*o\b/i] },
+      marella: { aliases: [/\bmarella\b/i] },
+      cunard: { aliases: [/\bcunard\b/i] }
+    },
+    document: {
+      getElementById: id => id === 'sheets-status' ? status : id === 'g-campaign' ? campaign : null,
+      querySelectorAll: () => []
+    },
+    localStorage: {
+      getItem: key => storage.get(key) || null,
+      setItem: (key, value) => storage.set(key, value)
+    },
+    load: () => {},
+    renderSingleOffer: () => {},
+    updateAllStatus: () => {},
+    genAllUtms: () => {},
+    updateExportFilenames: () => {},
+    findKnownOperatorShip: findKnownOperatorShipForTest
+  };
+  vm.createContext(context);
+  vm.runInContext(source, context);
+
+  context.processSheetCSV(csv, status);
+
+  assert.equal(context.offers[0].price, '1689');
+  assert.equal(context.offers[0].basis, 'Based On 2 Adults & 1 Child Sharing');
+  assert.equal(context.offers[1].price, '2499');
+  assert.equal(context.offers[1].basis, 'Based On 2 Adults & 2 Children Sharing');
+  assert.equal(context.offers[2].price, '1249');
+  assert.equal(context.offers[2].basis, 'Based On 2 Adults Sharing');
 });

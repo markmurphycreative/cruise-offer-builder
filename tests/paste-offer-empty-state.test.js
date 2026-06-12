@@ -89,7 +89,7 @@ function createClassList() {
 
 function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
   const fields = Object.fromEntries([
-    'operator', 'name', 'ship', 'incl', 'price', 'board', 'boardlbl', 'day', 'month', 'nights', 'ports'
+    'operator', 'name', 'ship', 'incl', 'price', 'basis', 'board', 'boardlbl', 'day', 'month', 'nights', 'ports'
   ].map(name => [`f-${name}`, { value: '', classList: createClassList(), offsetWidth: 0 }]));
   const modal = { classList: createClassList() };
   modal.classList.add('active');
@@ -104,7 +104,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     offers,
     cur,
     PARSE_FIELD_MAP: {
-      operatorKey: 'f-operator', name: 'f-name', ship: 'f-ship', incl: 'f-incl', price: 'f-price',
+      operatorKey: 'f-operator', name: 'f-name', ship: 'f-ship', incl: 'f-incl', price: 'f-price', basis: 'f-basis',
       board: 'f-board', boardlbl: 'f-boardlbl', day: 'f-day', month: 'f-month', nights: 'f-nights', ports: 'f-ports'
     },
     document: {
@@ -146,6 +146,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('cleanParsedPorts'),
     extractFunction('escapeRegExp'),
     extractFunction('findKnownOperatorShip'),
+    extractFunction('parseFamilyPassengerBasis'),
     extractFunction('parseOffer'),
     extractFunction('setParseStatus'),
     extractFunction('showParsePreview'),
@@ -238,6 +239,42 @@ test('real Load Offer runtime path applies the supplied Celebrity offer when the
   assert.equal(harness.calls.autosave, 1);
 });
 
+
+
+test('family passenger basis parser recognises child counts one through four', () => {
+  const context = {};
+  vm.createContext(context);
+  vm.runInContext(extractFunction('parseFamilyPassengerBasis'), context);
+
+  assert.equal(context.parseFamilyPassengerBasis('for a family of two adults & 1 child'), 'Based On 2 Adults & 1 Child Sharing');
+  assert.equal(context.parseFamilyPassengerBasis('for a family of 2 adults & 2 children'), 'Based On 2 Adults & 2 Children Sharing');
+  assert.equal(context.parseFamilyPassengerBasis('for a family of two adults & 3 children'), 'Based On 2 Adults & 3 Children Sharing');
+  assert.equal(context.parseFamilyPassengerBasis('for a family of 2 adults & 4 children'), 'Based On 2 Adults & 4 Children Sharing');
+  assert.equal(context.parseFamilyPassengerBasis('£1249 per person based on 2 sharing'), '');
+});
+
+test('Paste Offer sets family passenger basis for one child while keeping the parsed price unchanged', () => {
+  const harness = createHarness([], 0, { hasParsePreviewModal: false });
+  harness.parse('P&O Cruises\nFamily Caribbean offer\nArvia\n7 nights\nFull Board\n£1689 for a family of two adults & 1 child');
+
+  assert.equal(harness.context.offers[0].price, '1689');
+  assert.equal(harness.context.offers[0].basis, 'Based On 2 Adults & 1 Child Sharing');
+});
+
+test('Paste Offer sets family passenger basis for multiple children with numeric adults', () => {
+  const harness = createHarness([], 0, { hasParsePreviewModal: false });
+  harness.parse('Marella Cruises\nFamily Mediterranean offer\nMarella Explorer\n7 nights\nFull Board\n£2499 for a family of 2 adults & 2 children');
+
+  assert.equal(harness.context.offers[0].price, '2499');
+  assert.equal(harness.context.offers[0].basis, 'Based On 2 Adults & 2 Children Sharing');
+});
+
+test('Paste Offer leaves standard per-person passenger basis unchanged', () => {
+  const harness = createHarness([], 0, { hasParsePreviewModal: false });
+  harness.parse(CELEBRITY_CRUISES_OFFER);
+
+  assert.equal(harness.context.offers[0].basis, undefined);
+});
 
 test("Paste Offer recognises Itinerary, Ports, and You'll Visit labels with line and bullet-separated destinations", () => {
   for (const label of ['Itinerary', 'Ports', "You'll Visit"]) {
