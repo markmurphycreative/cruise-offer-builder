@@ -230,7 +230,7 @@ test('selector-only critical content status does not alter Campaign Health readi
 
   context.updateAllStatus();
 
-  assert.equal(elements['prod-status-summary'].innerHTML, 'Ready for Export<br><span class="prod-status-secondary">No blockers found</span>');
+  assert.equal(elements['prod-status-summary'].innerHTML, 'Ready for Export<br><span class="prod-status-secondary">0 blockers • 0 warnings</span>');
   assert.deepEqual(dots.map(dot => dot.className), Array(4).fill('status-dot red'));
 });
 

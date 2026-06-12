@@ -116,6 +116,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .prod-status-item.ok{color:var(--muted);}
 .prod-status-item.warn{color:var(--amber);font-weight:600;}
 .prod-status-item.hero-warning{color:var(--red);background:#fff0f0;border:1px solid #f0b0b0;border-radius:3px;padding:4px 5px;font-weight:700;}
+.prod-status-empty{font-size:9px;line-height:1.35;color:var(--muted);}
 .copy-qa-panel{margin-top:6px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;}
 .copy-qa-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);margin-bottom:4px;}
 .copy-qa-status{font-size:9px;line-height:1.35;color:var(--muted);margin-bottom:4px;}
@@ -1079,7 +1080,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.1.0";
+const APP_VERSION = "v2.1.4";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -2642,51 +2643,88 @@ function hasOperatorLogo(o){
   return !!(header.pngData||header.svgData);
 }
 function updateProductionStatus(){
-  const o=offers[cur]||{};
-  const readiness=getOfferReadiness(o);
+  const pluralise=count=>`${count} ${count===1?"blocker":"blockers"}`;
+  const pluraliseWarning=count=>`${count} ${count===1?"warning":"warnings"}`;
+  const stripPrefix=label=>String(label||"").replace(/^⚠\s*/,"").replace(/^✓\s*/,"");
+  const normaliseIssueText=label=>{
+    const text=stripPrefix(label);
+    if(/^Hero image required for export$/i.test(text)) return "missing hero image";
+    const missingMatch=text.match(/^(.+) missing$/i);
+    if(missingMatch) return `missing ${missingMatch[1].toLowerCase()}`;
+    return text.replace(/^([A-Z][a-z])/,match=>match.toLowerCase());
+  };
+  const makeIssue=(type,label,offerIndex,warningClass="")=>{
+    const text=offerIndex===undefined?stripPrefix(label):normaliseIssueText(label);
+    return {type,text:offerIndex===undefined?text:`Offer ${offerIndex+1} ${text}`,warningClass};
+  };
   const loadedOffers=offers.filter(isOfferLoaded).length;
   const value=id=>String(((document.getElementById(id)||{}).value)||"").trim();
+  const offerIndexes=offers.map((offer,index)=>isOfferLoaded(offer)?index:null).filter(index=>index!==null);
+  const diagnosticOfferIndexes=offerIndexes;
+  const assetChecks=[];
+  const marketingChecks=[];
+  diagnosticOfferIndexes.forEach(index=>{
+    const offer=offers[index]||{};
+    const offerReadiness=getOfferReadiness(offer);
+    assetChecks.push(
+      {ok:offerReadiness.heroLoaded,okLbl:"✓ Hero image loaded",warnLbl:"⚠ Hero image required for export",warningClass:"hero-warning",severity:"blocker",offerIndex:index},
+      {ok:offerReadiness.operatorLogoPresent,okLbl:"✓ Operator logo present",warnLbl:"⚠ Operator logo missing",severity:"warning",offerIndex:index},
+      {ok:offerReadiness.operatorSelected,okLbl:"✓ Operator selected",warnLbl:"⚠ Operator not selected",severity:"warning",offerIndex:index}
+    );
+    marketingChecks.push({ok:offerReadiness.utmGenerated,okLbl:"✓ UTMs generated",warnLbl:"⚠ UTM missing",severity:"warning",offerIndex:index});
+    if(offer._img && String(offer._img).startsWith("http")){
+      assetChecks.push({ok:false,warnLbl:"⚠ External image URL may affect export",severity:"warning",offerIndex:index});
+    }
+  });
   const groups=[
     {label:"Campaign",checks:[
-      {ok:!!value("g-campaign"),okLbl:"✓ Campaign name present",warnLbl:"⚠ Campaign name missing"},
-      {ok:!!value("g-date"),okLbl:"✓ Send date present",warnLbl:"⚠ Send date missing"},
-      {ok:!!value("g-airport"),okLbl:"✓ Departure airport present",warnLbl:"⚠ Departure airport missing"},
-      {ok:!!value("g-terms"),okLbl:"✓ Default T&Cs present",warnLbl:"⚠ Default T&Cs missing"}
+      {ok:!!value("g-campaign"),okLbl:"✓ Campaign name present",warnLbl:"⚠ Campaign name missing",severity:"warning"},
+      {ok:!!value("g-date"),okLbl:"✓ Send date present",warnLbl:"⚠ Send date missing",severity:"warning"},
+      {ok:!!value("g-airport"),okLbl:"✓ Departure airport present",warnLbl:"⚠ Departure airport missing",severity:"warning"},
+      {ok:!!value("g-terms"),okLbl:"✓ Default T&Cs present",warnLbl:"⚠ Default T&Cs missing",severity:"warning"}
     ]},
     {label:"Offers",checks:[
-      {ok:loadedOffers>0,okLbl:"✓ At least one offer loaded",warnLbl:"⚠ No offers loaded",render:loadedOffers<offers.length},
+      {ok:loadedOffers>0,okLbl:"✓ At least one offer loaded",warnLbl:"⚠ No offers loaded",render:loadedOffers<offers.length,severity:"warning"},
       // Keep the existing readiness requirement while rendering the loaded count as progress.
       {ok:loadedOffers===offers.length,okLbl:`✓ Offers loaded (${loadedOffers}/${offers.length})`,render:loadedOffers>0,displayOk:true}
     ]},
-    {label:"Assets",checks:[
-      {ok:readiness.heroLoaded,okLbl:"✓ Hero image loaded",warnLbl:"⚠ Hero image required for export",warningClass:"hero-warning"},
-      {ok:readiness.operatorLogoPresent,okLbl:"✓ Operator logo present",warnLbl:"⚠ Operator logo missing"},
-      {ok:readiness.operatorSelected,okLbl:"✓ Operator selected",warnLbl:"⚠ Operator not selected"}
-    ]},
-    {label:"Marketing",checks:[
-      {ok:readiness.utmGenerated,okLbl:"✓ UTMs generated",warnLbl:"⚠ UTM missing"}
-    ]}
+    {label:"Assets",checks:assetChecks},
+    {label:"Marketing",checks:marketingChecks}
   ];
-  if(o._img && String(o._img).startsWith("http")) groups[2].checks.push({ok:false,warnLbl:"⚠ External image URL may affect export"});
-  const checks=groups.flatMap(group=>group.checks);
-  const attentionCount=checks.filter(check=>!check.ok).length;
-  const blockerCount=Number(!readiness.heroLoaded);
-  const warningCount=Number(!value("g-campaign"))+Number(!value("g-date"));
+  const diagnostics={blockers:[],warnings:[]};
+  const seenIssues=new Set();
+  groups.forEach(group=>{
+    group.checks.forEach(check=>{
+      if(check.render===false || check.ok || !check.warnLbl) return;
+      const issue=makeIssue(check.severity||"warning",check.warnLbl,check.offerIndex,check.warningClass||"");
+      const issueKey=`${issue.type}|${issue.text}`;
+      if(seenIssues.has(issueKey)) return;
+      seenIssues.add(issueKey);
+      if(issue.type==="blocker") diagnostics.blockers.push(issue);
+      else diagnostics.warnings.push(issue);
+    });
+  });
+  const blockerCount=diagnostics.blockers.length;
+  const warningCount=diagnostics.warnings.length;
+  const attentionCount=blockerCount+warningCount;
+  const countText=`${pluralise(blockerCount)} • ${pluraliseWarning(warningCount)}`;
   const collapsedSummary=document.getElementById("prod-status-collapsed-summary");
-  if(collapsedSummary) collapsedSummary.textContent=attentionCount?`${blockerCount} blockers · ${warningCount} warnings`:"Ready for export";
+  if(collapsedSummary) collapsedSummary.textContent=attentionCount?countText.replace(" • "," · "):"Ready for export";
   const exportHealthCount=document.getElementById("export-health-count");
   if(exportHealthCount){
-    exportHealthCount.textContent=attentionCount?`${blockerCount} blocker${blockerCount===1?"":"s"} · ${warningCount} warning${warningCount===1?"":"s"}`:"Ready";
+    exportHealthCount.textContent=attentionCount?countText.replace(" • "," · "):"Ready";
     exportHealthCount.classList.toggle("ready", !attentionCount);
   }
   const summary=document.getElementById("prod-status-summary");
   if(summary){
     summary.className=`prod-status-summary ${attentionCount?"warn":"ok"}`;
-    summary.innerHTML=attentionCount?`⚠ Campaign Not Ready<br><span class="prod-status-secondary">${blockerCount} blocker${blockerCount===1?"":"s"} • ${warningCount} warning${warningCount===1?"":"s"}</span>`:`Ready for Export<br><span class="prod-status-secondary">No blockers found</span>`;
+    summary.innerHTML=attentionCount?`⚠ Campaign Not Ready<br><span class="prod-status-secondary">${countText}</span>`:`Ready for Export<br><span class="prod-status-secondary">${countText}</span>`;
   }
   const host=document.getElementById("prod-status-list");
   if(!host) return;
-  host.innerHTML=groups.map(group=>`<div class="prod-status-group">${group.label}</div>${group.checks.filter(c=>c.render!==false).map(c=>{const displayOk=c.displayOk===undefined?c.ok:c.displayOk;return `<div class="prod-status-item ${displayOk?"ok":`warn ${c.warningClass||""}`}"><span>${displayOk?"•":"⚠"}</span><span>${displayOk?(c.okLbl||"").replace(/^✓\s*/,""):(c.warnLbl||"").replace(/^⚠\s*/,"")}</span></div>`}).join("")}`).join("");
+  const renderIssue=issue=>`<div class="${`prod-status-item warn ${issue.warningClass||""}`.trim()}"><span>⚠</span><span>${issue.text}</span></div>`;
+  const renderSection=(label,issues)=>`<div class="prod-status-group">${label}</div>${issues.length?issues.map(renderIssue).join(""):`<div class="prod-status-empty">None</div>`}`;
+  host.innerHTML=renderSection("BLOCKERS",diagnostics.blockers)+renderSection("WARNINGS",diagnostics.warnings);
 }
 
 // ═══════════════════════════════════════════════════════
