@@ -2976,6 +2976,75 @@ function processSheetCSV(csv,status){
     }
     return {code:code||"",label:label||""};
   }
+  function displayBoardInclusion(boardParts){
+    const label=norm(boardParts&&boardParts.label);
+    const code=norm(boardParts&&boardParts.code).toUpperCase();
+    if(code==="FB" || /full\s*board/i.test(label)) return "Full Board Dining";
+    if(code==="AI" || /all\s*inclusive/i.test(label)) return "All Inclusive";
+    if(code==="HB" || /half\s*board/i.test(label)) return "Half Board Dining";
+    if(code==="BB" || /bed\s*&?\s*breakfast/i.test(label)) return "Bed & Breakfast";
+    return label;
+  }
+  function hasAnyValue(row,headers,names){ return names.some(name=>!!val(row,headers,name)); }
+  function addUnique(parts,value){
+    value=norm(value);
+    if(value && !parts.some(item=>item.toLowerCase()===value.toLowerCase())) parts.push(value);
+  }
+  function normalisePassengerBasis(rawText,searchText){
+    const combined=norm([rawText,searchText].filter(Boolean).join(" "));
+    const family=parseFamilyPassengerBasis(combined);
+    if(family) return family;
+    if(/based\s+on\s+2\s+adults\s+sharing/i.test(combined)) return "Based On 2 Adults Sharing";
+    if(/\b2\s+adults\s+sharing\b/i.test(combined)) return "Based On 2 Adults Sharing";
+    const raw=norm(rawText);
+    if(!raw) return "Based On 2 Adults Sharing";
+    if(/^based\s+on\b/i.test(raw)) return /sharing\b/i.test(raw) ? raw : raw+" Sharing";
+    if(/\badults?\b/i.test(raw)) return "Based On "+raw.replace(/^based\s+on\s+/i,"").replace(/\s+sharing\b/i,"")+" Sharing";
+    return raw;
+  }
+  function normaliseItineraryDisplay(text){
+    return norm(text)
+      .split(/[|•]+/)
+      .map(part=>norm(part))
+      .filter(Boolean)
+      .join(" • ");
+  }
+  function buildCSVDetailsLine(row,headers,boardParts,passengerBasis,title,ship){
+    const parts=[];
+    const inclusionText=val(row,headers,["inclusions","inclusion","included"]);
+    const combined=norm([
+      inclusionText,
+      val(row,headers,["flights","flight","flight_included"]),
+      val(row,headers,["luggage","baggage"]),
+      val(row,headers,["transfers","transfer"]),
+      val(row,headers,["drinks","drinks_package","beverage_package"]),
+      val(row,headers,["wifi","wi_fi","wi-fi"]),
+      val(row,headers,["entertainment"]),
+      val(row,headers,["gratuities","service_charges"]),
+      val(row,headers,["cabin","cabin_type"])
+    ].filter(Boolean).join(" "));
+    if(hasAnyValue(row,headers,["flights","flight","flight_included"]) || /\b(flights?|fly|flying|airfare|airport|luggage|baggage|transfers?)\b/i.test(combined)) addUnique(parts,"Flights");
+    addUnique(parts,displayBoardInclusion(boardParts));
+    if(hasAnyValue(row,headers,["luggage","baggage"]) || /\b(luggage|baggage|checked\s+bags?)\b/i.test(combined)) addUnique(parts,"Luggage Included");
+    if(hasAnyValue(row,headers,["transfers","transfer"]) || /\btransfers?\b/i.test(combined)) addUnique(parts,"Transfers Included");
+    if(/\bpremium\s+drinks?\b/i.test(combined)) addUnique(parts,"Premium Drinks");
+    else if(hasAnyValue(row,headers,["drinks","drinks_package","beverage_package"]) || /\b(drinks?\s+package|beverage\s+package|drinks?\s+included)\b/i.test(combined)) addUnique(parts,"Drinks Package Included");
+    if(hasAnyValue(row,headers,["wifi","wi_fi","wi-fi"]) || /\bwi[ -]?fi\b/i.test(combined)) addUnique(parts,"Wi-Fi Included");
+    if(hasAnyValue(row,headers,["entertainment"]) || /\bentertainment\b/i.test(combined)) addUnique(parts,"Entertainment");
+    if(hasAnyValue(row,headers,["gratuities"]) || /\bgratuities\b/i.test(combined)) addUnique(parts,"Gratuities Included");
+    if(hasAnyValue(row,headers,["service_charges"]) || /\bservice\s+charges?\b/i.test(combined)) addUnique(parts,"Service Charges Included");
+    const cabin=val(row,headers,["cabin","cabin_type"]) || (combined.match(/\b(?:inside|outside|ocean\s+view|balcony|suite|veranda|interior)\s+cabin\b/i)||[])[0] || (combined.match(/\bocean\s+view\b/i)||[])[0];
+    if(cabin) addUnique(parts,cabin.replace(/\b\w/g,ch=>ch.toUpperCase()).replace(/\bAnd\b/g,"and"));
+    if(/\bchild(?:ren)?\b/i.test(passengerBasis)) addUnique(parts,"Family");
+    const banned=[title,ship,passengerBasis,val(row,headers,["price"])].map(v=>norm(v).toLowerCase()).filter(Boolean);
+    return parts.filter(part=>{
+      const lower=part.toLowerCase();
+      if(banned.includes(lower)) return false;
+      if(/£|\b\d{3,}\b/.test(part)) return false;
+      if(/^based\s+on\b/i.test(part)) return false;
+      return true;
+    }).join(" · ");
+  }
 
   let rows=parseCSV(csv).filter(r=>r.some(c=>norm(c)));
   // Fallback for TSV or copy/paste files saved with tab separators
@@ -2989,7 +3058,7 @@ function processSheetCSV(csv,status){
   }
 
   const headers=rows[0].map(slugHeader);
-  const useful=["operator","offer_name","cruise_name","ship_name","ship","price","nights","date","month_year","board_basis","board_label","board_type","inclusions","ports"];
+  const useful=["operator","title","offer_name","cruise_name","ship_name","ship","price","nights","date","month_year","board_basis","board_label","board_type","inclusions","ports"];
   const hasUsefulHeader=useful.some(h=>headers.includes(h));
   if(!hasUsefulHeader){
     status.className="csv-error";
@@ -3004,7 +3073,7 @@ function processSheetCSV(csv,status){
 
     const hasUsefulData =
       val(row,headers,["operator"]) ||
-      val(row,headers,["offer_name","cruise_name","name"]) ||
+      (val(row,headers,["title"]) || val(row,headers,["offer_title"]) || val(row,headers,["offer_name"]) || val(row,headers,["cruise_name"]) || val(row,headers,["name"])) ||
       val(row,headers,["ship_name","ship"]) ||
       val(row,headers,["price"]) ||
       val(row,headers,["ports"]);
@@ -3028,7 +3097,7 @@ function processSheetCSV(csv,status){
       ...offers[loaded],
       operator: resolvedOperator,
       _logoDisplay: "operator",
-      name: val(row,headers,["offer_name","cruise_name","name"]),
+      name: val(row,headers,["title"]) || val(row,headers,["offer_title"]) || val(row,headers,["offer_name"]) || val(row,headers,["cruise_name"]) || val(row,headers,["name"]),
       ship: shipText,
       price: val(row,headers,["price"]).replace(/[^0-9.]/g,"") || "",
       nights: val(row,headers,["nights"]).replace(/[^0-9]/g,"") || "",
@@ -3036,17 +3105,17 @@ function processSheetCSV(csv,status){
       month: dateParts.month || val(row,headers,["month_year","month"]),
       board: boardParts.code,
       boardlbl: boardParts.label,
-      incl: val(row,headers,["inclusions","inclusion","included"]),
-      ports: val(row,headers,["ports","port_list","itinerary"]),
-      basis: parseFamilyPassengerBasis([
-        val(row,headers,["price_basis","basis"]),
-        val(row,headers,["price"]),
-        row.map(cell=>norm(cell)).join(" ")
-      ].join(" ")) || val(row,headers,["price_basis","basis"]) || "Based On 2 Adults Sharing",
+      incl: "",
+      ports: normaliseItineraryDisplay(val(row,headers,["ports","port_list","itinerary"])),
+      basis: normalisePassengerBasis(
+        val(row,headers,["passenger_basis"]) || val(row,headers,["price_basis"]) || val(row,headers,["basis"]),
+        [val(row,headers,["price"]),row.map(cell=>norm(cell)).join(" ")].join(" ")
+      ),
       url: val(row,headers,["url","destination_url"]) || offers[loaded].url || "https://dawsonandsanderson.co.uk/cruises",
       tags: offers[loaded].tags
     };
 
+    newOffer.incl=buildCSVDetailsLine(row,headers,boardParts,newOffer.basis,newOffer.name,newOffer.ship);
     if(hero && !(typeof isHeroImageLocked==="function" && isHeroImageLocked(loaded))){ newOffer._img=hero; }
     if(typeof preserveLockedHeroImageData==="function") preserveLockedHeroImageData(newOffer, loaded, offers[loaded]);
     const hdr=val(row,headers,["operator_header","header"]);

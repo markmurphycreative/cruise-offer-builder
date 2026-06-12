@@ -1,0 +1,144 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import test from 'node:test';
+import vm from 'node:vm';
+
+const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+
+function extract(pattern, label) {
+  const match = html.match(pattern);
+  assert.ok(match, `Could not locate ${label}`);
+  return match[0];
+}
+
+function createImportHarness() {
+  const storage = new Map();
+  const status = {};
+  const campaign = { value: '' };
+  const start = html.indexOf('const LAST_SUCCESSFUL_CSV_KEY =');
+  const end = html.indexOf('\nfunction currentSheetTemplateTSV()', start);
+  assert.ok(start >= 0 && end > start, 'Could not locate CSV persistence/import block');
+  const source = [
+    extract(/function parseFamilyPassengerBasis\(text\)\{[\s\S]*?\n\}/, 'family passenger basis parser'),
+    html.slice(start, end)
+  ].join('\n')
+    .replace('const LAST_SUCCESSFUL_CSV_KEY', 'var LAST_SUCCESSFUL_CSV_KEY')
+    .replace('let restoringLastSuccessfulCsv', 'var restoringLastSuccessfulCsv');
+
+  const context = {
+    console,
+    offers: [{}, {}, {}, {}],
+    cur: 0,
+    OPERATOR_CONFIG: {
+      marella: { aliases: [/\bmarella\b/i] },
+      amawaterways: { aliases: [/\bamawaterways\b/i] },
+      royal: { aliases: [/\broyal\s+caribbean\b/i] }
+    },
+    document: {
+      getElementById: id => id === 'sheets-status' ? status : id === 'g-campaign' ? campaign : null,
+      querySelectorAll: () => []
+    },
+    localStorage: {
+      getItem: key => storage.get(key) || null,
+      setItem: (key, value) => storage.set(key, value)
+    },
+    load: () => {},
+    renderSingleOffer: () => {},
+    updateAllStatus: () => {},
+    genAllUtms: () => {},
+    updateExportFilenames: () => {},
+    findKnownOperatorShip: () => null
+  };
+  vm.createContext(context);
+  vm.runInContext(source, context);
+  return { context, status };
+}
+
+function importCSV(csv) {
+  const harness = createImportHarness();
+  harness.context.processSheetCSV(csv, harness.status);
+  assert.equal(harness.status.textContent, '✓ Loaded 1 offer(s)');
+  return harness.context.offers[0];
+}
+
+test('CSV Title column always becomes the card title and cannot be replaced by inclusions', () => {
+  const offer = importCSV([
+    'Operator,Title,Board Basis,Price,Ship,Inclusions,Passenger Basis,Itinerary',
+    'Marella Cruises,Iconic Islands,All Inclusive,£1249,Marella Voyager,Checked luggage & transfers,2 Adults Sharing,Corfu | Rhodes | Patmos | Heraklion'
+  ].join('\n'));
+
+  assert.equal(offer.name, 'Iconic Islands');
+  assert.notEqual(offer.name, offer.incl);
+  assert.equal(offer.incl, 'Flights · All Inclusive · Luggage Included · Transfers Included');
+});
+
+test('CSV Title column cannot be replaced by ship names or passenger basis text', () => {
+  const offer = importCSV([
+    'Operator,Title,Price,Ship,Inclusions,Passenger Basis,Itinerary',
+    'Royal Caribbean,Spain & France,£1689,Liberty of the Seas,Ocean View Cabin,2 Adults & 1 Child,Barcelona | Marseille | Valencia'
+  ].join('\n'));
+
+  assert.equal(offer.name, 'Spain & France');
+  assert.equal(offer.ship, 'Liberty of the Seas');
+  assert.equal(offer.incl, 'Ocean View Cabin · Family');
+  assert.equal(offer.basis, 'Based On 2 Adults & 1 Child Sharing');
+  assert.doesNotMatch(offer.name, /Liberty of the Seas|Based On|Child/i);
+});
+
+
+test('CSV importer only falls back from Title when the Title cell is genuinely empty', () => {
+  const offer = importCSV([
+    'Operator,Title,offer_name,Price,Ship,Inclusions,Itinerary',
+    'Marella Cruises,,Fallback Cruise Name,£1249,Marella Voyager,Checked luggage & transfers,Corfu | Rhodes'
+  ].join('\n'));
+
+  assert.equal(offer.name, 'Fallback Cruise Name');
+});
+
+test('details line is built only from inclusions and attributes while ship and basis stay in their own fields', () => {
+  const offer = importCSV([
+    'Operator,Title,Board Basis,Price,Ship,Inclusions,Passenger Basis,Itinerary',
+    'AmaWaterways,Swiss Alps & Rhine Castles,Full Board,£1899,AmaSerena,Luggage & transfers included,2 Adults Sharing,Basel | Strasbourg | Cologne | Amsterdam'
+  ].join('\n'));
+
+  assert.equal(offer.name, 'Swiss Alps & Rhine Castles');
+  assert.equal(offer.incl, 'Flights · Full Board Dining · Luggage Included · Transfers Included');
+  assert.equal(offer.ship, 'AmaSerena');
+  assert.equal(offer.basis, 'Based On 2 Adults Sharing');
+  assert.doesNotMatch(offer.incl, /AmaSerena|Based On|Swiss Alps|£|Basel|Strasbourg|Cologne|Amsterdam/);
+});
+
+test('passenger basis wording never appears in title, details, sailing or itinerary data', () => {
+  const offer = importCSV([
+    'Operator,Title,Price,Ship,Inclusions,Passenger Basis,Itinerary',
+    'Royal Caribbean,Family Fjords,£2089,Odyssey of the Seas,Balcony Cabin,2 Adults & 2 Children,Bergen | Flam | Stavanger'
+  ].join('\n'));
+
+  assert.equal(offer.basis, 'Based On 2 Adults & 2 Children Sharing');
+  assert.doesNotMatch([offer.name, offer.incl, offer.ship, offer.ports].join(' || '), /Based On|2 Adults|Children Sharing/);
+});
+
+test('CSV itinerary pipe separators convert to the builder bullet separator', () => {
+  const offer = importCSV([
+    'Operator,Title,Price,Ship,Inclusions,Itinerary',
+    'Marella Cruises,Iconic Islands,£1249,Marella Voyager,Checked luggage & transfers,Corfu | Rhodes | Patmos | Heraklion'
+  ].join('\n'));
+
+  assert.equal(offer.ports, 'Corfu • Rhodes • Patmos • Heraklion');
+  assert.doesNotMatch(offer.ports, /\|/);
+});
+
+test('existing pasted-offer parser, card renderer, and export renderer paths remain unchanged', () => {
+  assert.match(html, /function parseOffer\(\)\{/);
+  assert.match(html, /const PARSE_FIELD_MAP=\{operatorKey:"f-operator",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"\};/);
+  assert.match(html, /out\.innerHTML=renderCardHTML\(data\|\|\{\}\);/);
+  assert.match(html, /wrap\.innerHTML = renderCardHTML\(offerData\);/);
+  assert.match(html, /html2canvas\(target, \{/);
+});
+
+test('card layout render order remains unchanged for imported and manually built cards', () => {
+  assert.match(
+    html,
+    /\$\{getHeaderHTML\(d\)\}\$\{heroHTML\}<div class="isec"><div class="isec-content"><div class="cname">\$\{name\}<\/div><div class="incl">\$\{incl\}<\/div><div class="sname">\$\{shipLine\}<\/div><div class="price-block">\$\{priceHTML\}<div class="pbasis">\$\{basis\}<\/div><\/div><\/div><\/div><div class="ibar">[\s\S]*<div class="vsec"><div class="vtit">You'll Visit<\/div><div class="vpts">\$\{portsHTML\}<\/div><\/div><div class="tcbar">\$\{terms\}<\/div>/
+  );
+});
