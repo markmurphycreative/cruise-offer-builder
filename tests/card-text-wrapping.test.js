@@ -20,6 +20,9 @@ function createItineraryContext() {
     extractFunction('getItineraryMeasureText'),
     extractFunction('renderItineraryLine'),
     extractFunction('packItineraryLines'),
+    extractFunction('getRenderedItineraryPorts'),
+    extractFunction('cleanEmbarkationPortDisplay'),
+    extractFunction('getEmbarkationPort'),
     extractFunction('chunkBullets')
   ].join('\n'), context);
   return context;

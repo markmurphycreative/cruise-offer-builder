@@ -83,6 +83,9 @@ function createRenderContext() {
     extractFunction('getItineraryMeasureText'),
     extractFunction('renderItineraryLine'),
     extractFunction('packItineraryLines'),
+    extractFunction('getRenderedItineraryPorts'),
+    extractFunction('cleanEmbarkationPortDisplay'),
+    extractFunction('getEmbarkationPort'),
     extractFunction('chunkBullets'),
     extractFunction('renderCardHTML'),
     extractFunction('bc')
@@ -99,12 +102,14 @@ function textBetween(source, startNeedle, endNeedle) {
 }
 
 test('destination normalisation improves readability without trailing bullet opportunities', () => {
-  const { chunkBullets, cleanPortsDisplay } = createRenderContext();
+  const { chunkBullets, cleanPortsDisplay, getEmbarkationPort } = createRenderContext();
 
   assert.equal(cleanPortsDisplay('Piraeus (Athens)'), 'Piraeus, Athens');
   assert.equal(cleanPortsDisplay('Paris (Le Havre), France'), 'Paris, Le Havre, France');
   assert.equal(cleanPortsDisplay('Souda (for Chania), Crete'), 'Souda, Chania, Crete');
   assert.equal(cleanPortsDisplay('Mykonos (overnight)'), 'Mykonos');
+  assert.equal(getEmbarkationPort('Piraeus (Athens) • Mykonos • Piraeus (Athens)'), 'Piraeus');
+  assert.equal(getEmbarkationPort('At Sea • Southampton • Lisbon • Southampton'), 'Southampton');
 
   const rendered = chunkBullets('Chania, Crete • Piraeus (Athens)', 3);
   assert.equal(rendered, '<span class="port-line"><span class="port-unit">Chania,&nbsp;Crete</span> <span class="port-separator">•</span> <span class="port-unit">Piraeus,&nbsp;Athens</span></span>');
@@ -174,7 +179,7 @@ test('pre-cruise note renders above You\'ll Visit while passenger basis remains 
 
   assert.doesNotMatch(titleArea, /Sailing on|Based On|Pre-Cruise|Celebrity Infinity|Newcastle Flights/i);
   assert.doesNotMatch(detailsLine, /Full Board|Based On|Celebrity Infinity|Pre-Cruise/i);
-  assert.equal(sailingLine, 'Sailing on Celebrity Infinity');
+  assert.equal(sailingLine, 'Sailing on Celebrity Infinity from Piraeus');
   assert.doesNotMatch(destinations, /Pre-Cruise|Bed & Breakfast|Based On|Celebrity Infinity|overnight/i);
   assert.equal((card.match(/Based On 2 Adults Sharing/g) || []).length, 1);
   assert.match(card, /<div class="pbasis">Based On 2 Adults Sharing<\/div>/);
@@ -182,9 +187,10 @@ test('pre-cruise note renders above You\'ll Visit while passenger basis remains 
 
 test('cards without pre-cruise stay keep the existing itinerary section HTML unchanged', () => {
   const { renderCardHTML } = createRenderContext();
-  const card = renderCardHTML({ ports: 'Chania, Crete • Mykonos', basis: 'Based On 2 Adults Sharing' });
+  const card = renderCardHTML({ ship: 'Liberty of the Seas', ports: 'Southampton • Lisbon • Southampton', basis: 'Based On 2 Adults Sharing' });
 
-  assert.match(card, /<div class="vsec"><div class="vtit">You'll Visit<\/div><div class="vpts"><span class="port-line"><span class="port-unit">Chania,&nbsp;Crete<\/span> <span class="port-separator">•<\/span> <span class="port-unit">Mykonos<\/span><\/span><\/div><\/div>/);
+  assert.match(card, /<div class="sname">Sailing on Liberty of the Seas from Southampton<\/div>/);
+  assert.match(card, /<div class="vsec"><div class="vtit">You'll Visit<\/div><div class="vpts"><span class="port-line"><span class="port-unit">Southampton<\/span> <span class="port-separator">•<\/span> <span class="port-unit">Lisbon<\/span><\/span><\/div><\/div>/);
   assert.doesNotMatch(card, /precruise-note|Pre-Cruise|Bed & Breakfast/);
 });
 

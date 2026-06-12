@@ -33,6 +33,18 @@ function createRenderContext(extra = {}) {
   };
   vm.createContext(context);
   vm.runInContext([
+    extractFunction('normaliseDestinationName'),
+    extractFunction('cleanPortsDisplay'),
+    extractFunction('getDestinationComparisonValue'),
+    extractFunction('removeDuplicateReturnToOriginDestination'),
+    extractFunction('estimateItineraryTextWidth'),
+    extractFunction('getItineraryMeasureText'),
+    extractFunction('renderItineraryLine'),
+    extractFunction('packItineraryLines'),
+    extractFunction('getRenderedItineraryPorts'),
+    extractFunction('cleanEmbarkationPortDisplay'),
+    extractFunction('getEmbarkationPort'),
+    extractFunction('chunkBullets'),
     extractFunction('escapeAttr'),
     extractFunction('getHeroImageSource'),
     extractFunction('renderHeroHTML'),
