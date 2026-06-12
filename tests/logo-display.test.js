@@ -119,12 +119,14 @@ test('header rendering preserves the USP strip and fixed card header dimensions 
 test('AmaWaterways uses the existing operator logo header system and brand palette', () => {
   const source = [
     extract(/const OPERATOR_USP_PRESETS = \{[\s\S]*?\n\};/, 'OPERATOR_USP_PRESETS'),
+    extract(/const OPERATOR_SHIPS = \{[\s\S]*?\n\};/, 'OPERATOR_SHIPS'),
     extract(/const OPERATOR_HEADERS = \{[\s\S]*?\n\};/, 'OPERATOR_HEADERS'),
     extract(/const OPERATOR_SKINS = \{[\s\S]*?\n\};/, 'OPERATOR_SKINS'),
     extract(/function getOperatorSkin\(d\)\{[\s\S]*?\n\}/, 'getOperatorSkin'),
     extract(/function getHeaderHTML\(d\)\{[\s\S]*?\n\}/, 'getHeaderHTML')
   ].join('\n')
     .replace('const OPERATOR_USP_PRESETS', 'var OPERATOR_USP_PRESETS')
+    .replace('const OPERATOR_SHIPS', 'var OPERATOR_SHIPS')
     .replace('const OPERATOR_HEADERS', 'var OPERATOR_HEADERS')
     .replace('const OPERATOR_SKINS', 'var OPERATOR_SKINS');
   const context = {};
@@ -133,7 +135,7 @@ test('AmaWaterways uses the existing operator logo header system and brand palet
 
   const header = context.getHeaderHTML({ operator: 'amawaterways' });
   assert.equal(context.OPERATOR_HEADERS.amawaterways.pngData, 'assets/operator-logos/amawaterways-logo.png');
-  assert.equal(context.OPERATOR_HEADERS.amawaterways.color, '#002D72');
+  assert.equal(context.OPERATOR_HEADERS.amawaterways.color, '#A75543');
   assert.deepEqual(
     {
       background: context.OPERATOR_SKINS.amawaterways.background,
@@ -141,9 +143,10 @@ test('AmaWaterways uses the existing operator logo header system and brand palet
       infoBar: context.OPERATOR_SKINS.amawaterways.infoBar,
       text: context.OPERATOR_SKINS.amawaterways.text
     },
-    { background: '#002D72', accentStrip: '#A75543', infoBar: '#A75543', text: '#002D72' }
+    { background: '#07131f', accentStrip: '#A75543', infoBar: '#A75543', text: '#1a1a1a' }
   );
   assert.match(header, /<div class="operator-png-usp" style="background:#A75543;">Cuisine · Cultural Experiences · Luxury · Wellness<\/div>/);
-  assert.match(header, /background:#002D72/);
+  assert.match(header, /background:#07131f/);
+  assert.doesNotMatch(header, /background:#002D72/);
   assert.match(header, /<img class="operator-png-logo" src="assets\/operator-logos\/amawaterways-logo\.png" alt="AmaWaterways logo">/);
 });

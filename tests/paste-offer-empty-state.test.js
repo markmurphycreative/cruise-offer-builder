@@ -121,7 +121,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     isOfferLoaded: offer => !!(offer && (offer.name || offer.ship || offer.price || offer._img)),
     BOARD_MAP: { FB: ['FB', 'Full Board'], 'FULL BOARD': ['FB', 'Full Board'] },
     OPERATOR_HEADERS: {},
-    OPERATOR_SHIPS: { celebrity: ['Celebrity Ascent'] },
+    OPERATOR_SHIPS: { celebrity: ['Celebrity Ascent'], amawaterways: ['AmaBella', 'AmaDouro', 'AmaMagna', 'Zambezi Queen'] },
     OPERATOR_ALIASES: { celebrity: [/\bcelebrity\b/i, /\bcelebrity\s+cruises\b/i] },
     AIRPORT_WORDS: ['newcastle'],
     getLikelyTypos() { return []; },
@@ -144,6 +144,8 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     `const ITINERARY_FOOTER_LABEL=/^(?:luggage\\s*(?:&|and)\\s*transfers?\\s+included|flights?\\s+included|inclusions?|what(?:'|’)?s included|price|from £|terms(?:\\s*&\\s*conditions)?|book now|call to book|cabin|accommodation)\\b/i;`,
     extractFunction('getItineraryLines'),
     extractFunction('cleanParsedPorts'),
+    extractFunction('escapeRegExp'),
+    extractFunction('findKnownOperatorShip'),
     extractFunction('parseOffer'),
     extractFunction('setParseStatus'),
     extractFunction('showParsePreview'),
@@ -305,6 +307,19 @@ test('live Load Offer button click handler reaches the supplied Celebrity offer 
   assert.equal(harness.calls.rv, 1);
   assert.equal(harness.calls.status, 1);
   assert.equal(harness.calls.autosave, 1);
+});
+
+
+test('Paste Offer recognises AmaWaterways ships without manual operator selection', () => {
+  for (const ship of ['AmaMagna', 'AmaBella', 'AmaDouro', 'Zambezi Queen']) {
+    const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+    harness.parse(`Luxury river cruise
+${ship}
+7 nights from £1999pp
+Full Board`);
+    assert.equal(harness.context.offers[0].operator, 'amawaterways', ship);
+    assert.equal(harness.context.offers[0].ship, ship);
+  }
 });
 
 test('refresh paths retain the export-filename compatibility hook used by load', () => {

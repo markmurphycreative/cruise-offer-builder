@@ -34,6 +34,59 @@ test('Royal Caribbean ship catalogue contains the official first-pass list', () 
   assert.deepEqual(Object.keys(OPERATOR_SHIPS), ['amawaterways', 'ambassador', 'celebrity', 'cunard', 'fred', 'marella', 'msc', 'ncl', 'po', 'princess', 'royal', 'virgin']);
 });
 
+
+test('AmaWaterways ship catalogue contains the requested list', () => {
+  const { OPERATOR_SHIPS } = createShipQaHarness();
+  assert.deepEqual(Array.from(OPERATOR_SHIPS.amawaterways), [
+    'AmaBella',
+    'AmaCello',
+    'AmaCerto',
+    'AmaDahlia',
+    'AmaDante',
+    'AmaDara',
+    'AmaDolce',
+    'AmaDouro',
+    'AmaKristina',
+    'AmaLea',
+    'AmaLilia',
+    'AmaLotus',
+    'AmaLucia',
+    'AmaLyra',
+    'AmaMagna',
+    'AmaMagdalena',
+    'AmaMelodia',
+    'AmaMora',
+    'AmaPrima',
+    'AmaReina',
+    'AmaSerena',
+    'AmaSiena',
+    'AmaSonata',
+    'AmaStella',
+    'AmaVerde',
+    'AmaVenita',
+    'AmaVida',
+    'AmaViola',
+    'Zambezi Queen'
+  ]);
+});
+
+test('AmaWaterways ship QA covers exact, close, empty and unknown values', () => {
+  const { getOperatorShipQaIssue } = createShipQaHarness();
+  assert.equal(getOperatorShipQaIssue('amawaterways', 'AmaMagna'), '');
+  assert.equal(getOperatorShipQaIssue('amawaterways', 'AmaBella'), '');
+  assert.equal(getOperatorShipQaIssue('amawaterways', 'AmaDouro'), '');
+  assert.equal(getOperatorShipQaIssue('amawaterways', 'Zambezi Queen'), '');
+  assert.equal(
+    getOperatorShipQaIssue('amawaterways', 'AmaMagna X'),
+    'Possible ship name error: did you mean AmaMagna?'
+  );
+  assert.equal(getOperatorShipQaIssue('amawaterways', ''), '');
+  assert.equal(
+    getOperatorShipQaIssue('amawaterways', 'Entirely Unknown Vessel'),
+    'Ship name not found in AmaWaterways ship list.'
+  );
+});
+
 test('Ambassador Cruise Line ship catalogue contains the requested list', () => {
   const { OPERATOR_SHIPS } = createShipQaHarness();
   assert.deepEqual(Array.from(OPERATOR_SHIPS.ambassador), ['Ambition', 'Renaissance', 'Ambience']);
