@@ -5,8 +5,10 @@ import vm from 'node:vm';
 
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
+const AMAWATERWAYS_USP_PRESET = 'Cuisine · Cultural Experiences · Luxury · Wellness';
+
 const EXPECTED_CRUISE_PRESETS = {
-  amawaterways: 'Cuisine · Cultural Experiences · Luxury · Wellness',
+  amawaterways: AMAWATERWAYS_USP_PRESET,
   ambassador: 'Adult Only Options · Entertainment · Sustainability · Value',
   celebrity: 'Cuisine · Cultural Experiences · Entertainment · Overnight Port Stays',
   cunard: 'Cuisine · Entertainment · Luxury · Wellness',
@@ -54,6 +56,16 @@ function createOperatorHarness() {
   vm.runInContext(source, context);
   return { context, fields };
 }
+
+test('AmaWaterways applies its requested USP preset through the shared preset system', () => {
+  const { context, fields } = createOperatorHarness();
+  fields['f-operator'].value = 'amawaterways';
+  context.operatorChanged();
+
+  assert.equal(context.OPERATOR_USP_PRESETS.amawaterways, AMAWATERWAYS_USP_PRESET);
+  assert.equal(fields['f-tags'].value, AMAWATERWAYS_USP_PRESET);
+  assert.equal(context.offers[0].tags, AMAWATERWAYS_USP_PRESET);
+});
 
 test('every supported cruise operator has the exact requested USP preset', () => {
   const { context } = createOperatorHarness();
