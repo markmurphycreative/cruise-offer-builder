@@ -91,6 +91,7 @@ test('export panel exposes only the streamlined JPG and campaign-pack actions wh
 
 test('supported cruise operators receive their recommended empty hero imagery placeholders only when no hero image exists', () => {
   const expected = {
+    amawaterways: ['AmaWaterways', 'River &amp; Destination Imagery Recommended'],
     po: ['P&amp;O Cruises', 'Destination Imagery Recommended'],
     marella: ['Marella Cruises', 'Beach &amp; Destination Imagery Recommended'],
     celebrity: ['Celebrity Cruises', 'Lifestyle &amp; Luxury Imagery Recommended'],

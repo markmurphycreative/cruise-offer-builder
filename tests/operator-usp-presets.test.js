@@ -6,6 +6,7 @@ import vm from 'node:vm';
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
 const EXPECTED_CRUISE_PRESETS = {
+  amawaterways: 'Cuisine · Cultural Experiences · Luxury · Wellness',
   ambassador: 'Adult Only Options · Entertainment · Sustainability · Value',
   celebrity: 'Cuisine · Cultural Experiences · Entertainment · Overnight Port Stays',
   cunard: 'Cuisine · Entertainment · Luxury · Wellness',
