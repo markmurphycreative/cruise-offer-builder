@@ -56,7 +56,8 @@ test('Offer 1–4 selector reuses the sliding segmented-control pill while retai
   assert.match(html, /\.otab\.active\{color:var\(--navy\);border-radius:0;box-shadow:inset 0 -2px 0 rgba\(14,27,42,\.18\);\}/);
   assert.doesNotMatch(html, /\.otab\.active\{[^}]*border-bottom/);
   assert.match(html, /\.offer-tab-item\{[^}]*position:relative;[^}]*flex:1;[^}]*min-width:0;/);
-  assert.match(html, /\.otab\{[^}]*width:100%;[^}]*padding:4px 4px 13px;[^}]*font-size:10px;/);
+  assert.match(html, /\.otab\{[^}]*width:100%;[^}]*min-height:47px;[^}]*padding:7px 4px 15px;[^}]*font-size:10px;/);
+  assert.match(html, /\.offer-tab-label\{[^}]*gap:2px;[^}]*line-height:1\.12;/);
   assert.match(html, /\.status-dot\{[^}]*position:absolute;[^}]*width:5\.8px;[^}]*height:5\.8px;[^}]*border-radius:50%;/);
   assert.match(html, /\.status-dot\.green\{background:var\(--green\);\}\s*\.status-dot\.amber\{background:var\(--amber\);\}\s*\.status-dot\.red\{background:var\(--red\);\}/);
   for(let i = 0; i < 4; i += 1){
