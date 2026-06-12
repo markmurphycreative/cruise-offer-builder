@@ -4787,11 +4787,21 @@ function packItineraryLines(ports,options){
   if(current.length) lines.push(current);
   return lines;
 }
-function chunkBullets(str,options){
-  const ports=removeDuplicateReturnToOriginDestination(cleanPortsDisplay(str)
+function getRenderedItineraryPorts(str){
+  return removeDuplicateReturnToOriginDestination(cleanPortsDisplay(str)
     .split("•")
     .map(s=>s.trim())
     .filter(Boolean));
+}
+function cleanEmbarkationPortDisplay(port){
+  return String(port||"").split(",").map(part=>part.trim()).filter(Boolean)[0]||"";
+}
+function getEmbarkationPort(str){
+  const firstPort=getRenderedItineraryPorts(str)[0]||"";
+  return cleanEmbarkationPortDisplay(firstPort);
+}
+function chunkBullets(str,options){
+  const ports=getRenderedItineraryPorts(str);
   return packItineraryLines(ports,options)
     .map(line=>`<span class="port-line">${renderItineraryLine(line)}</span>`)
     .join(" ");
@@ -4808,12 +4818,13 @@ function renderCardHTML(d){
   const month=d.month||""; const nights=d.nights||"";
   const ports=(d.ports||"").trim();
   const portsHTML=ports?chunkBullets(ports):"";
+  const embarkationPort=ports?getEmbarkationPort(ports):"";
   const preCruiseStay=d.preCruiseStay||null;
   const preCruiseHTML=preCruiseStay&&preCruiseStay.text ? `<div class="vpts precruise-note"><div>${preCruiseStay.text}</div></div>` : "";
   const terms=document.getElementById("g-terms").value||"T&Cs Apply";
   const heroPlaceholder=OPERATOR_HERO_PLACEHOLDERS[d.operator];
   const heroHTML=renderHeroHTML(d, heroPlaceholder);
-  const shipLine=ship?`Sailing on ${ship}`:"";
+  const shipLine=ship?`Sailing on ${ship}${embarkationPort?` from ${embarkationPort}`:""}`:"";
   const priceHTML=price?`<div class="pfrom">From</div><div class="pmain">£${price}<span class="ppp">pp</span></div>`:`<div class="pfrom"></div><div class="pmain"></div>`;
   const dateHTML=(day||month)?`${day}`:"";
   const nightLabel=nights?"Nights":"";
