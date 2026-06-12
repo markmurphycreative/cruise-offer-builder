@@ -14,6 +14,8 @@ function createItineraryContext() {
     extractConstant('ITINERARY_SEPARATOR'),
     extractFunction('normaliseDestinationName'),
     extractFunction('cleanPortsDisplay'),
+    extractFunction('getDestinationComparisonValue'),
+    extractFunction('removeDuplicateReturnToOriginDestination'),
     extractFunction('estimateItineraryTextWidth'),
     extractFunction('getItineraryMeasureText'),
     extractFunction('renderItineraryLine'),
@@ -117,6 +119,51 @@ test('long destinations wrap according to rendered width without overflowing', (
     'Cherbourg, France'
   ]);
   for (const line of lines) assert.ok(measureText(line) <= 530, `${line} overflowed safe width`);
+});
+
+test('duplicate return-to-origin destination is removed after normalisation before rendering', () => {
+  const context = createItineraryContext();
+
+  const rendered = context.chunkBullets(' Corfu • Souda (for Chania), Crete • Rhodes • Patmos • Heraklion, Crete • Katakolon, Olympia • corfu ');
+  const text = renderedLines(rendered).map(textFromRenderedLine).join(' • ');
+
+  assert.equal(text, 'Corfu • Souda, Chania, Crete • Rhodes • Patmos • Heraklion, Crete • Katakolon, Olympia');
+  assert.equal((text.match(/Corfu/gi) || []).length, 1);
+});
+
+test('different start and end destinations remain rendered', () => {
+  const context = createItineraryContext();
+
+  const rendered = context.chunkBullets('Southampton • Paris (Le Havre), France • Bilbao, Spain • Barcelona, Spain');
+  const text = renderedLines(rendered).map(textFromRenderedLine).join(' • ');
+
+  assert.equal(text, 'Southampton • Paris, Le Havre, France • Bilbao, Spain • Barcelona, Spain');
+  assert.match(rendered, /<span class="port-unit">Barcelona,&nbsp;Spain<\/span>/);
+});
+
+test('itinerary packing remains width based after return-to-origin removal', () => {
+  const context = createItineraryContext();
+  const measureText = itineraryMeasureStub({
+    Corfu: 80,
+    'Souda, Chania, Crete': 280,
+    Rhodes: 90,
+    Patmos: 100,
+    'Heraklion, Crete': 230,
+    'Katakolon, Olympia': 250
+  });
+
+  const rendered = context.chunkBullets(
+    'Corfu • Souda, Chania, Crete • Rhodes • Patmos • Heraklion, Crete • Katakolon, Olympia • Corfu',
+    { safeWidth: 520, measureText }
+  );
+  const lines = renderedLines(rendered).map(textFromRenderedLine);
+
+  assert.deepEqual(lines, [
+    'Corfu • Souda, Chania, Crete • Rhodes',
+    'Patmos • Heraklion, Crete',
+    'Katakolon, Olympia'
+  ]);
+  for (const line of lines) assert.ok(measureText(line) <= 520, `${line} overflowed safe width`);
 });
 
 test('itinerary packing uses canvas rendered text measurement when available', () => {

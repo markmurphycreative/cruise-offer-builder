@@ -77,6 +77,8 @@ function createRenderContext() {
     extractConstant('ITINERARY_SEPARATOR'),
     extractFunction('normaliseDestinationName'),
     extractFunction('cleanPortsDisplay'),
+    extractFunction('getDestinationComparisonValue'),
+    extractFunction('removeDuplicateReturnToOriginDestination'),
     extractFunction('estimateItineraryTextWidth'),
     extractFunction('getItineraryMeasureText'),
     extractFunction('renderItineraryLine'),

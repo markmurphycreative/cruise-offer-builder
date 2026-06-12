@@ -4719,6 +4719,18 @@ function cleanPortsDisplay(str){
     .filter(Boolean)
     .join(" • ");
 }
+function getDestinationComparisonValue(destination){
+  return String(destination||"").trim().toLowerCase();
+}
+function removeDuplicateReturnToOriginDestination(ports){
+  const renderedPorts=Array.isArray(ports)?ports.slice():[];
+  if(renderedPorts.length>1){
+    const first=getDestinationComparisonValue(renderedPorts[0]);
+    const last=getDestinationComparisonValue(renderedPorts[renderedPorts.length-1]);
+    if(first&&first===last) renderedPorts.pop();
+  }
+  return renderedPorts;
+}
 const ITINERARY_SAFE_WIDTH=1040;
 const ITINERARY_FONT='300 40px Montserrat, sans-serif';
 const ITINERARY_SEPARATOR=' • ';
@@ -4775,10 +4787,10 @@ function packItineraryLines(ports,options){
   return lines;
 }
 function chunkBullets(str,options){
-  const ports=cleanPortsDisplay(str)
+  const ports=removeDuplicateReturnToOriginDestination(cleanPortsDisplay(str)
     .split("•")
     .map(s=>s.trim())
-    .filter(Boolean);
+    .filter(Boolean));
   return packItineraryLines(ports,options)
     .map(line=>`<span class="port-line">${renderItineraryLine(line)}</span>`)
     .join(" ");
