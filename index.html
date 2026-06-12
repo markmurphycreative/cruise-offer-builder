@@ -3025,9 +3025,17 @@ function processSheetCSV(csv,status){
       val(row,headers,["gratuities","service_charges"]),
       val(row,headers,["cabin","cabin_type"])
     ].filter(Boolean).join(" "));
-    if(hasAnyValue(row,headers,["flights","flight","flight_included"]) || /\b(flights?|fly|flying|airfare|airport|luggage|baggage|transfers?)\b/i.test(combined)) addUnique(parts,"Flights");
-    if(hasAnyValue(row,headers,["luggage","baggage"]) || /\b(luggage|baggage|checked\s+bags?)\b/i.test(combined)) addUnique(parts,"Luggage Included");
-    if(hasAnyValue(row,headers,["transfers","transfer"]) || /\btransfers?\b/i.test(combined)) addUnique(parts,"Transfers Included");
+    const departureType=val(row,headers,["departure_type"]);
+    const departureAirport=val(row,headers,["departure","departure_airport","airport"]);
+    const isNoFlyCruise=/\bno\s*fly\s*cruise\b/i.test(departureType);
+    const isFlyCruise=!isNoFlyCruise && /\b(fly|flight|flights|flying)\b/i.test(departureType);
+    const hasFlightInclusion=hasAnyValue(row,headers,["flights","flight","flight_included"]) || /\b(flights?|fly|flying|airfare)\b/i.test(combined);
+    if(isFlyCruise || (!departureType && hasFlightInclusion)) addUnique(parts,departureAirport ? departureAirport+" Flights" : "Flights");
+    const hasLuggageInclusion=hasAnyValue(row,headers,["luggage","baggage"]) || /\b(luggage|baggage|checked\s+bags?)\b/i.test(combined);
+    const hasTransferInclusion=hasAnyValue(row,headers,["transfers","transfer"]) || /\btransfers?\b/i.test(combined);
+    if(hasLuggageInclusion && hasTransferInclusion) addUnique(parts,"Luggage & Transfers Included");
+    else if(hasLuggageInclusion) addUnique(parts,"Luggage Included");
+    else if(hasTransferInclusion) addUnique(parts,"Transfers Included");
     if(/\bpremium\s+drinks?\b/i.test(combined)) addUnique(parts,"Premium Drinks");
     else if(hasAnyValue(row,headers,["drinks","drinks_package","beverage_package"]) || /\b(drinks?\s+package|beverage\s+package|drinks?\s+included)\b/i.test(combined)) addUnique(parts,"Drinks Package");
     if(hasAnyValue(row,headers,["wifi","wi_fi","wi-fi"]) || /\bwi[ -]?fi\b/i.test(combined)) addUnique(parts,"Wi-Fi Included");

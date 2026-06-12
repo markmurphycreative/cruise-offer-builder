@@ -69,7 +69,7 @@ test('CSV Title column always becomes the card title and cannot be replaced by i
 
   assert.equal(offer.name, 'Iconic Islands');
   assert.notEqual(offer.name, offer.incl);
-  assert.equal(offer.incl, 'Flights · Luggage Included · Transfers Included');
+  assert.equal(offer.incl, 'Luggage & Transfers Included');
 });
 
 test('CSV Title column cannot be replaced by ship names or passenger basis text', () => {
@@ -102,7 +102,7 @@ test('details line is built only from inclusions and attributes while ship and b
   ].join('\n'));
 
   assert.equal(offer.name, 'Swiss Alps & Rhine Castles');
-  assert.equal(offer.incl, 'Flights · Luggage Included · Transfers Included');
+  assert.equal(offer.incl, 'Luggage & Transfers Included');
   assert.equal(offer.ship, 'AmaSerena');
   assert.equal(offer.basis, 'Based On 2 Adults Sharing');
   assert.doesNotMatch(offer.incl, /AmaSerena|Based On|Swiss Alps|£|Basel|Strasbourg|Cologne|Amsterdam/);
@@ -111,14 +111,48 @@ test('details line is built only from inclusions and attributes while ship and b
 
 test('details line keeps supporting inclusions but excludes board basis labels', () => {
   const offer = importCSV([
-    'Operator,Title,Board Basis,Price,Ship,Inclusions,Passenger Basis,Itinerary',
-    'Marella Cruises,Canaries Escape,All Inclusive,£1299,Marella Voyager,"Flights, luggage, transfers, drinks package, Wi-Fi, entertainment, service charges",2 Adults Sharing,Tenerife | Madeira'
+    'Operator,Title,Departure Type,Departure,Board Basis,Price,Ship,Inclusions,Passenger Basis,Itinerary',
+    'Marella Cruises,Canaries Escape,Fly Cruise,Newcastle,All Inclusive,£1299,Marella Voyager,"Flights, luggage, transfers, drinks package, Wi-Fi, entertainment, service charges",2 Adults Sharing,Tenerife | Madeira'
   ].join('\n'));
 
   assert.equal(offer.board, 'AI');
   assert.equal(offer.boardlbl, 'All Inclusive');
-  assert.equal(offer.incl, 'Flights · Luggage Included · Transfers Included · Drinks Package · Wi-Fi Included · Entertainment Included · Service Charges Included');
+  assert.equal(offer.incl, 'Newcastle Flights · Luggage & Transfers Included · Drinks Package · Wi-Fi Included · Entertainment Included · Service Charges Included');
   assert.doesNotMatch(offer.incl, /All Inclusive|Full Board|Half Board|Dining/);
+});
+
+
+test('CSV fly cruises use the Departure value in the flights wording', () => {
+  const offer = importCSV([
+    'Operator,Title,Departure Type,Departure,Price,Ship,Inclusions,Itinerary',
+    'Marella Cruises,Greek Islands,Fly Cruise,Edinburgh,£1199,Marella Explorer,Luggage and transfers included,Corfu | Rhodes'
+  ].join('\n'));
+
+  assert.equal(offer.incl, 'Edinburgh Flights · Luggage & Transfers Included');
+});
+
+test('CSV no fly cruises never add flights wording', () => {
+  const offer = importCSV([
+    'Operator,Title,Departure Type,Departure,Price,Ship,Inclusions,Itinerary',
+    'Marella Cruises,British Isles,No Fly Cruise,Southampton,£999,Marella Explorer,Flights luggage transfers,Southampton | Bruges'
+  ].join('\n'));
+
+  assert.equal(offer.incl, 'Luggage & Transfers Included');
+  assert.doesNotMatch(offer.incl, /Flights/i);
+});
+
+test('CSV luggage and transfers stay separate when only one inclusion is present', () => {
+  const luggageOffer = importCSV([
+    'Operator,Title,Price,Ship,Inclusions,Itinerary',
+    'Marella Cruises,Luggage Only,£999,Marella Explorer,Luggage included,Corfu | Rhodes'
+  ].join('\n'));
+  const transferOffer = importCSV([
+    'Operator,Title,Price,Ship,Inclusions,Itinerary',
+    'Marella Cruises,Transfers Only,£999,Marella Explorer,Transfers included,Corfu | Rhodes'
+  ].join('\n'));
+
+  assert.equal(luggageOffer.incl, 'Luggage Included');
+  assert.equal(transferOffer.incl, 'Transfers Included');
 });
 
 test('passenger basis wording never appears in title, details, sailing or itinerary data', () => {
