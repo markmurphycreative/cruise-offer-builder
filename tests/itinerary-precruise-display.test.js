@@ -91,8 +91,9 @@ test('destination normalisation improves readability without trailing bullet opp
   assert.equal(cleanPortsDisplay('Mykonos (overnight)'), 'Mykonos');
 
   const rendered = chunkBullets('Chania, Crete • Piraeus (Athens)', 3);
-  assert.equal(rendered, 'Chania,&nbsp;Crete&nbsp;•&nbsp;Piraeus,&nbsp;Athens');
-  assert.doesNotMatch(rendered, / • |• | •/);
+  assert.equal(rendered, '<span class="port-unit">Chania,&nbsp;Crete</span> <span class="port-unit">•&nbsp;Piraeus,&nbsp;Athens</span>');
+  assert.doesNotMatch(rendered, /<br>/);
+  assert.doesNotMatch(rendered, /<span class="port-unit">•<\/span>/);
   assert.doesNotMatch(rendered, /•$/);
 });
 
@@ -108,7 +109,7 @@ test('CSV pre-cruise stay is detected and excluded from title, details, sailing 
 
   assert.equal(status.textContent, '✓ Loaded 1 offer(s)');
   assert.equal(offer.preCruiseStay.text, '1 Night Pre-Cruise at the 4 Star Hotel Athens');
-  assert.equal(offer.preCruiseStay.board, 'Bed & Breakfast');
+  assert.equal(offer.preCruiseStay.board, undefined);
   assert.equal(offer.name, 'Greek Islands');
   assert.equal(offer.ship, 'Celebrity Infinity');
   assert.match(offer.incl, /Newcastle Flights|Luggage & Transfers Included/);
@@ -136,7 +137,11 @@ test('pre-cruise note renders above You\'ll Visit while passenger basis remains 
   });
 
   assert.ok(card.indexOf('1 Night Pre-Cruise at the 4 Star Hotel Athens') < card.indexOf("You'll Visit"));
-  assert.match(card, /<div class="vsec"><div class="vpts precruise-note"><div>1 Night Pre-Cruise at the 4 Star Hotel Athens<\/div><div>Bed & Breakfast<\/div><\/div><div class="vtit">You'll Visit<\/div>/);
+  assert.match(card, /<div class="vsec"><div class="vpts precruise-note"><div>1 Night Pre-Cruise at the 4 Star Hotel Athens<\/div><\/div><div class="vtit">You'll Visit<\/div>/);
+  const preCruiseNote = textBetween(card, '<div class="vpts precruise-note">', '</div><div class="vtit">');
+  assert.equal((preCruiseNote.match(/<div>/g) || []).length, 1);
+  assert.doesNotMatch(preCruiseNote, /Piraeus, Athens|Bed & Breakfast|Mykonos|Souda/i);
+  assert.match(html, /\.cc \.precruise-note\{margin-bottom:30px;white-space:nowrap;\}/);
 
   const titleArea = textBetween(card, '<div class="cname">', '</div><div class="incl">');
   const detailsLine = textBetween(card, '<div class="incl">', '</div><div class="sname">');
@@ -155,7 +160,7 @@ test('cards without pre-cruise stay keep the existing itinerary section HTML unc
   const { renderCardHTML } = createRenderContext();
   const card = renderCardHTML({ ports: 'Chania, Crete • Mykonos', basis: 'Based On 2 Adults Sharing' });
 
-  assert.match(card, /<div class="vsec"><div class="vtit">You'll Visit<\/div><div class="vpts">Chania,&nbsp;Crete&nbsp;•&nbsp;Mykonos<\/div><\/div>/);
+  assert.match(card, /<div class="vsec"><div class="vtit">You'll Visit<\/div><div class="vpts"><span class="port-unit">Chania,&nbsp;Crete<\/span> <span class="port-unit">•&nbsp;Mykonos<\/span><\/div><\/div>/);
   assert.doesNotMatch(card, /precruise-note|Pre-Cruise|Bed & Breakfast/);
 });
 

@@ -21,18 +21,25 @@ test('preview and image exports continue to use the same wrapped card renderer',
 });
 
 
-test('itinerary rendering does not split comma-bearing destinations', () => {
+test('itinerary rendering keeps each required destination as one unbroken unit', () => {
   const context = {};
   vm.createContext(context);
-  vm.runInContext([extractFunction('cleanPortsDisplay'), extractFunction('chunkBullets')].join('\n'), context);
+  vm.runInContext([extractFunction('normaliseDestinationName'), extractFunction('cleanPortsDisplay'), extractFunction('chunkBullets')].join('\n'), context);
 
-  const rendered = context.chunkBullets('Bilbao, Spain • La Coruna, Spain • Cherbourg, France • Souda (for Chania), Crete', 3);
+  const rendered = context.chunkBullets('Heraklion, Crete • Rhine Gorge • Bilbao, Spain • Cherbourg, France • Souda (for Chania), Crete', 3);
 
-  assert.match(rendered, /Bilbao,&nbsp;Spain/);
-  assert.match(rendered, /La&nbsp;Coruna,&nbsp;Spain/);
-  assert.match(rendered, /Cherbourg,&nbsp;France/);
-  assert.match(rendered, /Souda&nbsp;\(for&nbsp;Chania\),&nbsp;Crete/);
-  assert.doesNotMatch(rendered, /Bilbao,?\s*<br>\s*Spain|La&nbsp;Coruna,?\s*<br>\s*Spain|Cherbourg,?\s*<br>\s*France/);
+  for (const destination of [
+    'Heraklion,&nbsp;Crete',
+    'Rhine&nbsp;Gorge',
+    'Bilbao,&nbsp;Spain',
+    'Cherbourg,&nbsp;France',
+    'Souda,&nbsp;Chania,&nbsp;Crete'
+  ]) {
+    assert.match(rendered, new RegExp(`<span class=\"port-unit\">(?:•&nbsp;)?${destination}</span>`));
+  }
+  assert.doesNotMatch(rendered, /<br>|Her\s+aklion|Rh\s+ine|Spai\s+n|Franc\s+e|,\s*<\/span>\s*<span/);
+  assert.match(html, /\.cc \.vpts\{[^}]*overflow-wrap:normal;word-break:normal;\}/);
+  assert.match(html, /\.cc \.port-unit\{display:inline-block;white-space:nowrap;\}/);
 });
 
 test('white information panel narrows editorial copy, grows naturally, and centres the content group', () => {
@@ -72,6 +79,6 @@ test("card preview preserves every parsed destination without first-N port trunc
     'Strait of Magellan', 'Punta Arenas', 'Puerto Madryn', 'Punta Del Este'
   ];
 
-  assert.equal(context.chunkBullets(ports.join(' • '), 4).replaceAll('&nbsp;', ' '), ports.join(' • '));
+  assert.equal(context.chunkBullets(ports.join(' • '), 4).replace(/<\/?span[^>]*>/g, '').replaceAll('&nbsp;', ' ').replace(/ • /g, ' • '), ports.join(' • '));
   assert.doesNotMatch(context.chunkBullets(ports.join(' • '), 4), /<br>/);
 });
