@@ -100,6 +100,18 @@ test('placeholder panel is removed when a hero image source exists', () => {
   assert.match(heroCard, /<img class="hero" src="data:image\/jpeg;base64,hero"/);
 });
 
+
+test('workspace hero placeholders are enhanced in preview only and reuse the existing hero input', () => {
+  assert.match(html, /\.preview-pane \.hph\.clickable-hero-placeholder\{cursor:pointer;/);
+  assert.match(html, /\.preview-pane \.hph\.clickable-hero-placeholder::after\{content:"Click to add image"/);
+  assert.match(extractFunction('openHeroImagePickerForOffer'), /document\.querySelector\('#dz-hero input\[type="file"\]'\)/);
+  assert.match(extractFunction('openHeroImagePickerForOffer'), /input\.click\(\)/);
+  assert.match(extractFunction('enhanceClickableHeroPlaceholders'), /openHeroImagePickerForOffer\(resolvedIndex\)/);
+  assert.match(extractFunction('renderPreviewMode'), /enhanceClickableHeroPlaceholders\(cardWrap, i\)/);
+  assert.match(extractFunction('renderPreviewMode'), /enhanceClickableHeroPlaceholders\(c, index\)/);
+  assert.doesNotMatch(extractFunction('renderHeroHTML'), /clickable-hero-placeholder|onclick|input\.click/);
+});
+
 test('preview and export use renderCardHTML as the same hero source path', () => {
   const renderOfferWithCta = extractFunction('renderOfferWithOptionalCtaHTML');
   const previewRenderer = extractFunction('renderVisibleCard');
