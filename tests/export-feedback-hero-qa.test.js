@@ -18,6 +18,13 @@ function extractFunction(name) {
   throw new Error(`Could not extract ${name}`);
 }
 
+
+function extractConstant(name) {
+  const match = html.match(new RegExp(`const ${name}=.*?;`));
+  assert.ok(match, `Could not locate ${name}`);
+  return match[0];
+}
+
 test('successful export actions expose session-only green completion ticks', () => {
   const ids = ['exp-single-jpg-complete', 'exp-all-jpg-complete', 'exp-pack-complete'];
   ids.forEach(id => {
@@ -110,7 +117,15 @@ test('supported cruise operators receive their recommended empty hero imagery pl
     placeholders.replace('const OPERATOR_HERO_PLACEHOLDERS', 'var OPERATOR_HERO_PLACEHOLDERS'),
     'function getOperatorSkinStyle(){ return ""; }',
     'function getHeaderHTML(){ return ""; }',
+    extractConstant('ITINERARY_SAFE_WIDTH'),
+    extractConstant('ITINERARY_FONT'),
+    extractConstant('ITINERARY_SEPARATOR'),
+    extractFunction('normaliseDestinationName'),
     extractFunction('cleanPortsDisplay'),
+    extractFunction('estimateItineraryTextWidth'),
+    extractFunction('getItineraryMeasureText'),
+    extractFunction('renderItineraryLine'),
+    extractFunction('packItineraryLines'),
     extractFunction('chunkBullets'),
     extractFunction('escapeAttr'),
     extractFunction('getHeroImageSource'),
