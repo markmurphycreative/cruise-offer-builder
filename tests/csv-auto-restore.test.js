@@ -119,7 +119,7 @@ test('restoring a four-offer CSV repopulates card fields, operator logos and the
   vm.runInContext(source, context);
 
   context.processSheetCSV(csv, status);
-  assert.equal(status.textContent, '✓ Loaded 4 offer(s)');
+  assert.equal(status.textContent, '✓ 4 offers loaded');
   assert.equal(storage.get('cobLastSuccessfulCsvV1'), csv);
 
   context.offers = [{}, {}, {}, {}];
@@ -176,7 +176,7 @@ test('CSV import recognises AmaWaterways ships when the operator column is blank
   vm.runInContext(source, context);
 
   context.processSheetCSV(csv, status);
-  assert.equal(status.textContent, '✓ Loaded 3 offer(s)');
+  assert.equal(status.textContent, '✓ 3 offers loaded');
   assert.deepEqual(
     context.offers.slice(0, 3).map(({ operator, ship }) => ({ operator, ship })),
     [

@@ -44,7 +44,7 @@ function createHarness({ savedSource = '', csv = 'operator,offer_name\nP&O,Carib
       imported.push(loadedCsv);
       context.offers[0] = { name: 'Loaded offer' };
       loadedStatus.className = 'csv-success';
-      loadedStatus.textContent = '✓ Loaded 1 offer(s)';
+      loadedStatus.textContent = '✓ 1 offer loaded';
     })
   };
   vm.createContext(context);

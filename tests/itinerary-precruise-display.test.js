@@ -123,7 +123,7 @@ test('CSV pre-cruise stay is detected and excluded from title, details, sailing 
   context.processSheetCSV(csv, status);
   const offer = context.offers[0];
 
-  assert.equal(status.textContent, '✓ Loaded 1 offer(s)');
+  assert.equal(status.textContent, '✓ 1 offer loaded');
   assert.equal(offer.preCruiseStay.text, '1 Night Pre-Cruise at the 4 Star Hotel Athens');
   assert.equal(offer.preCruiseStay.board, undefined);
   assert.equal(offer.name, 'Greek Islands');
