@@ -31,7 +31,7 @@ test('Royal Caribbean ship catalogue contains the official first-pass list', () 
   const { OPERATOR_SHIPS } = createShipQaHarness();
   assert.equal(OPERATOR_SHIPS.royal.length, 30);
   assert.ok(OPERATOR_SHIPS.royal.includes('Navigator of the Seas'));
-  assert.deepEqual(Object.keys(OPERATOR_SHIPS), ['ambassador', 'celebrity', 'cunard', 'fred', 'marella', 'msc', 'ncl', 'po', 'princess', 'royal', 'virgin']);
+  assert.deepEqual(Object.keys(OPERATOR_SHIPS), ['amawaterways', 'ambassador', 'celebrity', 'cunard', 'fred', 'marella', 'msc', 'ncl', 'po', 'princess', 'royal', 'virgin']);
 });
 
 test('Ambassador Cruise Line ship catalogue contains the requested list', () => {

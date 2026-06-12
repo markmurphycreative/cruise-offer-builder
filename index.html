@@ -684,6 +684,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
           <select class="op-select" id="f-operator" onchange="operatorChanged()">
             <option value="">— Select Operator —</option>
             <option value="po">P&amp;O Cruises</option>
+            <option value="amawaterways">AmaWaterways</option>
             <option value="marella">Marella Cruises</option>
             <option value="royal">Royal Caribbean</option>
             <option value="ambassador">Ambassador Cruise Line</option>
@@ -1082,6 +1083,7 @@ document.querySelectorAll("[data-app-version]").forEach(label => { label.textCon
 // OPERATOR HEADERS — baked-in base64 assets
 // ═══════════════════════════════════════════════════════
 const OPERATOR_USP_PRESETS = {
+  amawaterways: "Cuisine · Cultural Experiences · Luxury · Wellness",
   ambassador: "Adult Only Options · Entertainment · Sustainability · Value",
   celebrity: "Cuisine · Cultural Experiences · Entertainment · Overnight Port Stays",
   cunard: "Cuisine · Entertainment · Luxury · Wellness",
@@ -1100,6 +1102,7 @@ const OPERATOR_USP_PRESETS = {
 };
 
 const OPERATOR_SHIPS = {
+  amawaterways: [],
   ambassador: [
     "Ambition",
     "Renaissance",
@@ -1257,6 +1260,7 @@ const OPERATOR_SHIPS = {
 };
 
 const OPERATOR_HEADERS = {
+  amawaterways: { name:"AmaWaterways",          svgData:null, pngData:"assets/operator-logos/amawaterways-logo.png", color:"#002D72", defaultBoard:"FB", ships:[] },
   po:       { name:"P&O Cruises",           pngData:"assets/operator-logos/po-cruises-logo.png", color:"#a09267", defaultBoard:"FB", ships:["Arvia","Iona","Britannia","Ventura","Azura","Aurora","Arcadia"] },
   marella: {
     name: "Marella Cruises",
@@ -1283,6 +1287,7 @@ const OPERATOR_HEADERS = {
 
 
 const OPERATOR_HERO_PLACEHOLDERS = {
+  amawaterways: ["AmaWaterways", "River &amp; Destination Imagery Recommended"],
   po:         ["P&amp;O Cruises", "Destination Imagery Recommended"],
   marella:    ["Marella Cruises", "Beach &amp; Destination Imagery Recommended"],
   celebrity:  ["Celebrity Cruises", "Lifestyle &amp; Luxury Imagery Recommended"],
@@ -1297,6 +1302,13 @@ const OPERATOR_HERO_PLACEHOLDERS = {
 };
 
 const OPERATOR_SKINS = {
+  amawaterways: {
+    background: "#002D72",
+    accentStrip: "#A75543",
+    infoBar: "#A75543",
+    text: "#002D72",
+    logoLabel: "AMAWATERWAYS"
+  },
   po: {
     background: "#07131f",
     accentStrip: "#ae9c6a",
@@ -1377,6 +1389,7 @@ const OPERATOR_SKINS = {
 };
 
 const OPERATOR_CONFIG = {
+  amawaterways:{displayName:"AmaWaterways",key:"amawaterways",url:"https://www.dawsonandsanderson.co.uk/cruises",defaultBoard:"FB",utmSlug:"amawaterways",logoAsset:"header",aliases:[/\bama\s*waterways\b/i,/\bamawaterways\b/i]},
   ambassador:{displayName:"Ambassador Cruise Line",key:"ambassador",url:"https://www.dawsonandsanderson.co.uk/ambassador-cruise-line",defaultBoard:"",utmSlug:"ambassador",logoAsset:"none",aliases:[/\bambassador\b/i]},
   celebrity:{displayName:"Celebrity Cruises",key:"celebrity",url:"https://www.dawsonandsanderson.co.uk/celebrity-cruises",defaultBoard:"AI",utmSlug:"celebrity",logoAsset:"header",aliases:[/\bcelebrity\b/i,/\bcelebrity\s+cruises\b/i]},
   cunard:{displayName:"Cunard",key:"cunard",url:"https://www.dawsonandsanderson.co.uk/cunard",defaultBoard:"HB",utmSlug:"cunard",logoAsset:"header",aliases:[/\bcunard\b/i]},
@@ -5380,6 +5393,7 @@ function operatorAccentTint(color, alpha){
   return parts ? `rgba(${parts[0]},${parts[1]},${parts[2]},${alpha})` : `rgba(160,146,103,${alpha})`;
 }
 const UTM_OPERATOR_COLOURS = {
+  amawaterways: '#002D72',
   ambassador: '#6f1d46',
   celebrity: '#071f3d',
   cunard: '#8b0000',
