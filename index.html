@@ -286,17 +286,18 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 /* ── EXPORT SECTION ── */
 .export-section{background:var(--panel);}
 .export-section .section-body{padding:8px 10px;}
-.export-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin-bottom:6px;}
+.export-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin-bottom:5px;}
 .export-health-count{margin-left:6px;font-size:8px;font-weight:700;text-transform:none;letter-spacing:.03em;color:var(--amber);white-space:nowrap;}
 .export-health-count.ready{color:var(--muted);}
-.export-group{margin-top:8px;}
-.export-group-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;}
-.export-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
-.export-actions.single-action{grid-template-columns:1fr;}
-.export-btn{width:100%;padding:8px 9px;font-size:11px;font-weight:700;border:none;border-radius:var(--radius);color:#fff;margin:0;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s;letter-spacing:.03em;}
+.export-group{margin-top:7px;}
+.export-toolbar-group{margin-top:7px;}
+.export-actions{display:grid;gap:5px;}
+.export-toolbar{grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;}
+.export-btn{width:100%;min-height:36px;padding:0 7px;font-size:10px;font-weight:700;border:none;border-radius:var(--radius);color:#fff;margin:0;display:flex;align-items:center;justify-content:center;gap:4px;transition:all .15s;letter-spacing:.02em;white-space:nowrap;}
 .export-btn:hover{opacity:.88;transform:translateY(-1px);}
-.export-btn.single{background:var(--gold);box-shadow:0 2px 6px rgba(160,146,103,.35);}
-.export-btn.all{background:var(--navy);box-shadow:0 2px 6px rgba(14,27,42,.35);}
+.export-btn.secondary{background:var(--navy);box-shadow:0 1px 4px rgba(14,27,42,.24);}
+.export-btn.primary{background:var(--gold);color:var(--navy);box-shadow:0 2px 6px rgba(160,146,103,.35);}
+@media (max-width:360px){.export-btn{font-size:9px;padding:0 5px;gap:3px;}.export-toolbar{gap:4px;}}
 .export-complete{display:none;color:#b8f0c7;font-size:14px;font-weight:700;line-height:1;}
 .export-complete.active{display:inline;}
 .export-label-state{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
@@ -873,27 +874,17 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
           <div class="copy-qa-checklist" id="copy-qa-checklist"></div>
           <div class="copy-qa-note" id="copy-qa-note">Passive checks only — no auto-correction. Export is never blocked.</div>
         </div>
-      <div class="export-group">
-        <div class="export-group-title">Current Card</div>
-        <div class="export-actions single-action">
-          <button class="export-btn single" onclick="exportCurrentJPG()" id="exp-single-jpg-btn">
-            <span>⬇</span><span class="export-label-state" id="exp-single-jpg-lbl">Export Current Card JPG</span><span aria-hidden="true">JPG</span><span class="export-complete" id="exp-single-jpg-complete" aria-label="Export completed">✓</span>
+      <div class="export-group export-toolbar-group">
+        <div class="export-title">Exports</div>
+        <div class="export-actions export-toolbar" role="group" aria-label="Exports">
+          <button class="export-btn secondary" onclick="exportCurrentJPG()" id="exp-single-jpg-btn">
+            <span>⬇</span><span class="export-label-state" id="exp-single-jpg-lbl">Export Card</span><span aria-hidden="true">Card</span><span class="export-complete" id="exp-single-jpg-complete" aria-label="Export completed">✓</span>
           </button>
-        </div>
-      </div>
-      <div class="export-group">
-        <div class="export-group-title">All 4 Cards</div>
-        <div class="export-actions single-action">
-          <button class="export-btn all" onclick="exportAllJPG()" id="exp-all-jpg-btn">
-            <span>⬇</span><span class="export-label-state" id="exp-all-jpg-lbl">Export All 4 Cards JPG ZIP</span><span aria-hidden="true">JPG ZIP</span><span class="export-complete" id="exp-all-jpg-complete" aria-label="Export completed">✓</span>
+          <button class="export-btn secondary" onclick="exportAllJPG()" id="exp-all-jpg-btn">
+            <span>⬇</span><span class="export-label-state" id="exp-all-jpg-lbl">Export All Cards</span><span aria-hidden="true">All Cards</span><span class="export-complete" id="exp-all-jpg-complete" aria-label="Export completed">✓</span>
           </button>
-        </div>
-      </div>
-      <div class="export-group">
-        <div class="export-group-title">Campaign Pack</div>
-        <div class="export-actions single-action">
-          <button class="export-btn all" onclick="exportCampaignPack()" id="exp-pack-btn">
-            <span class="export-label-state" id="exp-pack-lbl">Export Campaign Pack</span><span aria-hidden="true">Export Campaign Pack</span><span class="export-complete" id="exp-pack-complete" aria-label="Export completed">✓</span>
+          <button class="export-btn primary" onclick="exportCampaignPack()" id="exp-pack-btn">
+            <span class="export-label-state" id="exp-pack-lbl">Export Campaign Pack</span><span aria-hidden="true">Campaign Pack</span><span class="export-complete" id="exp-pack-complete" aria-label="Export completed">✓</span>
           </button>
         </div>
       </div>
@@ -1058,8 +1049,8 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <dt>Select an offer</dt><dd><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd></dd>
       <dt>Next / previous offer</dt><dd><kbd>Tab</kbd> / <kbd>Shift</kbd> + <kbd>Tab</kbd></dd>
       <dt>Single / Email / All 4 view</dt><dd><kbd>S</kbd> / <kbd>E</kbd> / <kbd>A</kbd></dd>
-      <dt>Export current JPG</dt><dd><kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>S</kbd></dd>
-      <dt>Export JPG ZIP</dt><dd><kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd></dd>
+      <dt>Export card</dt><dd><kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>S</kbd></dd>
+      <dt>Export all cards</dt><dd><kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd></dd>
       <dt>Refresh offers</dt><dd><kbd>R</kbd></dd>
       <dt>Open this help</dt><dd><kbd>?</kbd></dd>
       <dt>Close this help</dt><dd><kbd>Esc</kbd></dd>
@@ -1084,7 +1075,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.1.4";
+const APP_VERSION = "v2.1.6";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -2325,7 +2316,7 @@ async function exportAll(){
   const toExport=offers.map((o,i)=>({o,i})).filter(({o})=>o.name||o._img);
   if(!toExport.length){ prog.textContent="No offers to export — fill in at least one offer first"; showExportToast("No offer loaded","error"); return; }
   if(!(await ensureJSZipLoaded())){
-    prog.textContent="⚠ ZIP export unavailable — JSZip did not load. Check your internet connection and try again.";
+    prog.textContent="⚠ All cards export unavailable — export library did not load. Check your internet connection and try again.";
     showExportToast("Export failed","error");
     return;
   }
@@ -6104,7 +6095,7 @@ async function exportCurrentJPG(){
   if(warn) warn.classList.remove('active');
   if(hasExternalImg(o) && warn) warn.classList.add('active');
   exportRunning=true; if(btn) btn.disabled=true; if(lbl) lbl.textContent='Rendering...';
-  if(prog) prog.textContent='Building JPG at 1200px...';
+  if(prog) prog.textContent='Building card at 1200px...';
   try{
     const filename=filenameWithExt(cur,'jpg');
     const blob=await renderCardToImageBlob(o,'image/jpeg',0.92);
@@ -6118,14 +6109,14 @@ async function exportCurrentJPG(){
       if(prog) prog.textContent='✓ Exported: '+filename+' + '+ctaFilename+' — CTA link '+getCtaLink(cta);
     } else if(prog) prog.textContent='✓ Exported: '+filename;
     markExportComplete('exp-single-jpg-complete');
-    showExportToast('JPG exported successfully');
+    showExportToast('Card exported successfully');
   }catch(err){
-    if(prog) prog.textContent='⚠ JPG export failed — try using a locally uploaded image';
+    if(prog) prog.textContent='⚠ Card export failed — try using a locally uploaded image';
     if(warn) warn.classList.add('active');
     console.error('JPG export error:',err);
     showExportToast('Export failed','error');
   }
-  if(lbl) lbl.textContent='Export Current Card JPG';
+  if(lbl) lbl.textContent='Export Card';
   exportRunning=false; if(btn) btn.disabled=false;
 }
 async function exportAllJPG(){
@@ -6138,7 +6129,7 @@ async function exportAllJPG(){
   if(warn) warn.classList.remove('active');
   const toExport=offers.map((o,i)=>({o,i})).filter(({o})=>o.name||o._img);
   if(!toExport.length){ if(prog) prog.textContent='No offers to export — fill in at least one offer first'; showExportToast('No offer loaded','error'); return; }
-  if(!(await ensureJSZipLoaded())){ if(prog) prog.textContent='⚠ ZIP export unavailable — JSZip did not load. Check your internet connection and try again.'; showExportToast('Export failed','error'); return; }
+  if(!(await ensureJSZipLoaded())){ if(prog) prog.textContent='⚠ All cards export unavailable — export library did not load. Check your internet connection and try again.'; showExportToast('Export failed','error'); return; }
   if(toExport.some(({o})=>hasExternalImg(o)) && warn) warn.classList.add('active');
   exportRunning=true; if(btn) btn.disabled=true;
   const zip=new JSZip(); const offerCardsFolder=zip.folder('offer-cards'); let done=0;
@@ -6146,8 +6137,8 @@ async function exportAllJPG(){
   ctaSettings=cta;
   for(const {o,i} of toExport){
     const filename=filenameWithExt(i,'jpg');
-    if(prog) prog.textContent=`Rendering JPG ${done+1} of ${toExport.length}: ${filename}`;
-    if(lbl) lbl.textContent=`Zipping ${done+1}/${toExport.length}...`;
+    if(prog) prog.textContent=`Rendering card ${done+1} of ${toExport.length}: ${filename}`;
+    if(lbl) lbl.textContent=`Packaging ${done+1}/${toExport.length}...`;
     try{
       const blob=await renderCardToImageBlob(o,'image/jpeg',0.92);
       offerCardsFolder.file(filename,blob);
@@ -6161,19 +6152,19 @@ async function exportAllJPG(){
     }catch(err){ console.error('JPG ZIP export error card '+(i+1),err); }
   }
   try{
-    if(prog) prog.textContent='Compressing JPG ZIP...';
-    if(lbl) lbl.textContent='Creating ZIP...';
+    if(prog) prog.textContent='Compressing all cards...';
+    if(lbl) lbl.textContent='Packaging...';
     const zipBlob=await zip.generateAsync({type:'blob'});
     downloadBlob(zipBlob,getCampaignZipFilenameExt('jpg'));
-    if(prog) prog.textContent=`✓ JPG ZIP exported — ${done} card(s)${getCtaSettingsFromUI().enabled ? ' + CTA asset(s)' : ''} included`;
+    if(prog) prog.textContent=`✓ All cards exported — ${done} card(s)${getCtaSettingsFromUI().enabled ? ' + CTA asset(s)' : ''} included`;
     markExportComplete('exp-all-jpg-complete');
-    showExportToast('ZIP exported successfully');
+    showExportToast('All cards exported successfully');
   }catch(err){
-    if(prog) prog.textContent='⚠ JPG ZIP export failed';
+    if(prog) prog.textContent='⚠ All cards export failed';
     console.error('JPG ZIP creation error:',err);
     showExportToast('Export failed','error');
   }
-  if(lbl) lbl.textContent='Export All 4 Cards JPG ZIP';
+  if(lbl) lbl.textContent='Export All Cards';
   exportRunning=false; if(btn) btn.disabled=false;
 }
 // Keep visible UTM box fresh when the page first opens.
