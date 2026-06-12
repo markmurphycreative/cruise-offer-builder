@@ -1102,7 +1102,37 @@ const OPERATOR_USP_PRESETS = {
 };
 
 const OPERATOR_SHIPS = {
-  amawaterways: [],
+  amawaterways: [
+    "AmaBella",
+    "AmaCello",
+    "AmaCerto",
+    "AmaDahlia",
+    "AmaDante",
+    "AmaDara",
+    "AmaDolce",
+    "AmaDouro",
+    "AmaKristina",
+    "AmaLea",
+    "AmaLilia",
+    "AmaLotus",
+    "AmaLucia",
+    "AmaLyra",
+    "AmaMagna",
+    "AmaMagdalena",
+    "AmaMelodia",
+    "AmaMora",
+    "AmaPrima",
+    "AmaReina",
+    "AmaSerena",
+    "AmaSiena",
+    "AmaSonata",
+    "AmaStella",
+    "AmaVerde",
+    "AmaVenita",
+    "AmaVida",
+    "AmaViola",
+    "Zambezi Queen"
+  ],
   ambassador: [
     "Ambition",
     "Renaissance",
@@ -1260,7 +1290,7 @@ const OPERATOR_SHIPS = {
 };
 
 const OPERATOR_HEADERS = {
-  amawaterways: { name:"AmaWaterways",          svgData:null, pngData:"assets/operator-logos/amawaterways-logo.png", color:"#002D72", defaultBoard:"FB", ships:[] },
+  amawaterways: { name:"AmaWaterways",          svgData:null, pngData:"assets/operator-logos/amawaterways-logo.png", color:"#A75543", defaultBoard:"FB", ships:["AmaBella","AmaCello","AmaCerto","AmaDahlia","AmaDante","AmaDara","AmaDolce","AmaDouro","AmaKristina","AmaLea","AmaLilia","AmaLotus","AmaLucia","AmaLyra","AmaMagna","AmaMagdalena","AmaMelodia","AmaMora","AmaPrima","AmaReina","AmaSerena","AmaSiena","AmaSonata","AmaStella","AmaVerde","AmaVenita","AmaVida","AmaViola","Zambezi Queen"] },
   po:       { name:"P&O Cruises",           pngData:"assets/operator-logos/po-cruises-logo.png", color:"#a09267", defaultBoard:"FB", ships:["Arvia","Iona","Britannia","Ventura","Azura","Aurora","Arcadia"] },
   marella: {
     name: "Marella Cruises",
@@ -1303,10 +1333,10 @@ const OPERATOR_HERO_PLACEHOLDERS = {
 
 const OPERATOR_SKINS = {
   amawaterways: {
-    background: "#002D72",
+    background: "#07131f",
     accentStrip: "#A75543",
     infoBar: "#A75543",
-    text: "#002D72",
+    text: "#1a1a1a",
     logoLabel: "AMAWATERWAYS"
   },
   po: {
@@ -2348,7 +2378,7 @@ function getOperatorShipQaIssue(operatorKey,shipName){
   const closeThreshold=Math.max(2,Math.floor(closest.name.length*.15));
   return closest.distance<=closeThreshold
     ?`Possible ship name error: did you mean ${closest.name}?`
-    :`Ship name not found in ${{ambassador:"Ambassador Cruise Line",celebrity:"Celebrity Cruises",cunard:"Cunard",fred:"Fred. Olsen Cruise Lines",marella:"Marella Cruises",msc:"MSC Cruises",ncl:"Norwegian Cruise Line",po:"P&O Cruises",princess:"Princess Cruises",royal:"Royal Caribbean",virgin:"Virgin Voyages"}[operatorKey]} ship list.`;
+    :`Ship name not found in ${{amawaterways:"AmaWaterways",ambassador:"Ambassador Cruise Line",celebrity:"Celebrity Cruises",cunard:"Cunard",fred:"Fred. Olsen Cruise Lines",marella:"Marella Cruises",msc:"MSC Cruises",ncl:"Norwegian Cruise Line",po:"P&O Cruises",princess:"Princess Cruises",royal:"Royal Caribbean",virgin:"Virgin Voyages"}[operatorKey]} ship list.`;
 }
 function setSpellWarn(warnId,msg){const el=document.getElementById(warnId); if(!el) return; el.textContent=msg||""; el.classList.toggle("active",!!msg);}
 function buildQaChecklist(rows){
@@ -2895,6 +2925,10 @@ function processSheetCSV(csv,status){
     if(v.includes("wendy")) return "wendy";
     return v ? "custom" : "";
   }
+  function opKeyFromShip(s){
+    const match=findKnownOperatorShip(norm(s),"amawaterways");
+    return match ? match.operatorKey : "";
+  }
   function splitDate(s){
     s=norm(s).replace(/,/g,"").replace(/\b(\d{1,2})(st|nd|rd|th)\b/ig,"$1");
     const m=s.match(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{2,4})/);
@@ -2972,14 +3006,17 @@ function processSheetCSV(csv,status){
       val(row,headers,["board_label","boardlabel"])
     );
     const operatorText=val(row,headers,["operator"]);
+    const shipText=val(row,headers,["ship_name","ship"]);
+    const operatorKey=opKey(operatorText);
+    const resolvedOperator=(operatorKey&&operatorKey!=="custom") ? operatorKey : (opKeyFromShip(shipText)||operatorKey);
     const hero=val(row,headers,["hero_image","image","image_url"]);
 
     const newOffer={
       ...offers[loaded],
-      operator: opKey(operatorText),
+      operator: resolvedOperator,
       _logoDisplay: "operator",
       name: val(row,headers,["offer_name","cruise_name","name"]),
-      ship: val(row,headers,["ship_name","ship"]),
+      ship: shipText,
       price: val(row,headers,["price"]).replace(/[^0-9.]/g,"") || "",
       nights: val(row,headers,["nights"]).replace(/[^0-9]/g,"") || "",
       day: dateParts.day || val(row,headers,["day"]),
@@ -4396,6 +4433,17 @@ function cleanParsedPorts(lines){
   const ignored=/^(?:at sea|(?:\d+\s+)?days?\s+at\s+sea|(?:\d+\s+)?sea\s+days?|overnight port stay|overnight stay|overnight|luggage\s*(?:&|and)\s*transfers?\s+included|flights?\s+included)[.!]?$/i;
   return lines.flatMap(line=>line.split(/(?:[•·▪◦●]|\s+[-–—]\s+|[-–—]\s*$|,)/)).map(item=>item.trim().replace(/^[-–—]\s*/,"")).filter(item=>item&&!ignored.test(item)).join(" • ");
 }
+function escapeRegExp(value){ return String(value||"").replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+function findKnownOperatorShip(text,operatorKey){
+  const search=String(text||"");
+  const keys=operatorKey?[operatorKey]:Object.keys(OPERATOR_SHIPS||{});
+  for(const key of keys){
+    const ships=[...(OPERATOR_SHIPS[key]||[])].sort((a,b)=>b.length-a.length);
+    const ship=ships.find(name=>new RegExp('\\b'+escapeRegExp(name)+'\\b','i').test(search));
+    if(ship) return {operatorKey:key,ship};
+  }
+  return null;
+}
 const TRANSIENT_PASTE_OFFER_KEYS=["rawPaste","pasteText","parsedRaw"];
 function stripTransientPasteOfferFields(offer){
   if(!offer) return offer;
@@ -4423,7 +4471,7 @@ function parseOffer(){
   const itineraryLines=getItineraryLines(lines); const portLines=itineraryLines||lines.filter(l=>/[•·,]|\s+-\s+/.test(l)&&/(?:[A-Za-z]{3,}\s*){2,}/.test(l)&&!/from|£|nights?|nts?|included|flights?/i.test(l)); const ports=cleanParsedPorts(portLines); if(ports){parsed.ports=ports;score+=8;}
   const incl=lines.find(l=>/flights?|luggage|transfer|included|all inclusive/i.test(l)); if(incl){parsed.incl=incl;score+=6;}
   const airport=AIRPORT_WORDS.find(a=>new RegExp('\\b'+a+'\\b','i').test(txt)); if(airport&&!parsed.incl){parsed.incl=airport[0].toUpperCase()+airport.slice(1)+' departures';score+=4;}
-  if(!parsed.ship&&parsed.operatorKey){const knownShip=(OPERATOR_SHIPS[parsed.operatorKey]||[]).find(ship=>new RegExp('\\b'+ship.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i').test(txt)); if(knownShip){parsed.ship=knownShip;score+=8;}}
+  const knownShipMatch=findKnownOperatorShip(txt,parsed.operatorKey||"amawaterways"); if(knownShipMatch){ if(!parsed.ship){parsed.ship=knownShipMatch.ship;score+=8;} if(!parsed.operatorKey&&knownShipMatch.operatorKey==="amawaterways"){parsed.operatorKey=knownShipMatch.operatorKey;score+=18;} }
   if(!parsed.ship){const shipLine=lines.find(l=>/\b(cruise|explorer|symphony|arvia|voyager|queen|discovery)\b/i.test(l)); if(shipLine){const m=shipLine.match(/\b([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+){0,3})\b/); if(m) parsed.ship=m[1];}}
   const title=lines.find(l=>!Object.values(OPERATOR_ALIASES).flat().some(r=>r.test(l))&&!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b/i.test(l))&&l.length>8&&l!==parsed.ship); if(title){parsed.name=title.replace(/^[-•\s]+/,'');score+=8;}
   const confidence=score>=62?'high':score>=35?'partial':'low';

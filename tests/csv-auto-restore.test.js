@@ -11,6 +11,16 @@ function extract(pattern, label) {
   return match[0];
 }
 
+function findKnownOperatorShipForTest(text, operatorKey) {
+  const ships = { amawaterways: ['AmaBella', 'AmaDouro', 'AmaMagna', 'Zambezi Queen'] };
+  const search = String(text || '');
+  for (const key of (operatorKey ? [operatorKey] : Object.keys(ships))) {
+    const ship = (ships[key] || []).find(name => new RegExp('\\b' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(search));
+    if (ship) return { operatorKey: key, ship };
+  }
+  return null;
+}
+
 function createRestoreHarness(initialCsv = '') {
   const storage = new Map();
   if (initialCsv) storage.set('cobLastSuccessfulCsvV1', initialCsv);
@@ -102,7 +112,8 @@ test('restoring a four-offer CSV repopulates card fields, operator logos and the
     renderSingleOffer: () => {},
     updateAllStatus: () => {},
     genAllUtms: () => { utmRefreshes += 1; },
-    updateExportFilenames: () => {}
+    updateExportFilenames: () => {},
+    findKnownOperatorShip: findKnownOperatorShipForTest
   };
   vm.createContext(context);
   vm.runInContext(source, context);
@@ -123,4 +134,55 @@ test('restoring a four-offer CSV repopulates card fields, operator logos and the
     ]
   );
   assert.equal(utmRefreshes, 2, 'initial import and automatic restore should both run the existing UTM refresh');
+});
+
+test('CSV import recognises AmaWaterways ships when the operator column is blank', () => {
+  const csv = [
+    'operator,offer_name,ship_name,price,nights,date,ports,url',
+    ',Magna on the Danube,AmaMagna,1999,7,12 November 2026,Vilshofen • Budapest,https://example.com/ama',
+    ',Douro River,AmaDouro,1799,7,4 April 2027,Porto • Vega de Terron,https://example.com/douro',
+    ',Botswana Safari,Zambezi Queen,2999,4,8 February 2027,Kasane • Chobe,https://example.com/zambezi'
+  ].join('\n');
+  const storage = new Map();
+  const status = {};
+  const campaign = { value: '' };
+  const start = html.indexOf('const LAST_SUCCESSFUL_CSV_KEY =');
+  const end = html.indexOf('\nfunction currentSheetTemplateTSV()', start);
+  assert.ok(start >= 0 && end > start, 'Could not locate CSV persistence/import block');
+  const source = html.slice(start, end)
+    .replace('const LAST_SUCCESSFUL_CSV_KEY', 'var LAST_SUCCESSFUL_CSV_KEY')
+    .replace('let restoringLastSuccessfulCsv', 'var restoringLastSuccessfulCsv');
+  const context = {
+    console,
+    offers: [{}, {}, {}, {}],
+    cur: 0,
+    OPERATOR_CONFIG: {},
+    document: {
+      getElementById: id => id === 'sheets-status' ? status : id === 'g-campaign' ? campaign : null,
+      querySelectorAll: () => []
+    },
+    localStorage: {
+      getItem: key => storage.get(key) || null,
+      setItem: (key, value) => storage.set(key, value)
+    },
+    load: () => {},
+    renderSingleOffer: () => {},
+    updateAllStatus: () => {},
+    genAllUtms: () => {},
+    updateExportFilenames: () => {},
+    findKnownOperatorShip: findKnownOperatorShipForTest
+  };
+  vm.createContext(context);
+  vm.runInContext(source, context);
+
+  context.processSheetCSV(csv, status);
+  assert.equal(status.textContent, '✓ Loaded 3 offer(s)');
+  assert.deepEqual(
+    context.offers.slice(0, 3).map(({ operator, ship }) => ({ operator, ship })),
+    [
+      { operator: 'amawaterways', ship: 'AmaMagna' },
+      { operator: 'amawaterways', ship: 'AmaDouro' },
+      { operator: 'amawaterways', ship: 'Zambezi Queen' }
+    ]
+  );
 });
