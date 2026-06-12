@@ -547,6 +547,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cc .vsec{width:1200px;min-height:536px;height:auto;background:var(--operator-bg,var(--navy));display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 80px;text-align:center;overflow:visible;position:relative;}
 .cc .vsec::before{content:"";position:absolute;top:-1px;left:0;right:0;height:2px;background:var(--operator-bg,var(--navy));pointer-events:none;}
 .cc .vtit{font-size:68px;font-weight:300;color:#fff;margin-bottom:26px;letter-spacing:.03em;line-height:1.1;}
+.cc .precruise-note{margin-bottom:30px;}
 .cc .vpts{font-size:40px;font-weight:300;color:rgba(255,255,255,.65);line-height:1.35;overflow-wrap:anywhere;word-break:normal;}
 .cc .tcbar{width:1200px;height:123px;background:#000;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:400;color:rgba(255,255,255,.72);letter-spacing:.06em;position:relative;}
 .cc .tcbar::before{content:"";position:absolute;top:-1px;left:0;right:0;height:2px;background:#000;pointer-events:none;}
@@ -3002,12 +3003,36 @@ function processSheetCSV(csv,status){
     if(/\badults?\b/i.test(raw)) return "Based On "+raw.replace(/^based\s+on\s+/i,"").replace(/\s+sharing\b/i,"")+" Sharing";
     return raw;
   }
-  function normaliseItineraryDisplay(text){
+  function extractPreCruiseStay(text){
     const value=norm(text);
+    if(!value) return null;
+    const match=value.match(/\b(\d+)\s+night(?:s)?\s+pre[-\s]?cruise\s+stay\s+at\s+(?:(?:the)\s+)?((?:\d\s*star|[a-z]+\s+star)\s+hotel)\s+(?:in\s+|at\s+)?([^|•,.;\n\r]+)/i);
+    if(!match) return null;
+    const nights=Number(match[1]);
+    const nightLabel=(Number.isFinite(nights)&&nights===1) ? "Night" : "Nights";
+    const hotel=norm(match[2]).replace(/\b\w/g,ch=>ch.toUpperCase()).replace(/\bStar\b/g,"Star").replace(/\bHotel\b/g,"Hotel");
+    const place=norm(match[3]).replace(/^the\s+/i, "").replace(/\b\w/g,ch=>ch.toUpperCase());
+    return {
+      text: `${match[1]} ${nightLabel} Pre-Cruise at the ${hotel}${place ? " " + place : ""}`.replace(/\s{2,}/g," ").trim(),
+      board: "Bed & Breakfast",
+      source: match[0]
+    };
+  }
+  function stripPreCruiseStayText(text){
+    const stay=extractPreCruiseStay(text);
+    if(!stay) return norm(text);
+    return norm(text).replace(stay.source, " ").replace(/\s{2,}/g," ").trim();
+  }
+  function normaliseItineraryDisplay(text){
+    const value=stripPreCruiseStayText(text);
     if(!value) return "";
     return value
-      .split("|")
+      .split(/[|•]/)
       .map(part=>norm(part))
+      .filter(Boolean)
+      .filter(part=>!extractPreCruiseStay(part))
+      .filter(part=>!/^based\s+on\b/i.test(part))
+      .map(part=>typeof normaliseDestinationName==="function" ? normaliseDestinationName(part) : part)
       .filter(Boolean)
       .join(" • ");
   }
@@ -3015,7 +3040,7 @@ function processSheetCSV(csv,status){
     const parts=[];
     const inclusionText=val(row,headers,["inclusions","inclusion","included"]);
     const combined=norm([
-      inclusionText,
+      stripPreCruiseStayText(inclusionText),
       val(row,headers,["flights","flight","flight_included"]),
       val(row,headers,["luggage","baggage"]),
       val(row,headers,["transfers","transfer"]),
@@ -3106,7 +3131,7 @@ function processSheetCSV(csv,status){
       ...offers[loaded],
       operator: resolvedOperator,
       _logoDisplay: "operator",
-      name: val(row,headers,["title"]) || val(row,headers,["offer_title"]) || val(row,headers,["offer_name"]) || val(row,headers,["cruise_name"]) || val(row,headers,["name"]),
+      name: stripPreCruiseStayText(val(row,headers,["title"]) || val(row,headers,["offer_title"]) || val(row,headers,["offer_name"]) || val(row,headers,["cruise_name"]) || val(row,headers,["name"])),
       ship: shipText,
       price: val(row,headers,["price"]).replace(/[^0-9.]/g,"") || "",
       nights: val(row,headers,["nights"]).replace(/[^0-9]/g,"") || "",
@@ -3116,6 +3141,15 @@ function processSheetCSV(csv,status){
       boardlbl: boardParts.label,
       incl: "",
       ports: normaliseItineraryDisplay(val(row,headers,["ports","port_list","itinerary"])),
+      preCruiseStay: (function(){
+        const stay=extractPreCruiseStay([
+          val(row,headers,["pre_cruise_stay","precruise_stay","pre_cruise","precruise"]),
+          val(row,headers,["inclusions","inclusion","included"]),
+          val(row,headers,["ports","port_list","itinerary"]),
+          row.map(cell=>norm(cell)).join(" ")
+        ].filter(Boolean).join(" "));
+        return stay ? {text:stay.text, board:stay.board} : null;
+      })(),
       basis: normalisePassengerBasis(
         val(row,headers,["passenger_basis"]) || val(row,headers,["price_basis"]) || val(row,headers,["basis"]),
         [val(row,headers,["price"]),row.map(cell=>norm(cell)).join(" ")].join(" ")
@@ -4627,6 +4661,24 @@ function getHeaderHTML(d){
   const label=(skin?.logoLabel||(op?op.name:d.line||"CRUISE LINE")).replace(/\n/g,"<br>");
   return `<div class="header-block" style="width:1200px;height:497px;background:${background};overflow:hidden;display:block;line-height:0;"><div class="operator-png-usp" style="background:${accent};">${tags}</div><div style="height:390px;display:flex;align-items:center;justify-content:center;text-align:center;font-family:'Montserrat',sans-serif;font-size:72px;font-weight:300;letter-spacing:.14em;line-height:1.15;color:#fff;">${label}</div></div>`;
 }
+function normaliseDestinationName(port){
+  let value=String(port||"")
+    .replace(/\s+,/g, ",")
+    .replace(/,\s*,/g, ", ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  if(!value) return "";
+  value=value.replace(/\s*\((?:overnight|overnight\s+stay|overnight\s+port\s+stay)\)\s*/gi, " ");
+  value=value.replace(/\s*\(\s*for\s+([^()]+?)\s*\)\s*/gi, ", $1");
+  value=value.replace(/\s*\((?!cruising\b|scenic\s+cruising\b|tender\b)([^()]+?)\)\s*/gi, ", $1");
+  const parts=value
+    .split(",")
+    .map(part=>part.trim())
+    .filter(Boolean);
+  const unique=[];
+  parts.forEach(part=>{ if(!unique.some(existing=>existing.toLowerCase()===part.toLowerCase())) unique.push(part); });
+  return unique.join(", ").replace(/\s{2,}/g, " ").trim();
+}
 function cleanPortsDisplay(str){
   return (str||"")
     .split("•")
@@ -4637,12 +4689,7 @@ function cleanPortsDisplay(str){
     .filter(p=>!/^at\s+sea$/i.test(p))
     .filter(p=>! /^(?:\d+\s+)?days?\s+at\s+sea$/i.test(p))
     .filter(p=>! /^(?:\d+\s+)?sea\s+days?$/i.test(p))
-    .map(p=>p
-      .replace(/\s+,/g, ",")
-      .replace(/,\s*,/g, ", ")
-      .replace(/\s{2,}/g, " ")
-      .trim()
-    )
+    .map(p=>typeof normaliseDestinationName==="function" ? normaliseDestinationName(p) : p)
     .filter(Boolean)
     .join(" • ");
 }
@@ -4652,7 +4699,7 @@ function chunkBullets(str,n){
     .map(s=>s.trim())
     .filter(Boolean)
     .map(port=>port.replace(/\s+/g,"&nbsp;"))
-    .join(" • ");
+    .join("&nbsp;•&nbsp;");
 }
 function renderCardHTML(d){
   const name=d.name||"";
@@ -4666,6 +4713,8 @@ function renderCardHTML(d){
   const month=d.month||""; const nights=d.nights||"";
   const ports=(d.ports||"").trim();
   const portsHTML=ports?chunkBullets(ports,3):"";
+  const preCruiseStay=d.preCruiseStay||null;
+  const preCruiseHTML=preCruiseStay&&preCruiseStay.text ? `<div class="vpts precruise-note"><div>${preCruiseStay.text}</div>${preCruiseStay.board?`<div>${preCruiseStay.board}</div>`:""}</div>` : "";
   const terms=document.getElementById("g-terms").value||"T&Cs Apply";
   const heroPlaceholder=OPERATOR_HERO_PLACEHOLDERS[d.operator];
   const heroHTML=renderHeroHTML(d, heroPlaceholder);
@@ -4673,7 +4722,7 @@ function renderCardHTML(d){
   const priceHTML=price?`<div class="pfrom">From</div><div class="pmain">£${price}<span class="ppp">pp</span></div>`:`<div class="pfrom"></div><div class="pmain"></div>`;
   const dateHTML=(day||month)?`${day}`:"";
   const nightLabel=nights?"Nights":"";
-  return `<div class="cc"${getOperatorSkinStyle(d)}>${getHeaderHTML(d)}${heroHTML}<div class="isec"><div class="isec-content"><div class="cname">${name}</div><div class="incl">${incl}</div><div class="sname">${shipLine}</div><div class="price-block">${priceHTML}<div class="pbasis">${basis}</div></div></div></div><div class="ibar"><div class="icell gold"><div class="ival">${board}</div><div class="ilbl">${boardlbl}</div></div><div class="icell blk"><div class="ival">${dateHTML}</div><div class="ilbl">${month}</div></div><div class="icell gold"><div class="ival">${nights}</div><div class="ilbl">${nightLabel}</div></div></div><div class="vsec"><div class="vtit">You'll Visit</div><div class="vpts">${portsHTML}</div></div><div class="tcbar">${terms}</div></div>`;
+  return `<div class="cc"${getOperatorSkinStyle(d)}>${getHeaderHTML(d)}${heroHTML}<div class="isec"><div class="isec-content"><div class="cname">${name}</div><div class="incl">${incl}</div><div class="sname">${shipLine}</div><div class="price-block">${priceHTML}<div class="pbasis">${basis}</div></div></div></div><div class="ibar"><div class="icell gold"><div class="ival">${board}</div><div class="ilbl">${boardlbl}</div></div><div class="icell blk"><div class="ival">${dateHTML}</div><div class="ilbl">${month}</div></div><div class="icell gold"><div class="ival">${nights}</div><div class="ilbl">${nightLabel}</div></div></div><div class="vsec">${preCruiseHTML}<div class="vtit">You'll Visit</div><div class="vpts">${portsHTML}</div></div><div class="tcbar">${terms}</div></div>`;
 }
 function bc(d){ return renderCardHTML(d); }
 

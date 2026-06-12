@@ -19,6 +19,7 @@ function createImportHarness() {
   const end = html.indexOf('\nfunction currentSheetTemplateTSV()', start);
   assert.ok(start >= 0 && end > start, 'Could not locate CSV persistence/import block');
   const source = [
+    extract(/function normaliseDestinationName\(port\)\{[\s\S]*?\n\}/, 'destination normaliser'),
     extract(/function parseFamilyPassengerBasis\(text\)\{[\s\S]*?\n\}/, 'family passenger basis parser'),
     html.slice(start, end)
   ].join('\n')
@@ -182,7 +183,7 @@ test('CSV itinerary keeps pipe-separated comma destinations atomic', () => {
     'Marella Cruises,Spanish Shores,£1249,Marella Voyager,Checked luggage & transfers,"Bilbao, Spain | La Coruna, Spain | Vigo, Spain | Souda (for Chania), Crete"'
   ].join('\n'));
 
-  assert.equal(offer.ports, 'Bilbao, Spain • La Coruna, Spain • Vigo, Spain • Souda (for Chania), Crete');
+  assert.equal(offer.ports, 'Bilbao, Spain • La Coruna, Spain • Vigo, Spain • Souda, Chania, Crete');
   assert.doesNotMatch(offer.ports, /Bilbao • Spain|La Coruna • Spain|Chania\) • Crete/);
 });
 
@@ -197,6 +198,6 @@ test('existing pasted-offer parser, card renderer, and export renderer paths rem
 test('card layout render order remains unchanged for imported and manually built cards', () => {
   assert.match(
     html,
-    /\$\{getHeaderHTML\(d\)\}\$\{heroHTML\}<div class="isec"><div class="isec-content"><div class="cname">\$\{name\}<\/div><div class="incl">\$\{incl\}<\/div><div class="sname">\$\{shipLine\}<\/div><div class="price-block">\$\{priceHTML\}<div class="pbasis">\$\{basis\}<\/div><\/div><\/div><\/div><div class="ibar">[\s\S]*<div class="vsec"><div class="vtit">You'll Visit<\/div><div class="vpts">\$\{portsHTML\}<\/div><\/div><div class="tcbar">\$\{terms\}<\/div>/
+    /\$\{getHeaderHTML\(d\)\}\$\{heroHTML\}<div class="isec"><div class="isec-content"><div class="cname">\$\{name\}<\/div><div class="incl">\$\{incl\}<\/div><div class="sname">\$\{shipLine\}<\/div><div class="price-block">\$\{priceHTML\}<div class="pbasis">\$\{basis\}<\/div><\/div><\/div><\/div><div class="ibar">[\s\S]*<div class="vsec">\$\{preCruiseHTML\}<div class="vtit">You'll Visit<\/div><div class="vpts">\$\{portsHTML\}<\/div><\/div><div class="tcbar">\$\{terms\}<\/div>/
   );
 });
