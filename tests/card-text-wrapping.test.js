@@ -20,6 +20,21 @@ test('preview and image exports continue to use the same wrapped card renderer',
   assert.match(html, /html2canvas\(target, \{/);
 });
 
+
+test('itinerary rendering does not split comma-bearing destinations', () => {
+  const context = {};
+  vm.createContext(context);
+  vm.runInContext([extractFunction('cleanPortsDisplay'), extractFunction('chunkBullets')].join('\n'), context);
+
+  const rendered = context.chunkBullets('Bilbao, Spain • La Coruna, Spain • Cherbourg, France • Souda (for Chania), Crete', 3);
+
+  assert.match(rendered, /Bilbao,&nbsp;Spain/);
+  assert.match(rendered, /La&nbsp;Coruna,&nbsp;Spain/);
+  assert.match(rendered, /Cherbourg,&nbsp;France/);
+  assert.match(rendered, /Souda&nbsp;\(for&nbsp;Chania\),&nbsp;Crete/);
+  assert.doesNotMatch(rendered, /Bilbao,?\s*<br>\s*Spain|La&nbsp;Coruna,?\s*<br>\s*Spain|Cherbourg,?\s*<br>\s*France/);
+});
+
 test('white information panel narrows editorial copy, grows naturally, and centres the content group', () => {
   assert.match(
     html,
@@ -57,5 +72,6 @@ test("card preview preserves every parsed destination without first-N port trunc
     'Strait of Magellan', 'Punta Arenas', 'Puerto Madryn', 'Punta Del Este'
   ];
 
-  assert.equal(context.chunkBullets(ports.join(' • '), 4).replaceAll('<br>', ' • '), ports.join(' • '));
+  assert.equal(context.chunkBullets(ports.join(' • '), 4).replaceAll('&nbsp;', ' '), ports.join(' • '));
+  assert.doesNotMatch(context.chunkBullets(ports.join(' • '), 4), /<br>/);
 });

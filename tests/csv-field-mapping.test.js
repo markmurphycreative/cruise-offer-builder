@@ -69,7 +69,7 @@ test('CSV Title column always becomes the card title and cannot be replaced by i
 
   assert.equal(offer.name, 'Iconic Islands');
   assert.notEqual(offer.name, offer.incl);
-  assert.equal(offer.incl, 'Flights · All Inclusive · Luggage Included · Transfers Included');
+  assert.equal(offer.incl, 'Flights · Luggage Included · Transfers Included');
 });
 
 test('CSV Title column cannot be replaced by ship names or passenger basis text', () => {
@@ -102,10 +102,23 @@ test('details line is built only from inclusions and attributes while ship and b
   ].join('\n'));
 
   assert.equal(offer.name, 'Swiss Alps & Rhine Castles');
-  assert.equal(offer.incl, 'Flights · Full Board Dining · Luggage Included · Transfers Included');
+  assert.equal(offer.incl, 'Flights · Luggage Included · Transfers Included');
   assert.equal(offer.ship, 'AmaSerena');
   assert.equal(offer.basis, 'Based On 2 Adults Sharing');
   assert.doesNotMatch(offer.incl, /AmaSerena|Based On|Swiss Alps|£|Basel|Strasbourg|Cologne|Amsterdam/);
+});
+
+
+test('details line keeps supporting inclusions but excludes board basis labels', () => {
+  const offer = importCSV([
+    'Operator,Title,Board Basis,Price,Ship,Inclusions,Passenger Basis,Itinerary',
+    'Marella Cruises,Canaries Escape,All Inclusive,£1299,Marella Voyager,"Flights, luggage, transfers, drinks package, Wi-Fi, entertainment, service charges",2 Adults Sharing,Tenerife | Madeira'
+  ].join('\n'));
+
+  assert.equal(offer.board, 'AI');
+  assert.equal(offer.boardlbl, 'All Inclusive');
+  assert.equal(offer.incl, 'Flights · Luggage Included · Transfers Included · Drinks Package · Wi-Fi Included · Entertainment Included · Service Charges Included');
+  assert.doesNotMatch(offer.incl, /All Inclusive|Full Board|Half Board|Dining/);
 });
 
 test('passenger basis wording never appears in title, details, sailing or itinerary data', () => {
@@ -126,6 +139,17 @@ test('CSV itinerary pipe separators convert to the builder bullet separator', ()
 
   assert.equal(offer.ports, 'Corfu • Rhodes • Patmos • Heraklion');
   assert.doesNotMatch(offer.ports, /\|/);
+});
+
+
+test('CSV itinerary keeps pipe-separated comma destinations atomic', () => {
+  const offer = importCSV([
+    'Operator,Title,Price,Ship,Inclusions,Itinerary',
+    'Marella Cruises,Spanish Shores,£1249,Marella Voyager,Checked luggage & transfers,"Bilbao, Spain | La Coruna, Spain | Vigo, Spain | Souda (for Chania), Crete"'
+  ].join('\n'));
+
+  assert.equal(offer.ports, 'Bilbao, Spain • La Coruna, Spain • Vigo, Spain • Souda (for Chania), Crete');
+  assert.doesNotMatch(offer.ports, /Bilbao • Spain|La Coruna • Spain|Chania\) • Crete/);
 });
 
 test('existing pasted-offer parser, card renderer, and export renderer paths remain unchanged', () => {
