@@ -523,6 +523,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cc .hero{width:100%;height:calc(100% + 1px);object-fit:cover;display:block;position:absolute;top:-1px;left:0;transform-origin:center center;}
 .cc .hph{width:1200px;height:849px;background:#b8ccd8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
 .cc .hph span{font-size:28px;font-weight:300;color:#5a7a90;font-family:'Montserrat',sans-serif;}
+.preview-pane .hph.clickable-hero-placeholder{cursor:pointer;position:relative;transition:filter .15s ease,box-shadow .15s ease;}
+.preview-pane .hph.clickable-hero-placeholder:hover{filter:brightness(.96);box-shadow:inset 0 0 0 8px rgba(255,255,255,.28);}
+.preview-pane .hph.clickable-hero-placeholder::after{content:"Click to add image";position:absolute;left:50%;bottom:90px;transform:translateX(-50%);opacity:0;font-family:'Montserrat',sans-serif;font-size:24px;font-weight:500;color:#5a7a90;background:rgba(255,255,255,.58);border:2px solid rgba(90,122,144,.28);border-radius:999px;padding:12px 22px;line-height:1;transition:opacity .15s ease;pointer-events:none;}
+.preview-pane .hph.clickable-hero-placeholder:hover::after{opacity:1;}
 .cc .isec{width:1200px;height:auto;min-height:0;overflow:visible;background:#fff;padding:80px 62px 112px;text-align:center;}
 .cc .isec-content{position:relative;top:16px;}
 .cc .cname,.cc .incl,.cc .sname,.cc .price-block,.cc .pmain,.cc .pbasis{max-width:100%;min-width:0;white-space:normal;word-wrap:break-word;overflow-wrap:break-word;}
@@ -1485,12 +1489,15 @@ let ctaSettings = {...CTA_DEFAULTS};
 // ═══════════════════════════════════════════════════════
 function toggleSec(hdr){
   const willOpen = hdr.classList.contains("collapsed");
+  const section = hdr && hdr.closest ? hdr.closest(".section[data-section-key]") : null;
+  const sectionKey = section && section.dataset ? section.dataset.sectionKey : "";
   if(willOpen){
     document.querySelectorAll(".section[data-section-key] .section-hdr").forEach(otherHdr=>{
       if(otherHdr !== hdr) setSectionCollapsedByHeader(otherHdr, true);
     });
   }
   setSectionCollapsedByHeader(hdr, !willOpen);
+  if(willOpen && sectionKey === "export-cards" && typeof autoExpandCampaignHealthForExport === "function") autoExpandCampaignHealthForExport();
   queueAutosave();
 }
 function setSectionCollapsedByHeader(hdr, collapsed){
@@ -1843,6 +1850,41 @@ function dzOver(e,id){e.preventDefault();document.getElementById(id).classList.a
 function dzOut(id){document.getElementById(id).classList.remove("over");}
 function dzDrop(e,type){e.preventDefault();dzOut(type==="logo"?"dz-logo":"dz-hero");const f=e.dataTransfer.files[0];if(f)readFile(f,type);}
 function fileChosen(e,type){const f=e.target.files[0];if(f)readFile(f,type);}
+function openHeroImagePickerForOffer(index){
+  const offerIndex = Number(index);
+  if(!Number.isInteger(offerIndex) || offerIndex < 0 || offerIndex >= offers.length) return;
+  if(offerIndex !== cur){
+    if(typeof sv === "function") sv(offerIndex);
+    else if(typeof load === "function") load(offerIndex);
+    else cur = offerIndex;
+  }
+  const input = document.querySelector('#dz-hero input[type="file"]');
+  if(!input) return;
+  input.value = "";
+  input.click();
+}
+function enhanceClickableHeroPlaceholders(root, offerIndex){
+  const scope = root && root.querySelectorAll ? root : document;
+  scope.querySelectorAll(".hph").forEach(placeholder=>{
+    const resolvedIndex = Number.isInteger(offerIndex) ? offerIndex : cur;
+    if(placeholder.dataset.heroPickerBound === "1") return;
+    placeholder.dataset.heroPickerBound = "1";
+    placeholder.classList.add("clickable-hero-placeholder");
+    placeholder.setAttribute("role", "button");
+    placeholder.setAttribute("tabindex", "0");
+    placeholder.setAttribute("title", "Click to add image");
+    placeholder.setAttribute("aria-label", "Add hero image for Offer " + (resolvedIndex + 1));
+    const openPicker = event=>{
+      event.preventDefault();
+      event.stopPropagation();
+      openHeroImagePickerForOffer(resolvedIndex);
+    };
+    placeholder.addEventListener("click", openPicker);
+    placeholder.addEventListener("keydown", event=>{
+      if(event.key === "Enter" || event.key === " ") openPicker(event);
+    });
+  });
+}
 function readFile(file,type){
   const isSvg=file.type==="image/svg+xml"||file.name.endsWith(".svg");
   if(type==="logo"&&isSvg){
@@ -2725,6 +2767,12 @@ function updateProductionStatus(){
   const renderIssue=issue=>`<div class="${`prod-status-item warn ${issue.warningClass||""}`.trim()}"><span>⚠</span><span>${issue.text}</span></div>`;
   const renderSection=(label,issues)=>`<div class="prod-status-group">${label}</div>${issues.length?issues.map(renderIssue).join(""):`<div class="prod-status-empty">None</div>`}`;
   host.innerHTML=renderSection("BLOCKERS",diagnostics.blockers)+renderSection("WARNINGS",diagnostics.warnings);
+  return {blockerCount, warningCount, attentionCount, diagnostics};
+}
+function autoExpandCampaignHealthForExport(){
+  const status = updateProductionStatus();
+  const panel = document.getElementById("prod-status");
+  if(panel && status && status.blockerCount > 0) panel.open = true;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -4893,6 +4941,7 @@ function renderSingleOffer(data){
   const scale=zoomPct/100;
   updatePreviewTitle();
   out.innerHTML=renderCardHTML(data||{});
+  enhanceClickableHeroPlaceholders(out, cur);
   scheduleHeroCropPositions(out);
   scaler.style.width="1200px";
   scaler.style.transform=`scale(${scale})`;
@@ -4916,7 +4965,7 @@ function rv(skipSave){
     bar.innerHTML=`<div class="email-dot" style="background:#ff5f57"></div><div class="email-dot" style="background:#ffbd2e"></div><div class="email-dot" style="background:#28ca41"></div><span style="font-size:10px;color:#aaa;margin-left:8px;">Klaviyo — ${document.getElementById("g-campaign").value||"Campaign"}</span>`;
     chrome.appendChild(bar);
     const stack=document.createElement("div"); stack.className="email-cards-stack";
-    offers.forEach(d=>{ if(!d.name&&!d._img) return; const cw=document.createElement("div"); cw.className="email-card-wrap"; cw.innerHTML=renderCardHTML(d); stack.appendChild(cw); });
+    offers.forEach((d,index)=>{ if(!d.name&&!d._img) return; const cw=document.createElement("div"); cw.className="email-card-wrap"; cw.innerHTML=renderCardHTML(d); enhanceClickableHeroPlaceholders(cw, index); stack.appendChild(cw); });
     const footer=document.createElement("div"); footer.className="email-footer"; footer.innerHTML="Dawson &amp; Sanderson · T&amp;Cs Apply<br><span style='font-size:10px;'>Unsubscribe</span>";
     chrome.appendChild(stack); chrome.appendChild(footer); wrap.appendChild(chrome);
     out.innerHTML=""; out.appendChild(wrap);
@@ -4925,7 +4974,7 @@ function rv(skipSave){
   } else if(viewMode==="all"){
     updatePreviewTitle();
     const grid=document.createElement("div"); grid.style.cssText="display:grid;grid-template-columns:1200px 1200px;width:2400px;background:#333;gap:2px;";
-    offers.forEach(d=>{const c=document.createElement("div");c.innerHTML=renderCardHTML(d);grid.appendChild(c);});
+    offers.forEach((d,index)=>{const c=document.createElement("div");c.innerHTML=renderCardHTML(d);enhanceClickableHeroPlaceholders(c, index);grid.appendChild(c);});
     out.innerHTML=""; out.appendChild(grid);
     scaler.style.width="2400px"; scaler.style.transform=`scale(${scale})`; scaler.style.transformOrigin="top center";
     scaler.style.height=Math.ceil(out.offsetHeight*scale)+"px";
@@ -5111,6 +5160,7 @@ function renderOfferIndex(i){
   if(viewMode==='single'){
     updatePreviewTitle();
     out.innerHTML=renderCardHTML(d);
+    enhanceClickableHeroPlaceholders(out, i);
     scheduleHeroCropPositions(out);
     scaler.style.width='1200px';
     scaler.style.transform='scale('+scale+')';
@@ -5217,6 +5267,7 @@ function renderVisibleCard(){
   const scale = (zoomPct / 100) * SINGLE_PREVIEW_SCALE;
   updatePreviewTitle();
   out.innerHTML = renderOfferWithOptionalCtaHTML(visibleFieldsToData(), getCtaSettingsFromUI());
+  enhanceClickableHeroPlaceholders(out, cur);
   scheduleHeroCropPositions(out);
   scaler.style.width = '1200px';
   scaler.style.transform = 'scale(' + scale + ')';
@@ -5603,6 +5654,7 @@ function renderPreviewMode(skipSave){
       cardWrap.className = 'email-card-wrap';
       cardWrap.style.cssText = 'width:1200px;background:#fff;overflow:hidden;';
       cardWrap.innerHTML = renderOfferWithOptionalCtaHTML(d, getCtaSettingsFromUI());
+      enhanceClickableHeroPlaceholders(cardWrap, i);
       stackWrap.appendChild(cardWrap);
       scheduleHeroCropPositions(cardWrap);
     }
@@ -5635,6 +5687,7 @@ function renderPreviewMode(skipSave){
       c.addEventListener('keydown', function(event){ handleAllPreviewCardKeydown(event, index); });
       c.innerHTML = bc(d || {});
       if(getCtaSettingsFromUI().enabled) c.innerHTML = renderOfferWithOptionalCtaHTML(d || {}, getCtaSettingsFromUI());
+      enhanceClickableHeroPlaceholders(c, index);
       grid.appendChild(c);
       scheduleHeroCropPositions(c);
     });

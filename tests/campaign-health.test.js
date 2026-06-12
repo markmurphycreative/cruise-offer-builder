@@ -44,7 +44,8 @@ function createHarness({ globals = {}, offers = [{}, {}, {}, {}], cur = 0, heade
     'g-terms': { value: globals.terms || '' },
     'prod-status-collapsed-summary': { textContent: '' },
     'prod-status-summary': { className: '', innerHTML: '' },
-    'prod-status-list': { innerHTML: '' }
+    'prod-status-list': { innerHTML: '' },
+    'prod-status': { open: false }
   };
   const context = {
     offers,
@@ -59,7 +60,8 @@ function createHarness({ globals = {}, offers = [{}, {}, {}, {}], cur = 0, heade
     extractFunction('hasOperatorLogo'),
     extractFunction('getOfferReadiness'),
     extractFunction('getMissingCriticalOfferFields'),
-    extractFunction('updateProductionStatus')
+    extractFunction('updateProductionStatus'),
+    extractFunction('autoExpandCampaignHealthForExport')
   ].join('\n'), context);
   return { context, elements };
 }
@@ -70,6 +72,27 @@ test('export checklist is renamed in place and retains its existing panel stylin
   assert.match(html, /\.prod-status\[open\] \.prod-status-collapsed-summary\{display:none;\}/);
   assert.doesNotMatch(html, /<div class="prod-status-title">Export Checklist<\/div>/);
   assert.match(html, /\.prod-status-secondary\{font-size:8px;font-weight:400;opacity:\.60;\}/);
+});
+
+
+test('opening export can auto-expand Campaign Health when blockers exist without changing ready state', () => {
+  const blocked = createHarness({
+    globals: { campaign: 'campaign', date: '16th May 2026', airport: 'NCL', terms: 'T&Cs Apply' },
+    offers: [{ name: 'One', ship: 'Arvia', price: '1669', day: '20', month: 'November', ports: 'Barbados', nights: '14', board: 'FB', boardlbl: 'Full Board', operator: 'po', _utm: 'https://example.com' }, {}, {}, {}],
+    headers: { po: { pngData: 'assets/operator-logos/po-cruises-logo.png' } }
+  });
+  blocked.context.autoExpandCampaignHealthForExport();
+  assert.equal(blocked.elements['prod-status'].open, true);
+  assert.match(blocked.elements['prod-status-list'].innerHTML, /Offer 1 missing hero image/);
+
+  const ready = createHarness({
+    globals: { campaign: 'campaign', date: '16th May 2026', airport: 'NCL', terms: 'T&Cs Apply' },
+    offers: [createCleanOffer('One'), createCleanOffer('Two'), createCleanOffer('Three'), createCleanOffer('Four')],
+    headers: { po: { pngData: 'assets/operator-logos/po-cruises-logo.png' } }
+  });
+  ready.context.autoExpandCampaignHealthForExport();
+  assert.equal(ready.elements['prod-status'].open, false);
+  assert.equal(ready.elements['prod-status-summary'].innerHTML, 'Ready for Export<br><span class="prod-status-secondary">0 blockers • 0 warnings</span>');
 });
 
 test('campaign health reports grouped required checks and updates to ready when known campaign state is complete', () => {
