@@ -3003,8 +3003,10 @@ function processSheetCSV(csv,status){
     return raw;
   }
   function normaliseItineraryDisplay(text){
-    return norm(text)
-      .split(/[|•]+/)
+    const value=norm(text);
+    if(!value) return "";
+    return value
+      .split("|")
       .map(part=>norm(part))
       .filter(Boolean)
       .join(" • ");
@@ -3024,13 +3026,12 @@ function processSheetCSV(csv,status){
       val(row,headers,["cabin","cabin_type"])
     ].filter(Boolean).join(" "));
     if(hasAnyValue(row,headers,["flights","flight","flight_included"]) || /\b(flights?|fly|flying|airfare|airport|luggage|baggage|transfers?)\b/i.test(combined)) addUnique(parts,"Flights");
-    addUnique(parts,displayBoardInclusion(boardParts));
     if(hasAnyValue(row,headers,["luggage","baggage"]) || /\b(luggage|baggage|checked\s+bags?)\b/i.test(combined)) addUnique(parts,"Luggage Included");
     if(hasAnyValue(row,headers,["transfers","transfer"]) || /\btransfers?\b/i.test(combined)) addUnique(parts,"Transfers Included");
     if(/\bpremium\s+drinks?\b/i.test(combined)) addUnique(parts,"Premium Drinks");
-    else if(hasAnyValue(row,headers,["drinks","drinks_package","beverage_package"]) || /\b(drinks?\s+package|beverage\s+package|drinks?\s+included)\b/i.test(combined)) addUnique(parts,"Drinks Package Included");
+    else if(hasAnyValue(row,headers,["drinks","drinks_package","beverage_package"]) || /\b(drinks?\s+package|beverage\s+package|drinks?\s+included)\b/i.test(combined)) addUnique(parts,"Drinks Package");
     if(hasAnyValue(row,headers,["wifi","wi_fi","wi-fi"]) || /\bwi[ -]?fi\b/i.test(combined)) addUnique(parts,"Wi-Fi Included");
-    if(hasAnyValue(row,headers,["entertainment"]) || /\bentertainment\b/i.test(combined)) addUnique(parts,"Entertainment");
+    if(hasAnyValue(row,headers,["entertainment"]) || /\bentertainment\b/i.test(combined)) addUnique(parts,"Entertainment Included");
     if(hasAnyValue(row,headers,["gratuities"]) || /\bgratuities\b/i.test(combined)) addUnique(parts,"Gratuities Included");
     if(hasAnyValue(row,headers,["service_charges"]) || /\bservice\s+charges?\b/i.test(combined)) addUnique(parts,"Service Charges Included");
     const cabin=val(row,headers,["cabin","cabin_type"]) || (combined.match(/\b(?:inside|outside|ocean\s+view|balcony|suite|veranda|interior)\s+cabin\b/i)||[])[0] || (combined.match(/\bocean\s+view\b/i)||[])[0];
@@ -4629,8 +4630,6 @@ function cleanPortsDisplay(str){
     .filter(p=>! /^(?:\d+\s+)?days?\s+at\s+sea$/i.test(p))
     .filter(p=>! /^(?:\d+\s+)?sea\s+days?$/i.test(p))
     .map(p=>p
-      .replace(/\s*\(([^)]*)\)/g, ", $1")
-      .replace(/[()]/g, "")
       .replace(/\s+,/g, ",")
       .replace(/,\s*,/g, ", ")
       .replace(/\s{2,}/g, " ")
@@ -4639,7 +4638,14 @@ function cleanPortsDisplay(str){
     .filter(Boolean)
     .join(" • ");
 }
-function chunkBullets(str,n){ const p=cleanPortsDisplay(str).split("•").map(s=>s.trim()).filter(Boolean); const rows=[]; for(let i=0;i<p.length;i+=n)rows.push(p.slice(i,i+n).join(" • ")); return rows.join("<br>"); }
+function chunkBullets(str,n){
+  return cleanPortsDisplay(str)
+    .split("•")
+    .map(s=>s.trim())
+    .filter(Boolean)
+    .map(port=>port.replace(/\s+/g,"&nbsp;"))
+    .join(" • ");
+}
 function renderCardHTML(d){
   const name=d.name||"";
   const incl=d.incl||"";
