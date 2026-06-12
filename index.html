@@ -549,7 +549,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cc .vtit{font-size:68px;font-weight:300;color:#fff;margin-bottom:26px;letter-spacing:.03em;line-height:1.1;}
 .cc .precruise-note{margin-bottom:30px;white-space:nowrap;}
 .cc .vpts{font-size:40px;font-weight:300;color:rgba(255,255,255,.65);line-height:1.35;overflow-wrap:normal;word-break:normal;}
-.cc .port-unit{display:inline-block;white-space:nowrap;}
+.cc .port-line{display:block;white-space:nowrap;}
+.cc .port-unit,.cc .port-separator{display:inline-block;white-space:nowrap;}
 .cc .tcbar{width:1200px;height:123px;background:#000;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:400;color:rgba(255,255,255,.72);letter-spacing:.06em;position:relative;}
 .cc .tcbar::before{content:"";position:absolute;top:-1px;left:0;right:0;height:2px;background:#000;pointer-events:none;}
 
@@ -3004,15 +3005,39 @@ function processSheetCSV(csv,status){
     if(/\badults?\b/i.test(raw)) return "Based On "+raw.replace(/^based\s+on\s+/i,"").replace(/\s+sharing\b/i,"")+" Sharing";
     return raw;
   }
-  function extractPreCruiseStay(text){
+  function cleanPreCruiseStayPlace(rawPlace,itineraryText){
+    let place=norm(rawPlace)
+      .replace(/\b(?:bed\s*&?\s*breakfast|full\s*board|half\s*board|all\s*inclusive|self\s*catering|room\s*only|board\s*basis)\b.*$/i, " ")
+      .replace(/\bbased\s+on\b.*$/i, " ")
+      .replace(/[|•].*$/g, " ")
+      .trim();
+    if(!place) return "";
+    if(/^piraeus\s*(?:\(\s*athens\s*\)|,\s*athens)$/i.test(place)) place="Athens";
+    place=place.replace(/\bpiraeus\s*(?:\(\s*athens\s*\)|,\s*athens)?/ig, " ");
+    if(itineraryText){
+      const itinerary=normaliseItineraryDisplay(itineraryText);
+      itinerary.split("•").map(item=>norm(item)).filter(Boolean).forEach(destination=>{
+        const primary=norm(destination.split(",")[0]);
+        if(primary && !/^athens$/i.test(primary)){
+          const safePrimary=String(primary).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          place=place.replace(new RegExp(`\\b${safePrimary}\\b`, "ig"), " ");
+        }
+      });
+    }
+    const words=place.replace(/[(),.;]+/g," ").replace(/\s{2,}/g," ").trim().split(" ").filter(Boolean);
+    const unique=[];
+    words.forEach(word=>{ if(!unique.some(existing=>existing.toLowerCase()===word.toLowerCase())) unique.push(word); });
+    return norm(unique.join(" ")).replace(/^the\s+/i, "").replace(/\b\w/g,ch=>ch.toUpperCase());
+  }
+  function extractPreCruiseStay(text,itineraryText){
     const value=norm(text);
     if(!value) return null;
-    const match=value.match(/\b(\d+)\s+night(?:s)?\s+pre[-\s]?cruise\s+stay\s+at\s+(?:(?:the)\s+)?((?:\d\s*star|[a-z]+\s+star)\s+hotel)\s+(?:in\s+|at\s+)?([^|•,.;\n\r]+)/i);
+    const match=value.match(/\b(\d+)\s+night(?:s)?\s+pre[-\s]?cruise\s+stay\s+at\s+(?:(?:the)\s+)?((?:\d\s*star|[a-z]+\s+star)\s+hotel)\s+(?:in\s+|at\s+)?([^|•,.;\n\r]+(?:,\s*Athens)?)/i);
     if(!match) return null;
     const nights=Number(match[1]);
     const nightLabel=(Number.isFinite(nights)&&nights===1) ? "Night" : "Nights";
     const hotel=norm(match[2]).replace(/\b\w/g,ch=>ch.toUpperCase()).replace(/\bStar\b/g,"Star").replace(/\bHotel\b/g,"Hotel");
-    const place=norm(match[3]).replace(/^the\s+/i, "").replace(/\b\w/g,ch=>ch.toUpperCase());
+    const place=cleanPreCruiseStayPlace(match[3],itineraryText);
     return {
       text: `${match[1]} ${nightLabel} Pre-Cruise at the ${hotel}${place ? " " + place : ""}`.replace(/\s{2,}/g," ").trim(),
       source: match[0]
@@ -3142,12 +3167,13 @@ function processSheetCSV(csv,status){
       incl: "",
       ports: normaliseItineraryDisplay(val(row,headers,["ports","port_list","itinerary"])),
       preCruiseStay: (function(){
+        const itineraryText=val(row,headers,["ports","port_list","itinerary"]);
         const stay=extractPreCruiseStay([
           val(row,headers,["pre_cruise_stay","precruise_stay","pre_cruise","precruise"]),
           val(row,headers,["inclusions","inclusion","included"]),
-          val(row,headers,["ports","port_list","itinerary"]),
+          itineraryText,
           row.map(cell=>norm(cell)).join(" ")
-        ].filter(Boolean).join(" "));
+        ].filter(Boolean).join(" "), itineraryText);
         return stay ? {text:stay.text, board:stay.board} : null;
       })(),
       basis: normalisePassengerBasis(
@@ -4694,16 +4720,19 @@ function cleanPortsDisplay(str){
     .join(" • ");
 }
 function chunkBullets(str,n){
-  return cleanPortsDisplay(str)
+  const ports=cleanPortsDisplay(str)
     .split("•")
     .map(s=>s.trim())
-    .filter(Boolean)
-    .map((port,index)=>{
-      const destination=port.replace(/\s+/g,"&nbsp;");
-      const prefix=index ? "•&nbsp;" : "";
-      return `<span class="port-unit">${prefix}${destination}</span>`;
-    })
-    .join(" ");
+    .filter(Boolean);
+  const perLine=Math.max(1, Number(n)||2);
+  const lines=[];
+  for(let index=0;index<ports.length;index+=perLine){
+    const line=ports.slice(index,index+perLine)
+      .map(port=>`<span class="port-unit">${port.replace(/\s+/g,"&nbsp;")}</span>`)
+      .join(' <span class="port-separator">•</span> ');
+    if(line) lines.push(`<span class="port-line">${line}</span>`);
+  }
+  return lines.join(" ");
 }
 function renderCardHTML(d){
   const name=d.name||"";
@@ -4716,7 +4745,7 @@ function renderCardHTML(d){
   const day=d.day||"";
   const month=d.month||""; const nights=d.nights||"";
   const ports=(d.ports||"").trim();
-  const portsHTML=ports?chunkBullets(ports,3):"";
+  const portsHTML=ports?chunkBullets(ports,2):"";
   const preCruiseStay=d.preCruiseStay||null;
   const preCruiseHTML=preCruiseStay&&preCruiseStay.text ? `<div class="vpts precruise-note"><div>${preCruiseStay.text}</div></div>` : "";
   const terms=document.getElementById("g-terms").value||"T&Cs Apply";

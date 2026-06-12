@@ -35,12 +35,32 @@ test('itinerary rendering keeps each required destination as one unbroken unit',
     'Cherbourg,&nbsp;France',
     'Souda,&nbsp;Chania,&nbsp;Crete'
   ]) {
-    assert.match(rendered, new RegExp(`<span class=\"port-unit\">(?:•&nbsp;)?${destination}</span>`));
+    assert.match(rendered, new RegExp(`<span class=\"port-unit\">${destination}</span>`));
   }
-  assert.doesNotMatch(rendered, /<br>|Her\s+aklion|Rh\s+ine|Spai\s+n|Franc\s+e|,\s*<\/span>\s*<span/);
+  assert.doesNotMatch(rendered, /<br>|Her\s+aklion|Rh\s+ine|Spai\s+n|Franc\s+e|,\s*<\/span>\s*<span class=\"port-unit/);
   assert.match(html, /\.cc \.vpts\{[^}]*overflow-wrap:normal;word-break:normal;\}/);
-  assert.match(html, /\.cc \.port-unit\{display:inline-block;white-space:nowrap;\}/);
+  assert.match(html, /\.cc \.port-line\{display:block;white-space:nowrap;\}/);
+  assert.match(html, /\.cc \.port-unit,\.cc \.port-separator\{display:inline-block;white-space:nowrap;\}/);
 });
+
+test('itinerary line groups never start or end with bullet separators when destinations wrap', () => {
+  const context = {};
+  vm.createContext(context);
+  vm.runInContext([extractFunction('normaliseDestinationName'), extractFunction('cleanPortsDisplay'), extractFunction('chunkBullets')].join('\n'), context);
+
+  const rendered = context.chunkBullets('Southampton • Paris (Le Havre), France • Bilbao, Spain • La Coruna, Spain • Vigo, Spain • Cherbourg, France • Southampton', 2);
+  const lines = [...rendered.matchAll(/<span class="port-line">([\s\S]*?)<\/span>/g)].map(match => match[1]);
+
+  assert.ok(lines.length > 1);
+  for (const line of lines) {
+    assert.doesNotMatch(line, /^\s*<span class="port-separator">•<\/span>/);
+    assert.doesNotMatch(line, /<span class="port-separator">•<\/span>\s*$/);
+  }
+  assert.match(rendered, /<span class="port-line"><span class="port-unit">Bilbao,&nbsp;Spain<\/span> <span class="port-separator">•<\/span> <span class="port-unit">La&nbsp;Coruna,&nbsp;Spain<\/span><\/span>/);
+  assert.match(rendered, /<span class="port-line"><span class="port-unit">Vigo,&nbsp;Spain<\/span> <span class="port-separator">•<\/span> <span class="port-unit">Cherbourg,&nbsp;France<\/span><\/span>/);
+  assert.doesNotMatch(rendered, /<span class="port-line">\s*<span class="port-separator">•<\/span>\s*<span class="port-unit">(?:Bilbao|Cherbourg)/);
+});
+
 
 test('white information panel narrows editorial copy, grows naturally, and centres the content group', () => {
   assert.match(
@@ -79,6 +99,7 @@ test("card preview preserves every parsed destination without first-N port trunc
     'Strait of Magellan', 'Punta Arenas', 'Puerto Madryn', 'Punta Del Este'
   ];
 
-  assert.equal(context.chunkBullets(ports.join(' • '), 4).replace(/<\/?span[^>]*>/g, '').replaceAll('&nbsp;', ' ').replace(/ • /g, ' • '), ports.join(' • '));
-  assert.doesNotMatch(context.chunkBullets(ports.join(' • '), 4), /<br>/);
+  const renderedPorts = context.chunkBullets(ports.join(' • '), 4);
+  assert.equal(renderedPorts.replace(/<\/span> <span class="port-line">/g, '</span> • <span class="port-line">').replace(/<\/?span[^>]*>/g, '').replaceAll('&nbsp;', ' ').replace(/\s*•\s*/g, ' • ').replace(/\s{2,}/g, ' ').trim(), ports.join(' • '));
+  assert.doesNotMatch(renderedPorts, /<br>/);
 });
