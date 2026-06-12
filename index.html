@@ -4719,20 +4719,69 @@ function cleanPortsDisplay(str){
     .filter(Boolean)
     .join(" • ");
 }
-function chunkBullets(str,n){
+const ITINERARY_SAFE_WIDTH=1040;
+const ITINERARY_FONT='300 40px Montserrat, sans-serif';
+const ITINERARY_SEPARATOR=' • ';
+function estimateItineraryTextWidth(text){
+  return Array.from(String(text||"")).reduce((width,char)=>{
+    if(char==="•") return width+20;
+    if(char===" ") return width+10;
+    if(/[,.]/.test(char)) return width+8;
+    if(/[ilI]/.test(char)) return width+10;
+    if(/[mwMW]/.test(char)) return width+34;
+    if(/[A-Z]/.test(char)) return width+27;
+    return width+21;
+  },0);
+}
+function getItineraryMeasureText(options){
+  if(options&&typeof options.measureText==="function") return options.measureText;
+  if(typeof document!=="undefined"&&document.createElement){
+    const canvas=document.createElement("canvas");
+    const context=canvas&&canvas.getContext&&canvas.getContext("2d");
+    if(context){
+      context.font=ITINERARY_FONT;
+      return text=>context.measureText(String(text||"")).width;
+    }
+  }
+  if(typeof OffscreenCanvas!=="undefined"){
+    const context=new OffscreenCanvas(1,1).getContext("2d");
+    if(context){
+      context.font=ITINERARY_FONT;
+      return text=>context.measureText(String(text||"")).width;
+    }
+  }
+  return estimateItineraryTextWidth;
+}
+function renderItineraryLine(ports){
+  return ports
+    .map(port=>`<span class="port-unit">${port.replace(/\s+/g,"&nbsp;")}</span>`)
+    .join(' <span class="port-separator">•</span> ');
+}
+function packItineraryLines(ports,options){
+  const safeWidth=(options&&Number(options.safeWidth))||ITINERARY_SAFE_WIDTH;
+  const measureText=getItineraryMeasureText(options);
+  const lines=[];
+  let current=[];
+  ports.forEach(port=>{
+    const candidate=current.length ? `${current.join(ITINERARY_SEPARATOR)}${ITINERARY_SEPARATOR}${port}` : port;
+    if(current.length&&measureText(candidate)>safeWidth){
+      lines.push(current);
+      current=[port];
+    }else{
+      current.push(port);
+    }
+  });
+  if(current.length) lines.push(current);
+  return lines;
+}
+function chunkBullets(str,options){
   const ports=cleanPortsDisplay(str)
     .split("•")
     .map(s=>s.trim())
     .filter(Boolean);
-  const perLine=Math.max(1, Number(n)||2);
-  const lines=[];
-  for(let index=0;index<ports.length;index+=perLine){
-    const line=ports.slice(index,index+perLine)
-      .map(port=>`<span class="port-unit">${port.replace(/\s+/g,"&nbsp;")}</span>`)
-      .join(' <span class="port-separator">•</span> ');
-    if(line) lines.push(`<span class="port-line">${line}</span>`);
-  }
-  return lines.join(" ");
+  return packItineraryLines(ports,options)
+    .map(line=>`<span class="port-line">${renderItineraryLine(line)}</span>`)
+    .join(" ");
 }
 function renderCardHTML(d){
   const name=d.name||"";
@@ -4745,7 +4794,7 @@ function renderCardHTML(d){
   const day=d.day||"";
   const month=d.month||""; const nights=d.nights||"";
   const ports=(d.ports||"").trim();
-  const portsHTML=ports?chunkBullets(ports,2):"";
+  const portsHTML=ports?chunkBullets(ports):"";
   const preCruiseStay=d.preCruiseStay||null;
   const preCruiseHTML=preCruiseStay&&preCruiseStay.text ? `<div class="vpts precruise-note"><div>${preCruiseStay.text}</div></div>` : "";
   const terms=document.getElementById("g-terms").value||"T&Cs Apply";

@@ -18,6 +18,13 @@ function extractFunction(name) {
   throw new Error(`Could not extract ${name}`);
 }
 
+
+function extractConstant(name) {
+  const match = html.match(new RegExp(`const ${name}=.*?;`));
+  assert.ok(match, `Could not locate ${name}`);
+  return match[0];
+}
+
 function csvImportSource() {
   const start = html.indexOf('const LAST_SUCCESSFUL_CSV_KEY =');
   const end = html.indexOf('\nfunction currentSheetTemplateTSV()', start);
@@ -65,8 +72,15 @@ function createRenderContext() {
   };
   vm.createContext(context);
   vm.runInContext([
+    extractConstant('ITINERARY_SAFE_WIDTH'),
+    extractConstant('ITINERARY_FONT'),
+    extractConstant('ITINERARY_SEPARATOR'),
     extractFunction('normaliseDestinationName'),
     extractFunction('cleanPortsDisplay'),
+    extractFunction('estimateItineraryTextWidth'),
+    extractFunction('getItineraryMeasureText'),
+    extractFunction('renderItineraryLine'),
+    extractFunction('packItineraryLines'),
     extractFunction('chunkBullets'),
     extractFunction('renderCardHTML'),
     extractFunction('bc')
