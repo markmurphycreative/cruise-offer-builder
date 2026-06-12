@@ -293,10 +293,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .export-toolbar-group{margin-top:7px;}
 .export-actions{display:grid;gap:5px;}
 .export-toolbar{grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;}
-.export-btn{width:100%;min-height:36px;padding:0 7px;font-size:10px;font-weight:700;border:none;border-radius:var(--radius);color:#fff;margin:0;display:flex;align-items:center;justify-content:center;gap:4px;transition:all .15s;letter-spacing:.02em;white-space:nowrap;}
+.export-btn{width:100%;min-height:28px;padding:4px 7px;font-size:10px;font-weight:700;border:none;border-radius:3px;color:#fff;margin:0;display:flex;align-items:center;justify-content:center;gap:4px;transition:all .15s;letter-spacing:.02em;white-space:nowrap;}
 .export-btn:hover{opacity:.88;transform:translateY(-1px);}
 .export-btn.secondary{background:var(--navy);box-shadow:0 1px 4px rgba(14,27,42,.24);}
-.export-btn.primary{background:var(--gold);color:var(--navy);box-shadow:0 2px 6px rgba(160,146,103,.35);}
+.export-btn.primary{background:var(--gold);color:#fff;box-shadow:0 2px 6px rgba(160,146,103,.35);}
 @media (max-width:360px){.export-btn{font-size:9px;padding:0 5px;gap:3px;}.export-toolbar{gap:4px;}}
 .export-complete{display:none;color:#b8f0c7;font-size:14px;font-weight:700;line-height:1;}
 .export-complete.active{display:inline;}
@@ -869,13 +869,12 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
           <div class="prod-status-list" id="prod-status-list"></div>
         </details>
         <div class="copy-qa-panel">
-          <div class="copy-qa-title">Spellcheck / Copy QA</div>
+          <div class="copy-qa-title">Copy QA</div>
           <div class="copy-qa-status" id="copy-qa-status">— QA not run yet</div>
           <div class="copy-qa-checklist" id="copy-qa-checklist"></div>
           <div class="copy-qa-note" id="copy-qa-note">Passive checks only — no auto-correction. Export is never blocked.</div>
         </div>
       <div class="export-group export-toolbar-group">
-        <div class="export-title">Exports</div>
         <div class="export-actions export-toolbar" role="group" aria-label="Exports">
           <button class="export-btn secondary" onclick="exportCurrentJPG()" id="exp-single-jpg-btn">
             <span>⬇</span><span class="export-label-state" id="exp-single-jpg-lbl">Export Card</span><span aria-hidden="true">Card</span><span class="export-complete" id="exp-single-jpg-complete" aria-label="Export completed">✓</span>
@@ -884,7 +883,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
             <span>⬇</span><span class="export-label-state" id="exp-all-jpg-lbl">Export All Cards</span><span aria-hidden="true">All Cards</span><span class="export-complete" id="exp-all-jpg-complete" aria-label="Export completed">✓</span>
           </button>
           <button class="export-btn primary" onclick="exportCampaignPack()" id="exp-pack-btn">
-            <span class="export-label-state" id="exp-pack-lbl">Export Campaign Pack</span><span aria-hidden="true">Campaign Pack</span><span class="export-complete" id="exp-pack-complete" aria-label="Export completed">✓</span>
+            <span>⬇</span><span class="export-label-state" id="exp-pack-lbl">Export Campaign Pack</span><span aria-hidden="true">Campaign</span><span class="export-complete" id="exp-pack-complete" aria-label="Export completed">✓</span>
           </button>
         </div>
       </div>
@@ -1075,7 +1074,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.1.6";
+const APP_VERSION = "v2.1.7";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 

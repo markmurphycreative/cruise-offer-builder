@@ -83,12 +83,15 @@ test('all export entry points report their existing success and failure outcomes
 
 
 test('export panel exposes a compact toolbar while retaining export entry points and render formats', () => {
-  assert.match(html, /<div class="export-title">Exports<\/div>\s*<div class="export-actions export-toolbar" role="group" aria-label="Exports">/);
+  assert.doesNotMatch(html, /<div class="export-title">Exports<\/div>/);
+  assert.match(html, /<div class="export-actions export-toolbar" role="group" aria-label="Exports">/);
   assert.match(html, /<button class="export-btn secondary" onclick="exportCurrentJPG\(\)" id="exp-single-jpg-btn">[\s\S]*?<span aria-hidden="true">Card<\/span>/);
   assert.match(html, /<button class="export-btn secondary" onclick="exportAllJPG\(\)" id="exp-all-jpg-btn">[\s\S]*?<span aria-hidden="true">All Cards<\/span>/);
-  assert.match(html, /<button class="export-btn primary" onclick="exportCampaignPack\(\)" id="exp-pack-btn">[\s\S]*?<span aria-hidden="true">Campaign Pack<\/span>/);
+  assert.match(html, /<button class="export-btn primary" onclick="exportCampaignPack\(\)" id="exp-pack-btn">[\s\S]*?<span aria-hidden="true">Campaign<\/span>/);
   assert.doesNotMatch(html, /class="export-actions single-action"/);
   assert.doesNotMatch(html, /class="export-group-title">(?:Current Card|All 4 Cards|Campaign Pack)<\/div>/);
+  assert.match(html, /\.export-btn\{[^}]*min-height:28px;[^}]*padding:4px 7px;[^}]*border-radius:3px;/);
+  assert.match(html, /\.export-btn\.primary\{background:var\(--gold\);color:#fff;/);
   assert.doesNotMatch(html, /id="exp-single-btn"/);
   assert.doesNotMatch(html, /id="exp-all-btn"/);
   assert.match(html, /function exportCurrent\(\)/);
