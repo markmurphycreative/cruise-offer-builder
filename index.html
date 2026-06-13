@@ -115,6 +115,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-library-item{appearance:none;border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;color:var(--navy);font:inherit;font-size:11px;font-weight:800;line-height:1.2;text-align:center;padding:9px 8px;cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease;}
 .hero-library-item:hover,.hero-library-item:focus-visible{border-color:var(--gold);box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px);outline:none;}
 .hero-library-empty{font-size:9px;color:var(--muted);background:#fafaf8;border:1px dashed var(--border);border-radius:var(--radius);padding:7px;text-align:center;}
+.hero-library-storage-feedback{display:none;margin-top:7px;background:#f7fbf7;border:1px solid rgba(32,126,64,.2);border-radius:var(--radius);padding:7px;font-size:9px;line-height:1.4;color:var(--green);}
+.hero-library-storage-feedback.active{display:block;}
+.hero-library-storage-feedback .storage-row{display:flex;justify-content:space-between;gap:8px;color:var(--text);}
+.hero-library-storage-feedback .storage-row span:first-child{font-weight:700;color:var(--muted);}
+.hero-library-storage-feedback .storage-success{margin-top:4px;font-weight:700;color:var(--green);}
 
 .prod-status{margin-bottom:7px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;}
 .prod-status-toggle{display:flex;align-items:center;gap:6px;cursor:pointer;list-style:none;}
@@ -826,10 +831,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       <div class="section-body hidden">
         <div class="hero-source-block hero-library-panel">
           <div class="field"><label>Category</label><input id="hero-library-name" placeholder="Mediterranean"></div>
-          <div class="dropzone hero-dropzone" id="dz-hero-library" ondragover="dzOver(event,'dz-hero-library')" ondragleave="dzOut('dz-hero-library')">
+          <div class="dropzone hero-dropzone" id="dz-hero-library" ondragover="dzOver(event,'dz-hero-library')" ondragleave="dzOut('dz-hero-library')" ondrop="heroLibraryDrop(event)">
             <input type="file" accept="image/*" onchange="heroLibraryFileChosen(event)">
             <div class="dz-inner"><div class="dz-lbl">Add Hero Image</div></div>
           </div>
+          <div class="hero-library-storage-feedback" id="hero-library-storage-feedback" aria-live="polite"></div>
           <div class="hero-library-list" id="hero-library-list"></div>
         </div>
       </div>
@@ -1115,7 +1121,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.2.2";
+const APP_VERSION = "v2.2.3";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -1954,7 +1960,72 @@ function applySuggestedHero(index,categoryId,event){
   renderHeroLibraryList(); refreshOfferUi({utm:false,spell:false});
   if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Hero suggestion applied");
 }
-function heroLibraryFileChosen(event){ const file=event.target.files&&event.target.files[0]; if(!file) return; const nameEl=document.getElementById("hero-library-name"); const name=String((nameEl&&nameEl.value)||"").trim(); if(!name){ alert("Add a category name first."); event.target.value=""; return; } const reader=new FileReader(); reader.onload=e=>{ const src=e.target.result; const list=getHeroLibrary().filter(item=>normaliseHeroText(item.name)!==normaliseHeroText(name)); list.unshift({id:"hero-"+Date.now(),name,thumbnail:src,image:src,lastUsed:""}); if(saveHeroLibrary(list)){ if(nameEl) nameEl.value=""; renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); } event.target.value=""; }; reader.readAsDataURL(file); }
+const HERO_LIBRARY_MAX_EDGE=1600;
+const HERO_LIBRARY_JPEG_QUALITY=0.80;
+function formatStorageBytes(bytes){
+  const size=Number(bytes)||0;
+  if(size>=1024*1024) return (size/(1024*1024)).toFixed(size>=10*1024*1024?1:2).replace(/\.0$/,'')+" MB";
+  if(size>=1024) return Math.round(size/1024)+" KB";
+  return size+" B";
+}
+function estimateDataUrlBytes(dataUrl){
+  const text=String(dataUrl||"");
+  const comma=text.indexOf(",");
+  const b64=comma>=0?text.slice(comma+1):text;
+  const padding=(b64.match(/=*$/)||[""])[0].length;
+  return Math.max(0,Math.floor((b64.length*3)/4)-padding);
+}
+function showHeroLibraryStorageFeedback(originalBytes,storedBytes){
+  const panel=document.getElementById("hero-library-storage-feedback"); if(!panel) return;
+  panel.innerHTML='<div class="storage-row"><span>Original:</span><strong>'+formatStorageBytes(originalBytes)+'</strong></div><div class="storage-row"><span>Stored:</span><strong>'+formatStorageBytes(storedBytes)+'</strong></div><div class="storage-success">✓ Image optimised for library storage</div>';
+  panel.classList.add("active");
+}
+function optimiseHeroLibraryImage(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onerror=()=>reject(new Error("Could not read image."));
+    reader.onload=event=>{
+      const originalSrc=event.target.result;
+      const img=new Image();
+      img.onload=()=>{
+        const width=img.naturalWidth||img.width;
+        const height=img.naturalHeight||img.height;
+        const scale=Math.min(1,HERO_LIBRARY_MAX_EDGE/Math.max(width,height));
+        const canvas=document.createElement("canvas");
+        canvas.width=Math.max(1,Math.round(width*scale));
+        canvas.height=Math.max(1,Math.round(height*scale));
+        const ctx=canvas.getContext("2d");
+        if(!ctx){ reject(new Error("Image optimisation is not available in this browser.")); return; }
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        const optimised=canvas.toDataURL("image/jpeg",HERO_LIBRARY_JPEG_QUALITY);
+        resolve({dataUrl:optimised,originalBytes:file&&file.size?file.size:estimateDataUrlBytes(originalSrc),storedBytes:estimateDataUrlBytes(optimised),width:canvas.width,height:canvas.height});
+      };
+      img.onerror=()=>reject(new Error("Could not optimise this image. Try a different image file."));
+      img.src=originalSrc;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+async function saveHeroLibraryFile(file,inputEl){
+  if(!file) return;
+  const nameEl=document.getElementById("hero-library-name");
+  const name=String((nameEl&&nameEl.value)||"").trim();
+  if(!name){ alert("Add a category name first."); if(inputEl) inputEl.value=""; return; }
+  try{
+    const optimised=await optimiseHeroLibraryImage(file);
+    const src=optimised.dataUrl;
+    const list=getHeroLibrary().filter(item=>normaliseHeroText(item.name)!==normaliseHeroText(name));
+    list.unshift({id:"hero-"+Date.now(),name,thumbnail:src,image:src,lastUsed:""});
+    if(saveHeroLibrary(list)){
+      if(nameEl) nameEl.value="";
+      showHeroLibraryStorageFeedback(optimised.originalBytes,optimised.storedBytes);
+      renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false});
+    }
+  }catch(error){ alert((error&&error.message)||"Could not optimise this image."); }
+  if(inputEl) inputEl.value="";
+}
+function heroLibraryFileChosen(event){ const file=event.target.files&&event.target.files[0]; saveHeroLibraryFile(file,event.target); }
+function heroLibraryDrop(event){ event.preventDefault(); dzOut('dz-hero-library'); const file=event.dataTransfer&&event.dataTransfer.files&&event.dataTransfer.files[0]; saveHeroLibraryFile(file,null); }
 function deleteHeroLibraryCategory(id){ saveHeroLibrary(getHeroLibrary().filter(item=>item.id!==id)); renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); }
 function renameHeroLibraryCategory(id){ const list=getHeroLibrary(); const item=list.find(x=>x.id===id); if(!item) return; const next=prompt("Rename Hero Category",item.name); const name=String(next||"").trim(); if(!name||normaliseHeroText(name)===normaliseHeroText(item.name)) return; item.name=name; if(saveHeroLibrary(list)){ renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); } }
 function useHeroLibraryCategory(id){ const item=getHeroLibrary().find(x=>x.id===id); if(item) applySuggestedHero(cur,item.id); }

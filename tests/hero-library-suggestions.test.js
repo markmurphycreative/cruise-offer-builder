@@ -61,14 +61,16 @@ function createHarness(seed = {}){
     extractFunction('rememberHeroRelationship'),
     extractFunction('applySuggestedHero'),
     extractFunction('heroSuggestionHtml'),
+    extractFunction('formatStorageBytes'),
+    extractFunction('estimateDataUrlBytes'),
     extractFunction('getHeroImageSource'),
     extractFunction('renderHeroHTML')
   ].join('\n'), context);
   return { context, storage };
 }
 
-test('Image Library UI and v2.2.2 release version are present', () => {
-  assert.match(html, /const APP_VERSION = "v2\.2\.2";/);
+test('Image Library UI and v2.2.3 release version are present', () => {
+  assert.match(html, /const APP_VERSION = "v2\.2\.3";/);
   assert.match(html, />Image Library<\/h3>/);
   assert.match(html, /<label>Category<\/label>/);
   assert.match(html, /Add Hero Image/);
@@ -123,4 +125,22 @@ test('empty hero placeholders render an unobtrusive Apply suggestion panel when 
   assert.match(output, /Norwegian Fjords/);
   assert.match(output, /Suggested Hero/);
   assert.match(output, /applySuggestedHero\(0,'fjords'/);
+});
+
+
+test('hero library upload path optimises and stores JPEG data only', () => {
+  assert.match(html, /const HERO_LIBRARY_MAX_EDGE=1600;/);
+  assert.match(html, /const HERO_LIBRARY_JPEG_QUALITY=0\.80;/);
+  assert.match(html, /canvas\.toDataURL\("image\/jpeg",HERO_LIBRARY_JPEG_QUALITY\)/);
+  assert.match(html, /function saveHeroLibraryFile\(file,inputEl\)/);
+  assert.match(html, /showHeroLibraryStorageFeedback\(optimised\.originalBytes,optimised\.storedBytes\)/);
+  assert.match(html, /id="hero-library-storage-feedback"/);
+  assert.match(html, /✓ Image optimised for library storage/);
+});
+
+test('storage feedback formats original and optimised byte counts', () => {
+  const { context } = createHarness();
+  assert.equal(context.formatStorageBytes(12.1 * 1024 * 1024), '12.1 MB');
+  assert.equal(context.formatStorageBytes(320 * 1024), '320 KB');
+  assert.equal(context.estimateDataUrlBytes('data:image/jpeg;base64,QUJDRA=='), 4);
 });
