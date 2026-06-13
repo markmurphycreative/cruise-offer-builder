@@ -67,13 +67,17 @@ function createHarness(seed = {}){
   return { context, storage };
 }
 
-test('Hero Library UI and v2.2.1 release version are present', () => {
-  assert.match(html, /const APP_VERSION = "v2\.2\.1";/);
-  assert.match(html, /Stored locally for future campaigns\./);
+test('Image Library UI and v2.2.2 release version are present', () => {
+  assert.match(html, /const APP_VERSION = "v2\.2\.2";/);
+  assert.match(html, />Image Library<\/h3>/);
+  assert.match(html, /<label>Category<\/label>/);
+  assert.match(html, /Add Hero Image/);
   assert.match(html, /id="hero-library-name"/);
   assert.match(html, /id="hero-sidebar-suggestion"/);
   assert.match(html, /data-section-key="hero-library"/);
-  assert.match(html, /No Hero Categories saved\./);
+  assert.match(html, /No saved categories/);
+  assert.doesNotMatch(html, /Stored locally for future campaigns/);
+  assert.doesNotMatch(html, /No Hero Categories saved/);
 });
 
 test('rules-based hero suggestions match itinerary keywords to stored local categories', () => {
@@ -95,6 +99,21 @@ test('applying a suggested hero inserts the saved image without a picker and rem
   const memory = JSON.parse(storage.get('cruiseHeroMemory.v2')||'{}');
   assert.ok(Object.keys(memory).length > 0, JSON.stringify(memory));
   assert.equal(memory.Rhine || memory.Basel || memory.Amsterdam, 'River Cruise');
+});
+
+test('saved hero categories render as one-click category cards only', () => {
+  const list = [
+    { id: 'med', name: 'Mediterranean', image: 'data:image/png;base64,med', thumbnail: 'data:image/png;base64,med', lastUsed: '' },
+    { id: 'can', name: 'Canaries', image: 'data:image/png;base64,can', thumbnail: 'data:image/png;base64,can', lastUsed: '' }
+  ];
+  let htmlOut = '';
+  const { context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(list) });
+  context.document = { getElementById: id => id === 'hero-library-list' ? { set innerHTML(value){ htmlOut = value; }, get innerHTML(){ return htmlOut; } } : null };
+  vm.runInContext(extractFunction('useHeroLibraryCategory') + '\n' + extractFunction('renderHeroLibraryList'), context);
+  context.renderHeroLibraryList();
+  assert.match(htmlOut, /<button class="hero-library-item" type="button" onclick="useHeroLibraryCategory\('med'\)">Mediterranean<\/button>/);
+  assert.match(htmlOut, /Canaries/);
+  assert.doesNotMatch(htmlOut, /Last used|Not used yet|<img|>Use<|Rename|Delete/);
 });
 
 test('empty hero placeholders render an unobtrusive Apply suggestion panel when a match exists', () => {
