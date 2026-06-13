@@ -28,6 +28,7 @@ function createHarness(seed = {}){
     setTimeout,
     clearTimeout,
     alert: () => {},
+    confirm: () => true,
     localStorage: {
       getItem: key => storage.has(key) ? storage.get(key) : null,
       setItem: (key, value) => storage.set(key, String(value)),
@@ -60,6 +61,7 @@ function createHarness(seed = {}){
     extractFunction('saveHeroMemory'),
     extractFunction('normaliseHeroText'),
     extractFunction('escapeHeroRegExp'),
+    extractFunction('parseHeroDestinationTags'),
     extractFunction('splitHeroDestinationTags'),
     extractFunction('getHeroCategoryTags'),
     extractFunction('getOfferHeroSuggestionText'),
@@ -79,6 +81,7 @@ function createHarness(seed = {}){
     extractFunction('getActiveHeroLibraryCategory'),
     extractFunction('selectHeroLibraryCategory'),
     extractFunction('useHeroLibraryCategory'),
+    extractFunction('removeHeroLibraryImage'),
     extractFunction('renderHeroLibraryList'),
     extractFunction('updateHeroLibraryCategoryUx'),
     'var activeHeroLibraryCategoryId=""; var pendingHeroLibraryImage=null; var heroLibraryTagsFeedbackTimer=null; var heroLibraryTagsSaveTimer=null; var HERO_LIBRARY_TAGS_SAVE_DEBOUNCE_MS=700;',
@@ -94,8 +97,8 @@ function createHarness(seed = {}){
   return { context, storage };
 }
 
-test('Image Library UI and v2.3.0 release version are present', () => {
-  assert.match(html, /const APP_VERSION = "v2\.3\.0";/);
+test('Image Library UI and v2.3.1 release version are present', () => {
+  assert.match(html, /const APP_VERSION = "v2\.3\.1";/);
   assert.match(html, />Image Library<\/h3>/);
   assert.match(html, /<label>Category<\/label>/);
   assert.match(html, /Add Hero Image/);
@@ -164,6 +167,38 @@ test('destination tag ties use recently used category then stored order', () => 
 test('destination tag parsing trims whitespace and ignores case-insensitive duplicates', () => {
   const { context } = createHarness();
   assert.equal(JSON.stringify(context.splitHeroDestinationTags(' Santorini, santorini, Mykonos , CRETE, crete ')), JSON.stringify(['Santorini', 'Mykonos', 'CRETE']));
+});
+
+
+test('saving destination tags reports and removes duplicate tags', () => {
+  const library = [{ id: 'med', name: 'Mediterranean', image: 'data:image/png;base64,med', thumbnail: 'data:image/png;base64,med', tags: ['Santorini'], imageCount: 1, lastUsed: '' }];
+  const tagsInput = { value: ' Santorini, santorini, Mykonos ', };
+  const feedback = { textContent: '', className: '' };
+  const { context, storage } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(library) });
+  context.activeHeroLibraryCategoryId = 'med';
+  context.document = {
+    activeElement: null,
+    getElementById: id => id === 'hero-library-tags' ? tagsInput : (id === 'hero-library-tags-feedback' ? feedback : null)
+  };
+
+  assert.equal(context.saveActiveHeroLibraryTags(), true);
+  assert.equal(feedback.textContent, 'Duplicate ignored: santorini');
+  assert.equal(tagsInput.value, 'Santorini, Mykonos');
+  assert.deepEqual(JSON.parse(storage.get('cruiseHeroLibrary.v2'))[0].tags, ['Santorini', 'Mykonos']);
+});
+
+test('saved category images can be removed with confirmation while keeping the category', () => {
+  const library = [{ id: 'na', name: 'North America', image: 'data:image/png;base64,na', thumbnail: 'data:image/png;base64,na', tags: ['Alaska'], imageCount: 1, lastUsed: '' }];
+  const { context, storage } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(library) });
+  context.confirm = message => { context.confirmMessage = message; return true; };
+
+  assert.equal(context.removeHeroLibraryImage('na'), true);
+  const saved = JSON.parse(storage.get('cruiseHeroLibrary.v2'))[0];
+  assert.equal(context.confirmMessage, 'Remove this image from North America?');
+  assert.equal(saved.name, 'North America');
+  assert.equal(saved.image, '');
+  assert.equal(saved.thumbnail, '');
+  assert.equal(saved.imageCount, 0);
 });
 
 test('applying a suggested hero inserts the saved image without a picker and remembers matched keywords', () => {
@@ -241,8 +276,8 @@ test('editing destination tags auto-saves to the active image library category',
   assert.deepEqual(saved.find(item => item.id === 'med').tags, ['Santorini', 'Mykonos', 'Crete']);
   assert.deepEqual(saved.find(item => item.id === 'fjords').tags, ['Bergen']);
   assert.equal(elements['hero-library-tags'].value, 'Santorini, Mykonos, Crete');
-  assert.equal(elements['hero-library-tags-feedback'].textContent, 'Saving tags...');
-  await new Promise(resolve => setTimeout(resolve, 150));
+  assert.equal(elements['hero-library-tags-feedback'].textContent, 'Duplicate ignored: santorini');
+  await new Promise(resolve => setTimeout(resolve, 1700));
   assert.equal(elements['hero-library-tags-feedback'].textContent, '✓ Tags saved');
   context.selectHeroLibraryCategory('fjords');
   context.selectHeroLibraryCategory('med');
@@ -283,7 +318,7 @@ test('destination tag input debounces saves and preserves focused editing value'
   assert.equal(renderCount, 0);
   assert.equal(refreshCount, 0);
   await new Promise(resolve => setTimeout(resolve, 150));
-  assert.equal(elements['hero-library-tags-feedback'].textContent, '✓ Tags saved');
+  assert.equal(elements['hero-library-tags-feedback'].textContent, 'Duplicate ignored: santorini');
 
   context.document.activeElement = null;
   assert.equal(context.flushActiveHeroLibraryTagsSave(), true);
