@@ -53,9 +53,13 @@ function createHarness(seed = {}){
     extractFunction('getHeroMemory'),
     extractFunction('saveHeroMemory'),
     extractFunction('normaliseHeroText'),
+    extractFunction('escapeHeroRegExp'),
+    extractFunction('splitHeroDestinationTags'),
+    extractFunction('getHeroCategoryTags'),
     extractFunction('getOfferHeroSuggestionText'),
     extractFunction('findHeroCategoryByName'),
     extractFunction('getMatchedHeroKeywords'),
+    extractFunction('scoreHeroDestinationTags'),
     extractFunction('getHeroSuggestionForOffer'),
     extractFunction('setHeroSuggestionRemember'),
     extractFunction('rememberHeroRelationship'),
@@ -69,12 +73,14 @@ function createHarness(seed = {}){
   return { context, storage };
 }
 
-test('Image Library UI and v2.2.4 release version are present', () => {
-  assert.match(html, /const APP_VERSION = "v2\.2\.4";/);
+test('Image Library UI and v2.2.5 release version are present', () => {
+  assert.match(html, /const APP_VERSION = "v2\.2\.5";/);
   assert.match(html, />Image Library<\/h3>/);
   assert.match(html, /<label>Category<\/label>/);
   assert.match(html, /Add Hero Image/);
   assert.match(html, /id="hero-library-name"/);
+  assert.match(html, />Destination Tags<\/label>/);
+  assert.match(html, /id="hero-library-tags"/);
   assert.match(html, /id="hero-sidebar-suggestion"/);
   assert.match(html, /data-section-key="hero-library"/);
   assert.match(html, /No saved categories/);
@@ -89,6 +95,39 @@ test('rules-based hero suggestions match itinerary keywords to stored local cate
   assert.equal(suggestion.category.name, 'Mediterranean');
   assert.equal(suggestion.keyword, 'Santorini');
   assert.equal(suggestion.source, 'rules');
+});
+
+
+
+test('destination tags score stored categories before keyword rules and show match counts', () => {
+  const library = [
+    { id: 'med', name: 'Mediterranean', image: 'data:image/png;base64,med', thumbnail: 'data:image/png;base64,med', tags: ['Corfu', 'Rhodes', 'Crete', 'Athens'], lastUsed: '' },
+    { id: 'river', name: 'River Cruise', image: 'data:image/png;base64,river', thumbnail: 'data:image/png;base64,river', tags: ['Rhine'], lastUsed: '' }
+  ];
+  const { context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(library) });
+  const suggestion = context.getHeroSuggestionForOffer({ ports: 'Corfu • Rhodes • Crete • Katakolon' });
+  assert.equal(suggestion.category.name, 'Mediterranean');
+  assert.equal(suggestion.source, 'tags');
+  assert.equal(suggestion.matchCount, 3);
+  assert.equal(JSON.stringify(suggestion.matches), JSON.stringify(['Corfu', 'Rhodes', 'Crete']));
+  assert.match(context.heroSuggestionHtml(suggestion, 0, true), /3 destination matches/);
+});
+
+test('destination tag ties use recently used category then stored order', () => {
+  const library = [
+    { id: 'first', name: 'First Saved', image: 'data:image/png;base64,first', thumbnail: 'data:image/png;base64,first', tags: ['Bergen'], lastUsed: '' },
+    { id: 'recent', name: 'Recently Used', image: 'data:image/png;base64,recent', thumbnail: 'data:image/png;base64,recent', tags: ['Bergen'], lastUsed: '2026-06-01T12:00:00.000Z' }
+  ];
+  let { context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(library) });
+  assert.equal(context.getHeroSuggestionForOffer({ ports: 'Bergen' }).category.name, 'Recently Used');
+  const withoutRecent = library.map(item => ({ ...item, lastUsed: '' }));
+  ({ context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(withoutRecent) }));
+  assert.equal(context.getHeroSuggestionForOffer({ ports: 'Bergen' }).category.name, 'First Saved');
+});
+
+test('destination tag parsing trims whitespace and ignores case-insensitive duplicates', () => {
+  const { context } = createHarness();
+  assert.equal(JSON.stringify(context.splitHeroDestinationTags(' Santorini, santorini, Mykonos , CRETE, crete ')), JSON.stringify(['Santorini', 'Mykonos', 'CRETE']));
 });
 
 test('applying a suggested hero inserts the saved image without a picker and remembers matched keywords', () => {

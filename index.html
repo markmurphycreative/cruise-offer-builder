@@ -831,6 +831,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       <div class="section-body hidden">
         <div class="hero-source-block hero-library-panel">
           <div class="field"><label>Category</label><input id="hero-library-name" placeholder="Mediterranean"></div>
+          <div class="field"><label>Destination Tags</label><input id="hero-library-tags" placeholder="Santorini, Mykonos, Crete, Corfu, Rhodes"></div>
           <div class="dropzone hero-dropzone" id="dz-hero-library" ondragover="dzOver(event,'dz-hero-library')" ondragleave="dzOut('dz-hero-library')" ondrop="heroLibraryDrop(event)">
             <input type="file" accept="image/*" onchange="heroLibraryFileChosen(event)">
             <div class="dz-inner"><div class="dz-lbl">Add Hero Image</div></div>
@@ -1121,7 +1122,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.2.4";
+const APP_VERSION = "v2.2.5";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -1907,16 +1908,49 @@ function saveHeroLibrary(list){ return safeWriteJsonStorage(HERO_LIBRARY_KEY,(Ar
 function getHeroMemory(){ const memory=safeReadJsonStorage(HERO_MEMORY_KEY,{}); return memory&&typeof memory==="object"&&!Array.isArray(memory)?memory:{}; }
 function saveHeroMemory(memory){ safeWriteJsonStorage(HERO_MEMORY_KEY,memory||{}); }
 function normaliseHeroText(text){ return String(text||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); }
-function getOfferHeroSuggestionText(offer){ return [offer&&offer.ports,offer&&offer.name,offer&&offer.incl,offer&&offer.ship].filter(Boolean).join(" • "); }
+function escapeHeroRegExp(text){ return normaliseHeroText(text).replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
+function splitHeroDestinationTags(value){
+  const seen=new Set();
+  return String(value||"").split(",").map(tag=>tag.trim()).filter(tag=>{
+    const key=normaliseHeroText(tag);
+    if(!key||seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+}
+function getHeroCategoryTags(category){ return splitHeroDestinationTags(Array.isArray(category&&category.tags)?category.tags.join(","):(category&&category.tags)||""); }
+function getOfferHeroSuggestionText(offer){
+  if(!offer) return "";
+  const direct=[offer.ports,offer.name,offer.incl,offer.ship,offer.tags,offer.destination,offer.destinations,offer.itinerary,offer.raw,offer.rawText,offer.parsedText];
+  const destinationFields=Object.keys(offer).filter(key=>/(ports?|destination|itinerary|visit)/i.test(key)).map(key=>offer[key]);
+  return direct.concat(destinationFields).filter(value=>typeof value==="string"&&value.trim()).join(" • ");
+}
 function findHeroCategoryByName(name){ const target=normaliseHeroText(name); return getHeroLibrary().find(item=>normaliseHeroText(item.name)===target)||null; }
 function getMatchedHeroKeywords(offer){
   const text=normaliseHeroText(getOfferHeroSuggestionText(offer));
   const matches=[];
   Object.entries(HERO_KEYWORD_RULES).forEach(([category,keywords])=>{
-    const hit=(keywords||[]).find(keyword=>new RegExp("(^|[^a-z0-9])"+normaliseHeroText(keyword).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"([^a-z0-9]|$)","i").test(text));
+    const hit=(keywords||[]).find(keyword=>new RegExp("(^|[^a-z0-9])"+escapeHeroRegExp(keyword)+"([^a-z0-9]|$)","i").test(text));
     if(hit) matches.push({category,keyword:hit});
   });
   return matches;
+}
+function scoreHeroDestinationTags(offer,library){
+  const text=normaliseHeroText(getOfferHeroSuggestionText(offer));
+  if(!text) return null;
+  const scored=(library||[]).map((category,index)=>{
+    const matches=getHeroCategoryTags(category).filter(tag=>new RegExp("(^|[^a-z0-9])"+escapeHeroRegExp(tag)+"([^a-z0-9]|$)","i").test(text));
+    return {category,matches,score:matches.length,index};
+  }).filter(item=>item.score>0);
+  if(!scored.length) return null;
+  scored.sort((a,b)=>{
+    if(b.score!==a.score) return b.score-a.score;
+    const aUsed=Date.parse(a.category.lastUsed||"")||0;
+    const bUsed=Date.parse(b.category.lastUsed||"")||0;
+    if(bUsed!==aUsed) return bUsed-aUsed;
+    return a.index-b.index;
+  });
+  const winner=scored[0];
+  return {category:winner.category,keyword:winner.matches[0],matches:winner.matches,matchCount:winner.score,source:"tags"};
 }
 function getHeroSuggestionForOffer(offer){
   if(!offer||offer._img) return null;
@@ -1926,6 +1960,8 @@ function getHeroSuggestionForOffer(offer){
   for(const [keyword,categoryName] of Object.entries(memory)){
     if(keyword && text.includes(normaliseHeroText(keyword))){ const stored=findHeroCategoryByName(categoryName); if(stored) return {category:stored,keyword,source:"memory"}; }
   }
+  const destinationSuggestion=scoreHeroDestinationTags(offer,library);
+  if(destinationSuggestion) return destinationSuggestion;
   const matches=getMatchedHeroKeywords(offer);
   for(const match of matches){ const stored=findHeroCategoryByName(match.category); if(stored) return {category:stored,keyword:match.keyword,source:"rules"}; }
   return null;
@@ -1935,7 +1971,8 @@ function heroSuggestionHtml(suggestion,index,compact){
   const name=escapeAttr(suggestion.category.name);
   const idx=Number.isInteger(index)?index:cur;
   const buttonText=compact?"Apply Hero Image":"Apply";
-  return `<div class="hero-suggestion-label">Suggested Hero</div><div class="hero-suggestion-name">${name}</div><div class="hero-suggestion-actions"><button class="abtn gold${compact?"":" btn-compact"}" type="button" onclick="applySuggestedHero(${idx},'${escapeAttr(suggestion.category.id)}',event)">${buttonText}</button></div>`;
+  const detail=suggestion.source==="tags"&&suggestion.matchCount?`<div class="hero-suggestion-label">${suggestion.matchCount} destination match${suggestion.matchCount===1?"":"es"}</div>`:"";
+  return `<div class="hero-suggestion-label">Suggested Hero</div><div class="hero-suggestion-name">${name}</div>${detail}<div class="hero-suggestion-actions"><button class="abtn gold${compact?"":" btn-compact"}" type="button" onclick="applySuggestedHero(${idx},'${escapeAttr(suggestion.category.id)}',event)">${buttonText}</button></div>`;
 }
 function updateSidebarHeroSuggestion(){
   const panel=document.getElementById("hero-sidebar-suggestion"); if(!panel) return;
@@ -1945,8 +1982,13 @@ function updateSidebarHeroSuggestion(){
 }
 function setHeroSuggestionRemember(index,checked){ if(!offers[index]) offers[index]={}; offers[index]._rememberHeroSuggestion=!!checked; }
 function rememberHeroRelationship(offer,categoryName){
-  const matches=getMatchedHeroKeywords(offer); if(!matches.length) return;
-  const memory=getHeroMemory(); matches.forEach(match=>{ memory[match.keyword]=categoryName; }); saveHeroMemory(memory);
+  const matches=getMatchedHeroKeywords(offer);
+  const tagSuggestion=scoreHeroDestinationTags(offer,getHeroLibrary());
+  if(!matches.length&&!(tagSuggestion&&tagSuggestion.matches&&tagSuggestion.matches.length)) return;
+  const memory=getHeroMemory();
+  matches.forEach(match=>{ memory[match.keyword]=categoryName; });
+  if(tagSuggestion&&tagSuggestion.matches) tagSuggestion.matches.forEach(tag=>{ memory[tag]=categoryName; });
+  saveHeroMemory(memory);
 }
 function applySuggestedHero(index,categoryId,event){
   if(event){ event.preventDefault(); event.stopPropagation(); }
@@ -2010,15 +2052,18 @@ function optimiseHeroLibraryImage(file){
 async function saveHeroLibraryFile(file,inputEl){
   if(!file) return;
   const nameEl=document.getElementById("hero-library-name");
+  const tagsEl=document.getElementById("hero-library-tags");
   const name=String((nameEl&&nameEl.value)||"").trim();
+  const tags=splitHeroDestinationTags((tagsEl&&tagsEl.value)||"");
   if(!name){ alert("Add a category name first."); if(inputEl) inputEl.value=""; return; }
   try{
     const optimised=await optimiseHeroLibraryImage(file);
     const src=optimised.dataUrl;
     const list=getHeroLibrary().filter(item=>normaliseHeroText(item.name)!==normaliseHeroText(name));
-    list.unshift({id:"hero-"+Date.now(),name,thumbnail:src,image:src,lastUsed:""});
+    list.unshift({id:"hero-"+Date.now(),name,thumbnail:src,image:src,tags,lastUsed:""});
     if(saveHeroLibrary(list)){
       if(nameEl) nameEl.value="";
+      if(tagsEl) tagsEl.value="";
       showHeroLibraryStorageFeedback(optimised.originalBytes,optimised.storedBytes);
       renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false});
     }
