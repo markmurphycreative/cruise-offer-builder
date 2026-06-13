@@ -97,6 +97,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-hint{font-size:9px;color:var(--muted);margin:5px 0 2px;}
 .hero-source-block{margin-top:6px;padding-top:6px;border-top:1px solid var(--border);}
 .hero-dropzone{padding:10px;min-height:92px;display:block;text-align:center;}
+.hero-library-upload-helper{min-height:auto;padding:7px;border-style:dashed;background:#fff;text-align:center;color:var(--muted);font-size:9px;line-height:1.35;cursor:default;}
+.hero-library-upload-helper input{display:none;}
 .hero-suggestion-card{display:none;margin-top:7px;padding:8px;border:1px solid rgba(160,146,103,.45);border-radius:var(--radius);background:linear-gradient(135deg,#fffdf7,#f3f0e8);text-align:left;position:relative;z-index:3;box-shadow:0 1px 3px rgba(14,27,42,.08);}
 .hero-suggestion-card.active{display:block;}
 .hero-suggestion-name{font-size:12px;font-weight:300;color:var(--navy);line-height:1.2;}
@@ -625,6 +627,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       <div class="splash-actions">
         <button class="splash-btn gold" id="splash-continue-session-btn" type="button" style="display:none;">Continue Last Session</button>
         <button class="splash-btn gold" id="splash-open-builder-btn" type="button">Open Builder</button>
+        <button class="splash-btn" id="splash-load-campaign-btn" type="button">Load Campaign</button>
         <button class="splash-btn" id="splash-load-csv-btn" type="button">Load CSV</button>
               </div>
     </div>
@@ -855,9 +858,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
           <div class="hero-library-category-status" id="hero-library-category-status" aria-live="polite"></div>
           <div class="field"><label>Destination Tags</label><input id="hero-library-tags" placeholder="Santorini, Mykonos, Crete, Corfu, Rhodes" oninput="scheduleActiveHeroLibraryTagsSave()" onblur="flushActiveHeroLibraryTagsSave()"></div>
           <div class="hero-library-tags-feedback" id="hero-library-tags-feedback" aria-live="polite"></div>
-          <div class="dropzone hero-dropzone" id="dz-hero-library" ondragover="dzOver(event,'dz-hero-library')" ondragleave="dzOut('dz-hero-library')" ondrop="heroLibraryDrop(event)">
+          <div class="dropzone hero-library-upload-helper" id="dz-hero-library" ondragover="dzOver(event,'dz-hero-library')" ondragleave="dzOut('dz-hero-library')" ondrop="heroLibraryDrop(event)">
             <input type="file" accept="image/*" onchange="heroLibraryFileChosen(event)">
-            <div class="dz-inner"><div class="dz-lbl">Add Hero Image</div></div>
+            <div class="dz-inner"><div class="dz-lbl">Select a category below to add or manage images.</div></div>
           </div>
           <div class="hero-library-storage-feedback" id="hero-library-storage-feedback" aria-live="polite"></div>
           <div class="hero-library-category-helper" id="hero-library-category-helper" aria-live="polite"></div>
@@ -1147,7 +1150,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.3.2";
+const APP_VERSION = "v2.3.3";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -2228,6 +2231,7 @@ function getActiveHeroLibraryCategory(){ return typeof activeHeroLibraryCategory
 function selectHeroLibraryCategory(id){
   const item=getHeroLibrary().find(x=>x.id===id); if(!item) return;
   activeHeroLibraryCategoryId=item.id;
+  syncHeroLibraryActiveCards();
   const nameEl=document.getElementById("hero-library-name");
   const tagsEl=document.getElementById("hero-library-tags");
   if(nameEl) nameEl.value=item.name;
@@ -2254,6 +2258,19 @@ function removeHeroLibraryImage(id,event){
 }
 function deleteHeroLibraryCategory(id){ saveHeroLibrary(getHeroLibrary().filter(item=>item.id!==id)); renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); }
 function renameHeroLibraryCategory(id){ const list=getHeroLibrary(); const item=list.find(x=>x.id===id); if(!item) return; const next=prompt("Rename Hero Category",item.name); const name=String(next||"").trim(); if(!name||normaliseHeroText(name)===normaliseHeroText(item.name)) return; item.name=name; if(saveHeroLibrary(list)){ renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); } }
+function syncHeroLibraryActiveCards(){
+  const cards=document.querySelectorAll?document.querySelectorAll(".hero-library-card"):[];
+  const items=document.querySelectorAll?document.querySelectorAll(".hero-library-item"):[];
+  cards.forEach(card=>{
+    const isActive=card.getAttribute("data-hero-category-id")===activeHeroLibraryCategoryId;
+    card.classList.toggle("active",isActive);
+  });
+  items.forEach(item=>{
+    const isActive=item.getAttribute("data-hero-category-id")===activeHeroLibraryCategoryId;
+    item.classList.toggle("active",isActive);
+    item.setAttribute("aria-pressed",isActive?"true":"false");
+  });
+}
 function useHeroLibraryCategory(id){ selectHeroLibraryCategory(id); }
 function renderHeroLibraryList(){
   const host=document.getElementById("hero-library-list"); if(!host) return;
@@ -2264,7 +2281,7 @@ function renderHeroLibraryList(){
     const icon=count>0?"✓":"⚠";
     const active=typeof activeHeroLibraryCategoryId!=="undefined"&&item.id===activeHeroLibraryCategoryId;
     const action=count>0?`<button class="hero-library-card-action hero-library-remove-image" type="button" onclick="removeHeroLibraryImage('${escapeAttr(item.id)}',event)">Remove Image</button>`:`<button class="hero-library-card-action hero-library-add-image" type="button" onclick="addHeroLibraryImage('${escapeAttr(item.id)}',event)">Add Image</button>`;
-    return `<div class="hero-library-card${count>0?"":" empty"}${active?" active":""}"><button class="hero-library-item${count>0?"":" empty"}${active?" active":""}" type="button" aria-pressed="${active?"true":"false"}" onclick="useHeroLibraryCategory('${escapeAttr(item.id)}')">${icon} ${escapeAttr(item.name)}<span class="hero-library-item-count">${count} Image${count===1?"":"s"}</span></button>${action}</div>`;
+    return `<div class="hero-library-card${count>0?"":" empty"}${active?" active":""}" data-hero-category-id="${escapeAttr(item.id)}"><button class="hero-library-item${count>0?"":" empty"}${active?" active":""}" data-hero-category-id="${escapeAttr(item.id)}" type="button" aria-pressed="${active?"true":"false"}" onclick="useHeroLibraryCategory('${escapeAttr(item.id)}')">${icon} ${escapeAttr(item.name)}<span class="hero-library-item-count">${count} Image${count===1?"":"s"}</span></button>${action}</div>`;
   }).join("");
   if(typeof updateHeroLibraryCategoryUx==="function") updateHeroLibraryCategoryUx();
 }
@@ -6766,11 +6783,13 @@ window.loadCsvFromSplash = function(event){
 };
 function initStartScreenActions(){
   const openBtn=document.getElementById("splash-open-builder-btn") || document.querySelector("#app-splash .splash-btn.gold");
+  const campaignBtn=document.getElementById("splash-load-campaign-btn");
   const csvBtn=document.getElementById("splash-load-csv-btn") || document.querySelector("#app-splash .splash-btn:not(.gold)");
   const continueBtn=document.getElementById("splash-continue-session-btn");
   const splash=document.getElementById("app-splash");
   if(!splash) console.warn("[splash] Missing #app-splash; start screen actions cannot be wired.");
   if(!openBtn) console.warn("[splash] Missing Open Builder button; action not bound.");
+  if(!campaignBtn) console.warn("[splash] Missing Load Campaign button; action not bound.");
   if(!csvBtn) console.warn("[splash] Missing Load CSV button; action not bound.");
 
   if(shouldBypassSplashOnLoad()){
@@ -6797,6 +6816,14 @@ function initStartScreenActions(){
       markBuilderOpenState(true,"restored");
       chooseRestoreSession();
       dismissSplashAndShowBuilder("restored");
+    });
+  }
+  if(campaignBtn){
+    campaignBtn.addEventListener("click",(e)=>{
+      if(e) e.preventDefault();
+      markBuilderOpenState(true,"campaign");
+      dismissSplashAndShowBuilder("campaign");
+      triggerLoadCampaignFile();
     });
   }
   if(csvBtn){

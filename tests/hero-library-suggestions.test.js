@@ -80,6 +80,7 @@ function createHarness(seed = {}){
     extractFunction('getHeroLibraryCategoryUxState'),
     extractFunction('getActiveHeroLibraryCategory'),
     extractFunction('selectHeroLibraryCategory'),
+    extractFunction('syncHeroLibraryActiveCards'),
     extractFunction('useHeroLibraryCategory'),
     extractFunction('removeHeroLibraryImage'),
     extractFunction('renderHeroLibraryList'),
@@ -97,11 +98,11 @@ function createHarness(seed = {}){
   return { context, storage };
 }
 
-test('Image Library UI and v2.3.2 release version are present', () => {
-  assert.match(html, /const APP_VERSION = "v2\.3\.2";/);
+test('Image Library UI and v2.3.3 release version is present', () => {
+  assert.match(html, /const APP_VERSION = "v2\.3\.3";/);
   assert.match(html, />Image Library<\/h3>/);
   assert.match(html, /<label>Category<\/label>/);
-  assert.match(html, /Add Hero Image/);
+  assert.match(html, /Select a category below to add or manage images\./);
   assert.match(html, /id="hero-library-name"/);
   assert.match(html, />Destination Tags<\/label>/);
   assert.match(html, /id="hero-library-tags"/);
@@ -223,7 +224,7 @@ test('saved hero categories render compact cards with image-aware actions', () =
   context.document = { getElementById: id => id === 'hero-library-list' ? { set innerHTML(value){ htmlOut = value; }, get innerHTML(){ return htmlOut; } } : null };
   vm.runInContext(extractFunction('useHeroLibraryCategory') + '\n' + extractFunction('renderHeroLibraryList'), context);
   context.renderHeroLibraryList();
-  assert.match(htmlOut, /<button class="hero-library-item" type="button" aria-pressed="false" onclick="useHeroLibraryCategory\('med'\)">✓ Mediterranean<span class="hero-library-item-count">1 Image<\/span><\/button><button class="hero-library-card-action hero-library-remove-image" type="button" onclick="removeHeroLibraryImage\('med',event\)">Remove Image<\/button>/);
+  assert.match(htmlOut, /<button class="hero-library-item" data-hero-category-id="med" type="button" aria-pressed="false" onclick="useHeroLibraryCategory\('med'\)">✓ Mediterranean<span class="hero-library-item-count">1 Image<\/span><\/button><button class="hero-library-card-action hero-library-remove-image" type="button" onclick="removeHeroLibraryImage\('med',event\)">Remove Image<\/button>/);
   assert.match(htmlOut, /⚠ Canaries<span class="hero-library-item-count">0 Images<\/span><\/button><button class="hero-library-card-action hero-library-add-image" type="button" onclick="addHeroLibraryImage\('can',event\)">Add Image<\/button>/);
   assert.doesNotMatch(htmlOut, /Last used|Not used yet|<img|>Use<|Rename|Delete/);
 });
