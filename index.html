@@ -1165,7 +1165,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.4.2";
+const APP_VERSION = "v2.4.3";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -2112,10 +2112,15 @@ function heroSuggestionHtml(suggestion,index,compact){
   const name=escapeAttr(suggestion.category.name);
   const idx=Number.isInteger(index)?index:cur;
   const buttonText=compact?"Apply Hero Image":"Apply";
-  const imageName=suggestion.image&&suggestion.image.image?escapeAttr(suggestion.image.name||suggestion.category.name):"";
+  const hasMatchedImage=suggestion.imageSource==="image-tags"&&suggestion.image&&suggestion.image.image;
+  const fallbackImage=getHeroLibraryDefaultImage(suggestion.category);
+  const hasFallbackImage=!!(fallbackImage&&fallbackImage.image);
+  const imageName=hasMatchedImage?escapeAttr((suggestion.imageMatches&&suggestion.imageMatches[0])||suggestion.image.name||"Matched image"):"";
   const matchCount=Number(suggestion.imageMatchCount)||0;
-  const detail=matchCount?`<div class="hero-suggestion-label">Matched Image:</div><div class="hero-suggestion-name small">${imageName}</div><div class="hero-suggestion-label">${matchCount} destination match${matchCount===1?"":"es"}</div>`:`<div class="hero-suggestion-label">Matched Image:</div><div class="hero-suggestion-name small">Category fallback</div>`;
-  const disabled=suggestion.imageSource==="image-tags"&&suggestion.image&&suggestion.image.image?"":" disabled title=\"No destination image match\"";
+  const imageLabel=hasMatchedImage?imageName:(hasFallbackImage?"Category fallback":"No destination image match");
+  const matchLabel=matchCount?`<div class="hero-suggestion-label">${matchCount} destination match${matchCount===1?"":"es"}</div>`:"";
+  const detail=`<div class="hero-suggestion-label">Suggested Image:</div><div class="hero-suggestion-name small">${imageLabel}</div>${matchLabel}`;
+  const disabled=hasMatchedImage?"":" disabled title=\"No destination image match\"";
   return `<div class="hero-suggestion-label">Suggested Hero</div><div class="hero-suggestion-name">${name}</div>${detail}<div class="hero-suggestion-actions"><button class="abtn gold${compact?"":" btn-compact"}" type="button" onclick="applySuggestedHero(${idx},'${escapeAttr(suggestion.category.id)}',event)"${disabled}>${buttonText}</button></div>`;
 }
 function updateSidebarHeroSuggestion(){
