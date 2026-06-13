@@ -97,8 +97,8 @@ function createHarness(seed = {}){
   return { context, storage };
 }
 
-test('Image Library UI and v2.3.1 release version are present', () => {
-  assert.match(html, /const APP_VERSION = "v2\.3\.1";/);
+test('Image Library UI and v2.3.2 release version are present', () => {
+  assert.match(html, /const APP_VERSION = "v2\.3\.2";/);
   assert.match(html, />Image Library<\/h3>/);
   assert.match(html, /<label>Category<\/label>/);
   assert.match(html, /Add Hero Image/);
@@ -213,18 +213,18 @@ test('applying a suggested hero inserts the saved image without a picker and rem
   assert.equal(memory.Rhine || memory.Basel || memory.Amsterdam, 'River Cruise');
 });
 
-test('saved hero categories render as one-click category cards only', () => {
+test('saved hero categories render compact cards with image-aware actions', () => {
   const list = [
-    { id: 'med', name: 'Mediterranean', image: 'data:image/png;base64,med', thumbnail: 'data:image/png;base64,med', lastUsed: '' },
-    { id: 'can', name: 'Canaries', image: 'data:image/png;base64,can', thumbnail: 'data:image/png;base64,can', lastUsed: '' }
+    { id: 'med', name: 'Mediterranean', image: 'data:image/png;base64,med', thumbnail: 'data:image/png;base64,med', imageCount: 1, lastUsed: '' },
+    { id: 'can', name: 'Canaries', image: '', thumbnail: '', imageCount: 0, lastUsed: '' }
   ];
   let htmlOut = '';
   const { context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(list) });
   context.document = { getElementById: id => id === 'hero-library-list' ? { set innerHTML(value){ htmlOut = value; }, get innerHTML(){ return htmlOut; } } : null };
   vm.runInContext(extractFunction('useHeroLibraryCategory') + '\n' + extractFunction('renderHeroLibraryList'), context);
   context.renderHeroLibraryList();
-  assert.match(htmlOut, /<button class="hero-library-item" type="button" aria-pressed="false" onclick="useHeroLibraryCategory\('med'\)">✓ Mediterranean<span class="hero-library-item-count">1 Image<\/span><\/button>/);
-  assert.match(htmlOut, /Canaries/);
+  assert.match(htmlOut, /<button class="hero-library-item" type="button" aria-pressed="false" onclick="useHeroLibraryCategory\('med'\)">✓ Mediterranean<span class="hero-library-item-count">1 Image<\/span><\/button><button class="hero-library-card-action hero-library-remove-image" type="button" onclick="removeHeroLibraryImage\('med',event\)">Remove Image<\/button>/);
+  assert.match(htmlOut, /⚠ Canaries<span class="hero-library-item-count">0 Images<\/span><\/button><button class="hero-library-card-action hero-library-add-image" type="button" onclick="addHeroLibraryImage\('can',event\)">Add Image<\/button>/);
   assert.doesNotMatch(htmlOut, /Last used|Not used yet|<img|>Use<|Rename|Delete/);
 });
 
