@@ -38,7 +38,8 @@ function createHarness(seed = {}){
     setThumb: () => {},
     syncHeroUi: () => {},
     recordCampaignHistoryAfterAsyncChange: () => {},
-    renderHeroLibraryList: () => {}
+    renderHeroLibraryList: () => {},
+    updateSidebarHeroSuggestion: () => {}
   };
   vm.createContext(context);
   const constants = html.match(/const HERO_LIBRARY_KEY=[\s\S]*?const HERO_KEYWORD_RULES=[\s\S]*?\n};/)[0]
@@ -71,14 +72,22 @@ function createHarness(seed = {}){
     extractFunction('heroSuggestionHtml'),
     extractFunction('formatStorageBytes'),
     extractFunction('estimateDataUrlBytes'),
+    extractFunction('getHeroLibraryCategoryInputName'),
+    extractFunction('getHeroLibraryCategoryUxState'),
+    extractFunction('getActiveHeroLibraryCategory'),
+    extractFunction('selectHeroLibraryCategory'),
+    extractFunction('useHeroLibraryCategory'),
+    extractFunction('renderHeroLibraryList'),
+    extractFunction('updateHeroLibraryCategoryUx'),
+    extractFunction('savePendingHeroLibraryCategory'),
     extractFunction('getHeroImageSource'),
     extractFunction('renderHeroHTML')
   ].join('\n'), context);
   return { context, storage };
 }
 
-test('Image Library UI and v2.2.7 release version are present', () => {
-  assert.match(html, /const APP_VERSION = "v2\.2\.7";/);
+test('Image Library UI and v2.2.8 release version are present', () => {
+  assert.match(html, /const APP_VERSION = "v2\.2\.8";/);
   assert.match(html, />Image Library<\/h3>/);
   assert.match(html, /<label>Category<\/label>/);
   assert.match(html, /Add Hero Image/);
@@ -171,9 +180,56 @@ test('saved hero categories render as one-click category cards only', () => {
   context.document = { getElementById: id => id === 'hero-library-list' ? { set innerHTML(value){ htmlOut = value; }, get innerHTML(){ return htmlOut; } } : null };
   vm.runInContext(extractFunction('useHeroLibraryCategory') + '\n' + extractFunction('renderHeroLibraryList'), context);
   context.renderHeroLibraryList();
-  assert.match(htmlOut, /<button class="hero-library-item" type="button" onclick="useHeroLibraryCategory\('med'\)">✓ Mediterranean<span class="hero-library-item-count">1 Image<\/span><\/button>/);
+  assert.match(htmlOut, /<button class="hero-library-item" type="button" aria-pressed="false" onclick="useHeroLibraryCategory\('med'\)">✓ Mediterranean<span class="hero-library-item-count">1 Image<\/span><\/button>/);
   assert.match(htmlOut, /Canaries/);
   assert.doesNotMatch(htmlOut, /Last used|Not used yet|<img|>Use<|Rename|Delete/);
+});
+
+
+
+test('clicking a category card loads editor fields and marks it as active upload target', () => {
+  const list = [
+    { id: 'na', name: 'North America', image: '', thumbnail: '', tags: ['New York', 'Boston', 'Halifax'], imageCount: 0, lastUsed: '' },
+    { id: 'med', name: 'Mediterranean', image: 'data:image/jpeg;base64,med', thumbnail: 'data:image/jpeg;base64,med', tags: ['Santorini'], imageCount: 1, lastUsed: '' }
+  ];
+  const elements = {
+    'hero-library-name': { value: '' },
+    'hero-library-tags': { value: '' },
+    'hero-library-list': { innerHTML: '' },
+    'hero-library-category-status': { textContent: '', className: '', classList: { add(){} } },
+    'hero-library-category-helper': { textContent: '' },
+    'hero-library-category-action': { textContent: '', className: '', classList: { add(){} } }
+  };
+  const { context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(list) });
+  context.document = { getElementById: id => elements[id] || null };
+  context.selectHeroLibraryCategory('na');
+  assert.equal(elements['hero-library-name'].value, 'North America');
+  assert.equal(elements['hero-library-tags'].value, 'New York, Boston, Halifax');
+  assert.match(elements['hero-library-list'].innerHTML, /North America.*ACTIVE|active/);
+  assert.equal(context.getActiveHeroLibraryCategory().name, 'North America');
+});
+
+test('saving an image after selecting an empty category attaches it to that active category', () => {
+  const list = [{ id: 'na', name: 'North America', image: '', thumbnail: '', tags: ['New York', 'Boston'], imageCount: 0, lastUsed: '' }];
+  const elements = {
+    'hero-library-name': { value: '' },
+    'hero-library-tags': { value: '' },
+    'hero-library-list': { innerHTML: '' },
+    'hero-library-category-status': { textContent: '', className: '', classList: { add(){} } },
+    'hero-library-category-helper': { textContent: '' },
+    'hero-library-category-action': { textContent: '', className: '', classList: { add(){} } }
+  };
+  const { context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(list) });
+  context.document = { getElementById: id => elements[id] || null };
+  context.selectHeroLibraryCategory('na');
+  context.pendingHeroLibraryImage = { dataUrl: 'data:image/jpeg;base64,newyork' };
+  assert.equal(context.savePendingHeroLibraryCategory(), true);
+  const saved = context.getHeroLibrary()[0];
+  assert.equal(saved.id, 'na');
+  assert.equal(saved.name, 'North America');
+  assert.equal(saved.image, 'data:image/jpeg;base64,newyork');
+  assert.equal(saved.imageCount, 1);
+  assert.equal(elements['hero-library-name'].value, 'North America');
 });
 
 test('empty hero placeholders render a centered primary suggestion takeover when a match exists', () => {

@@ -122,6 +122,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-library-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:6px;margin-top:7px;}
 .hero-library-item{appearance:none;border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;color:var(--navy);font:inherit;font-size:11px;font-weight:800;line-height:1.2;text-align:center;padding:9px 8px;cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease;}
 .hero-library-item:hover,.hero-library-item:focus-visible{border-color:var(--gold);box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px);outline:none;}
+.hero-library-item.active{border-color:var(--gold);background:linear-gradient(135deg,#fff8df,#ffffff);box-shadow:0 0 0 2px rgba(160,146,103,.28),0 6px 16px rgba(14,27,42,.12);transform:translateY(-1px);}
+.hero-library-item.active::after{content:"ACTIVE";display:block;margin-top:5px;font-size:8px;font-weight:900;letter-spacing:.14em;color:var(--gold);}
 .hero-library-empty{font-size:9px;color:var(--muted);background:#fafaf8;border:1px dashed var(--border);border-radius:var(--radius);padding:7px;text-align:center;}
 .hero-library-storage-feedback{display:none;margin-top:7px;background:#f7fbf7;border:1px solid rgba(32,126,64,.2);border-radius:var(--radius);padding:7px;font-size:9px;line-height:1.4;color:var(--green);}
 .hero-library-storage-feedback.active{display:block;}
@@ -1133,7 +1135,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.2.7";
+const APP_VERSION = "v2.2.8";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -2038,6 +2040,7 @@ function estimateDataUrlBytes(dataUrl){
   return Math.max(0,Math.floor((b64.length*3)/4)-padding);
 }
 let pendingHeroLibraryImage=null;
+let activeHeroLibraryCategoryId="";
 function getHeroLibraryCategoryInputName(){
   const nameEl=document.getElementById("hero-library-name");
   return String((nameEl&&nameEl.value)||"").trim();
@@ -2048,17 +2051,18 @@ function getHeroLibraryCategoryUxState(){
   return {typed,existing,isNew:!!typed&&!existing};
 }
 function updateHeroLibraryCategoryUx(){
+  const selected=getActiveHeroLibraryCategory();
   const status=document.getElementById("hero-library-category-status");
   const helper=document.getElementById("hero-library-category-helper");
   const action=document.getElementById("hero-library-category-action");
   const state=getHeroLibraryCategoryUxState();
   if(status){
     status.className="hero-library-category-status";
-    if(state.existing){ status.textContent="● Existing Category"; status.classList.add("existing"); }
+    if(state.existing){ status.textContent=(selected&&selected.id===state.existing.id?"● Active Category":"● Existing Category"); status.classList.add("existing"); }
     else if(state.isNew){ status.textContent="● New Category"; status.classList.add("new"); }
     else status.textContent="";
   }
-  if(helper) helper.textContent=state.existing?"Existing category found.":(state.isNew?"No hero image assigned yet. You can create the category now and add images later.":"");
+  if(helper) helper.textContent=state.existing?`${state.existing.name} is the active upload target · ${Number(state.existing.imageCount)||0} Image${Number(state.existing.imageCount)===1?"":"s"}.`:(state.isNew?"No hero image assigned yet. You can create the category now and add images later.":"");
   if(action){
     action.className="abtn btn-compact hero-library-category-action";
     if(state.typed){
@@ -2127,27 +2131,41 @@ function savePendingHeroLibraryCategory(){
   const existing=findHeroCategoryByName(name);
   const src=pendingHeroLibraryImage?pendingHeroLibraryImage.dataUrl:(existing&&existing.image)||"";
   const list=getHeroLibrary().filter(item=>normaliseHeroText(item.name)!==normaliseHeroText(name));
-  list.unshift({id:(existing&&existing.id)||"hero-"+Date.now(),name,thumbnail:src,image:src,tags,lastUsed:(existing&&existing.lastUsed)||"",imageCount:src?1:0});
+  const savedId=(existing&&existing.id)||activeHeroLibraryCategoryId||"hero-"+Date.now();
+  list.unshift({id:savedId,name,thumbnail:src,image:src,tags,lastUsed:(existing&&existing.lastUsed)||"",imageCount:src?1:0});
   if(!saveHeroLibrary(list)) return false;
   pendingHeroLibraryImage=null;
-  if(nameEl) nameEl.value="";
-  if(tagsEl) tagsEl.value="";
+  activeHeroLibraryCategoryId=savedId;
+  if(nameEl) nameEl.value=name;
+  if(tagsEl) tagsEl.value=tags.join(", ");
   renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); updateHeroLibraryCategoryUx();
   return true;
 }
 function handleHeroLibraryCategoryAction(){
   const state=getHeroLibraryCategoryUxState();
-  if(state.existing) useHeroLibraryCategory(state.existing.id);
+  if(state.existing) selectHeroLibraryCategory(state.existing.id);
   else if(state.isNew) savePendingHeroLibraryCategory();
+}
+function getActiveHeroLibraryCategory(){ return typeof activeHeroLibraryCategoryId!=="undefined"&&activeHeroLibraryCategoryId?getHeroLibrary().find(item=>item.id===activeHeroLibraryCategoryId)||null:null; }
+function selectHeroLibraryCategory(id){
+  const item=getHeroLibrary().find(x=>x.id===id); if(!item) return;
+  activeHeroLibraryCategoryId=item.id;
+  const nameEl=document.getElementById("hero-library-name");
+  const tagsEl=document.getElementById("hero-library-tags");
+  if(nameEl) nameEl.value=item.name;
+  if(tagsEl) tagsEl.value=getHeroCategoryTags(item).join(", ");
+  pendingHeroLibraryImage=null;
+  renderHeroLibraryList();
+  updateHeroLibraryCategoryUx();
 }
 function deleteHeroLibraryCategory(id){ saveHeroLibrary(getHeroLibrary().filter(item=>item.id!==id)); renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); }
 function renameHeroLibraryCategory(id){ const list=getHeroLibrary(); const item=list.find(x=>x.id===id); if(!item) return; const next=prompt("Rename Hero Category",item.name); const name=String(next||"").trim(); if(!name||normaliseHeroText(name)===normaliseHeroText(item.name)) return; item.name=name; if(saveHeroLibrary(list)){ renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); } }
-function useHeroLibraryCategory(id){ const item=getHeroLibrary().find(x=>x.id===id); if(item&&item.image) applySuggestedHero(cur,item.id); }
+function useHeroLibraryCategory(id){ selectHeroLibraryCategory(id); }
 function renderHeroLibraryList(){
   const host=document.getElementById("hero-library-list"); if(!host) return;
   const list=getHeroLibrary();
   if(!list.length){ host.innerHTML='<div class="hero-library-empty">No saved categories</div>'; if(typeof updateHeroLibraryCategoryUx==="function") updateHeroLibraryCategoryUx(); return; }
-  host.innerHTML=list.map(item=>{ const count=Number(item.imageCount)||0; const icon=count>0?"✓":"⚠"; return `<button class="hero-library-item${count>0?"":" empty"}" type="button" onclick="useHeroLibraryCategory('${escapeAttr(item.id)}')">${icon} ${escapeAttr(item.name)}<span class="hero-library-item-count">${count} Image${count===1?"":"s"}</span></button>`; }).join("");
+  host.innerHTML=list.map(item=>{ const count=Number(item.imageCount)||0; const icon=count>0?"✓":"⚠"; const active=typeof activeHeroLibraryCategoryId!=="undefined"&&item.id===activeHeroLibraryCategoryId; return `<button class="hero-library-item${count>0?"":" empty"}${active?" active":""}" type="button" aria-pressed="${active?"true":"false"}" onclick="useHeroLibraryCategory('${escapeAttr(item.id)}')">${icon} ${escapeAttr(item.name)}<span class="hero-library-item-count">${count} Image${count===1?"":"s"}</span></button>`; }).join("");
   if(typeof updateHeroLibraryCategoryUx==="function") updateHeroLibraryCategoryUx();
 }
 
