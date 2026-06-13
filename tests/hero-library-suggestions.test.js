@@ -67,11 +67,13 @@ function createHarness(seed = {}){
   return { context, storage };
 }
 
-test('Hero Library UI and v2.2.0 release version are present', () => {
-  assert.match(html, /const APP_VERSION = "v2\.2\.0";/);
-  assert.match(html, /Hero Library: reusable categories and rules-based suggestions/);
+test('Hero Library UI and v2.2.1 release version are present', () => {
+  assert.match(html, /const APP_VERSION = "v2\.2\.1";/);
+  assert.match(html, /Stored locally for future campaigns\./);
   assert.match(html, /id="hero-library-name"/);
   assert.match(html, /id="hero-sidebar-suggestion"/);
+  assert.match(html, /data-section-key="hero-library"/);
+  assert.match(html, /No Hero Categories saved\./);
 });
 
 test('rules-based hero suggestions match itinerary keywords to stored local categories', () => {
