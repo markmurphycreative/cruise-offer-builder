@@ -81,6 +81,7 @@ function createHarness(seed = {}){
     extractFunction('setHeroSuggestionRemember'),
     extractFunction('rememberHeroRelationship'),
     extractFunction('applySuggestedHero'),
+    extractFunction('heroSuggestionDebugHtml'),
     extractFunction('heroSuggestionHtml'),
     extractFunction('formatStorageBytes'),
     extractFunction('estimateDataUrlBytes'),
@@ -168,6 +169,7 @@ test('destination tags score stored categories before keyword rules and show mat
   assert.equal(suggestion.matchCount, 3);
   assert.equal(JSON.stringify(suggestion.matches), JSON.stringify(['Corfu', 'Rhodes', 'Crete']));
   assert.match(context.heroSuggestionHtml(suggestion, 0, true), /Category fallback/);
+  assert.match(context.heroSuggestionHtml(suggestion, 0, true), /Category:[\s\S]*Mediterranean[\s\S]*Matched Category Tags:[\s\S]*Corfu, Rhodes, Crete[\s\S]*Matched Image Tags:[\s\S]*\(none\)[\s\S]*Image Score:[\s\S]*0[\s\S]*Category Score:[\s\S]*3[\s\S]*Selected By:[\s\S]*category fallback/);
 });
 
 test('destination tag ties use recently used category then stored order', () => {
@@ -200,7 +202,6 @@ test('destination-level image tags choose the best image inside the matched cate
   assert.notEqual(suggestion.image.name, 'Santorini image');
   assert.equal(suggestion.imageMatchCount, 1);
   assert.match(context.heroSuggestionHtml(suggestion, 0, true), /Suggested Image:[\s\S]*Rhodes/);
-  assert.doesNotMatch(context.heroSuggestionHtml(suggestion, 0, true), /Suggested Image:[\s\S]*Mediterranean/);
 });
 
 
