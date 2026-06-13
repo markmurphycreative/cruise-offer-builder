@@ -103,6 +103,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-suggestion-card.active{display:block;}
 .hero-suggestion-name{font-size:12px;font-weight:300;color:var(--navy);line-height:1.2;}
 .hero-suggestion-label{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--gold);margin-top:2px;}
+.hero-suggestion-debug{margin-top:5px;padding:5px;border:1px dashed rgba(14,27,42,.18);border-radius:4px;background:rgba(255,255,255,.65);font-size:9px;line-height:1.35;color:var(--navy);}
+.hero-suggestion-debug-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px;}
+.hero-suggestion-debug-row strong{font-weight:900;color:var(--gold);}
 .hero-suggestion-actions{display:flex;align-items:center;gap:6px;margin-top:6px;}
 .hero-suggestion-actions .abtn{padding:4px 8px;font-size:9px;}
 .hero-remember{display:flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:var(--navy);}
@@ -2107,6 +2110,22 @@ function getHeroSuggestionForOffer(offer){
   }
   return null;
 }
+function heroSuggestionDebugHtml(suggestion){
+  if(!suggestion||!suggestion.category) return "";
+  const category=escapeAttr(suggestion.category.name||"");
+  const categoryMatches=(Array.isArray(suggestion.matches)?suggestion.matches:[]).filter(Boolean);
+  const imageMatches=(Array.isArray(suggestion.imageMatches)?suggestion.imageMatches:[]).filter(Boolean);
+  const selectedBy=suggestion.imageSource==="image-tags"?"image tags":"category fallback";
+  const rows=[
+    ["Category:",category||"(none)"],
+    ["Matched Category Tags:",categoryMatches.length?categoryMatches.map(escapeAttr).join(", "):"(none)"],
+    ["Matched Image Tags:",imageMatches.length?imageMatches.map(escapeAttr).join(", "):"(none)"],
+    ["Image Score:",String(Number(suggestion.imageMatchCount)||0)],
+    ["Category Score:",String(Number(suggestion.matchCount)||0)],
+    ["Selected By:",selectedBy]
+  ];
+  return `<div class="hero-suggestion-debug">${rows.map(([label,value])=>`<div class="hero-suggestion-debug-row"><strong>${label}</strong><span>${value}</span></div>`).join("")}</div>`;
+}
 function heroSuggestionHtml(suggestion,index,compact){
   if(!suggestion||!suggestion.category) return "";
   const name=escapeAttr(suggestion.category.name);
@@ -2119,7 +2138,7 @@ function heroSuggestionHtml(suggestion,index,compact){
   const matchCount=Number(suggestion.imageMatchCount)||0;
   const imageLabel=hasMatchedImage?imageName:(hasFallbackImage?"Category fallback":"No destination image match");
   const matchLabel=matchCount?`<div class="hero-suggestion-label">${matchCount} destination match${matchCount===1?"":"es"}</div>`:"";
-  const detail=`<div class="hero-suggestion-label">Suggested Image:</div><div class="hero-suggestion-name small">${imageLabel}</div>${matchLabel}`;
+  const detail=`<div class="hero-suggestion-label">Suggested Image:</div><div class="hero-suggestion-name small">${imageLabel}</div>${heroSuggestionDebugHtml(suggestion)}${matchLabel}`;
   const disabled=hasMatchedImage?"":" disabled title=\"No destination image match\"";
   return `<div class="hero-suggestion-label">Suggested Hero</div><div class="hero-suggestion-name">${name}</div>${detail}<div class="hero-suggestion-actions"><button class="abtn gold${compact?"":" btn-compact"}" type="button" onclick="applySuggestedHero(${idx},'${escapeAttr(suggestion.category.id)}',event)"${disabled}>${buttonText}</button></div>`;
 }
