@@ -114,6 +114,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-library-category-status{min-height:13px;margin-top:-4px;font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1.2;}
 .hero-library-category-status.existing{color:var(--green);}
 .hero-library-category-status.new{color:var(--gold);}
+.hero-library-item.empty{border-color:rgba(160,146,103,.36);background:#fffdf7;color:#6f6546;}
+.hero-library-item-count{display:block;margin-top:3px;font-size:9px;font-weight:700;color:var(--muted);}
 .hero-library-category-helper{min-height:12px;margin-top:6px;font-size:9px;color:var(--muted);line-height:1.25;}
 .hero-library-category-action{display:none;width:100%;justify-content:center;margin-top:5px;}
 .hero-library-category-action.active{display:inline-flex;}
@@ -1131,7 +1133,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.2.6";
+const APP_VERSION = "v2.2.7";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -1912,7 +1914,14 @@ const HERO_KEYWORD_RULES={
 };
 function safeReadJsonStorage(key,fallback){ try{ const raw=localStorage.getItem(key); return raw?JSON.parse(raw):fallback; }catch(e){ return fallback; } }
 function safeWriteJsonStorage(key,value){ try{ localStorage.setItem(key,JSON.stringify(value)); return true; }catch(e){ alert("Browser storage is full. Remove unused hero categories and try again."); return false; } }
-function getHeroLibrary(){ const list=safeReadJsonStorage(HERO_LIBRARY_KEY,[]); return Array.isArray(list)?list.filter(item=>item&&item.name&&item.image):[]; }
+function getHeroLibraryImageCount(category){ return category&&category.image?1:0; }
+function normaliseHeroLibraryCategory(item){
+  if(!item||!item.name) return null;
+  const image=item.image||item.thumbnail||"";
+  return {...item,image,thumbnail:item.thumbnail||image,imageCount:Number.isFinite(Number(item.imageCount))?Number(item.imageCount):getHeroLibraryImageCount({image})};
+}
+function getHeroLibrary(){ const list=safeReadJsonStorage(HERO_LIBRARY_KEY,[]); return Array.isArray(list)?list.map(normaliseHeroLibraryCategory).filter(Boolean):[]; }
+function getSuggestableHeroLibrary(){ return getHeroLibrary().filter(item=>item&&item.image&&Number(item.imageCount)>0); }
 function saveHeroLibrary(list){ return safeWriteJsonStorage(HERO_LIBRARY_KEY,(Array.isArray(list)?list:[]).slice(0,30)); }
 function getHeroMemory(){ const memory=safeReadJsonStorage(HERO_MEMORY_KEY,{}); return memory&&typeof memory==="object"&&!Array.isArray(memory)?memory:{}; }
 function saveHeroMemory(memory){ safeWriteJsonStorage(HERO_MEMORY_KEY,memory||{}); }
@@ -1934,6 +1943,7 @@ function getOfferHeroSuggestionText(offer){
   return direct.concat(destinationFields).filter(value=>typeof value==="string"&&value.trim()).join(" • ");
 }
 function findHeroCategoryByName(name){ const target=normaliseHeroText(name); return getHeroLibrary().find(item=>normaliseHeroText(item.name)===target)||null; }
+function findSuggestableHeroCategoryByName(name){ const target=normaliseHeroText(name); return getSuggestableHeroLibrary().find(item=>normaliseHeroText(item.name)===target)||null; }
 function getMatchedHeroKeywords(offer){
   const text=normaliseHeroText(getOfferHeroSuggestionText(offer));
   const matches=[];
@@ -1963,16 +1973,16 @@ function scoreHeroDestinationTags(offer,library){
 }
 function getHeroSuggestionForOffer(offer){
   if(!offer||offer._img) return null;
-  const library=getHeroLibrary(); if(!library.length) return null;
+  const library=getSuggestableHeroLibrary(); if(!library.length) return null;
   const text=normaliseHeroText(getOfferHeroSuggestionText(offer));
   const memory=getHeroMemory();
   for(const [keyword,categoryName] of Object.entries(memory)){
-    if(keyword && text.includes(normaliseHeroText(keyword))){ const stored=findHeroCategoryByName(categoryName); if(stored) return {category:stored,keyword,source:"memory"}; }
+    if(keyword && text.includes(normaliseHeroText(keyword))){ const stored=findSuggestableHeroCategoryByName(categoryName); if(stored) return {category:stored,keyword,source:"memory"}; }
   }
   const destinationSuggestion=scoreHeroDestinationTags(offer,library);
   if(destinationSuggestion) return destinationSuggestion;
   const matches=getMatchedHeroKeywords(offer);
-  for(const match of matches){ const stored=findHeroCategoryByName(match.category); if(stored) return {category:stored,keyword:match.keyword,source:"rules"}; }
+  for(const match of matches){ const stored=findSuggestableHeroCategoryByName(match.category); if(stored) return {category:stored,keyword:match.keyword,source:"rules"}; }
   return null;
 }
 function heroSuggestionHtml(suggestion,index,compact){
@@ -1992,7 +2002,7 @@ function updateSidebarHeroSuggestion(){
 function setHeroSuggestionRemember(index,checked){ if(!offers[index]) offers[index]={}; offers[index]._rememberHeroSuggestion=!!checked; }
 function rememberHeroRelationship(offer,categoryName){
   const matches=getMatchedHeroKeywords(offer);
-  const tagSuggestion=scoreHeroDestinationTags(offer,getHeroLibrary());
+  const tagSuggestion=scoreHeroDestinationTags(offer,getSuggestableHeroLibrary());
   if(!matches.length&&!(tagSuggestion&&tagSuggestion.matches&&tagSuggestion.matches.length)) return;
   const memory=getHeroMemory();
   matches.forEach(match=>{ memory[match.keyword]=categoryName; });
@@ -2002,7 +2012,7 @@ function rememberHeroRelationship(offer,categoryName){
 function applySuggestedHero(index,categoryId,event){
   if(event){ event.preventDefault(); event.stopPropagation(); }
   const i=Number(index); const category=getHeroLibrary().find(item=>item.id===categoryId);
-  if(!Number.isInteger(i)||!category) return;
+  if(!Number.isInteger(i)||!category||!category.image) return;
   if(!offers[i]) offers[i]={};
   offers[i]._img=category.image; offers[i]._imgSource="Hero Library: "+category.name; offers[i]._imgNeedsReupload=false;
   offers[i]._cropZoom=100; offers[i]._cropX=50; offers[i]._cropY=50; offers[i]._cropPosVersion=2; offers[i]._heroFitMode="fill";
@@ -2048,7 +2058,7 @@ function updateHeroLibraryCategoryUx(){
     else if(state.isNew){ status.textContent="● New Category"; status.classList.add("new"); }
     else status.textContent="";
   }
-  if(helper) helper.textContent=state.existing?"Existing category found.":(state.isNew?"This category does not exist yet. Create it to save this image and destination mapping.":"");
+  if(helper) helper.textContent=state.existing?"Existing category found.":(state.isNew?"No hero image assigned yet. You can create the category now and add images later.":"");
   if(action){
     action.className="abtn btn-compact hero-library-category-action";
     if(state.typed){
@@ -2114,10 +2124,10 @@ function savePendingHeroLibraryCategory(){
   const name=getHeroLibraryCategoryInputName();
   const tags=splitHeroDestinationTags((tagsEl&&tagsEl.value)||"");
   if(!name){ alert("Add a category name first."); return false; }
-  if(!pendingHeroLibraryImage){ alert("Upload a hero image first."); return false; }
-  const src=pendingHeroLibraryImage.dataUrl;
+  const existing=findHeroCategoryByName(name);
+  const src=pendingHeroLibraryImage?pendingHeroLibraryImage.dataUrl:(existing&&existing.image)||"";
   const list=getHeroLibrary().filter(item=>normaliseHeroText(item.name)!==normaliseHeroText(name));
-  list.unshift({id:"hero-"+Date.now(),name,thumbnail:src,image:src,tags,lastUsed:""});
+  list.unshift({id:(existing&&existing.id)||"hero-"+Date.now(),name,thumbnail:src,image:src,tags,lastUsed:(existing&&existing.lastUsed)||"",imageCount:src?1:0});
   if(!saveHeroLibrary(list)) return false;
   pendingHeroLibraryImage=null;
   if(nameEl) nameEl.value="";
@@ -2132,12 +2142,12 @@ function handleHeroLibraryCategoryAction(){
 }
 function deleteHeroLibraryCategory(id){ saveHeroLibrary(getHeroLibrary().filter(item=>item.id!==id)); renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); }
 function renameHeroLibraryCategory(id){ const list=getHeroLibrary(); const item=list.find(x=>x.id===id); if(!item) return; const next=prompt("Rename Hero Category",item.name); const name=String(next||"").trim(); if(!name||normaliseHeroText(name)===normaliseHeroText(item.name)) return; item.name=name; if(saveHeroLibrary(list)){ renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); } }
-function useHeroLibraryCategory(id){ const item=getHeroLibrary().find(x=>x.id===id); if(item) applySuggestedHero(cur,item.id); }
+function useHeroLibraryCategory(id){ const item=getHeroLibrary().find(x=>x.id===id); if(item&&item.image) applySuggestedHero(cur,item.id); }
 function renderHeroLibraryList(){
   const host=document.getElementById("hero-library-list"); if(!host) return;
   const list=getHeroLibrary();
   if(!list.length){ host.innerHTML='<div class="hero-library-empty">No saved categories</div>'; if(typeof updateHeroLibraryCategoryUx==="function") updateHeroLibraryCategoryUx(); return; }
-  host.innerHTML=list.map(item=>`<button class="hero-library-item" type="button" onclick="useHeroLibraryCategory('${escapeAttr(item.id)}')">${escapeAttr(item.name)}</button>`).join("");
+  host.innerHTML=list.map(item=>{ const count=Number(item.imageCount)||0; const icon=count>0?"✓":"⚠"; return `<button class="hero-library-item${count>0?"":" empty"}" type="button" onclick="useHeroLibraryCategory('${escapeAttr(item.id)}')">${icon} ${escapeAttr(item.name)}<span class="hero-library-item-count">${count} Image${count===1?"":"s"}</span></button>`; }).join("");
   if(typeof updateHeroLibraryCategoryUx==="function") updateHeroLibraryCategoryUx();
 }
 

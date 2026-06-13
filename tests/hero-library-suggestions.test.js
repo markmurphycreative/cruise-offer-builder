@@ -6,7 +6,7 @@ import vm from 'node:vm';
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
 function extractFunction(name){
-  const start = html.indexOf(`function ${name}`);
+  const start = html.indexOf(`function ${name}(`);
   assert.notEqual(start, -1, `Missing function ${name}`);
   let depth = 0;
   let seen = false;
@@ -48,7 +48,10 @@ function createHarness(seed = {}){
     extractFunction('escapeAttr'),
     extractFunction('safeReadJsonStorage'),
     extractFunction('safeWriteJsonStorage'),
+    extractFunction('getHeroLibraryImageCount'),
+    extractFunction('normaliseHeroLibraryCategory'),
     extractFunction('getHeroLibrary'),
+    extractFunction('getSuggestableHeroLibrary'),
     extractFunction('saveHeroLibrary'),
     extractFunction('getHeroMemory'),
     extractFunction('saveHeroMemory'),
@@ -58,6 +61,7 @@ function createHarness(seed = {}){
     extractFunction('getHeroCategoryTags'),
     extractFunction('getOfferHeroSuggestionText'),
     extractFunction('findHeroCategoryByName'),
+    extractFunction('findSuggestableHeroCategoryByName'),
     extractFunction('getMatchedHeroKeywords'),
     extractFunction('scoreHeroDestinationTags'),
     extractFunction('getHeroSuggestionForOffer'),
@@ -73,8 +77,8 @@ function createHarness(seed = {}){
   return { context, storage };
 }
 
-test('Image Library UI and v2.2.6 release version are present', () => {
-  assert.match(html, /const APP_VERSION = "v2\.2\.6";/);
+test('Image Library UI and v2.2.7 release version are present', () => {
+  assert.match(html, /const APP_VERSION = "v2\.2\.7";/);
   assert.match(html, />Image Library<\/h3>/);
   assert.match(html, /<label>Category<\/label>/);
   assert.match(html, /Add Hero Image/);
@@ -84,8 +88,23 @@ test('Image Library UI and v2.2.6 release version are present', () => {
   assert.match(html, /id="hero-sidebar-suggestion"/);
   assert.match(html, /data-section-key="hero-library"/);
   assert.match(html, /No saved categories/);
+  assert.match(html, /No hero image assigned yet\. You can create the category now and add images later\./);
+  assert.doesNotMatch(html, /Upload a hero image first\./);
   assert.doesNotMatch(html, /Stored locally for future campaigns/);
   assert.doesNotMatch(html, /No Hero Categories saved/);
+});
+
+
+
+test('empty categories are stored with tags and imageCount zero but never suggested', () => {
+  const library = [{ id: 'na', name: 'North America', tags: ['New York', 'Boston', 'Miami', 'Quebec'], imageCount: 0, image: '', thumbnail: '', lastUsed: '' }];
+  const { context } = createHarness({
+    'cruiseHeroLibrary.v2': JSON.stringify(library),
+    'cruiseHeroMemory.v2': JSON.stringify({ Quebec: 'North America' })
+  });
+  assert.equal(context.getHeroLibrary()[0].name, 'North America');
+  assert.equal(context.getHeroLibrary()[0].imageCount, 0);
+  assert.equal(context.getHeroSuggestionForOffer({ ports: 'New York • Boston • Quebec' }), null);
 });
 
 test('rules-based hero suggestions match itinerary keywords to stored local categories', () => {
@@ -152,7 +171,7 @@ test('saved hero categories render as one-click category cards only', () => {
   context.document = { getElementById: id => id === 'hero-library-list' ? { set innerHTML(value){ htmlOut = value; }, get innerHTML(){ return htmlOut; } } : null };
   vm.runInContext(extractFunction('useHeroLibraryCategory') + '\n' + extractFunction('renderHeroLibraryList'), context);
   context.renderHeroLibraryList();
-  assert.match(htmlOut, /<button class="hero-library-item" type="button" onclick="useHeroLibraryCategory\('med'\)">Mediterranean<\/button>/);
+  assert.match(htmlOut, /<button class="hero-library-item" type="button" onclick="useHeroLibraryCategory\('med'\)">✓ Mediterranean<span class="hero-library-item-count">1 Image<\/span><\/button>/);
   assert.match(htmlOut, /Canaries/);
   assert.doesNotMatch(htmlOut, /Last used|Not used yet|<img|>Use<|Rename|Delete/);
 });
