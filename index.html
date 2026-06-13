@@ -1939,7 +1939,22 @@ function normaliseHeroLibraryCategory(item){
   const image=item.image||item.thumbnail||"";
   return {...item,image,thumbnail:item.thumbnail||image,imageCount:Number.isFinite(Number(item.imageCount))?Number(item.imageCount):getHeroLibraryImageCount({image})};
 }
-function getHeroLibrary(){ const list=safeReadJsonStorage(HERO_LIBRARY_KEY,[]); return Array.isArray(list)?list.map(normaliseHeroLibraryCategory).filter(Boolean):[]; }
+function heroLibraryCategoryIdBase(item,index){
+  const rawId=String((item&&item.id)||"").trim();
+  if(rawId) return rawId;
+  const name=normaliseHeroText(item&&item.name).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+  return name||`category-${index+1}`;
+}
+function getHeroLibrary(){
+  const list=safeReadJsonStorage(HERO_LIBRARY_KEY,[]);
+  if(!Array.isArray(list)) return [];
+  const used={};
+  return list.map(normaliseHeroLibraryCategory).filter(Boolean).map((item,index)=>{
+    const base=heroLibraryCategoryIdBase(item,index);
+    used[base]=(used[base]||0)+1;
+    return {...item,id:used[base]===1?base:`${base}-${used[base]}`};
+  });
+}
 function getSuggestableHeroLibrary(){ return getHeroLibrary().filter(item=>item&&item.image&&Number(item.imageCount)>0); }
 function saveHeroLibrary(list){ return safeWriteJsonStorage(HERO_LIBRARY_KEY,(Array.isArray(list)?list:[]).slice(0,30)); }
 function getHeroMemory(){ const memory=safeReadJsonStorage(HERO_MEMORY_KEY,{}); return memory&&typeof memory==="object"&&!Array.isArray(memory)?memory:{}; }
@@ -2205,7 +2220,7 @@ function savePendingHeroLibraryCategory(){
   const existing=findHeroCategoryByName(name);
   const src=pendingHeroLibraryImage?pendingHeroLibraryImage.dataUrl:(existing&&existing.image)||"";
   const list=getHeroLibrary().filter(item=>normaliseHeroText(item.name)!==normaliseHeroText(name));
-  const savedId=(existing&&existing.id)||"hero-"+Date.now();
+  const savedId=(existing&&existing.id)||`hero-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
   list.unshift({id:savedId,name,thumbnail:src,image:src,tags,lastUsed:(existing&&existing.lastUsed)||"",imageCount:src?1:0});
   if(!saveHeroLibrary(list)) return false;
   pendingHeroLibraryImage=null;
