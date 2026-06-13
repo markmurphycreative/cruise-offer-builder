@@ -107,8 +107,8 @@ function createHarness(seed = {}){
   return { context, storage };
 }
 
-test('Image Library UI and v2.4.2 release version is present', () => {
-  assert.match(html, /const APP_VERSION = "v2\.4\.2";/);
+test('Image Library UI and v2.4.3 release version is present', () => {
+  assert.match(html, /const APP_VERSION = "v2\.4\.3";/);
   assert.match(html, />Image Library<\/h3>/);
   assert.match(html, /<label>Category<\/label>/);
   assert.match(html, /Select a category below to add or manage images\./);
@@ -141,7 +141,7 @@ test('empty categories are stored with tags and can suggest categories without a
   const suggestion = context.getHeroSuggestionForOffer({ ports: 'New York • Boston • Quebec' });
   assert.equal(suggestion.category.name, 'North America');
   assert.equal(suggestion.image, null);
-  assert.match(context.heroSuggestionHtml(suggestion, 0, true), /Matched Image:[\s\S]*Category fallback/);
+  assert.match(context.heroSuggestionHtml(suggestion, 0, true), /Suggested Image:[\s\S]*No destination image match/);
   assert.match(context.heroSuggestionHtml(suggestion, 0, true), /disabled/);
 });
 
@@ -199,7 +199,8 @@ test('destination-level image tags choose the best image inside the matched cate
   assert.ok(['Rhodes image', 'Crete image'].includes(suggestion.image.name));
   assert.notEqual(suggestion.image.name, 'Santorini image');
   assert.equal(suggestion.imageMatchCount, 1);
-  assert.match(context.heroSuggestionHtml(suggestion, 0, true), /Matched Image:/);
+  assert.match(context.heroSuggestionHtml(suggestion, 0, true), /Suggested Image:[\s\S]*Rhodes/);
+  assert.doesNotMatch(context.heroSuggestionHtml(suggestion, 0, true), /Suggested Image:[\s\S]*Mediterranean/);
 });
 
 
@@ -219,7 +220,7 @@ test('image scoring does not treat category destination tags as image tags', () 
   assert.equal(suggestion.imageMatchCount, 0);
   assert.equal(JSON.stringify(suggestion.imageMatches), JSON.stringify([]));
   assert.equal(suggestion.fallbackReason, 'no image tags matched offer destinations');
-  assert.match(context.heroSuggestionHtml(suggestion, 0, true), /Matched Image:[\s\S]*Category fallback/);
+  assert.match(context.heroSuggestionHtml(suggestion, 0, true), /Suggested Image:[\s\S]*Category fallback/);
   assert.match(context.heroSuggestionHtml(suggestion, 0, true), /disabled/);
 });
 
