@@ -1165,7 +1165,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.4.1";
+const APP_VERSION = "v2.4.2";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -2075,13 +2075,13 @@ function debugHeroImageSuggestion(suggestion,offer,imageMatch,fallback){
     matches:item.matches,
     score:item.score
   }));
-  const winning=imageMatch&&imageMatch.image?imageMatch.image:fallback;
+  const winning=imageMatch&&imageMatch.image?imageMatch.image:null;
   console.debug("[Hero Library] destination image matching",{
     matchedCategory:suggestion.category.name,
     categorySource:suggestion.source||"unknown",
     categoryMatches:suggestion.matches||[],
     imageScores:scores,
-    winningImage:winning?winning.name||winning.id||"Category fallback":null,
+    winningImage:winning?winning.name||winning.id||"Matched image":null,
     winningSource:imageMatch?"image-tags":"category-fallback",
     fallbackReason:imageMatch?"image tag match found":"no image tags matched offer destinations"
   });
@@ -2091,7 +2091,7 @@ function withMatchedHeroImage(suggestion,offer){
   const imageMatch=scoreHeroCategoryImages(offer,suggestion.category);
   const fallback=getHeroLibraryDefaultImage(suggestion.category);
   debugHeroImageSuggestion(suggestion,offer,imageMatch,fallback);
-  return {...suggestion,image:imageMatch?imageMatch.image:fallback,imageMatches:imageMatch?imageMatch.matches:[],imageMatchCount:imageMatch?imageMatch.matchCount:0,imageSource:imageMatch?"image-tags":"category-fallback",fallbackReason:imageMatch?"":"no image tags matched offer destinations"};
+  return {...suggestion,image:imageMatch?imageMatch.image:null,imageMatches:imageMatch?imageMatch.matches:[],imageMatchCount:imageMatch?imageMatch.matchCount:0,imageSource:imageMatch?"image-tags":"category-fallback",fallbackReason:imageMatch?"":"no image tags matched offer destinations"};
 }
 function getHeroSuggestionForOffer(offer){
   if(!offer||offer._img) return null;
@@ -2115,7 +2115,7 @@ function heroSuggestionHtml(suggestion,index,compact){
   const imageName=suggestion.image&&suggestion.image.image?escapeAttr(suggestion.image.name||suggestion.category.name):"";
   const matchCount=Number(suggestion.imageMatchCount)||0;
   const detail=matchCount?`<div class="hero-suggestion-label">Matched Image:</div><div class="hero-suggestion-name small">${imageName}</div><div class="hero-suggestion-label">${matchCount} destination match${matchCount===1?"":"es"}</div>`:`<div class="hero-suggestion-label">Matched Image:</div><div class="hero-suggestion-name small">Category fallback</div>`;
-  const disabled=suggestion.image&&suggestion.image.image?"":" disabled title=\"Add an image to this category first\"";
+  const disabled=suggestion.imageSource==="image-tags"&&suggestion.image&&suggestion.image.image?"":" disabled title=\"No destination image match\"";
   return `<div class="hero-suggestion-label">Suggested Hero</div><div class="hero-suggestion-name">${name}</div>${detail}<div class="hero-suggestion-actions"><button class="abtn gold${compact?"":" btn-compact"}" type="button" onclick="applySuggestedHero(${idx},'${escapeAttr(suggestion.category.id)}',event)"${disabled}>${buttonText}</button></div>`;
 }
 function updateSidebarHeroSuggestion(){

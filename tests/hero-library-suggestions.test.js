@@ -107,8 +107,8 @@ function createHarness(seed = {}){
   return { context, storage };
 }
 
-test('Image Library UI and v2.4.1 release version is present', () => {
-  assert.match(html, /const APP_VERSION = "v2\.4\.1";/);
+test('Image Library UI and v2.4.2 release version is present', () => {
+  assert.match(html, /const APP_VERSION = "v2\.4\.2";/);
   assert.match(html, />Image Library<\/h3>/);
   assert.match(html, /<label>Category<\/label>/);
   assert.match(html, /Select a category below to add or manage images\./);
@@ -214,11 +214,30 @@ test('image scoring does not treat category destination tags as image tags', () 
   const { context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(library) });
   const suggestion = context.getHeroSuggestionForOffer({ ports: 'Corfu • Souda • Chania • Crete • Rhodes • Patmos • Heraklion • Katakolon • Olympia' });
   assert.equal(suggestion.category.name, 'Mediterranean');
+  assert.equal(suggestion.image, null);
   assert.equal(suggestion.imageSource, 'category-fallback');
   assert.equal(suggestion.imageMatchCount, 0);
   assert.equal(JSON.stringify(suggestion.imageMatches), JSON.stringify([]));
   assert.equal(suggestion.fallbackReason, 'no image tags matched offer destinations');
   assert.match(context.heroSuggestionHtml(suggestion, 0, true), /Matched Image:[\s\S]*Category fallback/);
+  assert.match(context.heroSuggestionHtml(suggestion, 0, true), /disabled/);
+});
+
+test('adding a matching image tag selects that destination image strictly inside the category', () => {
+  const library = [{
+    id: 'med', name: 'Mediterranean', image: 'data:image/png;base64,santorini', thumbnail: 'data:image/png;base64,santorini',
+    tags: ['Santorini', 'Mykonos', 'Crete', 'Corfu', 'Rhodes', 'Athens', 'Piraeus', 'Katakolon', 'Heraklion', 'Chania', 'Patmos'], lastUsed: '',
+    images: [
+      { id: 'santorini', name: 'Santorini photo', image: 'data:image/png;base64,santorini', thumbnail: 'data:image/png;base64,santorini', tags: ['Santorini', 'Oia', 'Mykonos'] },
+      { id: 'rhodes', name: 'Rhodes photo', image: 'data:image/png;base64,rhodes', thumbnail: 'data:image/png;base64,rhodes', tags: ['Rhodes', 'Lindos'] }
+    ]
+  }];
+  const { context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(library) });
+  const suggestion = context.getHeroSuggestionForOffer({ ports: 'Corfu • Souda • Chania • Crete • Rhodes • Patmos • Heraklion • Katakolon • Olympia' });
+  assert.equal(suggestion.category.name, 'Mediterranean');
+  assert.equal(suggestion.image.name, 'Rhodes photo');
+  assert.equal(suggestion.imageSource, 'image-tags');
+  assert.equal(JSON.stringify(suggestion.imageMatches), JSON.stringify(['Rhodes']));
 });
 
 test('legacy category images do not inherit category destination tags as image tags', () => {
@@ -226,6 +245,7 @@ test('legacy category images do not inherit category destination tags as image t
   const { context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(library) });
   const suggestion = context.getHeroSuggestionForOffer({ ports: 'Corfu • Rhodes • Crete' });
   assert.equal(suggestion.category.name, 'Mediterranean');
+  assert.equal(suggestion.image, null);
   assert.equal(suggestion.imageSource, 'category-fallback');
   assert.equal(suggestion.imageMatchCount, 0);
   assert.equal(JSON.stringify(context.getHeroLibrary()[0].images[0].tags), JSON.stringify([]));
@@ -284,12 +304,12 @@ test('saved category images can be removed with confirmation while keeping the c
 });
 
 test('applying a suggested hero inserts the saved image without a picker and remembers matched keywords', () => {
-  const library = [{ id: 'river', name: 'River Cruise', image: 'data:image/png;base64,river', thumbnail: 'data:image/png;base64,river', lastUsed: '' }];
+  const library = [{ id: 'river', name: 'River Cruise', image: 'data:image/png;base64,river', thumbnail: 'data:image/png;base64,river', tags: ['Rhine'], lastUsed: '', images: [{ id: 'rhine', name: 'Rhine', image: 'data:image/png;base64,river', thumbnail: 'data:image/png;base64,river', tags: ['Rhine'] }] }];
   const { context, storage } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(library) });
   context.offers[0] = { ports: 'Rhine • Basel • Amsterdam', _rememberHeroSuggestion: true };
   context.applySuggestedHero(0, 'river');
   assert.equal(context.offers[0]._img, 'data:image/png;base64,river');
-  assert.equal(context.offers[0]._imgSource, 'Hero Library: River Cruise / River Cruise');
+  assert.equal(context.offers[0]._imgSource, 'Hero Library: River Cruise / Rhine');
   const memory = JSON.parse(storage.get('cruiseHeroMemory.v2')||'{}');
   assert.ok(Object.keys(memory).length > 0, JSON.stringify(memory));
   assert.equal(memory.Rhine || memory.Basel || memory.Amsterdam, 'River Cruise');
