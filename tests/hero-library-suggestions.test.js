@@ -69,6 +69,9 @@ function createHarness(seed = {}){
     extractFunction('splitHeroDestinationTags'),
     extractFunction('getHeroCategoryTags'),
     extractFunction('getOfferHeroSuggestionText'),
+    extractFunction('getHeroSuggestionOfferIndex'),
+    extractFunction('getHeroSuggestionOfferTrace'),
+    extractFunction('attachHeroSuggestionTrace'),
     extractFunction('findHeroCategoryByName'),
     extractFunction('findSuggestableHeroCategoryByName'),
     extractFunction('getMatchedHeroKeywords'),
@@ -551,6 +554,40 @@ test('image library render normalises duplicate stored ids before applying activ
   assert.match(elements['hero-library-list'].innerHTML, /data-hero-category-id="hero-duplicate-3"><button class="hero-library-item empty active"/);
   assert.doesNotMatch(elements['hero-library-list'].innerHTML, /data-hero-category-id="hero-duplicate"><button class="hero-library-item active"/);
   assert.doesNotMatch(elements['hero-library-list'].innerHTML, /data-hero-category-id="hero-duplicate-2"><button class="hero-library-item active"/);
+});
+
+
+test('hero suggestions only match the current offer destinations and expose render trace details', () => {
+  const library = [{
+    id: 'med', name: 'Mediterranean', tags: ['Santorini', 'Crete', 'Rhodes'], image: 'data:image/png;base64,med', thumbnail: 'data:image/png;base64,med',
+    images: [
+      { id: 'santorini', name: 'Santorini photo', image: 'data:image/png;base64,santorini', thumbnail: 'data:image/png;base64,santorini', tags: ['Santorini'] },
+      { id: 'crete', name: 'Crete photo', image: 'data:image/png;base64,crete', thumbnail: 'data:image/png;base64,crete', tags: ['Crete'] },
+      { id: 'rhodes', name: 'Rhodes photo', image: 'data:image/png;base64,rhodes', thumbnail: 'data:image/png;base64,rhodes', tags: ['Rhodes'] }
+    ]
+  }];
+  const { context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(library) });
+
+  const offer = {
+    name: 'Marella Greek Islands',
+    ports: 'Corfu • Souda • Chania • Crete • Rhodes • Patmos • Heraklion • Katakolon • Olympia',
+    rawText: 'Offer 3 contains Santorini'
+  };
+  const suggestion = context.getHeroSuggestionForOffer(offer, 0);
+  const debugHtml = context.heroSuggestionHtml(suggestion, 0, true);
+
+  assert.equal(suggestion.image.name, 'Crete photo');
+  assert.notEqual(suggestion.image.name, 'Santorini photo');
+  assert.equal(JSON.stringify(suggestion.imageMatches), JSON.stringify(['Crete']));
+  assert.equal(suggestion.trace.offerIndex, 0);
+  assert.equal(suggestion.trace.offerTitle, 'Marella Greek Islands');
+  assert.equal(suggestion.trace.portsUsedForMatching, offer.ports);
+  assert.match(debugHtml, /Offer Index:[\s\S]*1/);
+  assert.match(debugHtml, /Offer Title:[\s\S]*Marella Greek Islands/);
+  assert.match(debugHtml, /Ports Used For Matching:[\s\S]*Corfu • Souda • Chania • Crete • Rhodes/);
+  assert.match(debugHtml, /Selected Image:[\s\S]*Crete photo/);
+  assert.match(debugHtml, /Selected Image Tags:[\s\S]*Crete/);
+  assert.doesNotMatch(debugHtml, /Offer 3 contains Santorini/);
 });
 
 test('destination matches outrank stale hero memory for Greek Islands suggestions', () => {

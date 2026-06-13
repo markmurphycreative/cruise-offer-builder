@@ -2015,9 +2015,36 @@ function splitHeroDestinationTags(value){ return parseHeroDestinationTags(value)
 function getHeroCategoryTags(category){ return splitHeroDestinationTags(Array.isArray(category&&category.tags)?category.tags.join(","):(category&&category.tags)||""); }
 function getOfferHeroSuggestionText(offer){
   if(!offer) return "";
-  const direct=[offer.ports,offer.name,offer.incl,offer.ship,offer.tags,offer.destination,offer.destinations,offer.itinerary,offer.raw,offer.rawText,offer.parsedText];
-  const destinationFields=Object.keys(offer).filter(key=>/(ports?|destination|itinerary|visit)/i.test(key)).map(key=>offer[key]);
-  return direct.concat(destinationFields).filter(value=>typeof value==="string"&&value.trim()).join(" • ");
+  const destinationFields=[offer.ports,offer.destination,offer.destinations,offer.itinerary,offer.visit,offer.visits,offer.youllVisit,offer.youll_visit]
+    .concat(Object.keys(offer).filter(key=>/(^|_)(ports?|destination|destinations|itinerary|visits?|youllVisit|youll_visit)$/i.test(key)).map(key=>offer[key]));
+  const seen=new Set();
+  return destinationFields.filter(value=>{
+    if(typeof value!=="string"||!value.trim()) return false;
+    const key=normaliseHeroText(value.trim());
+    if(seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).join(" • ");
+}
+function getHeroSuggestionOfferIndex(offer,explicitIndex){
+  if(Number.isInteger(explicitIndex)) return explicitIndex;
+  if(typeof offers!=="undefined"&&Array.isArray(offers)){
+    const found=offers.indexOf(offer);
+    if(found>=0) return found;
+  }
+  return Number.isInteger(cur)?cur:-1;
+}
+function getHeroSuggestionOfferTrace(offer,explicitIndex){
+  const index=getHeroSuggestionOfferIndex(offer,explicitIndex);
+  return {
+    offerIndex:index,
+    offerTitle:String((offer&&(offer.name||offer.title||offer.offer_name))||"").trim(),
+    portsUsedForMatching:getOfferHeroSuggestionText(offer)
+  };
+}
+function attachHeroSuggestionTrace(suggestion,offer,explicitIndex){
+  if(!suggestion) return suggestion;
+  return {...suggestion,trace:getHeroSuggestionOfferTrace(offer,explicitIndex)};
 }
 function findHeroCategoryByName(name){ const target=normaliseHeroText(name); return getHeroLibrary().find(item=>normaliseHeroText(item.name)===target)||null; }
 function findSuggestableHeroCategoryByName(name){ const target=normaliseHeroText(name); return getSuggestableHeroLibrary().find(item=>normaliseHeroText(item.name)===target)||null; }
@@ -2096,27 +2123,35 @@ function withMatchedHeroImage(suggestion,offer){
   debugHeroImageSuggestion(suggestion,offer,imageMatch,fallback);
   return {...suggestion,image:imageMatch?imageMatch.image:null,imageMatches:imageMatch?imageMatch.matches:[],imageMatchCount:imageMatch?imageMatch.matchCount:0,imageSource:imageMatch?"image-tags":"category-fallback",fallbackReason:imageMatch?"":"no image tags matched offer destinations"};
 }
-function getHeroSuggestionForOffer(offer){
+function getHeroSuggestionForOffer(offer,explicitIndex){
   if(!offer||offer._img) return null;
   const library=getHeroLibrary(); if(!library.length) return null;
   const text=normaliseHeroText(getOfferHeroSuggestionText(offer));
   const memory=getHeroMemory();
   const destinationSuggestion=scoreHeroDestinationTags(offer,library);
-  if(destinationSuggestion) return withMatchedHeroImage(destinationSuggestion,offer);
+  if(destinationSuggestion) return attachHeroSuggestionTrace(withMatchedHeroImage(destinationSuggestion,offer),offer,explicitIndex);
   const matches=getMatchedHeroKeywords(offer);
-  for(const match of matches){ const stored=findHeroCategoryByName(match.category); if(stored) return withMatchedHeroImage({category:stored,keyword:match.keyword,source:"rules"},offer); }
+  for(const match of matches){ const stored=findHeroCategoryByName(match.category); if(stored) return attachHeroSuggestionTrace(withMatchedHeroImage({category:stored,keyword:match.keyword,source:"rules"},offer),offer,explicitIndex); }
   for(const [keyword,categoryName] of Object.entries(memory)){
-    if(keyword && text.includes(normaliseHeroText(keyword))){ const stored=findHeroCategoryByName(categoryName); if(stored) return withMatchedHeroImage({category:stored,keyword,source:"memory"},offer); }
+    if(keyword && text.includes(normaliseHeroText(keyword))){ const stored=findHeroCategoryByName(categoryName); if(stored) return attachHeroSuggestionTrace(withMatchedHeroImage({category:stored,keyword,source:"memory"},offer),offer,explicitIndex); }
   }
   return null;
 }
 function heroSuggestionDebugHtml(suggestion){
   if(!suggestion||!suggestion.category) return "";
   const category=escapeAttr(suggestion.category.name||"");
+  const trace=suggestion.trace||{};
+  const selectedImage=suggestion.imageSource==="image-tags"&&suggestion.image?(suggestion.image.name||suggestion.image.id||"Matched image"):(suggestion.imageSource==="category-fallback"?"(none - category fallback)":"(none)");
+  const selectedImageTags=suggestion.image&&Array.isArray(suggestion.image.tags)?suggestion.image.tags:splitHeroDestinationTags(suggestion.image&&suggestion.image.tags||"");
   const categoryMatches=(Array.isArray(suggestion.matches)?suggestion.matches:[]).filter(Boolean);
   const imageMatches=(Array.isArray(suggestion.imageMatches)?suggestion.imageMatches:[]).filter(Boolean);
   const selectedBy=suggestion.imageSource==="image-tags"?"image tags":"category fallback";
   const rows=[
+    ["Offer Index:",Number.isInteger(trace.offerIndex)?String(trace.offerIndex+1):"(unknown)"],
+    ["Offer Title:",trace.offerTitle?escapeAttr(trace.offerTitle):"(untitled)"],
+    ["Ports Used For Matching:",trace.portsUsedForMatching?escapeAttr(trace.portsUsedForMatching):"(none)"],
+    ["Selected Image:",escapeAttr(selectedImage)],
+    ["Selected Image Tags:",selectedImageTags.length?selectedImageTags.map(escapeAttr).join(", "):"(none)"],
     ["Category:",category||"(none)"],
     ["Matched Category Tags:",categoryMatches.length?categoryMatches.map(escapeAttr).join(", "):"(none)"],
     ["Matched Image Tags:",imageMatches.length?imageMatches.map(escapeAttr).join(", "):"(none)"],
@@ -2144,7 +2179,7 @@ function heroSuggestionHtml(suggestion,index,compact){
 }
 function updateSidebarHeroSuggestion(){
   const panel=document.getElementById("hero-sidebar-suggestion"); if(!panel) return;
-  const suggestion=getHeroSuggestionForOffer(offers[cur]||{});
+  const suggestion=getHeroSuggestionForOffer(offers[cur]||{},cur);
   panel.innerHTML=suggestion?heroSuggestionHtml(suggestion,cur,false):"";
   panel.classList.toggle("active",!!suggestion);
 }
@@ -2757,8 +2792,8 @@ function renderHeroHTML(d, heroPlaceholder){
     const heroBg=heroFitMode==="fit"?"background:#0e1b2a;":"";
     return `<div class="hero-wrap" style="${heroBg}"><img class="hero" src="${escapeAttr(heroSrc)}" data-hero-src="${escapeAttr(heroSrc)}" data-crop-x="${cx}" data-crop-y="${cy}" data-crop-zoom="${cz}" data-fit-mode="${heroFitMode}" style="object-fit:fill;object-position:50% 50%;transform:none;left:0;top:0;width:100%;height:100%;" onload="if(typeof applyHeroCropPositions==='function') applyHeroCropPositions(document)" onerror="this.parentElement.innerHTML='<div class=hph><span>Image failed to load</span></div>'"></div>`;
   }
-  const suggestion=typeof getHeroSuggestionForOffer==="function"?getHeroSuggestionForOffer(d):null;
   const suggestionIndex=(typeof offers!=="undefined"&&Array.isArray(offers))?offers.indexOf(d):-1;
+  const suggestion=typeof getHeroSuggestionForOffer==="function"?getHeroSuggestionForOffer(d,suggestionIndex>=0?suggestionIndex:cur):null;
   const suggestionPanel=suggestion?`<div class="hero-suggestion-takeover">${heroSuggestionHtml(suggestion,suggestionIndex>=0?suggestionIndex:cur,true)}</div>`:"";
   if(suggestionPanel) return `<div class="hph">${suggestionPanel}</div>`;
   return heroPlaceholder
