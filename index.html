@@ -844,7 +844,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
         <div class="hero-source-block hero-library-panel">
           <div class="field"><label>Category</label><input id="hero-library-name" placeholder="Mediterranean" oninput="updateHeroLibraryCategoryUx()"></div>
           <div class="hero-library-category-status" id="hero-library-category-status" aria-live="polite"></div>
-          <div class="field"><label>Destination Tags</label><input id="hero-library-tags" placeholder="Santorini, Mykonos, Crete, Corfu, Rhodes" oninput="saveActiveHeroLibraryTags()"></div>
+          <div class="field"><label>Destination Tags</label><input id="hero-library-tags" placeholder="Santorini, Mykonos, Crete, Corfu, Rhodes" oninput="scheduleActiveHeroLibraryTagsSave()" onblur="flushActiveHeroLibraryTagsSave()"></div>
           <div class="hero-library-tags-feedback" id="hero-library-tags-feedback" aria-live="polite"></div>
           <div class="dropzone hero-dropzone" id="dz-hero-library" ondragover="dzOver(event,'dz-hero-library')" ondragleave="dzOut('dz-hero-library')" ondrop="heroLibraryDrop(event)">
             <input type="file" accept="image/*" onchange="heroLibraryFileChosen(event)">
@@ -1138,7 +1138,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.2.9";
+const APP_VERSION = "v2.3.0";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -2077,26 +2077,44 @@ function updateHeroLibraryCategoryUx(){
 }
 
 let heroLibraryTagsFeedbackTimer=null;
+let heroLibraryTagsSaveTimer=null;
+const HERO_LIBRARY_TAGS_SAVE_DEBOUNCE_MS=700;
 function setHeroLibraryTagsFeedback(message,state){
   const panel=document.getElementById("hero-library-tags-feedback"); if(!panel) return;
   panel.textContent=message||"";
   panel.className="hero-library-tags-feedback"+(state?" "+state:"");
+}
+function isHeroLibraryTagsInputFocused(tagsEl){
+  return !!(tagsEl&&typeof document!=="undefined"&&document.activeElement===tagsEl);
+}
+function scheduleActiveHeroLibraryTagsSave(){
+  if(heroLibraryTagsSaveTimer) clearTimeout(heroLibraryTagsSaveTimer);
+  setHeroLibraryTagsFeedback("Saving tags...","saving");
+  heroLibraryTagsSaveTimer=setTimeout(()=>{ heroLibraryTagsSaveTimer=null; saveActiveHeroLibraryTags(); },HERO_LIBRARY_TAGS_SAVE_DEBOUNCE_MS);
+  return true;
+}
+function flushActiveHeroLibraryTagsSave(){
+  if(heroLibraryTagsSaveTimer){ clearTimeout(heroLibraryTagsSaveTimer); heroLibraryTagsSaveTimer=null; }
+  return saveActiveHeroLibraryTags();
 }
 function saveActiveHeroLibraryTags(){
   const active=getActiveHeroLibraryCategory();
   if(!active) return false;
   const tagsEl=document.getElementById("hero-library-tags");
   const tags=splitHeroDestinationTags((tagsEl&&tagsEl.value)||"");
+  const isEditing=isHeroLibraryTagsInputFocused(tagsEl);
   setHeroLibraryTagsFeedback("Saving tags...","saving");
   const list=getHeroLibrary();
   const item=list.find(category=>category.id===active.id);
   if(!item){ setHeroLibraryTagsFeedback("",""); return false; }
   item.tags=tags;
   if(!saveHeroLibrary(list)){ setHeroLibraryTagsFeedback("",""); return false; }
-  if(tagsEl) tagsEl.value=tags.join(", ");
-  renderHeroLibraryList();
+  if(tagsEl&&!isEditing) tagsEl.value=tags.join(", ");
+  if(!isEditing){
+    renderHeroLibraryList();
+    refreshOfferUi({status:false,utm:false,spell:false});
+  }
   updateSidebarHeroSuggestion();
-  refreshOfferUi({status:false,utm:false,spell:false});
   if(heroLibraryTagsFeedbackTimer) clearTimeout(heroLibraryTagsFeedbackTimer);
   heroLibraryTagsFeedbackTimer=setTimeout(()=>setHeroLibraryTagsFeedback("✓ Tags saved",""),120);
   return true;

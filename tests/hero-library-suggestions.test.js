@@ -81,8 +81,11 @@ function createHarness(seed = {}){
     extractFunction('useHeroLibraryCategory'),
     extractFunction('renderHeroLibraryList'),
     extractFunction('updateHeroLibraryCategoryUx'),
-    'var activeHeroLibraryCategoryId=""; var pendingHeroLibraryImage=null; var heroLibraryTagsFeedbackTimer=null;',
+    'var activeHeroLibraryCategoryId=""; var pendingHeroLibraryImage=null; var heroLibraryTagsFeedbackTimer=null; var heroLibraryTagsSaveTimer=null; var HERO_LIBRARY_TAGS_SAVE_DEBOUNCE_MS=700;',
     extractFunction('setHeroLibraryTagsFeedback'),
+    extractFunction('isHeroLibraryTagsInputFocused'),
+    extractFunction('scheduleActiveHeroLibraryTagsSave'),
+    extractFunction('flushActiveHeroLibraryTagsSave'),
     extractFunction('saveActiveHeroLibraryTags'),
     extractFunction('savePendingHeroLibraryCategory'),
     extractFunction('getHeroImageSource'),
@@ -91,8 +94,8 @@ function createHarness(seed = {}){
   return { context, storage };
 }
 
-test('Image Library UI and v2.2.9 release version are present', () => {
-  assert.match(html, /const APP_VERSION = "v2\.2\.9";/);
+test('Image Library UI and v2.3.0 release version are present', () => {
+  assert.match(html, /const APP_VERSION = "v2\.3\.0";/);
   assert.match(html, />Image Library<\/h3>/);
   assert.match(html, /<label>Category<\/label>/);
   assert.match(html, /Add Hero Image/);
@@ -244,6 +247,49 @@ test('editing destination tags auto-saves to the active image library category',
   context.selectHeroLibraryCategory('fjords');
   context.selectHeroLibraryCategory('med');
   assert.equal(elements['hero-library-tags'].value, 'Santorini, Mykonos, Crete');
+});
+
+test('destination tag input debounces saves and preserves focused editing value', async () => {
+  const list = [
+    { id: 'med', name: 'Mediterranean', image: 'data:image/jpeg;base64,med', thumbnail: 'data:image/jpeg;base64,med', tags: ['Santorini'], imageCount: 1, lastUsed: '' }
+  ];
+  const elements = {
+    'hero-library-name': { value: '' },
+    'hero-library-tags': { value: '' },
+    'hero-library-tags-feedback': { textContent: '', className: '' },
+    'hero-library-list': { innerHTML: '' },
+    'hero-library-category-status': { textContent: '', className: '', classList: { add(){} } },
+    'hero-library-category-helper': { textContent: '' },
+    'hero-library-category-action': { textContent: '', className: '', classList: { add(){} } }
+  };
+  let renderCount = 0;
+  let refreshCount = 0;
+  const { context, storage } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(list) });
+  context.document = { getElementById: id => elements[id] || null, activeElement: null };
+  context.renderHeroLibraryList = () => { renderCount++; };
+  context.refreshOfferUi = () => { refreshCount++; };
+  context.selectHeroLibraryCategory('med');
+  renderCount = 0;
+  elements['hero-library-tags'].value = ' Santorini, santorini, Mykonos , Crete ';
+  context.document.activeElement = elements['hero-library-tags'];
+
+  assert.equal(context.scheduleActiveHeroLibraryTagsSave(), true);
+  assert.equal(elements['hero-library-tags-feedback'].textContent, 'Saving tags...');
+  assert.deepEqual(JSON.parse(storage.get('cruiseHeroLibrary.v2'))[0].tags, ['Santorini']);
+  await new Promise(resolve => setTimeout(resolve, 750));
+
+  assert.deepEqual(JSON.parse(storage.get('cruiseHeroLibrary.v2'))[0].tags, ['Santorini', 'Mykonos', 'Crete']);
+  assert.equal(elements['hero-library-tags'].value, ' Santorini, santorini, Mykonos , Crete ');
+  assert.equal(renderCount, 0);
+  assert.equal(refreshCount, 0);
+  await new Promise(resolve => setTimeout(resolve, 150));
+  assert.equal(elements['hero-library-tags-feedback'].textContent, '✓ Tags saved');
+
+  context.document.activeElement = null;
+  assert.equal(context.flushActiveHeroLibraryTagsSave(), true);
+  assert.equal(elements['hero-library-tags'].value, 'Santorini, Mykonos, Crete');
+  assert.equal(renderCount, 1);
+  assert.equal(refreshCount, 1);
 });
 
 test('saving an image after selecting an empty category attaches it to that active category', () => {
