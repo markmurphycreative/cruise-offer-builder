@@ -111,6 +111,12 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hph .hero-suggestion-takeover .hero-suggestion-name{font-size:42px;font-weight:900;color:var(--navy);line-height:1.05;margin:0 0 30px;}
 .hph .hero-suggestion-takeover .hero-suggestion-actions{width:100%;justify-content:center;margin-top:0;}
 .hph .hero-suggestion-takeover .hero-suggestion-actions .abtn{width:100%;padding:16px 20px;font-size:15px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 8px 18px rgba(14,27,42,.16);}
+.hero-library-category-status{min-height:13px;margin-top:-4px;font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1.2;}
+.hero-library-category-status.existing{color:var(--green);}
+.hero-library-category-status.new{color:var(--gold);}
+.hero-library-category-helper{min-height:12px;margin-top:6px;font-size:9px;color:var(--muted);line-height:1.25;}
+.hero-library-category-action{display:none;width:100%;justify-content:center;margin-top:5px;}
+.hero-library-category-action.active{display:inline-flex;}
 .hero-library-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:6px;margin-top:7px;}
 .hero-library-item{appearance:none;border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;color:var(--navy);font:inherit;font-size:11px;font-weight:800;line-height:1.2;text-align:center;padding:9px 8px;cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease;}
 .hero-library-item:hover,.hero-library-item:focus-visible{border-color:var(--gold);box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px);outline:none;}
@@ -830,13 +836,16 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       </div>
       <div class="section-body hidden">
         <div class="hero-source-block hero-library-panel">
-          <div class="field"><label>Category</label><input id="hero-library-name" placeholder="Mediterranean"></div>
+          <div class="field"><label>Category</label><input id="hero-library-name" placeholder="Mediterranean" oninput="updateHeroLibraryCategoryUx()"></div>
+          <div class="hero-library-category-status" id="hero-library-category-status" aria-live="polite"></div>
           <div class="field"><label>Destination Tags</label><input id="hero-library-tags" placeholder="Santorini, Mykonos, Crete, Corfu, Rhodes"></div>
           <div class="dropzone hero-dropzone" id="dz-hero-library" ondragover="dzOver(event,'dz-hero-library')" ondragleave="dzOut('dz-hero-library')" ondrop="heroLibraryDrop(event)">
             <input type="file" accept="image/*" onchange="heroLibraryFileChosen(event)">
             <div class="dz-inner"><div class="dz-lbl">Add Hero Image</div></div>
           </div>
           <div class="hero-library-storage-feedback" id="hero-library-storage-feedback" aria-live="polite"></div>
+          <div class="hero-library-category-helper" id="hero-library-category-helper" aria-live="polite"></div>
+          <button class="abtn btn-compact hero-library-category-action" id="hero-library-category-action" type="button" onclick="handleHeroLibraryCategoryAction()"></button>
           <div class="hero-library-list" id="hero-library-list"></div>
         </div>
       </div>
@@ -1122,7 +1131,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.2.5";
+const APP_VERSION = "v2.2.6";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -2018,6 +2027,37 @@ function estimateDataUrlBytes(dataUrl){
   const padding=(b64.match(/=*$/)||[""])[0].length;
   return Math.max(0,Math.floor((b64.length*3)/4)-padding);
 }
+let pendingHeroLibraryImage=null;
+function getHeroLibraryCategoryInputName(){
+  const nameEl=document.getElementById("hero-library-name");
+  return String((nameEl&&nameEl.value)||"").trim();
+}
+function getHeroLibraryCategoryUxState(){
+  const typed=getHeroLibraryCategoryInputName();
+  const existing=typed?findHeroCategoryByName(typed):null;
+  return {typed,existing,isNew:!!typed&&!existing};
+}
+function updateHeroLibraryCategoryUx(){
+  const status=document.getElementById("hero-library-category-status");
+  const helper=document.getElementById("hero-library-category-helper");
+  const action=document.getElementById("hero-library-category-action");
+  const state=getHeroLibraryCategoryUxState();
+  if(status){
+    status.className="hero-library-category-status";
+    if(state.existing){ status.textContent="● Existing Category"; status.classList.add("existing"); }
+    else if(state.isNew){ status.textContent="● New Category"; status.classList.add("new"); }
+    else status.textContent="";
+  }
+  if(helper) helper.textContent=state.existing?"Existing category found.":(state.isNew?"This category does not exist yet. Create it to save this image and destination mapping.":"");
+  if(action){
+    action.className="abtn btn-compact hero-library-category-action";
+    if(state.typed){
+      action.classList.add("active");
+      if(state.existing){ action.textContent="✓ "+state.existing.name; }
+      else { action.textContent="+ Create "+state.typed; action.classList.add("gold"); }
+    }else action.textContent="";
+  }
+}
 function showHeroLibraryStorageFeedback(originalBytes,storedBytes){
   const panel=document.getElementById("hero-library-storage-feedback"); if(!panel) return;
   panel.innerHTML='<div class="storage-row"><span>Original:</span><strong>'+formatStorageBytes(originalBytes)+'</strong></div><div class="storage-row"><span>Stored:</span><strong>'+formatStorageBytes(storedBytes)+'</strong></div><div class="storage-success">✓ Image optimised for library storage</div>';
@@ -2051,35 +2091,54 @@ function optimiseHeroLibraryImage(file){
 }
 async function saveHeroLibraryFile(file,inputEl){
   if(!file) return;
-  const nameEl=document.getElementById("hero-library-name");
-  const tagsEl=document.getElementById("hero-library-tags");
-  const name=String((nameEl&&nameEl.value)||"").trim();
-  const tags=splitHeroDestinationTags((tagsEl&&tagsEl.value)||"");
+  const name=getHeroLibraryCategoryInputName();
   if(!name){ alert("Add a category name first."); if(inputEl) inputEl.value=""; return; }
   try{
     const optimised=await optimiseHeroLibraryImage(file);
-    const src=optimised.dataUrl;
-    const list=getHeroLibrary().filter(item=>normaliseHeroText(item.name)!==normaliseHeroText(name));
-    list.unshift({id:"hero-"+Date.now(),name,thumbnail:src,image:src,tags,lastUsed:""});
-    if(saveHeroLibrary(list)){
-      if(nameEl) nameEl.value="";
-      if(tagsEl) tagsEl.value="";
-      showHeroLibraryStorageFeedback(optimised.originalBytes,optimised.storedBytes);
-      renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false});
+    showHeroLibraryStorageFeedback(optimised.originalBytes,optimised.storedBytes);
+    if(findHeroCategoryByName(name)){
+      pendingHeroLibraryImage=optimised;
+      savePendingHeroLibraryCategory();
+    }else{
+      pendingHeroLibraryImage=optimised;
+      updateHeroLibraryCategoryUx();
     }
   }catch(error){ alert((error&&error.message)||"Could not optimise this image."); }
   if(inputEl) inputEl.value="";
 }
 function heroLibraryFileChosen(event){ const file=event.target.files&&event.target.files[0]; saveHeroLibraryFile(file,event.target); }
 function heroLibraryDrop(event){ event.preventDefault(); dzOut('dz-hero-library'); const file=event.dataTransfer&&event.dataTransfer.files&&event.dataTransfer.files[0]; saveHeroLibraryFile(file,null); }
+function savePendingHeroLibraryCategory(){
+  const nameEl=document.getElementById("hero-library-name");
+  const tagsEl=document.getElementById("hero-library-tags");
+  const name=getHeroLibraryCategoryInputName();
+  const tags=splitHeroDestinationTags((tagsEl&&tagsEl.value)||"");
+  if(!name){ alert("Add a category name first."); return false; }
+  if(!pendingHeroLibraryImage){ alert("Upload a hero image first."); return false; }
+  const src=pendingHeroLibraryImage.dataUrl;
+  const list=getHeroLibrary().filter(item=>normaliseHeroText(item.name)!==normaliseHeroText(name));
+  list.unshift({id:"hero-"+Date.now(),name,thumbnail:src,image:src,tags,lastUsed:""});
+  if(!saveHeroLibrary(list)) return false;
+  pendingHeroLibraryImage=null;
+  if(nameEl) nameEl.value="";
+  if(tagsEl) tagsEl.value="";
+  renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); updateHeroLibraryCategoryUx();
+  return true;
+}
+function handleHeroLibraryCategoryAction(){
+  const state=getHeroLibraryCategoryUxState();
+  if(state.existing) useHeroLibraryCategory(state.existing.id);
+  else if(state.isNew) savePendingHeroLibraryCategory();
+}
 function deleteHeroLibraryCategory(id){ saveHeroLibrary(getHeroLibrary().filter(item=>item.id!==id)); renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); }
 function renameHeroLibraryCategory(id){ const list=getHeroLibrary(); const item=list.find(x=>x.id===id); if(!item) return; const next=prompt("Rename Hero Category",item.name); const name=String(next||"").trim(); if(!name||normaliseHeroText(name)===normaliseHeroText(item.name)) return; item.name=name; if(saveHeroLibrary(list)){ renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); } }
 function useHeroLibraryCategory(id){ const item=getHeroLibrary().find(x=>x.id===id); if(item) applySuggestedHero(cur,item.id); }
 function renderHeroLibraryList(){
   const host=document.getElementById("hero-library-list"); if(!host) return;
   const list=getHeroLibrary();
-  if(!list.length){ host.innerHTML='<div class="hero-library-empty">No saved categories</div>'; return; }
+  if(!list.length){ host.innerHTML='<div class="hero-library-empty">No saved categories</div>'; if(typeof updateHeroLibraryCategoryUx==="function") updateHeroLibraryCategoryUx(); return; }
   host.innerHTML=list.map(item=>`<button class="hero-library-item" type="button" onclick="useHeroLibraryCategory('${escapeAttr(item.id)}')">${escapeAttr(item.name)}</button>`).join("");
+  if(typeof updateHeroLibraryCategoryUx==="function") updateHeroLibraryCategoryUx();
 }
 
 // ═══════════════════════════════════════════════════════

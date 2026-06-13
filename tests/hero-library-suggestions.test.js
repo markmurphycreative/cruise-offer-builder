@@ -73,8 +73,8 @@ function createHarness(seed = {}){
   return { context, storage };
 }
 
-test('Image Library UI and v2.2.5 release version are present', () => {
-  assert.match(html, /const APP_VERSION = "v2\.2\.5";/);
+test('Image Library UI and v2.2.6 release version are present', () => {
+  assert.match(html, /const APP_VERSION = "v2\.2\.6";/);
   assert.match(html, />Image Library<\/h3>/);
   assert.match(html, /<label>Category<\/label>/);
   assert.match(html, /Add Hero Image/);
