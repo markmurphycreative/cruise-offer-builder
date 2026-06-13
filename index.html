@@ -133,6 +133,12 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-library-active-label{display:none;font-size:8px;font-weight:900;letter-spacing:.12em;color:var(--gold);}
 .hero-library-card.active .hero-library-active-label{display:inline;}
 .hero-library-row-actions{display:flex;align-items:center;gap:4px;justify-content:flex-end;}
+.hero-library-image-rows{grid-column:1/-1;display:grid;gap:4px;margin-top:1px;}
+.hero-library-image-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) auto auto;align-items:center;gap:5px;padding:4px 5px;border:1px solid rgba(14,27,42,.08);border-radius:4px;background:#fff;}
+.hero-library-image-name,.hero-library-image-tags{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;line-height:1.2;}
+.hero-library-image-name{font-weight:800;color:var(--navy);}
+.hero-library-image-tags{color:var(--muted);}
+.hero-library-manage-images[aria-expanded="true"]{background:#fff8df;border-color:rgba(160,146,103,.45);color:var(--gold);}
 .hero-library-card-action{white-space:nowrap;padding:4px 6px;border:1px solid rgba(176,42,42,.25);border-radius:4px;background:#fff;color:var(--red);font:inherit;font-size:9px;font-weight:800;cursor:pointer;}
 .hero-library-replace-image{border-color:rgba(160,146,103,.35);color:var(--gold);}
 .hero-library-replace-image:hover,.hero-library-replace-image:focus-visible{background:#fff8df;outline:none;}
@@ -1159,7 +1165,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.4.0";
+const APP_VERSION = "v2.4.1";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -2086,7 +2092,7 @@ function heroSuggestionHtml(suggestion,index,compact){
   const buttonText=compact?"Apply Hero Image":"Apply";
   const imageName=suggestion.image&&suggestion.image.image?escapeAttr(suggestion.image.name||suggestion.category.name):"";
   const matchCount=Number(suggestion.imageMatchCount)||0;
-  const detail=matchCount?`<div class="hero-suggestion-label">Matched Image:</div><div class="hero-suggestion-name small">${imageName}</div><div class="hero-suggestion-label">${matchCount} destination match${matchCount===1?"":"es"}</div>`:`<div class="hero-suggestion-label">Category match only</div>`;
+  const detail=matchCount?`<div class="hero-suggestion-label">Matched Image:</div><div class="hero-suggestion-name small">${imageName}</div><div class="hero-suggestion-label">${matchCount} destination match${matchCount===1?"":"es"}</div>`:`<div class="hero-suggestion-label">Matched Image:</div><div class="hero-suggestion-name small">Category fallback</div>`;
   const disabled=suggestion.image&&suggestion.image.image?"":" disabled title=\"Add an image to this category first\"";
   return `<div class="hero-suggestion-label">Suggested Hero</div><div class="hero-suggestion-name">${name}</div>${detail}<div class="hero-suggestion-actions"><button class="abtn gold${compact?"":" btn-compact"}" type="button" onclick="applySuggestedHero(${idx},'${escapeAttr(suggestion.category.id)}',event)"${disabled}>${buttonText}</button></div>`;
 }
@@ -2140,6 +2146,7 @@ function estimateDataUrlBytes(dataUrl){
 let pendingHeroLibraryImage=null;
 let pendingHeroLibraryReplaceImageId="";
 let activeHeroLibraryCategoryId="";
+let expandedHeroLibraryCategoryIds=new Set();
 function getHeroLibraryCategoryInputName(){
   const nameEl=document.getElementById("hero-library-name");
   return String((nameEl&&nameEl.value)||"").trim();
@@ -2364,6 +2371,7 @@ function removeHeroLibraryImage(id,event,imageId){
   item.thumbnail=first?first.thumbnail:"";
   item.imageCount=item.images.length;
   if(activeHeroLibraryCategoryId===id) pendingHeroLibraryImage=null;
+  if(typeof expandedHeroLibraryCategoryIds!=="undefined"&&expandedHeroLibraryCategoryIds&&expandedHeroLibraryCategoryIds.has(id)&&!item.images.length) expandedHeroLibraryCategoryIds.delete(id);
   if(!saveHeroLibrary(list)) return false;
   renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); updateHeroLibraryCategoryUx();
   if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Hero library image removed");
@@ -2403,6 +2411,16 @@ function syncHeroLibraryActiveCards(){
   });
 }
 function useHeroLibraryCategory(id){ selectHeroLibraryCategory(id); }
+function toggleHeroLibraryImages(id,event){
+  if(event){ event.preventDefault(); event.stopPropagation(); }
+  const item=getHeroLibrary().find(x=>x.id===id);
+  if(!item||!Number(item.imageCount)) return false;
+  if(typeof expandedHeroLibraryCategoryIds==="undefined"||!expandedHeroLibraryCategoryIds||!(expandedHeroLibraryCategoryIds instanceof Set)) expandedHeroLibraryCategoryIds=new Set();
+  if(expandedHeroLibraryCategoryIds.has(id)) expandedHeroLibraryCategoryIds.delete(id);
+  else expandedHeroLibraryCategoryIds.add(id);
+  renderHeroLibraryList();
+  return true;
+}
 function renderHeroLibraryList(){
   const host=document.getElementById("hero-library-list"); if(!host) return;
   const list=getHeroLibrary();
@@ -2412,9 +2430,10 @@ function renderHeroLibraryList(){
     const count=Number(item.imageCount)||0;
     const icon=count>0?"✓":"⚠";
     const active=typeof activeHeroLibraryCategoryId!=="undefined"&&item.id===activeHeroLibraryCategoryId;
-    const imageRows=count>0?`<div class="hero-library-image-rows">${(item.images||[]).map(image=>`<div class="hero-library-image-row"><span class="hero-library-image-name">${escapeAttr(image.name||item.name)}</span><span class="hero-library-image-tags">${escapeAttr((image.tags||[]).join(", "))}</span><button class="hero-library-card-action hero-library-replace-image" type="button" onclick="addHeroLibraryImage('${escapeAttr(item.id)}',event,'${escapeAttr(image.id)}')">Replace</button><button class="hero-library-card-action hero-library-remove-image" type="button" onclick="removeHeroLibraryImage('${escapeAttr(item.id)}',event,'${escapeAttr(image.id)}')">Remove</button></div>`).join("")}</div>`:"";
-    const imageAction=`<button class="hero-library-card-action hero-library-add-image" type="button" onclick="addHeroLibraryImage('${escapeAttr(item.id)}',event)">Add Image</button>${count>0?`<button class="hero-library-card-action hero-library-manage-images" type="button" onclick="useHeroLibraryCategory('${escapeAttr(item.id)}')">Manage Images</button>`:""}`;
-    return `<div class="hero-library-card${count>0?"":" empty"}${active?" active":""}" data-hero-category-id="${escapeAttr(item.id)}"><button class="hero-library-item${count>0?"":" empty"}${active?" active":""}" data-hero-category-id="${escapeAttr(item.id)}" type="button" aria-pressed="${active?"true":"false"}" onclick="useHeroLibraryCategory('${escapeAttr(item.id)}')"><span class="hero-library-status-icon">${icon}</span><span class="hero-library-name">${escapeAttr(item.name)}</span><span class="hero-library-item-count">${count} Image${count===1?"":"s"}</span><span class="hero-library-active-label">Active</span></button><div class="hero-library-row-actions">${imageAction}</div>${active?imageRows:""}</div>`;
+    const expanded=!!(typeof expandedHeroLibraryCategoryIds!=="undefined"&&expandedHeroLibraryCategoryIds&&expandedHeroLibraryCategoryIds.has(item.id));
+    const imageRows=count>0&&expanded?`<div class="hero-library-image-rows">${(item.images||[]).map(image=>`<div class="hero-library-image-row"><span class="hero-library-image-name">${escapeAttr(image.name||item.name)}</span><span class="hero-library-image-tags">${escapeAttr((image.tags||[]).join(", "))}</span><button class="hero-library-card-action hero-library-replace-image" type="button" onclick="addHeroLibraryImage('${escapeAttr(item.id)}',event,'${escapeAttr(image.id)}')">Replace</button><button class="hero-library-card-action hero-library-remove-image" type="button" onclick="removeHeroLibraryImage('${escapeAttr(item.id)}',event,'${escapeAttr(image.id)}')">Remove</button></div>`).join("")}</div>`:"";
+    const imageAction=`<button class="hero-library-card-action hero-library-add-image" type="button" onclick="addHeroLibraryImage('${escapeAttr(item.id)}',event)">Add Image</button>${count>0?`<button class="hero-library-card-action hero-library-manage-images" type="button" aria-expanded="${expanded?"true":"false"}" onclick="toggleHeroLibraryImages('${escapeAttr(item.id)}',event)">${expanded?"Hide Images":"Manage Images"}</button>`:""}`;
+    return `<div class="hero-library-card${count>0?"":" empty"}${active?" active":""}" data-hero-category-id="${escapeAttr(item.id)}"><button class="hero-library-item${count>0?"":" empty"}${active?" active":""}" data-hero-category-id="${escapeAttr(item.id)}" type="button" aria-pressed="${active?"true":"false"}" onclick="useHeroLibraryCategory('${escapeAttr(item.id)}')"><span class="hero-library-status-icon">${icon}</span><span class="hero-library-name">${escapeAttr(item.name)}</span><span class="hero-library-item-count">${count} Image${count===1?"":"s"}</span><span class="hero-library-active-label">Active</span></button><div class="hero-library-row-actions">${imageAction}</div>${imageRows}</div>`;
   }).join("");
   syncHeroLibraryActiveCards();
   if(typeof updateHeroLibraryCategoryUx==="function") updateHeroLibraryCategoryUx();
