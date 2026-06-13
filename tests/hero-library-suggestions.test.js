@@ -69,6 +69,7 @@ function createHarness(seed = {}){
     extractFunction('splitHeroDestinationTags'),
     extractFunction('getHeroCategoryTags'),
     extractFunction('getOfferHeroSuggestionText'),
+    'var currentHeroSuggestionRenderIndex=null;',
     extractFunction('getHeroSuggestionOfferIndex'),
     extractFunction('getHeroSuggestionOfferTrace'),
     extractFunction('attachHeroSuggestionTrace'),
@@ -582,6 +583,9 @@ test('hero suggestions only match the current offer destinations and expose rend
   assert.equal(suggestion.trace.offerIndex, 0);
   assert.equal(suggestion.trace.offerTitle, 'Marella Greek Islands');
   assert.equal(suggestion.trace.portsUsedForMatching, offer.ports);
+  assert.match(debugHtml, /Card Number:[\s\S]*1/);
+  assert.match(debugHtml, /Offer Index Used For Matching:[\s\S]*1/);
+  assert.match(debugHtml, /Offer Index Used For Rendering:[\s\S]*1/);
   assert.match(debugHtml, /Offer Index:[\s\S]*1/);
   assert.match(debugHtml, /Offer Title:[\s\S]*Marella Greek Islands/);
   assert.match(debugHtml, /Ports Used For Matching:[\s\S]*Corfu • Souda • Chania • Crete • Rhodes/);
@@ -603,6 +607,38 @@ test('destination matches outrank stale hero memory for Greek Islands suggestion
   assert.equal(context.getHeroSuggestionForOffer({ name: 'Marella Greek Islands', ports: 'Corfu • Rhodes • Crete' }).category.name, 'Mediterranean');
   assert.equal(context.getHeroSuggestionForOffer({ name: 'Virgin Greek Island Glow', ports: 'Santorini • Rhodes • Crete' }).category.name, 'Mediterranean');
   assert.equal(context.getHeroSuggestionForOffer({ ports: 'Barbados • Martinique • St Kitts' }).category.name, 'Caribbean');
+});
+
+
+test('each hero placeholder renders the suggestion for its own offer index', () => {
+  const library = [{
+    id: 'med', name: 'Mediterranean', tags: ['Corfu', 'Santorini', 'Barcelona', 'Athens'], image: 'data:image/png;base64,med', thumbnail: 'data:image/png;base64,med',
+    images: [
+      { id: 'corfu', name: 'Corfu photo', image: 'data:image/png;base64,corfu', thumbnail: 'data:image/png;base64,corfu', tags: ['Corfu'] },
+      { id: 'santorini', name: 'Santorini photo', image: 'data:image/png;base64,santorini', thumbnail: 'data:image/png;base64,santorini', tags: ['Santorini'] },
+      { id: 'barcelona', name: 'Barcelona photo', image: 'data:image/png;base64,barcelona', thumbnail: 'data:image/png;base64,barcelona', tags: ['Barcelona'] },
+      { id: 'athens', name: 'Athens photo', image: 'data:image/png;base64,athens', thumbnail: 'data:image/png;base64,athens', tags: ['Athens'] }
+    ]
+  }];
+  const { context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(library) });
+  context.offers = [
+    { name: 'Offer 1 Marella', ports: 'Corfu' },
+    { name: 'Offer 2 P&O', ports: 'Barcelona' },
+    { name: 'Offer 3 Virgin', ports: 'Santorini' },
+    { name: 'Offer 4 Royal', ports: 'Athens' }
+  ];
+  context.cur = 2;
+
+  context.offers.forEach((offer, index) => {
+    context.currentHeroSuggestionRenderIndex = index;
+    const html = context.renderHeroHTML({ ...offer }, ['Hero', 'Placeholder']);
+    context.currentHeroSuggestionRenderIndex = null;
+    assert.match(html, new RegExp(`Card Number:[\\s\\S]*${index + 1}`));
+    assert.match(html, new RegExp(`Offer Title:[\\s\\S]*${offer.name.replace('&', '&amp;')}`));
+    assert.match(html, new RegExp(`Offer Index Used For Matching:[\\s\\S]*${index + 1}`));
+    assert.match(html, new RegExp(`Offer Index Used For Rendering:[\\s\\S]*${index + 1}`));
+    assert.match(html, new RegExp(`Selected Image:[\\s\\S]*${offer.ports} photo`));
+  });
 });
 
 test('empty hero placeholders render a centered primary suggestion takeover when a match exists', () => {
