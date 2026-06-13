@@ -818,16 +818,25 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
           <div class="field"><label>Image URL (Optional)</label><input id="f-img-url" placeholder="https://..." oninput="imgUrlCh()"></div>
           <div style="font-size:9px;color:var(--muted);margin-top:2px;">External URLs may fail export; local upload is safer.</div>
         </div>
+
+      </div>
+    </div>
+
+    <!-- ── HERO LIBRARY ── -->
+    <div class="section hero-library-section" data-section-key="hero-library">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"></path></svg>Hero Library</h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body hidden">
         <div class="hero-source-block hero-library-panel">
-          <div class="field"><label>Hero Library Category</label><input id="hero-library-name" placeholder="Mediterranean"></div>
+          <div class="field"><label>Category Name</label><input id="hero-library-name" placeholder="Mediterranean"></div>
           <div class="dropzone hero-dropzone" id="dz-hero-library" ondragover="dzOver(event,'dz-hero-library')" ondragleave="dzOut('dz-hero-library')">
             <input type="file" accept="image/*" onchange="heroLibraryFileChosen(event)">
             <div class="dz-inner"><div class="dz-lbl">Add category hero image</div><div class="dz-sub">Stored locally for future campaigns</div></div>
           </div>
-          <div class="hero-library-note">Hero Library: reusable categories and rules-based suggestions are stored in this browser localStorage.</div>
+          <div class="hero-library-note">Stored locally for future campaigns.</div>
           <div class="hero-library-list" id="hero-library-list"></div>
         </div>
-
       </div>
     </div>
 
@@ -1111,7 +1120,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.2.0";
+const APP_VERSION = "v2.2.1";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -1924,7 +1933,7 @@ function heroSuggestionHtml(suggestion,index,compact){
   if(!suggestion||!suggestion.category) return "";
   const name=escapeAttr(suggestion.category.name);
   const idx=Number.isInteger(index)?index:cur;
-  return `<div class="hero-suggestion-name">${name}</div><div class="hero-suggestion-label">Suggested Hero</div><div class="hero-suggestion-actions"><button class="abtn gold btn-compact" type="button" onclick="applySuggestedHero(${idx},'${escapeAttr(suggestion.category.id)}',event)">Apply</button><label class="hero-remember"><input type="checkbox" ${compact?"":"checked"} onchange="setHeroSuggestionRemember(${idx},this.checked)"> Remember this Hero</label></div>`;
+  return `<div class="hero-suggestion-label">Suggested Hero</div><div class="hero-suggestion-name">${name}</div><div class="hero-suggestion-actions"><button class="abtn gold btn-compact" type="button" onclick="applySuggestedHero(${idx},'${escapeAttr(suggestion.category.id)}',event)">Apply</button></div>`;
 }
 function updateSidebarHeroSuggestion(){
   const panel=document.getElementById("hero-sidebar-suggestion"); if(!panel) return;
@@ -1952,12 +1961,13 @@ function applySuggestedHero(index,categoryId,event){
 }
 function heroLibraryFileChosen(event){ const file=event.target.files&&event.target.files[0]; if(!file) return; const nameEl=document.getElementById("hero-library-name"); const name=String((nameEl&&nameEl.value)||"").trim(); if(!name){ alert("Add a category name first."); event.target.value=""; return; } const reader=new FileReader(); reader.onload=e=>{ const src=e.target.result; const list=getHeroLibrary().filter(item=>normaliseHeroText(item.name)!==normaliseHeroText(name)); list.unshift({id:"hero-"+Date.now(),name,thumbnail:src,image:src,lastUsed:""}); if(saveHeroLibrary(list)){ if(nameEl) nameEl.value=""; renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); } event.target.value=""; }; reader.readAsDataURL(file); }
 function deleteHeroLibraryCategory(id){ saveHeroLibrary(getHeroLibrary().filter(item=>item.id!==id)); renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); }
+function renameHeroLibraryCategory(id){ const list=getHeroLibrary(); const item=list.find(x=>x.id===id); if(!item) return; const next=prompt("Rename Hero Category",item.name); const name=String(next||"").trim(); if(!name||normaliseHeroText(name)===normaliseHeroText(item.name)) return; item.name=name; if(saveHeroLibrary(list)){ renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); } }
 function useHeroLibraryCategory(id){ const item=getHeroLibrary().find(x=>x.id===id); if(item) applySuggestedHero(cur,item.id); }
 function renderHeroLibraryList(){
   const host=document.getElementById("hero-library-list"); if(!host) return;
   const list=getHeroLibrary();
-  if(!list.length){ host.innerHTML='<div class="hero-library-empty">No saved Hero Categories yet. Add images for Mediterranean, Canaries, Caribbean and other repeat itineraries.</div>'; return; }
-  host.innerHTML=list.map(item=>`<div class="hero-library-item"><img class="hero-library-thumb" src="${escapeAttr(item.thumbnail||item.image)}" alt=""><div><div class="hero-library-name">${escapeAttr(item.name)}</div><div class="hero-library-meta">${item.lastUsed?"Last used "+new Date(item.lastUsed).toLocaleDateString():"Not used yet"}</div></div><div class="hero-library-actions"><button class="abtn btn-compact" type="button" onclick="useHeroLibraryCategory('${escapeAttr(item.id)}')">Use</button><button class="abtn red btn-compact" type="button" onclick="deleteHeroLibraryCategory('${escapeAttr(item.id)}')">Delete</button></div></div>`).join("");
+  if(!list.length){ host.innerHTML='<div class="hero-library-empty">No Hero Categories saved.</div>'; return; }
+  host.innerHTML=list.map(item=>`<div class="hero-library-item"><img class="hero-library-thumb" src="${escapeAttr(item.thumbnail||item.image)}" alt=""><div><div class="hero-library-name">${escapeAttr(item.name)}</div><div class="hero-library-meta">${item.lastUsed?"Last used "+new Date(item.lastUsed).toLocaleDateString():"Not used yet"}</div></div><div class="hero-library-actions"><button class="abtn btn-compact" type="button" onclick="useHeroLibraryCategory('${escapeAttr(item.id)}')">Use</button><button class="abtn btn-compact" type="button" onclick="renameHeroLibraryCategory('${escapeAttr(item.id)}')">Rename</button><button class="abtn red btn-compact" type="button" onclick="deleteHeroLibraryCategory('${escapeAttr(item.id)}')">Delete</button></div></div>`).join("");
 }
 
 // ═══════════════════════════════════════════════════════
