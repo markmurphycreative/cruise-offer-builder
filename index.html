@@ -4,7 +4,7 @@
 
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cruise Offer Builder — Dawson &amp; Sanderson</title>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" crossorigin="anonymous"></script>
 <style>
@@ -116,7 +116,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-library-category-status{min-height:13px;margin-top:-4px;font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1.2;}
 .hero-library-category-status.existing{color:var(--green);}
 .hero-library-category-status.new{color:var(--gold);}
-.hero-library-item.empty{border-color:rgba(160,146,103,.36);background:#fffdf7;color:#6f6546;}
+.hero-library-item.empty{border-color:var(--border);background:#fafaf8;color:var(--navy);}
 .hero-library-item-count{display:block;margin-top:1px;font-size:9px;font-weight:700;color:var(--muted);}
 .hero-library-category-helper{min-height:12px;margin-top:6px;font-size:9px;color:var(--muted);line-height:1.25;}
 .hero-library-category-action{display:none;width:100%;justify-content:center;margin-top:5px;}
@@ -124,14 +124,16 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-library-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:5px;margin-top:6px;}
 .hero-library-item{appearance:none;border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;color:var(--navy);font:inherit;font-size:11px;font-weight:800;line-height:1.12;text-align:center;padding:6px 7px;cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease;}
 .hero-library-card{border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;overflow:hidden;transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease;}
-.hero-library-card:hover,.hero-library-card:focus-within{border-color:var(--gold);box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px);}
+.hero-library-card:hover,.hero-library-card:focus-within{border-color:var(--border);box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px);}
+.hero-library-card.active:hover,.hero-library-card.active:focus-within{border-color:var(--gold);}
 .hero-library-card .hero-library-item{width:100%;border:0;border-radius:0;background:transparent;}
 .hero-library-card.active{border-color:var(--gold);background:linear-gradient(135deg,#fff8df,#ffffff);box-shadow:0 0 0 2px rgba(160,146,103,.28),0 6px 16px rgba(14,27,42,.12);transform:translateY(-1px);}
 .hero-library-card-action{width:calc(100% - 12px);margin:0 6px 5px;padding:4px 6px;border:1px solid rgba(176,42,42,.25);border-radius:4px;background:#fff;color:var(--red);font:inherit;font-size:9px;font-weight:800;cursor:pointer;}
 .hero-library-remove-image:hover,.hero-library-remove-image:focus-visible{background:#fff0f0;outline:none;}
 .hero-library-add-image{border-color:rgba(32,126,64,.35);color:var(--green);}
 .hero-library-add-image:hover,.hero-library-add-image:focus-visible{background:#f0fff4;outline:none;}
-.hero-library-item:hover,.hero-library-item:focus-visible{border-color:var(--gold);box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px);outline:none;}
+.hero-library-item:hover,.hero-library-item:focus-visible{border-color:var(--border);box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px);outline:none;}
+.hero-library-item.active:hover,.hero-library-item.active:focus-visible{border-color:var(--gold);}
 .hero-library-card .hero-library-item:hover,.hero-library-card .hero-library-item:focus-visible{box-shadow:none;transform:none;}
 .hero-library-item.active{border-color:var(--gold);background:linear-gradient(135deg,#fff8df,#ffffff);box-shadow:0 0 0 2px rgba(160,146,103,.28),0 6px 16px rgba(14,27,42,.12);transform:translateY(-1px);}
 .hero-library-item.active::after{content:"ACTIVE";display:block;margin-top:2px;font-size:8px;font-weight:900;letter-spacing:.14em;color:var(--gold);}
@@ -271,7 +273,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash.hidden,.splash.is-exiting{opacity:0;visibility:hidden;pointer-events:none;}
 .splash-inner{text-align:center;color:#fff;padding:18px;min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;width:min(560px,100%);}
 .splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;animation:splashFadeIn .28s ease-out both;}
-.splash-title{font-size:22px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
+.splash-title{font-size:22px;font-weight:300;letter-spacing:.04em;text-transform:uppercase;}
 .splash-brand{margin-top:6px;font-size:13px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;}
 .splash-version{margin-top:18px;font-size:11px;color:rgba(255,255,255,.7);}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
@@ -620,7 +622,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 <div id="app-splash" class="splash" aria-hidden="false">
   <div class="splash-inner">
     <div class="splash-main">
-      <div class="splash-title">Cruise Offer Builder</div>
+      <div class="splash-title">CRUISE OFFER BUILDER</div>
       <div class="splash-brand">Dawson &amp; Sanderson</div>
       <div class="splash-version" data-app-version></div>
       <div class="splash-line">Start a new campaign or load a CSV.</div>
@@ -1150,7 +1152,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.3.4";
+const APP_VERSION = "v2.3.5";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -2265,13 +2267,31 @@ function syncHeroLibraryActiveCards(){
   const cards=document.querySelectorAll?document.querySelectorAll(".hero-library-card"):[];
   const items=document.querySelectorAll?document.querySelectorAll(".hero-library-item"):[];
   cards.forEach(card=>{
-    const isActive=card.getAttribute("data-hero-category-id")===activeHeroLibraryCategoryId;
-    card.classList.toggle("active",isActive);
+    card.classList.remove("active");
+    if(card.style){
+      card.style.removeProperty("background");
+      card.style.removeProperty("border-color");
+      card.style.removeProperty("box-shadow");
+    }
   });
   items.forEach(item=>{
-    const isActive=item.getAttribute("data-hero-category-id")===activeHeroLibraryCategoryId;
-    item.classList.toggle("active",isActive);
-    item.setAttribute("aria-pressed",isActive?"true":"false");
+    item.classList.remove("active");
+    item.setAttribute("aria-pressed","false");
+    if(item.style){
+      item.style.removeProperty("background");
+      item.style.removeProperty("border-color");
+      item.style.removeProperty("box-shadow");
+    }
+  });
+  if(!activeHeroLibraryCategoryId) return;
+  cards.forEach(card=>{
+    if(card.getAttribute("data-hero-category-id")===activeHeroLibraryCategoryId) card.classList.add("active");
+  });
+  items.forEach(item=>{
+    if(item.getAttribute("data-hero-category-id")===activeHeroLibraryCategoryId){
+      item.classList.add("active");
+      item.setAttribute("aria-pressed","true");
+    }
   });
 }
 function useHeroLibraryCategory(id){ selectHeroLibraryCategory(id); }
