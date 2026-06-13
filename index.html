@@ -97,6 +97,29 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-hint{font-size:9px;color:var(--muted);margin:5px 0 2px;}
 .hero-source-block{margin-top:6px;padding-top:6px;border-top:1px solid var(--border);}
 .hero-dropzone{padding:10px;min-height:92px;display:block;text-align:center;}
+.hero-suggestion-card{display:none;margin-top:7px;padding:8px;border:1px solid rgba(160,146,103,.45);border-radius:var(--radius);background:linear-gradient(135deg,#fffdf7,#f3f0e8);text-align:left;position:relative;z-index:3;box-shadow:0 1px 3px rgba(14,27,42,.08);}
+.hero-suggestion-card.active{display:block;}
+.hero-suggestion-name{font-size:12px;font-weight:800;color:var(--navy);line-height:1.2;}
+.hero-suggestion-label{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--gold);margin-top:2px;}
+.hero-suggestion-actions{display:flex;align-items:center;gap:6px;margin-top:6px;}
+.hero-suggestion-actions .abtn{padding:4px 8px;font-size:9px;}
+.hero-remember{display:flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:var(--navy);}
+.hero-remember input{width:auto;}
+.hph{position:relative;}
+.hph .hero-suggestion-card{display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:260px;max-width:70%;text-align:center;pointer-events:auto;}
+.hph .hero-suggestion-actions{justify-content:center;}
+.hph .hero-suggestion-card button{font-size:18px;padding:10px 22px;}
+.hph .hero-suggestion-name{font-size:28px;}
+.hph .hero-suggestion-label{font-size:16px;margin:7px 0 4px;}
+.hero-library-list{display:grid;gap:6px;margin-top:7px;}
+.hero-library-item{display:grid;grid-template-columns:54px minmax(0,1fr) auto;gap:7px;align-items:center;background:#fafaf8;border:1px solid var(--border);border-radius:var(--radius);padding:6px;}
+.hero-library-thumb{width:54px;height:38px;object-fit:cover;background:var(--navy);border-radius:3px;}
+.hero-library-name{font-size:11px;font-weight:800;color:var(--navy);}
+.hero-library-meta{font-size:8px;color:var(--muted);margin-top:2px;}
+.hero-library-actions{display:grid;gap:3px;}
+.hero-library-empty{font-size:9px;color:var(--muted);background:#fafaf8;border:1px dashed var(--border);border-radius:var(--radius);padding:7px;text-align:center;}
+.hero-library-note{font-size:9px;color:var(--muted);line-height:1.35;margin-top:4px;}
+
 .prod-status{margin-bottom:7px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;}
 .prod-status-toggle{display:flex;align-items:center;gap:6px;cursor:pointer;list-style:none;}
 .prod-status-toggle::-webkit-details-marker{display:none;}
@@ -747,7 +770,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
         <div class="dz-wrap">
           <div class="dropzone hero-dropzone" id="dz-hero" ondragover="dzOver(event,&#39;dz-hero&#39;)" ondragleave="dzOut(&#39;dz-hero&#39;)" ondrop="dzDrop(event,&#39;hero&#39;)">
             <input type="file" accept="image/*" onchange="fileChosen(event,&#39;hero&#39;)">
-            <div class="dz-inner"><div class="dz-icon"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"></path></svg></div><div class="dz-lbl">Drop hero image here</div><div class="dz-sub">JPG/PNG · Adobe Stock or local file</div></div>
+            <div class="dz-inner"><div class="dz-icon"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"></path></svg></div><div class="dz-lbl">Drop hero image here</div><div class="dz-sub">JPG/PNG · Adobe Stock or local file</div></div><div class="hero-suggestion-card" id="hero-sidebar-suggestion"></div>
             <img class="dz-thumb hero-t" id="hero-thumb" alt="hero" style="display: none;">
           </div>
           <div class="hero-thumb-dimensions" id="hero-image-dimensions"></div>
@@ -795,6 +818,16 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
           <div class="field"><label>Image URL (Optional)</label><input id="f-img-url" placeholder="https://..." oninput="imgUrlCh()"></div>
           <div style="font-size:9px;color:var(--muted);margin-top:2px;">External URLs may fail export; local upload is safer.</div>
         </div>
+        <div class="hero-source-block hero-library-panel">
+          <div class="field"><label>Hero Library Category</label><input id="hero-library-name" placeholder="Mediterranean"></div>
+          <div class="dropzone hero-dropzone" id="dz-hero-library" ondragover="dzOver(event,'dz-hero-library')" ondragleave="dzOut('dz-hero-library')">
+            <input type="file" accept="image/*" onchange="heroLibraryFileChosen(event)">
+            <div class="dz-inner"><div class="dz-lbl">Add category hero image</div><div class="dz-sub">Stored locally for future campaigns</div></div>
+          </div>
+          <div class="hero-library-note">Hero Library: reusable categories and rules-based suggestions are stored in this browser localStorage.</div>
+          <div class="hero-library-list" id="hero-library-list"></div>
+        </div>
+
       </div>
     </div>
 
@@ -1078,7 +1111,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.1.8";
+const APP_VERSION = "v2.2.0";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -1837,6 +1870,96 @@ function resetAll(){
   });
 }
 
+
+
+// ═══════════════════════════════════════════════════════
+// HERO LIBRARY & SMART SUGGESTIONS
+// Rules-based matching only; no AI or external APIs.
+// ═══════════════════════════════════════════════════════
+const HERO_LIBRARY_KEY="cruiseHeroLibrary.v2";
+const HERO_MEMORY_KEY="cruiseHeroMemory.v2";
+const HERO_KEYWORD_RULES={
+  "Mediterranean":["Santorini","Mykonos","Crete","Rhodes","Athens","Corfu","Zakynthos","Kos","Sicily","Malta"],
+  "River Cruise":["Rhine","Danube","Basel","Amsterdam","Budapest","Vienna","Cologne","Strasbourg"],
+  "Norwegian Fjords":["Flam","Flåm","Geiranger","Bergen","Olden","Alesund","Ålesund","Nordfjordeid"],
+  "Canaries":["Tenerife","Gran Canaria","Lanzarote","Fuerteventura","La Palma"],
+  "Caribbean":["Barbados","Antigua","St Lucia","Saint Lucia","Grenada","Martinique","Dominica"],
+  "Alaska":["Alaska","Juneau","Ketchikan","Skagway","Glacier Bay","Sitka","Hubbard Glacier"],
+  "Baltic":["Baltic","Tallinn","Helsinki","Stockholm","Copenhagen","Riga","Visby","Gdansk"],
+  "Far East":["Tokyo","Osaka","Kyoto","Singapore","Hong Kong","Shanghai","Taipei","Vietnam","Halong"],
+  "Australia & NZ":["Sydney","Melbourne","Auckland","Wellington","Hobart","Dunedin","Fjordland","Milford Sound"],
+  "South America":["Buenos Aires","Rio","Santos","Montevideo","Ushuaia","Valparaiso","Lima","Cartagena"]
+};
+function safeReadJsonStorage(key,fallback){ try{ const raw=localStorage.getItem(key); return raw?JSON.parse(raw):fallback; }catch(e){ return fallback; } }
+function safeWriteJsonStorage(key,value){ try{ localStorage.setItem(key,JSON.stringify(value)); return true; }catch(e){ alert("Browser storage is full. Remove unused hero categories and try again."); return false; } }
+function getHeroLibrary(){ const list=safeReadJsonStorage(HERO_LIBRARY_KEY,[]); return Array.isArray(list)?list.filter(item=>item&&item.name&&item.image):[]; }
+function saveHeroLibrary(list){ return safeWriteJsonStorage(HERO_LIBRARY_KEY,(Array.isArray(list)?list:[]).slice(0,30)); }
+function getHeroMemory(){ const memory=safeReadJsonStorage(HERO_MEMORY_KEY,{}); return memory&&typeof memory==="object"&&!Array.isArray(memory)?memory:{}; }
+function saveHeroMemory(memory){ safeWriteJsonStorage(HERO_MEMORY_KEY,memory||{}); }
+function normaliseHeroText(text){ return String(text||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); }
+function getOfferHeroSuggestionText(offer){ return [offer&&offer.ports,offer&&offer.name,offer&&offer.incl,offer&&offer.ship].filter(Boolean).join(" • "); }
+function findHeroCategoryByName(name){ const target=normaliseHeroText(name); return getHeroLibrary().find(item=>normaliseHeroText(item.name)===target)||null; }
+function getMatchedHeroKeywords(offer){
+  const text=normaliseHeroText(getOfferHeroSuggestionText(offer));
+  const matches=[];
+  Object.entries(HERO_KEYWORD_RULES).forEach(([category,keywords])=>{
+    const hit=(keywords||[]).find(keyword=>new RegExp("(^|[^a-z0-9])"+normaliseHeroText(keyword).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"([^a-z0-9]|$)","i").test(text));
+    if(hit) matches.push({category,keyword:hit});
+  });
+  return matches;
+}
+function getHeroSuggestionForOffer(offer){
+  if(!offer||offer._img) return null;
+  const library=getHeroLibrary(); if(!library.length) return null;
+  const text=normaliseHeroText(getOfferHeroSuggestionText(offer));
+  const memory=getHeroMemory();
+  for(const [keyword,categoryName] of Object.entries(memory)){
+    if(keyword && text.includes(normaliseHeroText(keyword))){ const stored=findHeroCategoryByName(categoryName); if(stored) return {category:stored,keyword,source:"memory"}; }
+  }
+  const matches=getMatchedHeroKeywords(offer);
+  for(const match of matches){ const stored=findHeroCategoryByName(match.category); if(stored) return {category:stored,keyword:match.keyword,source:"rules"}; }
+  return null;
+}
+function heroSuggestionHtml(suggestion,index,compact){
+  if(!suggestion||!suggestion.category) return "";
+  const name=escapeAttr(suggestion.category.name);
+  const idx=Number.isInteger(index)?index:cur;
+  return `<div class="hero-suggestion-name">${name}</div><div class="hero-suggestion-label">Suggested Hero</div><div class="hero-suggestion-actions"><button class="abtn gold btn-compact" type="button" onclick="applySuggestedHero(${idx},'${escapeAttr(suggestion.category.id)}',event)">Apply</button><label class="hero-remember"><input type="checkbox" ${compact?"":"checked"} onchange="setHeroSuggestionRemember(${idx},this.checked)"> Remember this Hero</label></div>`;
+}
+function updateSidebarHeroSuggestion(){
+  const panel=document.getElementById("hero-sidebar-suggestion"); if(!panel) return;
+  const suggestion=getHeroSuggestionForOffer(offers[cur]||{});
+  panel.innerHTML=suggestion?heroSuggestionHtml(suggestion,cur,false):"";
+  panel.classList.toggle("active",!!suggestion);
+}
+function setHeroSuggestionRemember(index,checked){ if(!offers[index]) offers[index]={}; offers[index]._rememberHeroSuggestion=!!checked; }
+function rememberHeroRelationship(offer,categoryName){
+  const matches=getMatchedHeroKeywords(offer); if(!matches.length) return;
+  const memory=getHeroMemory(); matches.forEach(match=>{ memory[match.keyword]=categoryName; }); saveHeroMemory(memory);
+}
+function applySuggestedHero(index,categoryId,event){
+  if(event){ event.preventDefault(); event.stopPropagation(); }
+  const i=Number(index); const category=getHeroLibrary().find(item=>item.id===categoryId);
+  if(!Number.isInteger(i)||!category) return;
+  if(!offers[i]) offers[i]={};
+  offers[i]._img=category.image; offers[i]._imgSource="Hero Library: "+category.name; offers[i]._imgNeedsReupload=false;
+  offers[i]._cropZoom=100; offers[i]._cropX=50; offers[i]._cropY=50; offers[i]._cropPosVersion=2; offers[i]._heroFitMode="fill";
+  if(offers[i]._rememberHeroSuggestion!==false) rememberHeroRelationship(offers[i],category.name);
+  const library=getHeroLibrary(); const stored=library.find(item=>item.id===category.id); if(stored) stored.lastUsed=new Date().toISOString(); saveHeroLibrary(library);
+  if(i===cur){ setThumb("hero",offers[i]._img); syncHeroUi(); }
+  renderHeroLibraryList(); refreshOfferUi({utm:false,spell:false});
+  if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Hero suggestion applied");
+}
+function heroLibraryFileChosen(event){ const file=event.target.files&&event.target.files[0]; if(!file) return; const nameEl=document.getElementById("hero-library-name"); const name=String((nameEl&&nameEl.value)||"").trim(); if(!name){ alert("Add a category name first."); event.target.value=""; return; } const reader=new FileReader(); reader.onload=e=>{ const src=e.target.result; const list=getHeroLibrary().filter(item=>normaliseHeroText(item.name)!==normaliseHeroText(name)); list.unshift({id:"hero-"+Date.now(),name,thumbnail:src,image:src,lastUsed:""}); if(saveHeroLibrary(list)){ if(nameEl) nameEl.value=""; renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); } event.target.value=""; }; reader.readAsDataURL(file); }
+function deleteHeroLibraryCategory(id){ saveHeroLibrary(getHeroLibrary().filter(item=>item.id!==id)); renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); }
+function useHeroLibraryCategory(id){ const item=getHeroLibrary().find(x=>x.id===id); if(item) applySuggestedHero(cur,item.id); }
+function renderHeroLibraryList(){
+  const host=document.getElementById("hero-library-list"); if(!host) return;
+  const list=getHeroLibrary();
+  if(!list.length){ host.innerHTML='<div class="hero-library-empty">No saved Hero Categories yet. Add images for Mediterranean, Canaries, Caribbean and other repeat itineraries.</div>'; return; }
+  host.innerHTML=list.map(item=>`<div class="hero-library-item"><img class="hero-library-thumb" src="${escapeAttr(item.thumbnail||item.image)}" alt=""><div><div class="hero-library-name">${escapeAttr(item.name)}</div><div class="hero-library-meta">${item.lastUsed?"Last used "+new Date(item.lastUsed).toLocaleDateString():"Not used yet"}</div></div><div class="hero-library-actions"><button class="abtn btn-compact" type="button" onclick="useHeroLibraryCategory('${escapeAttr(item.id)}')">Use</button><button class="abtn red btn-compact" type="button" onclick="deleteHeroLibraryCategory('${escapeAttr(item.id)}')">Delete</button></div></div>`).join("");
+}
+
 // ═══════════════════════════════════════════════════════
 // DROP ZONES
 // ═══════════════════════════════════════════════════════
@@ -2109,9 +2232,12 @@ function renderHeroHTML(d, heroPlaceholder){
     const heroBg=heroFitMode==="fit"?"background:#0e1b2a;":"";
     return `<div class="hero-wrap" style="${heroBg}"><img class="hero" src="${escapeAttr(heroSrc)}" data-hero-src="${escapeAttr(heroSrc)}" data-crop-x="${cx}" data-crop-y="${cy}" data-crop-zoom="${cz}" data-fit-mode="${heroFitMode}" style="object-fit:fill;object-position:50% 50%;transform:none;left:0;top:0;width:100%;height:100%;" onload="if(typeof applyHeroCropPositions==='function') applyHeroCropPositions(document)" onerror="this.parentElement.innerHTML='<div class=hph><span>Image failed to load</span></div>'"></div>`;
   }
+  const suggestion=typeof getHeroSuggestionForOffer==="function"?getHeroSuggestionForOffer(d):null;
+  const suggestionIndex=(typeof offers!=="undefined"&&Array.isArray(offers))?offers.indexOf(d):-1;
+  const suggestionPanel=suggestion?`<div class="hero-suggestion-card">${heroSuggestionHtml(suggestion,suggestionIndex>=0?suggestionIndex:cur,true)}</div>`:"";
   return heroPlaceholder
-    ? `<div class="hph"><span>${heroPlaceholder[0]}</span><span>${heroPlaceholder[1]}</span></div>`
-    : `<div class="hph"><span></span></div>`;
+    ? `<div class="hph"><span>${heroPlaceholder[0]}</span><span>${heroPlaceholder[1]}</span>${suggestionPanel}</div>`
+    : `<div class="hph"><span></span>${suggestionPanel}</div>`;
 }
 function applyHeroCropPositions(root){
   const scope=root&&root.querySelectorAll?root:document;
@@ -6514,6 +6640,20 @@ function syncSailDateFromHidden(){
   refreshStandardUtmsSafe();
 })();
 
+
+
+(function(){
+  ["loadOfferToEditor","load","up","sv","rv","processSheetCSV"].forEach(function(fnName){
+    if(typeof window[fnName]!=="function") return;
+    const previous=window[fnName];
+    window[fnName]=function(){
+      const result=previous.apply(this,arguments);
+      try{ updateSidebarHeroSuggestion(); }catch(e){}
+      return result;
+    };
+  });
+  try{ renderHeroLibraryList(); updateSidebarHeroSuggestion(); }catch(e){}
+})();
 
 // Lightweight global shortcuts: including campaign-level undo/redo.
 let shortcutsPreviousFocus = null;
