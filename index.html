@@ -116,27 +116,30 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-library-category-status{min-height:13px;margin-top:-4px;font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1.2;}
 .hero-library-category-status.existing{color:var(--green);}
 .hero-library-category-status.new{color:var(--gold);}
-.hero-library-item.empty{border-color:var(--border);background:#fafaf8;color:var(--navy);}
-.hero-library-item-count{display:block;margin-top:1px;font-size:9px;font-weight:700;color:var(--muted);}
+.hero-library-item.empty{color:var(--navy);}
+.hero-library-item-count{font-size:9px;font-weight:700;color:var(--muted);white-space:nowrap;}
 .hero-library-category-helper{min-height:12px;margin-top:6px;font-size:9px;color:var(--muted);line-height:1.25;}
-.hero-library-category-action{display:none;width:100%;justify-content:center;margin-top:5px;}
-.hero-library-category-action.active{display:inline-flex;}
-.hero-library-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:5px;margin-top:6px;}
-.hero-library-item{appearance:none;border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;color:var(--navy);font:inherit;font-size:11px;font-weight:800;line-height:1.12;text-align:center;padding:6px 7px;cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease;}
-.hero-library-card{border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;overflow:hidden;transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease;}
-.hero-library-card:hover,.hero-library-card:focus-within{border-color:var(--border);box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px);}
-.hero-library-card.active:hover,.hero-library-card.active:focus-within{border-color:var(--gold);}
-.hero-library-card .hero-library-item{width:100%;border:0;border-radius:0;background:transparent;}
-.hero-library-card.active{border-color:var(--gold);background:linear-gradient(135deg,#fff8df,#ffffff);box-shadow:0 0 0 2px rgba(160,146,103,.28),0 6px 16px rgba(14,27,42,.12);transform:translateY(-1px);}
-.hero-library-card-action{width:calc(100% - 12px);margin:0 6px 5px;padding:4px 6px;border:1px solid rgba(176,42,42,.25);border-radius:4px;background:#fff;color:var(--red);font:inherit;font-size:9px;font-weight:800;cursor:pointer;}
+.hero-library-category-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px;}
+.hero-library-category-action{display:inline-flex;width:100%;justify-content:center;}
+.hero-library-category-action:disabled{opacity:.45;cursor:not-allowed;}
+.hero-library-list{display:grid;grid-template-columns:1fr;gap:5px;margin-top:6px;}
+.hero-library-card{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px;border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;padding:5px;transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease;}
+.hero-library-card:hover,.hero-library-card:focus-within{border-color:var(--border);box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.hero-library-card.active{border-color:var(--gold);background:linear-gradient(135deg,#fff8df,#ffffff);box-shadow:0 0 0 2px rgba(160,146,103,.22);}
+.hero-library-item{appearance:none;min-width:0;border:0;background:transparent;color:var(--navy);font:inherit;font-size:11px;font-weight:800;line-height:1.15;text-align:left;padding:3px 2px;cursor:pointer;display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:6px;}
+.hero-library-status-icon{font-weight:900;color:var(--green);}
+.hero-library-card.empty .hero-library-status-icon{color:var(--gold);}
+.hero-library-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hero-library-active-label{display:none;font-size:8px;font-weight:900;letter-spacing:.12em;color:var(--gold);}
+.hero-library-card.active .hero-library-active-label{display:inline;}
+.hero-library-row-actions{display:flex;align-items:center;gap:4px;justify-content:flex-end;}
+.hero-library-card-action{white-space:nowrap;padding:4px 6px;border:1px solid rgba(176,42,42,.25);border-radius:4px;background:#fff;color:var(--red);font:inherit;font-size:9px;font-weight:800;cursor:pointer;}
+.hero-library-replace-image{border-color:rgba(160,146,103,.35);color:var(--gold);}
+.hero-library-replace-image:hover,.hero-library-replace-image:focus-visible{background:#fff8df;outline:none;}
 .hero-library-remove-image:hover,.hero-library-remove-image:focus-visible{background:#fff0f0;outline:none;}
 .hero-library-add-image{border-color:rgba(32,126,64,.35);color:var(--green);}
 .hero-library-add-image:hover,.hero-library-add-image:focus-visible{background:#f0fff4;outline:none;}
-.hero-library-item:hover,.hero-library-item:focus-visible{border-color:var(--border);box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px);outline:none;}
-.hero-library-item.active:hover,.hero-library-item.active:focus-visible{border-color:var(--gold);}
-.hero-library-card .hero-library-item:hover,.hero-library-card .hero-library-item:focus-visible{box-shadow:none;transform:none;}
-.hero-library-item.active{border-color:var(--gold);background:linear-gradient(135deg,#fff8df,#ffffff);box-shadow:0 0 0 2px rgba(160,146,103,.28),0 6px 16px rgba(14,27,42,.12);transform:translateY(-1px);}
-.hero-library-item.active::after{content:"ACTIVE";display:block;margin-top:2px;font-size:8px;font-weight:900;letter-spacing:.14em;color:var(--gold);}
+.hero-library-item:hover,.hero-library-item:focus-visible{outline:none;}
 .hero-library-empty{font-size:9px;color:var(--muted);background:#fafaf8;border:1px dashed var(--border);border-radius:var(--radius);padding:7px;text-align:center;}
 .hero-library-storage-feedback{display:none;margin-top:7px;background:#f7fbf7;border:1px solid rgba(32,126,64,.2);border-radius:var(--radius);padding:7px;font-size:9px;line-height:1.4;color:var(--green);}
 .hero-library-storage-feedback.active{display:block;}
@@ -273,7 +276,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash.hidden,.splash.is-exiting{opacity:0;visibility:hidden;pointer-events:none;}
 .splash-inner{text-align:center;color:#fff;padding:18px;min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;width:min(560px,100%);}
 .splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;animation:splashFadeIn .28s ease-out both;}
-.splash-title{font-size:22px;font-weight:300;letter-spacing:.04em;text-transform:uppercase;}
+.splash-title{font-family:'Montserrat',sans-serif;font-size:22px;font-weight:300;letter-spacing:.04em;text-transform:uppercase;}
 .splash-brand{margin-top:6px;font-size:13px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;}
 .splash-version{margin-top:18px;font-size:11px;color:rgba(255,255,255,.7);}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
@@ -866,7 +869,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
           </div>
           <div class="hero-library-storage-feedback" id="hero-library-storage-feedback" aria-live="polite"></div>
           <div class="hero-library-category-helper" id="hero-library-category-helper" aria-live="polite"></div>
-          <button class="abtn btn-compact hero-library-category-action" id="hero-library-category-action" type="button" onclick="handleHeroLibraryCategoryAction()"></button>
+          <div class="hero-library-category-actions">
+            <button class="abtn btn-compact hero-library-category-action" id="hero-library-rename-category-action" type="button" onclick="renameActiveHeroLibraryCategoryFromField()">Rename Category</button>
+            <button class="abtn btn-compact gold hero-library-category-action" id="hero-library-create-category-action" type="button" onclick="createHeroLibraryCategoryFromField()">Create New Category</button>
+          </div>
           <div class="hero-library-list" id="hero-library-list"></div>
         </div>
       </div>
@@ -2092,23 +2098,25 @@ function updateHeroLibraryCategoryUx(){
   const selected=getActiveHeroLibraryCategory();
   const status=document.getElementById("hero-library-category-status");
   const helper=document.getElementById("hero-library-category-helper");
-  const action=document.getElementById("hero-library-category-action");
+  const renameAction=document.getElementById("hero-library-rename-category-action");
+  const createAction=document.getElementById("hero-library-create-category-action");
   const state=getHeroLibraryCategoryUxState();
+  const typedMatchesSelected=!!(selected&&state.typed&&normaliseHeroText(state.typed)===normaliseHeroText(selected.name));
   if(status){
     status.className="hero-library-category-status";
-    if(state.existing){ status.textContent=(selected&&selected.id===state.existing.id?"● Active Category":"● Existing Category"); status.classList.add("existing"); }
-    else if(state.isNew){ status.textContent="● New Category"; status.classList.add("new"); }
+    if(selected){ status.textContent="● Active Category"; status.classList.add("existing"); }
+    else if(state.existing){ status.textContent="● Existing Category"; status.classList.add("existing"); }
+    else if(state.isNew){ status.textContent="● New Category Name"; status.classList.add("new"); }
     else status.textContent="";
   }
-  if(helper) helper.textContent=state.existing?`${state.existing.name} is the active upload target · ${Number(state.existing.imageCount)||0} Image${Number(state.existing.imageCount)===1?"":"s"}.`:(state.isNew?"No hero image assigned yet. You can create the category now and add images later.":"");
-  if(action){
-    action.className="abtn btn-compact hero-library-category-action";
-    if(state.typed){
-      action.classList.add("active");
-      if(state.existing){ action.textContent="✓ "+state.existing.name; }
-      else { action.textContent="+ Create "+state.typed; action.classList.add("gold"); }
-    }else action.textContent="";
+  if(helper){
+    if(selected) helper.textContent=`${selected.name} is the active upload target · ${Number(selected.imageCount)||0} Image${Number(selected.imageCount)===1?"":"s"}. Use Rename Category to change its name.`;
+    else if(state.existing) helper.textContent=`${state.existing.name} exists. Select it from the list before editing or uploading.`;
+    else if(state.isNew) helper.textContent="Use Create New Category to add this as a separate category before uploading an image.";
+    else helper.textContent="";
   }
+  if(renameAction) renameAction.disabled=!selected||!state.typed||typedMatchesSelected||!!(state.existing&&state.existing.id!==selected.id);
+  if(createAction) createAction.disabled=!state.isNew;
 }
 
 let heroLibraryTagsFeedbackTimer=null;
@@ -2194,47 +2202,61 @@ function optimiseHeroLibraryImage(file){
 }
 async function saveHeroLibraryFile(file,inputEl){
   if(!file) return;
+  const active=getActiveHeroLibraryCategory();
   const name=getHeroLibraryCategoryInputName();
-  if(!name){ alert("Add a category name first."); if(inputEl) inputEl.value=""; return; }
+  if(!active){
+    const existing=name?findHeroCategoryByName(name):null;
+    if(existing) selectHeroLibraryCategory(existing.id);
+    else { alert(name?"Create the new category first, then add an image.":"Select or create a category first."); if(inputEl) inputEl.value=""; return; }
+  }
   try{
     const optimised=await optimiseHeroLibraryImage(file);
     showHeroLibraryStorageFeedback(optimised.originalBytes,optimised.storedBytes);
-    if(findHeroCategoryByName(name)){
-      pendingHeroLibraryImage=optimised;
-      savePendingHeroLibraryCategory();
-    }else{
-      pendingHeroLibraryImage=optimised;
-      updateHeroLibraryCategoryUx();
-    }
+    pendingHeroLibraryImage=optimised;
+    savePendingHeroLibraryCategory();
   }catch(error){ alert((error&&error.message)||"Could not optimise this image."); }
   if(inputEl) inputEl.value="";
 }
 function heroLibraryFileChosen(event){ const file=event.target.files&&event.target.files[0]; saveHeroLibraryFile(file,event.target); }
 function heroLibraryDrop(event){ event.preventDefault(); dzOut('dz-hero-library'); const file=event.dataTransfer&&event.dataTransfer.files&&event.dataTransfer.files[0]; saveHeroLibraryFile(file,null); }
-function savePendingHeroLibraryCategory(){
+function savePendingHeroLibraryCategory(options){
   const nameEl=document.getElementById("hero-library-name");
   const tagsEl=document.getElementById("hero-library-tags");
   const name=getHeroLibraryCategoryInputName();
   const tags=splitHeroDestinationTags((tagsEl&&tagsEl.value)||"");
   if(!name){ alert("Add a category name first."); return false; }
-  const existing=findHeroCategoryByName(name);
+  const forceNew=!!(options&&options.forceNew);
+  const active=getActiveHeroLibraryCategory();
+  const existing=forceNew?null:(active||findHeroCategoryByName(name));
+  const savedName=existing?existing.name:name;
   const src=pendingHeroLibraryImage?pendingHeroLibraryImage.dataUrl:(existing&&existing.image)||"";
-  const list=getHeroLibrary().filter(item=>normaliseHeroText(item.name)!==normaliseHeroText(name));
+  const list=getHeroLibrary().filter(item=>existing?item.id!==existing.id:normaliseHeroText(item.name)!==normaliseHeroText(name));
   const savedId=(existing&&existing.id)||`hero-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-  list.unshift({id:savedId,name,thumbnail:src,image:src,tags,lastUsed:(existing&&existing.lastUsed)||"",imageCount:src?1:0});
+  list.unshift({id:savedId,name:savedName,thumbnail:src,image:src,tags,lastUsed:(existing&&existing.lastUsed)||"",imageCount:src?1:0});
   if(!saveHeroLibrary(list)) return false;
   pendingHeroLibraryImage=null;
   activeHeroLibraryCategoryId=savedId;
-  if(nameEl) nameEl.value=name;
+  if(nameEl) nameEl.value=savedName;
   if(tagsEl) tagsEl.value=tags.join(", ");
   renderHeroLibraryList(); syncHeroLibraryActiveCards(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); updateHeroLibraryCategoryUx();
   return true;
 }
-function handleHeroLibraryCategoryAction(){
+function createHeroLibraryCategoryFromField(){
   const state=getHeroLibraryCategoryUxState();
-  if(state.existing) selectHeroLibraryCategory(state.existing.id);
-  else if(state.isNew) savePendingHeroLibraryCategory();
+  if(!state.typed){ alert("Add a category name first."); return false; }
+  if(state.existing){ alert("That category already exists. Choose a different name or select it from the list."); return false; }
+  return savePendingHeroLibraryCategory({forceNew:true});
 }
+function renameActiveHeroLibraryCategoryFromField(){
+  const active=getActiveHeroLibraryCategory();
+  const name=getHeroLibraryCategoryInputName();
+  if(!active){ alert("Select a category to rename first."); return false; }
+  if(!name){ alert("Add a category name first."); return false; }
+  const duplicate=findHeroCategoryByName(name);
+  if(duplicate&&duplicate.id!==active.id){ alert("That category already exists. Choose a different name."); return false; }
+  return renameHeroLibraryCategory(active.id,name);
+}
+function handleHeroLibraryCategoryAction(){ return createHeroLibraryCategoryFromField(); }
 function addHeroLibraryImage(id,event){
   if(event){ event.preventDefault(); event.stopPropagation(); }
   selectHeroLibraryCategory(id);
@@ -2277,7 +2299,7 @@ function removeHeroLibraryImage(id,event){
   return true;
 }
 function deleteHeroLibraryCategory(id){ if(activeHeroLibraryCategoryId===id) activeHeroLibraryCategoryId=""; saveHeroLibrary(getHeroLibrary().filter(item=>item.id!==id)); renderHeroLibraryList(); syncHeroLibraryActiveCards(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); }
-function renameHeroLibraryCategory(id){ const list=getHeroLibrary(); const item=list.find(x=>x.id===id); if(!item) return; const next=prompt("Rename Hero Category",item.name); const name=String(next||"").trim(); if(!name||normaliseHeroText(name)===normaliseHeroText(item.name)) return; item.name=name; if(saveHeroLibrary(list)){ renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); } }
+function renameHeroLibraryCategory(id,nextName){ const list=getHeroLibrary(); const item=list.find(x=>x.id===id); if(!item) return false; const next=typeof nextName==="string"?nextName:prompt("Rename Hero Category",item.name); const name=String(next||"").trim(); if(!name||normaliseHeroText(name)===normaliseHeroText(item.name)) return false; const duplicate=list.find(x=>x.id!==id&&normaliseHeroText(x.name)===normaliseHeroText(name)); if(duplicate){ alert("That category already exists. Choose a different name."); return false; } item.name=name; if(saveHeroLibrary(list)){ const nameEl=document.getElementById("hero-library-name"); if(activeHeroLibraryCategoryId===id&&nameEl) nameEl.value=name; renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); updateHeroLibraryCategoryUx(); return true; } return false; }
 function syncHeroLibraryActiveCards(){
   const cards=document.querySelectorAll?document.querySelectorAll(".hero-library-card"):[];
   const items=document.querySelectorAll?document.querySelectorAll(".hero-library-item"):[];
@@ -2319,8 +2341,8 @@ function renderHeroLibraryList(){
     const count=Number(item.imageCount)||0;
     const icon=count>0?"✓":"⚠";
     const active=typeof activeHeroLibraryCategoryId!=="undefined"&&item.id===activeHeroLibraryCategoryId;
-    const action=count>0?`<button class="hero-library-card-action hero-library-remove-image" type="button" onclick="removeHeroLibraryImage('${escapeAttr(item.id)}',event)">Remove Image</button>`:`<button class="hero-library-card-action hero-library-add-image" type="button" onclick="addHeroLibraryImage('${escapeAttr(item.id)}',event)">Add Image</button>`;
-    return `<div class="hero-library-card${count>0?"":" empty"}${active?" active":""}" data-hero-category-id="${escapeAttr(item.id)}"><button class="hero-library-item${count>0?"":" empty"}${active?" active":""}" data-hero-category-id="${escapeAttr(item.id)}" type="button" aria-pressed="${active?"true":"false"}" onclick="useHeroLibraryCategory('${escapeAttr(item.id)}')">${icon} ${escapeAttr(item.name)}<span class="hero-library-item-count">${count} Image${count===1?"":"s"}</span></button>${action}</div>`;
+    const imageAction=count>0?`<button class="hero-library-card-action hero-library-replace-image" type="button" onclick="addHeroLibraryImage('${escapeAttr(item.id)}',event)">Replace Image</button><button class="hero-library-card-action hero-library-remove-image" type="button" onclick="removeHeroLibraryImage('${escapeAttr(item.id)}',event)">Remove</button>`:`<button class="hero-library-card-action hero-library-add-image" type="button" onclick="addHeroLibraryImage('${escapeAttr(item.id)}',event)">Add Image</button>`;
+    return `<div class="hero-library-card${count>0?"":" empty"}${active?" active":""}" data-hero-category-id="${escapeAttr(item.id)}"><button class="hero-library-item${count>0?"":" empty"}${active?" active":""}" data-hero-category-id="${escapeAttr(item.id)}" type="button" aria-pressed="${active?"true":"false"}" onclick="useHeroLibraryCategory('${escapeAttr(item.id)}')"><span class="hero-library-status-icon">${icon}</span><span class="hero-library-name">${escapeAttr(item.name)}</span><span class="hero-library-item-count">${count} Image${count===1?"":"s"}</span><span class="hero-library-active-label">Active</span></button><div class="hero-library-row-actions">${imageAction}</div></div>`;
   }).join("");
   syncHeroLibraryActiveCards();
   if(typeof updateHeroLibraryCategoryUx==="function") updateHeroLibraryCategoryUx();
