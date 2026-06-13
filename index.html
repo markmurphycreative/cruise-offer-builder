@@ -1961,13 +1961,13 @@ function normaliseHeroLibraryImage(image,index,category){
   };
 }
 function getHeroLibraryImages(category){ return Array.isArray(category&&category.images)?category.images.filter(image=>image&&image.image):[]; }
-function getHeroLibraryDefaultImage(category){ const images=getHeroLibraryImages(category); return images[0]||(category&&category.image?{id:"default",name:category.name||"Image",image:category.image,thumbnail:category.thumbnail||category.image,tags:getHeroCategoryTags(category),lastUsed:category.lastUsed||""}:null); }
+function getHeroLibraryDefaultImage(category){ const images=getHeroLibraryImages(category); return images[0]||(category&&category.image?{id:"default",name:category.name||"Image",image:category.image,thumbnail:category.thumbnail||category.image,tags:[],lastUsed:category.lastUsed||""}:null); }
 function getHeroLibraryImageCount(category){ return getHeroLibraryImages(category).length || (category&&category.image?1:0); }
 function normaliseHeroLibraryCategory(item){
   if(!item||!item.name) return null;
   const legacyImage=item.image||item.thumbnail||"";
   let images=Array.isArray(item.images)?item.images.map((image,index)=>normaliseHeroLibraryImage(image,index,item)).filter(Boolean):[];
-  if(!images.length&&legacyImage){ images=[normaliseHeroLibraryImage({id:"default",name:item.name,image:legacyImage,thumbnail:item.thumbnail||legacyImage,tags:item.tags,lastUsed:item.lastUsed},0,item)]; }
+  if(!images.length&&legacyImage){ images=[normaliseHeroLibraryImage({id:"default",name:item.name,image:legacyImage,thumbnail:item.thumbnail||legacyImage,tags:item.imageTags||[],lastUsed:item.lastUsed},0,item)]; }
   const defaultImage=images[0]||null;
   const image=(item.image||legacyImage||(defaultImage&&defaultImage.image)||"");
   const thumbnail=(item.thumbnail||image||(defaultImage&&defaultImage.thumbnail)||"");
@@ -2045,15 +2045,17 @@ function scoreHeroDestinationTags(offer,library){
   const winner=scored[0];
   return {category:winner.category,keyword:winner.matches[0],matches:winner.matches,matchCount:winner.score,source:"tags"};
 }
-function scoreHeroCategoryImages(offer,category){
+function getHeroCategoryImageScores(offer,category){
   const text=normaliseHeroText(getOfferHeroSuggestionText(offer));
-  if(!text||!category) return null;
-  const images=getHeroLibraryImages(category);
-  const scored=images.map((image,index)=>{
+  if(!text||!category) return [];
+  return getHeroLibraryImages(category).map((image,index)=>{
     const tags=Array.isArray(image.tags)?image.tags:splitHeroDestinationTags(image.tags||"");
     const matches=tags.filter(tag=>new RegExp("(^|[^a-z0-9])"+escapeHeroRegExp(tag)+"([^a-z0-9]|$)","i").test(text));
     return {image,matches,score:matches.length,index};
-  }).filter(item=>item.score>0);
+  });
+}
+function scoreHeroCategoryImages(offer,category){
+  const scored=getHeroCategoryImageScores(offer,category).filter(item=>item.score>0);
   if(!scored.length) return null;
   scored.sort((a,b)=>{
     if(b.score!==a.score) return b.score-a.score;
@@ -2065,11 +2067,31 @@ function scoreHeroCategoryImages(offer,category){
   const winner=scored[0];
   return {image:winner.image,matches:winner.matches,matchCount:winner.score};
 }
+function debugHeroImageSuggestion(suggestion,offer,imageMatch,fallback){
+  if(!suggestion||!suggestion.category||typeof console==="undefined"||!console.debug) return;
+  const scores=getHeroCategoryImageScores(offer,suggestion.category).map(item=>({
+    image:item.image&&item.image.name||item.image&&item.image.id||`Image ${item.index+1}`,
+    tags:Array.isArray(item.image&&item.image.tags)?item.image.tags:splitHeroDestinationTags(item.image&&item.image.tags||""),
+    matches:item.matches,
+    score:item.score
+  }));
+  const winning=imageMatch&&imageMatch.image?imageMatch.image:fallback;
+  console.debug("[Hero Library] destination image matching",{
+    matchedCategory:suggestion.category.name,
+    categorySource:suggestion.source||"unknown",
+    categoryMatches:suggestion.matches||[],
+    imageScores:scores,
+    winningImage:winning?winning.name||winning.id||"Category fallback":null,
+    winningSource:imageMatch?"image-tags":"category-fallback",
+    fallbackReason:imageMatch?"image tag match found":"no image tags matched offer destinations"
+  });
+}
 function withMatchedHeroImage(suggestion,offer){
   if(!suggestion||!suggestion.category) return suggestion;
   const imageMatch=scoreHeroCategoryImages(offer,suggestion.category);
   const fallback=getHeroLibraryDefaultImage(suggestion.category);
-  return {...suggestion,image:imageMatch?imageMatch.image:fallback,imageMatches:imageMatch?imageMatch.matches:[],imageMatchCount:imageMatch?imageMatch.matchCount:0,imageSource:imageMatch?"image-tags":"category"};
+  debugHeroImageSuggestion(suggestion,offer,imageMatch,fallback);
+  return {...suggestion,image:imageMatch?imageMatch.image:fallback,imageMatches:imageMatch?imageMatch.matches:[],imageMatchCount:imageMatch?imageMatch.matchCount:0,imageSource:imageMatch?"image-tags":"category-fallback",fallbackReason:imageMatch?"":"no image tags matched offer destinations"};
 }
 function getHeroSuggestionForOffer(offer){
   if(!offer||offer._img) return null;

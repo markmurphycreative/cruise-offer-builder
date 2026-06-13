@@ -73,7 +73,9 @@ function createHarness(seed = {}){
     extractFunction('findSuggestableHeroCategoryByName'),
     extractFunction('getMatchedHeroKeywords'),
     extractFunction('scoreHeroDestinationTags'),
+    extractFunction('getHeroCategoryImageScores'),
     extractFunction('scoreHeroCategoryImages'),
+    extractFunction('debugHeroImageSuggestion'),
     extractFunction('withMatchedHeroImage'),
     extractFunction('getHeroSuggestionForOffer'),
     extractFunction('setHeroSuggestionRemember'),
@@ -165,7 +167,7 @@ test('destination tags score stored categories before keyword rules and show mat
   assert.equal(suggestion.source, 'tags');
   assert.equal(suggestion.matchCount, 3);
   assert.equal(JSON.stringify(suggestion.matches), JSON.stringify(['Corfu', 'Rhodes', 'Crete']));
-  assert.match(context.heroSuggestionHtml(suggestion, 0, true), /3 destination matches/);
+  assert.match(context.heroSuggestionHtml(suggestion, 0, true), /Category fallback/);
 });
 
 test('destination tag ties use recently used category then stored order', () => {
@@ -198,6 +200,35 @@ test('destination-level image tags choose the best image inside the matched cate
   assert.notEqual(suggestion.image.name, 'Santorini image');
   assert.equal(suggestion.imageMatchCount, 1);
   assert.match(context.heroSuggestionHtml(suggestion, 0, true), /Matched Image:/);
+});
+
+
+test('image scoring does not treat category destination tags as image tags', () => {
+  const library = [{
+    id: 'med', name: 'Mediterranean', image: 'data:image/png;base64,santorini', thumbnail: 'data:image/png;base64,santorini',
+    tags: ['Santorini', 'Mykonos', 'Crete', 'Corfu', 'Rhodes'], lastUsed: '',
+    images: [
+      { id: 'santorini', name: 'Santorini photo', image: 'data:image/png;base64,santorini', thumbnail: 'data:image/png;base64,santorini', tags: ['Santorini', 'Oia', 'Mykonos'] }
+    ]
+  }];
+  const { context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(library) });
+  const suggestion = context.getHeroSuggestionForOffer({ ports: 'Corfu • Souda • Chania • Crete • Rhodes • Patmos • Heraklion • Katakolon • Olympia' });
+  assert.equal(suggestion.category.name, 'Mediterranean');
+  assert.equal(suggestion.imageSource, 'category-fallback');
+  assert.equal(suggestion.imageMatchCount, 0);
+  assert.equal(JSON.stringify(suggestion.imageMatches), JSON.stringify([]));
+  assert.equal(suggestion.fallbackReason, 'no image tags matched offer destinations');
+  assert.match(context.heroSuggestionHtml(suggestion, 0, true), /Matched Image:[\s\S]*Category fallback/);
+});
+
+test('legacy category images do not inherit category destination tags as image tags', () => {
+  const library = [{ id: 'med', name: 'Mediterranean', image: 'data:image/png;base64,santorini', thumbnail: 'data:image/png;base64,santorini', tags: ['Corfu', 'Rhodes', 'Crete'], lastUsed: '' }];
+  const { context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(library) });
+  const suggestion = context.getHeroSuggestionForOffer({ ports: 'Corfu • Rhodes • Crete' });
+  assert.equal(suggestion.category.name, 'Mediterranean');
+  assert.equal(suggestion.imageSource, 'category-fallback');
+  assert.equal(suggestion.imageMatchCount, 0);
+  assert.equal(JSON.stringify(context.getHeroLibrary()[0].images[0].tags), JSON.stringify([]));
 });
 
 test('image-level tag ties prefer recently used image then saved order', () => {
