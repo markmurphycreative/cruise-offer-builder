@@ -130,6 +130,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-library-storage-feedback .storage-row{display:flex;justify-content:space-between;gap:8px;color:var(--text);}
 .hero-library-storage-feedback .storage-row span:first-child{font-weight:700;color:var(--muted);}
 .hero-library-storage-feedback .storage-success{margin-top:4px;font-weight:700;color:var(--green);}
+.hero-library-tags-feedback{min-height:12px;margin-top:4px;font-size:9px;font-weight:700;color:var(--green);line-height:1.25;}
+.hero-library-tags-feedback.saving{color:var(--muted);}
 
 .prod-status{margin-bottom:7px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;}
 .prod-status-toggle{display:flex;align-items:center;gap:6px;cursor:pointer;list-style:none;}
@@ -842,7 +844,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
         <div class="hero-source-block hero-library-panel">
           <div class="field"><label>Category</label><input id="hero-library-name" placeholder="Mediterranean" oninput="updateHeroLibraryCategoryUx()"></div>
           <div class="hero-library-category-status" id="hero-library-category-status" aria-live="polite"></div>
-          <div class="field"><label>Destination Tags</label><input id="hero-library-tags" placeholder="Santorini, Mykonos, Crete, Corfu, Rhodes"></div>
+          <div class="field"><label>Destination Tags</label><input id="hero-library-tags" placeholder="Santorini, Mykonos, Crete, Corfu, Rhodes" oninput="saveActiveHeroLibraryTags()"></div>
+          <div class="hero-library-tags-feedback" id="hero-library-tags-feedback" aria-live="polite"></div>
           <div class="dropzone hero-dropzone" id="dz-hero-library" ondragover="dzOver(event,'dz-hero-library')" ondragleave="dzOut('dz-hero-library')" ondrop="heroLibraryDrop(event)">
             <input type="file" accept="image/*" onchange="heroLibraryFileChosen(event)">
             <div class="dz-inner"><div class="dz-lbl">Add Hero Image</div></div>
@@ -1135,7 +1138,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.2.8";
+const APP_VERSION = "v2.2.9";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -2072,6 +2075,32 @@ function updateHeroLibraryCategoryUx(){
     }else action.textContent="";
   }
 }
+
+let heroLibraryTagsFeedbackTimer=null;
+function setHeroLibraryTagsFeedback(message,state){
+  const panel=document.getElementById("hero-library-tags-feedback"); if(!panel) return;
+  panel.textContent=message||"";
+  panel.className="hero-library-tags-feedback"+(state?" "+state:"");
+}
+function saveActiveHeroLibraryTags(){
+  const active=getActiveHeroLibraryCategory();
+  if(!active) return false;
+  const tagsEl=document.getElementById("hero-library-tags");
+  const tags=splitHeroDestinationTags((tagsEl&&tagsEl.value)||"");
+  setHeroLibraryTagsFeedback("Saving tags...","saving");
+  const list=getHeroLibrary();
+  const item=list.find(category=>category.id===active.id);
+  if(!item){ setHeroLibraryTagsFeedback("",""); return false; }
+  item.tags=tags;
+  if(!saveHeroLibrary(list)){ setHeroLibraryTagsFeedback("",""); return false; }
+  if(tagsEl) tagsEl.value=tags.join(", ");
+  renderHeroLibraryList();
+  updateSidebarHeroSuggestion();
+  refreshOfferUi({status:false,utm:false,spell:false});
+  if(heroLibraryTagsFeedbackTimer) clearTimeout(heroLibraryTagsFeedbackTimer);
+  heroLibraryTagsFeedbackTimer=setTimeout(()=>setHeroLibraryTagsFeedback("✓ Tags saved",""),120);
+  return true;
+}
 function showHeroLibraryStorageFeedback(originalBytes,storedBytes){
   const panel=document.getElementById("hero-library-storage-feedback"); if(!panel) return;
   panel.innerHTML='<div class="storage-row"><span>Original:</span><strong>'+formatStorageBytes(originalBytes)+'</strong></div><div class="storage-row"><span>Stored:</span><strong>'+formatStorageBytes(storedBytes)+'</strong></div><div class="storage-success">✓ Image optimised for library storage</div>';
@@ -2154,6 +2183,7 @@ function selectHeroLibraryCategory(id){
   const tagsEl=document.getElementById("hero-library-tags");
   if(nameEl) nameEl.value=item.name;
   if(tagsEl) tagsEl.value=getHeroCategoryTags(item).join(", ");
+  setHeroLibraryTagsFeedback("","");
   pendingHeroLibraryImage=null;
   renderHeroLibraryList();
   updateHeroLibraryCategoryUx();

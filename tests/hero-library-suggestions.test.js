@@ -25,6 +25,8 @@ function createHarness(seed = {}){
   const context = {
     console,
     Date,
+    setTimeout,
+    clearTimeout,
     alert: () => {},
     localStorage: {
       getItem: key => storage.has(key) ? storage.get(key) : null,
@@ -79,6 +81,9 @@ function createHarness(seed = {}){
     extractFunction('useHeroLibraryCategory'),
     extractFunction('renderHeroLibraryList'),
     extractFunction('updateHeroLibraryCategoryUx'),
+    'var activeHeroLibraryCategoryId=""; var pendingHeroLibraryImage=null; var heroLibraryTagsFeedbackTimer=null;',
+    extractFunction('setHeroLibraryTagsFeedback'),
+    extractFunction('saveActiveHeroLibraryTags'),
     extractFunction('savePendingHeroLibraryCategory'),
     extractFunction('getHeroImageSource'),
     extractFunction('renderHeroHTML')
@@ -86,8 +91,8 @@ function createHarness(seed = {}){
   return { context, storage };
 }
 
-test('Image Library UI and v2.2.8 release version are present', () => {
-  assert.match(html, /const APP_VERSION = "v2\.2\.8";/);
+test('Image Library UI and v2.2.9 release version are present', () => {
+  assert.match(html, /const APP_VERSION = "v2\.2\.9";/);
   assert.match(html, />Image Library<\/h3>/);
   assert.match(html, /<label>Category<\/label>/);
   assert.match(html, /Add Hero Image/);
@@ -207,6 +212,38 @@ test('clicking a category card loads editor fields and marks it as active upload
   assert.equal(elements['hero-library-tags'].value, 'New York, Boston, Halifax');
   assert.match(elements['hero-library-list'].innerHTML, /North America.*ACTIVE|active/);
   assert.equal(context.getActiveHeroLibraryCategory().name, 'North America');
+});
+
+
+test('editing destination tags auto-saves to the active image library category', async () => {
+  const list = [
+    { id: 'med', name: 'Mediterranean', image: 'data:image/jpeg;base64,med', thumbnail: 'data:image/jpeg;base64,med', tags: ['Santorini'], imageCount: 1, lastUsed: '' },
+    { id: 'fjords', name: 'Norwegian Fjords', image: 'data:image/jpeg;base64,fjord', thumbnail: 'data:image/jpeg;base64,fjord', tags: ['Bergen'], imageCount: 1, lastUsed: '' }
+  ];
+  const elements = {
+    'hero-library-name': { value: '' },
+    'hero-library-tags': { value: '' },
+    'hero-library-tags-feedback': { textContent: '', className: '' },
+    'hero-library-list': { innerHTML: '' },
+    'hero-library-category-status': { textContent: '', className: '', classList: { add(){} } },
+    'hero-library-category-helper': { textContent: '' },
+    'hero-library-category-action': { textContent: '', className: '', classList: { add(){} } }
+  };
+  const { context, storage } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(list) });
+  context.document = { getElementById: id => elements[id] || null };
+  context.selectHeroLibraryCategory('med');
+  elements['hero-library-tags'].value = ' Santorini, santorini, Mykonos , Crete ';
+  assert.equal(context.saveActiveHeroLibraryTags(), true);
+  let saved = JSON.parse(storage.get('cruiseHeroLibrary.v2'));
+  assert.deepEqual(saved.find(item => item.id === 'med').tags, ['Santorini', 'Mykonos', 'Crete']);
+  assert.deepEqual(saved.find(item => item.id === 'fjords').tags, ['Bergen']);
+  assert.equal(elements['hero-library-tags'].value, 'Santorini, Mykonos, Crete');
+  assert.equal(elements['hero-library-tags-feedback'].textContent, 'Saving tags...');
+  await new Promise(resolve => setTimeout(resolve, 150));
+  assert.equal(elements['hero-library-tags-feedback'].textContent, '✓ Tags saved');
+  context.selectHeroLibraryCategory('fjords');
+  context.selectHeroLibraryCategory('med');
+  assert.equal(elements['hero-library-tags'].value, 'Santorini, Mykonos, Crete');
 });
 
 test('saving an image after selecting an empty category attaches it to that active category', () => {
