@@ -2026,6 +2026,7 @@ function getOfferHeroSuggestionText(offer){
     return true;
   }).join(" • ");
 }
+var currentHeroSuggestionRenderIndex=null;
 function getHeroSuggestionOfferIndex(offer,explicitIndex){
   if(Number.isInteger(explicitIndex)) return explicitIndex;
   if(typeof offers!=="undefined"&&Array.isArray(offers)){
@@ -2137,7 +2138,7 @@ function getHeroSuggestionForOffer(offer,explicitIndex){
   }
   return null;
 }
-function heroSuggestionDebugHtml(suggestion){
+function heroSuggestionDebugHtml(suggestion,renderIndex){
   if(!suggestion||!suggestion.category) return "";
   const category=escapeAttr(suggestion.category.name||"");
   const trace=suggestion.trace||{};
@@ -2146,9 +2147,14 @@ function heroSuggestionDebugHtml(suggestion){
   const categoryMatches=(Array.isArray(suggestion.matches)?suggestion.matches:[]).filter(Boolean);
   const imageMatches=(Array.isArray(suggestion.imageMatches)?suggestion.imageMatches:[]).filter(Boolean);
   const selectedBy=suggestion.imageSource==="image-tags"?"image tags":"category fallback";
+  const renderingIndex=Number.isInteger(renderIndex)?renderIndex:(Number.isInteger(trace.renderIndex)?trace.renderIndex:null);
+  const matchingIndex=Number.isInteger(trace.offerIndex)?trace.offerIndex:null;
   const rows=[
-    ["Offer Index:",Number.isInteger(trace.offerIndex)?String(trace.offerIndex+1):"(unknown)"],
+    ["Card Number:",Number.isInteger(renderingIndex)?String(renderingIndex+1):"(unknown)"],
     ["Offer Title:",trace.offerTitle?escapeAttr(trace.offerTitle):"(untitled)"],
+    ["Offer Index Used For Matching:",Number.isInteger(matchingIndex)?String(matchingIndex+1):"(unknown)"],
+    ["Offer Index Used For Rendering:",Number.isInteger(renderingIndex)?String(renderingIndex+1):"(unknown)"],
+    ["Offer Index:",Number.isInteger(trace.offerIndex)?String(trace.offerIndex+1):"(unknown)"],
     ["Ports Used For Matching:",trace.portsUsedForMatching?escapeAttr(trace.portsUsedForMatching):"(none)"],
     ["Selected Image:",escapeAttr(selectedImage)],
     ["Selected Image Tags:",selectedImageTags.length?selectedImageTags.map(escapeAttr).join(", "):"(none)"],
@@ -2173,7 +2179,7 @@ function heroSuggestionHtml(suggestion,index,compact){
   const matchCount=Number(suggestion.imageMatchCount)||0;
   const imageLabel=hasMatchedImage?imageName:(hasFallbackImage?"Category fallback":"No destination image match");
   const matchLabel=matchCount?`<div class="hero-suggestion-label">${matchCount} destination match${matchCount===1?"":"es"}</div>`:"";
-  const detail=`<div class="hero-suggestion-label">Suggested Image:</div><div class="hero-suggestion-name small">${imageLabel}</div>${heroSuggestionDebugHtml(suggestion)}${matchLabel}`;
+  const detail=`<div class="hero-suggestion-label">Suggested Image:</div><div class="hero-suggestion-name small">${imageLabel}</div>${heroSuggestionDebugHtml(suggestion,idx)}${matchLabel}`;
   const disabled=hasMatchedImage?"":" disabled title=\"No destination image match\"";
   return `<div class="hero-suggestion-label">Suggested Hero</div><div class="hero-suggestion-name">${name}</div>${detail}<div class="hero-suggestion-actions"><button class="abtn gold${compact?"":" btn-compact"}" type="button" onclick="applySuggestedHero(${idx},'${escapeAttr(suggestion.category.id)}',event)"${disabled}>${buttonText}</button></div>`;
 }
@@ -2792,9 +2798,10 @@ function renderHeroHTML(d, heroPlaceholder){
     const heroBg=heroFitMode==="fit"?"background:#0e1b2a;":"";
     return `<div class="hero-wrap" style="${heroBg}"><img class="hero" src="${escapeAttr(heroSrc)}" data-hero-src="${escapeAttr(heroSrc)}" data-crop-x="${cx}" data-crop-y="${cy}" data-crop-zoom="${cz}" data-fit-mode="${heroFitMode}" style="object-fit:fill;object-position:50% 50%;transform:none;left:0;top:0;width:100%;height:100%;" onload="if(typeof applyHeroCropPositions==='function') applyHeroCropPositions(document)" onerror="this.parentElement.innerHTML='<div class=hph><span>Image failed to load</span></div>'"></div>`;
   }
-  const suggestionIndex=(typeof offers!=="undefined"&&Array.isArray(offers))?offers.indexOf(d):-1;
-  const suggestion=typeof getHeroSuggestionForOffer==="function"?getHeroSuggestionForOffer(d,suggestionIndex>=0?suggestionIndex:cur):null;
-  const suggestionPanel=suggestion?`<div class="hero-suggestion-takeover">${heroSuggestionHtml(suggestion,suggestionIndex>=0?suggestionIndex:cur,true)}</div>`:"";
+  const indexedOffer=(typeof offers!=="undefined"&&Array.isArray(offers))?offers.indexOf(d):-1;
+  const renderIndex=typeof currentHeroSuggestionRenderIndex!=="undefined"&&Number.isInteger(currentHeroSuggestionRenderIndex)?currentHeroSuggestionRenderIndex:(indexedOffer>=0?indexedOffer:(typeof cur!=="undefined"&&Number.isInteger(cur)?cur:-1));
+  const suggestion=typeof getHeroSuggestionForOffer==="function"?getHeroSuggestionForOffer(d,renderIndex):null;
+  const suggestionPanel=suggestion?`<div class="hero-suggestion-takeover">${heroSuggestionHtml(suggestion,renderIndex,true)}</div>`:"";
   if(suggestionPanel) return `<div class="hph">${suggestionPanel}</div>`;
   return heroPlaceholder
     ? `<div class="hph"><span>${heroPlaceholder[0]}</span><span>${heroPlaceholder[1]}</span></div>`
@@ -6334,7 +6341,9 @@ function renderPreviewMode(skipSave){
       const cardWrap = document.createElement('div');
       cardWrap.className = 'email-card-wrap';
       cardWrap.style.cssText = 'width:1200px;background:#fff;overflow:hidden;';
+      currentHeroSuggestionRenderIndex = i;
       cardWrap.innerHTML = renderOfferWithOptionalCtaHTML(d, getCtaSettingsFromUI());
+      currentHeroSuggestionRenderIndex = null;
       enhanceClickableHeroPlaceholders(cardWrap, i);
       stackWrap.appendChild(cardWrap);
       scheduleHeroCropPositions(cardWrap);
@@ -6366,8 +6375,10 @@ function renderPreviewMode(skipSave){
       c.setAttribute('aria-label', 'Edit Offer ' + (index + 1));
       c.addEventListener('click', function(){ editOfferFromAllPreview(index); });
       c.addEventListener('keydown', function(event){ handleAllPreviewCardKeydown(event, index); });
+      currentHeroSuggestionRenderIndex = index;
       c.innerHTML = bc(d || {});
       if(getCtaSettingsFromUI().enabled) c.innerHTML = renderOfferWithOptionalCtaHTML(d || {}, getCtaSettingsFromUI());
+      currentHeroSuggestionRenderIndex = null;
       enhanceClickableHeroPlaceholders(c, index);
       grid.appendChild(c);
       scheduleHeroCropPositions(c);
