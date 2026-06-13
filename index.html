@@ -106,11 +106,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-remember{display:flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:var(--navy);}
 .hero-remember input{width:auto;}
 .hph{position:relative;}
-.hph .hero-suggestion-card{display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:260px;max-width:70%;text-align:center;pointer-events:auto;}
-.hph .hero-suggestion-actions{justify-content:center;}
-.hph .hero-suggestion-card button{font-size:18px;padding:10px 22px;}
-.hph .hero-suggestion-name{font-size:28px;}
-.hph .hero-suggestion-label{font-size:16px;margin:7px 0 4px;}
+.hph .hero-suggestion-takeover{display:flex;flex-direction:column;align-items:center;justify-content:center;width:300px;max-width:74%;text-align:center;pointer-events:auto;line-height:normal;}
+.hph .hero-suggestion-takeover .hero-suggestion-label{font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:.16em;color:var(--gold);margin:0 0 14px;}
+.hph .hero-suggestion-takeover .hero-suggestion-name{font-size:42px;font-weight:900;color:var(--navy);line-height:1.05;margin:0 0 30px;}
+.hph .hero-suggestion-takeover .hero-suggestion-actions{width:100%;justify-content:center;margin-top:0;}
+.hph .hero-suggestion-takeover .hero-suggestion-actions .abtn{width:100%;padding:16px 20px;font-size:15px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 8px 18px rgba(14,27,42,.16);}
 .hero-library-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:6px;margin-top:7px;}
 .hero-library-item{appearance:none;border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;color:var(--navy);font:inherit;font-size:11px;font-weight:800;line-height:1.2;text-align:center;padding:9px 8px;cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease;}
 .hero-library-item:hover,.hero-library-item:focus-visible{border-color:var(--gold);box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px);outline:none;}
@@ -1121,7 +1121,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.2.3";
+const APP_VERSION = "v2.2.4";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -1934,7 +1934,8 @@ function heroSuggestionHtml(suggestion,index,compact){
   if(!suggestion||!suggestion.category) return "";
   const name=escapeAttr(suggestion.category.name);
   const idx=Number.isInteger(index)?index:cur;
-  return `<div class="hero-suggestion-label">Suggested Hero</div><div class="hero-suggestion-name">${name}</div><div class="hero-suggestion-actions"><button class="abtn gold btn-compact" type="button" onclick="applySuggestedHero(${idx},'${escapeAttr(suggestion.category.id)}',event)">Apply</button></div>`;
+  const buttonText=compact?"Apply Hero Image":"Apply";
+  return `<div class="hero-suggestion-label">Suggested Hero</div><div class="hero-suggestion-name">${name}</div><div class="hero-suggestion-actions"><button class="abtn gold${compact?"":" btn-compact"}" type="button" onclick="applySuggestedHero(${idx},'${escapeAttr(suggestion.category.id)}',event)">${buttonText}</button></div>`;
 }
 function updateSidebarHeroSuggestion(){
   const panel=document.getElementById("hero-sidebar-suggestion"); if(!panel) return;
@@ -2310,10 +2311,11 @@ function renderHeroHTML(d, heroPlaceholder){
   }
   const suggestion=typeof getHeroSuggestionForOffer==="function"?getHeroSuggestionForOffer(d):null;
   const suggestionIndex=(typeof offers!=="undefined"&&Array.isArray(offers))?offers.indexOf(d):-1;
-  const suggestionPanel=suggestion?`<div class="hero-suggestion-card">${heroSuggestionHtml(suggestion,suggestionIndex>=0?suggestionIndex:cur,true)}</div>`:"";
+  const suggestionPanel=suggestion?`<div class="hero-suggestion-takeover">${heroSuggestionHtml(suggestion,suggestionIndex>=0?suggestionIndex:cur,true)}</div>`:"";
+  if(suggestionPanel) return `<div class="hph">${suggestionPanel}</div>`;
   return heroPlaceholder
-    ? `<div class="hph"><span>${heroPlaceholder[0]}</span><span>${heroPlaceholder[1]}</span>${suggestionPanel}</div>`
-    : `<div class="hph"><span></span>${suggestionPanel}</div>`;
+    ? `<div class="hph"><span>${heroPlaceholder[0]}</span><span>${heroPlaceholder[1]}</span></div>`
+    : `<div class="hph"><span></span></div>`;
 }
 function applyHeroCropPositions(root){
   const scope=root&&root.querySelectorAll?root:document;
