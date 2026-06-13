@@ -54,6 +54,7 @@ function createHarness(seed = {}){
     extractFunction('safeWriteJsonStorage'),
     extractFunction('getHeroLibraryImageCount'),
     extractFunction('normaliseHeroLibraryCategory'),
+    extractFunction('heroLibraryCategoryIdBase'),
     extractFunction('getHeroLibrary'),
     extractFunction('getSuggestableHeroLibrary'),
     extractFunction('saveHeroLibrary'),
@@ -384,6 +385,46 @@ test('image library render uses active category id as the only active source of 
   assert.equal(context.activeHeroLibraryCategoryId, 'na');
   assert.equal((elements['hero-library-list'].innerHTML.match(/class="hero-library-card[^"]* active/g) || []).length, 1);
   assert.match(elements['hero-library-list'].innerHTML, /data-hero-category-id="na"><button class="hero-library-item empty active"/);
+});
+
+test('image library render normalises duplicate stored ids before applying active state', () => {
+  const list = [
+    { id: 'hero-duplicate', name: 'Caribbean', image: 'data:image/png;base64,caribbean', thumbnail: 'data:image/png;base64,caribbean', tags: ['Barbados'], imageCount: 1, lastUsed: '' },
+    { id: 'hero-duplicate', name: 'Mediterranean', image: 'data:image/png;base64,med', thumbnail: 'data:image/png;base64,med', tags: ['Santorini'], imageCount: 1, lastUsed: '' },
+    { id: 'hero-duplicate', name: 'North America', image: '', thumbnail: '', tags: ['New York'], imageCount: 0, lastUsed: '' }
+  ];
+  const elements = {
+    'hero-library-name': { value: '' },
+    'hero-library-tags': { value: '' },
+    'hero-library-list': { innerHTML: '' },
+    'hero-library-category-status': { textContent: '', className: '', classList: { add(){} } },
+    'hero-library-category-helper': { textContent: '' },
+    'hero-library-category-action': { textContent: '', className: '', classList: { add(){} } }
+  };
+  const { context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(list) });
+  context.document = { getElementById: id => elements[id] || null, querySelectorAll: () => [] };
+
+  assert.equal(JSON.stringify(context.getHeroLibrary().map(item => item.id)), JSON.stringify(['hero-duplicate', 'hero-duplicate-2', 'hero-duplicate-3']));
+
+  context.selectHeroLibraryCategory('hero-duplicate');
+  assert.equal((elements['hero-library-list'].innerHTML.match(/class="hero-library-card[^"]* active/g) || []).length, 1);
+  assert.equal((elements['hero-library-list'].innerHTML.match(/aria-pressed="true"/g) || []).length, 1);
+  assert.match(elements['hero-library-list'].innerHTML, /data-hero-category-id="hero-duplicate"><button class="hero-library-item active"/);
+
+  context.selectHeroLibraryCategory('hero-duplicate-2');
+  assert.equal(context.activeHeroLibraryCategoryId, 'hero-duplicate-2');
+  assert.equal((elements['hero-library-list'].innerHTML.match(/class="hero-library-card[^"]* active/g) || []).length, 1);
+  assert.equal((elements['hero-library-list'].innerHTML.match(/aria-pressed="true"/g) || []).length, 1);
+  assert.match(elements['hero-library-list'].innerHTML, /data-hero-category-id="hero-duplicate-2"><button class="hero-library-item active"/);
+  assert.doesNotMatch(elements['hero-library-list'].innerHTML, /data-hero-category-id="hero-duplicate"><button class="hero-library-item active"/);
+
+  context.selectHeroLibraryCategory('hero-duplicate-3');
+  assert.equal(context.activeHeroLibraryCategoryId, 'hero-duplicate-3');
+  assert.equal((elements['hero-library-list'].innerHTML.match(/class="hero-library-card[^"]* active/g) || []).length, 1);
+  assert.equal((elements['hero-library-list'].innerHTML.match(/aria-pressed="true"/g) || []).length, 1);
+  assert.match(elements['hero-library-list'].innerHTML, /data-hero-category-id="hero-duplicate-3"><button class="hero-library-item empty active"/);
+  assert.doesNotMatch(elements['hero-library-list'].innerHTML, /data-hero-category-id="hero-duplicate"><button class="hero-library-item active"/);
+  assert.doesNotMatch(elements['hero-library-list'].innerHTML, /data-hero-category-id="hero-duplicate-2"><button class="hero-library-item active"/);
 });
 
 test('destination matches outrank stale hero memory for Greek Islands suggestions', () => {
