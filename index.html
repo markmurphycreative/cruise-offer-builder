@@ -862,6 +862,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
           <div class="field"><label>Category</label><input id="hero-library-name" placeholder="Mediterranean" oninput="updateHeroLibraryCategoryUx()"></div>
           <div class="hero-library-category-status" id="hero-library-category-status" aria-live="polite"></div>
           <div class="field"><label>Destination Tags</label><input id="hero-library-tags" placeholder="Santorini, Mykonos, Crete, Corfu, Rhodes" oninput="scheduleActiveHeroLibraryTagsSave()" onblur="flushActiveHeroLibraryTagsSave()"></div>
+          <div class="field"><label>Image Tags</label><input id="hero-library-image-tags" placeholder="Santorini, Oia, Mykonos"></div>
           <div class="hero-library-tags-feedback" id="hero-library-tags-feedback" aria-live="polite"></div>
           <div class="dropzone hero-library-upload-helper" id="dz-hero-library" ondragover="dzOver(event,'dz-hero-library')" ondragleave="dzOut('dz-hero-library')" ondrop="heroLibraryDrop(event)">
             <input type="file" accept="image/*" onchange="heroLibraryFileChosen(event)">
@@ -1158,7 +1159,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.3.5";
+const APP_VERSION = "v2.4.0";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -1939,11 +1940,32 @@ const HERO_KEYWORD_RULES={
 };
 function safeReadJsonStorage(key,fallback){ try{ const raw=localStorage.getItem(key); return raw?JSON.parse(raw):fallback; }catch(e){ return fallback; } }
 function safeWriteJsonStorage(key,value){ try{ localStorage.setItem(key,JSON.stringify(value)); return true; }catch(e){ alert("Browser storage is full. Remove unused hero categories and try again."); return false; } }
-function getHeroLibraryImageCount(category){ return category&&category.image?1:0; }
+function normaliseHeroLibraryImage(image,index,category){
+  if(!image) return null;
+  const src=image.image||image.thumbnail||"";
+  if(!src) return null;
+  const fallbackName=(category&&category.name?category.name:"Image")+(index?` ${index+1}`:"");
+  return {
+    id:String(image.id||`image-${index+1}`),
+    name:String(image.name||fallbackName),
+    image:src,
+    thumbnail:image.thumbnail||src,
+    tags:Array.isArray(image.tags)?image.tags:splitHeroDestinationTags(image.tags||""),
+    lastUsed:image.lastUsed||""
+  };
+}
+function getHeroLibraryImages(category){ return Array.isArray(category&&category.images)?category.images.filter(image=>image&&image.image):[]; }
+function getHeroLibraryDefaultImage(category){ const images=getHeroLibraryImages(category); return images[0]||(category&&category.image?{id:"default",name:category.name||"Image",image:category.image,thumbnail:category.thumbnail||category.image,tags:getHeroCategoryTags(category),lastUsed:category.lastUsed||""}:null); }
+function getHeroLibraryImageCount(category){ return getHeroLibraryImages(category).length || (category&&category.image?1:0); }
 function normaliseHeroLibraryCategory(item){
   if(!item||!item.name) return null;
-  const image=item.image||item.thumbnail||"";
-  return {...item,image,thumbnail:item.thumbnail||image,imageCount:Number.isFinite(Number(item.imageCount))?Number(item.imageCount):getHeroLibraryImageCount({image})};
+  const legacyImage=item.image||item.thumbnail||"";
+  let images=Array.isArray(item.images)?item.images.map((image,index)=>normaliseHeroLibraryImage(image,index,item)).filter(Boolean):[];
+  if(!images.length&&legacyImage){ images=[normaliseHeroLibraryImage({id:"default",name:item.name,image:legacyImage,thumbnail:item.thumbnail||legacyImage,tags:item.tags,lastUsed:item.lastUsed},0,item)]; }
+  const defaultImage=images[0]||null;
+  const image=(item.image||legacyImage||(defaultImage&&defaultImage.image)||"");
+  const thumbnail=(item.thumbnail||image||(defaultImage&&defaultImage.thumbnail)||"");
+  return {...item,image,thumbnail,images,imageCount:images.length||getHeroLibraryImageCount({image})};
 }
 function heroLibraryCategoryIdBase(item,index){
   const rawId=String((item&&item.id)||"").trim();
@@ -1961,7 +1983,7 @@ function getHeroLibrary(){
     return {...item,id:used[base]===1?base:`${base}-${used[base]}`};
   });
 }
-function getSuggestableHeroLibrary(){ return getHeroLibrary().filter(item=>item&&item.image&&Number(item.imageCount)>0); }
+function getSuggestableHeroLibrary(){ return getHeroLibrary().filter(item=>item&&Number(item.imageCount)>0); }
 function saveHeroLibrary(list){ return safeWriteJsonStorage(HERO_LIBRARY_KEY,(Array.isArray(list)?list:[]).slice(0,30)); }
 function getHeroMemory(){ const memory=safeReadJsonStorage(HERO_MEMORY_KEY,{}); return memory&&typeof memory==="object"&&!Array.isArray(memory)?memory:{}; }
 function saveHeroMemory(memory){ safeWriteJsonStorage(HERO_MEMORY_KEY,memory||{}); }
@@ -2017,17 +2039,43 @@ function scoreHeroDestinationTags(offer,library){
   const winner=scored[0];
   return {category:winner.category,keyword:winner.matches[0],matches:winner.matches,matchCount:winner.score,source:"tags"};
 }
+function scoreHeroCategoryImages(offer,category){
+  const text=normaliseHeroText(getOfferHeroSuggestionText(offer));
+  if(!text||!category) return null;
+  const images=getHeroLibraryImages(category);
+  const scored=images.map((image,index)=>{
+    const tags=Array.isArray(image.tags)?image.tags:splitHeroDestinationTags(image.tags||"");
+    const matches=tags.filter(tag=>new RegExp("(^|[^a-z0-9])"+escapeHeroRegExp(tag)+"([^a-z0-9]|$)","i").test(text));
+    return {image,matches,score:matches.length,index};
+  }).filter(item=>item.score>0);
+  if(!scored.length) return null;
+  scored.sort((a,b)=>{
+    if(b.score!==a.score) return b.score-a.score;
+    const aUsed=Date.parse(a.image.lastUsed||"")||0;
+    const bUsed=Date.parse(b.image.lastUsed||"")||0;
+    if(bUsed!==aUsed) return bUsed-aUsed;
+    return a.index-b.index;
+  });
+  const winner=scored[0];
+  return {image:winner.image,matches:winner.matches,matchCount:winner.score};
+}
+function withMatchedHeroImage(suggestion,offer){
+  if(!suggestion||!suggestion.category) return suggestion;
+  const imageMatch=scoreHeroCategoryImages(offer,suggestion.category);
+  const fallback=getHeroLibraryDefaultImage(suggestion.category);
+  return {...suggestion,image:imageMatch?imageMatch.image:fallback,imageMatches:imageMatch?imageMatch.matches:[],imageMatchCount:imageMatch?imageMatch.matchCount:0,imageSource:imageMatch?"image-tags":"category"};
+}
 function getHeroSuggestionForOffer(offer){
   if(!offer||offer._img) return null;
-  const library=getSuggestableHeroLibrary(); if(!library.length) return null;
+  const library=getHeroLibrary(); if(!library.length) return null;
   const text=normaliseHeroText(getOfferHeroSuggestionText(offer));
   const memory=getHeroMemory();
   const destinationSuggestion=scoreHeroDestinationTags(offer,library);
-  if(destinationSuggestion) return destinationSuggestion;
+  if(destinationSuggestion) return withMatchedHeroImage(destinationSuggestion,offer);
   const matches=getMatchedHeroKeywords(offer);
-  for(const match of matches){ const stored=findSuggestableHeroCategoryByName(match.category); if(stored) return {category:stored,keyword:match.keyword,source:"rules"}; }
+  for(const match of matches){ const stored=findHeroCategoryByName(match.category); if(stored) return withMatchedHeroImage({category:stored,keyword:match.keyword,source:"rules"},offer); }
   for(const [keyword,categoryName] of Object.entries(memory)){
-    if(keyword && text.includes(normaliseHeroText(keyword))){ const stored=findSuggestableHeroCategoryByName(categoryName); if(stored) return {category:stored,keyword,source:"memory"}; }
+    if(keyword && text.includes(normaliseHeroText(keyword))){ const stored=findHeroCategoryByName(categoryName); if(stored) return withMatchedHeroImage({category:stored,keyword,source:"memory"},offer); }
   }
   return null;
 }
@@ -2036,8 +2084,11 @@ function heroSuggestionHtml(suggestion,index,compact){
   const name=escapeAttr(suggestion.category.name);
   const idx=Number.isInteger(index)?index:cur;
   const buttonText=compact?"Apply Hero Image":"Apply";
-  const detail=suggestion.source==="tags"&&suggestion.matchCount?`<div class="hero-suggestion-label">${suggestion.matchCount} destination match${suggestion.matchCount===1?"":"es"}</div>`:"";
-  return `<div class="hero-suggestion-label">Suggested Hero</div><div class="hero-suggestion-name">${name}</div>${detail}<div class="hero-suggestion-actions"><button class="abtn gold${compact?"":" btn-compact"}" type="button" onclick="applySuggestedHero(${idx},'${escapeAttr(suggestion.category.id)}',event)">${buttonText}</button></div>`;
+  const imageName=suggestion.image&&suggestion.image.image?escapeAttr(suggestion.image.name||suggestion.category.name):"";
+  const matchCount=Number(suggestion.imageMatchCount)||0;
+  const detail=matchCount?`<div class="hero-suggestion-label">Matched Image:</div><div class="hero-suggestion-name small">${imageName}</div><div class="hero-suggestion-label">${matchCount} destination match${matchCount===1?"":"es"}</div>`:`<div class="hero-suggestion-label">Category match only</div>`;
+  const disabled=suggestion.image&&suggestion.image.image?"":" disabled title=\"Add an image to this category first\"";
+  return `<div class="hero-suggestion-label">Suggested Hero</div><div class="hero-suggestion-name">${name}</div>${detail}<div class="hero-suggestion-actions"><button class="abtn gold${compact?"":" btn-compact"}" type="button" onclick="applySuggestedHero(${idx},'${escapeAttr(suggestion.category.id)}',event)"${disabled}>${buttonText}</button></div>`;
 }
 function updateSidebarHeroSuggestion(){
   const panel=document.getElementById("hero-sidebar-suggestion"); if(!panel) return;
@@ -2048,7 +2099,7 @@ function updateSidebarHeroSuggestion(){
 function setHeroSuggestionRemember(index,checked){ if(!offers[index]) offers[index]={}; offers[index]._rememberHeroSuggestion=!!checked; }
 function rememberHeroRelationship(offer,categoryName){
   const matches=getMatchedHeroKeywords(offer);
-  const tagSuggestion=scoreHeroDestinationTags(offer,getSuggestableHeroLibrary());
+  const tagSuggestion=scoreHeroDestinationTags(offer,getHeroLibrary());
   if(!matches.length&&!(tagSuggestion&&tagSuggestion.matches&&tagSuggestion.matches.length)) return;
   const memory=getHeroMemory();
   matches.forEach(match=>{ memory[match.keyword]=categoryName; });
@@ -2058,12 +2109,15 @@ function rememberHeroRelationship(offer,categoryName){
 function applySuggestedHero(index,categoryId,event){
   if(event){ event.preventDefault(); event.stopPropagation(); }
   const i=Number(index); const category=getHeroLibrary().find(item=>item.id===categoryId);
-  if(!Number.isInteger(i)||!category||!category.image) return;
+  if(!Number.isInteger(i)||!category) return;
+  const suggestion=withMatchedHeroImage({category,source:"apply"},offers[i]||{});
+  const matchedImage=suggestion&&suggestion.image&&suggestion.image.image?suggestion.image:null;
+  if(!matchedImage) return;
   if(!offers[i]) offers[i]={};
-  offers[i]._img=category.image; offers[i]._imgSource="Hero Library: "+category.name; offers[i]._imgNeedsReupload=false;
+  offers[i]._img=matchedImage.image; offers[i]._imgSource="Hero Library: "+category.name+(matchedImage.name?" / "+matchedImage.name:""); offers[i]._imgNeedsReupload=false;
   offers[i]._cropZoom=100; offers[i]._cropX=50; offers[i]._cropY=50; offers[i]._cropPosVersion=2; offers[i]._heroFitMode="fill";
   if(offers[i]._rememberHeroSuggestion!==false) rememberHeroRelationship(offers[i],category.name);
-  const library=getHeroLibrary(); const stored=library.find(item=>item.id===category.id); if(stored) stored.lastUsed=new Date().toISOString(); saveHeroLibrary(library);
+  const library=getHeroLibrary(); const stored=library.find(item=>item.id===category.id); if(stored){ stored.lastUsed=new Date().toISOString(); const img=(stored.images||[]).find(image=>image.id===matchedImage.id); if(img) img.lastUsed=stored.lastUsed; } saveHeroLibrary(library);
   if(i===cur){ setThumb("hero",offers[i]._img); syncHeroUi(); }
   renderHeroLibraryList(); refreshOfferUi({utm:false,spell:false});
   if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Hero suggestion applied");
@@ -2084,6 +2138,7 @@ function estimateDataUrlBytes(dataUrl){
   return Math.max(0,Math.floor((b64.length*3)/4)-padding);
 }
 let pendingHeroLibraryImage=null;
+let pendingHeroLibraryReplaceImageId="";
 let activeHeroLibraryCategoryId="";
 function getHeroLibraryCategoryInputName(){
   const nameEl=document.getElementById("hero-library-name");
@@ -2223,7 +2278,9 @@ function savePendingHeroLibraryCategory(options){
   const nameEl=document.getElementById("hero-library-name");
   const tagsEl=document.getElementById("hero-library-tags");
   const name=getHeroLibraryCategoryInputName();
+  const imageTagsEl=document.getElementById("hero-library-image-tags");
   const tags=splitHeroDestinationTags((tagsEl&&tagsEl.value)||"");
+  const imageTags=splitHeroDestinationTags((imageTagsEl&&imageTagsEl.value)||"");
   if(!name){ alert("Add a category name first."); return false; }
   const forceNew=!!(options&&options.forceNew);
   const active=getActiveHeroLibraryCategory();
@@ -2232,12 +2289,21 @@ function savePendingHeroLibraryCategory(options){
   const src=pendingHeroLibraryImage?pendingHeroLibraryImage.dataUrl:(existing&&existing.image)||"";
   const list=getHeroLibrary().filter(item=>existing?item.id!==existing.id:normaliseHeroText(item.name)!==normaliseHeroText(name));
   const savedId=(existing&&existing.id)||`hero-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-  list.unshift({id:savedId,name:savedName,thumbnail:src,image:src,tags,lastUsed:(existing&&existing.lastUsed)||"",imageCount:src?1:0});
+  const images=existing&&Array.isArray(existing.images)?existing.images.slice():[];
+  const nextImageTags=imageTags.length?imageTags:tags;
+  const nextImageName=nextImageTags[0]||savedName;
+  if(pendingHeroLibraryImage&&src&&pendingHeroLibraryReplaceImageId){ const replaceIndex=images.findIndex(image=>image.id===pendingHeroLibraryReplaceImageId); if(replaceIndex>=0) images[replaceIndex]={...images[replaceIndex],name:nextImageName,image:src,thumbnail:src,tags:nextImageTags}; else images.push({id:pendingHeroLibraryReplaceImageId,name:nextImageName,image:src,thumbnail:src,tags:nextImageTags,lastUsed:""}); }
+  else if(pendingHeroLibraryImage&&src){ images.push({id:`image-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,name:nextImageName,image:src,thumbnail:src,tags:nextImageTags,lastUsed:""}); }
+  else if(src&&!images.length){ images.push({id:"default",name:nextImageName,image:src,thumbnail:src,tags:nextImageTags,lastUsed:(existing&&existing.lastUsed)||""}); }
+  const defaultImage=images[0]||null;
+  list.unshift({id:savedId,name:savedName,thumbnail:(defaultImage&&defaultImage.thumbnail)||"",image:(defaultImage&&defaultImage.image)||"",images,tags,lastUsed:(existing&&existing.lastUsed)||"",imageCount:images.length});
   if(!saveHeroLibrary(list)) return false;
   pendingHeroLibraryImage=null;
+  pendingHeroLibraryReplaceImageId="";
   activeHeroLibraryCategoryId=savedId;
   if(nameEl) nameEl.value=savedName;
   if(tagsEl) tagsEl.value=tags.join(", ");
+  if(imageTagsEl) imageTagsEl.value="";
   renderHeroLibraryList(); syncHeroLibraryActiveCards(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); updateHeroLibraryCategoryUx();
   return true;
 }
@@ -2257,9 +2323,10 @@ function renameActiveHeroLibraryCategoryFromField(){
   return renameHeroLibraryCategory(active.id,name);
 }
 function handleHeroLibraryCategoryAction(){ return createHeroLibraryCategoryFromField(); }
-function addHeroLibraryImage(id,event){
+function addHeroLibraryImage(id,event,imageId){
   if(event){ event.preventDefault(); event.stopPropagation(); }
   selectHeroLibraryCategory(id);
+  pendingHeroLibraryReplaceImageId=imageId||"";
   const input=document.querySelector('#dz-hero-library input[type="file"]');
   if(!input) return false;
   input.value="";
@@ -2278,20 +2345,24 @@ function selectHeroLibraryCategory(id){
   if(tagsEl) tagsEl.value=getHeroCategoryTags(item).join(", ");
   setHeroLibraryTagsFeedback("","");
   pendingHeroLibraryImage=null;
+  pendingHeroLibraryReplaceImageId="";
   renderHeroLibraryList();
   syncHeroLibraryActiveCards();
   updateSidebarHeroSuggestion();
   updateHeroLibraryCategoryUx();
 }
-function removeHeroLibraryImage(id,event){
+function removeHeroLibraryImage(id,event,imageId){
   if(event){ event.preventDefault(); event.stopPropagation(); }
   const list=getHeroLibrary();
   const item=list.find(x=>x.id===id);
-  if(!item||!item.image) return false;
+  if(!item||!Number(item.imageCount)) return false;
+  const targetId=imageId||((item.images&&item.images[0]&&item.images[0].id)||"");
   if(!confirm("Remove this image from "+item.name+"?")) return false;
-  item.image="";
-  item.thumbnail="";
-  item.imageCount=0;
+  item.images=(item.images||[]).filter(image=>image.id!==targetId);
+  const first=item.images[0]||null;
+  item.image=first?first.image:"";
+  item.thumbnail=first?first.thumbnail:"";
+  item.imageCount=item.images.length;
   if(activeHeroLibraryCategoryId===id) pendingHeroLibraryImage=null;
   if(!saveHeroLibrary(list)) return false;
   renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); updateHeroLibraryCategoryUx();
@@ -2341,8 +2412,9 @@ function renderHeroLibraryList(){
     const count=Number(item.imageCount)||0;
     const icon=count>0?"✓":"⚠";
     const active=typeof activeHeroLibraryCategoryId!=="undefined"&&item.id===activeHeroLibraryCategoryId;
-    const imageAction=count>0?`<button class="hero-library-card-action hero-library-replace-image" type="button" onclick="addHeroLibraryImage('${escapeAttr(item.id)}',event)">Replace Image</button><button class="hero-library-card-action hero-library-remove-image" type="button" onclick="removeHeroLibraryImage('${escapeAttr(item.id)}',event)">Remove</button>`:`<button class="hero-library-card-action hero-library-add-image" type="button" onclick="addHeroLibraryImage('${escapeAttr(item.id)}',event)">Add Image</button>`;
-    return `<div class="hero-library-card${count>0?"":" empty"}${active?" active":""}" data-hero-category-id="${escapeAttr(item.id)}"><button class="hero-library-item${count>0?"":" empty"}${active?" active":""}" data-hero-category-id="${escapeAttr(item.id)}" type="button" aria-pressed="${active?"true":"false"}" onclick="useHeroLibraryCategory('${escapeAttr(item.id)}')"><span class="hero-library-status-icon">${icon}</span><span class="hero-library-name">${escapeAttr(item.name)}</span><span class="hero-library-item-count">${count} Image${count===1?"":"s"}</span><span class="hero-library-active-label">Active</span></button><div class="hero-library-row-actions">${imageAction}</div></div>`;
+    const imageRows=count>0?`<div class="hero-library-image-rows">${(item.images||[]).map(image=>`<div class="hero-library-image-row"><span class="hero-library-image-name">${escapeAttr(image.name||item.name)}</span><span class="hero-library-image-tags">${escapeAttr((image.tags||[]).join(", "))}</span><button class="hero-library-card-action hero-library-replace-image" type="button" onclick="addHeroLibraryImage('${escapeAttr(item.id)}',event,'${escapeAttr(image.id)}')">Replace</button><button class="hero-library-card-action hero-library-remove-image" type="button" onclick="removeHeroLibraryImage('${escapeAttr(item.id)}',event,'${escapeAttr(image.id)}')">Remove</button></div>`).join("")}</div>`:"";
+    const imageAction=`<button class="hero-library-card-action hero-library-add-image" type="button" onclick="addHeroLibraryImage('${escapeAttr(item.id)}',event)">Add Image</button>${count>0?`<button class="hero-library-card-action hero-library-manage-images" type="button" onclick="useHeroLibraryCategory('${escapeAttr(item.id)}')">Manage Images</button>`:""}`;
+    return `<div class="hero-library-card${count>0?"":" empty"}${active?" active":""}" data-hero-category-id="${escapeAttr(item.id)}"><button class="hero-library-item${count>0?"":" empty"}${active?" active":""}" data-hero-category-id="${escapeAttr(item.id)}" type="button" aria-pressed="${active?"true":"false"}" onclick="useHeroLibraryCategory('${escapeAttr(item.id)}')"><span class="hero-library-status-icon">${icon}</span><span class="hero-library-name">${escapeAttr(item.name)}</span><span class="hero-library-item-count">${count} Image${count===1?"":"s"}</span><span class="hero-library-active-label">Active</span></button><div class="hero-library-row-actions">${imageAction}</div>${active?imageRows:""}</div>`;
   }).join("");
   syncHeroLibraryActiveCards();
   if(typeof updateHeroLibraryCategoryUx==="function") updateHeroLibraryCategoryUx();

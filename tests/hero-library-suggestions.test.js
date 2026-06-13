@@ -52,6 +52,9 @@ function createHarness(seed = {}){
     extractFunction('escapeAttr'),
     extractFunction('safeReadJsonStorage'),
     extractFunction('safeWriteJsonStorage'),
+    extractFunction('normaliseHeroLibraryImage'),
+    extractFunction('getHeroLibraryImages'),
+    extractFunction('getHeroLibraryDefaultImage'),
     extractFunction('getHeroLibraryImageCount'),
     extractFunction('normaliseHeroLibraryCategory'),
     extractFunction('heroLibraryCategoryIdBase'),
@@ -70,6 +73,8 @@ function createHarness(seed = {}){
     extractFunction('findSuggestableHeroCategoryByName'),
     extractFunction('getMatchedHeroKeywords'),
     extractFunction('scoreHeroDestinationTags'),
+    extractFunction('scoreHeroCategoryImages'),
+    extractFunction('withMatchedHeroImage'),
     extractFunction('getHeroSuggestionForOffer'),
     extractFunction('setHeroSuggestionRemember'),
     extractFunction('rememberHeroRelationship'),
@@ -86,7 +91,7 @@ function createHarness(seed = {}){
     extractFunction('removeHeroLibraryImage'),
     extractFunction('renderHeroLibraryList'),
     extractFunction('updateHeroLibraryCategoryUx'),
-    'var activeHeroLibraryCategoryId=""; var pendingHeroLibraryImage=null; var heroLibraryTagsFeedbackTimer=null; var heroLibraryTagsSaveTimer=null; var HERO_LIBRARY_TAGS_SAVE_DEBOUNCE_MS=700;',
+    'var activeHeroLibraryCategoryId=""; var pendingHeroLibraryImage=null; var pendingHeroLibraryReplaceImageId=""; var heroLibraryTagsFeedbackTimer=null; var heroLibraryTagsSaveTimer=null; var HERO_LIBRARY_TAGS_SAVE_DEBOUNCE_MS=700;',
     extractFunction('setHeroLibraryTagsFeedback'),
     extractFunction('isHeroLibraryTagsInputFocused'),
     extractFunction('scheduleActiveHeroLibraryTagsSave'),
@@ -99,14 +104,16 @@ function createHarness(seed = {}){
   return { context, storage };
 }
 
-test('Image Library UI and v2.3.5 release version is present', () => {
-  assert.match(html, /const APP_VERSION = "v2\.3\.5";/);
+test('Image Library UI and v2.4.0 release version is present', () => {
+  assert.match(html, /const APP_VERSION = "v2\.4\.0";/);
   assert.match(html, />Image Library<\/h3>/);
   assert.match(html, /<label>Category<\/label>/);
   assert.match(html, /Select a category below to add or manage images\./);
   assert.match(html, /id="hero-library-name"/);
   assert.match(html, />Destination Tags<\/label>/);
   assert.match(html, /id="hero-library-tags"/);
+  assert.match(html, />Image Tags<\/label>/);
+  assert.match(html, /id="hero-library-image-tags"/);
   assert.match(html, /id="hero-sidebar-suggestion"/);
   assert.match(html, /data-section-key="hero-library"/);
   assert.match(html, /No saved categories/);
@@ -120,7 +127,7 @@ test('Image Library UI and v2.3.5 release version is present', () => {
 
 
 
-test('empty categories are stored with tags and imageCount zero but never suggested', () => {
+test('empty categories are stored with tags and can suggest categories without applying images', () => {
   const library = [{ id: 'na', name: 'North America', tags: ['New York', 'Boston', 'Miami', 'Quebec'], imageCount: 0, image: '', thumbnail: '', lastUsed: '' }];
   const { context } = createHarness({
     'cruiseHeroLibrary.v2': JSON.stringify(library),
@@ -128,7 +135,11 @@ test('empty categories are stored with tags and imageCount zero but never sugges
   });
   assert.equal(context.getHeroLibrary()[0].name, 'North America');
   assert.equal(context.getHeroLibrary()[0].imageCount, 0);
-  assert.equal(context.getHeroSuggestionForOffer({ ports: 'New York • Boston • Quebec' }), null);
+  const suggestion = context.getHeroSuggestionForOffer({ ports: 'New York • Boston • Quebec' });
+  assert.equal(suggestion.category.name, 'North America');
+  assert.equal(suggestion.image, null);
+  assert.match(context.heroSuggestionHtml(suggestion, 0, true), /Category match only/);
+  assert.match(context.heroSuggestionHtml(suggestion, 0, true), /disabled/);
 });
 
 test('rules-based hero suggestions match itinerary keywords to stored local categories', () => {
@@ -166,6 +177,41 @@ test('destination tag ties use recently used category then stored order', () => 
   const withoutRecent = library.map(item => ({ ...item, lastUsed: '' }));
   ({ context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(withoutRecent) }));
   assert.equal(context.getHeroSuggestionForOffer({ ports: 'Bergen' }).category.name, 'First Saved');
+});
+
+
+
+test('destination-level image tags choose the best image inside the matched category', () => {
+  const library = [{
+    id: 'med', name: 'Mediterranean', image: 'data:image/png;base64,santorini', thumbnail: 'data:image/png;base64,santorini', tags: ['Santorini', 'Rhodes', 'Crete', 'Corfu'], lastUsed: '',
+    images: [
+      { id: 'santorini', name: 'Santorini image', image: 'data:image/png;base64,santorini', thumbnail: 'data:image/png;base64,santorini', tags: ['Santorini', 'Oia'] },
+      { id: 'rhodes', name: 'Rhodes image', image: 'data:image/png;base64,rhodes', thumbnail: 'data:image/png;base64,rhodes', tags: ['Rhodes', 'Lindos'] },
+      { id: 'crete', name: 'Crete image', image: 'data:image/png;base64,crete', thumbnail: 'data:image/png;base64,crete', tags: ['Crete', 'Heraklion'] }
+    ]
+  }];
+  const { context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(library) });
+  const suggestion = context.getHeroSuggestionForOffer({ ports: 'Corfu • Rhodes • Crete • Katakolon' });
+  assert.equal(suggestion.category.name, 'Mediterranean');
+  assert.ok(['Rhodes image', 'Crete image'].includes(suggestion.image.name));
+  assert.notEqual(suggestion.image.name, 'Santorini image');
+  assert.equal(suggestion.imageMatchCount, 1);
+  assert.match(context.heroSuggestionHtml(suggestion, 0, true), /Matched Image:/);
+});
+
+test('image-level tag ties prefer recently used image then saved order', () => {
+  const library = [{
+    id: 'med', name: 'Mediterranean', tags: ['Santorini', 'Rhodes'], image: 'data:image/png;base64,santorini', thumbnail: 'data:image/png;base64,santorini',
+    images: [
+      { id: 'santorini', name: 'Santorini', image: 'data:image/png;base64,santorini', thumbnail: 'data:image/png;base64,santorini', tags: ['Santorini'] },
+      { id: 'rhodes', name: 'Rhodes', image: 'data:image/png;base64,rhodes', thumbnail: 'data:image/png;base64,rhodes', tags: ['Rhodes'], lastUsed: '2026-06-01T12:00:00.000Z' }
+    ]
+  }];
+  let { context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(library) });
+  assert.equal(context.getHeroSuggestionForOffer({ ports: 'Santorini • Rhodes' }).image.name, 'Rhodes');
+  library[0].images[1].lastUsed = '';
+  ({ context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(library) }));
+  assert.equal(context.getHeroSuggestionForOffer({ ports: 'Santorini • Rhodes' }).image.name, 'Santorini');
 });
 
 test('destination tag parsing trims whitespace and ignores case-insensitive duplicates', () => {
@@ -211,7 +257,7 @@ test('applying a suggested hero inserts the saved image without a picker and rem
   context.offers[0] = { ports: 'Rhine • Basel • Amsterdam', _rememberHeroSuggestion: true };
   context.applySuggestedHero(0, 'river');
   assert.equal(context.offers[0]._img, 'data:image/png;base64,river');
-  assert.equal(context.offers[0]._imgSource, 'Hero Library: River Cruise');
+  assert.equal(context.offers[0]._imgSource, 'Hero Library: River Cruise / River Cruise');
   const memory = JSON.parse(storage.get('cruiseHeroMemory.v2')||'{}');
   assert.ok(Object.keys(memory).length > 0, JSON.stringify(memory));
   assert.equal(memory.Rhine || memory.Basel || memory.Amsterdam, 'River Cruise');
@@ -228,7 +274,7 @@ test('saved hero categories render compact cards with image-aware actions', () =
   vm.runInContext(extractFunction('useHeroLibraryCategory') + '\n' + extractFunction('renderHeroLibraryList'), context);
   context.renderHeroLibraryList();
   assert.match(htmlOut, /<span class="hero-library-status-icon">✓<\/span><span class="hero-library-name">Mediterranean<\/span><span class="hero-library-item-count">1 Image<\/span>/);
-  assert.match(htmlOut, /<button class="hero-library-card-action hero-library-replace-image" type="button" onclick="addHeroLibraryImage\('med',event\)">Replace Image<\/button><button class="hero-library-card-action hero-library-remove-image" type="button" onclick="removeHeroLibraryImage\('med',event\)">Remove<\/button>/);
+  assert.match(htmlOut, /<button class="hero-library-card-action hero-library-add-image" type="button" onclick="addHeroLibraryImage\('med',event\)">Add Image<\/button><button class="hero-library-card-action hero-library-manage-images" type="button" onclick="useHeroLibraryCategory\('med'\)">Manage Images<\/button>/);
   assert.match(htmlOut, /<span class="hero-library-status-icon">⚠<\/span><span class="hero-library-name">Canaries<\/span><span class="hero-library-item-count">0 Images<\/span>/);
   assert.match(htmlOut, /<button class="hero-library-card-action hero-library-add-image" type="button" onclick="addHeroLibraryImage\('can',event\)">Add Image<\/button>/);
   assert.doesNotMatch(htmlOut, /Last used|Not used yet|<img|>Use<|Rename|Delete/);
