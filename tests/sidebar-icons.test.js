@@ -26,7 +26,7 @@ test('sidebar section names follow the primary workflow and use the requested di
     'Campaign Presets',
     'Operator Logo',
     'Hero Image',
-    'Hero Library',
+    'Image Library',
     'Offer Details',
     'CTA Assets',
     'Paste Offer',
