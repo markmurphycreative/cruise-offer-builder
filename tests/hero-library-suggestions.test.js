@@ -98,8 +98,8 @@ function createHarness(seed = {}){
   return { context, storage };
 }
 
-test('Image Library UI and v2.3.3 release version is present', () => {
-  assert.match(html, /const APP_VERSION = "v2\.3\.3";/);
+test('Image Library UI and v2.3.4 release version is present', () => {
+  assert.match(html, /const APP_VERSION = "v2\.3\.4";/);
   assert.match(html, />Image Library<\/h3>/);
   assert.match(html, /<label>Category<\/label>/);
   assert.match(html, /Select a category below to add or manage images\./);
@@ -349,6 +349,56 @@ test('saving an image after selecting an empty category attaches it to that acti
   assert.equal(saved.image, 'data:image/jpeg;base64,newyork');
   assert.equal(saved.imageCount, 1);
   assert.equal(elements['hero-library-name'].value, 'North America');
+});
+
+
+test('image library render uses active category id as the only active source of truth', () => {
+  const list = [
+    { id: 'caribbean', name: 'Caribbean', image: 'data:image/jpeg;base64,caribbean', thumbnail: 'data:image/jpeg;base64,caribbean', tags: ['Barbados'], imageCount: 1, lastUsed: '' },
+    { id: 'med', name: 'Mediterranean', image: 'data:image/jpeg;base64,med', thumbnail: 'data:image/jpeg;base64,med', tags: ['Corfu', 'Rhodes', 'Crete'], imageCount: 1, lastUsed: '' },
+    { id: 'na', name: 'North America', image: '', thumbnail: '', tags: ['New York'], imageCount: 0, lastUsed: '' },
+    { id: 'scandi', name: 'Scandinavia & Iceland', image: '', thumbnail: '', tags: ['Reykjavik'], imageCount: 0, lastUsed: '' }
+  ];
+  const elements = {
+    'hero-library-name': { value: '' },
+    'hero-library-tags': { value: '' },
+    'hero-library-list': { innerHTML: '' },
+    'hero-library-category-status': { textContent: '', className: '', classList: { add(){} } },
+    'hero-library-category-helper': { textContent: '' },
+    'hero-library-category-action': { textContent: '', className: '', classList: { add(){} } }
+  };
+  const { context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(list) });
+  context.document = { getElementById: id => elements[id] || null, querySelectorAll: () => [] };
+
+  context.selectHeroLibraryCategory('caribbean');
+  assert.equal((elements['hero-library-list'].innerHTML.match(/class="hero-library-card[^"]* active/g) || []).length, 1);
+  assert.match(elements['hero-library-list'].innerHTML, /data-hero-category-id="caribbean"><button class="hero-library-item active"/);
+
+  context.selectHeroLibraryCategory('med');
+  assert.equal(context.activeHeroLibraryCategoryId, 'med');
+  assert.equal((elements['hero-library-list'].innerHTML.match(/class="hero-library-card[^"]* active/g) || []).length, 1);
+  assert.match(elements['hero-library-list'].innerHTML, /data-hero-category-id="med"><button class="hero-library-item active"/);
+  assert.doesNotMatch(elements['hero-library-list'].innerHTML, /data-hero-category-id="caribbean"><button class="hero-library-item active"/);
+
+  context.selectHeroLibraryCategory('na');
+  assert.equal(context.activeHeroLibraryCategoryId, 'na');
+  assert.equal((elements['hero-library-list'].innerHTML.match(/class="hero-library-card[^"]* active/g) || []).length, 1);
+  assert.match(elements['hero-library-list'].innerHTML, /data-hero-category-id="na"><button class="hero-library-item empty active"/);
+});
+
+test('destination matches outrank stale hero memory for Greek Islands suggestions', () => {
+  const library = [
+    { id: 'caribbean', name: 'Caribbean', image: 'data:image/png;base64,caribbean', thumbnail: 'data:image/png;base64,caribbean', tags: ['Barbados', 'St Kitts'], lastUsed: '' },
+    { id: 'med', name: 'Mediterranean', image: 'data:image/png;base64,med', thumbnail: 'data:image/png;base64,med', tags: ['Corfu', 'Rhodes', 'Crete'], lastUsed: '' }
+  ];
+  const { context } = createHarness({
+    'cruiseHeroLibrary.v2': JSON.stringify(library),
+    'cruiseHeroMemory.v2': JSON.stringify({ Crete: 'Caribbean', Corfu: 'Caribbean' })
+  });
+
+  assert.equal(context.getHeroSuggestionForOffer({ name: 'Marella Greek Islands', ports: 'Corfu • Rhodes • Crete' }).category.name, 'Mediterranean');
+  assert.equal(context.getHeroSuggestionForOffer({ name: 'Virgin Greek Island Glow', ports: 'Santorini • Rhodes • Crete' }).category.name, 'Mediterranean');
+  assert.equal(context.getHeroSuggestionForOffer({ ports: 'Barbados • Martinique • St Kitts' }).category.name, 'Caribbean');
 });
 
 test('empty hero placeholders render a centered primary suggestion takeover when a match exists', () => {

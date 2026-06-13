@@ -1150,7 +1150,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.3.3";
+const APP_VERSION = "v2.3.4";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -1999,13 +1999,13 @@ function getHeroSuggestionForOffer(offer){
   const library=getSuggestableHeroLibrary(); if(!library.length) return null;
   const text=normaliseHeroText(getOfferHeroSuggestionText(offer));
   const memory=getHeroMemory();
-  for(const [keyword,categoryName] of Object.entries(memory)){
-    if(keyword && text.includes(normaliseHeroText(keyword))){ const stored=findSuggestableHeroCategoryByName(categoryName); if(stored) return {category:stored,keyword,source:"memory"}; }
-  }
   const destinationSuggestion=scoreHeroDestinationTags(offer,library);
   if(destinationSuggestion) return destinationSuggestion;
   const matches=getMatchedHeroKeywords(offer);
   for(const match of matches){ const stored=findSuggestableHeroCategoryByName(match.category); if(stored) return {category:stored,keyword:match.keyword,source:"rules"}; }
+  for(const [keyword,categoryName] of Object.entries(memory)){
+    if(keyword && text.includes(normaliseHeroText(keyword))){ const stored=findSuggestableHeroCategoryByName(categoryName); if(stored) return {category:stored,keyword,source:"memory"}; }
+  }
   return null;
 }
 function heroSuggestionHtml(suggestion,index,compact){
@@ -2203,14 +2203,14 @@ function savePendingHeroLibraryCategory(){
   const existing=findHeroCategoryByName(name);
   const src=pendingHeroLibraryImage?pendingHeroLibraryImage.dataUrl:(existing&&existing.image)||"";
   const list=getHeroLibrary().filter(item=>normaliseHeroText(item.name)!==normaliseHeroText(name));
-  const savedId=(existing&&existing.id)||activeHeroLibraryCategoryId||"hero-"+Date.now();
+  const savedId=(existing&&existing.id)||"hero-"+Date.now();
   list.unshift({id:savedId,name,thumbnail:src,image:src,tags,lastUsed:(existing&&existing.lastUsed)||"",imageCount:src?1:0});
   if(!saveHeroLibrary(list)) return false;
   pendingHeroLibraryImage=null;
   activeHeroLibraryCategoryId=savedId;
   if(nameEl) nameEl.value=name;
   if(tagsEl) tagsEl.value=tags.join(", ");
-  renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); updateHeroLibraryCategoryUx();
+  renderHeroLibraryList(); syncHeroLibraryActiveCards(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); updateHeroLibraryCategoryUx();
   return true;
 }
 function handleHeroLibraryCategoryAction(){
@@ -2230,8 +2230,9 @@ function addHeroLibraryImage(id,event){
 function getActiveHeroLibraryCategory(){ return typeof activeHeroLibraryCategoryId!=="undefined"&&activeHeroLibraryCategoryId?getHeroLibrary().find(item=>item.id===activeHeroLibraryCategoryId)||null:null; }
 function selectHeroLibraryCategory(id){
   const item=getHeroLibrary().find(x=>x.id===id); if(!item) return;
-  activeHeroLibraryCategoryId=item.id;
+  activeHeroLibraryCategoryId="";
   syncHeroLibraryActiveCards();
+  activeHeroLibraryCategoryId=item.id;
   const nameEl=document.getElementById("hero-library-name");
   const tagsEl=document.getElementById("hero-library-tags");
   if(nameEl) nameEl.value=item.name;
@@ -2239,6 +2240,8 @@ function selectHeroLibraryCategory(id){
   setHeroLibraryTagsFeedback("","");
   pendingHeroLibraryImage=null;
   renderHeroLibraryList();
+  syncHeroLibraryActiveCards();
+  updateSidebarHeroSuggestion();
   updateHeroLibraryCategoryUx();
 }
 function removeHeroLibraryImage(id,event){
@@ -2256,7 +2259,7 @@ function removeHeroLibraryImage(id,event){
   if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Hero library image removed");
   return true;
 }
-function deleteHeroLibraryCategory(id){ saveHeroLibrary(getHeroLibrary().filter(item=>item.id!==id)); renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); }
+function deleteHeroLibraryCategory(id){ if(activeHeroLibraryCategoryId===id) activeHeroLibraryCategoryId=""; saveHeroLibrary(getHeroLibrary().filter(item=>item.id!==id)); renderHeroLibraryList(); syncHeroLibraryActiveCards(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); }
 function renameHeroLibraryCategory(id){ const list=getHeroLibrary(); const item=list.find(x=>x.id===id); if(!item) return; const next=prompt("Rename Hero Category",item.name); const name=String(next||"").trim(); if(!name||normaliseHeroText(name)===normaliseHeroText(item.name)) return; item.name=name; if(saveHeroLibrary(list)){ renderHeroLibraryList(); updateSidebarHeroSuggestion(); refreshOfferUi({status:false,utm:false,spell:false}); } }
 function syncHeroLibraryActiveCards(){
   const cards=document.querySelectorAll?document.querySelectorAll(".hero-library-card"):[];
@@ -2275,7 +2278,8 @@ function useHeroLibraryCategory(id){ selectHeroLibraryCategory(id); }
 function renderHeroLibraryList(){
   const host=document.getElementById("hero-library-list"); if(!host) return;
   const list=getHeroLibrary();
-  if(!list.length){ host.innerHTML='<div class="hero-library-empty">No saved categories</div>'; if(typeof updateHeroLibraryCategoryUx==="function") updateHeroLibraryCategoryUx(); return; }
+  if(!list.length){ activeHeroLibraryCategoryId=""; host.innerHTML='<div class="hero-library-empty">No saved categories</div>'; if(typeof updateHeroLibraryCategoryUx==="function") updateHeroLibraryCategoryUx(); return; }
+  if(activeHeroLibraryCategoryId&&!list.some(item=>item.id===activeHeroLibraryCategoryId)) activeHeroLibraryCategoryId="";
   host.innerHTML=list.map(item=>{
     const count=Number(item.imageCount)||0;
     const icon=count>0?"✓":"⚠";
@@ -2283,6 +2287,7 @@ function renderHeroLibraryList(){
     const action=count>0?`<button class="hero-library-card-action hero-library-remove-image" type="button" onclick="removeHeroLibraryImage('${escapeAttr(item.id)}',event)">Remove Image</button>`:`<button class="hero-library-card-action hero-library-add-image" type="button" onclick="addHeroLibraryImage('${escapeAttr(item.id)}',event)">Add Image</button>`;
     return `<div class="hero-library-card${count>0?"":" empty"}${active?" active":""}" data-hero-category-id="${escapeAttr(item.id)}"><button class="hero-library-item${count>0?"":" empty"}${active?" active":""}" data-hero-category-id="${escapeAttr(item.id)}" type="button" aria-pressed="${active?"true":"false"}" onclick="useHeroLibraryCategory('${escapeAttr(item.id)}')">${icon} ${escapeAttr(item.name)}<span class="hero-library-item-count">${count} Image${count===1?"":"s"}</span></button>${action}</div>`;
   }).join("");
+  syncHeroLibraryActiveCards();
   if(typeof updateHeroLibraryCategoryUx==="function") updateHeroLibraryCategoryUx();
 }
 
