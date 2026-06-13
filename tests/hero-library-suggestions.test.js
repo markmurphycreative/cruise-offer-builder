@@ -69,8 +69,8 @@ function createHarness(seed = {}){
   return { context, storage };
 }
 
-test('Image Library UI and v2.2.3 release version are present', () => {
-  assert.match(html, /const APP_VERSION = "v2\.2\.3";/);
+test('Image Library UI and v2.2.4 release version are present', () => {
+  assert.match(html, /const APP_VERSION = "v2\.2\.4";/);
   assert.match(html, />Image Library<\/h3>/);
   assert.match(html, /<label>Category<\/label>/);
   assert.match(html, /Add Hero Image/);
@@ -118,13 +118,16 @@ test('saved hero categories render as one-click category cards only', () => {
   assert.doesNotMatch(htmlOut, /Last used|Not used yet|<img|>Use<|Rename|Delete/);
 });
 
-test('empty hero placeholders render an unobtrusive Apply suggestion panel when a match exists', () => {
+test('empty hero placeholders render a centered primary suggestion takeover when a match exists', () => {
   const library = [{ id: 'fjords', name: 'Norwegian Fjords', image: 'data:image/png;base64,fjord', thumbnail: 'data:image/png;base64,fjord', lastUsed: '' }];
   const { context } = createHarness({ 'cruiseHeroLibrary.v2': JSON.stringify(library) });
   const output = context.renderHeroHTML({ ports: 'Bergen • Olden • Geiranger' }, ['Hero', 'Placeholder']);
   assert.match(output, /Norwegian Fjords/);
   assert.match(output, /Suggested Hero/);
+  assert.match(output, /Apply Hero Image/);
+  assert.match(output, /hero-suggestion-takeover/);
   assert.match(output, /applySuggestedHero\(0,'fjords'/);
+  assert.doesNotMatch(output, /<span>Hero<\/span>|<span>Placeholder<\/span>/);
 });
 
 
