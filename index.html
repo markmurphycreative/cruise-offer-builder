@@ -1083,7 +1083,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.1.8";
+const APP_VERSION = "v2.2.2";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -6567,9 +6567,12 @@ function cycleOfferShortcut(direction){
   selectOfferShortcut((active + direction + 4) % 4);
 }
 function openShortcutSection(sectionKey){
-  openSectionByKey(sectionKey);
   const section=document.querySelector ? document.querySelector(`.section[data-section-key="${sectionKey}"]`) : null;
-  if(section && typeof section.scrollIntoView === "function") section.scrollIntoView({block:"start",behavior:"smooth"});
+  const hdr=section && section.querySelector ? section.querySelector(".section-hdr") : null;
+  if(!hdr) return;
+  const willOpen=hdr.classList && hdr.classList.contains("collapsed");
+  toggleSec(hdr);
+  if(willOpen && typeof section.scrollIntoView === "function") section.scrollIntoView({block:"start",behavior:"smooth"});
 }
 function handleKeyboardShortcut(event){
   if(event.defaultPrevented) return;

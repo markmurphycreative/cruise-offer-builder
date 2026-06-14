@@ -6,13 +6,28 @@ import vm from 'node:vm';
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const shortcuts = html.match(/\/\/ Lightweight global shortcuts:[\s\S]*?document\.addEventListener\('keydown',handleKeyboardShortcut\);/)?.[0];
 
+test('visible app version is v2.2.2', () => {
+  assert.match(html, /const APP_VERSION = \"v2\.2\.2\";/);
+});
+
 function setup(){
   const calls=[];
   const modal={classList:{active:false,add(){this.active=true;},remove(){this.active=false;},contains(){return this.active;}}};
   const close={focus(){ calls.push(['focus-close']); }};
+  function makeSection(key, collapsed=true){
+    const hdr={
+      collapsed,
+      classList:{contains(name){ return name === 'collapsed' && hdr.collapsed; }}
+    };
+    return {
+      hdr,
+      scrollIntoView(){ calls.push(['scroll',key]); },
+      querySelector(selector){ return selector === '.section-hdr' ? hdr : null; }
+    };
+  }
   const sectionNodes={
-    'utm-link':{scrollIntoView(){ calls.push(['scroll','utm-link']); }},
-    'cta-assets':{scrollIntoView(){ calls.push(['scroll','cta-assets']); }}
+    'utm-link':makeSection('utm-link'),
+    'cta-assets':makeSection('cta-assets')
   };
   const document={
     activeElement:null,
@@ -20,9 +35,9 @@ function setup(){
     querySelector(selector){ const match=String(selector).match(/data-section-key=\"([^\"]+)\"/); return match ? sectionNodes[match[1]] : null; },
     addEventListener(type,handler){ this.handler=handler; }
   };
-  const context={document,cur:0,offers:[{name:'One'},{name:'Two'},{name:'Three'},{name:'Four'}],isOfferLoaded:offer=>!!offer.name,sv:i=>{ context.cur=i; calls.push(['sv',i]); },setView:v=>calls.push(['view',v]),openSectionByKey:key=>calls.push(['section',key]),exportCurrentJPG:()=>calls.push(['jpg']),exportAllJPG:()=>calls.push(['zip']),refreshOffers:()=>calls.push(['refresh']),undoCampaignChange:()=>calls.push(['undo']),redoCampaignChange:()=>calls.push(['redo'])};
+  const context={document,cur:0,offers:[{name:'One'},{name:'Two'},{name:'Three'},{name:'Four'}],isOfferLoaded:offer=>!!offer.name,sv:i=>{ context.cur=i; calls.push(['sv',i]); },setView:v=>calls.push(['view',v]),toggleSec:hdr=>{ hdr.collapsed=!hdr.collapsed; calls.push(['toggle',hdr.collapsed ? 'closed' : 'open']); },exportCurrentJPG:()=>calls.push(['jpg']),exportAllJPG:()=>calls.push(['zip']),refreshOffers:()=>calls.push(['refresh']),undoCampaignChange:()=>calls.push(['undo']),redoCampaignChange:()=>calls.push(['redo'])};
   vm.runInNewContext(shortcuts,context);
-  return {calls,context,document,modal};
+  return {calls,context,document,modal,sectionNodes};
 }
 function fire(document,key,overrides={}){
   let prevented=false;
@@ -50,8 +65,10 @@ test('card, view, undo, redo, export, refresh, UTM, CTA, help, and Escape shortc
   fire(document,'s',{ctrlKey:true}); assert.deepEqual(calls.pop(),['jpg']);
   fire(document,'S',{metaKey:true,shiftKey:true}); assert.deepEqual(calls.pop(),['zip']);
   fire(document,'r'); assert.deepEqual(calls.pop(),['refresh']);
-  fire(document,'u'); assert.deepEqual(calls.splice(-2),[['section','utm-link'],['scroll','utm-link']]);
-  fire(document,'c'); assert.deepEqual(calls.splice(-2),[['section','cta-assets'],['scroll','cta-assets']]);
+  fire(document,'u'); assert.deepEqual(calls.splice(-2),[['toggle','open'],['scroll','utm-link']]);
+  fire(document,'u'); assert.deepEqual(calls.splice(-1),[['toggle','closed']]);
+  fire(document,'c'); assert.deepEqual(calls.splice(-2),[['toggle','open'],['scroll','cta-assets']]);
+  fire(document,'c'); assert.deepEqual(calls.splice(-1),[['toggle','closed']]);
   fire(document,'?',{shiftKey:true}); assert.equal(modal.classList.active,true); assert.deepEqual(calls.pop(),['focus-close']);
   assert.equal(fire(document,'Tab'),false); assert.deepEqual(calls,[]);
   assert.equal(fire(document,'Escape',{target:{closest:()=>true}}),true); assert.equal(modal.classList.active,false);
