@@ -59,6 +59,9 @@ function createHarness(offers) {
     extractFunction('triggerCsvFilePicker'),
     extractFunction('isCsvUploadFile'),
     extractFunction('loadDroppedCSVFile'),
+    extractFunction('isCampaignJsonUploadFile'),
+    extractFunction('loadDroppedCampaignFile'),
+    extractFunction('loadDroppedWorkspaceFile'),
     extractFunction('initEmptyWorkspaceUploadZone'),
     extractFunction('renderEmptyPreviewIfNeeded')
   ].join('\n'), context);
@@ -73,9 +76,10 @@ test('fresh previews use the whole blank workspace as a subtle upload zone befor
   assert.match(html, /\.preview-empty-state::before\{[^}]*content:'⇧';[^}]*border:1px dashed rgba\(21,39,63,\.42\);/);
   assert.match(html, /\.preview-empty-state h2\{[^}]*padding:0;[^}]*background:none;[^}]*color:var\(--navy\);[^}]*font-family:'Montserrat',sans-serif;[^}]*font-size:16\.5px;[^}]*font-weight:400;/);
   assert.match(html, /\.preview-empty-state p\{[^}]*margin:14px 0 0;[^}]*padding:0;[^}]*background:none;[^}]*color:var\(--navy\);[^}]*font-family:'Montserrat',sans-serif;[^}]*font-size:9px;[^}]*font-weight:300;[^}]*line-height:1\.5;[^}]*opacity:\.72;/);
+  assert.match(html, /\.preview-empty-state p \+ p\{margin-top:7px;\}/);
   assert.doesNotMatch(html, /\.preview-empty-state(?: h2| p)?\{[^}]*background:var\(--(?:navy|gold)\)/);
   assert.doesNotMatch(html, /preview-empty-rule/);
-  assert.match(html, /<h2>Ready To Build<\/h2><p>Load a Google Sheet or CSV to generate your cruise cards instantly\.<\/p><p>Click anywhere or drag a CSV file into this workspace\.<\/p>/);
+  assert.match(html, /<h2>Ready To Build<\/h2><p>Load a Google Sheet or CSV to generate your cruise cards instantly\.<\/p><p>Click anywhere or drag a CSV or campaign file into this workspace\.<\/p>/);
 
   const renderPreviewMode = extractFunction('renderPreviewMode');
   assert.ok(renderPreviewMode.indexOf('if(renderEmptyPreviewIfNeeded()) return;') < renderPreviewMode.indexOf("if(viewMode === 'email')"));
@@ -89,7 +93,7 @@ test('fresh previews use the whole blank workspace as a subtle upload zone befor
   assert.equal(elements['card-output'].classList.contains('empty-preview-output'), true);
   assert.equal(elements['preview-wrap'].classList.contains('empty-upload-zone'), true);
   assert.match(elements['card-output'].innerHTML, /Ready To Build/);
-  assert.match(elements['card-output'].innerHTML, /Click anywhere or drag a CSV file into this workspace\./);
+  assert.match(elements['card-output'].innerHTML, /Click anywhere or drag a CSV or campaign file into this workspace\./);
   context.triggerCsvFilePicker();
   assert.equal(elements['sheets-file'].clickCount, 1);
 });
@@ -122,7 +126,7 @@ test('CSV import button and zero-offer workspace share the existing hidden file 
   assert.match(extractFunction('initEmptyWorkspaceUploadZone'), /wrap\.addEventListener\('click',[\s\S]*triggerCsvFilePicker\(\);/);
 });
 
-test('empty workspace click and CSV drag/drop are active only while no offers are loaded', () => {
+test('empty workspace click stays empty-only while CSV and JSON drag/drop use workspace routing', () => {
   const csvFile = { name: 'offers.csv', type: 'text/csv' };
   const blank = createHarness([{}, {}, {}, {}]);
 
@@ -150,6 +154,6 @@ test('empty workspace click and CSV drag/drop are active only while no offers ar
   loaded.listeners.click({ preventDefault() { loaded.elements.clickPrevented = true; } });
   loaded.listeners.drop({ preventDefault() { loaded.elements.dropPrevented = true; }, dataTransfer: { files: [csvFile] } });
   assert.equal(loaded.elements.clickPrevented, undefined);
-  assert.equal(loaded.elements.dropPrevented, undefined);
-  assert.equal(loaded.elements.loadedFile, undefined);
+  assert.equal(loaded.elements.dropPrevented, true);
+  assert.equal(loaded.elements.loadedFile, csvFile);
 });
