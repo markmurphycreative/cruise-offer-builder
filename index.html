@@ -45,17 +45,19 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .offer-tabs{position:relative;display:flex;margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:0;background:#fafaf8;flex-shrink:0;overflow:hidden;isolation:isolate;}
 .offer-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:0;background:linear-gradient(180deg,#b2a374 0%,var(--gold) 100%);box-shadow:0 1px 4px rgba(14,27,42,.22),inset 0 0 0 1px rgba(255,255,255,.18);transform:translateX(0);transition:transform .2s ease,width .2s ease;pointer-events:none;}
 .offer-tab-item{position:relative;z-index:1;flex:1;min-width:0;}
-.otab{width:100%;height:100%;min-height:47px;padding:7px 4px 15px;font-size:10px;font-weight:600;border:none;background:transparent;color:var(--muted);cursor:pointer;letter-spacing:.04em;transition:color .18s ease,background .18s ease,box-shadow .18s ease,opacity .18s ease;display:flex;align-items:flex-start;justify-content:center;}
+.otab{width:100%;height:100%;min-height:47px;padding:7px 5px 15px;font-size:10px;font-weight:500;border:none;background:transparent;color:var(--muted);cursor:pointer;letter-spacing:.035em;transition:color .18s ease,background .18s ease,box-shadow .18s ease,opacity .18s ease;display:flex;align-items:flex-start;justify-content:center;}
 .offer-tab-label{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;width:100%;min-width:0;line-height:1.12;text-align:center;}
 .offer-tab-number,.offer-tab-operator,.offer-tab-ship{display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.offer-tab-number{font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);opacity:.72;}
-.offer-tab-operator{font-size:9px;font-weight:700;letter-spacing:.01em;color:var(--text);opacity:.72;}
+.offer-tab-number{font-size:7px;font-weight:600;text-transform:uppercase;letter-spacing:.065em;color:var(--muted);opacity:.58;}
+.offer-tab-operator{font-size:9px;font-weight:700;letter-spacing:0;color:var(--text);opacity:.58;}
 .offer-tab-ship{font-size:8px;font-weight:500;letter-spacing:.01em;color:var(--muted);opacity:.64;}
+.otab:not(.active) .offer-tab-operator{font-weight:500;}
 .otab:hover:not(.active){color:var(--navy);background:rgba(160,146,103,.07);}
 .otab:hover:not(.active) .offer-tab-operator{opacity:.88;color:var(--navy);}
+.otab:not(.active) .offer-tab-ship{display:none;}
 .otab.active{color:var(--navy);border-radius:0;box-shadow:inset 0 -2px 0 rgba(14,27,42,.18);}
-.otab.active .offer-tab-number{color:rgba(14,27,42,.70);opacity:1;}
-.otab.active .offer-tab-operator{color:var(--navy);opacity:1;}
+.otab.active .offer-tab-number{color:rgba(14,27,42,.72);font-weight:700;letter-spacing:.08em;opacity:1;}
+.otab.active .offer-tab-operator{color:var(--navy);font-weight:700;letter-spacing:.01em;opacity:1;}
 .otab.active .offer-tab-ship{color:rgba(14,27,42,.76);opacity:1;}
 .otab.dragging{opacity:.55;}
 .otab.drag-over{background:rgba(160,146,103,.18);box-shadow:inset 0 0 0 1px rgba(160,146,103,.42);}
@@ -89,9 +91,12 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .reorder-group[open] .reorder-label{background:rgba(160,146,103,.12);box-shadow:inset 2px 0 0 var(--gold);}
 .reorder-label h3{font-size:10px;font-weight:400;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);display:flex;align-items:center;gap:6px;min-width:0;}
 .reorder-label::-webkit-details-marker{display:none;}
-.reorder-actions{margin-left:auto;display:flex;align-items:center;gap:4px;}
-.reorder-btn{flex:0 0 24px;width:24px;height:22px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:3px;}
-.reorder-btn .section-icon{width:13px;height:13px;}
+.reorder-actions{margin-left:auto;display:flex;align-items:center;gap:2px;}
+.reorder-btn{flex:0 0 20px;}
+.reorder-btn.abtn{flex:0 0 20px;width:20px;height:18px;min-height:0;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:3px;background:transparent;color:rgba(14,27,42,.56);box-shadow:none;letter-spacing:0;}
+.reorder-btn.abtn:hover:not(:disabled){background:rgba(160,146,103,.10);border-color:rgba(160,146,103,.18);color:var(--navy);}
+.reorder-btn.abtn:disabled{opacity:.32;cursor:default;}
+.reorder-btn .section-icon{width:12px;height:12px;stroke-width:2;}
 .hero-hint{font-size:9px;color:var(--muted);margin:5px 0 2px;}
 .hero-source-block{margin-top:6px;padding-top:6px;border-top:1px solid var(--border);}
 .hero-dropzone{padding:10px;min-height:92px;display:block;text-align:center;}
@@ -375,7 +380,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .campaign-library-category[data-campaign-category="recent"] .section-hdr:not(.collapsed){background:rgba(42,122,74,.10);box-shadow:inset 2px 0 0 var(--green);}
 .campaign-library-category[data-campaign-category="pinned"] .section-hdr:not(.collapsed){background:rgba(160,146,103,.12);box-shadow:inset 2px 0 0 var(--gold);}
 .campaign-history-list{display:grid;gap:4px;}
-.offer-context-label{margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);font-size:9px;font-weight:400;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);line-height:1.2;}
+.offer-context-label{margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);font-size:9px;font-weight:400;text-transform:uppercase;letter-spacing:.045em;color:var(--muted);opacity:.72;line-height:1.2;}
 .count-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:16px;padding:0 5px;border-radius:999px;background:rgba(160,146,103,.16);border:1px solid rgba(160,146,103,.34);color:var(--navy);font-size:9px;font-weight:700;line-height:1;margin-left:2px;font-variant-numeric:tabular-nums;}
 .count-badge--saved{background:rgba(42,122,74,.12);border-color:rgba(42,122,74,.34);color:var(--green);}
 .campaign-library-dashboard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin-bottom:5px;}
@@ -2555,6 +2560,7 @@ function updateOfferTabLabels(){
     const tab=document.getElementById("ot"+i);
     if(!tab) continue;
     const parts=getOfferTabLabelParts(i);
+    const isActive=i===cur;
     let label=tab.querySelector&&tab.querySelector(".offer-tab-label");
     if(!label){
       label=tab.querySelector&&tab.querySelector("span:not(.status-dot)");
@@ -2591,7 +2597,7 @@ function updateOfferTabLabels(){
       operator.remove();
     }
     let ship=label.querySelector&&label.querySelector(".offer-tab-ship");
-    if(parts.ship){
+    if(isActive&&parts.ship){
       if(!ship){
         ship=document.createElement("span");
         ship.className="offer-tab-ship";
