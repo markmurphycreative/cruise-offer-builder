@@ -429,6 +429,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .preview-wrap.empty-upload-zone:hover .preview-empty-state::before,.preview-wrap.empty-upload-zone.drag-over .preview-empty-state::before{transform:translateY(-3px);border-color:rgba(160,146,103,.72);color:var(--gold);}
 .preview-empty-state h2{margin:0;padding:0;background:none;color:var(--navy);font-family:'Montserrat',sans-serif;font-size:16.5px;font-weight:400;letter-spacing:.025em;line-height:1.2;}
 .preview-empty-state p{margin:14px 0 0;padding:0;background:none;color:var(--navy);font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;line-height:1.5;opacity:.72;}
+.preview-empty-state p + p{margin-top:7px;}
 @media (prefers-reduced-motion:reduce){.offer-pill,.preview-wrap,.preview-empty-state,.preview-empty-state::before{transition:none;}}
 
 /* ── EMAIL PREVIEW ── */
@@ -2938,6 +2939,38 @@ function loadDroppedCSVFile(file){
   loadFromCSVFile({target:{files:[file],value:''},_onSuccess:()=>dismissSplashAndShowBuilder('csv')});
   return true;
 }
+function isCampaignJsonUploadFile(file){
+  if(!file) return false;
+  const name = String(file.name || '').toLowerCase();
+  const type = String(file.type || '').toLowerCase();
+  return name.endsWith('.json') || type === 'application/json';
+}
+function loadDroppedCampaignFile(file){
+  if(!isCampaignJsonUploadFile(file)){
+    showSessionFeedback('Drop a CSV or Cruise Builder campaign JSON file',true);
+    return false;
+  }
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      restoreCampaignFilePayload(parseCampaignFileText(reader.result));
+      showSessionFeedback('Campaign JSON loaded',false);
+      dismissSplashAndShowBuilder('campaign');
+    }catch(e){
+      console.warn('Dropped campaign load rejected',e);
+      showSessionFeedback(`Invalid campaign file: ${e.message}`,true);
+    }
+  };
+  reader.onerror=()=>{ showSessionFeedback('Invalid campaign file: could not read file',true); };
+  reader.readAsText(file);
+  return true;
+}
+function loadDroppedWorkspaceFile(file){
+  if(isCsvUploadFile(file)) return loadDroppedCSVFile(file);
+  if(isCampaignJsonUploadFile(file)) return loadDroppedCampaignFile(file);
+  setSheetsStatus('Drop a CSV or Cruise Builder campaign JSON file','csv-error');
+  return false;
+}
 
 function loadFromCSVFile(event){
   const file=event.target.files && event.target.files[0];
@@ -5359,6 +5392,13 @@ function initEmptyWorkspaceUploadZone(){
   function isEmptyWorkspaceActive(){
     return wrap.classList.contains('empty-upload-zone') && !offers.some(isOfferLoaded);
   }
+  function getWorkspaceDropFile(e){
+    const files = e.dataTransfer && e.dataTransfer.files ? Array.from(e.dataTransfer.files) : [];
+    return files.find(file=>isCsvUploadFile(file) || isCampaignJsonUploadFile(file)) || files[0];
+  }
+  function canHandleWorkspaceDrop(e){
+    return !!getWorkspaceDropFile(e);
+  }
 
   wrap.addEventListener('click', function(e){
     if(!isEmptyWorkspaceActive()) return;
@@ -5367,25 +5407,24 @@ function initEmptyWorkspaceUploadZone(){
   });
 
   wrap.addEventListener('dragover', function(e){
-    if(!isEmptyWorkspaceActive()) return;
+    if(!isEmptyWorkspaceActive() && !canHandleWorkspaceDrop(e)) return;
     e.preventDefault();
     wrap.classList.add('drag-over');
     if(e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
   });
 
   wrap.addEventListener('dragleave', function(e){
-    if(!isEmptyWorkspaceActive()) return;
+    if(!isEmptyWorkspaceActive() && !canHandleWorkspaceDrop(e)) return;
     if(e.relatedTarget && wrap.contains(e.relatedTarget)) return;
     wrap.classList.remove('drag-over');
   });
 
   wrap.addEventListener('drop', function(e){
-    if(!isEmptyWorkspaceActive()) return;
+    if(!isEmptyWorkspaceActive() && !canHandleWorkspaceDrop(e)) return;
     e.preventDefault();
     wrap.classList.remove('drag-over');
-    const files = e.dataTransfer && e.dataTransfer.files ? Array.from(e.dataTransfer.files) : [];
-    const csvFile = files.find(isCsvUploadFile) || files[0];
-    if(csvFile) loadDroppedCSVFile(csvFile);
+    const file = getWorkspaceDropFile(e);
+    if(file) loadDroppedWorkspaceFile(file);
   });
 }
 
@@ -5621,7 +5660,7 @@ function renderEmptyPreviewIfNeeded(){
   }
   if(!showEmptyState) return false;
   updatePreviewTitle();
-  out.innerHTML = '<div class="preview-empty-state" role="status" aria-label="CSV upload zone"><h2>Ready To Build</h2><p>Load a Google Sheet or CSV to generate your cruise cards instantly.</p><p>Click anywhere or drag a CSV file into this workspace.</p></div>';
+  out.innerHTML = '<div class="preview-empty-state" role="status" aria-label="CSV or campaign upload zone"><h2>Ready To Build</h2><p>Load a Google Sheet or CSV to generate your cruise cards instantly.</p><p>Click anywhere or drag a CSV or campaign file into this workspace.</p></div>';
   scaler.style.width = '100%';
   scaler.style.height = '100%';
   scaler.style.transform = 'none';
