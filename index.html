@@ -238,8 +238,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash-btn:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.44);}
 .splash-btn.gold{background:var(--gold);border-color:var(--gold);color:#fff;box-shadow:0 2px 10px rgba(160,146,103,.28),0 0 0 1px rgba(255,255,255,.06) inset;}
 .splash-btn.gold:hover{background:#b2a277;border-color:#b2a277;box-shadow:0 4px 14px rgba(160,146,103,.32),0 0 0 1px rgba(255,255,255,.09) inset;}
-#splash-load-csv-btn{padding:10px 12px;border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.14);box-shadow:0 2px 12px rgba(0,0,0,.18);}
-#splash-load-csv-btn:hover{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.72);box-shadow:0 4px 16px rgba(0,0,0,.22);}
+.splash-btn.secondary{padding:10px 12px;border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.14);box-shadow:0 2px 12px rgba(0,0,0,.18);}
+.splash-btn.secondary:hover{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.72);box-shadow:0 4px 16px rgba(0,0,0,.22);}
 @keyframes splashFadeIn{from{opacity:0;}to{opacity:1;}}
 @media (prefers-reduced-motion:reduce){
   .splash-main{animation:none;}
@@ -581,8 +581,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       <div class="splash-line">Start a new campaign or load a CSV.</div>
       <div class="splash-actions">
         <button class="splash-btn gold" id="splash-continue-session-btn" type="button" style="display:none;">Continue Last Session</button>
-        <button class="splash-btn gold" id="splash-open-builder-btn" type="button">Open Builder</button>
-        <button class="splash-btn" id="splash-load-csv-btn" type="button">Load CSV</button>
+        <button class="splash-btn gold" id="splash-open-builder-btn" type="button">New Campaign</button>
+        <button class="splash-btn secondary" id="splash-load-campaign-btn" type="button">Load Campaign</button>
+        <button class="splash-btn secondary" id="splash-load-csv-btn" type="button">Load CSV</button>
               </div>
     </div>
     <div id="splash-recent-session" class="splash-recent" aria-live="polite">
@@ -1057,7 +1058,8 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <dt>Export card</dt><dd><kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>S</kbd></dd>
       <dt>Export all cards</dt><dd><kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd></dd>
       <dt>Refresh offers</dt><dd><kbd>R</kbd></dd>
-      <dt>UTM section</dt><dd><kbd>U</kbd></dd>
+      <dt>UTM Link</dt><dd><kbd>U</kbd></dd>
+      <dt>CTA Assets</dt><dd><kbd>C</kbd></dd>
       <dt>Open this help</dt><dd><kbd>?</kbd></dd>
       <dt>Close this help</dt><dd><kbd>Esc</kbd></dd>
     </dl>
@@ -6329,6 +6331,11 @@ window.openBuilderFromSplash = function(event){
   resetBuilderToBlankSession();
   dismissSplashAndShowBuilder("fresh");
 };
+window.loadCampaignFromSplash = function(event){
+  if(event) event.preventDefault();
+  dismissSplashAndShowBuilder("campaign");
+  triggerLoadCampaignFile();
+};
 window.loadCsvFromSplash = function(event){
   if(event) event.preventDefault();
   const temp=document.createElement("input");
@@ -6339,11 +6346,13 @@ window.loadCsvFromSplash = function(event){
 };
 function initStartScreenActions(){
   const openBtn=document.getElementById("splash-open-builder-btn") || document.querySelector("#app-splash .splash-btn.gold");
+  const campaignBtn=document.getElementById("splash-load-campaign-btn");
   const csvBtn=document.getElementById("splash-load-csv-btn") || document.querySelector("#app-splash .splash-btn:not(.gold)");
   const continueBtn=document.getElementById("splash-continue-session-btn");
   const splash=document.getElementById("app-splash");
   if(!splash) console.warn("[splash] Missing #app-splash; start screen actions cannot be wired.");
   if(!openBtn) console.warn("[splash] Missing Open Builder button; action not bound.");
+  if(!campaignBtn) console.warn("[splash] Missing Load Campaign button; action not bound.");
   if(!csvBtn) console.warn("[splash] Missing Load CSV button; action not bound.");
 
   if(shouldBypassSplashOnLoad()){
@@ -6361,6 +6370,11 @@ function initStartScreenActions(){
   if(openBtn){
     openBtn.addEventListener("click",(e)=>{
       window.openBuilderFromSplash(e);
+    });
+  }
+  if(campaignBtn){
+    campaignBtn.addEventListener("click",(e)=>{
+      window.loadCampaignFromSplash(e);
     });
   }
   if(continueBtn){
@@ -6552,6 +6566,11 @@ function cycleOfferShortcut(direction){
   const active=Number.isInteger(Number(cur)) ? Number(cur) : 0;
   selectOfferShortcut((active + direction + 4) % 4);
 }
+function openShortcutSection(sectionKey){
+  openSectionByKey(sectionKey);
+  const section=document.querySelector ? document.querySelector(`.section[data-section-key="${sectionKey}"]`) : null;
+  if(section && typeof section.scrollIntoView === "function") section.scrollIntoView({block:"start",behavior:"smooth"});
+}
 function handleKeyboardShortcut(event){
   if(event.defaultPrevented) return;
   const shortcutsModal=document.getElementById('shortcuts-modal');
@@ -6592,7 +6611,8 @@ function handleKeyboardShortcut(event){
   if(key === 's'){ setView('single'); event.preventDefault(); return; }
   if(key === 'e'){ setView('email'); event.preventDefault(); return; }
   if(key === 'a'){ setView('all'); event.preventDefault(); return; }
-  if(key === 'u'){ openSectionByKey('utm-link'); event.preventDefault(); return; }
+  if(key === 'u'){ openShortcutSection('utm-link'); event.preventDefault(); return; }
+  if(key === 'c'){ openShortcutSection('cta-assets'); event.preventDefault(); return; }
   if(key === 'r'){ refreshOffers(); event.preventDefault(); return; }
   if(event.key === '?'){ openShortcutsModal(); event.preventDefault(); }
 }
