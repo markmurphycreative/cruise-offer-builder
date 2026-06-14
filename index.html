@@ -270,6 +270,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .utm-visible-output{min-height:0;font-size:9px;font-family:monospace;line-height:1.4;color:var(--navy);word-break:break-all;white-space:pre-wrap;}
 .generated-utm-empty{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:6px;font-size:9px;color:var(--muted);line-height:1.4;}
 .utm-btn-row{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:5px;}
+.sheet-action-row{grid-template-columns:1fr;}
 .std-utm-actions{grid-template-columns:1fr;}
 .std-utm-list{display:grid;gap:6px;margin-top:4px;}
 .std-utm-item{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:6px;}
@@ -644,9 +645,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
             <label for="sheets-url">Google Sheet URL</label>
             <input id="sheets-url" type="url" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
           </div>
-          <div class="utm-btn-row">
+          <div class="utm-btn-row sheet-action-row">
             <button class="abtn navy" onclick="loadFromSheets()">Load Sheet</button>
-            <button class="abtn" onclick="refreshOffers()">Refresh Offers</button>
           </div>
           <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values,.json,application/json" style="display:none">
           <button class="abtn" onclick="triggerCsvFilePicker()" style="width:100%;margin-top:4px;">Load Campaign File</button>
