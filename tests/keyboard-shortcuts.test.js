@@ -15,7 +15,7 @@ function setup(){
     getElementById(id){ return id === 'shortcuts-modal' ? modal : id === 'shortcuts-close' ? close : null; },
     addEventListener(type,handler){ this.handler=handler; }
   };
-  const context={document,cur:0,offers:[{name:'One'},{name:'Two'},{name:'Three'},{name:'Four'}],isOfferLoaded:offer=>!!offer.name,sv:i=>{ context.cur=i; calls.push(['sv',i]); },setView:v=>calls.push(['view',v]),exportCurrentJPG:()=>calls.push(['jpg']),exportAllJPG:()=>calls.push(['zip']),refreshOffers:()=>calls.push(['refresh']),undoCampaignChange:()=>calls.push(['undo']),redoCampaignChange:()=>calls.push(['redo'])};
+  const context={document,cur:0,offers:[{name:'One'},{name:'Two'},{name:'Three'},{name:'Four'}],isOfferLoaded:offer=>!!offer.name,sv:i=>{ context.cur=i; calls.push(['sv',i]); },setView:v=>calls.push(['view',v]),openSectionByKey:key=>calls.push(['section',key]),exportCurrentJPG:()=>calls.push(['jpg']),exportAllJPG:()=>calls.push(['zip']),refreshOffers:()=>calls.push(['refresh']),undoCampaignChange:()=>calls.push(['undo']),redoCampaignChange:()=>calls.push(['redo'])};
   vm.runInNewContext(shortcuts,context);
   return {calls,context,document,modal};
 }
@@ -31,10 +31,10 @@ test('the global keyboard shortcut listener is attached exactly once', () => {
 
 test('shortcuts modal and small toolbar trigger list the supported keyboard shortcuts', () => {
   assert.match(html, /<button class="shortcuts-trigger"[^>]*onclick="openShortcutsModal\(\)"[^>]*>Shortcuts<\/button>/);
-  assert.match(html, /id="shortcuts-modal"[\s\S]*?Keyboard Shortcuts[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>Z<\/kbd>[\s\S]*?<kbd>1<\/kbd>[\s\S]*?<kbd>Tab<\/kbd>[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>S<\/kbd>[\s\S]*?<kbd>R<\/kbd>[\s\S]*?<kbd>\?<\/kbd>[\s\S]*?<kbd>Esc<\/kbd>/);
+  assert.match(html, /id="shortcuts-modal"[\s\S]*?Keyboard Shortcuts[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>Z<\/kbd>[\s\S]*?<kbd>1<\/kbd>[\s\S]*?<kbd>Tab<\/kbd>[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>S<\/kbd>[\s\S]*?<kbd>R<\/kbd>[\s\S]*?<kbd>U<\/kbd>[\s\S]*?<kbd>\?<\/kbd>[\s\S]*?<kbd>Esc<\/kbd>/);
 });
 
-test('card, view, undo, redo, export, refresh, help, and Escape shortcuts reuse existing actions', () => {
+test('card, view, undo, redo, export, refresh, UTM section, help, and Escape shortcuts reuse existing actions', () => {
   const {calls,context,document,modal}=setup();
   for(const [key,index] of [['1',0],['2',1],['3',2],['4',3]]){ assert.equal(fire(document,key),true); assert.deepEqual(calls.splice(-2),[['sv',index],['view','single']]); }
   context.cur=3; fire(document,'Tab'); assert.deepEqual(calls.splice(-2),[['sv',0],['view','single']]);
@@ -45,6 +45,7 @@ test('card, view, undo, redo, export, refresh, help, and Escape shortcuts reuse 
   fire(document,'s',{ctrlKey:true}); assert.deepEqual(calls.pop(),['jpg']);
   fire(document,'S',{metaKey:true,shiftKey:true}); assert.deepEqual(calls.pop(),['zip']);
   fire(document,'r'); assert.deepEqual(calls.pop(),['refresh']);
+  fire(document,'u'); assert.deepEqual(calls.pop(),['section','utm-link']);
   fire(document,'?',{shiftKey:true}); assert.equal(modal.classList.active,true); assert.deepEqual(calls.pop(),['focus-close']);
   assert.equal(fire(document,'Tab'),false); assert.deepEqual(calls,[]);
   assert.equal(fire(document,'Escape',{target:{closest:()=>true}}),true); assert.equal(modal.classList.active,false);

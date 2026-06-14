@@ -224,7 +224,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash.hidden,.splash.is-exiting{opacity:0;visibility:hidden;pointer-events:none;}
 .splash-inner{text-align:center;color:#fff;padding:18px;min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;width:min(560px,100%);}
 .splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;animation:splashFadeIn .28s ease-out both;}
-.splash-title{font-size:22px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
+.splash-title{font-size:22px;font-weight:400;letter-spacing:.04em;text-transform:uppercase;}
 .splash-brand{margin-top:6px;font-size:13px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;}
 .splash-version{margin-top:18px;font-size:11px;color:rgba(255,255,255,.7);}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
@@ -238,6 +238,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash-btn:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.44);}
 .splash-btn.gold{background:var(--gold);border-color:var(--gold);color:#fff;box-shadow:0 2px 10px rgba(160,146,103,.28),0 0 0 1px rgba(255,255,255,.06) inset;}
 .splash-btn.gold:hover{background:#b2a277;border-color:#b2a277;box-shadow:0 4px 14px rgba(160,146,103,.32),0 0 0 1px rgba(255,255,255,.09) inset;}
+#splash-load-csv-btn{padding:10px 12px;border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.14);box-shadow:0 2px 12px rgba(0,0,0,.18);}
+#splash-load-csv-btn:hover{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.72);box-shadow:0 4px 16px rgba(0,0,0,.22);}
 @keyframes splashFadeIn{from{opacity:0;}to{opacity:1;}}
 @media (prefers-reduced-motion:reduce){
   .splash-main{animation:none;}
@@ -1055,6 +1057,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <dt>Export card</dt><dd><kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>S</kbd></dd>
       <dt>Export all cards</dt><dd><kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd></dd>
       <dt>Refresh offers</dt><dd><kbd>R</kbd></dd>
+      <dt>UTM section</dt><dd><kbd>U</kbd></dd>
       <dt>Open this help</dt><dd><kbd>?</kbd></dd>
       <dt>Close this help</dt><dd><kbd>Esc</kbd></dd>
     </dl>
@@ -1526,6 +1529,12 @@ function applySectionCollapseState(sectionState, preferredOpenKey){
     if(hdr && Object.prototype.hasOwnProperty.call(sectionState,sec.dataset.sectionKey)){
       setSectionCollapsedByHeader(hdr, sec.dataset.sectionKey !== openKey);
     }
+  });
+}
+function openSectionByKey(sectionKey){
+  document.querySelectorAll(".section[data-section-key]").forEach(sec=>{
+    const hdr = sec.querySelector(".section-hdr");
+    if(hdr) setSectionCollapsedByHeader(hdr, sec.dataset.sectionKey !== sectionKey);
   });
 }
 function openCsvImportWhenNoOffersLoaded(){
@@ -6583,6 +6592,7 @@ function handleKeyboardShortcut(event){
   if(key === 's'){ setView('single'); event.preventDefault(); return; }
   if(key === 'e'){ setView('email'); event.preventDefault(); return; }
   if(key === 'a'){ setView('all'); event.preventDefault(); return; }
+  if(key === 'u'){ openSectionByKey('utm-link'); event.preventDefault(); return; }
   if(key === 'r'){ refreshOffers(); event.preventDefault(); return; }
   if(event.key === '?'){ openShortcutsModal(); event.preventDefault(); }
 }
