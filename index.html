@@ -224,10 +224,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash.hidden,.splash.is-exiting{opacity:0;visibility:hidden;pointer-events:none;}
 .splash-inner{text-align:center;color:#fff;padding:18px;min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;width:min(560px,100%);}
 .splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;animation:splashFadeIn .28s ease-out both;}
-.splash-icon{display:block;width:120px;height:auto;margin:0 auto 30px;}
+.splash-icon{display:block;width:132px;height:auto;margin:0 auto 15px;}
 .splash-title{font-size:22px;font-weight:400;letter-spacing:.04em;text-transform:uppercase;}
 .splash-brand{margin-top:6px;font-size:13px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;}
-.splash-version{margin-top:18px;font-size:11px;color:rgba(255,255,255,.7);}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
 .splash-actions{margin-top:18px;display:grid;gap:6px;max-width:220px;margin-left:auto;margin-right:auto;width:100%;}
 .splash-recent{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);max-width:320px;text-align:center;display:none;}
@@ -579,7 +578,6 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       <img class="splash-icon" src="assets/operator-logos/cb-icon.png" alt="" aria-hidden="true">
       <div class="splash-title">Cruise Offer Builder</div>
       <div class="splash-brand">Dawson &amp; Sanderson</div>
-      <div class="splash-version" data-app-version></div>
       <div class="splash-actions">
         <button class="splash-btn gold" id="splash-continue-session-btn" type="button" style="display:none;">Continue Last Session</button>
         <button class="splash-btn gold" id="splash-open-builder-btn" type="button">New Campaign</button>
@@ -6411,7 +6409,8 @@ function hydrateSplashRecentSession(){
   wrap.classList.add("active");
   continueBtn.style.display="block";
   name.textContent="Recovered Session";
-  time.textContent=formatRelativeAutosave(saved.savedAt) || "Autosaved recently";
+  const autosaveLabel=formatRelativeAutosave(saved.savedAt) || "Autosaved recently";
+  time.textContent=`${APP_VERSION} • ${autosaveLabel}`;
 }
 function initStandaloneApp(){
   resetCampaignLibraryStartupState();
