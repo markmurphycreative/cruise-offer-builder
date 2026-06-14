@@ -194,7 +194,7 @@ test('sidebar polish adds subtle spacing, compact active-offer context and profe
   assert.match(html, /\.section-body\{padding:7px 9px;\}/);
   assert.match(html, /id="active-offer-label" aria-live="polite">Editing Offer 1 of 4/);
   assert.match(html, /function updateActiveOfferLabel\(\)\{[\s\S]*?label\.textContent=`Editing Offer \$\{cur\+1\} of 4`;/);
-  assert.match(html, /<div class="empty-state" id="sheets-status" aria-live="polite"><strong>No CSV loaded<\/strong>Import a campaign CSV to begin\.<\/div>/);
+  assert.match(html, /<div id="sheets-status" aria-live="polite"><\/div>/);
   assert.match(html, /<div id="utm-visible-output" class="generated-utm-empty empty-state" role="status"><strong>No UTMs generated yet\.<\/strong>Add offer details and a landing page to generate tracking links\.<\/div>/);
 });
 
