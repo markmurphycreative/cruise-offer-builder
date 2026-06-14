@@ -12,7 +12,7 @@ const headingLabels = sectionHeaders.map(heading => heading
   .trim());
 
 test('every sidebar section heading uses one inline monochrome SVG icon', () => {
-  assert.equal(sectionHeaders.length, 11);
+  assert.equal(sectionHeaders.length, 12);
   sectionHeaders.forEach(heading => {
     assert.match(heading, /^<svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24">[\s\S]*<\/svg>[^<]+(?:<span class="section-complete"[^>]*>✓<\/span>)?(?:<span class="export-health-count ready" id="export-health-count">Ready<\/span>)?$/);
     assert.doesNotMatch(heading, /\p{Extended_Pictographic}/u);
@@ -26,6 +26,7 @@ test('sidebar section names follow the primary workflow and use the requested di
     'Campaign Presets',
     'Operator Logo',
     'Hero Image',
+    'Image Library',
     'Offer Details',
     'CTA Assets',
     'Paste Offer',
@@ -47,13 +48,14 @@ test('completion indicators tint existing icons without standalone checkmarks', 
 });
 
 test('required workflow headings expose the requested icon shapes', () => {
-  const [upload, save, logoAsset, image, fileText, ctaAssets, clipboardPaste] = sectionHeaders;
+  const [upload, save, logoAsset, image, heroLibrary, fileText, ctaAssets, clipboardPaste] = sectionHeaders;
   assert.match(upload, /<polyline points="17 8 12 3 7 8"><\/polyline>/);
   assert.match(save, /<path d="M17 21v-8H7v8"><\/path>/);
   assert.match(ctaAssets, /<rect width="18" height="10" x="3" y="7" rx="2"><\/rect>/);
   assert.match(clipboardPaste, /<path d="m17 10 4 4-4 4"><\/path>/);
   assert.match(logoAsset, /<circle cx="10" cy="13" r="2"><\/circle>/);
   assert.match(image, /<circle cx="9" cy="9" r="2"><\/circle>/);
+  assert.match(heroLibrary, /<circle cx="9" cy="9" r="2"><\/circle>/);
   assert.match(fileText, /<path d="M16 13H8"><\/path>/);
 });
 

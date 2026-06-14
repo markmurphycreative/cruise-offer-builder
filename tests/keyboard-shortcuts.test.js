@@ -10,12 +10,22 @@ function setup(){
   const calls=[];
   const modal={classList:{active:false,add(){this.active=true;},remove(){this.active=false;},contains(){return this.active;}}};
   const close={focus(){ calls.push(['focus-close']); }};
+  const sectionHeaders={
+    'utm-link':{key:'utm-link'},
+    'cta-assets':{key:'cta-assets'}
+  };
   const document={
     activeElement:null,
     getElementById(id){ return id === 'shortcuts-modal' ? modal : id === 'shortcuts-close' ? close : null; },
+    querySelector(selector){
+      const match=selector.match(/data-section-key=\"([^\"]+)\"/);
+      if(match && sectionHeaders[match[1]]) return {querySelector:()=>sectionHeaders[match[1]]};
+      return null;
+    },
+    querySelectorAll(){ return Object.values(sectionHeaders); },
     addEventListener(type,handler){ this.handler=handler; }
   };
-  const context={document,cur:0,offers:[{name:'One'},{name:'Two'},{name:'Three'},{name:'Four'}],isOfferLoaded:offer=>!!offer.name,sv:i=>{ context.cur=i; calls.push(['sv',i]); },setView:v=>calls.push(['view',v]),exportCurrentJPG:()=>calls.push(['jpg']),exportAllJPG:()=>calls.push(['zip']),refreshOffers:()=>calls.push(['refresh']),undoCampaignChange:()=>calls.push(['undo']),redoCampaignChange:()=>calls.push(['redo'])};
+  const context={document,cur:0,offers:[{name:'One'},{name:'Two'},{name:'Three'},{name:'Four'}],isOfferLoaded:offer=>!!offer.name,sv:i=>{ context.cur=i; calls.push(['sv',i]); },setView:v=>calls.push(['view',v]),setSectionCollapsedByHeader:(hdr,collapsed)=>calls.push(['section',hdr.key,collapsed]),queueAutosave:()=>calls.push(['autosave']),exportCurrentJPG:()=>calls.push(['jpg']),exportAllJPG:()=>calls.push(['zip']),refreshOffers:()=>calls.push(['refresh']),undoCampaignChange:()=>calls.push(['undo']),redoCampaignChange:()=>calls.push(['redo'])};
   vm.runInNewContext(shortcuts,context);
   return {calls,context,document,modal};
 }
@@ -31,7 +41,7 @@ test('the global keyboard shortcut listener is attached exactly once', () => {
 
 test('shortcuts modal and small toolbar trigger list the supported keyboard shortcuts', () => {
   assert.match(html, /<button class="shortcuts-trigger"[^>]*onclick="openShortcutsModal\(\)"[^>]*>Shortcuts<\/button>/);
-  assert.match(html, /id="shortcuts-modal"[\s\S]*?Keyboard Shortcuts[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>Z<\/kbd>[\s\S]*?<kbd>1<\/kbd>[\s\S]*?<kbd>Tab<\/kbd>[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>S<\/kbd>[\s\S]*?<kbd>R<\/kbd>[\s\S]*?<kbd>\?<\/kbd>[\s\S]*?<kbd>Esc<\/kbd>/);
+  assert.match(html, /id="shortcuts-modal"[\s\S]*?Keyboard Shortcuts[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>Z<\/kbd>[\s\S]*?<kbd>1<\/kbd>[\s\S]*?<kbd>Tab<\/kbd>[\s\S]*?UTM Section<\/dt><dd><kbd>U<\/kbd>[\s\S]*?CTA Assets<\/dt><dd><kbd>C<\/kbd>[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>S<\/kbd>[\s\S]*?<kbd>R<\/kbd>[\s\S]*?<kbd>\?<\/kbd>[\s\S]*?<kbd>Esc<\/kbd>/);
 });
 
 test('card, view, undo, redo, export, refresh, help, and Escape shortcuts reuse existing actions', () => {
@@ -45,6 +55,8 @@ test('card, view, undo, redo, export, refresh, help, and Escape shortcuts reuse 
   fire(document,'s',{ctrlKey:true}); assert.deepEqual(calls.pop(),['jpg']);
   fire(document,'S',{metaKey:true,shiftKey:true}); assert.deepEqual(calls.pop(),['zip']);
   fire(document,'r'); assert.deepEqual(calls.pop(),['refresh']);
+  fire(document,'u'); assert.deepEqual(calls.splice(-3),[['section','utm-link',false],['section','cta-assets',true],['autosave']]);
+  fire(document,'c'); assert.deepEqual(calls.splice(-3),[['section','utm-link',true],['section','cta-assets',false],['autosave']]);
   fire(document,'?',{shiftKey:true}); assert.equal(modal.classList.active,true); assert.deepEqual(calls.pop(),['focus-close']);
   assert.equal(fire(document,'Tab'),false); assert.deepEqual(calls,[]);
   assert.equal(fire(document,'Escape',{target:{closest:()=>true}}),true); assert.equal(modal.classList.active,false);
