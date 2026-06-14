@@ -85,15 +85,13 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .section-body{padding:7px 9px;}
 .section-body.hidden{display:none;}
 .reorder-group{margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;overflow:hidden;}
-.reorder-label{display:flex;align-items:center;justify-content:space-between;padding:5px 9px;background:var(--panel);cursor:pointer;user-select:none;list-style:none;}
+.reorder-label{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 9px;background:var(--panel);cursor:default;user-select:none;list-style:none;}
 .reorder-group[open] .reorder-label{background:rgba(160,146,103,.12);box-shadow:inset 2px 0 0 var(--gold);}
-.reorder-label h3{font-size:10px;font-weight:400;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);display:flex;align-items:center;gap:6px;}
+.reorder-label h3{font-size:10px;font-weight:400;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);display:flex;align-items:center;gap:6px;min-width:0;}
 .reorder-label::-webkit-details-marker{display:none;}
-.reorder-label .section-toggle{transform:rotate(-90deg);}
-.reorder-group[open] .reorder-label .section-toggle{transform:none;}
-.reorder-buttons{display:flex;gap:5px;padding:0 5px 5px;}
-.reorder-btn{flex:0 0 32px;width:32px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;}
-.reorder-btn .section-icon{width:16px;height:16px;}
+.reorder-actions{margin-left:auto;display:flex;align-items:center;gap:4px;}
+.reorder-btn{flex:0 0 24px;width:24px;height:22px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:3px;}
+.reorder-btn .section-icon{width:13px;height:13px;}
 .hero-hint{font-size:9px;color:var(--muted);margin:5px 0 2px;}
 .hero-source-block{margin-top:6px;padding-top:6px;border-top:1px solid var(--border);}
 .hero-dropzone{padding:10px;min-height:92px;display:block;text-align:center;}
@@ -225,8 +223,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash-inner{text-align:center;color:#fff;padding:18px;min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;width:min(560px,100%);}
 .splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;transform:translateY(-76px);animation:splashFadeIn .28s ease-out both;}
 .splash-icon{display:block;width:132px;height:auto;margin:0 auto 15px;}
-.splash-title{font-size:17.5px;font-weight:300;letter-spacing:.04em;text-transform:uppercase;}
-.splash-brand{margin-top:6px;font-size:11px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;}
+.splash-title{font-size:14.5px;font-weight:300;letter-spacing:.04em;text-transform:uppercase;}
+.splash-brand{margin-top:6px;font-size:9.5px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
 .splash-actions{margin-top:60px;display:grid;gap:9px;max-width:200px;margin-left:auto;margin-right:auto;width:100%;}
 .splash-recent{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);max-width:320px;text-align:center;display:none;}
@@ -625,13 +623,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <div class="offer-tab-item"><button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3" title="No offer loaded" aria-label="Offer 4 status: No offer loaded"><span>Offer 4</span><span class="status-dot" id="sd3" title="No offer loaded" aria-hidden="true"></span></button></div>
   </div>
   <div class="offer-context-label" id="active-offer-label" aria-live="polite">Editing Offer 1 of 4</div>
-  <details class="reorder-group">
-    <summary class="reorder-label"><h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="m3 6 1 1 2-2"></path><path d="m3 12 1 1 2-2"></path><path d="m3 18 1 1 2-2"></path></svg>Reorder Cards</h3><span class="section-toggle">▾</span></summary>
-    <div class="reorder-buttons">
-      <button class="abtn reorder-btn" id="move-left-btn" onclick="moveOfferLeft()" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-      <button class="abtn reorder-btn" id="move-right-btn" onclick="moveOfferRight()" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
-    </div>
-  </details>
+  <div class="reorder-group">
+    <div class="reorder-label"><h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="m3 6 1 1 2-2"></path><path d="m3 12 1 1 2-2"></path><path d="m3 18 1 1 2-2"></path></svg>Reorder Cards</h3><div class="reorder-actions" aria-label="Reorder selected card"><button class="abtn reorder-btn" id="move-left-btn" onclick="moveOfferLeft()" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button><button class="abtn reorder-btn" id="move-right-btn" onclick="moveOfferRight()" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button></div></div>
+  </div>
 
   <div class="sb-body">
     <div class="lock-ind" id="lock-ind">🔒 CARD LOCKED — Click Unlock to edit</div>
@@ -1060,7 +1054,9 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <dt>Export all cards</dt><dd><kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd></dd>
       <dt>Refresh offers</dt><dd><kbd>R</kbd></dd>
       <dt>UTM Link</dt><dd><kbd>U</kbd></dd>
-      <dt>CTA Assets</dt><dd><kbd>C</kbd></dd>
+      <dt>CTA Assets panel</dt><dd><kbd>C</kbd></dd>
+      <dt>Toggle CTA preview</dt><dd><kbd>Shift</kbd> + <kbd>C</kbd></dd>
+      <dt>Reorder selected card</dt><dd><kbd>←</kbd> / <kbd>→</kbd></dd>
       <dt>Open this help</dt><dd><kbd>?</kbd></dd>
       <dt>Close this help</dt><dd><kbd>Esc</kbd></dd>
     </dl>
@@ -6611,13 +6607,23 @@ function cycleOfferShortcut(direction){
   const active=Number.isInteger(Number(cur)) ? Number(cur) : 0;
   selectOfferShortcut((active + direction + 4) % 4);
 }
-function openShortcutSection(sectionKey){
+function openShortcutSection(sectionKey, forceOpen){
   const section=document.querySelector ? document.querySelector(`.section[data-section-key="${sectionKey}"]`) : null;
   const hdr=section && section.querySelector ? section.querySelector(".section-hdr") : null;
   if(!hdr) return;
   const willOpen=hdr.classList && hdr.classList.contains("collapsed");
+  if(forceOpen && !willOpen){
+    if(typeof section.scrollIntoView === "function") section.scrollIntoView({block:"start",behavior:"smooth"});
+    return;
+  }
   toggleSec(hdr);
   if(willOpen && typeof section.scrollIntoView === "function") section.scrollIntoView({block:"start",behavior:"smooth"});
+}
+function toggleCtaPreviewShortcut(){
+  const enabledEl=document.getElementById('cta-enabled');
+  if(!enabledEl) return;
+  enabledEl.checked = !enabledEl.checked;
+  ctaSettingsChanged();
 }
 function handleKeyboardShortcut(event){
   if(event.defaultPrevented) return;
@@ -6652,6 +6658,17 @@ function handleKeyboardShortcut(event){
     cycleOfferShortcut(event.shiftKey ? -1 : 1);
     return;
   }
+  if(event.key === 'ArrowLeft' || event.key === 'ArrowRight'){
+    event.preventDefault();
+    if(event.key === 'ArrowLeft') moveOfferLeft();
+    else moveOfferRight();
+    return;
+  }
+  if(event.shiftKey && event.key.toLowerCase() === 'c'){
+    toggleCtaPreviewShortcut();
+    event.preventDefault();
+    return;
+  }
   if(event.shiftKey && event.key !== '?') return;
 
   const key=event.key.toLowerCase();
@@ -6660,7 +6677,7 @@ function handleKeyboardShortcut(event){
   if(key === 'e'){ setView('email'); event.preventDefault(); return; }
   if(key === 'a'){ setView('all'); event.preventDefault(); return; }
   if(key === 'u'){ openShortcutSection('utm-link'); event.preventDefault(); return; }
-  if(key === 'c'){ openShortcutSection('cta-assets'); event.preventDefault(); return; }
+  if(key === 'c'){ openShortcutSection('cta-assets', true); event.preventDefault(); return; }
   if(key === 'r'){ refreshOffers(); event.preventDefault(); return; }
   if(event.key === '?'){ openShortcutsModal(); event.preventDefault(); }
 }
