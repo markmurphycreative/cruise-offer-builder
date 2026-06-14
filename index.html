@@ -235,12 +235,12 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash-recent-title{font-size:10px;font-weight:500;letter-spacing:.03em;color:rgba(255,255,255,.68);}
 .splash-recent-name{display:inline;margin-left:4px;font-size:11px;color:rgba(255,255,255,.84);font-weight:600;line-height:1.3;}
 .splash-recent-time{margin-top:3px;font-size:10px;color:rgba(255,255,255,.64);} 
-.splash-btn{padding:8px 10px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:4px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.08);color:#fff;}
-.splash-btn:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.44);}
+.splash-btn{padding:8px 10px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:4px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.08);color:#fff;transition:background .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease;}
+.splash-btn:hover{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.58);box-shadow:0 3px 12px rgba(0,0,0,.18);transform:translateY(-1px);}
 .splash-btn.gold{background:var(--gold);border-color:var(--gold);color:#fff;box-shadow:0 2px 10px rgba(160,146,103,.28),0 0 0 1px rgba(255,255,255,.06) inset;}
-.splash-btn.gold:hover{background:#b2a277;border-color:#b2a277;box-shadow:0 4px 14px rgba(160,146,103,.32),0 0 0 1px rgba(255,255,255,.09) inset;}
+.splash-btn.gold:hover{background:#b8aa80;border-color:#d0c29a;box-shadow:0 5px 18px rgba(160,146,103,.4),0 0 0 1px rgba(255,255,255,.16) inset;transform:translateY(-1px);}
 .splash-btn.secondary{padding:10px 12px;border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.14);box-shadow:0 2px 12px rgba(0,0,0,.18);}
-.splash-btn.secondary:hover{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.72);box-shadow:0 4px 16px rgba(0,0,0,.22);}
+.splash-btn.secondary:hover{background:rgba(255,255,255,.26);border-color:rgba(255,255,255,.82);box-shadow:0 5px 18px rgba(0,0,0,.26);transform:translateY(-1px);}
 @keyframes splashFadeIn{from{opacity:0;}to{opacity:1;}}
 @media (prefers-reduced-motion:reduce){
   .splash-main{animation:none;}
@@ -580,7 +580,6 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       <div class="splash-title">Cruise Offer Builder</div>
       <div class="splash-brand">Dawson &amp; Sanderson</div>
       <div class="splash-version" data-app-version></div>
-      <div class="splash-line">Start a new campaign or load a CSV.</div>
       <div class="splash-actions">
         <button class="splash-btn gold" id="splash-continue-session-btn" type="button" style="display:none;">Continue Last Session</button>
         <button class="splash-btn gold" id="splash-open-builder-btn" type="button">New Campaign</button>
