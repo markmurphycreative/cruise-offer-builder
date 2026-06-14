@@ -317,6 +317,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 
 
 .csv-success{color:#4f8765!important;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:400;line-height:1.35;}
+#sheets-status.csv-source-saved-status{display:block;margin-top:14px;text-align:center;color:#5f8d70!important;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:400;line-height:1.35;}
 #sheets-status.csv-loaded-status{display:block;margin-top:10px;color:var(--green)!important;font-size:9px;font-weight:600;line-height:1.35;letter-spacing:.01em;}
 .csv-error{color:var(--red)!important;font-weight:700;}
 .experimental-box{margin-top:8px;border-top:1px solid var(--border);padding-top:8px;}
@@ -2842,7 +2843,7 @@ function restoreGoogleSheetSource(){
   const source=getSavedGoogleSheetSource();
   const input=document.getElementById("sheets-url");
   if(input) input.value=source;
-  setSheetsStatus(source?"Sheet URL saved":"No saved source",source?"csv-success":"");
+  setSheetsStatus(source?"✓ Sheet URL saved":"No saved source",source?"csv-success csv-source-saved-status":"");
   return source;
 }
 async function fetchCsvUrl(url){
