@@ -223,10 +223,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:1;visibility:visible;}
 .splash.hidden,.splash.is-exiting{opacity:0;visibility:hidden;pointer-events:none;}
 .splash-inner{text-align:center;color:#fff;padding:18px;min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;width:min(560px,100%);}
-.splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;transform:translateY(-40px);animation:splashFadeIn .28s ease-out both;}
+.splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;transform:translateY(-76px);animation:splashFadeIn .28s ease-out both;}
 .splash-icon{display:block;width:132px;height:auto;margin:0 auto 15px;}
-.splash-title{font-size:20px;font-weight:300;letter-spacing:.04em;text-transform:uppercase;}
-.splash-brand{margin-top:6px;font-size:12px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;}
+.splash-title{font-size:17.5px;font-weight:300;letter-spacing:.04em;text-transform:uppercase;}
+.splash-brand{margin-top:6px;font-size:11px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
 .splash-actions{margin-top:60px;display:grid;gap:9px;max-width:200px;margin-left:auto;margin-right:auto;width:100%;}
 .splash-recent{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);max-width:320px;text-align:center;display:none;}
@@ -318,7 +318,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 
 .csv-success{color:#4f8765!important;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:400;line-height:1.35;}
 #sheets-status.csv-source-saved-status{display:block;margin-top:14px;text-align:center;color:#5f8d70!important;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:400;line-height:1.35;}
-#sheets-status.csv-loaded-status{display:block;margin-top:10px;color:var(--green)!important;font-size:9px;font-weight:600;line-height:1.35;letter-spacing:.01em;}
+#sheets-status.csv-loaded-status{display:block;margin-top:14px;text-align:center;color:var(--green)!important;font-size:8.5px;font-weight:400;line-height:1.35;letter-spacing:.005em;}
 .csv-error{color:var(--red)!important;font-weight:700;}
 .experimental-box{margin-top:8px;border-top:1px solid var(--border);padding-top:8px;}
 .experimental-summary{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);cursor:pointer;user-select:none;margin-bottom:6px;}
@@ -424,9 +424,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 #card-output.empty-preview-output{display:flex;align-items:center;justify-content:center;width:100%;height:100%;}
 .all-preview-card{cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,outline-color .16s ease;outline:0 solid transparent;outline-offset:10px;}
 .all-preview-card:hover,.all-preview-card:focus-visible{transform:translateY(-10px);box-shadow:0 18px 42px rgba(0,0,0,.28);outline:3px solid rgba(160,146,103,.55);}
-.preview-empty-state{width:min(475px,calc(100% - 30px));text-align:center;background:none;border:none;border-radius:0;box-shadow:none;font-family:'Montserrat',sans-serif;color:var(--navy);cursor:pointer;transform:translateY(-50px);transition:opacity .18s ease,transform .18s ease;}
+.preview-empty-state{width:min(475px,calc(100% - 30px));text-align:center;background:none;border:none;border-radius:0;box-shadow:none;font-family:'Montserrat',sans-serif;color:var(--navy);cursor:pointer;transform:translateY(-92px);transition:opacity .18s ease,transform .18s ease;}
 .preview-empty-state::before{content:'⇧';display:block;width:34px;height:34px;margin:0 auto 15px;border:1px dashed rgba(21,39,63,.42);border-radius:999px;color:rgba(21,39,63,.62);font-size:17px;font-weight:300;line-height:32px;transition:transform .18s ease,border-color .18s ease,color .18s ease;}
-.preview-wrap.empty-upload-zone:hover .preview-empty-state,.preview-wrap.empty-upload-zone.drag-over .preview-empty-state{opacity:.9;transform:translateY(-52px);}
+.preview-wrap.empty-upload-zone:hover .preview-empty-state,.preview-wrap.empty-upload-zone.drag-over .preview-empty-state{opacity:.9;transform:translateY(-94px);}
 .preview-wrap.empty-upload-zone:hover .preview-empty-state::before,.preview-wrap.empty-upload-zone.drag-over .preview-empty-state::before{transform:translateY(-3px);border-color:rgba(160,146,103,.72);color:var(--gold);}
 .preview-empty-state h2{margin:0;padding:0;background:none;color:var(--navy);font-family:'Montserrat',sans-serif;font-size:16.5px;font-weight:400;letter-spacing:.025em;line-height:1.2;}
 .preview-empty-state p{margin:14px 0 0;padding:0;background:none;color:var(--navy);font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;line-height:1.5;opacity:.72;}
@@ -636,10 +636,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
   <div class="sb-body">
     <div class="lock-ind" id="lock-ind">🔒 CARD LOCKED — Click Unlock to edit</div>
 
-    <!-- ── CSV IMPORT (CORE WORKFLOW) ── -->
+    <!-- ── CAMPAIGN IMPORT (CORE WORKFLOW) ── -->
     <div class="section csv-core-section" data-section-key="csv-import">
       <div class="section-hdr" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>CSV Import</h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>Campaign Import</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body">
           <div class="field">
@@ -650,9 +650,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
             <button class="abtn navy" onclick="loadFromSheets()">Load Sheet</button>
             <button class="abtn" onclick="refreshOffers()">Refresh Offers</button>
           </div>
-          <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values" style="display:none">
-          <button class="abtn" onclick="triggerCsvFilePicker()" style="width:100%;margin-top:4px;">Load Downloaded CSV File</button>
-          <div class="empty-state" id="sheets-status" aria-live="polite"><strong>No CSV loaded</strong>Import a campaign CSV to begin.</div>
+          <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values,.json,application/json" style="display:none">
+          <button class="abtn" onclick="triggerCsvFilePicker()" style="width:100%;margin-top:4px;">Load Campaign File</button>
+          <div class="empty-state" id="sheets-status" aria-live="polite"><strong>No campaign file loaded</strong>Import a CSV or campaign JSON to begin.</div>
 
       </div>
     </div>
@@ -2791,7 +2791,7 @@ function autoExpandCampaignHealthForExport(){
 const GOOGLE_SHEET_SOURCE_KEY = "cobGoogleSheetSourceV1";
 
 function csvEmptyStateHtml(){
-  return '<strong>No CSV loaded</strong>Import a campaign CSV to begin.';
+  return '<strong>No campaign file loaded</strong>Import a CSV or campaign JSON to begin.';
 }
 function setSheetsStatus(message,type=""){
   const status=document.getElementById("sheets-status");
@@ -2977,6 +2977,11 @@ function loadFromCSVFile(event){
   const file=event.target.files && event.target.files[0];
   const status=document.getElementById("sheets-status");
   if(!file){return;}
+  if(isCampaignJsonUploadFile(file)){
+    loadCampaignFile(event);
+    if(typeof event._onSuccess==="function") event._onSuccess();
+    return;
+  }
   status.className="";
   status.textContent="Reading local CSV file...";
   const reader=new FileReader();
@@ -5661,7 +5666,7 @@ function renderEmptyPreviewIfNeeded(){
   }
   if(!showEmptyState) return false;
   updatePreviewTitle();
-  out.innerHTML = '<div class="preview-empty-state" role="status" aria-label="CSV or campaign upload zone"><h2>Ready To Build</h2><p>Load a Google Sheet or CSV to generate your cruise cards instantly.</p><p>Click anywhere or drag a CSV or campaign file into this workspace.</p></div>';
+  out.innerHTML = '<div class="preview-empty-state" role="status" aria-label="CSV or campaign upload zone"><h2>Ready To Build</h2><p>Load a Google Sheet, CSV or campaign file to generate your cruise cards instantly.</p><p>Click anywhere or drag a CSV or campaign file into this workspace.</p></div>';
   scaler.style.width = '100%';
   scaler.style.height = '100%';
   scaler.style.transform = 'none';
