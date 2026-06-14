@@ -319,9 +319,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .export-toast.active{opacity:1;visibility:visible;transform:translateY(0);}
 
 
-.csv-success{color:#4f8765!important;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:400;line-height:1.35;}
-#sheets-status.csv-source-saved-status{display:block;margin-top:14px;text-align:center;color:#5f8d70!important;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:400;line-height:1.35;}
-#sheets-status.csv-loaded-status{display:block;margin-top:14px;text-align:center;color:var(--green)!important;font-size:8.5px;font-weight:400;line-height:1.35;letter-spacing:.005em;}
+.csv-success{color:rgba(79,135,101,.72)!important;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:400;line-height:1.25;text-align:left;}
+#sheets-status.csv-loaded-status{display:block;margin-top:5px;color:rgba(79,135,101,.72)!important;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:400;line-height:1.25;letter-spacing:0;text-align:left;}
 .csv-error{color:var(--red)!important;font-weight:700;}
 .experimental-box{margin-top:8px;border-top:1px solid var(--border);padding-top:8px;}
 .experimental-summary{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);cursor:pointer;user-select:none;margin-bottom:6px;}
@@ -651,7 +650,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
           </div>
           <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values,.json,application/json" style="display:none">
           <button class="abtn" onclick="triggerCsvFilePicker()" style="width:100%;margin-top:4px;">Load Campaign File</button>
-          <div class="empty-state" id="sheets-status" aria-live="polite"><strong>No campaign file loaded</strong>Import a CSV or campaign JSON to begin.</div>
+          <div id="sheets-status" aria-live="polite"></div>
 
       </div>
     </div>
@@ -2799,8 +2798,8 @@ function setSheetsStatus(message,type=""){
   const status=document.getElementById("sheets-status");
   if(!status) return;
   if(!type && (message === "No saved source" || message === "No CSV loaded")){
-    status.className="empty-state";
-    status.innerHTML=csvEmptyStateHtml();
+    status.className="";
+    status.textContent="";
     return;
   }
   status.className=type;
@@ -2845,7 +2844,7 @@ function restoreGoogleSheetSource(){
   const source=getSavedGoogleSheetSource();
   const input=document.getElementById("sheets-url");
   if(input) input.value=source;
-  setSheetsStatus(source?"✓ Sheet URL saved":"No saved source",source?"csv-success csv-source-saved-status":"");
+  setSheetsStatus("No saved source");
   return source;
 }
 async function fetchCsvUrl(url){
@@ -2879,8 +2878,7 @@ function importCsvPreservingOffersOnFailure(csv,status,successMessage){
   try{
     processSheetCSV(csv,status);
     if(status.className==="csv-error") throw new Error(status.textContent||"CSV import failed");
-    status.className="csv-success";
-    status.textContent=successMessage;
+    if(successMessage && !status.textContent) status.textContent=successMessage;
     resetShortcutFocusAfterImport();
     return true;
   }catch(e){
@@ -2910,7 +2908,6 @@ async function loadFromSheets(){
   const csvUrl=googleSheetUrlToCsvUrl(source);
   if(!csvUrl){ setSheetsStatus("Failed to load: paste a valid public Google Sheet URL","csv-error"); return false; }
   storeGoogleSheetSource(source);
-  setSheetsStatus("Source saved","csv-success");
   return loadSheetCsvUrl(csvUrl,"Offers loaded",sheetSource.type);
 }
 async function refreshOffers(){
@@ -2979,7 +2976,7 @@ function loadFromCSVFile(event){
   const file=event.target.files && event.target.files[0];
   const status=document.getElementById("sheets-status");
   if(!file){return;}
-  if(isCampaignJsonUploadFile(file)){
+  if(typeof isCampaignJsonUploadFile==="function" && isCampaignJsonUploadFile(file)){
     loadCampaignFile(event);
     if(typeof event._onSuccess==="function") event._onSuccess();
     return;
@@ -4490,6 +4487,7 @@ function restoreCampaignFilePayload(filePayload){
   if(imageWarning) showSessionFeedback("Campaign loaded, images may need checking",true);
   else if(compatibilityWarning) showSessionFeedback("Campaign loaded with compatibility warning",true);
   else showSessionFeedback("Campaign loaded",false);
+  if(typeof setSheetsStatus==="function") setSheetsStatus("✓ Campaign loaded","csv-success csv-loaded-status");
   if(typeof addCampaignHistoryEntry==="function") addCampaignHistoryEntry(buildCampaignHistoryEntryFromPayload(parsed, "backup"));
   if(typeof refreshCampaignHistoryUI==="function") refreshCampaignHistoryUI();
   resetShortcutFocusAfterImport();

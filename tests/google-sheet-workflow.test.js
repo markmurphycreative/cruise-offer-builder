@@ -79,7 +79,7 @@ test('loading a Sheet stores the original source and routes generated CSV throug
   assert.equal(storage.get('cobGoogleSheetSourceV1'), input.value);
   assert.deepEqual(fetched, ['https://docs.google.com/spreadsheets/d/abc123/export?format=csv&gid=42']);
   assert.deepEqual(imported, ['operator,offer_name\nP&O,Caribbean']);
-  assert.equal(status.textContent, 'Offers loaded');
+  assert.equal(status.textContent, '✓ 1 offer loaded');
 });
 
 test('successful Sheet loads move focus from the action control to the shortcut-safe app container', async () => {
@@ -169,7 +169,7 @@ test('saved source repopulates on startup without automatically loading offers',
   const { context, status, input, fetched, imported } = createHarness({ savedSource });
   assert.equal(context.restoreGoogleSheetSource(), savedSource);
   assert.equal(input.value, savedSource);
-  assert.equal(status.textContent, 'Sheet URL saved');
+  assert.equal(status.textContent, '');
   assert.deepEqual(fetched, []);
   assert.deepEqual(imported, []);
   assert.match(html, /function initBuilderApp\(\)[\s\S]*?load\(0\);\s*restoreGoogleSheetSource\(\);/);
@@ -182,15 +182,15 @@ test('Refresh Offers uses the saved source instead of unsaved input changes', as
   input.value = 'https://docs.google.com/spreadsheets/d/unsaved/edit';
   assert.equal(await context.refreshOffers(), true);
   assert.deepEqual(fetched, ['https://docs.google.com/spreadsheets/d/saved123/export?format=csv&gid=9']);
-  assert.equal(status.textContent, 'Refresh complete');
+  assert.equal(status.textContent, '✓ 1 offer loaded');
 });
 
 test('Refresh without a saved source is non-blocking and leaves offers unchanged', async () => {
   const { context, status, fetched } = createHarness();
   const before = context.offers;
   assert.equal(await context.refreshOffers(), false);
-  assert.equal(status.className, 'empty-state');
-  assert.equal(status.textContent, 'No CSV loadedImport a campaign CSV to begin.');
+  assert.equal(status.className, '');
+  assert.equal(status.textContent, '');
   assert.equal(context.offers, before);
   assert.deepEqual(fetched, []);
 });
