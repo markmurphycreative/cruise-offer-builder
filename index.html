@@ -287,11 +287,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash.hidden,.splash.is-exiting{opacity:0;visibility:hidden;pointer-events:none;}
 .splash-inner{text-align:center;color:#fff;padding:18px;min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;width:min(560px,100%);}
 .splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;animation:splashFadeIn .28s ease-out both;}
-.splash-title{font-family:'Montserrat',sans-serif;font-size:22px;font-weight:300;letter-spacing:.04em;text-transform:uppercase;}
+.splash-title{font-family:'Montserrat',sans-serif;font-size:22px;font-weight:400;letter-spacing:.04em;text-transform:uppercase;}
 .splash-brand{margin-top:6px;font-size:13px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;}
 .splash-version{margin-top:18px;font-size:11px;color:rgba(255,255,255,.7);}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
-.splash-actions{margin-top:22px;display:grid;gap:10px;max-width:246px;margin-left:auto;margin-right:auto;width:100%;}
+.splash-actions{margin-top:26px;display:grid;gap:12px;max-width:284px;margin-left:auto;margin-right:auto;width:100%;}
 .splash-recent{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);max-width:320px;text-align:center;display:none;}
 .splash-recent.active{display:block;}
 .splash-recent-title{font-size:10px;font-weight:500;letter-spacing:.03em;color:rgba(255,255,255,.68);}
@@ -301,8 +301,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash-btn:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.44);transform:translateY(-1px);}
 .splash-btn.gold{background:var(--gold);border-color:var(--gold);color:#fff;box-shadow:0 2px 10px rgba(160,146,103,.28),0 0 0 1px rgba(255,255,255,.06) inset;}
 .splash-btn.gold:hover{background:#b2a277;border-color:#b2a277;box-shadow:0 4px 14px rgba(160,146,103,.32),0 0 0 1px rgba(255,255,255,.09) inset;}
-.splash-btn.primary-load{padding:13px 16px;font-size:11px;font-weight:700;letter-spacing:.095em;background:#fff;color:var(--navy);border-color:#fff;box-shadow:0 14px 32px rgba(0,0,0,.20),0 0 0 1px rgba(160,146,103,.34) inset;}
-.splash-btn.primary-load:hover{background:#f8f5ec;border-color:#f8f5ec;box-shadow:0 18px 38px rgba(0,0,0,.24),0 0 0 1px rgba(160,146,103,.48) inset;}
+.splash-btn.primary-load{padding:17px 20px;font-size:12px;font-weight:800;letter-spacing:.105em;background:#fff;color:var(--navy);border-color:#fff;box-shadow:0 16px 34px rgba(0,0,0,.24),0 0 0 2px rgba(160,146,103,.38) inset;}
+.splash-btn.primary-load:hover{background:#f8f5ec;border-color:#f8f5ec;box-shadow:0 20px 42px rgba(0,0,0,.28),0 0 0 2px rgba(160,146,103,.52) inset;}
 @keyframes splashFadeIn{from{opacity:0;}to{opacity:1;}}
 @media (prefers-reduced-motion:reduce){
   .splash-main{animation:none;}
@@ -1146,7 +1146,8 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <dt>Select an offer</dt><dd><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd></dd>
       <dt>Next / previous offer</dt><dd><kbd>Tab</kbd> / <kbd>Shift</kbd> + <kbd>Tab</kbd></dd>
       <dt>Single / Email / All 4 view</dt><dd><kbd>S</kbd> / <kbd>E</kbd> / <kbd>A</kbd></dd>
-      <dt>Open CTA Assets</dt><dd><kbd>C</kbd></dd>
+      <dt>UTM Section</dt><dd><kbd>U</kbd></dd>
+      <dt>CTA Assets</dt><dd><kbd>C</kbd></dd>
       <dt>Export card</dt><dd><kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>S</kbd></dd>
       <dt>Export all cards</dt><dd><kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd></dd>
       <dt>Refresh offers</dt><dd><kbd>R</kbd></dd>
@@ -7321,6 +7322,7 @@ function handleKeyboardShortcut(event){
   if(key === 'e'){ setView('email'); event.preventDefault(); return; }
   if(key === 'a'){ setView('all'); event.preventDefault(); return; }
   if(key === 'r'){ refreshOffers(); event.preventDefault(); return; }
+  if(key === 'u'){ openSectionShortcut('utm-link'); event.preventDefault(); return; }
   if(key === 'c'){ openSectionShortcut('cta-assets'); event.preventDefault(); return; }
   if(event.key === '?'){ openShortcutsModal(); event.preventDefault(); }
 }
