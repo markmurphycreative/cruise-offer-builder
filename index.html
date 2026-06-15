@@ -993,6 +993,49 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       </div>
     </div>
 
+
+    <!-- ── AI COPY ── -->
+    <div class="section" data-section-key="ai-copy">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M12 3l1.7 5.1L19 10l-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9L12 3z"></path><path d="M5 15l.8 2.2L8 18l-2.2.8L5 21l-.8-2.2L2 18l2.2-.8L5 15z"></path><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8L19 14z"></path></svg>AI Copy</h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body hidden">
+        <div class="field">
+          <label for="ai-prompt-type">Prompt Type</label>
+          <select id="ai-prompt-type">
+            <option value="subject-lines">Subject Lines</option>
+            <option value="preview-text">Preview Text</option>
+            <option value="subject-preview">Subject + Preview</option>
+            <option value="taglines">Taglines</option>
+            <option value="short-description">Short Description</option>
+            <option value="long-description">Long Description</option>
+            <option value="email-intro">Email Intro</option>
+            <option value="social-caption">Social Caption</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="ai-prompt-tone">Tone</label>
+          <select id="ai-prompt-tone">
+            <option value="Direct" selected>Direct</option>
+            <option value="Premium">Premium</option>
+            <option value="Luxury">Luxury</option>
+            <option value="Editorial">Editorial</option>
+            <option value="Urgent">Urgent</option>
+            <option value="Friendly">Friendly</option>
+          </select>
+        </div>
+        <button class="abtn navy" type="button" style="width:100%;margin-bottom:6px;" onclick="generateAiCopyPrompt()">Generate Prompt</button>
+        <div class="field">
+          <label for="ai-prompt-output">Prompt Output</label>
+          <textarea id="ai-prompt-output" readonly rows="12" placeholder="Generated ChatGPT prompt will appear here."></textarea>
+        </div>
+        <div class="utm-btn-row">
+          <button class="abtn btn-compact" type="button" onclick="copyAiCopyPrompt()">Copy Prompt</button>
+        </div>
+        <div id="ai-prompt-copy-status" style="font-size:9px;color:var(--green);margin-top:4px;min-height:12px;" aria-live="polite"></div>
+      </div>
+    </div>
+
     
     <div style="display:none;">
       <button id="sz-btn" type="button">Show Safe Zones</button>
@@ -1470,6 +1513,82 @@ function autoBoardLabel(){
   if(!match) return;
   codeEl.value = match[0];
   labelEl.value = match[1];
+}
+
+
+// ═══════════════════════════════════════════════════════
+// AI COPY PROMPT GENERATOR
+// ═══════════════════════════════════════════════════════
+function getAiCopyOperatorName(operatorKey){
+  const config = OPERATOR_CONFIG[operatorKey || ""];
+  return config && config.displayName ? config.displayName : String(operatorKey || "").trim();
+}
+function getAiCopySelectedOffer(){
+  try { save(); } catch(e) {}
+  return offers[cur] || {};
+}
+function addAiCopyDetail(rows, label, value){
+  const clean = String(value == null ? "" : value).replace(/\s+/g," ").trim();
+  if(clean) rows.push(`${label}: ${clean}`);
+}
+function formatAiCopyPrice(value){
+  const clean = String(value || "").trim();
+  if(!clean) return "";
+  if(/[£$€]/.test(clean) || /\bfrom\b/i.test(clean) || /pp\b/i.test(clean)) return clean;
+  return `From £${clean}pp`;
+}
+function buildAiCopyOfferDetails(offer){
+  const rows=[];
+  addAiCopyDetail(rows,"Operator",getAiCopyOperatorName(offer.operator));
+  addAiCopyDetail(rows,"Ship",offer.ship);
+  addAiCopyDetail(rows,"Title",offer.name);
+  addAiCopyDetail(rows,"Ports",offer.ports);
+  addAiCopyDetail(rows,"Departure Airport",document.getElementById("g-airport")?.value || "");
+  addAiCopyDetail(rows,"Price",formatAiCopyPrice(offer.price));
+  addAiCopyDetail(rows,"Board Basis",offer.boardlbl || offer.board);
+  addAiCopyDetail(rows,"Dates",[offer.day,offer.month].filter(Boolean).join(" ") || offer.saildate);
+  addAiCopyDetail(rows,"Nights",offer.nights);
+  addAiCopyDetail(rows,"USPs",offer.tags || offer.incl);
+  addAiCopyDetail(rows,"Destination Data",document.getElementById("g-description")?.value || "");
+  return rows;
+}
+function getAiCopyTask(type){
+  const tasks={
+    "subject-lines":"Write 10 email subject line options.\n\nRequirements:\n\n• British English\n• Travel retail audience\n• Keep subject lines under 45 characters\n• Avoid clichés\n• Make the offer feel compelling and clear",
+    "preview-text":"Write 10 email preview text options.\n\nRequirements:\n\n• British English\n• Travel retail audience\n• Keep each option concise\n• Avoid repeating the subject line\n• Make the reason to click clear",
+    "subject-preview":"Write 10 email subject lines and matching preview text options.\n\nRequirements:\n\n• British English\n• Travel retail audience\n• Keep subject lines under 45 characters\n• Avoid clichés\n• Avoid excessive luxury wording\n• Make the offer feel compelling and clear",
+    "taglines":"Create 15 short travel taglines.\n\nRequirements:\n\n• Maximum 5 words\n• British English\n• Avoid mentioning operator names\n• Avoid clichés",
+    "short-description":"Write a concise travel offer description.\n\nRequirements:\n\n• Maximum 40 words\n• British English\n• Clear and compelling\n• Do not sound AI-generated\n• Use only the information provided",
+    "long-description":"Write a polished travel offer description.\n\nRequirements:\n\n• 90–120 words\n• British English\n• Clear, useful and sales-focused\n• Do not invent details\n• Do not sound AI-generated\n• Use only the information provided",
+    "email-intro":"Write 5 email intro paragraph options for this travel offer.\n\nRequirements:\n\n• British English\n• 35–60 words each\n• Warm but concise\n• Travel retail audience\n• Do not invent details\n• Use only the information provided",
+    "social-caption":"Write 5 social media caption options for this travel offer.\n\nRequirements:\n\n• British English\n• Clear, concise and engaging\n• Include a light call to action\n• Avoid hashtags unless they add value\n• Do not invent details\n• Use only the information provided"
+  };
+  return tasks[type] || tasks["subject-lines"];
+}
+function generateAiCopyPrompt(){
+  const type=document.getElementById("ai-prompt-type")?.value || "subject-lines";
+  const tone=document.getElementById("ai-prompt-tone")?.value || "Direct";
+  const offer=getAiCopySelectedOffer();
+  const details=buildAiCopyOfferDetails(offer);
+  const output=document.getElementById("ai-prompt-output");
+  const status=document.getElementById("ai-prompt-copy-status");
+  const prompt=[getAiCopyTask(type),"","Tone:",tone,"","Offer Details:",details.length ? details.join("\n") : "No offer details have been loaded yet.","","Return the copy only, clearly labelled where helpful."].join("\n");
+  if(output) output.value=prompt;
+  if(status) status.textContent="";
+}
+async function copyAiCopyPrompt(){
+  const output=document.getElementById("ai-prompt-output");
+  const status=document.getElementById("ai-prompt-copy-status");
+  if(!output || !output.value.trim()) generateAiCopyPrompt();
+  const text=(output && output.value) || "";
+  if(!text.trim()) return;
+  try{
+    if(navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(text);
+    else { output.focus(); output.select(); document.execCommand("copy"); }
+    if(status) status.textContent="✓ Prompt copied";
+  }catch(e){
+    if(status) status.textContent="Copy failed — select the prompt and copy manually.";
+  }
 }
 
 // ═══════════════════════════════════════════════════════
