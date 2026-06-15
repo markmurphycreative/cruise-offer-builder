@@ -1012,6 +1012,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
             <option value="email-intro">Email Intro</option>
             <option value="social-caption">Social Caption</option>
           </select>
+          <div style="font-size:9px;color:var(--muted);margin-top:3px;line-height:1.3;">Campaign-level prompts use all loaded offers. Offer copy prompts use the selected offer.</div>
         </div>
         <div class="field">
           <label for="ai-prompt-tone">Tone</label>
@@ -1540,26 +1541,57 @@ function formatAiCopyPrice(value){
   if(/[£$€]/.test(clean) || /\bfrom\b/i.test(clean) || /pp\b/i.test(clean)) return clean;
   return `From £${clean}pp`;
 }
-function buildAiCopyOfferDetails(offer){
+function isAiCopyCampaignPrompt(type){
+  return ["subject-lines","preview-text","subject-preview"].includes(type);
+}
+function isAiCopyLoadedOffer(offer){
+  return !!(offer && [offer.operator,offer.ship,offer.name,offer.ports,offer.price,offer.boardlbl,offer.board,offer.day,offer.month,offer.saildate,offer.nights,offer.tags,offer.incl].some(value=>String(value||"").trim()));
+}
+function buildAiCopyOfferDetails(offer,options={}){
+  offer=offer || {};
   const rows=[];
+  if(options.offerNumber) rows.push(`Offer ${options.offerNumber}:`);
   addAiCopyDetail(rows,"Operator",getAiCopyOperatorName(offer.operator));
   addAiCopyDetail(rows,"Ship",offer.ship);
   addAiCopyDetail(rows,"Title",offer.name);
   addAiCopyDetail(rows,"Ports",offer.ports);
-  addAiCopyDetail(rows,"Departure Airport",document.getElementById("g-airport")?.value || "");
+  if(options.includeDepartureAirport) addAiCopyDetail(rows,"Departure Airport",document.getElementById("g-airport")?.value || "");
   addAiCopyDetail(rows,"Price",formatAiCopyPrice(offer.price));
   addAiCopyDetail(rows,"Board Basis",offer.boardlbl || offer.board);
   addAiCopyDetail(rows,"Dates",[offer.day,offer.month].filter(Boolean).join(" ") || offer.saildate);
   addAiCopyDetail(rows,"Nights",offer.nights);
   addAiCopyDetail(rows,"USPs",offer.tags || offer.incl);
-  addAiCopyDetail(rows,"Destination Data",document.getElementById("g-description")?.value || "");
+  addAiCopyDetail(rows,"Destination Data",offer.destination || offer.destinationData || offer.region || offer.area || "");
   return rows;
+}
+function buildAiCopyCampaignDetails(){
+  const rows=[];
+  addAiCopyDetail(rows,"Campaign Name",document.getElementById("g-campaign")?.value || "");
+  addAiCopyDetail(rows,"Send Date",document.getElementById("g-date")?.value || "");
+  addAiCopyDetail(rows,"Campaign Description",document.getElementById("g-description")?.value || "");
+  addAiCopyDetail(rows,"Owner",document.getElementById("g-owner")?.value || "");
+  addAiCopyDetail(rows,"Departure Airport",document.getElementById("g-airport")?.value || "");
+  return rows;
+}
+function buildAiCopyCampaignPromptDetails(){
+  const campaignRows=buildAiCopyCampaignDetails();
+  const loadedOffers=(offers||[]).map((offer,index)=>({offer,index})).filter(item=>isAiCopyLoadedOffer(item.offer));
+  const offerBlocks=loadedOffers.map(item=>buildAiCopyOfferDetails(item.offer,{offerNumber:item.index+1}).join("\n")).filter(Boolean);
+  return [
+    "This is a multi-offer campaign. Create copy that represents the full campaign, not just one card.",
+    "",
+    "Campaign Details:",
+    campaignRows.length ? campaignRows.join("\n") : "No campaign details have been loaded yet.",
+    "",
+    "Offers:",
+    offerBlocks.length ? offerBlocks.join("\n\n") : "No loaded offers are available yet."
+  ].join("\n");
 }
 function getAiCopyTask(type){
   const tasks={
-    "subject-lines":"Write 10 email subject line options.\n\nRequirements:\n\n• British English\n• Travel retail audience\n• Keep subject lines under 45 characters\n• Avoid clichés\n• Make the offer feel compelling and clear",
-    "preview-text":"Write 10 email preview text options.\n\nRequirements:\n\n• British English\n• Travel retail audience\n• Keep each option concise\n• Avoid repeating the subject line\n• Make the reason to click clear",
-    "subject-preview":"Write 10 email subject lines and matching preview text options.\n\nRequirements:\n\n• British English\n• Travel retail audience\n• Keep subject lines under 45 characters\n• Avoid clichés\n• Avoid excessive luxury wording\n• Make the offer feel compelling and clear",
+    "subject-lines":"Write 10 email subject line options for the full multi-offer campaign.\n\nRequirements:\n\n• British English\n• Travel retail audience\n• Keep subject lines under 45 characters\n• Avoid clichés\n• Make the campaign feel compelling and clear\n• Represent the range of offers provided",
+    "preview-text":"Write 10 email preview text options for the full multi-offer campaign.\n\nRequirements:\n\n• British English\n• Travel retail audience\n• Keep each option concise\n• Avoid repeating the subject line\n• Make the reason to click clear\n• Represent the range of offers provided",
+    "subject-preview":"Write 10 matched email subject line and preview text pairs for the full multi-offer campaign.\n\nRequirements:\n\n• British English\n• Travel retail audience\n• Keep subject lines under 45 characters\n• Avoid clichés\n• Avoid excessive luxury wording\n• Make the campaign feel compelling and clear\n• Represent the range of offers provided",
     "taglines":"Create 15 short travel taglines.\n\nRequirements:\n\n• Maximum 5 words\n• British English\n• Avoid mentioning operator names\n• Avoid clichés",
     "short-description":"Write a concise travel offer description.\n\nRequirements:\n\n• Maximum 40 words\n• British English\n• Clear and compelling\n• Do not sound AI-generated\n• Use only the information provided",
     "long-description":"Write a polished travel offer description.\n\nRequirements:\n\n• 90–120 words\n• British English\n• Clear, useful and sales-focused\n• Do not invent details\n• Do not sound AI-generated\n• Use only the information provided",
@@ -1571,11 +1603,13 @@ function getAiCopyTask(type){
 function generateAiCopyPrompt(){
   const type=document.getElementById("ai-prompt-type")?.value || "subject-lines";
   const tone=document.getElementById("ai-prompt-tone")?.value || "Direct";
-  const offer=getAiCopySelectedOffer();
-  const details=buildAiCopyOfferDetails(offer);
+  try { save(); } catch(e) {}
   const output=document.getElementById("ai-prompt-output");
   const status=document.getElementById("ai-prompt-copy-status");
-  const prompt=[getAiCopyTask(type),"","Tone:",tone,"","Offer Details:",details.length ? details.join("\n") : "No offer details have been loaded yet.","","Return the copy only, clearly labelled where helpful."].join("\n");
+  const context=isAiCopyCampaignPrompt(type)
+    ? buildAiCopyCampaignPromptDetails()
+    : ["Offer Details:",buildAiCopyOfferDetails(getAiCopySelectedOffer(),{includeDepartureAirport:true}).join("\n") || "No offer details have been loaded yet."].join("\n");
+  const prompt=[getAiCopyTask(type),"","Tone:",tone,"",context,"","Return the copy only, clearly labelled where helpful."].join("\n");
   if(output) output.value=prompt;
   if(status) status.textContent="";
 }
