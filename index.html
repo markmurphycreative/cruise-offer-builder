@@ -1012,6 +1012,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
             <option value="subject-lines">Subject Lines</option>
             <option value="preview-text">Preview Text</option>
             <option value="subject-preview">Subject + Preview</option>
+            <option value="copy-pack-campaign">Copy Pack (Campaign)</option>
             <option value="taglines">Taglines</option>
             <option value="short-description">Short Description</option>
             <option value="long-description">Long Description</option>
@@ -1552,7 +1553,7 @@ function formatAiCopyPrice(value){
   return `From £${clean}pp`;
 }
 function isAiCopyCampaignPrompt(type){
-  return ["subject-lines","preview-text","subject-preview"].includes(type);
+  return ["subject-lines","preview-text","subject-preview","copy-pack-campaign"].includes(type);
 }
 function isAiCopyLoadedOffer(offer){
   return !!(offer && [offer.operator,offer.ship,offer.name,offer.ports,offer.price,offer.boardlbl,offer.board,offer.day,offer.month,offer.saildate,offer.nights,offer.tags,offer.incl].some(value=>String(value||"").trim()));
@@ -1602,6 +1603,7 @@ function getAiCopyTask(type){
     "subject-lines":"Write 10 email subject line options for the full multi-offer campaign.\n\nRequirements:\n\n• British English\n• Travel retail audience\n• Keep subject lines under 45 characters\n• Avoid clichés\n• Make the campaign feel compelling and clear\n• Represent the range of offers provided",
     "preview-text":"Write 10 email preview text options for the full multi-offer campaign.\n\nRequirements:\n\n• British English\n• Travel retail audience\n• Keep each option concise\n• Avoid repeating the subject line\n• Make the reason to click clear\n• Represent the range of offers provided",
     "subject-preview":"Write 10 matched email subject line and preview text pairs for the full multi-offer campaign.\n\nRequirements:\n\n• British English\n• Travel retail audience\n• Keep subject lines under 45 characters\n• Avoid clichés\n• Avoid excessive luxury wording\n• Make the campaign feel compelling and clear\n• Represent the range of offers provided",
+    "copy-pack-campaign":"Create a complete copy pack for this multi-offer campaign.\n\nReturn the copy in this order:\n\n1. 10 Email Subject Lines\n2. 10 Preview Text Options\n3. 10 Subject + Preview Pairs\n4. 15 Campaign Taglines\n5. For each loaded offer: 1 Short Description\n6. For each loaded offer: 1 Long Description\n\nRequirements:\n\n• Treat this as a multi-offer campaign\n• Create campaign-level copy first\n• Then create offer-level copy for each loaded offer\n• Use British English\n• Write for a travel retail audience\n• Avoid clichés\n• Avoid sounding AI-generated\n• Use only the information provided\n• Represent the range of offers provided\n\nShort Description rules:\n\n• Focus on the overall holiday experience\n• Do not list every port\n• Do not mention price\n• Use destination information selectively\n\nLong Description rules:\n\n• Focus on experience and itinerary highlights\n• Do not list every port\n• Do not mention price unless specifically relevant",
     "taglines":"Create 15 short travel taglines.\n\nRequirements:\n\n• Maximum 5 words\n• British English\n• Avoid mentioning operator names\n• Avoid clichés",
     "short-description":"Write a concise travel offer description.\n\nRequirements:\n\n• Maximum 40 words\n• British English\n• Clear and compelling\n• Focus on the overall holiday experience. Do not list every port. Do not mention the price. Use destination and itinerary information selectively.\n• Do not sound AI-generated\n• Use only the information provided",
     "long-description":"Write a polished travel offer description.\n\nRequirements:\n\n• 90–120 words\n• British English\n• Clear, useful and sales-focused\n• Focus on the experience, destinations and itinerary highlights. Do not list every port. Do not mention the price unless specifically relevant.\n• Do not invent details\n• Do not sound AI-generated\n• Use only the information provided",
