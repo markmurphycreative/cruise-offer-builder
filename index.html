@@ -1032,6 +1032,9 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         <div class="utm-btn-row">
           <button class="abtn btn-compact" type="button" onclick="copyAiCopyPrompt()">Copy Prompt</button>
         </div>
+        <div class="utm-btn-row">
+          <button class="abtn btn-compact" type="button" onclick="openAiCopyPromptInChatGPT()">Open in ChatGPT</button>
+        </div>
         <div id="ai-prompt-copy-status" style="font-size:9px;color:var(--green);margin-top:4px;min-height:12px;" aria-live="polite"></div>
       </div>
     </div>
@@ -1576,18 +1579,29 @@ function generateAiCopyPrompt(){
   if(output) output.value=prompt;
   if(status) status.textContent="";
 }
-async function copyAiCopyPrompt(){
+async function copyAiCopyPrompt(message){
   const output=document.getElementById("ai-prompt-output");
   const status=document.getElementById("ai-prompt-copy-status");
   if(!output || !output.value.trim()) generateAiCopyPrompt();
   const text=(output && output.value) || "";
-  if(!text.trim()) return;
+  if(!text.trim()) return false;
   try{
     if(navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(text);
-    else { output.focus(); output.select(); document.execCommand("copy"); }
-    if(status) status.textContent="✓ Prompt copied";
+    else { output.focus(); output.select(); if(!document.execCommand("copy")) throw new Error("Copy command unavailable"); }
+    if(status) status.textContent=message || "✓ Prompt copied";
+    return true;
   }catch(e){
     if(status) status.textContent="Copy failed — select the prompt and copy manually.";
+    return false;
+  }
+}
+async function openAiCopyPromptInChatGPT(){
+  generateAiCopyPrompt();
+  const copied=await copyAiCopyPrompt("✓ Prompt copied. Paste into ChatGPT.");
+  window.open("https://chatgpt.com/","_blank","noopener");
+  if(!copied){
+    const status=document.getElementById("ai-prompt-copy-status");
+    if(status) status.textContent="Prompt generated. Copy it manually, then paste into ChatGPT.";
   }
 }
 
