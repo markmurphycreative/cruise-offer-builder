@@ -270,7 +270,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .utm-visible-output{min-height:0;font-size:9px;font-family:monospace;line-height:1.4;color:var(--navy);word-break:break-all;white-space:pre-wrap;}
 .generated-utm-empty{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:6px;font-size:9px;color:var(--muted);line-height:1.4;}
 .utm-btn-row{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:5px;}
-.ai-prompt-actions{grid-template-columns:repeat(2,minmax(0,1fr));}
+.ai-prompt-actions{grid-template-columns:repeat(3,minmax(0,1fr));}
 .ai-prompt-actions .abtn{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;}
 .ai-action-icon{width:13px;height:13px;flex:0 0 13px;color:var(--navy);stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;fill:none;}
 .ai-action-icon.chatgpt-icon{stroke-width:1.55;}
@@ -1046,6 +1046,10 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
             <svg class="ai-action-icon chatgpt-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8.1 4.7a5 5 0 0 1 7.8 1.4 5 5 0 0 1 2.6 7.3 5 5 0 0 1-5.2 5.8 5 5 0 0 1-7.8-1.4 5 5 0 0 1-2.6-7.3 5 5 0 0 1 5.2-5.8z"></path><path d="M8 14.9V8.7l5.4-3.1"></path><path d="M6.2 10.4l5.4 3.1 5.4-3.1"></path><path d="M16 9.1v6.2l-5.4 3.1"></path></svg>
             <span>Open in ChatGPT</span>
           </button>
+          <button class="abtn btn-compact" type="button" onclick="clearAiCopyPrompt()">
+            <svg class="ai-action-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M18 6L6 18"></path><path d="M6 6l12 12"></path></svg>
+            <span>Clear</span>
+          </button>
         </div>
         <div id="ai-prompt-copy-status" style="font-size:9px;color:var(--green);margin-top:4px;min-height:12px;" aria-live="polite"></div>
       </div>
@@ -1623,6 +1627,12 @@ function generateAiCopyPrompt(){
     : ["Offer Details:",buildAiCopyOfferDetails(getAiCopySelectedOffer(),{includeDepartureAirport:true}).join("\n") || "No offer details have been loaded yet."].join("\n");
   const prompt=[getAiCopyTask(type),"","Tone:",tone,"",context,"","Return the copy only, clearly labelled where helpful."].join("\n");
   if(output) output.value=prompt;
+  if(status) status.textContent="";
+}
+function clearAiCopyPrompt(){
+  const output=document.getElementById("ai-prompt-output");
+  const status=document.getElementById("ai-prompt-copy-status");
+  if(output) output.value="";
   if(status) status.textContent="";
 }
 async function copyAiCopyPrompt(message){
