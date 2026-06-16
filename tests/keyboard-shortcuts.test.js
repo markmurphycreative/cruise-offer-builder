@@ -4,7 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const shortcuts = html.match(/\/\/ Lightweight global shortcuts:[\s\S]*?document\.addEventListener\('keydown',handleKeyboardShortcut\);/)?.[0];
+const shortcuts = html.match(/\/\/ Lightweight global shortcuts:[\s\S]*?document\.addEventListener\('change',releaseSelectShortcutFocus\);/)?.[0];
 
 test('visible app version is v2.2.2', () => {
   assert.match(html, /const APP_VERSION = \"v2\.2\.2\";/);
@@ -34,7 +34,7 @@ function setup(){
     activeElement:null,
     getElementById(id){ return id === 'shortcuts-modal' ? modal : id === 'shortcuts-close' ? close : id === 'cta-enabled' ? ctaEnabled : null; },
     querySelector(selector){ const match=String(selector).match(/data-section-key=\"([^\"]+)\"/); return match ? sectionNodes[match[1]] : null; },
-    addEventListener(type,handler){ this.handler=handler; }
+    addEventListener(type,handler){ if(type === 'keydown') this.handler=handler; if(type === 'change') this.changeHandler=handler; }
   };
   const context={document,cur:0,offers:[{name:'One'},{name:'Two'},{name:'Three'},{name:'Four'}],isOfferLoaded:offer=>!!offer.name,sv:i=>{ context.cur=i; calls.push(['sv',i]); },setView:v=>calls.push(['view',v]),toggleSec:hdr=>{ hdr.collapsed=!hdr.collapsed; calls.push(['toggle',hdr.collapsed ? 'closed' : 'open']); },exportCurrentJPG:()=>calls.push(['jpg']),exportAllJPG:()=>calls.push(['zip']),refreshOffers:()=>calls.push(['refresh']),moveOfferLeft:()=>calls.push(['move-left']),moveOfferRight:()=>calls.push(['move-right']),ctaSettingsChanged:()=>calls.push(['cta-changed',context.document.getElementById('cta-enabled').checked]),undoCampaignChange:()=>calls.push(['undo']),redoCampaignChange:()=>calls.push(['redo'])};
   vm.runInNewContext(shortcuts,context);
@@ -48,6 +48,7 @@ function fire(document,key,overrides={}){
 
 test('the global keyboard shortcut listener is attached exactly once', () => {
   assert.equal((html.match(/document\.addEventListener\('keydown',handleKeyboardShortcut\);/g) || []).length, 1);
+  assert.equal((html.match(/document\.addEventListener\('change',releaseSelectShortcutFocus\);/g) || []).length, 1);
 });
 
 test('shortcuts modal and small toolbar trigger list the supported keyboard shortcuts', () => {
@@ -90,7 +91,7 @@ test('card navigation does not force Single view before any offers are loaded', 
 
 test('typing targets and unrelated browser or editing commands retain native behavior', () => {
   const {calls,document}=setup();
-  const typingTarget={closest:selector=>selector === 'input,textarea,select,button,[contenteditable]'};
+  const typingTarget={closest:selector=>selector === 'input,textarea,select,[contenteditable]'};
   assert.equal(fire(document,'s',{target:typingTarget}),false);
   assert.equal(fire(document,'Tab',{target:typingTarget}),false);
   assert.equal(fire(document,'ArrowLeft',{target:typingTarget}),false);
@@ -102,4 +103,46 @@ test('typing targets and unrelated browser or editing commands retain native beh
   assert.equal(fire(document,'v',{ctrlKey:true}),false);
   assert.equal(fire(document,'r',{ctrlKey:true}),false);
   assert.deepEqual(calls,[['undo'],['redo']]);
+});
+
+
+test('shortcuts do not trigger while typing in inputs or textareas', () => {
+  for(const tag of ['input','textarea']){
+    const {calls,document}=setup();
+    const target={closest:selector=>selector.split(',').includes(tag)};
+    assert.equal(fire(document,'s',{target}),false);
+    assert.equal(fire(document,'r',{target}),false);
+    assert.deepEqual(calls,[]);
+  }
+});
+
+test('shortcuts work after clicking sidebar buttons and changing offers', () => {
+  const {calls,document}=setup();
+  const buttonTarget={closest:()=>null};
+  assert.equal(fire(document,'j',{target:buttonTarget}),false);
+  assert.equal(fire(document,'Tab',{target:buttonTarget}),true);
+  assert.deepEqual(calls.splice(-2),[['sv',1],['view','single']]);
+  assert.equal(fire(document,'2',{target:buttonTarget}),true);
+  assert.deepEqual(calls.splice(-2),[['sv',1],['view','single']]);
+});
+
+test('shortcuts work after opening and closing modals', () => {
+  const {calls,document,modal}=setup();
+  fire(document,'?',{shiftKey:true});
+  assert.equal(modal.classList.active,true);
+  fire(document,'Escape');
+  assert.equal(modal.classList.active,false);
+  assert.equal(fire(document,'r'),true);
+  assert.deepEqual(calls.pop(),['refresh']);
+});
+
+test('select changes release focus so global shortcuts can resume after dropdown interactions', () => {
+  const {calls,document}=setup();
+  let blurred=false;
+  const selectTarget={matches:selector=>selector === 'select',blur(){ blurred=true; },closest:selector=>selector === 'input,textarea,select,[contenteditable]'};
+  assert.equal(fire(document,'Tab',{target:selectTarget}),false);
+  document.changeHandler({target:selectTarget});
+  assert.equal(blurred,true);
+  assert.equal(fire(document,'Tab',{target:{closest:()=>null}}),true);
+  assert.deepEqual(calls.splice(-2),[['sv',1],['view','single']]);
 });
