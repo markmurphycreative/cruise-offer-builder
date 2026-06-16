@@ -103,7 +103,7 @@ test('placeholder panel is removed when a hero image source exists', () => {
 
 test('workspace hero placeholders are enhanced in preview only and reuse the existing hero input', () => {
   assert.match(html, /\.preview-pane \.hph\.clickable-hero-placeholder\{cursor:pointer;/);
-  assert.match(html, /\.preview-pane \.hph\.clickable-hero-placeholder::after\{content:"Click to add image"/);
+  assert.match(html, /\.preview-pane \.hph\.clickable-hero-placeholder::after\{content:"ADD HERO IMAGE"/);
   assert.match(extractFunction('openHeroImagePickerForOffer'), /document\.querySelector\('#dz-hero input\[type="file"\]'\)/);
   assert.match(extractFunction('openHeroImagePickerForOffer'), /input\.click\(\)/);
   assert.match(extractFunction('enhanceClickableHeroPlaceholders'), /openHeroImagePickerForOffer\(resolvedIndex\)/);

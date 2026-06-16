@@ -158,10 +158,10 @@ test('supported cruise operators receive their recommended empty hero imagery pl
 
 test('empty hero placeholder text is approximately 25% larger without changing the hero dimensions or positioning styles', () => {
   assert.match(html, /\.cc \.hph\{width:1200px;height:849px;background:#435465;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;\}/);
-  assert.match(html, /\.cc \.hph span\{font-size:35px;font-weight:300;color:#fff;font-family:'Montserrat',sans-serif;text-align:center;text-shadow:0 1px 2px rgba\(0,0,0,.24\);\}/);
-  assert.match(html, /\.cc \.hph span:last-child::before\{content:"Image Recommended";font-size:35px;line-height:1.15;\}/);
+  assert.match(html, /\.cc \.hph span\{font-size:44px;font-weight:300;color:#fff;font-family:'Montserrat',sans-serif;text-align:center;text-shadow:0 1px 2px rgba\(0,0,0,.24\);\}/);
+  assert.match(html, /\.cc \.hph span:last-child::before\{content:"Image Recommended";font-size:44px;line-height:1.15;\}/);
   assert.match(html, /\.all-preview-card \.hph span:first-child\{display:none;\}/);
-  assert.match(html, /\.preview-pane \.hph\.clickable-hero-placeholder::after\{content:"Click to add image";[^}]*font-size:30px;[^}]*padding:15px 28px;/);
+  assert.match(html, /\.preview-pane \.hph\.clickable-hero-placeholder::after\{content:"ADD HERO IMAGE";[^}]*font-size:38px;[^}]*background:rgba\(255,255,255,.18\);border:0;border-radius:3px;padding:19px 35px;/);
 });
 
 test('required hero QA retains passive logic while adding a stronger warning treatment', () => {
