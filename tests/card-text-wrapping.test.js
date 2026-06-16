@@ -197,6 +197,10 @@ test("You'll Visit section grows for longer ports text instead of compressing sp
   assert.doesNotMatch(html, /\.cc \.vsec\{[^}]*(?:^|;)height:536px/);
   assert.doesNotMatch(html, /\.cc \.vsec\{[^}]*max-height:536px/);
   assert.doesNotMatch(html, /\.cc \.vpts\{[^}]*font-size:(?!40px)/);
+  assert.match(html, /function adjustVisitSectionHeights\(root\)\{/);
+  assert.match(html, /const lineCount=Math\.max\(1,Math\.round\(ports\.scrollHeight\/lineHeight\)\);/);
+  assert.match(html, /const extraLines=Math\.max\(0,lineCount-4\);/);
+  assert.match(html, /section\.style\.minHeight=`\$\{536\+\(extraLines\*lineHeight\)\}px`;/);
 });
 
 test('normal port separators remain unchanged while malformed long ports can wrap', () => {
