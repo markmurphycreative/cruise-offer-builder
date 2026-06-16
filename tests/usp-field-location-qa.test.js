@@ -59,6 +59,7 @@ test('Copy QA marks USP text as checked when the existing f-tags value is popula
     extract(/const PROTECTED_WORDS=[\s\S]*?;\nlet copyQaRunCount=0;/, 'copy QA globals'),
     extract(/function getLikelyTypos\(text\)\{[\s\S]*?\n\}/, 'getLikelyTypos'),
     extract(/function buildQaChecklist\(rows\)\{[\s\S]*?\n\}/, 'buildQaChecklist'),
+    extract(/function getCurrentOfferUspText\(\)\{[\s\S]*?\n\}/, 'getCurrentOfferUspText'),
     extract(/function runSpellQA\(\)\{[\s\S]*?\n\}/, 'runSpellQA')
   ].join('\n').replace('const SPELLCHECK_FIELDS', 'var SPELLCHECK_FIELDS').replace('const PROTECTED_WORDS', 'var PROTECTED_WORDS').replace('let copyQaRunCount=0;', 'var copyQaRunCount=0;');
   const context = {
@@ -72,4 +73,73 @@ test('Copy QA marks USP text as checked when the existing f-tags value is popula
 
   assert.match(elements['copy-qa-checklist'].innerHTML, /<strong>USP text<\/strong><span class="state">✓ Checked<\/span>/);
   assert.doesNotMatch(elements['copy-qa-checklist'].innerHTML, /<strong>USP text<\/strong><span class="state">— Empty \/ not checked<\/span>/);
+});
+
+
+test('Copy QA checks current selected offer tags when the visible USP field has not supplied text', () => {
+  const fields = Object.fromEntries(['f-name', 'f-ship', 'f-incl', 'f-ports', 'f-tags', 'raw-paste', 'f-operator'].map(id => [id, { value: '', classList: { toggle() {} } }]));
+  const elements = {
+    ...fields,
+    'copy-qa-checklist': { innerHTML: '' },
+    'copy-qa-status': { textContent: '', classList: { toggle() {} } },
+    'copy-qa-note': { textContent: '' },
+    'spell-warn-name': { textContent: '' },
+    'spell-warn-ports': { textContent: '' },
+    'spell-warn-tags': { textContent: '' },
+    'spell-warn-raw': { textContent: '' }
+  };
+  const source = [
+    extract(/const SPELLCHECK_FIELDS=\[[\s\S]*?\n\];/, 'SPELLCHECK_FIELDS'),
+    extract(/const PROTECTED_WORDS=[\s\S]*?;\nlet copyQaRunCount=0;/, 'copy QA globals'),
+    extract(/function getLikelyTypos\(text\)\{[\s\S]*?\n\}/, 'getLikelyTypos'),
+    extract(/function buildQaChecklist\(rows\)\{[\s\S]*?\n\}/, 'buildQaChecklist'),
+    extract(/function getCurrentOfferUspText\(\)\{[\s\S]*?\n\}/, 'getCurrentOfferUspText'),
+    extract(/function runSpellQA\(\)\{[\s\S]*?\n\}/, 'runSpellQA')
+  ].join('\n').replace('const SPELLCHECK_FIELDS', 'var SPELLCHECK_FIELDS').replace('const PROTECTED_WORDS', 'var PROTECTED_WORDS').replace('let copyQaRunCount=0;', 'var copyQaRunCount=0;');
+  const context = {
+    document: { getElementById: id => elements[id] || null },
+    setSpellWarn: (id, value) => { if (elements[id]) elements[id].textContent = value; },
+    getOperatorShipQaIssue: () => '',
+    offers: [{ tags: '' }, { tags: 'Cuisine · Entertainment · Family' }],
+    cur: 1
+  };
+  vm.createContext(context);
+  vm.runInContext(source, context);
+  context.runSpellQA();
+
+  assert.match(elements['copy-qa-checklist'].innerHTML, /<strong>USP text<\/strong><span class="state">✓ Checked<\/span>/);
+});
+
+test('Copy QA marks USP text empty only when f-tags and current offer tags are both empty', () => {
+  const fields = Object.fromEntries(['f-name', 'f-ship', 'f-incl', 'f-ports', 'f-tags', 'raw-paste', 'f-operator'].map(id => [id, { value: '', classList: { toggle() {} } }]));
+  const elements = {
+    ...fields,
+    'copy-qa-checklist': { innerHTML: '' },
+    'copy-qa-status': { textContent: '', classList: { toggle() {} } },
+    'copy-qa-note': { textContent: '' },
+    'spell-warn-name': { textContent: '' },
+    'spell-warn-ports': { textContent: '' },
+    'spell-warn-tags': { textContent: '' },
+    'spell-warn-raw': { textContent: '' }
+  };
+  const source = [
+    extract(/const SPELLCHECK_FIELDS=\[[\s\S]*?\n\];/, 'SPELLCHECK_FIELDS'),
+    extract(/const PROTECTED_WORDS=[\s\S]*?;\nlet copyQaRunCount=0;/, 'copy QA globals'),
+    extract(/function getLikelyTypos\(text\)\{[\s\S]*?\n\}/, 'getLikelyTypos'),
+    extract(/function buildQaChecklist\(rows\)\{[\s\S]*?\n\}/, 'buildQaChecklist'),
+    extract(/function getCurrentOfferUspText\(\)\{[\s\S]*?\n\}/, 'getCurrentOfferUspText'),
+    extract(/function runSpellQA\(\)\{[\s\S]*?\n\}/, 'runSpellQA')
+  ].join('\n').replace('const SPELLCHECK_FIELDS', 'var SPELLCHECK_FIELDS').replace('const PROTECTED_WORDS', 'var PROTECTED_WORDS').replace('let copyQaRunCount=0;', 'var copyQaRunCount=0;');
+  const context = {
+    document: { getElementById: id => elements[id] || null },
+    setSpellWarn: (id, value) => { if (elements[id]) elements[id].textContent = value; },
+    getOperatorShipQaIssue: () => '',
+    offers: [{ tags: '' }],
+    cur: 0
+  };
+  vm.createContext(context);
+  vm.runInContext(source, context);
+  context.runSpellQA();
+
+  assert.match(elements['copy-qa-checklist'].innerHTML, /<strong>USP text<\/strong><span class="state">— Empty \/ not checked<\/span>/);
 });

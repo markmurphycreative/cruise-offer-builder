@@ -2627,6 +2627,23 @@ function buildQaChecklist(rows){
   if(!host) return;
   host.innerHTML=rows.map(row=>`<div class="copy-qa-item ${row.stateClass}"><strong>${row.label}</strong><span class="state">${row.state}</span></div>`).join('');
 }
+function getCurrentOfferUspText(){
+  const visible=document.getElementById("f-tags");
+  const visibleValue=String((visible&&visible.value)||"").trim();
+  if(visibleValue) return visibleValue;
+  try{
+    if(typeof visibleFieldsToData==="function"){
+      const visibleData=visibleFieldsToData()||{};
+      const visibleTags=String(visibleData.tags||"").trim();
+      if(visibleTags) return visibleTags;
+    }
+  }catch(e){}
+  try{
+    const offerTags=String(((offers&&offers[cur])||{}).tags||"").trim();
+    if(offerTags) return offerTags;
+  }catch(e){}
+  return "";
+}
 function runSpellQA(){
   copyQaRunCount++;
   const byWarn={};
@@ -2634,7 +2651,7 @@ function runSpellQA(){
   SPELLCHECK_FIELDS.forEach(f=>{
     const el=document.getElementById(f.id);
     if(!el) return;
-    const value=String(el.value||"").trim();
+    const value=f.id==="f-tags"?getCurrentOfferUspText():String(el.value||"").trim();
     const bad=value?getLikelyTypos(value):[];
     const shipIssue=f.id==="f-ship"?getOperatorShipQaIssue((document.getElementById("f-operator")||{}).value,value):"";
     const issues=[...(bad.length?[`${f.label}: ${bad.join(', ')}`]:[]),...(shipIssue?[shipIssue]:[])];
