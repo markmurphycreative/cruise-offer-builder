@@ -5204,6 +5204,20 @@ function currentFormData(){
   if(op) d.operator=op.value;
   return d;
 }
+function adjustVisitSectionHeights(root){
+  const scope=root||document;
+  scope.querySelectorAll(".cc .vsec").forEach(section=>{
+    const ports=section.querySelector(".vpts:not(.precruise-note)");
+    section.style.minHeight="";
+    if(!ports) return;
+    const styles=getComputedStyle(ports);
+    const lineHeight=parseFloat(styles.lineHeight)||54;
+    const lineCount=Math.max(1,Math.round(ports.scrollHeight/lineHeight));
+    const extraLines=Math.max(0,lineCount-4);
+    if(extraLines) section.style.minHeight=`${536+(extraLines*lineHeight)}px`;
+  });
+}
+
 function renderSingleOffer(data){
   if(!data) data=currentFormData();
   const scaler=document.getElementById("preview-scaler");
@@ -5211,6 +5225,7 @@ function renderSingleOffer(data){
   const scale=zoomPct/100;
   updatePreviewTitle();
   out.innerHTML=renderCardHTML(data||{});
+  adjustVisitSectionHeights(out);
   enhanceClickableHeroPlaceholders(out, cur);
   scheduleHeroCropPositions(out);
   scaler.style.width="1200px";
@@ -5235,7 +5250,7 @@ function rv(skipSave){
     bar.innerHTML=`<div class="email-dot" style="background:#ff5f57"></div><div class="email-dot" style="background:#ffbd2e"></div><div class="email-dot" style="background:#28ca41"></div><span style="font-size:10px;color:#aaa;margin-left:8px;">Klaviyo — ${document.getElementById("g-campaign").value||"Campaign"}</span>`;
     chrome.appendChild(bar);
     const stack=document.createElement("div"); stack.className="email-cards-stack";
-    offers.forEach((d,index)=>{ if(!d.name&&!d._img) return; const cw=document.createElement("div"); cw.className="email-card-wrap"; cw.innerHTML=renderCardHTML(d); enhanceClickableHeroPlaceholders(cw, index); stack.appendChild(cw); });
+    offers.forEach((d,index)=>{ if(!d.name&&!d._img) return; const cw=document.createElement("div"); cw.className="email-card-wrap"; cw.innerHTML=renderCardHTML(d); adjustVisitSectionHeights(cw); enhanceClickableHeroPlaceholders(cw, index); stack.appendChild(cw); });
     const footer=document.createElement("div"); footer.className="email-footer"; footer.innerHTML="Dawson &amp; Sanderson · T&amp;Cs Apply<br><span style='font-size:10px;'>Unsubscribe</span>";
     chrome.appendChild(stack); chrome.appendChild(footer); wrap.appendChild(chrome);
     out.innerHTML=""; out.appendChild(wrap);
@@ -5244,7 +5259,7 @@ function rv(skipSave){
   } else if(viewMode==="all"){
     updatePreviewTitle();
     const grid=document.createElement("div"); grid.style.cssText="display:grid;grid-template-columns:1200px 1200px;width:2400px;background:#333;gap:2px;";
-    offers.forEach((d,index)=>{const c=document.createElement("div");c.innerHTML=renderCardHTML(d);enhanceClickableHeroPlaceholders(c, index);grid.appendChild(c);});
+    offers.forEach((d,index)=>{const c=document.createElement("div");c.innerHTML=renderCardHTML(d);adjustVisitSectionHeights(c);enhanceClickableHeroPlaceholders(c, index);grid.appendChild(c);});
     out.innerHTML=""; out.appendChild(grid);
     scaler.style.width="2400px"; scaler.style.transform=`scale(${scale})`; scaler.style.transformOrigin="top center";
     scaler.style.height=Math.ceil(out.offsetHeight*scale)+"px";
@@ -5431,6 +5446,7 @@ function renderOfferIndex(i){
   if(viewMode==='single'){
     updatePreviewTitle();
     out.innerHTML=renderCardHTML(d);
+    adjustVisitSectionHeights(out);
     enhanceClickableHeroPlaceholders(out, i);
     scheduleHeroCropPositions(out);
     scaler.style.width='1200px';
@@ -6308,6 +6324,7 @@ async function renderCardToImageBlob(offerData, mimeType, quality){
     wrap.style.cssText = 'position:fixed;left:-99999px;top:0;width:1200px;min-width:1200px;max-width:1200px;background:#fff;z-index:-999;pointer-events:none;overflow:visible;transform:none;';
     wrap.innerHTML = renderCardHTML(offerData);
     document.body.appendChild(wrap);
+    adjustVisitSectionHeights(wrap);
     scheduleHeroCropPositions(wrap);
 
     const target = wrap.querySelector('.cc') || wrap;
