@@ -326,6 +326,52 @@ test('campaign history list keeps existing actions while inserting reusable thum
   assert.match(writes[0], /deleteCampaignHistoryEntry\('abc'\)">Delete<\/button>/);
 });
 
+test('campaign history cards render the campaign title once while preserving metadata and actions', () => {
+  const writes = [];
+  const context = runFunctions([
+    'campaignHistoryDisplayType',
+    'campaignHistoryMeta',
+    'escapeCampaignHistoryText',
+    'renderCampaignHistoryEmptyState',
+    'getCampaignThumbnailPayload',
+    'getCampaignThumbnailName',
+    'getCampaignThumbnailOffers',
+    'isCampaignThumbnailOfferPresent',
+    'getCampaignOperatorShortLabel',
+    'getCampaignThumbnailOperatorEntries',
+    'getCampaignThumbnailOperatorKey',
+    'campaignThumbnailRgba',
+    'getCampaignThumbnailOperatorColour',
+    'getCampaignThumbnailPillStyle',
+    'getCampaignThumbnailOfferCount',
+    'getCampaignThumbnailSavedTime',
+    'renderCampaignThumbnail',
+    'renderCampaignHistoryList'
+  ], {
+    formatCampaignDate: () => '09 Jun 2026',
+    document: { getElementById: () => ({ set innerHTML(value) { writes.push(value); } }) }
+  });
+
+  context.renderCampaignHistoryList('recent-campaign-list', [{
+    id: 'abc',
+    title: 'Single Title Campaign',
+    type: 'saved',
+    savedAt: '2026-06-09T12:00:00.000Z',
+    payload: { state: { offers: [{ operator: 'royal', name: 'Loaded offer' }] } }
+  }], 'No saved campaigns yet.');
+
+  const markup = writes[0];
+  const titleMatches = markup.match(/Single Title Campaign/g) || [];
+  assert.equal(titleMatches.length, 1);
+  assert.doesNotMatch(markup, /class="campaign-history-title"/);
+  assert.match(markup, /<div class="campaign-history-meta">09 Jun 2026 · Campaign<\/div>/);
+  assert.match(markup, /1 Offer · Saved/);
+  assert.match(markup, />RC<\/span>/);
+  assert.match(markup, /<button class="abtn btn-compact" onclick="restoreCampaignHistoryEntry\('abc'\)">Load<\/button>/);
+  assert.match(markup, /<button class="abtn btn-compact" onclick="togglePinCampaignHistoryEntry\('abc'\)">Pin<\/button>/);
+  assert.match(markup, /<button class="abtn red btn-compact" onclick="deleteCampaignHistoryEntry\('abc'\)">Delete<\/button>/);
+});
+
 test('campaign library thumbnail uses the same restore handler as the Load button without changing other actions', () => {
   const writes = [];
   const context = runFunctions([
@@ -488,4 +534,47 @@ test('campaign library reopens a stored backup through the same backup restore p
   });
   assert.equal(context.restoreCampaignHistoryEntry('backup'), true);
   assert.deepEqual(calls, [storedPayload]);
+});
+
+test('campaign library pin action toggles pinned state without changing stored campaign data', () => {
+  const originalPayload = { state: { offers: [{ name: 'Pinned offer' }] } };
+  let history = [{ id: 'abc', title: 'Pinned Campaign', type: 'saved', pinned: false, payload: originalPayload }];
+  let refreshed = 0;
+  const context = runFunctions(['campaignHistoryTime', 'sortCampaignHistory', 'togglePinCampaignHistoryEntry'], {
+    readCampaignHistory: () => history,
+    writeCampaignHistory: next => {
+      history = next;
+      return true;
+    },
+    refreshCampaignHistoryUI: () => { refreshed += 1; }
+  });
+
+  context.togglePinCampaignHistoryEntry('abc');
+
+  assert.equal(history[0].pinned, true);
+  assert.ok(history[0].pinnedAt);
+  assert.deepEqual(history[0].payload, originalPayload);
+  assert.equal(refreshed, 1);
+});
+
+test('campaign library delete action removes only the selected history entry and refreshes the library', () => {
+  let history = [
+    { id: 'abc', title: 'Delete Me', payload: { state: { offers: [{ name: 'Delete' }] } } },
+    { id: 'keep', title: 'Keep Me', payload: { state: { offers: [{ name: 'Keep' }] } } }
+  ];
+  let refreshed = 0;
+  const context = runFunctions(['deleteCampaignHistoryEntry'], {
+    readCampaignHistory: () => history,
+    writeCampaignHistory: next => {
+      history = next;
+      return true;
+    },
+    refreshCampaignHistoryUI: () => { refreshed += 1; }
+  });
+
+  context.deleteCampaignHistoryEntry('abc');
+
+  assert.deepEqual(history.map(item => item.id), ['keep']);
+  assert.equal(history[0].title, 'Keep Me');
+  assert.equal(refreshed, 1);
 });

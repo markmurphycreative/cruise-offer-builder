@@ -4568,9 +4568,8 @@ function renderCampaignHistoryList(targetId,items,emptyLabel){
   if(!items.length){ el.innerHTML=renderCampaignHistoryEmptyState(emptyLabel); return; }
   el.innerHTML=items.map(item=>{
     const safeId=escapeCampaignHistoryText(item.id);
-    const safeTitle=escapeCampaignHistoryText(item.title||"Untitled Campaign");
     const safeMeta=escapeCampaignHistoryText(campaignHistoryMeta(item));
-    return `<div class="campaign-history-item">${renderCampaignThumbnail(item,safeId)}<div class="campaign-history-title">${safeTitle}</div><div class="campaign-history-meta">${safeMeta}</div><div class="campaign-history-actions"><button class="abtn btn-compact" onclick="restoreCampaignHistoryEntry('${safeId}')">Load</button><button class="abtn btn-compact" onclick="togglePinCampaignHistoryEntry('${safeId}')">Pin</button><button class="abtn red btn-compact" onclick="deleteCampaignHistoryEntry('${safeId}')">Delete</button></div></div>`;
+    return `<div class="campaign-history-item">${renderCampaignThumbnail(item,safeId)}<div class="campaign-history-meta">${safeMeta}</div><div class="campaign-history-actions"><button class="abtn btn-compact" onclick="restoreCampaignHistoryEntry('${safeId}')">Load</button><button class="abtn btn-compact" onclick="togglePinCampaignHistoryEntry('${safeId}')">Pin</button><button class="abtn red btn-compact" onclick="deleteCampaignHistoryEntry('${safeId}')">Delete</button></div></div>`;
   }).join("");
 }
 function isCampaignHistoryBackup(item){
