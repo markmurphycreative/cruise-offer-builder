@@ -573,7 +573,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cc .vsec::before{content:"";position:absolute;top:-1px;left:0;right:0;height:2px;background:var(--operator-bg,var(--navy));pointer-events:none;}
 .cc .vtit{font-size:68px;font-weight:300;color:#fff;margin-bottom:26px;letter-spacing:.03em;line-height:1.1;}
 .cc .precruise-note{margin-bottom:30px;white-space:nowrap;}
-.cc .vpts{max-width:100%;min-width:0;font-size:40px;font-weight:300;color:rgba(255,255,255,.65);line-height:1.35;overflow-wrap:anywhere;word-break:break-word;}
+.cc .vpts{width:100%;max-width:960px;min-width:0;font-size:40px;font-weight:300;color:rgba(255,255,255,.65);line-height:1.35;overflow-wrap:anywhere;word-break:break-word;}
 .cc .port-line{display:block;max-width:100%;white-space:normal;}
 .cc .port-unit{display:inline-block;max-width:100%;white-space:normal;overflow-wrap:anywhere;word-break:break-word;}
 .cc .port-separator{display:inline-block;white-space:nowrap;}
@@ -5088,7 +5088,7 @@ function removeDuplicateReturnToOriginDestination(ports){
   }
   return renderedPorts;
 }
-const ITINERARY_SAFE_WIDTH=1040;
+const ITINERARY_SAFE_WIDTH=960;
 const ITINERARY_FONT='300 40px Montserrat, sans-serif';
 const ITINERARY_SEPARATOR=' • ';
 function estimateItineraryTextWidth(text){
