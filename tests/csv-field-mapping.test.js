@@ -198,7 +198,7 @@ test('existing pasted-offer parser, card renderer, and export renderer paths rem
 test('card layout render order remains unchanged for imported and manually built cards', () => {
   assert.match(
     html,
-    /\$\{getHeaderHTML\(d\)\}\$\{heroHTML\}<div class="isec"><div class="isec-content"><div class="cname">\$\{name\}<\/div><div class="incl">\$\{incl\}<\/div><div class="sname">\$\{shipLine\}<\/div><div class="price-block">\$\{priceHTML\}<div class="pbasis">\$\{basis\}<\/div><\/div><\/div><\/div><div class="ibar">[\s\S]*<div class="vsec">\$\{preCruiseHTML\}<div class="vtit">You'll Visit<\/div><div class="vpts">\$\{portsHTML\}<\/div><\/div><div class="tcbar">\$\{terms\}<\/div>/
+    /\$\{getHeaderHTML\(d\)\}\$\{heroHTML\}<div class="isec"><div class="isec-content"><div class="cname">\$\{name\}<\/div><div class="incl">\$\{incl\}<\/div><div class="sname">\$\{shipLine\}<\/div><div class="price-block">\$\{priceHTML\}<div class="pbasis">\$\{basis\}<\/div><\/div><\/div><\/div><div class="ibar">[\s\S]*<div class="vsec"><div class="visit-inner">\$\{preCruiseHTML\}<div class="vtit">You'll Visit<\/div><div class="vpts">\$\{portsHTML\}<\/div><\/div><\/div><div class="tcbar">\$\{terms\}<\/div>/
   );
 });
 
