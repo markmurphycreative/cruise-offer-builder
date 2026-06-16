@@ -12,6 +12,9 @@ function createItineraryContext() {
     extractConstant('ITINERARY_SAFE_WIDTH'),
     extractConstant('ITINERARY_FONT'),
     extractConstant('ITINERARY_SEPARATOR'),
+    extractConstant('VISIT_SECTION_BASE_HEIGHT'),
+    extractConstant('VISIT_SECTION_NORMAL_LINES'),
+    extractFunction('getVisitSectionMinHeight'),
     extractFunction('normaliseDestinationName'),
     extractFunction('cleanPortsDisplay'),
     extractFunction('getDestinationComparisonValue'),
@@ -188,19 +191,36 @@ test("You'll Visit ports text has safe horizontal containment without changing c
   assert.match(html, /\.cc \.tcbar\{width:1200px;height:123px;/);
 });
 
-test("You'll Visit section grows for longer ports text instead of compressing spacing", () => {
+test("You'll Visit section uses fixed stacked spacing and grows only for extra port lines", () => {
   assert.match(
     html,
-    /\.cc \.vsec\{width:1200px;min-height:536px;height:auto;background:var\(--operator-bg,var\(--navy\)\);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 80px;text-align:center;overflow:visible;position:relative;\}/
+    /\.cc \.vsec\{width:1200px;min-height:536px;height:auto;background:var\(--operator-bg,var\(--navy\)\);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;box-sizing:border-box;padding:110px 80px;text-align:center;overflow:visible;position:relative;\}/
   );
   assert.match(html, /\.cc \.vtit\{font-size:68px;font-weight:300;color:#fff;margin-bottom:26px;letter-spacing:\.03em;line-height:1\.1;\}/);
   assert.doesNotMatch(html, /\.cc \.vsec\{[^}]*(?:^|;)height:536px/);
   assert.doesNotMatch(html, /\.cc \.vsec\{[^}]*max-height:536px/);
   assert.doesNotMatch(html, /\.cc \.vpts\{[^}]*font-size:(?!40px)/);
-  assert.match(html, /function adjustVisitSectionHeights\(root\)\{/);
-  assert.match(html, /const lineCount=Math\.max\(1,Math\.round\(ports\.scrollHeight\/lineHeight\)\);/);
-  assert.match(html, /const extraLines=Math\.max\(0,lineCount-4\);/);
-  assert.match(html, /section\.style\.minHeight=`\$\{536\+\(extraLines\*lineHeight\)\}px`;/);
+  assert.match(html, /const VISIT_SECTION_BASE_HEIGHT=536;/);
+  assert.match(html, /const VISIT_SECTION_NORMAL_LINES=4;/);
+  assert.match(html, /function getVisitSectionMinHeight\(lineCount,lineHeight\)\{/);
+  assert.match(html, /const extraLines=Math\.max\(0,safeLineCount-VISIT_SECTION_NORMAL_LINES\);/);
+  assert.match(html, /return VISIT_SECTION_BASE_HEIGHT\+\(extraLines\*safeLineHeight\);/);
+});
+
+test("You'll Visit section height preserves fixed top and bottom spacing for normal and long itineraries", () => {
+  const context = createItineraryContext();
+
+  assert.equal(context.getVisitSectionMinHeight(1, 54), 536);
+  assert.equal(context.getVisitSectionMinHeight(4, 54), 536);
+  assert.equal(context.getVisitSectionMinHeight(5, 54), 590);
+  assert.equal(context.getVisitSectionMinHeight(7, 54), 698);
+});
+
+test("preview and export paths use matching You'll Visit section-height adjustment", () => {
+  assert.match(html, /out\.innerHTML=renderCardHTML\(data\|\|\{\}\);\n  adjustVisitSectionHeights\(out\);/);
+  assert.match(html, /wrap\.innerHTML = renderCardHTML\(offerData\);[\s\S]*?adjustVisitSectionHeights\(wrap\);[\s\S]*?html2canvas\(target, \{/);
+  assert.match(html, /const minHeight=getVisitSectionMinHeight\(lineCount,lineHeight\);/);
+  assert.match(html, /if\(minHeight>VISIT_SECTION_BASE_HEIGHT\) section\.style\.minHeight=`\$\{minHeight\}px`;/);
 });
 
 test('normal port separators remain unchanged while malformed long ports can wrap', () => {
