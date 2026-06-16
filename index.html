@@ -35,10 +35,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .campaign-bar{background:var(--panel);border-bottom:1px solid var(--border);padding:6px 12px;flex-shrink:0;display:grid;grid-template-columns:1fr 1fr;gap:5px;}
 .campaign-bar input{font-size:11px;padding:4px 7px;border:1px solid var(--border);border-radius:var(--radius);background:#fff;color:var(--text);width:100%;}
 .campaign-bar input:focus{outline:none;border-color:var(--gold);}
-.campaign-name-actions{display:flex;align-items:center;gap:6px;grid-column:1/-1;}
+.campaign-name-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .campaign-auto-toggle{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted);white-space:nowrap;}
 .campaign-auto-toggle input{width:auto;}
-.campaign-name-actions .abtn{padding:4px 7px;font-size:10px;}
 .clabel{font-size:9px;font-weight:400;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:2px;}
 
 /* ── OFFER SEGMENTED CONTROL ── */
@@ -615,16 +614,15 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 
   <!-- Campaign globals -->
   <div class="campaign-bar">
-    <div><span class="clabel">Campaign Name</span><input id="g-campaign" placeholder="3rd June 2026 - Wednesday - Cruise Worldwide Mixed (Mark)" oninput="genAllUtms();updateAllStatus()"></div>
+    <div>
+      <div class="campaign-name-heading"><span class="clabel">Campaign Name</span><label class="campaign-auto-toggle"><input id="g-auto-campaign" type="checkbox" checked onchange="handleAutoCampaignNameToggle()"> Auto Campaign Name</label></div>
+      <input id="g-campaign" placeholder="3rd June 2026 - Wednesday - Cruise Worldwide Mixed (Mark)" oninput="genAllUtms();updateAllStatus()">
+    </div>
     <div><span class="clabel">Send Date</span><input id="g-date" placeholder="16th May 2026" oninput="genUtm();genStandardUtms();updateAllStatus()"></div>
     <div><span class="clabel">Campaign Description</span><input id="g-description" placeholder="Cruise Worldwide Mixed" oninput="handleCampaignNamingFieldInput()"></div>
     <div><span class="clabel">Owner</span><input id="g-owner" placeholder="Mark" oninput="handleCampaignNamingFieldInput()"></div>
     <div><span class="clabel">Departure Airport</span><input id="g-airport" placeholder="Newcastle" oninput="updateAllStatus()"></div>
     <div><span class="clabel">Default T&amp;Cs</span><input id="g-terms" placeholder="T&amp;Cs Apply" oninput="up()"></div>
-    <div class="campaign-name-actions">
-      <label class="campaign-auto-toggle"><input id="g-auto-campaign" type="checkbox" checked onchange="handleAutoCampaignNameToggle()"> Auto Campaign Name</label>
-      <button class="abtn" type="button" onclick="regenerateCampaignName()">Regenerate Campaign Name</button>
-    </div>
   </div>
 
   <!-- Offer tabs -->
