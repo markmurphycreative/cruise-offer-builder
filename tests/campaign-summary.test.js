@@ -63,17 +63,35 @@ test('copied campaign summary includes health and the same expanded offer detail
   assert.match(summaryText, /Offer \$\{i\+1\} — Empty/);
 });
 
-test('campaign summary footer remains a review and copy surface without a direct TXT download', () => {
+test('campaign summary footer keeps only the Copy All UTMs workflow', () => {
   const modalStart = html.indexOf('<div class="modal-overlay" id="summary-modal"');
   const modalEnd = html.indexOf('</div>\n\n<script>', modalStart);
   assert.notEqual(modalStart, -1, 'Expected Campaign Summary modal to exist');
   assert.notEqual(modalEnd, -1, 'Expected Campaign Summary modal boundary to exist');
   const modal = html.slice(modalStart, modalEnd);
-  assert.match(modal, /copySummary\(\)">Copy Campaign Summary/);
+  assert.doesNotMatch(modal, /copySummary\(\)">Copy Campaign Summary/);
   assert.match(modal, /copyAllUtms\(\)">Copy All UTMs/);
-  assert.match(modal, /closeModal\('summary-modal'\)">Close/);
+  assert.doesNotMatch(modal, /closeModal\('summary-modal'\)">Close/);
   assert.doesNotMatch(modal, /Download Summary TXT|downloadSummaryTxt/);
   assert.doesNotMatch(html, /function downloadSummaryTxt\(/);
+});
+
+test('campaign summary header close button remains wired to close the modal', () => {
+  const modalStart = html.indexOf('<div class="modal-overlay" id="summary-modal"');
+  const modalEnd = html.indexOf('</div>\n\n<script>', modalStart);
+  const modal = html.slice(modalStart, modalEnd);
+  assert.match(modal, /<button class="summary-close" type="button" aria-label="Close summary" onclick="closeModal\('summary-modal'\)">×<\/button>/);
+
+  const closeModal = extractFunction('closeModal');
+  const classList = { removed: [], remove(value) { this.removed.push(value); } };
+  const context = {
+    document: { getElementById: id => id === 'summary-modal' ? { classList } : null },
+    console: { warn() {} }
+  };
+  vm.createContext(context);
+  vm.runInContext(closeModal, context);
+  context.closeModal('summary-modal');
+  assert.deepEqual(classList.removed, ['active']);
 });
 
 test('campaign pack export continues to generate summary/campaign-summary.txt', () => {
