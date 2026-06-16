@@ -182,7 +182,7 @@ test("You'll Visit ports text has safe horizontal containment without changing c
   assert.match(html, /const ITINERARY_SAFE_WIDTH=960;/);
   assert.match(
     html,
-    /\.cc \.vpts\{width:100%;max-width:960px;min-width:0;font-size:40px;font-weight:300;color:rgba\(255,255,255,\.65\);line-height:1\.35;overflow-wrap:anywhere;word-break:break-word;\}/
+    /\.cc \.vpts\{width:100%;max-width:960px;margin-left:auto;margin-right:auto;min-width:0;font-size:40px;font-weight:300;color:rgba\(255,255,255,\.65\);line-height:1\.35;text-align:center;overflow-wrap:anywhere;word-break:break-word;\}/
   );
   assert.match(html, /\.cc\{width:1200px;/);
   assert.match(html, /\.cc \.header-block\{width:1200px;/);
@@ -194,9 +194,9 @@ test("You'll Visit ports text has safe horizontal containment without changing c
 test("You'll Visit section uses fixed stacked spacing and grows only for extra port lines", () => {
   assert.match(
     html,
-    /\.cc \.vsec\{width:1200px;min-height:536px;height:auto;background:var\(--operator-bg,var\(--navy\)\);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;box-sizing:border-box;padding:110px 80px;text-align:center;overflow:visible;position:relative;\}/
+    /\.cc \.vsec\{width:1200px;min-height:536px;height:auto;background:var\(--operator-bg,var\(--navy\)\);display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;padding:110px 80px;text-align:center;overflow:visible;position:relative;\}/
   );
-  assert.match(html, /\.cc \.vtit\{font-size:68px;font-weight:300;color:#fff;margin-bottom:26px;letter-spacing:\.03em;line-height:1\.1;\}/);
+  assert.match(html, /\.cc \.vtit\{width:100%;font-size:68px;font-weight:300;color:#fff;margin-bottom:26px;letter-spacing:\.03em;line-height:1\.1;text-align:center;\}/);
   assert.doesNotMatch(html, /\.cc \.vsec\{[^}]*(?:^|;)height:536px/);
   assert.doesNotMatch(html, /\.cc \.vsec\{[^}]*max-height:536px/);
   assert.doesNotMatch(html, /\.cc \.vpts\{[^}]*font-size:(?!40px)/);
@@ -205,6 +205,15 @@ test("You'll Visit section uses fixed stacked spacing and grows only for extra p
   assert.match(html, /function getVisitSectionMinHeight\(lineCount,lineHeight\)\{/);
   assert.match(html, /const extraLines=Math\.max\(0,safeLineCount-VISIT_SECTION_NORMAL_LINES\);/);
   assert.match(html, /return VISIT_SECTION_BASE_HEIGHT\+\(extraLines\*safeLineHeight\);/);
+});
+
+
+test("You'll Visit heading, ports, and long itinerary lines share the same centred axis", () => {
+  assert.match(html, /\.cc \.visit-inner\{width:100%;max-width:960px;margin-left:auto;margin-right:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;\}/);
+  assert.match(html, /\.cc \.vtit\{width:100%;[^}]*text-align:center;\}/);
+  assert.match(html, /\.cc \.vpts\{width:100%;max-width:960px;margin-left:auto;margin-right:auto;[^}]*text-align:center;[^}]*\}/);
+  assert.match(html, /\.cc \.port-line\{display:block;max-width:100%;margin-left:auto;margin-right:auto;text-align:center;white-space:normal;\}/);
+  assert.match(html, /<div class="vsec"><div class="visit-inner">\$\{preCruiseHTML\}<div class="vtit">You'll Visit<\/div><div class="vpts">\$\{portsHTML\}<\/div><\/div><\/div>/);
 });
 
 test("You'll Visit section height preserves fixed top and bottom spacing for normal and long itineraries", () => {
@@ -284,7 +293,7 @@ test('itinerary rendering keeps each required destination as one unbroken unit',
   }
   assert.doesNotMatch(rendered, /<br>|Her\s+aklion|Rh\s+ine|Spai\s+n|Franc\s+e|,\s*<\/span>\s*<span class=\"port-unit/);
   assert.match(html, /\.cc \.vpts\{[^}]*overflow-wrap:anywhere;word-break:break-word;\}/);
-  assert.match(html, /\.cc \.port-line\{display:block;max-width:100%;white-space:normal;\}/);
+  assert.match(html, /\.cc \.port-line\{display:block;max-width:100%;margin-left:auto;margin-right:auto;text-align:center;white-space:normal;\}/);
   assert.match(html, /\.cc \.port-unit\{display:inline-block;max-width:100%;white-space:normal;overflow-wrap:anywhere;word-break:break-word;\}/);
   assert.match(html, /\.cc \.port-separator\{display:inline-block;white-space:nowrap;\}/);
 });

@@ -166,7 +166,7 @@ test('pre-cruise note renders above You\'ll Visit while passenger basis remains 
   });
 
   assert.ok(card.indexOf('1 Night Pre-Cruise at the 4 Star Hotel Athens') < card.indexOf("You'll Visit"));
-  assert.match(card, /<div class="vsec"><div class="vpts precruise-note"><div>1 Night Pre-Cruise at the 4 Star Hotel Athens<\/div><\/div><div class="vtit">You'll Visit<\/div>/);
+  assert.match(card, /<div class="vsec"><div class="visit-inner"><div class="vpts precruise-note"><div>1 Night Pre-Cruise at the 4 Star Hotel Athens<\/div><\/div><div class="vtit">You'll Visit<\/div>/);
   const preCruiseNote = textBetween(card, '<div class="vpts precruise-note">', '</div><div class="vtit">');
   assert.equal((preCruiseNote.match(/<div>/g) || []).length, 1);
   assert.doesNotMatch(preCruiseNote, /Piraeus \(Athens\)|Piraeus, Athens|Bed & Breakfast|Full Board|Half Board|Mykonos|Souda/i);
@@ -175,7 +175,7 @@ test('pre-cruise note renders above You\'ll Visit while passenger basis remains 
   const titleArea = textBetween(card, '<div class="cname">', '</div><div class="incl">');
   const detailsLine = textBetween(card, '<div class="incl">', '</div><div class="sname">');
   const sailingLine = textBetween(card, '<div class="sname">', '</div><div class="price-block">');
-  const destinations = textBetween(card, '<div class="vtit">You\'ll Visit</div><div class="vpts">', '</div></div><div class="tcbar">');
+  const destinations = textBetween(card, '<div class="vtit">You\'ll Visit</div><div class="vpts">', '</div></div></div><div class="tcbar">');
 
   assert.doesNotMatch(titleArea, /Sailing on|Based On|Pre-Cruise|Celebrity Infinity|Newcastle Flights/i);
   assert.doesNotMatch(detailsLine, /Full Board|Based On|Celebrity Infinity|Pre-Cruise/i);
@@ -190,7 +190,7 @@ test('cards without pre-cruise stay keep the existing itinerary section HTML unc
   const card = renderCardHTML({ ship: 'Liberty of the Seas', ports: 'Southampton • Lisbon • Southampton', basis: 'Based On 2 Adults Sharing' });
 
   assert.match(card, /<div class="sname">Sailing on Liberty of the Seas from Southampton<\/div>/);
-  assert.match(card, /<div class="vsec"><div class="vtit">You'll Visit<\/div><div class="vpts"><span class="port-line"><span class="port-unit">Southampton<\/span> <span class="port-separator">•<\/span> <span class="port-unit">Lisbon<\/span><\/span><\/div><\/div>/);
+  assert.match(card, /<div class="vsec"><div class="visit-inner"><div class="vtit">You'll Visit<\/div><div class="vpts"><span class="port-line"><span class="port-unit">Southampton<\/span> <span class="port-separator">•<\/span> <span class="port-unit">Lisbon<\/span><\/span><\/div><\/div><\/div>/);
   assert.doesNotMatch(card, /precruise-note|Pre-Cruise|Bed & Breakfast/);
 });
 
@@ -199,6 +199,6 @@ test('preview and export use the same card rendering path with no pre-cruise pan
   assert.match(html, /wrap\.innerHTML = renderCardHTML\(offerData\);/);
   assert.match(html, /c\.innerHTML = bc\(d \|\| \{\}\);/);
   assert.match(html, /const card=bc\(offerData \|\| \{\}\);/);
-  assert.match(html, /<div class="vsec">\$\{preCruiseHTML\}<div class="vtit">You'll Visit<\/div><div class="vpts">\$\{portsHTML\}<\/div><\/div>/);
+  assert.match(html, /<div class="vsec"><div class="visit-inner">\$\{preCruiseHTML\}<div class="vtit">You'll Visit<\/div><div class="vpts">\$\{portsHTML\}<\/div><\/div><\/div>/);
   assert.doesNotMatch(html, /precruise-(?:panel|box|badge|overlay|callout|popup)|pre-cruise-(?:panel|box|badge|overlay|callout|popup)/i);
 });
