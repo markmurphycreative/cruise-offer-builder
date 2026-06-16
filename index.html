@@ -6860,7 +6860,11 @@ function closeShortcutsModal(){
   shortcutsPreviousFocus=null;
 }
 function isShortcutBlockedTarget(target){
-  return !!(target && target.closest && target.closest('input,textarea,select,button,[contenteditable]'));
+  return !!(target && target.closest && target.closest('input,textarea,select,[contenteditable]'));
+}
+function releaseSelectShortcutFocus(event){
+  const target=event && event.target;
+  if(target && target.matches && target.matches('select') && typeof target.blur === 'function') target.blur();
 }
 function selectOfferShortcut(index){
   sv(index);
@@ -6945,6 +6949,7 @@ function handleKeyboardShortcut(event){
   if(event.key === '?'){ openShortcutsModal(); event.preventDefault(); }
 }
 document.addEventListener('keydown',handleKeyboardShortcut);
+document.addEventListener('change',releaseSelectShortcutFocus);
 
 window.addEventListener('resize', function(){
   updateViewPill();
