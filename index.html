@@ -569,7 +569,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cc .ilbl{font-size:30px;font-weight:300;line-height:1.1;}
 .cc .icell.gold .ilbl{color:rgba(255,255,255,.82);}
 .cc .icell.blk .ilbl{color:rgba(255,255,255,.7);}
-.cc .vsec{width:1200px;min-height:536px;height:auto;background:var(--operator-bg,var(--navy));display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 80px;text-align:center;overflow:visible;position:relative;}
+.cc .vsec{width:1200px;min-height:536px;height:auto;background:var(--operator-bg,var(--navy));display:flex;flex-direction:column;align-items:center;justify-content:flex-start;box-sizing:border-box;padding:110px 80px;text-align:center;overflow:visible;position:relative;}
 .cc .vsec::before{content:"";position:absolute;top:-1px;left:0;right:0;height:2px;background:var(--operator-bg,var(--navy));pointer-events:none;}
 .cc .vtit{font-size:68px;font-weight:300;color:#fff;margin-bottom:26px;letter-spacing:.03em;line-height:1.1;}
 .cc .precruise-note{margin-bottom:30px;white-space:nowrap;}
@@ -5091,6 +5091,14 @@ function removeDuplicateReturnToOriginDestination(ports){
 const ITINERARY_SAFE_WIDTH=960;
 const ITINERARY_FONT='300 40px Montserrat, sans-serif';
 const ITINERARY_SEPARATOR=' • ';
+const VISIT_SECTION_BASE_HEIGHT=536;
+const VISIT_SECTION_NORMAL_LINES=4;
+function getVisitSectionMinHeight(lineCount,lineHeight){
+  const safeLineCount=Math.max(1,Number(lineCount)||1);
+  const safeLineHeight=Number(lineHeight)||54;
+  const extraLines=Math.max(0,safeLineCount-VISIT_SECTION_NORMAL_LINES);
+  return VISIT_SECTION_BASE_HEIGHT+(extraLines*safeLineHeight);
+}
 function estimateItineraryTextWidth(text){
   return Array.from(String(text||"")).reduce((width,char)=>{
     if(char==="•") return width+20;
@@ -5213,8 +5221,8 @@ function adjustVisitSectionHeights(root){
     const styles=getComputedStyle(ports);
     const lineHeight=parseFloat(styles.lineHeight)||54;
     const lineCount=Math.max(1,Math.round(ports.scrollHeight/lineHeight));
-    const extraLines=Math.max(0,lineCount-4);
-    if(extraLines) section.style.minHeight=`${536+(extraLines*lineHeight)}px`;
+    const minHeight=getVisitSectionMinHeight(lineCount,lineHeight);
+    if(minHeight>VISIT_SECTION_BASE_HEIGHT) section.style.minHeight=`${minHeight}px`;
   });
 }
 
