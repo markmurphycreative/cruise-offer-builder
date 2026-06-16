@@ -189,7 +189,7 @@ test('CSV itinerary keeps pipe-separated comma destinations atomic', () => {
 
 test('existing pasted-offer parser, card renderer, and export renderer paths remain unchanged', () => {
   assert.match(html, /function parseOffer\(\)\{/);
-  assert.match(html, /const PARSE_FIELD_MAP=\{operatorKey:"f-operator",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"\};/);
+  assert.match(html, /const PARSE_FIELD_MAP=\{operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"\};/);
   assert.match(html, /out\.innerHTML=renderCardHTML\(data\|\|\{\}\);/);
   assert.match(html, /wrap\.innerHTML = renderCardHTML\(offerData\);/);
   assert.match(html, /html2canvas\(target, \{/);
@@ -200,4 +200,22 @@ test('card layout render order remains unchanged for imported and manually built
     html,
     /\$\{getHeaderHTML\(d\)\}\$\{heroHTML\}<div class="isec"><div class="isec-content"><div class="cname">\$\{name\}<\/div><div class="incl">\$\{incl\}<\/div><div class="sname">\$\{shipLine\}<\/div><div class="price-block">\$\{priceHTML\}<div class="pbasis">\$\{basis\}<\/div><\/div><\/div><\/div><div class="ibar">[\s\S]*<div class="vsec">\$\{preCruiseHTML\}<div class="vtit">You'll Visit<\/div><div class="vpts">\$\{portsHTML\}<\/div><\/div><div class="tcbar">\$\{terms\}<\/div>/
   );
+});
+
+test('CSV imported USP/tag text is written to offer.tags for f-tags persistence', () => {
+  const offer = importCSV([
+    'Operator,Title,Ship,Price,Nights,Date,Board Basis,Tags,Inclusions,Itinerary',
+    'Marella Cruises,Greek Island Gems,Marella Voyager,£1249,7,12 May 2027,All Inclusive,Accessible · All Inclusive · Entertainment · Family,Flights included,Corfu | Rhodes | Patmos'
+  ].join('\n'));
+
+  assert.equal(offer.tags, 'Accessible · All Inclusive · Entertainment · Family');
+});
+
+test('CSV import writes the same fallback top-bar USP text into offer.tags when no tag column is supplied', () => {
+  const offer = importCSV([
+    'Operator,Title,Ship,Price,Nights,Date,Board Basis,Inclusions,Itinerary',
+    'Marella Cruises,Greek Island Gems,Marella Voyager,£1249,7,12 May 2027,All Inclusive,Flights included,Corfu | Rhodes | Patmos'
+  ].join('\n'));
+
+  assert.equal(offer.tags, 'Cruise · Destinations · Entertainment');
 });
