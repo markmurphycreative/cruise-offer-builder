@@ -143,3 +143,48 @@ test('Copy QA marks USP text empty only when f-tags and current offer tags are b
 
   assert.match(elements['copy-qa-checklist'].innerHTML, /<strong>USP text<\/strong><span class="state">— Empty \/ not checked<\/span>/);
 });
+
+test('imported offer tags restore into f-tags when switching selected offers', () => {
+  assert.match(html, /if\(!o\.tags && \(o\.operator\|\|o\.name\|\|o\.ship\|\|o\.price\|\|o\.incl\|\|o\.ports\)\) o\.tags=\(typeof OPERATOR_USP_PRESETS!=="undefined"&&OPERATOR_USP_PRESETS\[o\.operator\|\|""\]\)\|\|"Cruise · Destinations · Entertainment";/, 'load path should materialise top-bar USP fallback on the offer');
+  assert.match(html, /FLDS\.forEach\(f=>\{\n    const e=document\.getElementById\('f-'\+f\);\n    if\(e\) e\.value = o\[f\] \|\| '';\n  \}\);/, 'load path should restore offer.tags into the visible f-tags field through FLDS');
+});
+
+test('campaign save/load preserves imported USP values through the tags field', () => {
+  assert.match(html, /function buildAutosavePayload\(\)\{[\s\S]*?const clonedOffers = JSON\.parse\(JSON\.stringify\(offers \|\| \[\{\},\{\},\{\},\{\}\]\)\);/, 'campaign/autosave payload should clone offers including tags');
+  assert.match(html, /function applySessionPayload\(data\)\{[\s\S]*?offers = data\.offers\.slice\(0,4\)\.map/, 'campaign/session restore should restore saved offers including tags');
+  assert.match(html, /const FLDS = \["tags",/, 'tags should remain part of the editor save/load field list');
+});
+
+test('Copy QA marks imported USP text checked without manual f-tags typing', () => {
+  const fields = Object.fromEntries(['f-name', 'f-ship', 'f-incl', 'f-ports', 'f-tags', 'raw-paste', 'f-operator'].map(id => [id, { value: '', classList: { toggle() {} } }]));
+  const elements = {
+    ...fields,
+    'copy-qa-checklist': { innerHTML: '' },
+    'copy-qa-status': { textContent: '', classList: { toggle() {} } },
+    'copy-qa-note': { textContent: '' },
+    'spell-warn-name': { textContent: '' },
+    'spell-warn-ports': { textContent: '' },
+    'spell-warn-tags': { textContent: '' },
+    'spell-warn-raw': { textContent: '' }
+  };
+  const source = [
+    extract(/const SPELLCHECK_FIELDS=\[[\s\S]*?\n\];/, 'SPELLCHECK_FIELDS'),
+    extract(/const PROTECTED_WORDS=[\s\S]*?;\nlet copyQaRunCount=0;/, 'copy QA globals'),
+    extract(/function getLikelyTypos\(text\)\{[\s\S]*?\n\}/, 'getLikelyTypos'),
+    extract(/function buildQaChecklist\(rows\)\{[\s\S]*?\n\}/, 'buildQaChecklist'),
+    extract(/function getCurrentOfferUspText\(\)\{[\s\S]*?\n\}/, 'getCurrentOfferUspText'),
+    extract(/function runSpellQA\(\)\{[\s\S]*?\n\}/, 'runSpellQA')
+  ].join('\n').replace('const SPELLCHECK_FIELDS', 'var SPELLCHECK_FIELDS').replace('const PROTECTED_WORDS', 'var PROTECTED_WORDS').replace('let copyQaRunCount=0;', 'var copyQaRunCount=0;');
+  const context = {
+    document: { getElementById: id => elements[id] || null },
+    setSpellWarn: (id, value) => { if (elements[id]) elements[id].textContent = value; },
+    getOperatorShipQaIssue: () => '',
+    offers: [{ tags: 'Accessible · All Inclusive · Entertainment · Family' }],
+    cur: 0
+  };
+  vm.createContext(context);
+  vm.runInContext(source, context);
+  context.runSpellQA();
+
+  assert.match(elements['copy-qa-checklist'].innerHTML, /<strong>USP text<\/strong><span class="state">✓ Checked<\/span>/);
+});
