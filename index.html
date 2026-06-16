@@ -543,6 +543,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .all-preview-card .hph::before{width:72px;height:72px;}
 .preview-pane .hph.clickable-hero-placeholder{cursor:pointer;position:relative;transition:filter .15s ease;}
 .preview-pane .hph.clickable-hero-placeholder:hover{filter:brightness(1.05);}
+.preview-hero-drop-target{position:relative;}
+.preview-hero-drop-target.hero-drag-over{outline:4px solid rgba(160,146,103,.7);outline-offset:10px;box-shadow:0 0 0 10px rgba(160,146,103,.16);filter:brightness(1.03);}
 .preview-pane .hph.clickable-hero-placeholder::after{content:"ADD HERO IMAGE";display:inline-flex;align-items:center;justify-content:center;opacity:1;font-family:'Montserrat',sans-serif;font-size:38px;font-weight:500;color:#fff;background:transparent;border:0;border-radius:0;padding:0;line-height:1;text-align:center;box-shadow:none;pointer-events:none;}
 .cc .isec{width:1200px;height:auto;min-height:0;overflow:visible;background:#fff;padding:80px 62px 112px;text-align:center;}
 .cc .isec-content{position:relative;top:16px;}
@@ -2036,6 +2038,71 @@ function dzOver(e,id){e.preventDefault();document.getElementById(id).classList.a
 function dzOut(id){document.getElementById(id).classList.remove("over");}
 function dzDrop(e,type){e.preventDefault();dzOut(type==="logo"?"dz-logo":"dz-hero");const f=e.dataTransfer.files[0];if(f)readFile(f,type);}
 function fileChosen(e,type){const f=e.target.files[0];if(f)readFile(f,type);}
+function getFirstAcceptedHeroDropFile(dataTransfer){
+  const files=Array.from((dataTransfer&&dataTransfer.files)||[]);
+  return files.find(file=>/^(image\/jpeg|image\/png|image\/webp|image\/gif)$/i.test(file.type||"")) || null;
+}
+function showHeroDropStatus(message,isError){
+  const toast=document.getElementById("export-toast");
+  if(toast){
+    toast.textContent=message;
+    toast.classList.add("show");
+    toast.style.background=isError?"#8a1f1f":"";
+    clearTimeout(showHeroDropStatus._timer);
+    showHeroDropStatus._timer=setTimeout(()=>{ toast.classList.remove("show"); toast.style.background=""; },2400);
+    return;
+  }
+  try{ console[isError?"warn":"log"](message); }catch(e){}
+}
+function applyHeroImageSourceToOffer(src,index){
+  const offerIndex=Number(index);
+  if(!Number.isInteger(offerIndex)||offerIndex<0||offerIndex>=offers.length) return false;
+  offers[offerIndex]=offers[offerIndex]||{};
+  offers[offerIndex]._img=src;
+  if(offerIndex===cur){ setThumb("hero",src); syncHeroUi(); }
+  refreshOfferUi({utm:false,spell:false});
+  if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Hero image change");
+  return true;
+}
+function readHeroDropFile(file,index){
+  const offerIndex=Number(index);
+  if(isHeroImageLocked(offerIndex)){
+    showHeroDropStatus("Hero image is protected for Offer "+(offerIndex+1)+".",true);
+    return false;
+  }
+  const r=new FileReader();
+  r.onload=ev=>{
+    if(applyHeroImageSourceToOffer(ev.target.result,offerIndex)) showHeroDropStatus("Hero image applied to Offer "+(offerIndex+1)+".",false);
+  };
+  r.readAsDataURL(file);
+  return true;
+}
+function clearHeroDragOver(target){
+  if(target&&target.classList) target.classList.remove("hero-drag-over");
+}
+function handleHeroWorkspaceDragOver(event,target){
+  if(event){ event.preventDefault(); if(event.dataTransfer) event.dataTransfer.dropEffect="copy"; }
+  if(target&&target.classList) target.classList.add("hero-drag-over");
+}
+function handleHeroWorkspaceDrop(event,index,target){
+  if(event){ event.preventDefault(); event.stopPropagation(); }
+  clearHeroDragOver(target);
+  const file=getFirstAcceptedHeroDropFile(event&&event.dataTransfer);
+  if(!file){ showHeroDropStatus("Drop a JPG, PNG, WEBP or GIF image file.",true); return false; }
+  return readHeroDropFile(file,index);
+}
+function enhanceHeroDropTarget(root,offerIndex){
+  if(!root||!root.addEventListener) return;
+  const resolvedIndex=Number.isInteger(offerIndex)?offerIndex:cur;
+  if(root.dataset&&root.dataset.heroDropBound==="1") return;
+  if(root.dataset) root.dataset.heroDropBound="1";
+  root.classList.add("preview-hero-drop-target");
+  root.addEventListener("dragover",event=>handleHeroWorkspaceDragOver(event,root));
+  root.addEventListener("dragenter",event=>handleHeroWorkspaceDragOver(event,root));
+  root.addEventListener("dragleave",event=>{ if(!root.contains(event.relatedTarget)) clearHeroDragOver(root); });
+  root.addEventListener("drop",event=>handleHeroWorkspaceDrop(event,resolvedIndex,root));
+}
+
 function openHeroImagePickerForOffer(index){
   const offerIndex = Number(index);
   if(!Number.isInteger(offerIndex) || offerIndex < 0 || offerIndex >= offers.length) return;
@@ -5233,6 +5300,7 @@ function renderSingleOffer(data){
   out.innerHTML=renderCardHTML(data||{});
   adjustVisitSectionHeights(out);
   enhanceClickableHeroPlaceholders(out, cur);
+  enhanceHeroDropTarget(out, cur);
   scheduleHeroCropPositions(out);
   scaler.style.width="1200px";
   scaler.style.transform=`scale(${scale})`;
@@ -5256,7 +5324,7 @@ function rv(skipSave){
     bar.innerHTML=`<div class="email-dot" style="background:#ff5f57"></div><div class="email-dot" style="background:#ffbd2e"></div><div class="email-dot" style="background:#28ca41"></div><span style="font-size:10px;color:#aaa;margin-left:8px;">Klaviyo — ${document.getElementById("g-campaign").value||"Campaign"}</span>`;
     chrome.appendChild(bar);
     const stack=document.createElement("div"); stack.className="email-cards-stack";
-    offers.forEach((d,index)=>{ if(!d.name&&!d._img) return; const cw=document.createElement("div"); cw.className="email-card-wrap"; cw.innerHTML=renderCardHTML(d); adjustVisitSectionHeights(cw); enhanceClickableHeroPlaceholders(cw, index); stack.appendChild(cw); });
+    offers.forEach((d,index)=>{ if(!d.name&&!d._img) return; const cw=document.createElement("div"); cw.className="email-card-wrap"; cw.innerHTML=renderCardHTML(d); adjustVisitSectionHeights(cw); enhanceClickableHeroPlaceholders(cw, index); enhanceHeroDropTarget(cw, index); stack.appendChild(cw); });
     const footer=document.createElement("div"); footer.className="email-footer"; footer.innerHTML="Dawson &amp; Sanderson · T&amp;Cs Apply<br><span style='font-size:10px;'>Unsubscribe</span>";
     chrome.appendChild(stack); chrome.appendChild(footer); wrap.appendChild(chrome);
     out.innerHTML=""; out.appendChild(wrap);
@@ -5265,7 +5333,7 @@ function rv(skipSave){
   } else if(viewMode==="all"){
     updatePreviewTitle();
     const grid=document.createElement("div"); grid.style.cssText="display:grid;grid-template-columns:1200px 1200px;width:2400px;background:#333;gap:2px;";
-    offers.forEach((d,index)=>{const c=document.createElement("div");c.innerHTML=renderCardHTML(d);adjustVisitSectionHeights(c);enhanceClickableHeroPlaceholders(c, index);grid.appendChild(c);});
+    offers.forEach((d,index)=>{const c=document.createElement("div");c.innerHTML=renderCardHTML(d);adjustVisitSectionHeights(c);enhanceClickableHeroPlaceholders(c, index);enhanceHeroDropTarget(c, index);grid.appendChild(c);});
     out.innerHTML=""; out.appendChild(grid);
     scaler.style.width="2400px"; scaler.style.transform=`scale(${scale})`; scaler.style.transformOrigin="top center";
     scaler.style.height=Math.ceil(out.offsetHeight*scale)+"px";
@@ -5958,6 +6026,7 @@ function renderPreviewMode(skipSave){
       cardWrap.innerHTML = renderOfferWithOptionalCtaHTML(d, getCtaSettingsFromUI());
       adjustVisitSectionHeights(cardWrap);
       enhanceClickableHeroPlaceholders(cardWrap, i);
+      enhanceHeroDropTarget(cardWrap, i);
       stackWrap.appendChild(cardWrap);
       scheduleHeroCropPositions(cardWrap);
     }
@@ -5992,6 +6061,7 @@ function renderPreviewMode(skipSave){
       if(getCtaSettingsFromUI().enabled) c.innerHTML = renderOfferWithOptionalCtaHTML(d || {}, getCtaSettingsFromUI());
       adjustVisitSectionHeights(c);
       enhanceClickableHeroPlaceholders(c, index);
+      enhanceHeroDropTarget(c, index);
       grid.appendChild(c);
       scheduleHeroCropPositions(c);
     });
