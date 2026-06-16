@@ -401,7 +401,7 @@ test('campaign library buckets keep pinned first and show the last 20 recent cam
     recentAt: new Date(now - index * 60000).toISOString(),
     payload: { id: index }
   }));
-  const context = runFunctions(['campaignHistoryTime', 'sortCampaignHistory', 'sortCampaignHistoryNewest', 'getCampaignLibraryBuckets'], {
+  const context = runFunctions(['campaignHistoryTime', 'sortCampaignHistory', 'sortCampaignHistoryNewest', 'isCampaignHistoryBackup', 'isCampaignHistoryCampaign', 'getCampaignLibraryBuckets'], {
     CAMPAIGN_RECENT_MAX: 20,
     readCampaignHistory: () => history
   });
@@ -412,7 +412,53 @@ test('campaign library buckets keep pinned first and show the last 20 recent cam
   assert.equal(buckets.recent.length, 20);
   assert.deepEqual(buckets.recent.map(item => item.id), history.slice(0, 20).map(item => item.id));
   assert.ok(buckets.recent.some(item => item.pinned), 'recent bucket should include pinned campaigns');
+  assert.equal(buckets.backup.length, 0);
   assert.equal(Object.hasOwn(buckets, 'saved'), false);
+});
+
+
+test('campaign library separates campaign and backup entries into display buckets', () => {
+  const history = [
+    { id: 'campaign-1', title: 'Campaign 1', type: 'saved', updatedAt: '2026-06-09T12:00:00.000Z', recentAt: '2026-06-09T12:00:00.000Z', payload: {} },
+    { id: 'backup-1', title: 'Backup 1', type: 'backup', updatedAt: '2026-06-09T12:01:00.000Z', recentAt: '2026-06-09T12:01:00.000Z', payload: {} },
+    { id: 'campaign-2', title: 'Campaign 2', updatedAt: '2026-06-09T12:02:00.000Z', recentAt: '2026-06-09T12:02:00.000Z', payload: {} }
+  ];
+  const context = runFunctions(['campaignHistoryTime', 'sortCampaignHistory', 'sortCampaignHistoryNewest', 'isCampaignHistoryBackup', 'isCampaignHistoryCampaign', 'getCampaignLibraryBuckets'], {
+    CAMPAIGN_RECENT_MAX: 20,
+    readCampaignHistory: () => history
+  });
+
+  const buckets = context.getCampaignLibraryBuckets();
+
+  assert.deepEqual(buckets.recent.map(item => item.id), ['campaign-2', 'campaign-1']);
+  assert.deepEqual(buckets.backup.map(item => item.id), ['backup-1']);
+});
+
+test('campaign library refresh displays existing stored campaigns and backups in separate sections', () => {
+  const history = [
+    { id: 'campaign-1', title: 'Campaign 1', type: 'saved', updatedAt: '2026-06-09T12:00:00.000Z', recentAt: '2026-06-09T12:00:00.000Z', payload: {} },
+    { id: 'backup-1', title: 'Backup 1', type: 'backup', updatedAt: '2026-06-09T12:01:00.000Z', recentAt: '2026-06-09T12:01:00.000Z', payload: {} }
+  ];
+  const rendered = new Map();
+  const context = runFunctions([
+    'campaignHistoryTime',
+    'sortCampaignHistory',
+    'sortCampaignHistoryNewest',
+    'isCampaignHistoryBackup',
+    'isCampaignHistoryCampaign',
+    'getCampaignLibraryBuckets',
+    'refreshCampaignHistoryUI'
+  ], {
+    CAMPAIGN_RECENT_MAX: 20,
+    readCampaignHistory: () => history,
+    renderCampaignLibraryDashboard: () => {},
+    renderCampaignHistoryList: (targetId, items) => rendered.set(targetId, items.map(item => item.id))
+  });
+
+  context.refreshCampaignHistoryUI();
+
+  assert.deepEqual(rendered.get('recent-campaign-list'), ['campaign-1']);
+  assert.deepEqual(rendered.get('backup-campaign-list'), ['backup-1']);
 });
 
 test('campaign library reopens a stored campaign through the same backup restore pipeline', () => {
@@ -426,5 +472,20 @@ test('campaign library reopens a stored campaign through the same backup restore
     restoreCampaignFilePayload: payload => calls.push(payload)
   });
   assert.equal(context.restoreCampaignHistoryEntry('abc'), true);
+  assert.deepEqual(calls, [storedPayload]);
+});
+
+
+test('campaign library reopens a stored backup through the same backup restore pipeline', () => {
+  const storedPayload = { fileType: 'cruise-offer-builder-campaign', schemaVersion: '1.0', state: { offers: [{ name: 'Backup' }] } };
+  const storage = new Map([['cobCampaignHistoryV1', JSON.stringify([{ id: 'backup', title: 'Backup', type: 'backup', payload: storedPayload }])]]);
+  const calls = [];
+  const context = runFunctions(['readCampaignHistory', 'restoreCampaignHistoryEntry'], {
+    CAMPAIGN_HISTORY_KEY: 'cobCampaignHistoryV1',
+    localStorage: { getItem: key => storage.get(key) || null },
+    parseCampaignFileText: text => JSON.parse(text),
+    restoreCampaignFilePayload: payload => calls.push(payload)
+  });
+  assert.equal(context.restoreCampaignHistoryEntry('backup'), true);
   assert.deepEqual(calls, [storedPayload]);
 });

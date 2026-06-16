@@ -950,6 +950,14 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
               <div id="recent-campaign-list" class="campaign-history-list"></div>
             </div>
           </div>
+          <div class="campaign-library-category" data-campaign-category="backups">
+            <div class="section-hdr collapsed" onclick="toggleCampaignLibraryCategory(this)">
+              <h4>CAMPAIGN BACKUPS <span class="count-badge count-badge--saved" id="backup-campaign-count">0</span></h4><span class="section-toggle">▾</span>
+            </div>
+            <div class="section-body hidden">
+              <div id="backup-campaign-list" class="campaign-history-list"></div>
+            </div>
+          </div>
           <div class="campaign-library-category" data-campaign-category="utility">
             <div class="section-hdr" onclick="toggleCampaignLibraryCategory(this)">
               <h4>Campaign Actions</h4><span class="section-toggle">▾</span>
@@ -4565,11 +4573,20 @@ function renderCampaignHistoryList(targetId,items,emptyLabel){
     return `<div class="campaign-history-item">${renderCampaignThumbnail(item,safeId)}<div class="campaign-history-title">${safeTitle}</div><div class="campaign-history-meta">${safeMeta}</div><div class="campaign-history-actions"><button class="abtn btn-compact" onclick="restoreCampaignHistoryEntry('${safeId}')">Load</button><button class="abtn btn-compact" onclick="togglePinCampaignHistoryEntry('${safeId}')">Pin</button><button class="abtn red btn-compact" onclick="deleteCampaignHistoryEntry('${safeId}')">Delete</button></div></div>`;
   }).join("");
 }
+function isCampaignHistoryBackup(item){
+  return item && item.type === "backup";
+}
+function isCampaignHistoryCampaign(item){
+  return !isCampaignHistoryBackup(item);
+}
 function getCampaignLibraryBuckets(){
   const list=readCampaignHistory();
-  const pinned=sortCampaignHistory(list.filter(item=>item.pinned));
-  const recent=sortCampaignHistoryNewest(list,"recentAt").slice(0,CAMPAIGN_RECENT_MAX);
-  return {pinned,recent};
+  const campaigns=list.filter(isCampaignHistoryCampaign);
+  const backups=list.filter(isCampaignHistoryBackup);
+  const pinned=sortCampaignHistory(campaigns.filter(item=>item.pinned));
+  const recent=sortCampaignHistoryNewest(campaigns,"recentAt").slice(0,CAMPAIGN_RECENT_MAX);
+  const backup=sortCampaignHistoryNewest(backups,"recentAt").slice(0,CAMPAIGN_RECENT_MAX);
+  return {pinned,recent,backup};
 }
 function campaignHistoryLastSaved(list){
   const latest=sortCampaignHistoryNewest((Array.isArray(list)?list:[]).filter(item=>item&&(item.savedAt||item.updatedAt)),"savedAt")[0];
@@ -4582,8 +4599,12 @@ function renderCampaignLibraryDashboard(buckets){
   const list=readCampaignHistory();
   const count=document.getElementById("campaign-library-count");
   if(count) count.textContent=String(list.length);
+  const campaignCount=list.filter(isCampaignHistoryCampaign).length;
+  const backupCount=list.filter(isCampaignHistoryBackup).length;
   const savedCount=document.getElementById("saved-campaign-count");
-  if(savedCount) savedCount.textContent=String(list.length);
+  if(savedCount) savedCount.textContent=String(campaignCount);
+  const backupCountEl=document.getElementById("backup-campaign-count");
+  if(backupCountEl) backupCountEl.textContent=String(backupCount);
   const dashboard=document.getElementById("campaign-library-dashboard");
   if(!dashboard) return;
   const stats=[
@@ -4599,6 +4620,7 @@ function refreshCampaignHistoryUI(){
   renderCampaignLibraryDashboard(buckets);
   renderCampaignHistoryList("pinned-campaign-list", buckets.pinned, "No pinned campaigns yet.");
   renderCampaignHistoryList("recent-campaign-list", buckets.recent, "No saved campaigns yet.");
+  renderCampaignHistoryList("backup-campaign-list", buckets.backup, "No campaign backups yet.");
 }
 function getCampaignLibraryHeader(){
   const panel=document.getElementById("campaign-library-panel");
