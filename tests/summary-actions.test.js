@@ -4,11 +4,11 @@ import test from 'node:test';
 
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
-function extractSummarySection() {
-  const start = html.indexOf('<div class="section summary-section"');
+function extractSummaryAction() {
+  const start = html.indexOf('<div class="summary-action">');
   const end = html.indexOf('<div class="section campaign-library-section"', start);
-  assert.notEqual(start, -1, 'Expected Summary section to exist');
-  assert.notEqual(end, -1, 'Expected Summary section boundary to exist');
+  assert.notEqual(start, -1, 'Expected Campaign Summary action to exist');
+  assert.notEqual(end, -1, 'Expected Campaign Summary action boundary to exist');
   return html.slice(start, end);
 }
 
@@ -25,19 +25,22 @@ function extractFunction(name) {
   throw new Error(`Could not extract ${name}`);
 }
 
-const summarySection = extractSummarySection();
+const summaryAction = extractSummaryAction();
 
-test('summary actions no longer render redundant Save Project or Reset All buttons', () => {
-  assert.doesNotMatch(summarySection, />Save Project<|saveProjectFile\(\)/);
-  assert.doesNotMatch(summarySection, />Reset All<|resetAll\(\)/);
+test('Summary accordion no longer renders', () => {
+  assert.doesNotMatch(html, /<div class="section summary-section"/);
+  assert.doesNotMatch(summaryAction, /<div class="section-hdr[^>]*onclick="toggleSec\(this\)"/);
+  assert.doesNotMatch(summaryAction, /<h3>[\s\S]*Summary[\s\S]*<\/h3><span class="section-toggle">▾<\/span>/);
+  assert.doesNotMatch(summaryAction, /section-body hidden/);
 });
 
-test('summary actions keep Open Summary and Reset Offer controls', () => {
-  assert.match(summarySection, /<button class="abtn navy" id="open-summary-btn" onclick="openSummary\(\)">Open Summary<\/button>/);
-  assert.match(summarySection, /<button class="abtn" onclick="resetOffer\(\)">Reset Offer<\/button>/);
+test('single Campaign Summary button renders in place of the Summary section', () => {
+  assert.match(summaryAction, /^<div class="summary-action">\n\s*<button class="abtn navy" id="open-summary-btn" type="button" onclick="openSummary\(\)">Campaign Summary<\/button>\n\s*<\/div>\n\n\s*$/);
+  assert.equal((summaryAction.match(/<button\b/g) || []).length, 1);
+  assert.doesNotMatch(summaryAction, /Open Summary|Reset Offer|resetOffer\(\)/);
 });
 
-test('Open Summary still opens the existing Campaign Summary modal', () => {
+test('Campaign Summary button opens the existing Campaign Summary modal', () => {
   assert.match(html, /<div class="modal-overlay" id="summary-modal"/);
   assert.match(html, /<h2 id="summary-title">Campaign Summary<\/h2>/);
   const openSummary = extractFunction('openSummary');
@@ -47,13 +50,22 @@ test('Open Summary still opens the existing Campaign Summary modal', () => {
   assert.match(openSummary, /modal\.classList\.add\("active"\);/);
 });
 
-test('Reset Offer still clears only the selected offer after confirmation', () => {
+test('existing Campaign Summary functionality remains unchanged', () => {
+  const modalStart = html.indexOf('<div class="modal-overlay" id="summary-modal"');
+  const modalEnd = html.indexOf('<!-- Export Readiness Modal -->', modalStart);
+  const modal = html.slice(modalStart, modalEnd);
+  assert.match(modal, /copySummary\(\)">Copy Campaign Summary/);
+  assert.match(modal, /copyAllUtms\(\)">Copy All UTMs/);
+  const openSummary = extractFunction('openSummary');
+  assert.match(openSummary, /getCampaignHealthReviewHtml\(\)/);
+  assert.match(openSummary, /isOfferLoaded\(o\)/);
+  assert.match(openSummary, /Offer \$\{i\+1\} — Empty/);
+});
+
+test('Reset Offer function remains available but is not rendered in the summary action', () => {
   const resetOffer = extractFunction('resetOffer');
   assert.match(resetOffer, /title:"Reset Offer\?"/);
-  assert.match(resetOffer, /confirmLabel:"Reset Offer"/);
-  assert.match(resetOffer, /offers\[cur\]=\{\}/);
-  assert.doesNotMatch(resetOffer, /offers=\[\{\},\{\},\{\},\{\}\]/);
-  assert.doesNotMatch(resetOffer, /lockedOffers=\[false,false,false,false\]/);
+  assert.doesNotMatch(summaryAction, /resetOffer\(\)/);
 });
 
 test('sticky Save Campaign remains wired to existing campaign save behaviour', () => {

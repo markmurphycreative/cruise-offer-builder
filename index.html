@@ -359,9 +359,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .section.csv-core-section .section-hdr{background:var(--navy);}
 .section.csv-core-section .section-hdr h3{color:#fff;}
 .section.csv-core-section .section-toggle{color:var(--gold);}
-.section.summary-section .section-hdr{background:var(--navy);}
-.section.summary-section .section-hdr h3{color:#fff;}
-.section.summary-section .section-toggle{color:rgba(255,255,255,.85);}
+.summary-action{padding:8px 10px;}
+.summary-action .abtn{width:100%;min-height:28px;display:flex;align-items:center;justify-content:center;}
 
 /* ── PREVIEW ── */
 .preview-toolbar{background:var(--navy);padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;}
@@ -911,16 +910,8 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       </div>
     </div>
 
-    <div class="section summary-section" data-section-key="summary-tools">
-      <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg>Summary</h3><span class="section-toggle">▾</span>
-      </div>
-      <div class="section-body hidden">
-        <div class="utm-btn-row">
-          <button class="abtn navy" id="open-summary-btn" onclick="openSummary()">Open Summary</button>
-          <button class="abtn" onclick="resetOffer()">Reset Offer</button>
-        </div>
-      </div>
+    <div class="summary-action">
+      <button class="abtn navy" id="open-summary-btn" type="button" onclick="openSummary()">Campaign Summary</button>
     </div>
 
     <div class="section campaign-library-section" id="campaign-library-panel">
