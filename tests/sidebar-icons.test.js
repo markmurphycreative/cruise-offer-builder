@@ -22,7 +22,7 @@ test('every sidebar section heading uses one inline monochrome SVG icon', () => 
 
 test('sidebar section names follow the primary workflow and use the requested display labels', () => {
   assert.deepEqual(headingLabels, [
-    'CSV Import',
+    'Campaign Import',
     'Campaign Presets',
     'Operator Logo',
     'Hero Image',
@@ -30,9 +30,9 @@ test('sidebar section names follow the primary workflow and use the requested di
     'CTA Assets',
     'Paste Offer',
     'Export Cards',
-    'Summary',
     'UTM Link',
     'Standard UTMs',
+    'AI Copy',
   ]);
 });
 
