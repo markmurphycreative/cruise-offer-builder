@@ -175,6 +175,43 @@ test('itinerary packing uses canvas rendered text measurement when available', (
   assert.match(html, /const safeWidth=\(options&&Number\(options\.safeWidth\)\)\|\|ITINERARY_SAFE_WIDTH;/);
 });
 
+test("You'll Visit ports text has safe horizontal containment without changing card dimensions", () => {
+  assert.match(html, /const ITINERARY_SAFE_WIDTH=960;/);
+  assert.match(
+    html,
+    /\.cc \.vpts\{width:100%;max-width:960px;min-width:0;font-size:40px;font-weight:300;color:rgba\(255,255,255,\.65\);line-height:1\.35;overflow-wrap:anywhere;word-break:break-word;\}/
+  );
+  assert.match(html, /\.cc\{width:1200px;/);
+  assert.match(html, /\.cc \.header-block\{width:1200px;/);
+  assert.match(html, /\.cc \.hero-wrap\{width:1200px;height:849px;/);
+  assert.match(html, /\.cc \.ibar\{width:1200px;display:grid;grid-template-columns:400px 400px 400px;height:297px;/);
+  assert.match(html, /\.cc \.tcbar\{width:1200px;height:123px;/);
+});
+
+test("You'll Visit section grows for longer ports text instead of compressing spacing", () => {
+  assert.match(
+    html,
+    /\.cc \.vsec\{width:1200px;min-height:536px;height:auto;background:var\(--operator-bg,var\(--navy\)\);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 80px;text-align:center;overflow:visible;position:relative;\}/
+  );
+  assert.match(html, /\.cc \.vtit\{font-size:68px;font-weight:300;color:#fff;margin-bottom:26px;letter-spacing:\.03em;line-height:1\.1;\}/);
+  assert.doesNotMatch(html, /\.cc \.vsec\{[^}]*(?:^|;)height:536px/);
+  assert.doesNotMatch(html, /\.cc \.vsec\{[^}]*max-height:536px/);
+  assert.doesNotMatch(html, /\.cc \.vpts\{[^}]*font-size:(?!40px)/);
+});
+
+test('normal port separators remain unchanged while malformed long ports can wrap', () => {
+  const context = createItineraryContext();
+  const normalRendered = context.chunkBullets('Barbados • Martinique • St Kitts • Tortola');
+  const normalText = renderedLines(normalRendered).map(textFromRenderedLine).join(' • ');
+
+  assert.equal(normalText, 'Barbados • Martinique • St Kitts • Tortola');
+  assert.match(normalRendered, / <span class="port-separator">•<\/span> /);
+
+  const malformedRendered = context.chunkBullets('AReallyLongMalformedDestinationNameWithNoSpacesOrSeparatorsThatCouldArriveFromPastedCSVOrAPIContent');
+  assert.match(malformedRendered, /<span class="port-unit">AReallyLongMalformedDestinationNameWithNoSpacesOrSeparatorsThatCouldArriveFromPastedCSVOrAPIContent<\/span>/);
+  assert.match(html, /\.cc \.port-unit\{display:inline-block;max-width:100%;white-space:normal;overflow-wrap:anywhere;word-break:break-word;\}/);
+});
+
 test('itinerary rendering keeps each required destination as one unbroken unit', () => {
   const context = createItineraryContext();
 
