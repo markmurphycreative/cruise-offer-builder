@@ -190,9 +190,10 @@ test('itinerary rendering keeps each required destination as one unbroken unit',
     assert.match(rendered, new RegExp(`<span class=\"port-unit\">${destination}</span>`));
   }
   assert.doesNotMatch(rendered, /<br>|Her\s+aklion|Rh\s+ine|Spai\s+n|Franc\s+e|,\s*<\/span>\s*<span class=\"port-unit/);
-  assert.match(html, /\.cc \.vpts\{[^}]*overflow-wrap:normal;word-break:normal;\}/);
-  assert.match(html, /\.cc \.port-line\{display:block;white-space:nowrap;\}/);
-  assert.match(html, /\.cc \.port-unit,\.cc \.port-separator\{display:inline-block;white-space:nowrap;\}/);
+  assert.match(html, /\.cc \.vpts\{[^}]*overflow-wrap:anywhere;word-break:break-word;\}/);
+  assert.match(html, /\.cc \.port-line\{display:block;max-width:100%;white-space:normal;\}/);
+  assert.match(html, /\.cc \.port-unit\{display:inline-block;max-width:100%;white-space:normal;overflow-wrap:anywhere;word-break:break-word;\}/);
+  assert.match(html, /\.cc \.port-separator\{display:inline-block;white-space:nowrap;\}/);
 });
 
 test('itinerary line groups never start or end with bullet separators when destinations wrap', () => {
