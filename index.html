@@ -1131,9 +1131,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     </div>
     <div class="summary-body" id="summary-content"></div>
     <div class="summary-actions">
-      <button class="summary-btn primary" type="button" onclick="copySummary()">Copy Campaign Summary</button>
       <button class="summary-btn" type="button" onclick="copyAllUtms()">Copy All UTMs</button>
-      <button class="summary-btn" type="button" onclick="closeModal('summary-modal')">Close</button>
     </div>
   </div>
 </div>
@@ -6225,7 +6223,10 @@ function copyUtm(index, btn){
 }
 function copyAllUtms(){
   genAllUtms(true);
-  const lines = [0,1,2,3].map(i => (offers[i] && offers[i]._utm) ? `Card ${i+1}: ${offers[i]._utm}` : buildUtmForOffer(i).message).join("\n");
+  const lines = [0,1,2,3].map(i => {
+    const result = (offers[i] && offers[i]._utm) ? {url:offers[i]._utm} : buildUtmForOffer(i);
+    return `Card ${i+1}:\n${result.url || result.message}`;
+  }).join("\n\n");
   const visible = document.getElementById("utm-visible-output");
   setUtmVisibleOutput(visible, lines);
   navigator.clipboard.writeText(lines).then(()=>alert("All UTMs copied"));

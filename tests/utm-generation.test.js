@@ -176,6 +176,36 @@ test('Generated UTM card colour updates instantly when the active offer changes 
   assert.match(copied.at(-1), /utm_content=160526_princess_greek_islands_card4/);
 });
 
+
+test('Copy All UTMs copies card labels and URLs in the spaced format without changing URL values or order', async () => {
+  const offers = [
+    { operator: 'royal', name: 'Barcelona to Rome' },
+    { operator: 'msc', name: 'Greek Isles' },
+    { operator: 'cunard', name: 'Northern Lights' },
+    { operator: 'princess', name: 'Greek Islands' }
+  ];
+  const { context, copied } = createUtmHarness({ offers });
+
+  const expectedUrls = [0, 1, 2, 3].map(index => context.buildUtmForOffer(index).url);
+  context.copyAllUtms();
+  await Promise.resolve();
+
+  const expectedText = expectedUrls.map((url, index) => `Card ${index + 1}:\n${url}`).join('\n\n');
+  assert.equal(copied.at(-1), expectedText);
+  assert.deepEqual(
+    copied.at(-1).match(/https?:\/\/[^\n]+/g),
+    expectedUrls
+  );
+  assert.match(copied.at(-1), /^Card 1:\nhttps:\/\//);
+  assert.match(copied.at(-1), /\n\nCard 2:\nhttps:\/\//);
+  assert.match(copied.at(-1), /\n\nCard 3:\nhttps:\/\//);
+  assert.match(copied.at(-1), /\n\nCard 4:\nhttps:\/\//);
+  assert.equal(new URL(expectedUrls[0]).searchParams.get('utm_content'), '160526_royal_caribbean_barcelona_to_rome_card1');
+  assert.equal(new URL(expectedUrls[1]).searchParams.get('utm_content'), '160526_msc_greek_isles_card2');
+  assert.equal(new URL(expectedUrls[2]).searchParams.get('utm_content'), '160526_cunard_northern_lights_card3');
+  assert.equal(new URL(expectedUrls[3]).searchParams.get('utm_content'), '160526_princess_greek_islands_card4');
+});
+
 test('Standard UTMs keeps Copy All and the redundant Generate All button is not rendered', () => {
   const standardSection = html.match(/<div class="section" data-section-key="standard-utms">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/)[0];
   assert.match(standardSection, /onclick="copyAllUtms\(\)">Copy All UTMs<\/button>/);

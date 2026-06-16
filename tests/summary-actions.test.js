@@ -50,12 +50,13 @@ test('Campaign Summary button opens the existing Campaign Summary modal', () => 
   assert.match(openSummary, /modal\.classList\.add\("active"\);/);
 });
 
-test('existing Campaign Summary functionality remains unchanged', () => {
+test('existing Campaign Summary content and open behaviour remain unchanged', () => {
   const modalStart = html.indexOf('<div class="modal-overlay" id="summary-modal"');
   const modalEnd = html.indexOf('<!-- Export Readiness Modal -->', modalStart);
   const modal = html.slice(modalStart, modalEnd);
-  assert.match(modal, /copySummary\(\)">Copy Campaign Summary/);
+  assert.doesNotMatch(modal, /copySummary\(\)">Copy Campaign Summary/);
   assert.match(modal, /copyAllUtms\(\)">Copy All UTMs/);
+  assert.doesNotMatch(modal, /closeModal\('summary-modal'\)">Close/);
   const openSummary = extractFunction('openSummary');
   assert.match(openSummary, /getCampaignHealthReviewHtml\(\)/);
   assert.match(openSummary, /isOfferLoaded\(o\)/);
