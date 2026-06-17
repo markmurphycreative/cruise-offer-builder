@@ -67,8 +67,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .offer-lock-toggle{position:absolute;top:4px;right:4px;z-index:3;width:14px;height:14px;padding:5px;border:none;border-radius:999px;background:transparent;color:rgba(78,89,101,.82);opacity:.74;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:color .18s ease,opacity .18s ease,background .18s ease,box-shadow .18s ease;}
 .offer-lock-toggle:hover,.offer-lock-toggle:focus-visible{color:rgba(14,27,42,.78);opacity:.88;background:rgba(255,255,255,.22);outline:none;}
 .offer-lock-toggle:focus-visible{box-shadow:0 0 0 1px rgba(160,146,103,.32);}
-.offer-lock-toggle.locked{color:#fff;opacity:1;background:transparent;}
-.offer-lock-toggle.locked:hover,.offer-lock-toggle.locked:focus-visible{color:#fff;opacity:1;background:rgba(255,255,255,.16);}
+.offer-lock-toggle.locked{color:var(--gold);opacity:1;background:transparent;}
+.offer-lock-toggle.locked:hover,.offer-lock-toggle.locked:focus-visible{color:var(--gold);opacity:1;background:rgba(160,146,103,.10);}
+.otab.active .offer-lock-toggle.locked{color:#fff;}
+.otab.active .offer-lock-toggle.locked:hover,.otab.active .offer-lock-toggle.locked:focus-visible{color:#fff;background:rgba(255,255,255,.16);}
 .offer-lock-toggle svg{width:14px;height:14px;display:block;stroke:currentColor;stroke-width:2.15;stroke-linecap:round;stroke-linejoin:round;fill:none;pointer-events:none;}
 .offer-lock-toggle.locked svg{width:14px;height:14px;stroke-width:1.9;flex:0 0 14px;transform:none;}
 .offer-lock-toggle .lock-icon-locked{display:none;}
