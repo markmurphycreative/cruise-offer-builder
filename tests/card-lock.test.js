@@ -62,8 +62,11 @@ test('offer selector tiles include native lock toggles and locked styling', () =
   for (const index of [0, 1, 2, 3]) {
     assert.match(html, new RegExp(`id="lock-toggle-${index}"[\\s\\S]*?toggleOfferLockFromTile\\(event,${index}\\)`));
   }
-  assert.match(html, /\.offer-lock-toggle\{[^}]*width:14px[^}]*background:transparent/);
-  assert.match(html, /\.offer-lock-toggle\.locked\{[^}]*rgba\(154,64,64,/);
+  assert.match(html, /\.offer-lock-toggle\{[^}]*top:4px[^}]*right:4px[^}]*width:14px[^}]*background:transparent/);
+  assert.match(html, /\.offer-lock-toggle\{[^}]*color:rgba\(78,89,101,\.82\)[^}]*opacity:\.74/);
+  assert.match(html, /\.offer-lock-toggle\.locked\{[^}]*color:#fff[^}]*background:transparent/);
+  assert.match(html, /\.offer-lock-toggle svg\{[^}]*width:14px[^}]*stroke-width:2\.15/);
+  assert.match(html, /\.offer-lock-toggle\.locked svg\{[^}]*width:14px[^}]*stroke-width:1\.9[^}]*flex:0 0 14px/);
   assert.doesNotMatch(html, /\.otab\.offer-locked \.offer-tab-number::after\{content:" · Locked"/);
   assert.match(html, /lock-icon-open/);
   assert.match(html, /lock-icon-locked/);
