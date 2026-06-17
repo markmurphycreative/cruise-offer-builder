@@ -42,7 +42,9 @@ function createDropContext({ offers = [{}, {}, {}, {}], cur = 0, lockedHeroImage
   vm.runInContext([
     extractFunction('normaliseHeroLockArray'),
     extractFunction('isHeroImageLocked'),
+    extractFunction('isAcceptedHeroImageType'),
     extractFunction('getFirstAcceptedHeroDropFile'),
+    extractFunction('hasAcceptedHeroDragItem'),
     extractFunction('showHeroDropStatus'),
     extractFunction('applyHeroImageSourceToOffer'),
     extractFunction('readHeroDropFile'),
@@ -138,6 +140,30 @@ test('multiple dropped files use only the first valid image', () => {
   ]), 0, null);
 
   assert.equal(context.offers[0]._img, 'data:image/gif;base64,first-valid');
+});
+
+
+test('drag target highlight only appears while an accepted image is over a card', () => {
+  const context = createDropContext();
+  const classList = {
+    classes: new Set(),
+    add(name) { this.classes.add(name); },
+    remove(name) { this.classes.delete(name); },
+    contains(name) { return this.classes.has(name); }
+  };
+  const target = { classList };
+  const validEvent = { dataTransfer: { items: [{ kind: 'file', type: 'image/png' }] }, preventDefault() { this.prevented = true; } };
+  const invalidEvent = { dataTransfer: { items: [{ kind: 'file', type: 'text/plain' }] }, preventDefault() { this.prevented = true; } };
+
+  assert.equal(context.handleHeroWorkspaceDragOver(validEvent, target), true);
+  assert.equal(validEvent.prevented, true);
+  assert.equal(validEvent.dataTransfer.dropEffect, 'copy');
+  assert.equal(classList.contains('hero-drag-over'), true);
+
+  assert.equal(context.handleHeroWorkspaceDragOver(invalidEvent, target), false);
+  assert.equal(invalidEvent.prevented, undefined);
+  assert.equal(invalidEvent.dataTransfer.dropEffect, 'none');
+  assert.equal(classList.contains('hero-drag-over'), false);
 });
 
 test('workspace drop support is bound to all preview modes and exports use the dropped hero path', () => {
