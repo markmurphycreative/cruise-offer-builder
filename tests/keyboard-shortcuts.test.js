@@ -94,7 +94,7 @@ test('card, view, undo, redo, export, refresh, UTM, CTA, help, and Escape shortc
   fire(document,'C',{shiftKey:true}); assert.deepEqual(calls.pop(),['cta-changed',false]);
   fire(document,'ArrowLeft'); assert.deepEqual(calls.pop(),['move-left']);
   fire(document,'ArrowRight'); assert.deepEqual(calls.pop(),['move-right']);
-  fire(document,'?',{shiftKey:true}); assert.equal(modal.classList.active,true); assert.deepEqual(calls.pop(),['focus-close']);
+  fire(document,'/',{shiftKey:true}); assert.equal(modal.classList.active,true); assert.deepEqual(calls.pop(),['focus-close']);
   assert.equal(fire(document,'Tab'),false); assert.deepEqual(calls,[]);
   assert.equal(fire(document,'Escape',{target:{closest:()=>true}}),true); assert.equal(modal.classList.active,false);
 });
@@ -241,7 +241,7 @@ test('shortcuts work after clicking sidebar buttons and changing offers', () => 
 
 test('shortcuts help toggles with question mark, closes with Escape, and restores focus', () => {
   const {calls,document,modal,previousFocus}=setup();
-  fire(document,'?',{shiftKey:true});
+  fire(document,'/',{shiftKey:true});
   assert.equal(modal.classList.active,true);
   assert.deepEqual(calls.pop(),['focus-close']);
   assert.equal(document.activeElement === previousFocus,false);
@@ -249,7 +249,7 @@ test('shortcuts help toggles with question mark, closes with Escape, and restore
   assert.equal(modal.classList.active,false);
   assert.equal(calls.pop()[0],'focus-previous');
 
-  fire(document,'?',{shiftKey:true});
+  fire(document,'/',{shiftKey:true});
   assert.equal(modal.classList.active,true);
   assert.equal(fire(document,'Escape'),true);
   assert.equal(modal.classList.active,false);
