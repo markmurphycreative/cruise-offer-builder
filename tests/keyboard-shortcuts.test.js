@@ -13,6 +13,7 @@ test('visible app version is v2.2.2', () => {
 function setup(){
   const calls=[];
   const modal={classList:{active:false,add(){this.active=true;},remove(){this.active=false;},contains(){return this.active;}}};
+  const summaryModal={classList:{active:false,add(){this.active=true;},remove(){this.active=false;},contains(){return this.active;}}};
   const close={focus(){ document.activeElement=close; calls.push(['focus-close']); }};
   const ctaEnabled={checked:false};
   function makeSection(key, collapsed=true){
@@ -39,13 +40,13 @@ function setup(){
   const previousFocus={focus(){ document.activeElement=previousFocus; calls.push(['focus-previous']); }};
   const document={
     activeElement:previousFocus,
-    getElementById(id){ return id === 'shortcuts-modal' ? modal : id === 'shortcuts-close' ? close : id === 'cta-enabled' ? ctaEnabled : null; },
+    getElementById(id){ return id === 'shortcuts-modal' ? modal : id === 'summary-modal' ? summaryModal : id === 'shortcuts-close' ? close : id === 'cta-enabled' ? ctaEnabled : null; },
     querySelector(selector){ const match=String(selector).match(/data-section-key="([^"]+)"/); if(match) return sectionNodes[match[1]]; if(selector === '#campaign-library-panel') return sectionNodes['campaign-library']; return focusNodes[selector] || null; },
     addEventListener(type,handler){ if(type === 'keydown') this.handler=handler; if(type === 'change') this.changeHandler=handler; }
   };
-  const context={document,cur:0,offers:[{name:'One'},{name:'Two'},{name:'Three'},{name:'Four'}],isOfferLoaded:offer=>!!offer.name,sv:i=>{ context.cur=i; calls.push(['sv',i]); },setView:v=>calls.push(['view',v]),toggleSec:hdr=>{ hdr.collapsed=!hdr.collapsed; calls.push(['toggle',hdr.collapsed ? 'closed' : 'open']); },exportCurrentJPG:()=>calls.push(['jpg']),exportAllJPG:()=>calls.push(['zip']),refreshOffers:()=>calls.push(['refresh']),moveOfferLeft:()=>calls.push(['move-left']),moveOfferRight:()=>calls.push(['move-right']),ctaSettingsChanged:()=>calls.push(['cta-changed',context.document.getElementById('cta-enabled').checked]),undoCampaignChange:()=>calls.push(['undo']),redoCampaignChange:()=>calls.push(['redo'])};
+  const context={document,cur:0,offers:[{name:'One'},{name:'Two'},{name:'Three'},{name:'Four'}],isOfferLoaded:offer=>!!offer.name,sv:i=>{ context.cur=i; calls.push(['sv',i]); },setView:v=>calls.push(['view',v]),toggleSec:hdr=>{ hdr.collapsed=!hdr.collapsed; calls.push(['toggle',hdr.collapsed ? 'closed' : 'open']); },exportCurrentJPG:()=>calls.push(['jpg']),exportAllJPG:()=>calls.push(['zip']),refreshOffers:()=>calls.push(['refresh']),moveOfferLeft:()=>calls.push(['move-left']),moveOfferRight:()=>calls.push(['move-right']),ctaSettingsChanged:()=>calls.push(['cta-changed',context.document.getElementById('cta-enabled').checked]),undoCampaignChange:()=>calls.push(['undo']),redoCampaignChange:()=>calls.push(['redo']),openSummary:()=>{ summaryModal.classList.add('active'); calls.push(['summary-open']); },closeModal:id=>{ if(id === 'summary-modal') summaryModal.classList.remove('active'); calls.push(['close-modal',id]); }};
   vm.runInNewContext(shortcuts,context);
-  return {calls,context,document,modal,sectionNodes,previousFocus,close};
+  return {calls,context,document,modal,summaryModal,sectionNodes,previousFocus,close};
 }
 function fire(document,key,overrides={}){
   let prevented=false;
@@ -72,7 +73,7 @@ test('the global keyboard shortcut listener is attached exactly once', () => {
 
 test('shortcuts modal and small toolbar trigger list the supported keyboard shortcuts', () => {
   assert.match(html, /<button class="shortcuts-trigger"[^>]*onclick="openShortcutsModal\(\)"[^>]*>Shortcuts<\/button>/);
-  assert.match(html, /id="shortcuts-modal"[\s\S]*?Keyboard Shortcuts[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>Z<\/kbd>[\s\S]*?<kbd>1<\/kbd>[\s\S]*?<kbd>Tab<\/kbd>[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>S<\/kbd>[\s\S]*?<kbd>R<\/kbd>[\s\S]*?<kbd>H<\/kbd>[\s\S]*?<kbd>O<\/kbd>[\s\S]*?<kbd>P<\/kbd>[\s\S]*?<kbd>C<\/kbd>[\s\S]*?<kbd>U<\/kbd>[\s\S]*?<kbd>L<\/kbd>[\s\S]*?<kbd>I<\/kbd>[\s\S]*?<kbd>X<\/kbd>[\s\S]*?<kbd>Shift<\/kbd> \+ <kbd>C<\/kbd>[\s\S]*?<kbd>←<\/kbd> \/ <kbd>→<\/kbd>[\s\S]*?<kbd>\?<\/kbd>[\s\S]*?<kbd>Esc<\/kbd>/);
+  assert.match(html, /id="shortcuts-modal"[\s\S]*?Keyboard Shortcuts[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>Z<\/kbd>[\s\S]*?<kbd>1<\/kbd>[\s\S]*?<kbd>Tab<\/kbd>[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>S<\/kbd>[\s\S]*?<kbd>R<\/kbd>[\s\S]*?<kbd>H<\/kbd>[\s\S]*?<kbd>O<\/kbd>[\s\S]*?<kbd>P<\/kbd>[\s\S]*?<kbd>C<\/kbd>[\s\S]*?<kbd>U<\/kbd>[\s\S]*?<kbd>L<\/kbd>[\s\S]*?<kbd>I<\/kbd>[\s\S]*?<kbd>X<\/kbd>[\s\S]*?<kbd>Shift<\/kbd> \+ <kbd>C<\/kbd>[\s\S]*?<kbd>←<\/kbd> \/ <kbd>→<\/kbd>[\s\S]*?<dt>Campaign Summary<\/dt><dd><kbd>M<\/kbd><\/dd>[\s\S]*?<kbd>\?<\/kbd>[\s\S]*?<kbd>Esc<\/kbd>/);
 });
 
 test('card, view, undo, redo, export, refresh, UTM, CTA, help, and Escape shortcuts reuse existing actions', () => {
@@ -99,6 +100,40 @@ test('card, view, undo, redo, export, refresh, UTM, CTA, help, and Escape shortc
   assert.equal(fire(document,'Escape',{target:{closest:()=>true}}),true); assert.equal(modal.classList.active,false);
 });
 
+
+test('Campaign Summary shortcut toggles with M and closes with Escape', () => {
+  const {calls,document,summaryModal}=setup();
+  assert.equal(fire(document,'m'),true);
+  assert.equal(summaryModal.classList.active,true);
+  assert.deepEqual(calls.pop(),['summary-open']);
+
+  assert.equal(fire(document,'M'),true);
+  assert.equal(summaryModal.classList.active,false);
+  assert.deepEqual(calls.pop(),['close-modal','summary-modal']);
+
+  assert.equal(fire(document,'m'),true);
+  assert.equal(summaryModal.classList.active,true);
+  assert.deepEqual(calls.pop(),['summary-open']);
+  assert.equal(fire(document,'Escape'),true);
+  assert.equal(summaryModal.classList.active,false);
+  assert.deepEqual(calls.pop(),['close-modal','summary-modal']);
+});
+
+test('Campaign Summary shortcut is ignored while typing in form fields', () => {
+  for(const tag of ['input','textarea','select','[contenteditable]']){
+    const {calls,document,summaryModal}=setup();
+    const target={value:'',closest:selector=>selector.split(',').includes(tag)};
+    assert.equal(typeKey(document,target,'m'),false);
+    assert.equal(target.value,'m');
+    assert.equal(summaryModal.classList.active,false);
+    assert.deepEqual(calls,[]);
+
+    summaryModal.classList.add('active');
+    assert.equal(typeKey(document,target,'m'),false);
+    assert.equal(summaryModal.classList.active,true);
+    assert.deepEqual(calls,[]);
+  }
+});
 
 test('section shortcuts toggle each sidebar section, scroll opened sections, and focus useful controls', () => {
   const {calls,document}=setup();

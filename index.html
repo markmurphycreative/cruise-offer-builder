@@ -1124,6 +1124,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <dt>Export Cards section</dt><dd><kbd>X</kbd></dd>
       <dt>Toggle CTA preview</dt><dd><kbd>Shift</kbd> + <kbd>C</kbd></dd>
       <dt>Reorder selected card</dt><dd><kbd>←</kbd> / <kbd>→</kbd></dd>
+      <dt>Campaign Summary</dt><dd><kbd>M</kbd></dd>
       <dt>Open / close this help</dt><dd><kbd>?</kbd></dd>
       <dt>Close this help</dt><dd><kbd>Esc</kbd></dd>
     </dl>
@@ -7013,12 +7014,26 @@ function toggleCtaPreviewShortcut(){
 function isQuestionMarkShortcut(event){
   return event.key === '?' || (event.shiftKey && event.key === '/');
 }
+function isCampaignSummaryShortcut(event){
+  return event.key.toLowerCase() === 'm' && !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey;
+}
 function handleKeyboardShortcut(event){
   if(event.defaultPrevented) return;
   const shortcutsModal=document.getElementById('shortcuts-modal');
   if(shortcutsModal && shortcutsModal.classList.contains('active')){
     if(event.key === 'Escape' || isQuestionMarkShortcut(event)){
       closeShortcutsModal();
+      event.preventDefault();
+    }
+    return;
+  }
+  const summaryModal=document.getElementById('summary-modal');
+  if(summaryModal && summaryModal.classList.contains('active')){
+    if(event.key === 'Escape'){
+      closeModal('summary-modal');
+      event.preventDefault();
+    }else if(isCampaignSummaryShortcut(event) && !isShortcutBlockedTarget(event.target)){
+      closeModal('summary-modal');
       event.preventDefault();
     }
     return;
@@ -7068,6 +7083,7 @@ function handleKeyboardShortcut(event){
   if(key === 'e'){ setView('email'); event.preventDefault(); return; }
   if(key === 'a'){ setView('all'); event.preventDefault(); return; }
   if(sectionShortcuts[key]){ openShortcutSection(sectionShortcuts[key]); event.preventDefault(); return; }
+  if(key === 'm'){ openSummary(); event.preventDefault(); return; }
   if(key === 'r'){ refreshOffers(); event.preventDefault(); return; }
   if(isQuestionMarkShortcut(event)){ openShortcutsModal(); event.preventDefault(); }
 }
