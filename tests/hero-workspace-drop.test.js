@@ -50,7 +50,8 @@ function createDropContext({ offers = [{}, {}, {}, {}], cur = 0, lockedHeroImage
     extractFunction('readHeroDropFile'),
     extractFunction('clearHeroDragOver'),
     extractFunction('handleHeroWorkspaceDragOver'),
-    extractFunction('handleHeroWorkspaceDrop')
+    extractFunction('handleHeroWorkspaceDrop'),
+    extractFunction('enhanceHeroDropTarget')
   ].join('\n'), context);
   context.calls = calls;
   context.showHeroDropStatus = (message, isError) => calls.status.push({ message, isError });
@@ -82,6 +83,27 @@ test('dropping an image in Single view updates the currently selected offer hero
   assert.equal(event.prevented, true);
   assert.equal(event.stopped, true);
   assert.deepEqual(context.calls.thumb, [{ type: 'hero', src: 'data:image/png;base64,single' }]);
+});
+
+
+test('Single view drop target updates to the newly selected offer after re-render', () => {
+  const context = createDropContext({ cur: 0 });
+  const listeners = {};
+  const root = {
+    dataset: {},
+    classList: { add() {}, remove() {} },
+    addEventListener(type, handler) { listeners[type] = handler; },
+    contains() { return false; }
+  };
+
+  context.enhanceHeroDropTarget(root, 0);
+  context.enhanceHeroDropTarget(root, 2);
+  listeners.drop(dropEvent([image('image/png', 'data:image/png;base64,rebound')]));
+
+  assert.equal(root.dataset.heroDropBound, '1');
+  assert.equal(root.dataset.heroDropOfferIndex, '2');
+  assert.equal(context.offers[2]._img, 'data:image/png;base64,rebound');
+  assert.equal(context.offers[0]._img, undefined);
 });
 
 test('dropping an image onto card 1 in All 4 view updates only offer 1', () => {
@@ -170,6 +192,7 @@ test('workspace drop support is bound to all preview modes and exports use the d
   assert.match(extractFunction('renderSingleOffer'), /enhanceHeroDropTarget\(out, cur\)/);
   assert.match(extractFunction('renderPreviewMode'), /enhanceHeroDropTarget\(cardWrap, i\)/);
   assert.match(extractFunction('renderPreviewMode'), /enhanceHeroDropTarget\(c, index\)/);
+  assert.match(extractFunction('renderVisibleCard'), /enhanceHeroDropTarget\(out, cur\)/);
   assert.match(extractFunction('renderCardToImageBlob'), /renderCardHTML\(offerData\)/);
   assert.match(html, /\.preview-hero-drop-target\.hero-drag-over/);
 });
