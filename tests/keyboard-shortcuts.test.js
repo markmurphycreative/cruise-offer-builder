@@ -44,7 +44,7 @@ function setup(){
     querySelector(selector){ const match=String(selector).match(/data-section-key="([^"]+)"/); if(match) return sectionNodes[match[1]]; if(selector === '#campaign-library-panel') return sectionNodes['campaign-library']; return focusNodes[selector] || null; },
     addEventListener(type,handler){ if(type === 'keydown') this.handler=handler; if(type === 'change') this.changeHandler=handler; }
   };
-  const context={document,cur:0,offers:[{name:'One'},{name:'Two'},{name:'Three'},{name:'Four'}],isOfferLoaded:offer=>!!offer.name,sv:i=>{ context.cur=i; calls.push(['sv',i]); },setView:v=>calls.push(['view',v]),toggleSec:hdr=>{ hdr.collapsed=!hdr.collapsed; calls.push(['toggle',hdr.collapsed ? 'closed' : 'open']); },exportCurrentJPG:()=>calls.push(['jpg']),exportAllJPG:()=>calls.push(['zip']),refreshOffers:()=>calls.push(['refresh']),moveOfferLeft:()=>calls.push(['move-left']),moveOfferRight:()=>calls.push(['move-right']),ctaSettingsChanged:()=>calls.push(['cta-changed',context.document.getElementById('cta-enabled').checked]),undoCampaignChange:()=>calls.push(['undo']),redoCampaignChange:()=>calls.push(['redo']),openSummary:()=>{ summaryModal.classList.add('active'); calls.push(['summary-open']); },closeModal:id=>{ if(id === 'summary-modal') summaryModal.classList.remove('active'); calls.push(['close-modal',id]); }};
+  const context={document,cur:0,offers:[{name:'One'},{name:'Two'},{name:'Three'},{name:'Four'}],isOfferLoaded:offer=>!!offer.name,sv:i=>{ context.cur=i; calls.push(['sv',i]); },setView:v=>calls.push(['view',v]),toggleSec:hdr=>{ hdr.collapsed=!hdr.collapsed; calls.push(['toggle',hdr.collapsed ? 'closed' : 'open']); },exportCurrentJPG:()=>calls.push(['jpg']),exportAllJPG:()=>calls.push(['zip']),refreshOffers:()=>calls.push(['refresh']),toggleLock:()=>calls.push(['lock']),moveOfferLeft:()=>calls.push(['move-left']),moveOfferRight:()=>calls.push(['move-right']),ctaSettingsChanged:()=>calls.push(['cta-changed',context.document.getElementById('cta-enabled').checked]),undoCampaignChange:()=>calls.push(['undo']),redoCampaignChange:()=>calls.push(['redo']),openSummary:()=>{ summaryModal.classList.add('active'); calls.push(['summary-open']); },closeModal:id=>{ if(id === 'summary-modal') summaryModal.classList.remove('active'); calls.push(['close-modal',id]); }};
   vm.runInNewContext(shortcuts,context);
   return {calls,context,document,modal,summaryModal,sectionNodes,previousFocus,close};
 }
@@ -87,6 +87,7 @@ test('card, view, undo, redo, export, refresh, UTM, CTA, help, and Escape shortc
   fire(document,'s',{ctrlKey:true}); assert.deepEqual(calls.pop(),['jpg']);
   fire(document,'S',{metaKey:true,shiftKey:true}); assert.deepEqual(calls.pop(),['zip']);
   fire(document,'r'); assert.deepEqual(calls.pop(),['refresh']);
+  assert.equal(fire(document,'k'), true); assert.deepEqual(calls.pop(), ['lock']);
   fire(document,'u'); assert.deepEqual(calls.splice(-2),[['toggle','open'],['scroll','utm-link']]);
   fire(document,'u'); assert.deepEqual(calls.splice(-1),[['toggle','closed']]);
   fire(document,'c'); assert.deepEqual(calls.splice(-3),[['toggle','open'],['scroll','cta-assets'],['focus','cta-enabled']]);
@@ -220,7 +221,7 @@ test('section shortcuts do not trigger while typing in form and contenteditable 
     {closest:selector=>selector === 'input,textarea,select,[contenteditable]'}
   ]){
     const {calls,document}=setup();
-    for(const key of ['h','o','p','c','u','l','i','x']) assert.equal(fire(document,key,{target}),false);
+    for(const key of ['h','o','p','c','u','l','i','x','k']) assert.equal(fire(document,key,{target}),false);
     assert.deepEqual(calls,[]);
   }
 });
@@ -257,6 +258,7 @@ test('shortcuts do not trigger while typing in inputs or textareas', () => {
     const target={value:'',closest:selector=>selector.split(',').includes(tag)};
     assert.equal(fire(document,'s',{target}),false);
     assert.equal(fire(document,'r',{target}),false);
+    assert.equal(fire(document,'k',{target}),false);
     assert.equal(typeKey(document,target,'?'),false);
     assert.equal(target.value,'?');
     assert.equal(modal.classList.active,false);
