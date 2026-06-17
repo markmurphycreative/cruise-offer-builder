@@ -7010,11 +7010,14 @@ function toggleCtaPreviewShortcut(){
   enabledEl.checked = !enabledEl.checked;
   ctaSettingsChanged();
 }
+function isQuestionMarkShortcut(event){
+  return event.key === '?' || (event.shiftKey && event.key === '/');
+}
 function handleKeyboardShortcut(event){
   if(event.defaultPrevented) return;
   const shortcutsModal=document.getElementById('shortcuts-modal');
   if(shortcutsModal && shortcutsModal.classList.contains('active')){
-    if(event.key === 'Escape' || event.key === '?'){
+    if(event.key === 'Escape' || isQuestionMarkShortcut(event)){
       closeShortcutsModal();
       event.preventDefault();
     }
@@ -7058,7 +7061,7 @@ function handleKeyboardShortcut(event){
     event.preventDefault();
     return;
   }
-  if(event.shiftKey && event.key !== '?') return;
+  if(event.shiftKey && !isQuestionMarkShortcut(event)) return;
 
   if(/^[1-4]$/.test(key)){ selectOfferShortcut(Number(key)-1); event.preventDefault(); return; }
   if(key === 's'){ setView('single'); event.preventDefault(); return; }
@@ -7066,7 +7069,7 @@ function handleKeyboardShortcut(event){
   if(key === 'a'){ setView('all'); event.preventDefault(); return; }
   if(sectionShortcuts[key]){ openShortcutSection(sectionShortcuts[key]); event.preventDefault(); return; }
   if(key === 'r'){ refreshOffers(); event.preventDefault(); return; }
-  if(event.key === '?'){ openShortcutsModal(); event.preventDefault(); }
+  if(isQuestionMarkShortcut(event)){ openShortcutsModal(); event.preventDefault(); }
 }
 document.addEventListener('keydown',handleKeyboardShortcut);
 document.addEventListener('change',releaseSelectShortcutFocus);
