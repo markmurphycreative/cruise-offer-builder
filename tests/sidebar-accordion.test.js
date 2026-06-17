@@ -73,9 +73,14 @@ test('CSV Import alone receives the primary navy header treatment with white con
 
 test('the expanded sidebar header receives the subtle palette-based highlight without layout changes', () => {
   const rule = extract(/\.section-hdr:not\(\.collapsed\)\{[^}]+\}/, 'expanded sidebar header highlight');
-  assert.match(rule, /background:rgba\(160,146,103,\.12\)/);
-  assert.match(rule, /box-shadow:inset 2px 0 0 var\(--gold\)/);
+  assert.match(rule, /background:rgba\(160,146,103,\.10\)/);
+  assert.match(rule, /box-shadow:inset 4px 0 0 var\(--gold\)/);
   assert.doesNotMatch(rule, /(?:padding|margin|border(?:-width)?|height):/);
+});
+
+test('the expanded sidebar header tints the icon and chevron gold', () => {
+  assert.match(html, /\.section-hdr:not\(\.collapsed\) \.section-icon\{color:var\(--gold\);\}/);
+  assert.match(html, /\.section-hdr:not\(\.collapsed\) \.section-toggle\{color:var\(--gold\);\}/);
 });
 
 test('an empty builder opens CSV Import and collapses every other section without overriding loaded-offer state', () => {
@@ -240,6 +245,6 @@ test('campaign library saved and pinned categories use distinct understated visu
   assert.match(html, /\.campaign-library-category\[data-campaign-category="recent"\]\{border-left:2px solid rgba\(42,122,74,\.46\);\}/);
   assert.match(html, /\.campaign-library-category\[data-campaign-category="recent"\] \.section-hdr\{background:rgba\(42,122,74,\.07\);\}/);
   assert.match(html, /\.campaign-library-category\[data-campaign-category="recent"\] \.section-hdr:not\(\.collapsed\)\{background:rgba\(42,122,74,\.10\);box-shadow:inset 2px 0 0 var\(--green\);\}/);
-  assert.match(html, /\.campaign-library-category\[data-campaign-category="pinned"\] \.section-hdr:not\(\.collapsed\)\{background:rgba\(160,146,103,\.12\);box-shadow:inset 2px 0 0 var\(--gold\);\}/);
+  assert.match(html, /\.campaign-library-category\[data-campaign-category="pinned"\] \.section-hdr:not\(\.collapsed\)\{background:rgba\(160,146,103,\.10\);box-shadow:inset 4px 0 0 var\(--gold\);\}/);
   assert.match(html, /\.count-badge--saved\{background:rgba\(42,122,74,\.12\);border-color:rgba\(42,122,74,\.34\);color:var\(--green\);\}/);
 });
