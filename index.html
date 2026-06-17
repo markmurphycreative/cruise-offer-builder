@@ -544,7 +544,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .preview-pane .hph.clickable-hero-placeholder{cursor:pointer;position:relative;transition:filter .15s ease;}
 .preview-pane .hph.clickable-hero-placeholder:hover{filter:brightness(1.05);}
 .preview-hero-drop-target{position:relative;}
-.preview-hero-drop-target.hero-drag-over{outline:4px solid rgba(160,146,103,.7);outline-offset:10px;box-shadow:0 0 0 10px rgba(160,146,103,.16);filter:brightness(1.03);}
+.preview-hero-drop-target.hero-drag-over{outline:5px solid var(--gold);outline-offset:8px;box-shadow:0 0 0 10px rgba(160,146,103,.18);}
 .preview-pane .hph.clickable-hero-placeholder::after{content:"ADD HERO IMAGE";display:inline-flex;align-items:center;justify-content:center;opacity:1;font-family:'Montserrat',sans-serif;font-size:38px;font-weight:500;color:#fff;background:transparent;border:0;border-radius:0;padding:0;line-height:1;text-align:center;box-shadow:none;pointer-events:none;}
 .cc .isec{width:1200px;height:auto;min-height:0;overflow:visible;background:#fff;padding:80px 62px 112px;text-align:center;}
 .cc .isec-content{position:relative;top:16px;}
@@ -2038,9 +2038,18 @@ function dzOver(e,id){e.preventDefault();document.getElementById(id).classList.a
 function dzOut(id){document.getElementById(id).classList.remove("over");}
 function dzDrop(e,type){e.preventDefault();dzOut(type==="logo"?"dz-logo":"dz-hero");const f=e.dataTransfer.files[0];if(f)readFile(f,type);}
 function fileChosen(e,type){const f=e.target.files[0];if(f)readFile(f,type);}
+function isAcceptedHeroImageType(type){
+  return /^(image\/jpeg|image\/png|image\/webp|image\/gif)$/i.test(type||"");
+}
 function getFirstAcceptedHeroDropFile(dataTransfer){
   const files=Array.from((dataTransfer&&dataTransfer.files)||[]);
-  return files.find(file=>/^(image\/jpeg|image\/png|image\/webp|image\/gif)$/i.test(file.type||"")) || null;
+  return files.find(file=>isAcceptedHeroImageType(file.type)) || null;
+}
+function hasAcceptedHeroDragItem(dataTransfer){
+  if(!dataTransfer) return false;
+  const items=Array.from(dataTransfer.items||[]);
+  if(items.length) return items.some(item=>(!item.kind||item.kind==="file")&&isAcceptedHeroImageType(item.type));
+  return !!getFirstAcceptedHeroDropFile(dataTransfer);
 }
 function showHeroDropStatus(message,isError){
   const toast=document.getElementById("export-toast");
@@ -2081,8 +2090,15 @@ function clearHeroDragOver(target){
   if(target&&target.classList) target.classList.remove("hero-drag-over");
 }
 function handleHeroWorkspaceDragOver(event,target){
+  const acceptsImage=hasAcceptedHeroDragItem(event&&event.dataTransfer);
+  if(!acceptsImage){
+    clearHeroDragOver(target);
+    if(event&&event.dataTransfer) event.dataTransfer.dropEffect="none";
+    return false;
+  }
   if(event){ event.preventDefault(); if(event.dataTransfer) event.dataTransfer.dropEffect="copy"; }
   if(target&&target.classList) target.classList.add("hero-drag-over");
+  return true;
 }
 function handleHeroWorkspaceDrop(event,index,target){
   if(event){ event.preventDefault(); event.stopPropagation(); }
@@ -2100,6 +2116,7 @@ function enhanceHeroDropTarget(root,offerIndex){
   root.addEventListener("dragover",event=>handleHeroWorkspaceDragOver(event,root));
   root.addEventListener("dragenter",event=>handleHeroWorkspaceDragOver(event,root));
   root.addEventListener("dragleave",event=>{ if(!root.contains(event.relatedTarget)) clearHeroDragOver(root); });
+  root.addEventListener("dragend",()=>clearHeroDragOver(root));
   root.addEventListener("drop",event=>handleHeroWorkspaceDrop(event,resolvedIndex,root));
 }
 
