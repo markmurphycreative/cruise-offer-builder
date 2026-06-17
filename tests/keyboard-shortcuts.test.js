@@ -26,14 +26,18 @@ function setup(){
       querySelector(selector){ return selector === '.section-hdr' ? hdr : null; }
     };
   }
-  const sectionNodes={
-    'utm-link':makeSection('utm-link'),
-    'cta-assets':makeSection('cta-assets')
+  const sectionNodes={};
+  for(const key of ['hero-image','offer-details','paste-raw-offer','cta-assets','utm-link','campaign-library','ai-copy','export-cards']) sectionNodes[key]=makeSection(key);
+  const focusNodes={
+    '#f-name':{focus(){ calls.push(['focus','f-name']); }},
+    '#raw-paste':{focus(){ calls.push(['focus','raw-paste']); }},
+    '#cta-enabled,#cta-text,#cta-phone':{focus(){ calls.push(['focus','cta-enabled']); }},
+    '#ai-prompt-type,button[onclick="generateAiCopyPrompt()"]':{focus(){ calls.push(['focus','ai-prompt-type']); }}
   };
   const document={
     activeElement:null,
     getElementById(id){ return id === 'shortcuts-modal' ? modal : id === 'shortcuts-close' ? close : id === 'cta-enabled' ? ctaEnabled : null; },
-    querySelector(selector){ const match=String(selector).match(/data-section-key=\"([^\"]+)\"/); return match ? sectionNodes[match[1]] : null; },
+    querySelector(selector){ const match=String(selector).match(/data-section-key="([^"]+)"/); if(match) return sectionNodes[match[1]]; if(selector === '#campaign-library-panel') return sectionNodes['campaign-library']; return focusNodes[selector] || null; },
     addEventListener(type,handler){ if(type === 'keydown') this.handler=handler; if(type === 'change') this.changeHandler=handler; }
   };
   const context={document,cur:0,offers:[{name:'One'},{name:'Two'},{name:'Three'},{name:'Four'}],isOfferLoaded:offer=>!!offer.name,sv:i=>{ context.cur=i; calls.push(['sv',i]); },setView:v=>calls.push(['view',v]),toggleSec:hdr=>{ hdr.collapsed=!hdr.collapsed; calls.push(['toggle',hdr.collapsed ? 'closed' : 'open']); },exportCurrentJPG:()=>calls.push(['jpg']),exportAllJPG:()=>calls.push(['zip']),refreshOffers:()=>calls.push(['refresh']),moveOfferLeft:()=>calls.push(['move-left']),moveOfferRight:()=>calls.push(['move-right']),ctaSettingsChanged:()=>calls.push(['cta-changed',context.document.getElementById('cta-enabled').checked]),undoCampaignChange:()=>calls.push(['undo']),redoCampaignChange:()=>calls.push(['redo'])};
@@ -53,7 +57,7 @@ test('the global keyboard shortcut listener is attached exactly once', () => {
 
 test('shortcuts modal and small toolbar trigger list the supported keyboard shortcuts', () => {
   assert.match(html, /<button class="shortcuts-trigger"[^>]*onclick="openShortcutsModal\(\)"[^>]*>Shortcuts<\/button>/);
-  assert.match(html, /id="shortcuts-modal"[\s\S]*?Keyboard Shortcuts[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>Z<\/kbd>[\s\S]*?<kbd>1<\/kbd>[\s\S]*?<kbd>Tab<\/kbd>[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>S<\/kbd>[\s\S]*?<kbd>R<\/kbd>[\s\S]*?<kbd>U<\/kbd>[\s\S]*?<kbd>C<\/kbd>[\s\S]*?<kbd>Shift<\/kbd> \+ <kbd>C<\/kbd>[\s\S]*?<kbd>←<\/kbd> \/ <kbd>→<\/kbd>[\s\S]*?<kbd>\?<\/kbd>[\s\S]*?<kbd>Esc<\/kbd>/);
+  assert.match(html, /id="shortcuts-modal"[\s\S]*?Keyboard Shortcuts[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>Z<\/kbd>[\s\S]*?<kbd>1<\/kbd>[\s\S]*?<kbd>Tab<\/kbd>[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>S<\/kbd>[\s\S]*?<kbd>R<\/kbd>[\s\S]*?<kbd>H<\/kbd>[\s\S]*?<kbd>O<\/kbd>[\s\S]*?<kbd>P<\/kbd>[\s\S]*?<kbd>C<\/kbd>[\s\S]*?<kbd>U<\/kbd>[\s\S]*?<kbd>L<\/kbd>[\s\S]*?<kbd>I<\/kbd>[\s\S]*?<kbd>X<\/kbd>[\s\S]*?<kbd>Shift<\/kbd> \+ <kbd>C<\/kbd>[\s\S]*?<kbd>←<\/kbd> \/ <kbd>→<\/kbd>[\s\S]*?<kbd>\?<\/kbd>[\s\S]*?<kbd>Esc<\/kbd>/);
 });
 
 test('card, view, undo, redo, export, refresh, UTM, CTA, help, and Escape shortcuts reuse existing actions', () => {
@@ -69,8 +73,8 @@ test('card, view, undo, redo, export, refresh, UTM, CTA, help, and Escape shortc
   fire(document,'r'); assert.deepEqual(calls.pop(),['refresh']);
   fire(document,'u'); assert.deepEqual(calls.splice(-2),[['toggle','open'],['scroll','utm-link']]);
   fire(document,'u'); assert.deepEqual(calls.splice(-1),[['toggle','closed']]);
-  fire(document,'c'); assert.deepEqual(calls.splice(-2),[['toggle','open'],['scroll','cta-assets']]);
-  fire(document,'c'); assert.deepEqual(calls.splice(-1),[['scroll','cta-assets']]);
+  fire(document,'c'); assert.deepEqual(calls.splice(-3),[['toggle','open'],['scroll','cta-assets'],['focus','cta-enabled']]);
+  fire(document,'c'); assert.deepEqual(calls.splice(-1),[['toggle','closed']]);
   fire(document,'C',{shiftKey:true}); assert.deepEqual(calls.pop(),['cta-changed',true]);
   fire(document,'C',{shiftKey:true}); assert.deepEqual(calls.pop(),['cta-changed',false]);
   fire(document,'ArrowLeft'); assert.deepEqual(calls.pop(),['move-left']);
@@ -78,6 +82,44 @@ test('card, view, undo, redo, export, refresh, UTM, CTA, help, and Escape shortc
   fire(document,'?',{shiftKey:true}); assert.equal(modal.classList.active,true); assert.deepEqual(calls.pop(),['focus-close']);
   assert.equal(fire(document,'Tab'),false); assert.deepEqual(calls,[]);
   assert.equal(fire(document,'Escape',{target:{closest:()=>true}}),true); assert.equal(modal.classList.active,false);
+});
+
+
+test('section shortcuts toggle each sidebar section, scroll opened sections, and focus useful controls', () => {
+  const {calls,document}=setup();
+  const cases=[
+    ['h','hero-image',null],
+    ['o','offer-details','f-name'],
+    ['p','paste-raw-offer','raw-paste'],
+    ['c','cta-assets','cta-enabled'],
+    ['u','utm-link',null],
+    ['l','campaign-library',null],
+    ['i','ai-copy','ai-prompt-type'],
+    ['x','export-cards',null]
+  ];
+  for(const [key,section,focus] of cases){
+    calls.length=0;
+    assert.equal(fire(document,key),true);
+    const expected=[['toggle','open'],['scroll',section]];
+    if(focus) expected.push(['focus',focus]);
+    assert.deepEqual(calls,expected);
+    calls.length=0;
+    assert.equal(fire(document,key.toUpperCase()),true);
+    assert.deepEqual(calls,[['toggle','closed']]);
+  }
+});
+
+test('section shortcuts do not trigger while typing in form and contenteditable fields', () => {
+  for(const target of [
+    {closest:selector=>selector === 'input,textarea,select,[contenteditable]'},
+    {closest:selector=>selector === 'input,textarea,select,[contenteditable]'},
+    {closest:selector=>selector === 'input,textarea,select,[contenteditable]'},
+    {closest:selector=>selector === 'input,textarea,select,[contenteditable]'}
+  ]){
+    const {calls,document}=setup();
+    for(const key of ['h','o','p','c','u','l','i','x']) assert.equal(fire(document,key,{target}),false);
+    assert.deepEqual(calls,[]);
+  }
 });
 
 test('card navigation does not force Single view before any offers are loaded', () => {

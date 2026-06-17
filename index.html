@@ -1114,8 +1114,14 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <dt>Export card</dt><dd><kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>S</kbd></dd>
       <dt>Export all cards</dt><dd><kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd></dd>
       <dt>Refresh offers</dt><dd><kbd>R</kbd></dd>
-      <dt>UTM Link</dt><dd><kbd>U</kbd></dd>
-      <dt>CTA Assets panel</dt><dd><kbd>C</kbd></dd>
+      <dt>Hero Image section</dt><dd><kbd>H</kbd></dd>
+      <dt>Offer Details section</dt><dd><kbd>O</kbd></dd>
+      <dt>Paste Offer section</dt><dd><kbd>P</kbd></dd>
+      <dt>CTA Assets section</dt><dd><kbd>C</kbd></dd>
+      <dt>UTM Link section</dt><dd><kbd>U</kbd></dd>
+      <dt>Campaign Library section</dt><dd><kbd>L</kbd></dd>
+      <dt>AI Copy section</dt><dd><kbd>I</kbd></dd>
+      <dt>Export Cards section</dt><dd><kbd>X</kbd></dd>
       <dt>Toggle CTA preview</dt><dd><kbd>Shift</kbd> + <kbd>C</kbd></dd>
       <dt>Reorder selected card</dt><dd><kbd>←</kbd> / <kbd>→</kbd></dd>
       <dt>Open this help</dt><dd><kbd>?</kbd></dd>
@@ -6964,17 +6970,28 @@ function cycleOfferShortcut(direction){
   const active=Number.isInteger(Number(cur)) ? Number(cur) : 0;
   selectOfferShortcut((active + direction + 4) % 4);
 }
-function openShortcutSection(sectionKey, forceOpen){
-  const section=document.querySelector ? document.querySelector(`.section[data-section-key="${sectionKey}"]`) : null;
+function getShortcutSectionFocusTarget(sectionKey){
+  const selectors={
+    "offer-details":"#f-name",
+    "paste-raw-offer":"#raw-paste",
+    "cta-assets":"#cta-enabled,#cta-text,#cta-phone",
+    "ai-copy":"#ai-prompt-type,button[onclick=\"generateAiCopyPrompt()\"]"
+  };
+  const selector=selectors[sectionKey];
+  return selector && document.querySelector ? document.querySelector(selector) : null;
+}
+function openShortcutSection(sectionKey){
+  const selector=sectionKey === "campaign-library" ? "#campaign-library-panel" : `.section[data-section-key="${sectionKey}"]`;
+  const section=document.querySelector ? document.querySelector(selector) : null;
   const hdr=section && section.querySelector ? section.querySelector(".section-hdr") : null;
   if(!hdr) return;
   const willOpen=hdr.classList && hdr.classList.contains("collapsed");
-  if(forceOpen && !willOpen){
-    if(typeof section.scrollIntoView === "function") section.scrollIntoView({block:"start",behavior:"smooth"});
-    return;
-  }
   toggleSec(hdr);
-  if(willOpen && typeof section.scrollIntoView === "function") section.scrollIntoView({block:"start",behavior:"smooth"});
+  if(willOpen){
+    if(typeof section.scrollIntoView === "function") section.scrollIntoView({block:"start",behavior:"smooth"});
+    const focusTarget=getShortcutSectionFocusTarget(sectionKey);
+    if(focusTarget && typeof focusTarget.focus === "function") focusTarget.focus({preventScroll:true});
+  }
 }
 function toggleCtaPreviewShortcut(){
   const enabledEl=document.getElementById('cta-enabled');
@@ -7033,8 +7050,8 @@ function handleKeyboardShortcut(event){
   if(key === 's'){ setView('single'); event.preventDefault(); return; }
   if(key === 'e'){ setView('email'); event.preventDefault(); return; }
   if(key === 'a'){ setView('all'); event.preventDefault(); return; }
-  if(key === 'u'){ openShortcutSection('utm-link'); event.preventDefault(); return; }
-  if(key === 'c'){ openShortcutSection('cta-assets', true); event.preventDefault(); return; }
+  const sectionShortcuts={h:'hero-image',o:'offer-details',p:'paste-raw-offer',c:'cta-assets',u:'utm-link',l:'campaign-library',i:'ai-copy',x:'export-cards'};
+  if(sectionShortcuts[key]){ openShortcutSection(sectionShortcuts[key]); event.preventDefault(); return; }
   if(key === 'r'){ refreshOffers(); event.preventDefault(); return; }
   if(event.key === '?'){ openShortcutsModal(); event.preventDefault(); }
 }
