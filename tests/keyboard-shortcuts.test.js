@@ -13,7 +13,7 @@ test('visible app version is v2.2.2', () => {
 function setup(){
   const calls=[];
   const modal={classList:{active:false,add(){this.active=true;},remove(){this.active=false;},contains(){return this.active;}}};
-  const close={focus(){ calls.push(['focus-close']); }};
+  const close={focus(){ document.activeElement=close; calls.push(['focus-close']); }};
   const ctaEnabled={checked:false};
   function makeSection(key, collapsed=true){
     const hdr={
@@ -36,15 +36,16 @@ function setup(){
     '#cta-enabled,#cta-text,#cta-phone':{focus(){ calls.push(['focus','cta-enabled']); }},
     '#ai-prompt-type,button[onclick="generateAiCopyPrompt()"]':{focus(){ calls.push(['focus','ai-prompt-type']); }}
   };
+  const previousFocus={focus(){ document.activeElement=previousFocus; calls.push(['focus-previous']); }};
   const document={
-    activeElement:null,
+    activeElement:previousFocus,
     getElementById(id){ return id === 'shortcuts-modal' ? modal : id === 'shortcuts-close' ? close : id === 'cta-enabled' ? ctaEnabled : null; },
     querySelector(selector){ const match=String(selector).match(/data-section-key="([^"]+)"/); if(match) return sectionNodes[match[1]]; if(selector === '#campaign-library-panel') return sectionNodes['campaign-library']; return focusNodes[selector] || null; },
     addEventListener(type,handler){ if(type === 'keydown') this.handler=handler; if(type === 'change') this.changeHandler=handler; }
   };
   const context={document,cur:0,offers:[{name:'One'},{name:'Two'},{name:'Three'},{name:'Four'}],isOfferLoaded:offer=>!!offer.name,sv:i=>{ context.cur=i; calls.push(['sv',i]); },setView:v=>calls.push(['view',v]),toggleSec:hdr=>{ hdr.collapsed=!hdr.collapsed; calls.push(['toggle',hdr.collapsed ? 'closed' : 'open']); },exportCurrentJPG:()=>calls.push(['jpg']),exportAllJPG:()=>calls.push(['zip']),refreshOffers:()=>calls.push(['refresh']),moveOfferLeft:()=>calls.push(['move-left']),moveOfferRight:()=>calls.push(['move-right']),ctaSettingsChanged:()=>calls.push(['cta-changed',context.document.getElementById('cta-enabled').checked]),undoCampaignChange:()=>calls.push(['undo']),redoCampaignChange:()=>calls.push(['redo'])};
   vm.runInNewContext(shortcuts,context);
-  return {calls,context,document,modal,sectionNodes};
+  return {calls,context,document,modal,sectionNodes,previousFocus,close};
 }
 function fire(document,key,overrides={}){
   let prevented=false;
@@ -217,10 +218,13 @@ test('typing targets and unrelated browser or editing commands retain native beh
 
 test('shortcuts do not trigger while typing in inputs or textareas', () => {
   for(const tag of ['input','textarea']){
-    const {calls,document}=setup();
-    const target={closest:selector=>selector.split(',').includes(tag)};
+    const {calls,document,modal}=setup();
+    const target={value:'',closest:selector=>selector.split(',').includes(tag)};
     assert.equal(fire(document,'s',{target}),false);
     assert.equal(fire(document,'r',{target}),false);
+    assert.equal(typeKey(document,target,'?'),false);
+    assert.equal(target.value,'?');
+    assert.equal(modal.classList.active,false);
     assert.deepEqual(calls,[]);
   }
 });
@@ -235,14 +239,33 @@ test('shortcuts work after clicking sidebar buttons and changing offers', () => 
   assert.deepEqual(calls.splice(-2),[['sv',1],['view','single']]);
 });
 
-test('shortcuts work after opening and closing modals', () => {
-  const {calls,document,modal}=setup();
+test('shortcuts help toggles with question mark, closes with Escape, and restores focus', () => {
+  const {calls,document,modal,previousFocus}=setup();
   fire(document,'?',{shiftKey:true});
   assert.equal(modal.classList.active,true);
-  fire(document,'Escape');
+  assert.deepEqual(calls.pop(),['focus-close']);
+  assert.equal(document.activeElement === previousFocus,false);
+  assert.equal(fire(document,'?',{shiftKey:true,target:{closest:()=>true}}),true);
   assert.equal(modal.classList.active,false);
+  assert.equal(calls.pop()[0],'focus-previous');
+
+  fire(document,'?',{shiftKey:true});
+  assert.equal(modal.classList.active,true);
+  assert.equal(fire(document,'Escape'),true);
+  assert.equal(modal.classList.active,false);
+  assert.equal(calls.pop()[0],'focus-previous');
   assert.equal(fire(document,'r'),true);
   assert.deepEqual(calls.pop(),['refresh']);
+});
+
+test('Shortcuts button path reuses the existing modal and close controls', () => {
+  const {calls,context,modal}=setup();
+  context.openShortcutsModal();
+  assert.equal(modal.classList.active,true);
+  assert.deepEqual(calls.pop(),['focus-close']);
+  context.closeShortcutsModal();
+  assert.equal(modal.classList.active,false);
+  assert.equal(calls.pop()[0],'focus-previous');
 });
 
 test('select changes release focus so global shortcuts can resume after dropdown interactions', () => {

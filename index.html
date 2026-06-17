@@ -1124,9 +1124,10 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <dt>Export Cards section</dt><dd><kbd>X</kbd></dd>
       <dt>Toggle CTA preview</dt><dd><kbd>Shift</kbd> + <kbd>C</kbd></dd>
       <dt>Reorder selected card</dt><dd><kbd>←</kbd> / <kbd>→</kbd></dd>
-      <dt>Open this help</dt><dd><kbd>?</kbd></dd>
+      <dt>Open / close this help</dt><dd><kbd>?</kbd></dd>
       <dt>Close this help</dt><dd><kbd>Esc</kbd></dd>
     </dl>
+    <p class="modal-note">Press <kbd>?</kbd> to open/close this help<br>Press <kbd>Esc</kbd> to close</p>
   </div>
 </div>
 
@@ -7012,12 +7013,13 @@ function toggleCtaPreviewShortcut(){
 function handleKeyboardShortcut(event){
   if(event.defaultPrevented) return;
   const shortcutsModal=document.getElementById('shortcuts-modal');
-  if(event.key === 'Escape' && shortcutsModal && shortcutsModal.classList.contains('active')){
-    closeShortcutsModal();
-    event.preventDefault();
+  if(shortcutsModal && shortcutsModal.classList.contains('active')){
+    if(event.key === 'Escape' || event.key === '?'){
+      closeShortcutsModal();
+      event.preventDefault();
+    }
     return;
   }
-  if(shortcutsModal && shortcutsModal.classList.contains('active')) return;
   const commandKey=event.metaKey || event.ctrlKey;
   if(commandKey && !event.altKey && event.key.toLowerCase() === 'z'){
     event.preventDefault();
