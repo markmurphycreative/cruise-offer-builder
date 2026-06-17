@@ -2110,6 +2110,7 @@ function handleHeroWorkspaceDrop(event,index,target){
 function enhanceHeroDropTarget(root,offerIndex){
   if(!root||!root.addEventListener) return;
   const resolvedIndex=Number.isInteger(offerIndex)?offerIndex:cur;
+  if(root.dataset) root.dataset.heroDropOfferIndex=String(resolvedIndex);
   if(root.dataset&&root.dataset.heroDropBound==="1") return;
   if(root.dataset) root.dataset.heroDropBound="1";
   root.classList.add("preview-hero-drop-target");
@@ -2117,7 +2118,7 @@ function enhanceHeroDropTarget(root,offerIndex){
   root.addEventListener("dragenter",event=>handleHeroWorkspaceDragOver(event,root));
   root.addEventListener("dragleave",event=>{ if(!root.contains(event.relatedTarget)) clearHeroDragOver(root); });
   root.addEventListener("dragend",()=>clearHeroDragOver(root));
-  root.addEventListener("drop",event=>handleHeroWorkspaceDrop(event,resolvedIndex,root));
+  root.addEventListener("drop",event=>handleHeroWorkspaceDrop(event,Number(root.dataset&&root.dataset.heroDropOfferIndex),root));
 }
 
 function openHeroImagePickerForOffer(index){
@@ -5539,6 +5540,7 @@ function renderOfferIndex(i){
     out.innerHTML=renderCardHTML(d);
     adjustVisitSectionHeights(out);
     enhanceClickableHeroPlaceholders(out, i);
+    enhanceHeroDropTarget(out, i);
     scheduleHeroCropPositions(out);
     scaler.style.width='1200px';
     scaler.style.transform='scale('+scale+')';
@@ -5647,6 +5649,7 @@ function renderVisibleCard(){
   out.innerHTML = renderOfferWithOptionalCtaHTML(visibleFieldsToData(), getCtaSettingsFromUI());
   adjustVisitSectionHeights(out);
   enhanceClickableHeroPlaceholders(out, cur);
+  enhanceHeroDropTarget(out, cur);
   scheduleHeroCropPositions(out);
   scaler.style.width = '1200px';
   scaler.style.marginInline = 'auto';
