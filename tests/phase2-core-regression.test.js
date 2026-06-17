@@ -180,7 +180,14 @@ test('Phase 2 UTM generation populates values with card order and preserves oper
 
 function createAiHarness() {
   const elements = { 'ai-prompt-type': element('subject-lines'), 'ai-prompt-tone': element('Direct'), 'ai-prompt-output': element(''), 'ai-prompt-copy-status': element(''), 'g-campaign': element('Phase 2 Campaign'), 'g-date': element('16 May 2026'), 'g-description': element('Cruise Worldwide Mixed'), 'g-owner': element('Mark'), 'g-airport': element('Newcastle') };
-  const context = { document: { getElementById: id => elements[id] || null }, offers: [{ name: 'Greek Isles Escape', operator: 'msc', ship: 'MSC Virtuosa', price: '1299', ports: 'Athens • Santorini', boardlbl: 'Full Board' }], cur: 0, save() {} };
+  const context = {
+    document: { getElementById: id => elements[id] || null, execCommand: () => true },
+    window: { isSecureContext: false, open() {} },
+    navigator: {},
+    offers: [{ name: 'Greek Isles Escape', operator: 'msc', ship: 'MSC Virtuosa', price: '1299', ports: 'Athens • Santorini', boardlbl: 'Full Board' }],
+    cur: 0,
+    save() {}
+  };
   vm.createContext(context);
   const operatorConfig = 'var OPERATOR_CONFIG = { msc: { displayName: \"MSC Cruises\" } };';
   const aiBlock = html.slice(html.indexOf('function getAiCopyOperatorName'), html.indexOf('// ═══════════════════════════════════════════════════════\n// STATE'));
@@ -196,6 +203,103 @@ test('Phase 2 AI Copy prompt generation succeeds and is non-empty for all requir
     assert.ok(elements['ai-prompt-output'].value.trim().length > 100, `${type} prompt should be populated`);
     assert.match(elements['ai-prompt-output'].value, /Return the copy only/);
   }
+});
+
+test('AI Copy adds concise Operator Context for recognised offer-level operators', () => {
+  const { context, elements } = createAiHarness();
+  context.offers = [{ name: 'Greek Islands', operator: 'Celebrity Cruises', price: '1299', ports: 'Athens • Santorini' }];
+  elements['ai-prompt-type'].value = 'short-description';
+
+  context.generateAiCopyPrompt();
+
+  assert.match(elements['ai-prompt-output'].value, /Operator Context:\nCelebrity Cruises:/);
+  assert.match(elements['ai-prompt-output'].value, /Category: Premium ocean cruise/);
+  assert.match(elements['ai-prompt-output'].value, /Use operator context for tone and positioning only\. Use only the loaded offer data for factual details\./);
+});
+
+test('AI Copy omits guessed Operator Context for unknown operators', () => {
+  const { context, elements } = createAiHarness();
+  context.offers = [{ name: 'Mystery Escape', operator: 'Unlisted Travel Brand', price: '999', ports: 'Lisbon' }];
+  elements['ai-prompt-type'].value = 'short-description';
+
+  context.generateAiCopyPrompt();
+
+  assert.doesNotMatch(elements['ai-prompt-output'].value, /Operator Context:/);
+  assert.doesNotMatch(elements['ai-prompt-output'].value, /Unlisted Travel Brand:\n- Category:/);
+});
+
+test('AI Copy campaign prompt includes context for all recognised loaded operators only', () => {
+  const { context, elements } = createAiHarness();
+  context.offers = [
+    { name: 'Greek Islands', operator: 'Celebrity Cruises', price: '1299', ports: 'Athens • Santorini' },
+    { name: 'Fjords', operator: 'Cunard', price: '999', ports: 'Southampton • Bergen' },
+    { name: 'Unknown City Break', operator: 'Unknown Operator', price: '399', ports: 'Paris' }
+  ];
+  elements['ai-prompt-type'].value = 'copy-pack-campaign';
+
+  context.generateAiCopyPrompt();
+
+  const prompt = elements['ai-prompt-output'].value;
+  assert.match(prompt, /Celebrity Cruises:\n- Category: Premium ocean cruise/);
+  assert.match(prompt, /Cunard:\n- Category: Heritage ocean cruise/);
+  assert.doesNotMatch(prompt, /Unknown Operator:\n- Category:/);
+});
+
+test('AI Copy offer prompt includes context only for the selected offer operator', () => {
+  const { context, elements } = createAiHarness();
+  context.offers = [
+    { name: 'Greek Islands', operator: 'Celebrity Cruises', price: '1299', ports: 'Athens • Santorini' },
+    { name: 'Fjords', operator: 'Cunard', price: '999', ports: 'Southampton • Bergen' }
+  ];
+  context.cur = 1;
+  elements['ai-prompt-type'].value = 'long-description';
+
+  context.generateAiCopyPrompt();
+
+  const prompt = elements['ai-prompt-output'].value;
+  assert.match(prompt, /Cunard:\n- Category: Heritage ocean cruise/);
+  assert.doesNotMatch(prompt, /Celebrity Cruises:\n- Category:/);
+});
+
+test('AI Copy operator aliases match correctly', () => {
+  const { context, elements } = createAiHarness();
+  context.offers = [{ name: 'Family Adventure', operator: 'RCI', price: '1199', ports: 'Barcelona • Marseille' }];
+  elements['ai-prompt-type'].value = 'short-description';
+
+  context.generateAiCopyPrompt();
+
+  assert.match(elements['ai-prompt-output'].value, /Royal Caribbean:\n- Category: Large-ship ocean cruise/);
+});
+
+test('AI Copy Operator Context stays separate from factual offer data', () => {
+  const { context, elements } = createAiHarness();
+  context.offers = [{ name: 'Greek Islands', operator: 'Virgin Voyages', price: '1299', ports: 'Athens • Santorini' }];
+  elements['ai-prompt-type'].value = 'short-description';
+
+  context.generateAiCopyPrompt();
+
+  const prompt = elements['ai-prompt-output'].value;
+  assert.match(prompt, /Offer Details:\nOperator: Virgin Voyages\nTitle: Greek Islands\nPorts: Athens • Santorini[\s\S]*Price: From £1299pp\n\nOperator Context:/);
+  assert.match(prompt, /Operator Context:\nVirgin Voyages:/);
+  assert.doesNotMatch(prompt, /Offer Details:[\s\S]*Category: Adults-only lifestyle cruise[\s\S]*Operator Context:/);
+});
+
+test('AI Copy prompt action functions still generate, clear, copy and open without changing button workflows', async () => {
+  const { context, elements } = createAiHarness();
+  let openedUrl = '';
+  context.document.execCommand = command => command === 'copy';
+  elements['ai-prompt-output'].focus = () => {};
+  elements['ai-prompt-output'].select = () => {};
+  context.window.open = url => { openedUrl = url; };
+
+  context.generateAiCopyPrompt();
+  assert.ok(elements['ai-prompt-output'].value.length > 100);
+  context.clearAiCopyPrompt();
+  assert.equal(elements['ai-prompt-output'].value, '');
+  assert.equal(await context.copyAiCopyPrompt(), true);
+  assert.ok(elements['ai-prompt-output'].value.length > 100);
+  await context.openAiCopyPromptInChatGPT();
+  assert.equal(openedUrl, 'https://chatgpt.com/');
 });
 
 test('Phase 2 campaign export payload is generated and preserves campaign metadata', () => {
