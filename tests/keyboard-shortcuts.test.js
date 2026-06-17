@@ -21,8 +21,10 @@ function setup(){
       classList:{contains(name){ return name === 'collapsed' && hdr.collapsed; }}
     };
     return {
+      key,
       hdr,
       scrollIntoView(){ calls.push(['scroll',key]); },
+      contains(target){ return target && target.sectionKey === key; },
       querySelector(selector){ return selector === '.section-hdr' ? hdr : null; }
     };
   }
@@ -47,6 +49,18 @@ function setup(){
 function fire(document,key,overrides={}){
   let prevented=false;
   document.handler({key,defaultPrevented:false,metaKey:false,ctrlKey:false,shiftKey:false,altKey:false,target:{closest:()=>null},preventDefault(){prevented=true;},...overrides});
+  return prevented;
+}
+function formTarget(sectionKey){
+  return {
+    sectionKey,
+    value:'',
+    closest:selector=>selector === 'input,textarea,select,[contenteditable]'
+  };
+}
+function typeKey(document,target,key){
+  const prevented=fire(document,key,{target});
+  if(!prevented && key.length === 1) target.value += key;
   return prevented;
 }
 
@@ -106,6 +120,59 @@ test('section shortcuts toggle each sidebar section, scroll opened sections, and
     calls.length=0;
     assert.equal(fire(document,key.toUpperCase()),true);
     assert.deepEqual(calls,[['toggle','closed']]);
+  }
+});
+
+test('focused section shortcuts collapse their own open section without typing into fields', () => {
+  const {calls,document}=setup();
+  assert.equal(fire(document,'o'),true);
+  assert.deepEqual(calls.splice(-3),[['toggle','open'],['scroll','offer-details'],['focus','f-name']]);
+  const offerInput=formTarget('offer-details');
+  assert.equal(typeKey(document,offerInput,'o'),true);
+  assert.deepEqual(calls.splice(-1),[['toggle','closed']]);
+  assert.equal(offerInput.value,'');
+
+  assert.equal(fire(document,'p'),true);
+  assert.deepEqual(calls.splice(-3),[['toggle','open'],['scroll','paste-raw-offer'],['focus','raw-paste']]);
+  const pasteTextarea=formTarget('paste-raw-offer');
+  assert.equal(typeKey(document,pasteTextarea,'p'),true);
+  assert.deepEqual(calls.splice(-1),[['toggle','closed']]);
+  assert.equal(pasteTextarea.value,'');
+});
+
+test('normal typing and unrelated section shortcuts remain blocked inside form fields', () => {
+  const {calls,document}=setup();
+  fire(document,'o');
+  calls.length=0;
+  const offerInput=formTarget('offer-details');
+  for(const key of 'Caribbean') assert.equal(typeKey(document,offerInput,key),false);
+  assert.equal(offerInput.value,'Caribbean');
+  assert.deepEqual(calls,[]);
+  assert.equal(typeKey(document,offerInput,'h'),false);
+  assert.equal(typeKey(document,offerInput,'u'),false);
+  assert.equal(offerInput.value,'Caribbeanhu');
+  assert.deepEqual(calls,[]);
+
+  fire(document,'p');
+  calls.length=0;
+  const pasteTextarea=formTarget('paste-raw-offer');
+  for(const key of 'Offer text') assert.equal(typeKey(document,pasteTextarea,key),false);
+  assert.equal(pasteTextarea.value,'Offer text');
+  assert.equal(typeKey(document,pasteTextarea,'u'),false);
+  assert.equal(pasteTextarea.value,'Offer textu');
+  assert.deepEqual(calls,[]);
+});
+
+test('all section shortcuts collapse their own open section when focus is inside that section', () => {
+  const cases=[['h','hero-image'],['c','cta-assets'],['u','utm-link'],['l','campaign-library'],['i','ai-copy'],['x','export-cards']];
+  for(const [key,section] of cases){
+    const {calls,document}=setup();
+    assert.equal(fire(document,key),true);
+    calls.length=0;
+    const target=formTarget(section);
+    assert.equal(typeKey(document,target,key),true);
+    assert.deepEqual(calls,[['toggle','closed']]);
+    assert.equal(target.value,'');
   }
 });
 
