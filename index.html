@@ -1556,6 +1556,62 @@ function getAiCopyOperatorName(operatorKey){
   const config = OPERATOR_CONFIG[operatorKey || ""];
   return config && config.displayName ? config.displayName : String(operatorKey || "").trim();
 }
+const OPERATOR_INTELLIGENCE = {
+  celebrity:{name:"Celebrity Cruises",aliases:["celebrity","celebrity cruises"],officialUrl:"https://www.celebritycruises.com/gb",dawsonUrl:"https://www.dawsonandsanderson.co.uk/celebrity-cruises",category:"Premium ocean cruise",bookableStatus:"Bookable",defaultCta:"Use the existing Dawson & Sanderson cruise enquiry/booking CTA behaviour.",tone:"polished, contemporary, design-led, destination-led",guidance:"modern cruise feel, dining, stylish ships, premium experience",avoid:"old-fashioned cruise clichés, family-first language unless stated"},
+  royal:{name:"Royal Caribbean",aliases:["royal caribbean","royal caribbean international","rci","royal"],officialUrl:"https://www.royalcaribbean.com/gbr/en",dawsonUrl:"https://www.dawsonandsanderson.co.uk/royal-caribbean-international",category:"Large-ship ocean cruise",bookableStatus:"Bookable",defaultCta:"Use the existing Dawson & Sanderson cruise enquiry/booking CTA behaviour.",tone:"energetic, accessible, family-friendly where relevant",guidance:"entertainment, variety, adventure, family appeal when offer supports it",avoid:"excessive luxury wording"},
+  po:{name:"P&O Cruises",aliases:["p&o","p&o cruises","p and o","p and o cruises","po cruises"],officialUrl:"https://www.pocruises.com/",dawsonUrl:"https://www.dawsonandsanderson.co.uk/p-and-o-cruises",category:"Mainstream ocean cruise",bookableStatus:"Bookable",defaultCta:"Use the existing Dawson & Sanderson cruise enquiry/booking CTA behaviour.",tone:"clear, trusted, accessible, British-market friendly",guidance:"ease, value, familiar cruising, destination variety",avoid:"over-luxury positioning"},
+  cunard:{name:"Cunard",aliases:["cunard","cunard line"],officialUrl:"https://www.cunard.com/",dawsonUrl:"https://www.dawsonandsanderson.co.uk/cunard",category:"Heritage ocean cruise",bookableStatus:"Bookable",defaultCta:"Use the existing Dawson & Sanderson cruise enquiry/booking CTA behaviour.",tone:"refined, classic, elegant",guidance:"heritage, iconic ships, polished travel, traditional cruise style",avoid:"casual party/lifestyle language"},
+  fred:{name:"Fred. Olsen Cruise Lines",aliases:["fred olsen","fred. olsen","fred olsen cruise lines","fred. olsen cruise lines"],officialUrl:"https://www.fredolsencruises.com/",dawsonUrl:"https://www.dawsonandsanderson.co.uk/fred-olsen-cruise-lines",category:"Smaller-ship ocean cruise",bookableStatus:"Bookable",defaultCta:"Use the existing Dawson & Sanderson cruise enquiry/booking CTA behaviour.",tone:"scenic, thoughtful, destination-focused",guidance:"smaller ships, scenic cruising, classic itineraries, relaxed pace",avoid:"mega-ship entertainment language"},
+  marella:{name:"Marella Cruises",aliases:["marella","marella cruises"],officialUrl:"https://www.tui.co.uk/cruise/",dawsonUrl:"https://www.dawsonandsanderson.co.uk/marella-cruises",category:"Mainstream fly-cruise",bookableStatus:"Bookable",defaultCta:"Use the existing Dawson & Sanderson cruise enquiry/booking CTA behaviour.",tone:"simple, clear, value-led, easy",guidance:"flights, all-inclusive where stated, ease, accessible cruising",avoid:"premium/luxury overclaiming"},
+  virgin:{name:"Virgin Voyages",aliases:["virgin voyages","virgin"],officialUrl:"https://www.virginvoyages.com/",dawsonUrl:"https://www.dawsonandsanderson.co.uk/cruises",category:"Adults-only lifestyle cruise",bookableStatus:"Bookable",defaultCta:"Use the existing Dawson & Sanderson cruise enquiry/booking CTA behaviour.",tone:"modern, bold, relaxed, contemporary",guidance:"adults-only, food, lifestyle, modern cruise style where supported",avoid:"family language, traditional cruise clichés"},
+  ambassador:{name:"Ambassador Cruise Line",aliases:["ambassador","ambassador cruise line"],officialUrl:"https://www.ambassadorcruiseline.com/",dawsonUrl:"https://www.dawsonandsanderson.co.uk/ambassador-cruise-line",category:"No-fly / classic ocean cruise",bookableStatus:"Bookable",defaultCta:"Use the existing Dawson & Sanderson cruise enquiry/booking CTA behaviour.",tone:"straightforward, good-value, traditional",guidance:"regional departures, classic cruising, value",avoid:"luxury overclaiming"},
+  amawaterways:{name:"AmaWaterways",aliases:["amawaterways","ama waterways"],officialUrl:"https://www.amawaterways.co.uk/",dawsonUrl:"https://www.dawsonandsanderson.co.uk/cruises",category:"Premium river cruise",bookableStatus:"Bookable",defaultCta:"Use the existing Dawson & Sanderson cruise enquiry/booking CTA behaviour.",tone:"cultured, calm, scenic, immersive",guidance:"rivers, culture, food, slower pace, destination depth",avoid:"ocean cruise language"},
+  riviera:{name:"Riviera Travel",aliases:["riviera","riviera travel"],officialUrl:"https://www.rivieratravel.co.uk/",dawsonUrl:"",category:"Escorted tours / river cruise",bookableStatus:"Enquiry-only",defaultCta:"Use the existing Dawson & Sanderson enquiry CTA behaviour.",tone:"trusted, cultured, clear",guidance:"expertly planned itineraries, cultural discovery, ease",avoid:"vague luxury language"},
+  wendywu:{name:"Wendy Wu Tours",aliases:["wendy wu","wendy wu tours"],officialUrl:"https://www.wendywutours.co.uk/",dawsonUrl:"",category:"Escorted touring",bookableStatus:"Enquiry-only",defaultCta:"Use the existing Dawson & Sanderson enquiry CTA behaviour.",tone:"expert-led, cultural, immersive",guidance:"Asia expertise, guided touring, cultural depth",avoid:"beach holiday language"},
+  newmarket:{name:"Newmarket Holidays",aliases:["newmarket","newmarket holidays"],officialUrl:"https://www.newmarketholidays.co.uk/",dawsonUrl:"",category:"Escorted tours",bookableStatus:"Enquiry-only",defaultCta:"Use the existing Dawson & Sanderson enquiry CTA behaviour.",tone:"accessible, clear, value-conscious",guidance:"guided tours, practical itineraries, value, ease",avoid:"excessive luxury wording"},
+  tui:{name:"TUI",aliases:["tui","tui holidays"],officialUrl:"https://www.tui.co.uk/",dawsonUrl:"",category:"Package holidays",bookableStatus:"Bookable",defaultCta:"Use the existing Dawson & Sanderson booking/enquiry CTA behaviour.",tone:"clear, accessible, mainstream",guidance:"ease, trusted holidays, broad appeal",avoid:"niche/luxury positioning unless offer supports it"},
+  jet2:{name:"Jet2holidays",aliases:["jet2","jet2holidays","jet2 holidays"],officialUrl:"https://www.jet2holidays.com/",dawsonUrl:"",category:"Package holidays",bookableStatus:"Bookable",defaultCta:"Use the existing Dawson & Sanderson booking/enquiry CTA behaviour.",tone:"clear, friendly, value-led, trusted",guidance:"flights, package ease, ATOL-style reassurance where appropriate",avoid:"overcomplicated editorial copy"}
+};
+function normaliseAiOperatorText(value){
+  return String(value || "").toLowerCase().replace(/&/g," and ").replace(/[^a-z0-9]+/g," ").replace(/\s+/g," ").trim();
+}
+function getOperatorIntelligence(operator){
+  const raw = String(operator || "").trim();
+  if(!raw) return null;
+  const configKey = OPERATOR_CONFIG[raw] ? raw : "";
+  const detectedKey = configKey || (typeof detectOperatorKey === "function" ? detectOperatorKey(raw) : "");
+  if(detectedKey && OPERATOR_INTELLIGENCE[detectedKey]) return OPERATOR_INTELLIGENCE[detectedKey];
+  const text = normaliseAiOperatorText(raw);
+  return Object.values(OPERATOR_INTELLIGENCE).find(record=>{
+    if(normaliseAiOperatorText(record.name)===text) return true;
+    return (record.aliases || []).some(alias=>{
+      const cleanAlias = normaliseAiOperatorText(alias);
+      return cleanAlias && (text===cleanAlias || text.includes(cleanAlias));
+    });
+  }) || null;
+}
+function buildOperatorContextSection(records){
+  const unique=[];
+  (records || []).forEach(record=>{
+    if(record && !unique.some(item=>item.name===record.name)) unique.push(record);
+  });
+  if(!unique.length) return "";
+  const blocks=unique.map(record=>[
+    `${record.name}:`,
+    `- Category: ${record.category}`,
+    `- Tone: ${record.tone}`,
+    `- Guidance: ${record.guidance}`,
+    `- Avoid: ${record.avoid}`
+  ].join("\n"));
+  return ["Operator Context:",...blocks,"","Use operator context for tone and positioning only. Use only the loaded offer data for factual details."].join("\n");
+}
+function buildAiCopyCampaignOperatorContext(){
+  const records=(offers||[]).filter(isAiCopyLoadedOffer).map(offer=>getOperatorIntelligence(offer.operator)).filter(Boolean);
+  return buildOperatorContextSection(records);
+}
+function buildAiCopyOfferOperatorContext(offer){
+  return buildOperatorContextSection([getOperatorIntelligence((offer||{}).operator)].filter(Boolean));
+}
 function getAiCopySelectedOffer(){
   try { save(); } catch(e) {}
   return offers[cur] || {};
@@ -1636,10 +1692,12 @@ function generateAiCopyPrompt(){
   try { save(); } catch(e) {}
   const output=document.getElementById("ai-prompt-output");
   const status=document.getElementById("ai-prompt-copy-status");
+  const selectedOffer=getAiCopySelectedOffer();
   const context=isAiCopyCampaignPrompt(type)
     ? buildAiCopyCampaignPromptDetails()
-    : ["Offer Details:",buildAiCopyOfferDetails(getAiCopySelectedOffer(),{includeDepartureAirport:true}).join("\n") || "No offer details have been loaded yet."].join("\n");
-  const prompt=[getAiCopyTask(type),"","Tone:",tone,"",context,"","Return the copy only, clearly labelled where helpful."].join("\n");
+    : ["Offer Details:",buildAiCopyOfferDetails(selectedOffer,{includeDepartureAirport:true}).join("\n") || "No offer details have been loaded yet."].join("\n");
+  const operatorContext=isAiCopyCampaignPrompt(type) ? buildAiCopyCampaignOperatorContext() : buildAiCopyOfferOperatorContext(selectedOffer);
+  const prompt=[getAiCopyTask(type),"","Tone:",tone,"",context,operatorContext ? `\n${operatorContext}` : "","","Return the copy only, clearly labelled where helpful."].join("\n");
   if(output) output.value=prompt;
   if(status) status.textContent="";
 }
