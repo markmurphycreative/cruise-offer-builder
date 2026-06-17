@@ -62,8 +62,11 @@ test('offer selector tiles include native lock toggles and locked styling', () =
   for (const index of [0, 1, 2, 3]) {
     assert.match(html, new RegExp(`id="lock-toggle-${index}"[\\s\\S]*?toggleOfferLockFromTile\\(event,${index}\\)`));
   }
-  assert.match(html, /\.offer-lock-toggle\.locked\{[^}]*var\(--gold\)/);
-  assert.match(html, /\.otab\.offer-locked \.offer-tab-number::after\{content:" · Locked"/);
+  assert.match(html, /\.offer-lock-toggle\{[^}]*width:14px[^}]*background:transparent/);
+  assert.match(html, /\.offer-lock-toggle\.locked\{[^}]*rgba\(154,64,64,/);
+  assert.doesNotMatch(html, /\.otab\.offer-locked \.offer-tab-number::after\{content:" · Locked"/);
+  assert.match(html, /lock-icon-open/);
+  assert.match(html, /lock-icon-locked/);
 });
 
 test('locked offer blocks paste offer while unlocking restores parse apply', () => {
