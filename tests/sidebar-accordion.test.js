@@ -71,15 +71,14 @@ test('CSV Import alone receives the primary navy header treatment with white con
   assert.doesNotMatch(html, /\.section:not\(\.csv-core-section\) \.section-hdr\{background:var\(--navy\);\}/);
 });
 
-test('the expanded sidebar header receives the subtle palette-based highlight without layout changes', () => {
+test('the expanded sidebar header receives the subtle builder-blue accent without layout or background changes', () => {
   const rule = extract(/\.section-hdr:not\(\.collapsed\)\{[^}]+\}/, 'expanded sidebar header highlight');
-  assert.match(rule, /background:rgba\(160,146,103,\.10\)/);
-  assert.match(rule, /box-shadow:inset 4px 0 0 var\(--gold\)/);
-  assert.doesNotMatch(rule, /(?:padding|margin|border(?:-width)?|height):/);
+  assert.match(rule, /box-shadow:inset 4px 0 0 var\(--builder-blue\)/);
+  assert.doesNotMatch(rule, /(?:background|padding|margin|border(?:-width)?|height):/);
 });
 
-test('the expanded sidebar header tints the icon and chevron gold', () => {
-  assert.match(html, /\.section-hdr:not\(\.collapsed\) \.section-icon\{color:var\(--gold\);\}/);
+test('the expanded sidebar header makes the icon more prominent and tints the icon and chevron gold', () => {
+  assert.match(html, /\.section-hdr:not\(\.collapsed\) \.section-icon\{color:var\(--gold\);stroke-width:2\.25;\}/);
   assert.match(html, /\.section-hdr:not\(\.collapsed\) \.section-toggle\{color:var\(--gold\);\}/);
 });
 
