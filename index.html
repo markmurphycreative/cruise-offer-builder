@@ -183,6 +183,14 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .offer-intel-item.detected .offer-intel-icon{color:var(--green);}
 .offer-intel-item.missing .offer-intel-icon{color:var(--amber);}
 .offer-intel-item.suggestion .offer-intel-icon{color:var(--builder-blue);}
+.poa-suggestion-card{border:1px solid var(--border);border-radius:var(--radius);padding:6px;background:#fafaf8;display:grid;gap:5px;}
+.poa-suggestion-card:hover{border-color:var(--gold);}
+.poa-suggestion-title{display:flex;gap:5px;align-items:center;font-size:9px;font-weight:700;color:var(--navy);}
+.poa-suggestion-values{font-size:10px;line-height:1.35;color:var(--text);}
+.poa-suggestion-target{font-size:8px;line-height:1.35;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;}
+.poa-suggestion-actions{display:flex;justify-content:flex-start;}
+.poa-suggestion-actions .abtn[disabled]{opacity:.65;cursor:default;}
+.field.poa-target-highlight input,.field.poa-target-highlight textarea{border-color:var(--gold);box-shadow:0 0 0 2px rgba(160,146,103,.14);background:#fff;}
 .offer-intel-empty{font-size:9px;color:var(--muted);line-height:1.35;}
 
 /* ── OPERATOR ── */
@@ -846,9 +854,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
           <div class="field"><label>Ship Name</label><input id="f-ship" spellcheck="true" placeholder="Arvia" oninput="up()"></div>
         </div>
         <div class="spell-warn" id="spell-warn-name"></div>
-        <div class="field"><label>Top Bar USP Text</label><input id="f-tags" spellcheck="true" placeholder="Adult Only Options · Cuisine · Entertainment · Family" oninput="up()"></div>
+        <div class="field" id="field-tags"><label>Top Bar USP Text</label><input id="f-tags" spellcheck="true" placeholder="Adult Only Options · Cuisine · Entertainment · Family" oninput="up()"></div>
         <div class="spell-warn" id="spell-warn-tags"></div>
-        <div class="field"><label>Inclusions</label><input id="f-incl" spellcheck="true" placeholder="Newcastle Flights, Luggage &amp; Transfers Included" oninput="up()"></div>
+        <div class="field" id="field-incl"><label>Inclusions</label><input id="f-incl" spellcheck="true" placeholder="Newcastle Flights, Luggage &amp; Transfers Included" oninput="up()"></div>
+        <div class="field" id="field-theme_tags"><label>Theme Tags</label><input id="f-theme_tags" spellcheck="true" placeholder="Luxury · Scenic Cruising · Norwegian Fjords" oninput="up()"></div>
         <div class="fg2">
           <div class="field"><label>Price (£)</label><input id="f-price" placeholder="1669" oninput="up()"></div>
           <div class="field"><label>Price Basis</label><input id="f-basis" placeholder="Based On 2 Adults Sharing" oninput="up()"></div>
@@ -1762,9 +1771,10 @@ let cur = 0, viewMode = "all", zoomPct = 32;
 let lockedOffers = [false,false,false,false];
 let lockedHeroImages = [false,false,false,false];
 let safeZoneOn = false, exportRunning = false;
-const FLDS = ["tags","name","ship","incl","price","basis","board","boardlbl","day","month","nights","ports","url","utm_content"];
+const FLDS = ["tags","theme_tags","name","ship","incl","price","basis","board","boardlbl","day","month","nights","ports","url","utm_content"];
 const CTA_DEFAULTS = {enabled:false,text:"Click To Call Us For More Info",phone:"01912229701"};
 let ctaSettings = {...CTA_DEFAULTS};
+let poaAppliedSuggestions = {};
 
 // ═══════════════════════════════════════════════════════
 // SECTION TOGGLE
@@ -5233,6 +5243,7 @@ function resetPasteOfferState(){
   cancelParsedOffer();
 }
 function parseOffer(){
+  resetPoaSuggestionState();
   const raw=(document.getElementById("raw-paste")||{}).value||""; if(!raw.trim()) return setParseStatus("Nothing to parse","low");
   const lines=raw.split(/\n/).map(l=>l.trim()).filter(Boolean); const txt=lines.join(" \n "); const parsed={}; let score=0;
   const earlyShipMatch=findKnownOperatorShip(txt);
@@ -5405,6 +5416,73 @@ function getOfferIntelligenceCopyThemes(parsed,rawText,effectiveOperator){
   if(/\bRiver Cruising\b/.test(themes.join(" "))) themes.unshift("Culture");
   return themes.filter((theme,index,self)=>self.indexOf(theme)===index).slice(0,3);
 }
+
+function getPoaCardInclusionSuggestion(inclusions){
+  const labels={"Flights Included":"Flights","Luggage Included":"Luggage","Transfers Included":"Transfers"};
+  const detected=(inclusions||[]).filter(label=>labels[label]);
+  if(!detected.length) return "";
+  if(detected.length===1) return detected[0];
+  return `${joinOfferIntelligenceSuggestionParts(detected.map(label=>labels[label]))} Included`;
+}
+function getPoaUspStripSuggestion(inclusions){
+  const priority=[
+    ["Wi-Fi Included","Wi-Fi Included"],
+    ["Drinks Package Included","Drinks Package Included"],
+    ["Onboard Spend Included","Onboard Spend"],
+    ["Gratuities Included","Gratuities Included"],
+    ["Speciality Dining Included","Speciality Dining"],
+    ["Hotel Stay Included","Hotel Stay Included"],
+    ["Rail Included","Rail Included"],
+    ["Balcony Cabin Included","Balcony Cabin"],
+    ["Cabin Upgrade Included","Suite"],
+    ["Shore Excursions Included","All Inclusive"]
+  ];
+  const set=new Set(inclusions||[]);
+  return priority.filter(([label])=>set.has(label)).slice(0,3).map(([,display])=>display).join(" • ");
+}
+function getPoaThemeTagSuggestion(parsed,rawText,effectiveOperator){
+  return getOfferIntelligenceCopyThemes(parsed,rawText,effectiveOperator).map(theme=>theme==="Norway"?"Norwegian Fjords":theme);
+}
+
+function resetPoaSuggestionState(){ poaAppliedSuggestions={}; clearPoaSuggestionHighlights(); }
+function clearPoaSuggestionHighlights(){ if(!document.querySelectorAll) return; document.querySelectorAll(".poa-target-highlight").forEach(el=>el.classList.remove("poa-target-highlight")); }
+function setPoaSuggestionHighlight(fieldKey,on){
+  const target=document.getElementById(`field-${fieldKey}`);
+  if(target) target.classList.toggle("poa-target-highlight",!!on);
+}
+function getPoaAssistedApplySuggestions(parsed,rawText,inclusions,effectiveOperator){
+  const suggestions=[];
+  const card=getPoaCardInclusionSuggestion(inclusions);
+  if(card) suggestions.push({id:"card-inclusion",title:"Card Inclusion",value:card,targetLabel:"Card Inclusion Line",fieldKey:"incl",fieldId:"f-incl"});
+  const usp=getPoaUspStripSuggestion(inclusions);
+  if(usp) suggestions.push({id:"usp-strip",title:"USP Strip",value:usp,targetLabel:"USP Tags",fieldKey:"tags",fieldId:"f-tags"});
+  const themes=getPoaThemeTagSuggestion(parsed,rawText,effectiveOperator);
+  if(themes.length) suggestions.push({id:"theme-tags",title:"Theme Tags",value:themes.join(" · "),targetLabel:"Theme Tags",fieldKey:"theme_tags",fieldId:"f-theme_tags"});
+  return suggestions;
+}
+function renderPoaAssistedApplySuggestions(suggestions){
+  if(!suggestions||!suggestions.length) return "";
+  const cards=suggestions.map(s=>{
+    const applied=!!poaAppliedSuggestions[s.id];
+    return `<div class="poa-suggestion-card" onmouseenter="setPoaSuggestionHighlight('${s.fieldKey}',true)" onmouseleave="setPoaSuggestionHighlight('${s.fieldKey}',false)"><div class="poa-suggestion-title"><span class="offer-intel-icon">💡</span><span>${s.title}</span></div><div class="poa-suggestion-values">${String(s.value).split(" · ").join("<br>")}</div><div class="poa-suggestion-target">Updates:<br>${s.targetLabel}</div><div class="poa-suggestion-actions"><button class="abtn btn-compact" type="button" onclick="applyPoaSuggestion('${s.id}')" ${applied?"disabled":""}>${applied?"✓ Applied":"Apply"}</button></div></div>`;
+  }).join("");
+  return `<div class="offer-intel-section"><div class="offer-intel-heading">POA Suggestions</div><div class="offer-intel-list">${cards}</div></div>`;
+}
+function applyPoaSuggestion(id){
+  if(poaAppliedSuggestions[id]||!window.currentPoaSuggestions) return;
+  const suggestion=window.currentPoaSuggestions.find(item=>item.id===id);
+  if(!suggestion) return;
+  const input=document.getElementById(suggestion.fieldId);
+  if(!input) return;
+  input.value=suggestion.value;
+  if(!offers[cur]) offers[cur]={};
+  offers[cur][suggestion.fieldKey]=suggestion.value;
+  poaAppliedSuggestions[id]=true;
+  clearPoaSuggestionHighlights();
+  up();
+  renderOfferIntelligencePanel(window.currentPoaParsed||{},window.currentPoaRawText||"");
+}
+
 function getOfferIntelligenceQualityScore(parsed,rawText,effectiveOperator){
   const p=parsed||{};
   const checks=[
@@ -5434,6 +5512,7 @@ function getOfferIntelligenceActionSuggestions(parsed,rawText,inclusions,effecti
   return actions;
 }
 function clearOfferIntelligencePanel(){
+  if(typeof resetPoaSuggestionState==="function") resetPoaSuggestionState(); if(typeof window!=="undefined") window.currentPoaSuggestions=[];
   const panel=document.getElementById("offer-intel-panel");
   if(!panel) return;
   panel.innerHTML="";
@@ -5504,11 +5583,14 @@ function renderOfferIntelligencePanel(parsed,rawText){
     if(shipOperator&&!p.operatorKey){ const name=(OPERATOR_HEADERS[shipOperator.operatorKey]||{}).name; if(name) suggestions.push(`Operator inferred from ship: ${name}`); }
     getOfferIntelligenceCruiseTypes(p,rawText,effectiveOperator).forEach(type=>suggestions.push(type));
     const actionSuggestions=getOfferIntelligenceActionSuggestions(p,rawText,inclusions,effectiveOperator);
+    const poaSuggestions=typeof getPoaAssistedApplySuggestions==="function"?getPoaAssistedApplySuggestions(p,rawText,inclusions,effectiveOperator):[];
+    if(typeof window!=="undefined"){ window.currentPoaSuggestions=poaSuggestions; window.currentPoaParsed=p; window.currentPoaRawText=rawText; }
     const item=(kind,icon,label)=>`<div class="offer-intel-item ${kind}"><span class="offer-intel-icon">${icon}</span><span>${label}</span></div>`;
     const section=(heading,html,empty="")=>`<div class="offer-intel-section"><div class="offer-intel-heading">${heading}</div><div class="offer-intel-list">${html||`<div class="offer-intel-empty">${empty}</div>`}</div></div>`;
     panel.innerHTML=`<div class="offer-intel-title">Offer Intelligence</div>`+
       section("Detected",detected.map(label=>item("detected","✓",label)).join(""),"No core fields detected yet.")+
       (cruiseKnowledge.length?section("Cruise Knowledge",cruiseKnowledge.map(label=>item("detected","✓",label)).join("")):"")+
+      (typeof renderPoaAssistedApplySuggestions==="function"?renderPoaAssistedApplySuggestions(poaSuggestions):"")+
       (inclusions.length?section("Inclusions Detected",inclusions.map(label=>item("detected","✓",label)).join("")):"")+
       (actionSuggestions.length?section("Offer Intelligence",actionSuggestions.map(label=>item("suggestion","💡",label)).join("")):"")+
       section("Suggestions / Missing Information",missing.map(label=>item("missing","⚠",label)).concat(suggestions.map(label=>item("suggestion","💡",label))).join(""),"No suggestions or missing fields.");
@@ -6004,6 +6086,7 @@ function rv(skipSave){
 }
 
 function sv(i){
+  resetPoaSuggestionState();
   saveEditorToOffer();
   cur=Number(i);
   document.querySelectorAll('.otab').forEach((t,idx)=>t.classList.toggle('active',idx===cur));
@@ -6033,6 +6116,7 @@ function up(){
 }
 
 function load(i){
+  resetPoaSuggestionState();
   cur=Number(i)||0;
   loadOfferToEditor(cur);
   genUtm();
