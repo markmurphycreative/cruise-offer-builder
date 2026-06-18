@@ -5249,6 +5249,36 @@ function getOfferIntelligenceCruiseTypes(parsed,rawText,operatorKey){
   if(/family|kids'?\s+clubs?|children/i.test(text)||["royal","msc","ncl","po","princess"].includes(operatorKey)) add("Family Friendly");
   return types;
 }
+
+function getOfferIntelligenceCruiseKnowledge(parsed,rawText){
+  const p=parsed||{};
+  const shipOperator=getOfferIntelligenceShipOperator(p.ship);
+  const operatorKey=p.operatorKey||(shipOperator&&shipOperator.operatorKey)||"";
+  if(!operatorKey) return [];
+  const knowledge={
+    po:{operator:"P&O Cruises",cruiseType:"Ocean Cruise",audience:"Family Friendly"},
+    royal:{operator:"Royal Caribbean",cruiseType:"Ocean Cruise",audience:"Family Friendly"},
+    msc:{operator:"MSC Cruises",cruiseType:"Ocean Cruise",audience:"Family Friendly"},
+    celebrity:{operator:"Celebrity Cruises",cruiseType:"Ocean Cruise",audience:"Premium"},
+    cunard:{operator:"Cunard",cruiseType:"Ocean Cruise",audience:"Premium"},
+    virgin:{operator:"Virgin Voyages",cruiseType:"Ocean Cruise",audience:"Adults Only"},
+    fred:{operator:"Fred. Olsen",cruiseType:"Ocean Cruise",audience:"Traditional"},
+    marella:{operator:"Marella Cruises",cruiseType:"Ocean Cruise",audience:"Mainstream"},
+    amawaterways:{operator:"AmaWaterways",cruiseType:"River Cruise",audience:"Premium"},
+    riviera:{operator:"Riviera Travel",cruiseType:"River Cruise",audience:"Premium"},
+    ambassador:{operator:"Ambassador",cruiseType:"Ocean Cruise",audience:"Traditional"}
+  };
+  const record=knowledge[operatorKey];
+  if(!record) return [];
+  const intelligence=(OPERATOR_INTELLIGENCE&&OPERATOR_INTELLIGENCE[operatorKey])||{};
+  const operator=record.operator||intelligence.name||((OPERATOR_HEADERS[operatorKey]||{}).name)||operatorKey;
+  return [
+    `Operator: ${operator}`,
+    `Cruise Type: ${record.cruiseType}`,
+    `Audience: ${record.audience}`
+  ];
+}
+
 function detectOfferIntelligenceInclusions(parsed,rawText){
   const text=[rawText,parsed&&parsed.incl].filter(Boolean).join(" ");
   const checks=[
@@ -5317,6 +5347,7 @@ function renderOfferIntelligencePanel(parsed,rawText){
     const detected=detectedInfo.fields;
     const airport=detectedInfo.airport;
     const inclusions=detectOfferIntelligenceInclusions(p,rawText);
+    const cruiseKnowledge=getOfferIntelligenceCruiseKnowledge(p,rawText);
     const missing=[];
     if(!p.ship) missing.push("Ship not detected");
     if(!(p.boardlbl||p.board)) missing.push("Board Basis not detected");
@@ -5331,6 +5362,7 @@ function renderOfferIntelligencePanel(parsed,rawText){
     const section=(heading,html,empty="")=>`<div class="offer-intel-section"><div class="offer-intel-heading">${heading}</div><div class="offer-intel-list">${html||`<div class="offer-intel-empty">${empty}</div>`}</div></div>`;
     panel.innerHTML=`<div class="offer-intel-title">Offer Intelligence</div>`+
       section("Detected",detected.map(label=>item("detected","✓",label)).join(""),"No core fields detected yet.")+
+      (cruiseKnowledge.length?section("Cruise Knowledge",cruiseKnowledge.map(label=>item("detected","✓",label)).join("")):"")+
       (inclusions.length?section("Inclusions Detected",inclusions.map(label=>item("detected","✓",label)).join("")):"")+
       section("Suggestions / Missing Information",missing.map(label=>item("missing","⚠",label)).concat(suggestions.map(label=>item("suggestion","💡",label))).join(""),"No suggestions or missing fields.");
     panel.classList.add("active");

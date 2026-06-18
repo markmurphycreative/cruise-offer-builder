@@ -32,9 +32,9 @@ function createHarness() {
     document: { getElementById(id) { return id === 'offer-intel-panel' ? panel : null; } },
     console: { warn() {} },
     AIRPORT_WORDS: ['newcastle', 'manchester'],
-    OPERATOR_SHIPS: { po: ['Arvia'], cunard: ['Queen Anne'], fred: ['Bolette'] },
-    OPERATOR_HEADERS: { po: { name: 'P&O Cruises' }, cunard: { name: 'Cunard' }, fred: { name: 'Fred. Olsen Cruise Lines' } },
-    OPERATOR_INTELLIGENCE: { po: { category: 'Mainstream ocean cruise', dawsonUrl: 'https://example.test/po' }, cunard: { category: 'Heritage ocean cruise', dawsonUrl: 'https://example.test/cunard' } },
+    OPERATOR_SHIPS: { po: ['Arvia'], cunard: ['Queen Anne'], fred: ['Bolette'], virgin: ['Scarlet Lady'], msc: ['MSC Virtuosa'] },
+    OPERATOR_HEADERS: { po: { name: 'P&O Cruises' }, cunard: { name: 'Cunard' }, fred: { name: 'Fred. Olsen Cruise Lines' }, virgin: { name: 'Virgin Voyages' }, msc: { name: 'MSC Cruises' } },
+    OPERATOR_INTELLIGENCE: { po: { name: 'P&O Cruises', category: 'Mainstream ocean cruise', dawsonUrl: 'https://example.test/po' }, cunard: { name: 'Cunard', category: 'Heritage ocean cruise', dawsonUrl: 'https://example.test/cunard' }, virgin: { name: 'Virgin Voyages', category: 'Adults-only lifestyle cruise' }, msc: { name: 'MSC Cruises', category: 'Mainstream ocean cruise' } },
     getOperatorLandingUrl(key) { return key === 'po' ? 'https://example.test/po' : ''; }
   };
   vm.createContext(context);
@@ -42,6 +42,7 @@ function createHarness() {
     extractFunction('escapeRegExp'),
     extractFunction('getOfferIntelligenceShipOperator'),
     extractFunction('getOfferIntelligenceCruiseTypes'),
+    extractFunction('getOfferIntelligenceCruiseKnowledge'),
     extractFunction('detectOfferIntelligenceInclusions'),
     extractFunction('clearOfferIntelligencePanel'),
     extractFunction('getOfferIntelligenceDetectedFields'),
@@ -103,4 +104,25 @@ test('Offer Intelligence summary counts detected panel fields using simple confi
 
   const low = vm.runInContext('getOfferIntelligenceSummary(parsed, raw);', Object.assign(context, { parsed: { price: '999' }, raw: '' }));
   assert.deepEqual(JSON.parse(JSON.stringify(low)), { count: 1, label: 'Needs Review', level: 'low' });
+});
+
+test('Offer Intelligence shows compact cruise knowledge for known ship matches without mutating parsed data', () => {
+  const { context, panel } = createHarness();
+  const parsed = { ship: 'Scarlet Lady', price: '999' };
+  vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, { parsed, raw: 'Scarlet Lady from Barcelona' }));
+
+  assert.equal(parsed.operatorKey, undefined);
+  assert.match(panel.innerHTML, /Cruise Knowledge/);
+  assert.match(panel.innerHTML, /Operator: Virgin Voyages/);
+  assert.match(panel.innerHTML, /Cruise Type: Ocean Cruise/);
+  assert.match(panel.innerHTML, /Audience: Adults Only/);
+});
+
+test('Offer Intelligence hides cruise knowledge when no confident operator or ship exists', () => {
+  const { context, panel } = createHarness();
+  vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, { parsed: { ship: 'Mystery Ship', price: '999' }, raw: 'Mystery Ship £999pp' }));
+
+  assert.doesNotMatch(panel.innerHTML, /Cruise Knowledge/);
+  assert.doesNotMatch(panel.innerHTML, /Cruise Type:/);
+  assert.doesNotMatch(panel.innerHTML, /Audience:/);
 });
