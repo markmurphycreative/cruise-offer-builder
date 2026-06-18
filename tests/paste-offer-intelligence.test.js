@@ -52,6 +52,12 @@ function createHarness() {
     extractFunction('getOfferIntelligenceCruiseKnowledge'),
     extractFunction('hasOfferIntelligenceNegativeContext'),
     extractFunction('detectOfferIntelligenceInclusions'),
+    extractFunction('joinOfferIntelligenceSuggestionParts'),
+    extractFunction('getOfferIntelligenceCardInclusionSuggestion'),
+    extractFunction('getOfferIntelligenceUspStripSuggestion'),
+    extractFunction('getOfferIntelligenceCopyThemes'),
+    extractFunction('getOfferIntelligenceQualityScore'),
+    extractFunction('getOfferIntelligenceActionSuggestions'),
     extractFunction('clearOfferIntelligencePanel'),
     extractFunction('formatOfferIntelligencePorts'),
     extractFunction('getOfferIntelligenceDetectedFields'),
@@ -74,6 +80,9 @@ test('Offer Intelligence infers known ship operators without changing parsed dat
   assert.match(panel.innerHTML, /Transfers Included/);
   assert.match(panel.innerHTML, /Departure Airport: Newcastle/);
   assert.match(panel.innerHTML, /Cabin Type: Inside Cabin/);
+  assert.match(panel.innerHTML, /Offer Intelligence/);
+  assert.match(panel.innerHTML, /💡<\/span><span>Card Inclusion: Flights, Luggage &amp; Transfers Included|💡<\/span><span>Card Inclusion: Flights, Luggage & Transfers Included/);
+  assert.match(panel.innerHTML, /Offer Quality: Good/);
   assert.match(panel.innerHTML, /Cruise Title: Caribbean Escape/);
   assert.match(panel.innerHTML, /Ship: Arvia/);
   assert.match(panel.innerHTML, /Nights: 14/);
@@ -81,6 +90,33 @@ test('Offer Intelligence infers known ship operators without changing parsed dat
   assert.match(panel.innerHTML, /Price: £1669pp/);
   assert.doesNotMatch(panel.innerHTML, /Operator USPs Available/);
   assert.doesNotMatch(panel.innerHTML, /Landing Page Available/);
+});
+
+test('Offer Intelligence actions suggest compact card inclusion and USP strip lines without mutating data', () => {
+  const { context, panel } = createHarness();
+  const parsed = { operatorKey: 'msc', name: 'Mediterranean Discovery', ship: 'MSC Virtuosa', day: '12', month: 'June 2027', nights: '7', boardlbl: 'Full Board', price: '999', ports: 'Barcelona • Rome • Palma' };
+  const raw = 'Mediterranean Discovery\nDrinks package included\nWi-Fi included\nOnboard spend included';
+
+  vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, { parsed, raw }));
+
+  assert.equal(parsed.incl, undefined);
+  assert.match(panel.innerHTML, /Card Inclusion: Drinks, Wi-Fi &amp; Onboard Spend Included|Card Inclusion: Drinks, Wi-Fi & Onboard Spend Included/);
+  assert.match(panel.innerHTML, /Suggested USP Strip: Onboard Spend • Drinks Package • Wi-Fi/);
+  assert.match(panel.innerHTML, /Copy Themes: Family • Mediterranean • Entertainment/);
+  assert.match(panel.innerHTML, /Offer Quality: Excellent/);
+});
+
+test('Offer Intelligence copy themes stay theme-only and support premium, adults-only and river signals', () => {
+  const { context } = createHarness();
+
+  const fjords = vm.runInContext('getOfferIntelligenceCopyThemes(parsed, raw, "cunard");', Object.assign(context, { parsed: { operatorKey: 'cunard', name: 'Norwegian Fjords', ship: 'Queen Anne', ports: 'Southampton • Bergen • Olden' }, raw: 'Norwegian Fjords' }));
+  assert.deepEqual(JSON.parse(JSON.stringify(fjords)), ['Luxury', 'Scenic Cruising', 'Norway']);
+
+  const virgin = vm.runInContext('getOfferIntelligenceCopyThemes(parsed, raw, "virgin");', Object.assign(context, { parsed: { operatorKey: 'virgin', ship: 'Scarlet Lady', ports: 'Barcelona • Ibiza' }, raw: 'Scarlet Lady adults only Mediterranean' }));
+  assert.deepEqual(JSON.parse(JSON.stringify(virgin)), ['Adults Only', 'Mediterranean', 'Lifestyle']);
+
+  const river = vm.runInContext('getOfferIntelligenceCopyThemes(parsed, raw, "amawaterways");', Object.assign(context, { parsed: { operatorKey: 'amawaterways', ship: 'AmaSerena', ports: 'Budapest • Vienna' }, raw: 'AmaSerena River Cruise Europe' }));
+  assert.deepEqual(JSON.parse(JSON.stringify(river)), ['Culture', 'River Cruising', 'Europe']);
 });
 
 
