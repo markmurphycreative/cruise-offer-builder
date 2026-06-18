@@ -44,11 +44,15 @@ function createHarness() {
     extractFunction('escapeRegExp'),
     extractFunction('getOfferIntelligenceShipOperator'),
     extractFunction('findKnownOperatorShip'),
+    extractFunction('normalisePortComparisonValue'),
+    extractFunction('isExcludedParsedPort'),
+    extractFunction('isStandalonePortCandidate'),
     extractFunction('getStandalonePortLines'),
     extractFunction('getOfferIntelligenceCruiseTypes'),
     extractFunction('getOfferIntelligenceCruiseKnowledge'),
     extractFunction('detectOfferIntelligenceInclusions'),
     extractFunction('clearOfferIntelligencePanel'),
+    extractFunction('formatOfferIntelligencePorts'),
     extractFunction('getOfferIntelligenceDetectedFields'),
     extractFunction('getOfferIntelligenceSummary'),
     extractFunction('renderOfferIntelligencePanel')
@@ -97,7 +101,7 @@ test('Offer Intelligence infers Queen Anne as Cunard premium knowledge only', ()
   assert.doesNotMatch(panel.innerHTML, /Family Friendly/);
 });
 
-test('Offer Intelligence detects standalone port lines without exposing each port in panel', () => {
+test('Offer Intelligence detects standalone port lines and displays them compactly in panel', () => {
   const { context, panel } = createHarness();
   const raw = 'Queen Anne\nSouthampton\nStavanger\nOlden\nGeiranger\nBergen\nSouthampton';
   const portLines = vm.runInContext('getStandalonePortLines(raw.split(/\\n/));', Object.assign(context, { raw }));
@@ -105,8 +109,8 @@ test('Offer Intelligence detects standalone port lines without exposing each por
   assert.deepEqual(JSON.parse(JSON.stringify(portLines)), ['Southampton', 'Stavanger', 'Olden', 'Geiranger', 'Bergen', 'Southampton']);
   vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, { parsed: { ship: 'Queen Anne', ports: portLines.join(' • ') }, raw }));
 
-  assert.match(panel.innerHTML, /You’ll Visit Ports: Detected/);
-  assert.doesNotMatch(panel.innerHTML, /Stavanger • Olden/);
+  assert.match(panel.innerHTML, /You’ll Visit Ports: Southampton · Stavanger · Olden · Geiranger · Bergen · Southampton/);
+  assert.doesNotMatch(panel.innerHTML, /You’ll Visit Ports: Detected/);
 });
 
 test('Known ship inference remains exact and avoids generic or ambiguous matches', () => {
@@ -140,7 +144,7 @@ test('Offer Intelligence reports missing fields and avoids false operator matche
 test('Offer Intelligence shows ports detection only when parsed ports exist', () => {
   const { context, panel } = createHarness();
   vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, { parsed: { ports: 'Barbados • Martinique' }, raw: 'Barbados • Martinique' }));
-  assert.match(panel.innerHTML, /You’ll Visit Ports: Detected/g);
+  assert.match(panel.innerHTML, /You’ll Visit Ports: Barbados · Martinique/g);
 
   vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, { parsed: { price: '999' }, raw: '£999pp' }));
   assert.doesNotMatch(panel.innerHTML, /You’ll Visit Ports: Detected/);

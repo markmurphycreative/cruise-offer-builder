@@ -120,9 +120,9 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     },
     isOfferLoaded: offer => !!(offer && (offer.name || offer.ship || offer.price || offer._img)),
     BOARD_MAP: { FB: ['FB', 'Full Board'], 'FULL BOARD': ['FB', 'Full Board'] },
-    OPERATOR_HEADERS: { cunard: { name: 'Cunard' }, ncl: { name: 'Norwegian Cruise Line' } },
-    OPERATOR_SHIPS: { celebrity: ['Celebrity Ascent'], amawaterways: ['AmaBella', 'AmaDouro', 'AmaMagna', 'Zambezi Queen'], cunard: ['Queen Anne'], ncl: ['Norwegian Prima', 'Pride of America'] },
-    OPERATOR_ALIASES: { celebrity: [/\bcelebrity\b/i, /\bcelebrity\s+cruises\b/i], cunard: [/\bcunard\b/i], ncl: [/\bnorwegian\s+cruise\s+line\b/i, /\bncl\b/i] },
+    OPERATOR_HEADERS: { cunard: { name: 'Cunard' }, ncl: { name: 'Norwegian Cruise Line' }, po: { name: 'P&O Cruises' } },
+    OPERATOR_SHIPS: { celebrity: ['Celebrity Ascent'], amawaterways: ['AmaBella', 'AmaDouro', 'AmaMagna', 'Zambezi Queen'], cunard: ['Queen Anne'], ncl: ['Norwegian Prima', 'Pride of America'], po: ['Arvia'] },
+    OPERATOR_ALIASES: { celebrity: [/\bcelebrity\b/i, /\bcelebrity\s+cruises\b/i], cunard: [/\bcunard\b/i], ncl: [/\bnorwegian\s+cruise\s+line\b/i, /\bncl\b/i], po: [/\bp\s*&\s*o\b/i, /\bp&o\s+cruises\b/i] },
     AIRPORT_WORDS: ['newcastle'],
     getLikelyTypos() { return []; },
     setSpellWarn() {},
@@ -147,6 +147,9 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('normaliseUspTagText'),
     extractFunction('inferUspTagsFromLines'),
     extractFunction('getItineraryLines'),
+    extractFunction('normalisePortComparisonValue'),
+    extractFunction('isExcludedParsedPort'),
+    extractFunction('isStandalonePortCandidate'),
     extractFunction('cleanParsedPorts'),
     extractFunction('escapeRegExp'),
     extractFunction('findKnownOperatorShip'),
@@ -386,6 +389,58 @@ Full Board
   assert.equal(harness.context.offers[0].operator, 'cunard');
   assert.equal(harness.context.offers[0].ship, 'Queen Anne');
   assert.notEqual(harness.context.offers[0].operator, 'ncl');
+});
+
+
+test('Paste Offer excludes parsed cruise title from Norwegian Fjords standalone ports', () => {
+  const harness = createHarness([], 0, { hasParsePreviewModal: false });
+
+  harness.parse(`Norwegian Fjords
+Queen Anne
+12 Nights
+15 May 2027
+Full Board
+From £1899pp
+Southampton
+Stavanger
+Olden
+Geiranger
+Bergen
+Southampton`);
+
+  assert.equal(harness.context.offers[0].operator, 'cunard');
+  assert.equal(harness.context.offers[0].ship, 'Queen Anne');
+  assert.equal(harness.context.offers[0].name, 'Norwegian Fjords');
+  assert.equal(harness.context.offers[0].ports, 'Southampton • Stavanger • Olden • Geiranger • Bergen • Southampton');
+  assert.doesNotMatch(harness.context.offers[0].ports, /Norwegian Fjords/);
+});
+
+test('Paste Offer keeps Caribbean standalone ports while rejecting offer detail lines as ports', () => {
+  const harness = createHarness([], 0, { hasParsePreviewModal: false });
+
+  harness.parse(`Caribbean Escape
+P&O Cruises
+Arvia
+14 Nights
+20 November 2027
+Full Board
+From £1669pp
+Flights, luggage and transfers included
+Family Friendly
+Premium
+Adults Only
+Ocean Cruise
+Barbados
+Martinique
+St Kitts
+Tortola
+Antigua
+St Lucia`);
+
+  assert.equal(harness.context.offers[0].operator, 'po');
+  assert.equal(harness.context.offers[0].ship, 'Arvia');
+  assert.equal(harness.context.offers[0].ports, 'Barbados • Martinique • St Kitts • Tortola • Antigua • St Lucia');
+  assert.doesNotMatch(harness.context.offers[0].ports, /P&O Cruises|Arvia|14 Nights|20 November|Full Board|1669|Flights|Family Friendly|Premium|Adults Only|Ocean Cruise/);
 });
 
 test('Paste Offer does not infer Norwegian Cruise Line from Norwegian Fjords without a ship', () => {
