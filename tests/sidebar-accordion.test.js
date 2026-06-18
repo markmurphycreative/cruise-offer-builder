@@ -71,9 +71,9 @@ test('CSV Import alone receives the primary navy header treatment with white con
   assert.doesNotMatch(html, /\.section:not\(\.csv-core-section\) \.section-hdr\{background:var\(--navy\);\}/);
 });
 
-test('the expanded sidebar header receives the subtle builder-blue accent without layout or background changes', () => {
+test('the expanded sidebar header receives the primary navy accent without layout or background changes', () => {
   const rule = extract(/\.section-hdr:not\(\.collapsed\)\{[^}]+\}/, 'expanded sidebar header highlight');
-  assert.match(rule, /box-shadow:inset 4px 0 0 var\(--builder-blue\)/);
+  assert.match(rule, /box-shadow:inset 4px 0 0 var\(--navy\)/);
   assert.doesNotMatch(rule, /(?:background|padding|margin|border(?:-width)?|height):/);
 });
 

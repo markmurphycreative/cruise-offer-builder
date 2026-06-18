@@ -25,6 +25,15 @@ test('CTA asset controls are additive and default to disabled with Dawson & Sand
   assert.match(html, /id="cta-link-output">tel:01912229701<\/span>/);
 });
 
+
+
+test('CTA enable checkbox uses the app navy with a custom white tick while preserving its dimensions', () => {
+  assert.match(html, /#cta-enabled:not\(:disabled\)\{[^}]*appearance:none;[^}]*width:13px;height:13px;[^}]*border:1px solid var\(--border\);/);
+  assert.match(html, /#cta-enabled:not\(:disabled\):checked\{background:var\(--navy\);border-color:var\(--navy\);\}/);
+  assert.match(html, /#cta-enabled:not\(:disabled\)::after\{[^}]*border:solid #fff;[^}]*border-width:0 1\.5px 1\.5px 0;[^}]*transform:rotate\(45deg\) scale\(0\);/);
+  assert.match(html, /#cta-enabled:not\(:disabled\):checked::after\{transform:rotate\(45deg\) scale\(1\);\}/);
+});
+
 test('CTA preview renders as a separate flush asset after the card and uses operator accent colour', () => {
   assert.match(extractFunction('renderOfferWithOptionalCtaHTML'), /return `<div class="cta-preview-group">\$\{card\}\$\{renderCtaHTML\(offerData \|\| \{\}, s\)\}<\/div>`;/);
   assert.match(extractFunction('renderCtaHTML'), /getOperatorAccentColor\(offerData\)/);
