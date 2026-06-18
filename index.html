@@ -5174,9 +5174,28 @@ function getItineraryLines(lines){
   }
   return itineraryLines;
 }
-function cleanParsedPorts(lines){
+function normalisePortComparisonValue(value){
+  return String(value||"").replace(/^[\s•·|:-]+|[\s•·|:-]+$/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+function isExcludedParsedPort(item,options){
+  const normalized=normalisePortComparisonValue(item);
+  const excluded=(options&&options.exclude)||[];
+  return normalized&&excluded.some(value=>normalisePortComparisonValue(value)===normalized);
+}
+function isStandalonePortCandidate(line){
+  const value=String(line||"").trim();
+  const likelyPort=/^[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’().-]*(?:\s+(?:\(?[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’().-]*|of|and|the)){0,4}$/;
+  const reject=/^(?:at sea|sea day|overnight|inside|outside|balcony|suite|full board|half board|all inclusive|self catering|family(?: friendly)?|premium|adults? only|ocean cruise|river cruise|cruise|ship|operator|price|from|ports?|itinerary|you(?:'|’)?ll visit)$/i;
+  return likelyPort.test(value)&&
+    !reject.test(value)&&
+    !ITINERARY_FOOTER_LABEL.test(value)&&
+    !Object.values(OPERATOR_ALIASES).flat().some(pattern=>pattern.test(value))&&
+    !findKnownOperatorShip(value)&&
+    !/[£$€]|\d|\b(?:nights?|nts?|included|flights?|transfers?|luggage|cabin|from)\b/i.test(value);
+}
+function cleanParsedPorts(lines,options){
   const ignored=/^(?:at sea|(?:\d+\s+)?days?\s+at\s+sea|(?:\d+\s+)?sea\s+days?|overnight port stay|overnight stay|overnight|luggage\s*(?:&|and)\s*transfers?\s+included|flights?\s+included)[.!]?$/i;
-  return lines.flatMap(line=>line.split(/(?:[•·▪◦●]|\s+[-–—]\s+|[-–—]\s*$|,)/)).map(item=>item.trim().replace(/^[-–—]\s*/,"")).filter(item=>item&&!ignored.test(item)).join(" • ");
+  return lines.flatMap(line=>line.split(/(?:[•·▪◦●]|\s+[-–—]\s+|[-–—]\s*$|,)/)).map(item=>item.trim().replace(/^[-–—]\s*/,"")).filter(item=>item&&!ignored.test(item)&&!isExcludedParsedPort(item,options)&&isStandalonePortCandidate(item)).join(" • ");
 }
 function escapeRegExp(value){ return String(value||"").replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 function findKnownOperatorShip(text,operatorKey){
@@ -5195,16 +5214,9 @@ function findKnownOperatorShip(text,operatorKey){
   const operators=[...new Set(unique.map(match=>match.operatorKey))];
   return operators.length===1 ? unique.sort((a,b)=>b.ship.length-a.ship.length)[0] : null;
 }
-function getStandalonePortLines(lines){
-  const likelyPort=/^[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’.-]*(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’.-]*){0,3}$/;
-  const reject=/^(?:at sea|sea day|overnight|inside|outside|balcony|suite|full board|half board|all inclusive|self catering|family|premium|ocean cruise|river cruise|cruise|ship|operator|price|from|ports?|itinerary|you(?:'|’)?ll visit)$/i;
+function getStandalonePortLines(lines,options){
   const portLines=(lines||[]).map(line=>String(line||"").trim()).filter(line=>
-    likelyPort.test(line)&&
-    !reject.test(line)&&
-    !ITINERARY_FOOTER_LABEL.test(line)&&
-    !Object.values(OPERATOR_ALIASES).flat().some(pattern=>pattern.test(line))&&
-    !findKnownOperatorShip(line)&&
-    !/[£$€]|\d|\b(?:nights?|nts?|included|flights?|transfers?|luggage|cabin|from)\b/i.test(line)
+    isStandalonePortCandidate(line)&&!isExcludedParsedPort(line,options)
   );
   return portLines.length>=3 ? portLines : [];
 }
@@ -5236,13 +5248,16 @@ function parseOffer(){
   let dm=txt.match(new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${months})\\s+(\\d{2,4})\\b`,'i'))||txt.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);
   if(dm){ if(dm[0].includes('/')){const y=dm[3].length===2?'20'+dm[3]:dm[3]; const date=new Date(`${y}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}`); parsed.day=String(date.getDate()); parsed.month=date.toLocaleString('en-GB',{month:'long'})+' '+date.getFullYear(); } else {const y=dm[3].length===2?'20'+dm[3]:dm[3]; const mn=new Date(`${dm[2]} 1, ${y}`); parsed.day=dm[1]; parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+y;} score+=16; }
   else { const mm=txt.match(new RegExp(`\\b(${months})\\s+(\\d{4})\\b`,'i')); if(mm){ const mn=new Date(`${mm[1]} 1, ${mm[2]}`); parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+mm[2]; score+=10; } }
-  const itineraryLines=getItineraryLines(lines); const standalonePortLines=getStandalonePortLines(lines); const portLines=itineraryLines||(standalonePortLines.length?standalonePortLines:null)||lines.filter(l=>/[•·,]|\s+-\s+/.test(l)&&/(?:[A-Za-z]{3,}\s*){2,}/.test(l)&&!/from|£|nights?|nts?|included|flights?/i.test(l)); const ports=cleanParsedPorts(portLines); if(ports){parsed.ports=ports;score+=8;}
+  const itineraryLines=getItineraryLines(lines);
+  const shipLineIndex=parsed.ship?lines.findIndex(line=>line===parsed.ship):-1;
+  const title=lines.find((l,index)=>!Object.values(OPERATOR_ALIASES).flat().some(r=>r.test(l))&&!(itineraryLines||[]).includes(l)&&(shipLineIndex<0||index<shipLineIndex)&&!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b|\b(?:full board|half board|all inclusive|self catering|inside|outside|balcony|suite)\b/i.test(l))&&l.length>8&&l!==parsed.ship); if(title){parsed.name=title.replace(/^[-•\s]+/,'');score+=8;}
+  const portExclusions=[parsed.name].filter(Boolean);
+  const standalonePortLines=getStandalonePortLines(lines,{exclude:portExclusions}); const portLines=itineraryLines||(standalonePortLines.length?standalonePortLines:null)||lines.filter(l=>/[•·,]|\s+-\s+/.test(l)&&/(?:[A-Za-z]{3,}\s*){2,}/.test(l)&&!/from|£|nights?|nts?|included|flights?/i.test(l)); const ports=cleanParsedPorts(portLines,{exclude:portExclusions}); if(ports){parsed.ports=ports;score+=8;}
   const uspTags=inferUspTagsFromLines(lines); if(uspTags){parsed.tags=uspTags;score+=8;}
   const incl=lines.find(l=>/flights?|luggage|transfer|included|all inclusive/i.test(l)); if(incl){parsed.incl=incl;score+=6;}
   const airport=AIRPORT_WORDS.find(a=>new RegExp('\\b'+a+'\\b','i').test(txt)); if(airport&&!parsed.incl){parsed.incl=airport[0].toUpperCase()+airport.slice(1)+' departures';score+=4;}
   const knownShipMatch=findKnownOperatorShip(txt,parsed.operatorKey); if(knownShipMatch){ if(!parsed.ship){parsed.ship=knownShipMatch.ship;score+=8;} if(!parsed.operatorKey){parsed.operatorKey=knownShipMatch.operatorKey;score+=18;} }
   if(!parsed.ship){const shipLine=lines.find(l=>/\b(cruise|explorer|symphony|arvia|voyager|queen|discovery)\b/i.test(l)); if(shipLine){const m=shipLine.match(/\b([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+){0,3})\b/); if(m) parsed.ship=m[1];}}
-  const title=lines.find(l=>!Object.values(OPERATOR_ALIASES).flat().some(r=>r.test(l))&&!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b/i.test(l))&&l.length>8&&l!==parsed.ship); if(title){parsed.name=title.replace(/^[-•\s]+/,'');score+=8;}
   const confidence=score>=62?'high':score>=35?'partial':'low';
   if(typeof renderOfferIntelligencePanel==="function") renderOfferIntelligencePanel(parsed,raw);
   pendingParseResult={parsed,confidence,score,rawText:raw}; if(!showParsePreview()) applyParsedOffer();
@@ -5321,6 +5336,9 @@ function clearOfferIntelligencePanel(){
   panel.innerHTML="";
   panel.classList.remove("active");
 }
+function formatOfferIntelligencePorts(ports){
+  return String(ports||"").split("•").map(port=>port.trim()).filter(Boolean).map(port=>typeof normaliseDestinationName==="function"?normaliseDestinationName(port):port).filter(Boolean).join(" · ");
+}
 function getOfferIntelligenceDetectedFields(parsed,rawText){
   const p=parsed||{};
   const fields=[];
@@ -5340,7 +5358,10 @@ function getOfferIntelligenceDetectedFields(parsed,rawText){
   addValue("Board Basis",p.boardlbl||p.board);
   const price=String(p.price||"").trim();
   if(isUsefulValue(price)) fields.push(`Price: ${/^£/.test(price)?price:`£${price}`}${/pp\b/i.test(price)?"":"pp"}`);
-  if(isUsefulValue(p.ports)) fields.push("You’ll Visit Ports: Detected");
+  if(isUsefulValue(p.ports)){
+    const portsDisplay=formatOfferIntelligencePorts(p.ports);
+    if(portsDisplay) fields.push(`You’ll Visit Ports: ${portsDisplay}`);
+  }
   const airport=AIRPORT_WORDS.find(a=>new RegExp('\\b'+escapeRegExp(a)+'\\b','i').test(text));
   if(airport){
     const airportMatch=text.match(new RegExp('\\b('+escapeRegExp(airport)+')\\b','i'));
@@ -5552,10 +5573,10 @@ function packItineraryLines(ports,options){
   return lines;
 }
 function getRenderedItineraryPorts(str){
-  return removeDuplicateReturnToOriginDestination(cleanPortsDisplay(str)
+  return cleanPortsDisplay(str)
     .split("•")
     .map(s=>s.trim())
-    .filter(Boolean));
+    .filter(Boolean);
 }
 function cleanEmbarkationPortDisplay(port){
   return String(port||"").split(",").map(part=>part.trim()).filter(Boolean)[0]||"";

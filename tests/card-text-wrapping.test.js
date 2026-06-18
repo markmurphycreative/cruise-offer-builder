@@ -127,14 +127,14 @@ test('long destinations wrap according to rendered width without overflowing', (
   for (const line of lines) assert.ok(measureText(line) <= 530, `${line} overflowed safe width`);
 });
 
-test('duplicate return-to-origin destination is removed after normalisation before rendering', () => {
+test('duplicate return-to-origin destination is retained after normalisation for card and POA consistency', () => {
   const context = createItineraryContext();
 
   const rendered = context.chunkBullets(' Corfu • Souda (for Chania), Crete • Rhodes • Patmos • Heraklion, Crete • Katakolon, Olympia • corfu ');
   const text = renderedLines(rendered).map(textFromRenderedLine).join(' • ');
 
-  assert.equal(text, 'Corfu • Souda, Chania, Crete • Rhodes • Patmos • Heraklion, Crete • Katakolon, Olympia');
-  assert.equal((text.match(/Corfu/gi) || []).length, 1);
+  assert.equal(text, 'Corfu • Souda, Chania, Crete • Rhodes • Patmos • Heraklion, Crete • Katakolon, Olympia • corfu');
+  assert.equal((text.match(/Corfu/gi) || []).length, 2);
 });
 
 test('different start and end destinations remain rendered', () => {
@@ -147,7 +147,7 @@ test('different start and end destinations remain rendered', () => {
   assert.match(rendered, /<span class="port-unit">Barcelona,&nbsp;Spain<\/span>/);
 });
 
-test('itinerary packing remains width based after return-to-origin removal', () => {
+test('itinerary packing remains width based with return-to-origin ports retained', () => {
   const context = createItineraryContext();
   const measureText = itineraryMeasureStub({
     Corfu: 80,
@@ -167,7 +167,7 @@ test('itinerary packing remains width based after return-to-origin removal', () 
   assert.deepEqual(lines, [
     'Corfu • Souda, Chania, Crete • Rhodes',
     'Patmos • Heraklion, Crete',
-    'Katakolon, Olympia'
+    'Katakolon, Olympia • Corfu'
   ]);
   for (const line of lines) assert.ok(measureText(line) <= 520, `${line} overflowed safe width`);
 });
