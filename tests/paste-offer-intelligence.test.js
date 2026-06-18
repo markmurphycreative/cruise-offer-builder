@@ -307,3 +307,85 @@ test('POA v3 inclusion detection does not alter summary confidence field counts'
 
   assert.deepEqual(JSON.parse(JSON.stringify(summary)), { count: 1, label: 'Needs Review', level: 'low' });
 });
+
+test('POA Suggestions render only card and USP suggestions with confidence and current versus suggested values', () => {
+  const fields = {
+    'f-incl': { value: 'Flights Included' },
+    'f-tags': { value: '' },
+    'field-incl': { classList: { toggle() {} } },
+    'field-tags': { classList: { toggle() {} } }
+  };
+  const context = {
+    document: { getElementById(id) { return fields[id] || null; }, querySelectorAll() { return []; } },
+    offers: [{ incl: 'Flights Included', tags: '' }],
+    cur: 0,
+    poaAppliedSuggestions: {},
+    getOfferIntelligenceSummary() { return { level: 'high', label: 'High Confidence', count: 7 }; },
+    window: {},
+    up() {}
+  };
+  vm.createContext(context);
+  vm.runInContext([
+    extractFunction('joinOfferIntelligenceSuggestionParts'),
+    extractFunction('getPoaCardInclusionSuggestion'),
+    extractFunction('getPoaUspStripSuggestion'),
+    extractFunction('clearPoaSuggestionHighlights'),
+    extractFunction('setPoaSuggestionHighlight'),
+    extractFunction('getPoaSuggestionConfidenceLabel'),
+    extractFunction('getPoaAssistedApplySuggestions'),
+    extractFunction('escapePoaSuggestionHtml'),
+    extractFunction('formatPoaSuggestionValue'),
+    extractFunction('getPoaSuggestionCurrentValue'),
+    extractFunction('renderPoaAssistedApplySuggestions'),
+    extractFunction('applyPoaSuggestion'),
+    extractFunction('removePoaSuggestion')
+  ].join('\n'), context);
+
+  const suggestions = vm.runInContext('getPoaAssistedApplySuggestions({}, "", ["Flights Included", "Luggage Included", "Transfers Included", "Wi-Fi Included", "Drinks Package Included", "Onboard Spend Included"], "po")', context);
+  assert.deepEqual(JSON.parse(JSON.stringify(suggestions.map(s => s.id))), ['card-inclusion', 'usp-strip']);
+
+  const htmlOutput = vm.runInContext('renderPoaAssistedApplySuggestions(suggestions)', Object.assign(context, { suggestions }));
+  assert.match(htmlOutput, /Card Inclusion/);
+  assert.match(htmlOutput, /USP Strip/);
+  assert.match(htmlOutput, /High Confidence/);
+  assert.match(htmlOutput, /Current:<\/span>Flights Included/);
+  assert.match(htmlOutput, /Suggested:<\/span>Flights, Luggage &amp; Transfers Included/);
+  assert.doesNotMatch(htmlOutput, /Theme Tags|💡/);
+});
+
+test('POA Suggestions remove restores each suggestion previous value independently', () => {
+  const fields = {
+    'f-incl': { value: 'Flights Included' },
+    'f-tags': { value: 'Original USP' }
+  };
+  const context = {
+    document: { getElementById(id) { return fields[id] || null; }, querySelectorAll() { return []; } },
+    offers: [{ incl: 'Flights Included', tags: 'Original USP' }],
+    cur: 0,
+    poaAppliedSuggestions: {},
+    window: {},
+    up() {},
+    renderOfferIntelligencePanel() {}
+  };
+  vm.createContext(context);
+  vm.runInContext([
+    extractFunction('clearPoaSuggestionHighlights'),
+    extractFunction('applyPoaSuggestion'),
+    extractFunction('removePoaSuggestion')
+  ].join('\n'), context);
+  context.window.currentPoaSuggestions = [
+    { id: 'card-inclusion', value: 'Flights, Luggage & Transfers Included', fieldKey: 'incl', fieldId: 'f-incl' },
+    { id: 'usp-strip', value: 'Wi-Fi Included • Drinks Package Included', fieldKey: 'tags', fieldId: 'f-tags' }
+  ];
+
+  vm.runInContext('applyPoaSuggestion("card-inclusion"); applyPoaSuggestion("usp-strip");', context);
+  assert.equal(fields['f-incl'].value, 'Flights, Luggage & Transfers Included');
+  assert.equal(fields['f-tags'].value, 'Wi-Fi Included • Drinks Package Included');
+
+  vm.runInContext('removePoaSuggestion("card-inclusion");', context);
+  assert.equal(fields['f-incl'].value, 'Flights Included');
+  assert.equal(fields['f-tags'].value, 'Wi-Fi Included • Drinks Package Included');
+
+  vm.runInContext('removePoaSuggestion("usp-strip");', context);
+  assert.equal(fields['f-tags'].value, 'Original USP');
+});
