@@ -183,14 +183,16 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .offer-intel-item.detected .offer-intel-icon{color:var(--green);}
 .offer-intel-item.missing .offer-intel-icon{color:var(--amber);}
 .offer-intel-item.suggestion .offer-intel-icon{color:var(--builder-blue);}
-.poa-suggestion-card{border:1px solid var(--border);border-radius:var(--radius);padding:6px;background:#fafaf8;display:grid;gap:5px;}
+.poa-suggestion-card{border:1px solid var(--border);border-radius:var(--radius);padding:7px;background:#fafaf8;display:grid;gap:6px;}
 .poa-suggestion-card:hover{border-color:var(--gold);}
-.poa-suggestion-title{display:flex;gap:5px;align-items:center;font-size:9px;font-weight:700;color:var(--navy);}
-.poa-suggestion-values{font-size:10px;line-height:1.35;color:var(--text);}
-.poa-suggestion-target{font-size:8px;line-height:1.35;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;}
-.poa-suggestion-actions{display:flex;justify-content:flex-start;}
-.poa-suggestion-actions .abtn[disabled]{opacity:.65;cursor:default;}
-.field.poa-target-highlight input,.field.poa-target-highlight textarea{border-color:var(--gold);box-shadow:0 0 0 2px rgba(160,146,103,.14);background:#fff;}
+.poa-suggestion-title{font-size:9px;font-weight:700;color:var(--navy);}
+.poa-suggestion-confidence{font-size:8px;font-weight:600;line-height:1.25;color:var(--green);}
+.poa-suggestion-compare{display:grid;gap:4px;font-size:9px;line-height:1.35;color:var(--text);}
+.poa-suggestion-compare-label{display:block;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:1px;}
+.poa-suggestion-empty{color:var(--muted);}
+.poa-suggestion-actions{display:flex;align-items:center;gap:5px;justify-content:flex-start;}
+.poa-suggestion-applied{font-size:9px;font-weight:700;color:var(--green);}
+.field.poa-target-highlight input,.field.poa-target-highlight textarea{border-color:var(--gold);background:rgba(184,167,110,0.08);}
 .offer-intel-empty{font-size:9px;color:var(--muted);line-height:1.35;}
 
 /* ── OPERATOR ── */
@@ -5440,31 +5442,50 @@ function getPoaUspStripSuggestion(inclusions){
   const set=new Set(inclusions||[]);
   return priority.filter(([label])=>set.has(label)).slice(0,3).map(([,display])=>display).join(" • ");
 }
-function getPoaThemeTagSuggestion(parsed,rawText,effectiveOperator){
-  return getOfferIntelligenceCopyThemes(parsed,rawText,effectiveOperator).map(theme=>theme==="Norway"?"Norwegian Fjords":theme);
-}
-
 function resetPoaSuggestionState(){ poaAppliedSuggestions={}; clearPoaSuggestionHighlights(); }
 function clearPoaSuggestionHighlights(){ if(!document.querySelectorAll) return; document.querySelectorAll(".poa-target-highlight").forEach(el=>el.classList.remove("poa-target-highlight")); }
 function setPoaSuggestionHighlight(fieldKey,on){
   const target=document.getElementById(`field-${fieldKey}`);
   if(target) target.classList.toggle("poa-target-highlight",!!on);
 }
+function getPoaSuggestionConfidenceLabel(parsed,rawText){
+  const summary=typeof getOfferIntelligenceSummary==="function"?getOfferIntelligenceSummary(parsed,rawText):null;
+  const level=summary&&summary.level;
+  if(level==="high") return "High Confidence";
+  if(level==="partial") return "Medium Confidence";
+  return "Low Confidence";
+}
 function getPoaAssistedApplySuggestions(parsed,rawText,inclusions,effectiveOperator){
   const suggestions=[];
+  const confidenceLabel=getPoaSuggestionConfidenceLabel(parsed,rawText);
   const card=getPoaCardInclusionSuggestion(inclusions);
-  if(card) suggestions.push({id:"card-inclusion",title:"Card Inclusion",value:card,targetLabel:"Card Inclusion Line",fieldKey:"incl",fieldId:"f-incl"});
+  if(card) suggestions.push({id:"card-inclusion",title:"Card Inclusion",value:card,confidenceLabel,targetLabel:"Card Inclusion Line",fieldKey:"incl",fieldId:"f-incl"});
   const usp=getPoaUspStripSuggestion(inclusions);
-  if(usp) suggestions.push({id:"usp-strip",title:"USP Strip",value:usp,targetLabel:"USP Tags",fieldKey:"tags",fieldId:"f-tags"});
-  const themes=getPoaThemeTagSuggestion(parsed,rawText,effectiveOperator);
-  if(themes.length) suggestions.push({id:"theme-tags",title:"Theme Tags",value:themes.join(" · "),targetLabel:"Theme Tags",fieldKey:"theme_tags",fieldId:"f-theme_tags"});
+  if(usp) suggestions.push({id:"usp-strip",title:"USP Strip",value:usp,confidenceLabel,targetLabel:"USP Tags",fieldKey:"tags",fieldId:"f-tags"});
   return suggestions;
+}
+function escapePoaSuggestionHtml(value){
+  return String(value==null?"":value).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
+}
+function formatPoaSuggestionValue(value){
+  const text=String(value==null?"":value);
+  if(!text.trim()) return '<span class="poa-suggestion-empty">—</span>';
+  return escapePoaSuggestionHtml(text).split(" · ").join("<br>");
+}
+function getPoaSuggestionCurrentValue(suggestion){
+  const input=suggestion&&document.getElementById(suggestion.fieldId);
+  if(input) return input.value;
+  return offers[cur]&&suggestion?offers[cur][suggestion.fieldKey]||"":"";
 }
 function renderPoaAssistedApplySuggestions(suggestions){
   if(!suggestions||!suggestions.length) return "";
   const cards=suggestions.map(s=>{
-    const applied=!!poaAppliedSuggestions[s.id];
-    return `<div class="poa-suggestion-card" onmouseenter="setPoaSuggestionHighlight('${s.fieldKey}',true)" onmouseleave="setPoaSuggestionHighlight('${s.fieldKey}',false)"><div class="poa-suggestion-title"><span class="offer-intel-icon">💡</span><span>${s.title}</span></div><div class="poa-suggestion-values">${String(s.value).split(" · ").join("<br>")}</div><div class="poa-suggestion-target">Updates:<br>${s.targetLabel}</div><div class="poa-suggestion-actions"><button class="abtn btn-compact" type="button" onclick="applyPoaSuggestion('${s.id}')" ${applied?"disabled":""}>${applied?"✓ Applied":"Apply"}</button></div></div>`;
+    const applied=poaAppliedSuggestions[s.id];
+    const current=applied&&Object.prototype.hasOwnProperty.call(applied,"previousValue")?applied.previousValue:getPoaSuggestionCurrentValue(s);
+    const actions=applied
+      ? `<span class="poa-suggestion-applied">✓ Applied</span><button class="abtn btn-compact" type="button" onclick="removePoaSuggestion('${s.id}')">Remove</button>`
+      : `<button class="abtn btn-compact" type="button" onclick="applyPoaSuggestion('${s.id}')">Apply</button>`;
+    return `<div class="poa-suggestion-card" onmouseenter="setPoaSuggestionHighlight('${s.fieldKey}',true)" onmouseleave="setPoaSuggestionHighlight('${s.fieldKey}',false)"><div class="poa-suggestion-title">${escapePoaSuggestionHtml(s.title)}</div><div class="poa-suggestion-confidence">${escapePoaSuggestionHtml(s.confidenceLabel||"Low Confidence")}</div><div class="poa-suggestion-compare"><div><span class="poa-suggestion-compare-label">Current:</span>${formatPoaSuggestionValue(current)}</div><div><span class="poa-suggestion-compare-label">Suggested:</span>${formatPoaSuggestionValue(s.value)}</div></div><div class="poa-suggestion-actions">${actions}</div></div>`;
   }).join("");
   return `<div class="offer-intel-section"><div class="offer-intel-heading">POA Suggestions</div><div class="offer-intel-list">${cards}</div></div>`;
 }
@@ -5474,10 +5495,26 @@ function applyPoaSuggestion(id){
   if(!suggestion) return;
   const input=document.getElementById(suggestion.fieldId);
   if(!input) return;
+  const previousValue=input.value;
   input.value=suggestion.value;
   if(!offers[cur]) offers[cur]={};
   offers[cur][suggestion.fieldKey]=suggestion.value;
-  poaAppliedSuggestions[id]=true;
+  poaAppliedSuggestions[id]={previousValue};
+  clearPoaSuggestionHighlights();
+  up();
+  renderOfferIntelligencePanel(window.currentPoaParsed||{},window.currentPoaRawText||"");
+}
+function removePoaSuggestion(id){
+  if(!poaAppliedSuggestions[id]||!window.currentPoaSuggestions) return;
+  const suggestion=window.currentPoaSuggestions.find(item=>item.id===id);
+  if(!suggestion) return;
+  const input=document.getElementById(suggestion.fieldId);
+  if(!input) return;
+  const previousValue=poaAppliedSuggestions[id].previousValue;
+  input.value=previousValue;
+  if(!offers[cur]) offers[cur]={};
+  offers[cur][suggestion.fieldKey]=previousValue;
+  delete poaAppliedSuggestions[id];
   clearPoaSuggestionHighlights();
   up();
   renderOfferIntelligencePanel(window.currentPoaParsed||{},window.currentPoaRawText||"");
