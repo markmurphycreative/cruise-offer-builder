@@ -5315,20 +5315,35 @@ function getOfferIntelligenceCruiseKnowledge(parsed,rawText){
   ];
 }
 
+function hasOfferIntelligenceNegativeContext(text,matchIndex,matchText){
+  const source=String(text||"");
+  const before=source.slice(Math.max(0,matchIndex-80),matchIndex);
+  const after=source.slice(matchIndex+String(matchText||"").length,matchIndex+String(matchText||"").length+80);
+  const combined=`${before} ${matchText||""} ${after}`;
+  return /\b(?:not\s+included|excludes?|excluding|optional|available\s+at\s+(?:a\s+)?supplement|available\s+at\s+(?:an\s+)?extra\s+cost|upgrade\s+available|extra\s+cost|payable\s+locally)\b/i.test(combined);
+}
 function detectOfferIntelligenceInclusions(parsed,rawText){
   const text=[rawText,parsed&&parsed.incl].filter(Boolean).join(" ");
   const checks=[
-    ["Flights Included",/\bflights?\b/i],
-    ["Luggage Included",/\bluggage\b/i],
-    ["Transfers Included",/\btransfers?\b/i],
-    ["Drinks Package Included",/\bdrinks?\s+package\b|\bdrinks?\s+included\b/i],
-    ["Wi-Fi Included",/\bwi[-\s]?fi\b|\binternet\b/i],
-    ["Gratuities Included",/\bgratuities\b|\btips\b/i],
-    ["Onboard Spend Included",/\bon\s*board\s+spend\b|\bonboard\s+spend\b|\bobs\b/i],
-    ["Shore Excursions Included",/\bshore\s+excursions?\b|\bexcursions?\s+included\b/i],
-    ["Hotel Stay Included",/\bhotel\s+stay\b|\bpre[-\s]?cruise\s+stay\b|\bpost[-\s]?cruise\s+stay\b/i]
+    ["Flights Included",/\b(?:flights?\s+included|includes?\s+flights?|return\s+flights?|regional\s+flights?|flights?\s+from\s+[a-z][a-z .'-]+|[a-z][a-z .'-]+\s+flights?)\b/i],
+    ["Luggage Included",/\b(?:luggage\s*(?:&|and)\s*transfers?\s+included|luggage\s+included|baggage\s+included|checked\s+baggage|checked\s+luggage|hold\s+luggage|includes?\s+luggage|includes?\s+baggage)\b/i],
+    ["Transfers Included",/\b(?:transfers?\s+included|includes?\s+transfers?|airport\s+transfers?|overseas\s+transfers?|return\s+transfers?|coach\s+transfers?|private\s+transfers?)\b/i],
+    ["Drinks Package Included",/\b(?:drinks?\s+package\s+included|drinks?\s+included|all[-\s]?inclusive\s+drinks?|premium\s+drinks?|classic\s+drinks?\s+package|drinks?\s+package)\b/i],
+    ["Wi-Fi Included",/\b(?:wi[-\s]?fi\s+included|wi[-\s]?fi\s+package|internet\s+package|includes?\s+wi[-\s]?fi|includes?\s+internet)\b/i],
+    ["Gratuities Included",/\b(?:gratuities\s+included|tips\s+included|service\s+charges?\s+included|includes?\s+gratuities|includes?\s+tips)\b/i],
+    ["Onboard Spend Included",/\b(?:on\s*board\s+spend|on-board\s+spend|onboard\s+spend|on\s*board\s+credit|on-board\s+credit|onboard\s+credit|shipboard\s+credit|spending\s+money|obs)\b/i],
+    ["Shore Excursions Included",/\b(?:shore\s+excursions?\s+included|excursions?\s+included|guided\s+excursions?|selected\s+excursions?\s+included|includes?\s+(?:shore\s+)?excursions?)\b/i],
+    ["Hotel Stay Included",/\b(?:hotel\s+stay\s+included|pre[-\s]?cruise\s+hotel|post[-\s]?cruise\s+hotel|hotel\s+nights?\s+included|includes?\s+hotel\s+stay|pre[-\s]?cruise\s+stay|post[-\s]?cruise\s+stay)\b/i],
+    ["Rail Included",/\b(?:rail\s+included|train\s+included|eurostar\s+included|rail\s+travel\s+included|includes?\s+rail|includes?\s+train)\b/i],
+    ["Speciality Dining Included",/\b(?:speciality\s+dining\s+included|specialty\s+dining\s+included|dining\s+package\s+included|includes?\s+(?:speciality|specialty)\s+dining)\b/i],
+    ["Cabin Upgrade Included",/\b(?:cabin\s+upgrade\s+included|free\s+cabin\s+upgrade|balcony\s+upgrade|ocean\s+view\s+upgrade|outside\s+cabin\s+upgrade)\b/i],
+    ["Balcony Cabin Included",/\b(?:balcony\s+cabin\s+included|balcony\s+stateroom\s+included|includes?\s+balcony\s+cabin)\b/i]
   ];
-  return checks.filter(([,pattern])=>pattern.test(text)).map(([label])=>label);
+  return checks.filter(([,pattern])=>{
+    pattern.lastIndex=0;
+    const match=pattern.exec(text);
+    return !!(match&&!hasOfferIntelligenceNegativeContext(text,match.index,match[0]));
+  }).map(([label])=>label);
 }
 function clearOfferIntelligencePanel(){
   const panel=document.getElementById("offer-intel-panel");
