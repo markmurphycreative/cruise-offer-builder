@@ -122,7 +122,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     BOARD_MAP: { FB: ['FB', 'Full Board'], 'FULL BOARD': ['FB', 'Full Board'] },
     OPERATOR_HEADERS: { cunard: { name: 'Cunard' }, ncl: { name: 'Norwegian Cruise Line' } },
     OPERATOR_SHIPS: { celebrity: ['Celebrity Ascent'], amawaterways: ['AmaBella', 'AmaDouro', 'AmaMagna', 'Zambezi Queen'], cunard: ['Queen Anne'], ncl: ['Norwegian Prima', 'Pride of America'] },
-    OPERATOR_ALIASES: { celebrity: [/\bcelebrity\b/i, /\bcelebrity\s+cruises\b/i], cunard: [/\bcunard\b/i], ncl: [/\bnorwegian\b/i, /\bncl\b/i] },
+    OPERATOR_ALIASES: { celebrity: [/\bcelebrity\b/i, /\bcelebrity\s+cruises\b/i], cunard: [/\bcunard\b/i], ncl: [/\bnorwegian\s+cruise\s+line\b/i, /\bncl\b/i] },
     AIRPORT_WORDS: ['newcastle'],
     getLikelyTypos() { return []; },
     setSpellWarn() {},
@@ -371,6 +371,65 @@ Southampton`);
   assert.equal(harness.context.offers[0].ship, 'Queen Anne');
   assert.equal(harness.context.offers[0].ports, 'Southampton • Stavanger • Olden • Geiranger • Bergen • Southampton');
   assert.notEqual(harness.context.offers[0].operator, 'ncl');
+});
+
+
+test('Paste Offer treats Norwegian Fjords as itinerary text and keeps Queen Anne as Cunard', () => {
+  const harness = createHarness([], 0, { hasParsePreviewModal: false });
+
+  harness.parse(`Norwegian Fjords
+Queen Anne
+7 nights
+Full Board
+£1199pp`);
+
+  assert.equal(harness.context.offers[0].operator, 'cunard');
+  assert.equal(harness.context.offers[0].ship, 'Queen Anne');
+  assert.notEqual(harness.context.offers[0].operator, 'ncl');
+});
+
+test('Paste Offer does not infer Norwegian Cruise Line from Norwegian Fjords without a ship', () => {
+  const fjordsOnly = createHarness([], 0, { hasParsePreviewModal: false });
+
+  fjordsOnly.parse(`Norwegian Fjords
+7 nights
+Full Board
+£1199pp
+Southampton`);
+
+  assert.notEqual(fjordsOnly.context.offers[0].operator, 'ncl');
+  assert.equal(fjordsOnly.context.offers[0].operator, undefined);
+
+  const fullName = createHarness([], 0, { hasParsePreviewModal: false });
+  fullName.parse(`Norwegian Cruise Line
+Norwegian Fjords
+Norwegian Prima
+7 nights
+Full Board
+£1199pp`);
+
+  assert.equal(fullName.context.offers[0].operator, 'ncl');
+  assert.equal(fullName.context.offers[0].ship, 'Norwegian Prima');
+});
+
+test('Paste Offer infers priority known ships from ship name alone', () => {
+  for (const [ship, operator] of [['Queen Anne', 'cunard'], ['Arvia', 'po'], ['MSC Virtuosa', 'msc']]) {
+    const harness = createHarness([], 0, { hasParsePreviewModal: false });
+    harness.context.OPERATOR_SHIPS.po = ['Arvia', 'Iona'];
+    harness.context.OPERATOR_SHIPS.msc = ['MSC Virtuosa'];
+    harness.context.OPERATOR_HEADERS.po = { name: 'P&O Cruises' };
+    harness.context.OPERATOR_HEADERS.msc = { name: 'MSC Cruises' };
+    harness.context.OPERATOR_ALIASES.po = [/\bp\s*&\s*o\b/i, /\bp\s*and\s*o\b/i];
+    harness.context.OPERATOR_ALIASES.msc = [/\bmsc\b/i];
+
+    harness.parse(`${ship}
+7 nights
+Full Board
+£1199pp`);
+
+    assert.equal(harness.context.offers[0].operator, operator, ship);
+    assert.equal(harness.context.offers[0].ship, ship);
+  }
 });
 
 test('Paste Offer recognises AmaWaterways ships without manual operator selection', () => {
