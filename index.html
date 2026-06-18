@@ -5345,6 +5345,94 @@ function detectOfferIntelligenceInclusions(parsed,rawText){
     return !!(match&&!hasOfferIntelligenceNegativeContext(text,match.index,match[0]));
   }).map(([label])=>label);
 }
+function joinOfferIntelligenceSuggestionParts(parts){
+  const values=(parts||[]).filter(Boolean);
+  if(values.length<=1) return values.join("");
+  if(values.length===2) return `${values[0]} & ${values[1]}`;
+  return `${values.slice(0,-1).join(", ")} & ${values[values.length-1]}`;
+}
+function getOfferIntelligenceCardInclusionSuggestion(inclusions){
+  const labels={
+    "Flights Included":"Flights",
+    "Luggage Included":"Luggage",
+    "Transfers Included":"Transfers",
+    "Drinks Package Included":"Drinks",
+    "Wi-Fi Included":"Wi-Fi",
+    "Onboard Spend Included":"Onboard Spend",
+    "Shore Excursions Included":"Excursions",
+    "Hotel Stay Included":"Hotel Stay",
+    "Gratuities Included":"Gratuities",
+    "Rail Included":"Rail",
+    "Cabin Upgrade Included":"Cabin Upgrade",
+    "Balcony Cabin Included":"Balcony Cabin"
+  };
+  const detected=(inclusions||[]).filter(label=>labels[label]);
+  if(!detected.length) return "";
+  if(detected.length===1) return detected[0];
+  return `${joinOfferIntelligenceSuggestionParts(detected.map(label=>labels[label]))} Included`;
+}
+function getOfferIntelligenceUspStripSuggestion(inclusions){
+  const priority=[
+    ["Onboard Spend Included","Onboard Spend"],
+    ["Drinks Package Included","Drinks Package"],
+    ["Wi-Fi Included","Wi-Fi"],
+    ["Shore Excursions Included","Excursions"],
+    ["Hotel Stay Included","Hotel Stay"],
+    ["Gratuities Included","Gratuities"],
+    ["Rail Included","Rail Included"],
+    ["Cabin Upgrade Included","Cabin Upgrade"],
+    ["Balcony Cabin Included","Balcony Cabin"]
+  ];
+  const set=new Set(inclusions||[]);
+  return priority.filter(([label])=>set.has(label)).slice(0,3).map(([,display])=>display).join(" • ");
+}
+function getOfferIntelligenceCopyThemes(parsed,rawText,effectiveOperator){
+  const p=parsed||{};
+  const text=[rawText,p.name,p.ports].filter(Boolean).join(" ");
+  const knowledge=getOfferIntelligenceCruiseKnowledge(p,rawText).join(" ");
+  const types=getOfferIntelligenceCruiseTypes(p,rawText,effectiveOperator).join(" ");
+  const themes=[];
+  const add=theme=>{ if(theme&&!themes.includes(theme)&&themes.length<3) themes.push(theme); };
+  if(/\bAdults Only\b/i.test(knowledge)||/Adults Only/i.test(types)) add("Adults Only");
+  if(/\bFamily Friendly\b/i.test(knowledge)||/Family Friendly/i.test(types)) add("Family");
+  if(/\bRiver Cruise\b/i.test(knowledge)||/River Cruise/i.test(types)) add("River Cruising");
+  if((/\bPremium\b/i.test(knowledge)||effectiveOperator==="cunard")&&!themes.includes("River Cruising")) add("Luxury");
+  if(/\b(?:fjord|fjords|norway|norwegian|olden|bergen|stavanger|geiranger)\b/i.test(text)){ add("Scenic Cruising"); add("Norway"); }
+  if(/\b(?:mediterranean|barcelona|rome|civitavecchia|palma|naples|marseille|athens|valletta)\b/i.test(text)) add("Mediterranean");
+  if(effectiveOperator==="virgin") add("Lifestyle");
+  if(/\bRiver Cruising\b/.test(themes.join(" "))||/\b(?:rhine|danube|douro|seine|moselle|europe)\b/i.test(text)) add("Europe");
+  if(/\bFamily\b/.test(themes.join(" "))&&["msc","royal","ncl"].includes(effectiveOperator)) add("Entertainment");
+  if(/\bRiver Cruising\b/.test(themes.join(" "))) themes.unshift("Culture");
+  return themes.filter((theme,index,self)=>self.indexOf(theme)===index).slice(0,3);
+}
+function getOfferIntelligenceQualityScore(parsed,rawText,effectiveOperator){
+  const p=parsed||{};
+  const checks=[
+    !!effectiveOperator,
+    !!String(p.ship||"").trim(),
+    !!([p.day,p.month].filter(Boolean).join(" ").trim()),
+    !!String(p.nights||"").trim(),
+    !!String(p.price||"").trim(),
+    !!String(p.boardlbl||p.board||"").trim(),
+    !!String(p.ports||"").trim()
+  ];
+  const count=checks.filter(Boolean).length;
+  if(count===checks.length) return "Excellent";
+  if(count>=5) return "Good";
+  return "Needs Review";
+}
+function getOfferIntelligenceActionSuggestions(parsed,rawText,inclusions,effectiveOperator){
+  const actions=[];
+  const cardInclusion=getOfferIntelligenceCardInclusionSuggestion(inclusions);
+  const uspStrip=getOfferIntelligenceUspStripSuggestion(inclusions);
+  const copyThemes=getOfferIntelligenceCopyThemes(parsed,rawText,effectiveOperator);
+  const quality=getOfferIntelligenceQualityScore(parsed,rawText,effectiveOperator);
+  if(cardInclusion) actions.push(`Card Inclusion: ${cardInclusion}`);
+  if(uspStrip) actions.push(`Suggested USP Strip: ${uspStrip}`);
+  if(copyThemes.length) actions.push(`Copy Themes: ${copyThemes.join(" • ")}`);
+  actions.push(`Offer Quality: ${quality}`);
+  return actions;
+}
 function clearOfferIntelligencePanel(){
   const panel=document.getElementById("offer-intel-panel");
   if(!panel) return;
@@ -5415,12 +5503,14 @@ function renderOfferIntelligencePanel(parsed,rawText){
     const effectiveOperator=p.operatorKey||(shipOperator&&shipOperator.operatorKey)||"";
     if(shipOperator&&!p.operatorKey){ const name=(OPERATOR_HEADERS[shipOperator.operatorKey]||{}).name; if(name) suggestions.push(`Operator inferred from ship: ${name}`); }
     getOfferIntelligenceCruiseTypes(p,rawText,effectiveOperator).forEach(type=>suggestions.push(type));
+    const actionSuggestions=getOfferIntelligenceActionSuggestions(p,rawText,inclusions,effectiveOperator);
     const item=(kind,icon,label)=>`<div class="offer-intel-item ${kind}"><span class="offer-intel-icon">${icon}</span><span>${label}</span></div>`;
     const section=(heading,html,empty="")=>`<div class="offer-intel-section"><div class="offer-intel-heading">${heading}</div><div class="offer-intel-list">${html||`<div class="offer-intel-empty">${empty}</div>`}</div></div>`;
     panel.innerHTML=`<div class="offer-intel-title">Offer Intelligence</div>`+
       section("Detected",detected.map(label=>item("detected","✓",label)).join(""),"No core fields detected yet.")+
       (cruiseKnowledge.length?section("Cruise Knowledge",cruiseKnowledge.map(label=>item("detected","✓",label)).join("")):"")+
       (inclusions.length?section("Inclusions Detected",inclusions.map(label=>item("detected","✓",label)).join("")):"")+
+      (actionSuggestions.length?section("Offer Intelligence",actionSuggestions.map(label=>item("suggestion","💡",label)).join("")):"")+
       section("Suggestions / Missing Information",missing.map(label=>item("missing","⚠",label)).concat(suggestions.map(label=>item("suggestion","💡",label))).join(""),"No suggestions or missing fields.");
     panel.classList.add("active");
   }catch(err){ console.warn("Offer Intelligence could not run",err); }
