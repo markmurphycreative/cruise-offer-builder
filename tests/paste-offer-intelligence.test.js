@@ -44,6 +44,8 @@ function createHarness() {
     extractFunction('getOfferIntelligenceCruiseTypes'),
     extractFunction('detectOfferIntelligenceInclusions'),
     extractFunction('clearOfferIntelligencePanel'),
+    extractFunction('getOfferIntelligenceDetectedFields'),
+    extractFunction('getOfferIntelligenceSummary'),
     extractFunction('renderOfferIntelligencePanel')
   ].join('\n'), context);
   return { context, panel };
@@ -62,6 +64,8 @@ test('Offer Intelligence infers known ship operators without changing parsed dat
   assert.match(panel.innerHTML, /Transfers Included/);
   assert.match(panel.innerHTML, /Departure Airport Detected/);
   assert.match(panel.innerHTML, /Cabin Type Detected/);
+  assert.doesNotMatch(panel.innerHTML, /Operator USPs Available/);
+  assert.doesNotMatch(panel.innerHTML, /Landing Page Available/);
 });
 
 test('Offer Intelligence reports missing fields and avoids false operator matches for unknown ships', () => {
@@ -74,3 +78,24 @@ test('Offer Intelligence reports missing fields and avoids false operator matche
   assert.doesNotMatch(panel.innerHTML, /Operator inferred from ship/);
 });
 
+
+test('Offer Intelligence shows ports detection only when parsed ports exist', () => {
+  const { context, panel } = createHarness();
+  vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, { parsed: { ports: 'Barbados • Martinique' }, raw: 'Barbados • Martinique' }));
+  assert.match(panel.innerHTML, /You’ll Visit Ports Detected/);
+
+  vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, { parsed: { price: '999' }, raw: '£999pp' }));
+  assert.doesNotMatch(panel.innerHTML, /You’ll Visit Ports Detected/);
+});
+
+test('Offer Intelligence summary counts detected panel fields using simple confidence labels', () => {
+  const { context } = createHarness();
+  const high = vm.runInContext('getOfferIntelligenceSummary(parsed, raw);', Object.assign(context, { parsed: { operatorKey: 'po', name: 'Caribbean Escape', ship: 'Arvia', day: '20', month: 'November 2026', nights: '14', boardlbl: 'Full Board', price: '1669', ports: 'Barbados • Martinique' }, raw: 'Inside Cabin from Newcastle' }));
+  assert.deepEqual(JSON.parse(JSON.stringify(high)), { count: 10, label: 'High Confidence', level: 'high' });
+
+  const partial = vm.runInContext('getOfferIntelligenceSummary(parsed, raw);', Object.assign(context, { parsed: { ship: 'Arvia', nights: '14', price: '1669', ports: 'Barbados • Martinique' }, raw: '' }));
+  assert.deepEqual(JSON.parse(JSON.stringify(partial)), { count: 4, label: 'Partial Match', level: 'partial' });
+
+  const low = vm.runInContext('getOfferIntelligenceSummary(parsed, raw);', Object.assign(context, { parsed: { price: '999' }, raw: '' }));
+  assert.deepEqual(JSON.parse(JSON.stringify(low)), { count: 1, label: 'Needs Review', level: 'low' });
+});

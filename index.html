@@ -5224,7 +5224,7 @@ function parseOffer(){
   const title=lines.find(l=>!Object.values(OPERATOR_ALIASES).flat().some(r=>r.test(l))&&!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b/i.test(l))&&l.length>8&&l!==parsed.ship); if(title){parsed.name=title.replace(/^[-•\s]+/,'');score+=8;}
   const confidence=score>=62?'high':score>=35?'partial':'low';
   if(typeof renderOfferIntelligencePanel==="function") renderOfferIntelligencePanel(parsed,raw);
-  pendingParseResult={parsed,confidence,score}; if(!showParsePreview()) applyParsedOffer();
+  pendingParseResult={parsed,confidence,score,rawText:raw}; if(!showParsePreview()) applyParsedOffer();
 }
 function getOfferIntelligenceShipOperator(shipName){
   const value=String(shipName||"").trim();
@@ -5270,20 +5270,33 @@ function clearOfferIntelligencePanel(){
   panel.innerHTML="";
   panel.classList.remove("active");
 }
+function getOfferIntelligenceDetectedFields(parsed,rawText){
+  const p=parsed||{};
+  const fields=[];
+  const add=(key,label)=>{ if(String(p[key]||"").trim()) fields.push(label); };
+  add("operatorKey","Operator Detected"); add("name","Cruise Title Detected"); add("ship","Ship Detected");
+  if(String(p.day||"").trim()||String(p.month||"").trim()) fields.push("Departure Date Detected");
+  add("nights","Nights Detected"); if(String(p.boardlbl||p.board||"").trim()) fields.push("Board Basis Detected");
+  add("price","Price Detected"); if(String(p.ports||"").trim()) fields.push("You’ll Visit Ports Detected");
+  const airport=AIRPORT_WORDS.find(a=>new RegExp('\\b'+escapeRegExp(a)+'\\b','i').test(String(rawText||"")+" "+String(p.incl||"")));
+  if(airport) fields.push("Departure Airport Detected");
+  if(/\b(?:inside|outside|balcony|suite|cabin|stateroom)\b/i.test(String(rawText||""))) fields.push("Cabin Type Detected");
+  return {fields,airport};
+}
+function getOfferIntelligenceSummary(parsed,rawText){
+  const count=getOfferIntelligenceDetectedFields(parsed,rawText).fields.length;
+  const label=count>=7?"High Confidence":count>=4?"Partial Match":"Needs Review";
+  const level=count>=7?"high":count>=4?"partial":"low";
+  return {count,label,level};
+}
 function renderOfferIntelligencePanel(parsed,rawText){
   try{
     const panel=document.getElementById("offer-intel-panel");
     if(!panel) return;
     const p=parsed||{};
-    const detected=[];
-    const addDetected=(key,label)=>{ if(String(p[key]||"").trim()) detected.push(label); };
-    addDetected("operatorKey","Operator Detected"); addDetected("name","Cruise Title Detected"); addDetected("ship","Ship Detected");
-    if(String(p.day||"").trim()||String(p.month||"").trim()) detected.push("Departure Date Detected");
-    addDetected("nights","Nights Detected"); if(String(p.boardlbl||p.board||"").trim()) detected.push("Board Basis Detected");
-    addDetected("price","Price Detected"); addDetected("ports","Ports Detected");
-    const airport=AIRPORT_WORDS.find(a=>new RegExp('\\b'+escapeRegExp(a)+'\\b','i').test(String(rawText||"")+" "+String(p.incl||"")));
-    if(airport) detected.push("Departure Airport Detected");
-    if(/\b(?:inside|outside|balcony|suite|cabin|stateroom)\b/i.test(String(rawText||""))) detected.push("Cabin Type Detected");
+    const detectedInfo=getOfferIntelligenceDetectedFields(p,rawText);
+    const detected=detectedInfo.fields;
+    const airport=detectedInfo.airport;
     const inclusions=detectOfferIntelligenceInclusions(p,rawText);
     const missing=[];
     if(!p.ship) missing.push("Ship not detected");
@@ -5295,8 +5308,6 @@ function renderOfferIntelligencePanel(parsed,rawText){
     const effectiveOperator=p.operatorKey||(shipOperator&&shipOperator.operatorKey)||"";
     if(shipOperator&&!p.operatorKey){ const name=(OPERATOR_HEADERS[shipOperator.operatorKey]||{}).name; if(name) suggestions.push(`Operator inferred from ship: ${name}`); }
     getOfferIntelligenceCruiseTypes(p,rawText,effectiveOperator).forEach(type=>suggestions.push(type));
-    const intel=OPERATOR_INTELLIGENCE&&OPERATOR_INTELLIGENCE[effectiveOperator];
-    if(intel){ suggestions.push("Operator USPs Available"); if(intel.dawsonUrl||getOperatorLandingUrl(effectiveOperator)) suggestions.push("Landing Page Available"); }
     const item=(kind,icon,label)=>`<div class="offer-intel-item ${kind}"><span class="offer-intel-icon">${icon}</span><span>${label}</span></div>`;
     const section=(heading,html,empty="")=>`<div class="offer-intel-section"><div class="offer-intel-heading">${heading}</div><div class="offer-intel-list">${html||`<div class="offer-intel-empty">${empty}</div>`}</div></div>`;
     panel.innerHTML=`<div class="offer-intel-title">Offer Intelligence</div>`+
@@ -5322,10 +5333,10 @@ function prepareOfferSlotForParsedOffer(parsed){
   if(!offers[cur]) offers[cur]={};
   return true;
 }
-function applyParsedOffer(){if(!pendingParseResult) return; if(typeof isOfferLocked==="function" && isOfferLocked(cur)){ setParseStatus(getLockedOfferMessage(cur),"low"); cancelParsedOffer(); return; } const {parsed,confidence}=pendingParseResult; if(!prepareOfferSlotForParsedOffer(parsed)){ setParseStatus('No offer fields detected','low'); cancelParsedOffer(); return; } const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
+function applyParsedOffer(){if(!pendingParseResult) return; if(typeof isOfferLocked==="function" && isOfferLocked(cur)){ setParseStatus(getLockedOfferMessage(cur),"low"); cancelParsedOffer(); return; } const {parsed,confidence,rawText}=pendingParseResult; if(!prepareOfferSlotForParsedOffer(parsed)){ setParseStatus('No offer fields detected','low'); cancelParsedOffer(); return; } const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
   touched.forEach(el=>{el.classList.remove('parse-field-flash'); void el.offsetWidth; el.classList.add('parse-field-flash'); setTimeout(()=>el.classList.remove('parse-field-flash'),1700);});
-  const applied=touched.length; const label=confidence==='high'?'High Confidence':confidence==='partial'?'Partial Match':'Needs Review';
-  setParseStatus(`✓ Parsed ${applied} fields — ${label}`,confidence); cancelParsedOffer(); rv(); updateAllStatus(); genUtm(); checkPortsWarn(); updateExportFilenames(); runSpellQA(); if(applied){ if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Offer loaded"); queueAutosave(); }}
+  const applied=touched.length; const summary=typeof getOfferIntelligenceSummary==="function"?getOfferIntelligenceSummary(parsed,rawText):{count:applied,label:(confidence==='high'?'High Confidence':confidence==='partial'?'Partial Match':'Needs Review'),level:confidence};
+  setParseStatus(`✓ Detected ${summary.count} fields — ${summary.label}`,summary.level); cancelParsedOffer(); rv(); updateAllStatus(); genUtm(); checkPortsWarn(); updateExportFilenames(); runSpellQA(); if(applied){ if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Offer loaded"); queueAutosave(); }}
 
 // ═══════════════════════════════════════════════════════
 // CARD BUILDER
