@@ -50,6 +50,7 @@ function createHarness() {
     extractFunction('getStandalonePortLines'),
     extractFunction('getOfferIntelligenceCruiseTypes'),
     extractFunction('getOfferIntelligenceCruiseKnowledge'),
+    extractFunction('hasOfferIntelligenceNegativeContext'),
     extractFunction('detectOfferIntelligenceInclusions'),
     extractFunction('clearOfferIntelligencePanel'),
     extractFunction('formatOfferIntelligencePorts'),
@@ -181,4 +182,92 @@ test('Offer Intelligence hides cruise knowledge when no confident operator or sh
   assert.doesNotMatch(panel.innerHTML, /Cruise Knowledge/);
   assert.doesNotMatch(panel.innerHTML, /Cruise Type:/);
   assert.doesNotMatch(panel.innerHTML, /Audience:/);
+});
+
+
+test('POA v3 detects advanced inclusion variants and normalises duplicate wording', () => {
+  const { context } = createHarness();
+  const raw = [
+    'Includes flights from Newcastle with regional flights',
+    'Luggage Included and checked baggage included',
+    'Airport transfers, overseas transfers and private transfers included',
+    'Classic drinks package with premium drinks',
+    'WiFi package and internet package',
+    'Gratuities Included and Tips Included',
+    'Onboard credit, on-board spend and spending money',
+    'Shore excursions included, selected excursions included and guided excursions',
+    'Pre-cruise hotel and hotel night included',
+    'Rail travel included, train included and Eurostar included',
+    'Speciality dining included and dining package included',
+    'Free cabin upgrade with balcony upgrade',
+    'Balcony cabin included'
+  ].join('\n');
+  const inclusions = vm.runInContext('detectOfferIntelligenceInclusions(parsed, raw);', Object.assign(context, { parsed: {}, raw }));
+
+  assert.deepEqual(JSON.parse(JSON.stringify(inclusions)), [
+    'Flights Included',
+    'Luggage Included',
+    'Transfers Included',
+    'Drinks Package Included',
+    'Wi-Fi Included',
+    'Gratuities Included',
+    'Onboard Spend Included',
+    'Shore Excursions Included',
+    'Hotel Stay Included',
+    'Rail Included',
+    'Speciality Dining Included',
+    'Cabin Upgrade Included',
+    'Balcony Cabin Included'
+  ]);
+});
+
+test('POA v3 detects requested real-world inclusion wording variants', () => {
+  const { context } = createHarness();
+  const cases = [
+    ['Flights Included', ['Flights Included', 'Includes flights', 'Return flights', 'Regional flights', 'Flights from Newcastle', 'Newcastle flights']],
+    ['Luggage Included', ['Baggage Included', 'Checked baggage', 'Hold luggage', 'Includes luggage']],
+    ['Transfers Included', ['Transfers Included', 'Airport transfers', 'Overseas transfers', 'Return transfers', 'Coach transfers', 'Private transfers']],
+    ['Drinks Package Included', ['Drinks Package Included', 'Drinks included', 'All-inclusive drinks', 'Premium drinks', 'Classic drinks package']],
+    ['Wi-Fi Included', ['Wi-Fi Included', 'WiFi Included', 'Wi-Fi package', 'Internet package', 'WiFi package']],
+    ['Gratuities Included', ['Gratuities Included', 'Tips Included', 'Service charges included']],
+    ['Onboard Spend Included', ['Onboard spend', 'On board spend', 'On-board spend', 'Onboard credit', 'On board credit', 'Shipboard credit', 'Spending money']],
+    ['Shore Excursions Included', ['Shore excursions included', 'Excursions included', 'Guided excursions', 'Selected excursions included']],
+    ['Hotel Stay Included', ['Hotel stay included', 'Pre-cruise hotel', 'Post-cruise hotel', 'Hotel night included', 'Includes hotel stay']],
+    ['Rail Included', ['Rail included', 'Train included', 'Eurostar included', 'Rail travel included']],
+    ['Speciality Dining Included', ['Speciality dining included', 'Dining package included']],
+    ['Cabin Upgrade Included', ['Cabin upgrade included', 'Free cabin upgrade', 'Balcony upgrade', 'Ocean view upgrade']]
+  ];
+
+  for (const [label, phrases] of cases) {
+    for (const phrase of phrases) {
+      const inclusions = vm.runInContext('detectOfferIntelligenceInclusions({}, raw);', Object.assign(context, { raw: phrase }));
+      assert.ok(inclusions.includes(label), `${phrase} should detect ${label}`);
+    }
+  }
+});
+
+test('POA v3 negative inclusion phrases do not create false positives', () => {
+  const { context } = createHarness();
+  const raw = [
+    'Transfers available at extra cost',
+    'Drinks package optional',
+    'Gratuities not included',
+    'Flights excluding regional departures',
+    'Hotel stay available at supplement',
+    'Rail travel payable locally',
+    'Cabin upgrade available',
+    'Shore excursions excluded',
+    'WiFi package extra cost'
+  ].join('\n');
+  const inclusions = vm.runInContext('detectOfferIntelligenceInclusions({}, raw);', Object.assign(context, { raw }));
+
+  assert.deepEqual(JSON.parse(JSON.stringify(inclusions)), []);
+});
+
+test('POA v3 inclusion detection does not alter summary confidence field counts', () => {
+  const { context } = createHarness();
+  const raw = 'Includes flights, luggage, airport transfers, premium drinks, WiFi package, gratuities and onboard credit';
+  const summary = vm.runInContext('getOfferIntelligenceSummary(parsed, raw);', Object.assign(context, { parsed: { price: '999' }, raw }));
+
+  assert.deepEqual(JSON.parse(JSON.stringify(summary)), { count: 1, label: 'Needs Review', level: 'low' });
 });
