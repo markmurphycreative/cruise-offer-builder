@@ -5273,14 +5273,33 @@ function clearOfferIntelligencePanel(){
 function getOfferIntelligenceDetectedFields(parsed,rawText){
   const p=parsed||{};
   const fields=[];
-  const add=(key,label)=>{ if(String(p[key]||"").trim()) fields.push(label); };
-  add("operatorKey","Operator Detected"); add("name","Cruise Title Detected"); add("ship","Ship Detected");
-  if(String(p.day||"").trim()||String(p.month||"").trim()) fields.push("Departure Date Detected");
-  add("nights","Nights Detected"); if(String(p.boardlbl||p.board||"").trim()) fields.push("Board Basis Detected");
-  add("price","Price Detected"); if(String(p.ports||"").trim()) fields.push("You’ll Visit Ports Detected");
-  const airport=AIRPORT_WORDS.find(a=>new RegExp('\\b'+escapeRegExp(a)+'\\b','i').test(String(rawText||"")+" "+String(p.incl||"")));
-  if(airport) fields.push("Departure Airport Detected");
-  if(/\b(?:inside|outside|balcony|suite|cabin|stateroom)\b/i.test(String(rawText||""))) fields.push("Cabin Type Detected");
+  const text=String(rawText||"")+" "+String(p.incl||"");
+  const isUsefulValue=(value)=>{
+    const normalized=String(value==null?"":value).trim();
+    return normalized&&!/^(?:unknown|null|undefined)$/i.test(normalized);
+  };
+  const addValue=(label,value)=>{ if(isUsefulValue(value)) fields.push(`${label}: ${String(value).trim()}`); };
+  const operatorName=(p.operatorKey&&((OPERATOR_HEADERS[p.operatorKey]||{}).name||p.operatorKey))||"";
+  addValue("Operator",operatorName);
+  addValue("Cruise Title",p.name);
+  addValue("Ship",p.ship);
+  const departureDate=[p.day,p.month].filter(isUsefulValue).map(value=>String(value).trim()).join(" ");
+  addValue("Departure Date",departureDate);
+  addValue("Nights",p.nights);
+  addValue("Board Basis",p.boardlbl||p.board);
+  const price=String(p.price||"").trim();
+  if(isUsefulValue(price)) fields.push(`Price: ${/^£/.test(price)?price:`£${price}`}${/pp\b/i.test(price)?"":"pp"}`);
+  if(isUsefulValue(p.ports)) fields.push("You’ll Visit Ports: Detected");
+  const airport=AIRPORT_WORDS.find(a=>new RegExp('\\b'+escapeRegExp(a)+'\\b','i').test(text));
+  if(airport){
+    const airportMatch=text.match(new RegExp('\\b('+escapeRegExp(airport)+')\\b','i'));
+    addValue("Departure Airport",airportMatch?airportMatch[1]:airport);
+  }
+  const cabinMatch=String(rawText||"").match(/\b(inside|outside|balcony|suite)(?:\s+(cabin|stateroom))?\b|\b(cabin|stateroom)\b/i);
+  if(cabinMatch){
+    const cabinType=[cabinMatch[1],cabinMatch[2]||(!cabinMatch[1]&&cabinMatch[3])].filter(Boolean).map(value=>String(value).charAt(0).toUpperCase()+String(value).slice(1).toLowerCase()).join(" ");
+    addValue("Cabin Type",cabinType);
+  }
   return {fields,airport};
 }
 function getOfferIntelligenceSummary(parsed,rawText){
