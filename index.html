@@ -5181,13 +5181,32 @@ function cleanParsedPorts(lines){
 function escapeRegExp(value){ return String(value||"").replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 function findKnownOperatorShip(text,operatorKey){
   const search=String(text||"");
+  if(!search.trim()) return null;
+  const matches=[];
   const keys=operatorKey?[operatorKey]:Object.keys(OPERATOR_SHIPS||{});
   for(const key of keys){
     const ships=[...(OPERATOR_SHIPS[key]||[])].sort((a,b)=>b.length-a.length);
-    const ship=ships.find(name=>new RegExp('\\b'+escapeRegExp(name)+'\\b','i').test(search));
-    if(ship) return {operatorKey:key,ship};
+    ships.forEach(ship=>{
+      const shipName=String(ship||"").trim();
+      if(shipName&&new RegExp('\\b'+escapeRegExp(shipName)+'\\b','i').test(search)) matches.push({operatorKey:key,ship:shipName});
+    });
   }
-  return null;
+  const unique=matches.filter((match,index,self)=>self.findIndex(other=>other.operatorKey===match.operatorKey&&other.ship.toLowerCase()===match.ship.toLowerCase())===index);
+  const operators=[...new Set(unique.map(match=>match.operatorKey))];
+  return operators.length===1 ? unique.sort((a,b)=>b.ship.length-a.ship.length)[0] : null;
+}
+function getStandalonePortLines(lines){
+  const likelyPort=/^[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’.-]*(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’.-]*){0,3}$/;
+  const reject=/^(?:at sea|sea day|overnight|inside|outside|balcony|suite|full board|half board|all inclusive|self catering|family|premium|ocean cruise|river cruise|cruise|ship|operator|price|from|ports?|itinerary|you(?:'|’)?ll visit)$/i;
+  const portLines=(lines||[]).map(line=>String(line||"").trim()).filter(line=>
+    likelyPort.test(line)&&
+    !reject.test(line)&&
+    !ITINERARY_FOOTER_LABEL.test(line)&&
+    !Object.values(OPERATOR_ALIASES).flat().some(pattern=>pattern.test(line))&&
+    !findKnownOperatorShip(line)&&
+    !/[£$€]|\d|\b(?:nights?|nts?|included|flights?|transfers?|luggage|cabin|from)\b/i.test(line)
+  );
+  return portLines.length>=3 ? portLines : [];
 }
 const TRANSIENT_PASTE_OFFER_KEYS=["rawPaste","pasteText","parsedRaw"];
 function stripTransientPasteOfferFields(offer){
@@ -5215,11 +5234,11 @@ function parseOffer(){
   let dm=txt.match(new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${months})\\s+(\\d{2,4})\\b`,'i'))||txt.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);
   if(dm){ if(dm[0].includes('/')){const y=dm[3].length===2?'20'+dm[3]:dm[3]; const date=new Date(`${y}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}`); parsed.day=String(date.getDate()); parsed.month=date.toLocaleString('en-GB',{month:'long'})+' '+date.getFullYear(); } else {const y=dm[3].length===2?'20'+dm[3]:dm[3]; const mn=new Date(`${dm[2]} 1, ${y}`); parsed.day=dm[1]; parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+y;} score+=16; }
   else { const mm=txt.match(new RegExp(`\\b(${months})\\s+(\\d{4})\\b`,'i')); if(mm){ const mn=new Date(`${mm[1]} 1, ${mm[2]}`); parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+mm[2]; score+=10; } }
-  const itineraryLines=getItineraryLines(lines); const portLines=itineraryLines||lines.filter(l=>/[•·,]|\s+-\s+/.test(l)&&/(?:[A-Za-z]{3,}\s*){2,}/.test(l)&&!/from|£|nights?|nts?|included|flights?/i.test(l)); const ports=cleanParsedPorts(portLines); if(ports){parsed.ports=ports;score+=8;}
+  const itineraryLines=getItineraryLines(lines); const standalonePortLines=getStandalonePortLines(lines); const portLines=itineraryLines||(standalonePortLines.length?standalonePortLines:null)||lines.filter(l=>/[•·,]|\s+-\s+/.test(l)&&/(?:[A-Za-z]{3,}\s*){2,}/.test(l)&&!/from|£|nights?|nts?|included|flights?/i.test(l)); const ports=cleanParsedPorts(portLines); if(ports){parsed.ports=ports;score+=8;}
   const uspTags=inferUspTagsFromLines(lines); if(uspTags){parsed.tags=uspTags;score+=8;}
   const incl=lines.find(l=>/flights?|luggage|transfer|included|all inclusive/i.test(l)); if(incl){parsed.incl=incl;score+=6;}
   const airport=AIRPORT_WORDS.find(a=>new RegExp('\\b'+a+'\\b','i').test(txt)); if(airport&&!parsed.incl){parsed.incl=airport[0].toUpperCase()+airport.slice(1)+' departures';score+=4;}
-  const knownShipMatch=findKnownOperatorShip(txt,parsed.operatorKey||"amawaterways"); if(knownShipMatch){ if(!parsed.ship){parsed.ship=knownShipMatch.ship;score+=8;} if(!parsed.operatorKey&&knownShipMatch.operatorKey==="amawaterways"){parsed.operatorKey=knownShipMatch.operatorKey;score+=18;} }
+  const knownShipMatch=findKnownOperatorShip(txt,parsed.operatorKey); if(knownShipMatch){ if(!parsed.ship){parsed.ship=knownShipMatch.ship;score+=8;} if(!parsed.operatorKey){parsed.operatorKey=knownShipMatch.operatorKey;score+=18;} }
   if(!parsed.ship){const shipLine=lines.find(l=>/\b(cruise|explorer|symphony|arvia|voyager|queen|discovery)\b/i.test(l)); if(shipLine){const m=shipLine.match(/\b([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+){0,3})\b/); if(m) parsed.ship=m[1];}}
   const title=lines.find(l=>!Object.values(OPERATOR_ALIASES).flat().some(r=>r.test(l))&&!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b/i.test(l))&&l.length>8&&l!==parsed.ship); if(title){parsed.name=title.replace(/^[-•\s]+/,'');score+=8;}
   const confidence=score>=62?'high':score>=35?'partial':'low';

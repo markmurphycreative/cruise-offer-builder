@@ -120,9 +120,9 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     },
     isOfferLoaded: offer => !!(offer && (offer.name || offer.ship || offer.price || offer._img)),
     BOARD_MAP: { FB: ['FB', 'Full Board'], 'FULL BOARD': ['FB', 'Full Board'] },
-    OPERATOR_HEADERS: {},
-    OPERATOR_SHIPS: { celebrity: ['Celebrity Ascent'], amawaterways: ['AmaBella', 'AmaDouro', 'AmaMagna', 'Zambezi Queen'] },
-    OPERATOR_ALIASES: { celebrity: [/\bcelebrity\b/i, /\bcelebrity\s+cruises\b/i] },
+    OPERATOR_HEADERS: { cunard: { name: 'Cunard' }, ncl: { name: 'Norwegian Cruise Line' } },
+    OPERATOR_SHIPS: { celebrity: ['Celebrity Ascent'], amawaterways: ['AmaBella', 'AmaDouro', 'AmaMagna', 'Zambezi Queen'], cunard: ['Queen Anne'], ncl: ['Norwegian Prima', 'Pride of America'] },
+    OPERATOR_ALIASES: { celebrity: [/\bcelebrity\b/i, /\bcelebrity\s+cruises\b/i], cunard: [/\bcunard\b/i], ncl: [/\bnorwegian\b/i, /\bncl\b/i] },
     AIRPORT_WORDS: ['newcastle'],
     getLikelyTypos() { return []; },
     setSpellWarn() {},
@@ -150,6 +150,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('cleanParsedPorts'),
     extractFunction('escapeRegExp'),
     extractFunction('findKnownOperatorShip'),
+    extractFunction('getStandalonePortLines'),
     extractFunction('parseFamilyPassengerBasis'),
     extractFunction('parseOffer'),
     extractFunction('setParseStatus'),
@@ -350,6 +351,27 @@ test('live Load Offer button click handler reaches the supplied Celebrity offer 
   assert.equal(harness.calls.autosave, 1);
 });
 
+
+
+test('Paste Offer infers Queen Anne as Cunard and detects standalone port lines', () => {
+  const harness = createHarness([], 0, { hasParsePreviewModal: false });
+
+  harness.parse(`Queen Anne
+7 nights
+Full Board
+£1199pp
+Southampton
+Stavanger
+Olden
+Geiranger
+Bergen
+Southampton`);
+
+  assert.equal(harness.context.offers[0].operator, 'cunard');
+  assert.equal(harness.context.offers[0].ship, 'Queen Anne');
+  assert.equal(harness.context.offers[0].ports, 'Southampton • Stavanger • Olden • Geiranger • Bergen • Southampton');
+  assert.notEqual(harness.context.offers[0].operator, 'ncl');
+});
 
 test('Paste Offer recognises AmaWaterways ships without manual operator selection', () => {
   for (const ship of ['AmaMagna', 'AmaBella', 'AmaDouro', 'Zambezi Queen']) {
