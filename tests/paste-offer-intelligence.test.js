@@ -62,8 +62,13 @@ test('Offer Intelligence infers known ship operators without changing parsed dat
   assert.match(panel.innerHTML, /Flights Included/);
   assert.match(panel.innerHTML, /Luggage Included/);
   assert.match(panel.innerHTML, /Transfers Included/);
-  assert.match(panel.innerHTML, /Departure Airport Detected/);
-  assert.match(panel.innerHTML, /Cabin Type Detected/);
+  assert.match(panel.innerHTML, /Departure Airport: Newcastle/);
+  assert.match(panel.innerHTML, /Cabin Type: Inside Cabin/);
+  assert.match(panel.innerHTML, /Cruise Title: Caribbean Escape/);
+  assert.match(panel.innerHTML, /Ship: Arvia/);
+  assert.match(panel.innerHTML, /Nights: 14/);
+  assert.match(panel.innerHTML, /Board Basis: Full Board/);
+  assert.match(panel.innerHTML, /Price: £1669pp/);
   assert.doesNotMatch(panel.innerHTML, /Operator USPs Available/);
   assert.doesNotMatch(panel.innerHTML, /Landing Page Available/);
 });
@@ -82,10 +87,10 @@ test('Offer Intelligence reports missing fields and avoids false operator matche
 test('Offer Intelligence shows ports detection only when parsed ports exist', () => {
   const { context, panel } = createHarness();
   vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, { parsed: { ports: 'Barbados • Martinique' }, raw: 'Barbados • Martinique' }));
-  assert.match(panel.innerHTML, /You’ll Visit Ports Detected/);
+  assert.match(panel.innerHTML, /You’ll Visit Ports: Detected/g);
 
   vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, { parsed: { price: '999' }, raw: '£999pp' }));
-  assert.doesNotMatch(panel.innerHTML, /You’ll Visit Ports Detected/);
+  assert.doesNotMatch(panel.innerHTML, /You’ll Visit Ports: Detected/);
 });
 
 test('Offer Intelligence summary counts detected panel fields using simple confidence labels', () => {
