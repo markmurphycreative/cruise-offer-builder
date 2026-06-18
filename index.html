@@ -45,9 +45,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .otab{position:relative;width:100%;height:100%;min-height:47px;padding:7px 5px 15px;font-size:10px;font-weight:500;border:none;background:transparent;color:var(--muted);cursor:pointer;letter-spacing:.035em;transition:color .18s ease,background .18s ease,box-shadow .18s ease,opacity .18s ease;display:flex;align-items:flex-start;justify-content:center;}
 .offer-tab-label{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;width:100%;min-width:0;line-height:1.12;text-align:center;}
 .offer-tab-number,.offer-tab-operator,.offer-tab-ship{display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.offer-tab-quality{display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .offer-tab-number{font-size:7px;font-weight:600;text-transform:uppercase;letter-spacing:.065em;color:var(--muted);opacity:.58;}
 .offer-tab-operator{font-size:9px;font-weight:700;letter-spacing:0;color:var(--text);opacity:.58;}
 .offer-tab-ship{font-size:8px;font-weight:500;letter-spacing:.01em;color:var(--muted);opacity:.64;}
+.offer-tab-quality{font-size:8px;font-weight:700;letter-spacing:.02em;color:var(--navy);opacity:.68;}
 .otab:not(.active) .offer-tab-operator{font-weight:500;}
 .otab:hover:not(.active){color:var(--navy);background:rgba(160,146,103,.07);}
 .otab:hover:not(.active) .offer-tab-operator{opacity:.88;color:var(--navy);}
@@ -192,6 +194,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .poa-suggestion-empty{color:var(--muted);}
 .poa-suggestion-actions{display:flex;align-items:center;gap:5px;justify-content:flex-start;}
 .poa-suggestion-applied{font-size:9px;font-weight:700;color:var(--green);}
+.poa-suggestion-toolbar{display:flex;align-items:center;gap:5px;margin-bottom:5px;}
+.offer-quality-score{font-size:18px;font-weight:700;color:var(--navy);line-height:1.1;margin:1px 0 4px;}
+.offer-quality-missing{margin-top:4px;}
+.offer-quick-action{margin-left:4px;}
 .field.poa-target-highlight input,.field.poa-target-highlight textarea{border-color:var(--gold);background:rgba(184,167,110,0.08);}
 .offer-intel-empty{font-size:9px;color:var(--muted);line-height:1.35;}
 
@@ -2996,6 +3002,17 @@ function getOfferTabLabelParts(i){
   if(!operatorLabel) return {number:fallback,operator:"",ship:""};
   return {number:"Offer "+(i+1),operator:operatorLabel,ship:String(o.ship||"").trim()};
 }
+function getOfferTabQualityScore(i){
+  const o=offers[i]||{};
+  if(!isOfferLoaded(o)) return "";
+  const raw=[o.name,o.ship,o.incl,o.ports,o.tags].filter(Boolean).join(" ");
+  const parsed={operatorKey:o.operator,name:o.name,ship:o.ship,day:o.day,month:o.month,nights:o.nights,price:o.price,board:o.board,boardlbl:o.boardlbl,ports:o.ports,incl:o.incl};
+  const previousCur=cur;
+  cur=i;
+  const score=(typeof getOfferIntelligenceQualityScore==="function")?getOfferIntelligenceQualityScore(parsed,raw,o.operator):"";
+  cur=previousCur;
+  return score;
+}
 function updateOfferTabLabels(){
   for(let i=0;i<4;i++){
     const tab=document.getElementById("ot"+i);
@@ -3047,6 +3064,18 @@ function updateOfferTabLabels(){
       ship.textContent=parts.ship;
     }else if(ship){
       ship.remove();
+    }
+    let quality=label.querySelector&&label.querySelector(".offer-tab-quality");
+    const qualityScore=typeof getOfferTabQualityScore==="function"?getOfferTabQualityScore(i):"";
+    if(qualityScore!==""&&qualityScore!=null){
+      if(!quality){
+        quality=document.createElement("span");
+        quality.className="offer-tab-quality";
+        label.appendChild(quality);
+      }
+      quality.textContent=String(qualityScore);
+    }else if(quality){
+      quality.remove();
     }
   }
 }
@@ -5245,7 +5274,7 @@ function resetPasteOfferState(){
   cancelParsedOffer();
 }
 function parseOffer(){
-  resetPoaSuggestionState();
+  if(typeof resetPoaSuggestionState==="function") resetPoaSuggestionState();
   const raw=(document.getElementById("raw-paste")||{}).value||""; if(!raw.trim()) return setParseStatus("Nothing to parse","low");
   const lines=raw.split(/\n/).map(l=>l.trim()).filter(Boolean); const txt=lines.join(" \n "); const parsed={}; let score=0;
   const earlyShipMatch=findKnownOperatorShip(txt);
@@ -5478,8 +5507,11 @@ function getPoaSuggestionCurrentValue(suggestion){
   return offers[cur]&&suggestion?offers[cur][suggestion.fieldKey]||"":"";
 }
 function renderPoaAssistedApplySuggestions(suggestions){
-  if(!suggestions||!suggestions.length) return "";
-  const cards=suggestions.map(s=>{
+  const visible=(suggestions||[]).filter(s=>s&&s.id&&s.fieldId&&document.getElementById(s.fieldId));
+  if(!visible.length) return "";
+  const appliedCount=visible.filter(s=>poaAppliedSuggestions[s.id]).length;
+  const toolbar=`<div class="poa-suggestion-toolbar"><button class="abtn btn-compact" type="button" onclick="applyAllPoaSuggestions()">Apply All</button>${appliedCount?`<button class="abtn btn-compact" type="button" onclick="removeAllPoaSuggestions()">Remove All</button>`:""}</div>`;
+  const cards=visible.map(s=>{
     const applied=poaAppliedSuggestions[s.id];
     const current=applied&&Object.prototype.hasOwnProperty.call(applied,"previousValue")?applied.previousValue:getPoaSuggestionCurrentValue(s);
     const actions=applied
@@ -5487,9 +5519,25 @@ function renderPoaAssistedApplySuggestions(suggestions){
       : `<button class="abtn btn-compact" type="button" onclick="applyPoaSuggestion('${s.id}')">Apply</button>`;
     return `<div class="poa-suggestion-card" onmouseenter="setPoaSuggestionHighlight('${s.fieldKey}',true)" onmouseleave="setPoaSuggestionHighlight('${s.fieldKey}',false)"><div class="poa-suggestion-title">${escapePoaSuggestionHtml(s.title)}</div><div class="poa-suggestion-confidence">${escapePoaSuggestionHtml(s.confidenceLabel||"Low Confidence")}</div><div class="poa-suggestion-compare"><div><span class="poa-suggestion-compare-label">Current:</span>${formatPoaSuggestionValue(current)}</div><div><span class="poa-suggestion-compare-label">Suggested:</span>${formatPoaSuggestionValue(s.value)}</div></div><div class="poa-suggestion-actions">${actions}</div></div>`;
   }).join("");
-  return `<div class="offer-intel-section"><div class="offer-intel-heading">POA Suggestions</div><div class="offer-intel-list">${cards}</div></div>`;
+  return `<div class="offer-intel-section"><div class="offer-intel-heading">POA Suggestions (${visible.length})</div>${toolbar}<div class="offer-intel-list">${cards}</div></div>`;
 }
-function applyPoaSuggestion(id){
+
+function getVisiblePoaSuggestions(){
+  return (window.currentPoaSuggestions||[]).filter(s=>s&&s.id&&s.fieldId&&document.getElementById(s.fieldId));
+}
+function applyAllPoaSuggestions(){
+  getVisiblePoaSuggestions().forEach(s=>{ if(!poaAppliedSuggestions[s.id]) applyPoaSuggestion(s.id,true); });
+  clearPoaSuggestionHighlights();
+  up();
+  renderOfferIntelligencePanel(window.currentPoaParsed||{},window.currentPoaRawText||"");
+}
+function removeAllPoaSuggestions(){
+  getVisiblePoaSuggestions().filter(s=>poaAppliedSuggestions[s.id]).forEach(s=>removePoaSuggestion(s.id,true));
+  clearPoaSuggestionHighlights();
+  up();
+  renderOfferIntelligencePanel(window.currentPoaParsed||{},window.currentPoaRawText||"");
+}
+function applyPoaSuggestion(id,silent){
   if(poaAppliedSuggestions[id]||!window.currentPoaSuggestions) return;
   const suggestion=window.currentPoaSuggestions.find(item=>item.id===id);
   if(!suggestion) return;
@@ -5501,10 +5549,10 @@ function applyPoaSuggestion(id){
   offers[cur][suggestion.fieldKey]=suggestion.value;
   poaAppliedSuggestions[id]={previousValue};
   clearPoaSuggestionHighlights();
-  up();
-  renderOfferIntelligencePanel(window.currentPoaParsed||{},window.currentPoaRawText||"");
+  if(!silent){ up();
+  renderOfferIntelligencePanel(window.currentPoaParsed||{},window.currentPoaRawText||""); }
 }
-function removePoaSuggestion(id){
+function removePoaSuggestion(id,silent){
   if(!poaAppliedSuggestions[id]||!window.currentPoaSuggestions) return;
   const suggestion=window.currentPoaSuggestions.find(item=>item.id===id);
   if(!suggestion) return;
@@ -5516,36 +5564,71 @@ function removePoaSuggestion(id){
   offers[cur][suggestion.fieldKey]=previousValue;
   delete poaAppliedSuggestions[id];
   clearPoaSuggestionHighlights();
-  up();
-  renderOfferIntelligencePanel(window.currentPoaParsed||{},window.currentPoaRawText||"");
+  if(!silent){ up();
+  renderOfferIntelligencePanel(window.currentPoaParsed||{},window.currentPoaRawText||""); }
 }
 
-function getOfferIntelligenceQualityScore(parsed,rawText,effectiveOperator){
+function getOfferIntelligenceAirport(parsed,rawText){
   const p=parsed||{};
+  const text=String(rawText||"")+" "+String(p.incl||"");
+  const airport=AIRPORT_WORDS.find(a=>new RegExp('\\b'+escapeRegExp(a)+'\\b','i').test(text));
+  if(airport){
+    const match=text.match(new RegExp('\\b('+escapeRegExp(airport)+')\\b','i'));
+    return match?match[1]:airport;
+  }
+  return (typeof offers!=="undefined"&&offers&&offers[cur]&&offers[cur]._poaDepartureAirport)||"";
+}
+function getOfferIntelligenceQualityDetails(parsed,rawText,effectiveOperator){
+  const p=parsed||{};
+  const has=value=>!!String(value==null?"":value).trim();
   const checks=[
-    !!effectiveOperator,
-    !!String(p.ship||"").trim(),
-    !!([p.day,p.month].filter(Boolean).join(" ").trim()),
-    !!String(p.nights||"").trim(),
-    !!String(p.price||"").trim(),
-    !!String(p.boardlbl||p.board||"").trim(),
-    !!String(p.ports||"").trim()
+    {label:"Operator",points:15,ok:!!effectiveOperator},
+    {label:"Ship",points:15,ok:has(p.ship)},
+    {label:"Cruise Title",points:10,ok:has(p.name)},
+    {label:"Departure Date",points:10,ok:has([p.day,p.month].filter(Boolean).join(" "))},
+    {label:"Nights",points:10,ok:has(p.nights)},
+    {label:"Price",points:10,ok:has(p.price)},
+    {label:"Board Basis",points:10,ok:has(p.boardlbl||p.board)},
+    {label:"Ports",points:10,ok:has(p.ports)},
+    {label:"Cabin Type",points:5,ok:/\b(inside|outside|balcony|suite)(?:\s+(?:cabin|stateroom))?\b|\b(?:cabin|stateroom)\b/i.test(String(rawText||""))},
+    {label:"Departure Airport",points:5,ok:has(getOfferIntelligenceAirport(p,rawText))}
   ];
-  const count=checks.filter(Boolean).length;
-  if(count===checks.length) return "Excellent";
-  if(count>=5) return "Good";
-  return "Needs Review";
+  return {score:checks.reduce((sum,item)=>sum+(item.ok?item.points:0),0),checks};
+}
+function getOfferIntelligenceQualityScore(parsed,rawText,effectiveOperator){
+  if(typeof getOfferIntelligenceQualityDetails==="function") return getOfferIntelligenceQualityDetails(parsed,rawText,effectiveOperator).score;
+  const p=parsed||{};
+  return [!!effectiveOperator,!!String(p.ship||"").trim(),!!String(p.name||"").trim(),!!([p.day,p.month].filter(Boolean).join(" ").trim()),!!String(p.nights||"").trim(),!!String(p.price||"").trim(),!!String(p.boardlbl||p.board||"").trim(),!!String(p.ports||"").trim()].filter(Boolean).length*10;
+}
+function renderOfferQualitySection(parsed,rawText,effectiveOperator,item){
+  const quality=getOfferIntelligenceQualityDetails(parsed,rawText,effectiveOperator);
+  const present=quality.checks.filter(c=>c.ok).map(c=>item("detected","✓",c.label)).join("");
+  const missing=quality.checks.filter(c=>!c.ok).map(c=>item("missing","⚠",c.label)).join("");
+  return `<div class="offer-intel-section"><div class="offer-intel-heading">Offer Quality</div><div class="offer-quality-score">${quality.score} / 100</div><div class="offer-intel-list">${present}${missing?`<div class="offer-quality-missing"><div class="offer-intel-heading">Missing:</div>${missing}</div>`:""}</div></div>`;
+}
+function getPoaVisibleSuggestionCount(suggestions){
+  return (suggestions||[]).filter(s=>s&&s.id&&s.fieldId&&document.getElementById(s.fieldId)).length;
+}
+function canUseCampaignAirportQuickAction(airport,inclusions){
+  const campaignAirport=String((document.getElementById("g-airport")||{}).value||"").trim();
+  return !!(!airport&&campaignAirport&&(inclusions||[]).includes("Flights Included"));
+}
+function applyCampaignAirportQuickAction(){
+  const campaignAirport=String((document.getElementById("g-airport")||{}).value||"").trim();
+  if(!campaignAirport) return;
+  if(!offers[cur]) offers[cur]={};
+  offers[cur]._poaDepartureAirport=campaignAirport;
+  up();
+  renderOfferIntelligencePanel(window.currentPoaParsed||{},window.currentPoaRawText||"");
 }
 function getOfferIntelligenceActionSuggestions(parsed,rawText,inclusions,effectiveOperator){
   const actions=[];
   const cardInclusion=getOfferIntelligenceCardInclusionSuggestion(inclusions);
   const uspStrip=getOfferIntelligenceUspStripSuggestion(inclusions);
   const copyThemes=getOfferIntelligenceCopyThemes(parsed,rawText,effectiveOperator);
-  const quality=getOfferIntelligenceQualityScore(parsed,rawText,effectiveOperator);
   if(cardInclusion) actions.push(`Card Inclusion: ${cardInclusion}`);
   if(uspStrip) actions.push(`Suggested USP Strip: ${uspStrip}`);
   if(copyThemes.length) actions.push(`Copy Themes: ${copyThemes.join(" • ")}`);
-  actions.push(`Offer Quality: ${quality}`);
   return actions;
 }
 function clearOfferIntelligencePanel(){
@@ -5581,11 +5664,15 @@ function getOfferIntelligenceDetectedFields(parsed,rawText){
     const portsDisplay=formatOfferIntelligencePorts(p.ports);
     if(portsDisplay) fields.push(`You’ll Visit Ports: ${portsDisplay}`);
   }
-  const airport=AIRPORT_WORDS.find(a=>new RegExp('\\b'+escapeRegExp(a)+'\\b','i').test(text));
-  if(airport){
-    const airportMatch=text.match(new RegExp('\\b('+escapeRegExp(airport)+')\\b','i'));
-    addValue("Departure Airport",airportMatch?airportMatch[1]:airport);
+  let airport="";
+  const airportWord=AIRPORT_WORDS.find(a=>new RegExp('\\b'+escapeRegExp(a)+'\\b','i').test(text));
+  if(airportWord){
+    const airportMatch=text.match(new RegExp('\\b('+escapeRegExp(airportWord)+')\\b','i'));
+    airport=airportMatch?airportMatch[1]:airportWord;
+  }else if(typeof offers!=="undefined"&&offers&&offers[cur]&&offers[cur]._poaDepartureAirport){
+    airport=offers[cur]._poaDepartureAirport;
   }
+  addValue("Departure Airport",airport);
   const cabinMatch=String(rawText||"").match(/\b(inside|outside|balcony|suite)(?:\s+(cabin|stateroom))?\b|\b(cabin|stateroom)\b/i);
   if(cabinMatch){
     const cabinType=[cabinMatch[1],cabinMatch[2]||(!cabinMatch[1]&&cabinMatch[3])].filter(Boolean).map(value=>String(value).charAt(0).toUpperCase()+String(value).slice(1).toLowerCase()).join(" ");
@@ -5612,7 +5699,6 @@ function renderOfferIntelligencePanel(parsed,rawText){
     const missing=[];
     if(!p.ship) missing.push("Ship not detected");
     if(!(p.boardlbl||p.board)) missing.push("Board Basis not detected");
-    if(!airport) missing.push("Departure Airport not detected");
     if(!p.nights) missing.push("Nights not detected");
     const suggestions=[];
     const shipOperator=getOfferIntelligenceShipOperator(p.ship);
@@ -5621,11 +5707,23 @@ function renderOfferIntelligencePanel(parsed,rawText){
     getOfferIntelligenceCruiseTypes(p,rawText,effectiveOperator).forEach(type=>suggestions.push(type));
     const actionSuggestions=getOfferIntelligenceActionSuggestions(p,rawText,inclusions,effectiveOperator);
     const poaSuggestions=typeof getPoaAssistedApplySuggestions==="function"?getPoaAssistedApplySuggestions(p,rawText,inclusions,effectiveOperator):[];
+    const visibleSuggestionCount=typeof getPoaVisibleSuggestionCount==="function"?getPoaVisibleSuggestionCount(poaSuggestions):poaSuggestions.length;
+    const quality=typeof getOfferIntelligenceQualityDetails==="function"?getOfferIntelligenceQualityDetails(p,rawText,effectiveOperator):{score:0};
+    const summary=getOfferIntelligenceSummary(p,rawText);
+    if(!airport&&!(inclusions||[]).includes("Flights Included")){}
+    else if(!airport){
+      const campaignAirport=String((document.getElementById("g-airport")||{}).value||"").trim();
+      const quick=(typeof canUseCampaignAirportQuickAction==="function"&&canUseCampaignAirportQuickAction(airport,inclusions)&&campaignAirport)?` <button class="abtn btn-compact offer-quick-action" type="button" onclick="applyCampaignAirportQuickAction()">Use ${escapePoaSuggestionHtml(campaignAirport)}</button>`:"";
+      missing.push(`Departure Airport not detected${quick}`);
+    }
     if(typeof window!=="undefined"){ window.currentPoaSuggestions=poaSuggestions; window.currentPoaParsed=p; window.currentPoaRawText=rawText; }
     const item=(kind,icon,label)=>`<div class="offer-intel-item ${kind}"><span class="offer-intel-icon">${icon}</span><span>${label}</span></div>`;
     const section=(heading,html,empty="")=>`<div class="offer-intel-section"><div class="offer-intel-heading">${heading}</div><div class="offer-intel-list">${html||`<div class="offer-intel-empty">${empty}</div>`}</div></div>`;
+    const summaryHtml=section("POA Summary",[summary.label,`${summary.count} Fields Detected`,`${visibleSuggestionCount} Suggestions Available`,`Quality Score: ${quality.score}`].map(label=>item("detected","✓",label)).join(""));
     panel.innerHTML=`<div class="offer-intel-title">Offer Intelligence</div>`+
+      summaryHtml+
       section("Detected",detected.map(label=>item("detected","✓",label)).join(""),"No core fields detected yet.")+
+      (typeof renderOfferQualitySection==="function"?renderOfferQualitySection(p,rawText,effectiveOperator,item):"")+
       (cruiseKnowledge.length?section("Cruise Knowledge",cruiseKnowledge.map(label=>item("detected","✓",label)).join("")):"")+
       (typeof renderPoaAssistedApplySuggestions==="function"?renderPoaAssistedApplySuggestions(poaSuggestions):"")+
       (inclusions.length?section("Inclusions Detected",inclusions.map(label=>item("detected","✓",label)).join("")):"")+
@@ -6123,7 +6221,7 @@ function rv(skipSave){
 }
 
 function sv(i){
-  resetPoaSuggestionState();
+  if(typeof resetPoaSuggestionState==="function") resetPoaSuggestionState();
   saveEditorToOffer();
   cur=Number(i);
   document.querySelectorAll('.otab').forEach((t,idx)=>t.classList.toggle('active',idx===cur));
@@ -6153,7 +6251,7 @@ function up(){
 }
 
 function load(i){
-  resetPoaSuggestionState();
+  if(typeof resetPoaSuggestionState==="function") resetPoaSuggestionState();
   cur=Number(i)||0;
   loadOfferToEditor(cur);
   genUtm();
