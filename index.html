@@ -171,6 +171,19 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .parse-preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;}
 .parse-preview-item{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:6px;}
 .parse-preview-item strong{display:block;font-size:9px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;}
+.offer-intel-panel{display:none;margin-top:6px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;}
+.offer-intel-panel.active{display:block;}
+.offer-intel-title{font-size:9px;font-weight:400;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);margin-bottom:5px;}
+.offer-intel-section{margin-top:5px;}
+.offer-intel-section:first-of-type{margin-top:0;}
+.offer-intel-heading{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:3px;}
+.offer-intel-list{display:grid;grid-template-columns:1fr;gap:2px;}
+.offer-intel-item{display:flex;align-items:flex-start;gap:5px;font-size:9px;line-height:1.3;color:var(--text);}
+.offer-intel-icon{flex:0 0 12px;text-align:center;font-weight:700;}
+.offer-intel-item.detected .offer-intel-icon{color:var(--green);}
+.offer-intel-item.missing .offer-intel-icon{color:var(--amber);}
+.offer-intel-item.suggestion .offer-intel-icon{color:var(--builder-blue);}
+.offer-intel-empty{font-size:9px;color:var(--muted);line-height:1.35;}
 
 /* ── OPERATOR ── */
 .op-select{width:100%;padding:5px 8px;font-size:12px;font-weight:600;border:1px solid var(--border);border-radius:var(--radius);background:#fff;color:var(--text);appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
@@ -879,6 +892,7 @@ Newcastle Flights, Luggage &amp; Transfers Included
 Barbados • Martinique • St Kitts • Tortola"></textarea>
         <button class="parse-btn" onclick="parseOffer()"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M12 18v-6"></path><path d="m9 15 3 3 3-3"></path></svg>Load Offer</button>
         <div class="parse-result" id="parse-result"></div>
+        <div class="offer-intel-panel" id="offer-intel-panel" aria-live="polite"></div>
         <div class="spell-warn" id="spell-warn-raw"></div>
       </div>
     </div>
@@ -5184,6 +5198,7 @@ function stripTransientPasteOfferFields(offer){
 function resetPasteOfferState(){
   const raw=document.getElementById("raw-paste"); if(raw) raw.value="";
   const status=document.getElementById("parse-result"); if(status){status.textContent="";status.className="parse-result";}
+  if(typeof clearOfferIntelligencePanel==="function") clearOfferIntelligencePanel();
   cancelParsedOffer();
 }
 function parseOffer(){
@@ -5208,9 +5223,91 @@ function parseOffer(){
   if(!parsed.ship){const shipLine=lines.find(l=>/\b(cruise|explorer|symphony|arvia|voyager|queen|discovery)\b/i.test(l)); if(shipLine){const m=shipLine.match(/\b([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+){0,3})\b/); if(m) parsed.ship=m[1];}}
   const title=lines.find(l=>!Object.values(OPERATOR_ALIASES).flat().some(r=>r.test(l))&&!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b/i.test(l))&&l.length>8&&l!==parsed.ship); if(title){parsed.name=title.replace(/^[-•\s]+/,'');score+=8;}
   const confidence=score>=62?'high':score>=35?'partial':'low';
+  if(typeof renderOfferIntelligencePanel==="function") renderOfferIntelligencePanel(parsed,raw);
   pendingParseResult={parsed,confidence,score}; if(!showParsePreview()) applyParsedOffer();
 }
-function setParseStatus(msg,level){const el=document.getElementById('parse-result'); if(!el) return; el.textContent=msg; el.className='parse-result '+(level||'');}
+function getOfferIntelligenceShipOperator(shipName){
+  const value=String(shipName||"").trim();
+  if(!value) return null;
+  const matches=[];
+  Object.entries(OPERATOR_SHIPS||{}).forEach(([operatorKey,ships])=>{
+    (ships||[]).forEach(ship=>{
+      if(String(ship).toLowerCase()===value.toLowerCase()) matches.push({operatorKey,ship});
+    });
+  });
+  return matches.length===1 ? matches[0] : null;
+}
+function getOfferIntelligenceCruiseTypes(parsed,rawText,operatorKey){
+  const text=String(rawText||"");
+  const types=[];
+  const category=(OPERATOR_INTELLIGENCE&&OPERATOR_INTELLIGENCE[operatorKey]&&OPERATOR_INTELLIGENCE[operatorKey].category)||"";
+  const add=(label)=>{ if(label&&!types.includes(label)) types.push(label); };
+  if(/river\s+cruise/i.test(text)||/river cruise/i.test(category)||operatorKey==="amawaterways") add("River Cruise");
+  else if(/expedition\s+cruise/i.test(text)||/\bexpedition\b/i.test(category)) add("Expedition Cruise");
+  else if(/ocean\s+cruise/i.test(text)||/ocean cruise/i.test(category)||["po","cunard","fred","celebrity","royal","marella","msc","ncl","princess","virgin","ambassador"].includes(operatorKey)) add("Ocean Cruise");
+  if(/adults?[-\s]*only/i.test(text)||/adults-only/i.test(category)||operatorKey==="virgin") add("Adults Only");
+  if(/family|kids'?\s+clubs?|children/i.test(text)||["royal","msc","ncl","po","princess"].includes(operatorKey)) add("Family Friendly");
+  return types;
+}
+function detectOfferIntelligenceInclusions(parsed,rawText){
+  const text=[rawText,parsed&&parsed.incl].filter(Boolean).join(" ");
+  const checks=[
+    ["Flights Included",/\bflights?\b/i],
+    ["Luggage Included",/\bluggage\b/i],
+    ["Transfers Included",/\btransfers?\b/i],
+    ["Drinks Package Included",/\bdrinks?\s+package\b|\bdrinks?\s+included\b/i],
+    ["Wi-Fi Included",/\bwi[-\s]?fi\b|\binternet\b/i],
+    ["Gratuities Included",/\bgratuities\b|\btips\b/i],
+    ["Onboard Spend Included",/\bon\s*board\s+spend\b|\bonboard\s+spend\b|\bobs\b/i],
+    ["Shore Excursions Included",/\bshore\s+excursions?\b|\bexcursions?\s+included\b/i],
+    ["Hotel Stay Included",/\bhotel\s+stay\b|\bpre[-\s]?cruise\s+stay\b|\bpost[-\s]?cruise\s+stay\b/i]
+  ];
+  return checks.filter(([,pattern])=>pattern.test(text)).map(([label])=>label);
+}
+function clearOfferIntelligencePanel(){
+  const panel=document.getElementById("offer-intel-panel");
+  if(!panel) return;
+  panel.innerHTML="";
+  panel.classList.remove("active");
+}
+function renderOfferIntelligencePanel(parsed,rawText){
+  try{
+    const panel=document.getElementById("offer-intel-panel");
+    if(!panel) return;
+    const p=parsed||{};
+    const detected=[];
+    const addDetected=(key,label)=>{ if(String(p[key]||"").trim()) detected.push(label); };
+    addDetected("operatorKey","Operator Detected"); addDetected("name","Cruise Title Detected"); addDetected("ship","Ship Detected");
+    if(String(p.day||"").trim()||String(p.month||"").trim()) detected.push("Departure Date Detected");
+    addDetected("nights","Nights Detected"); if(String(p.boardlbl||p.board||"").trim()) detected.push("Board Basis Detected");
+    addDetected("price","Price Detected"); addDetected("ports","Ports Detected");
+    const airport=AIRPORT_WORDS.find(a=>new RegExp('\\b'+escapeRegExp(a)+'\\b','i').test(String(rawText||"")+" "+String(p.incl||"")));
+    if(airport) detected.push("Departure Airport Detected");
+    if(/\b(?:inside|outside|balcony|suite|cabin|stateroom)\b/i.test(String(rawText||""))) detected.push("Cabin Type Detected");
+    const inclusions=detectOfferIntelligenceInclusions(p,rawText);
+    const missing=[];
+    if(!p.ship) missing.push("Ship not detected");
+    if(!(p.boardlbl||p.board)) missing.push("Board Basis not detected");
+    if(!airport) missing.push("Departure Airport not detected");
+    if(!p.nights) missing.push("Nights not detected");
+    const suggestions=[];
+    const shipOperator=getOfferIntelligenceShipOperator(p.ship);
+    const effectiveOperator=p.operatorKey||(shipOperator&&shipOperator.operatorKey)||"";
+    if(shipOperator&&!p.operatorKey){ const name=(OPERATOR_HEADERS[shipOperator.operatorKey]||{}).name; if(name) suggestions.push(`Operator inferred from ship: ${name}`); }
+    getOfferIntelligenceCruiseTypes(p,rawText,effectiveOperator).forEach(type=>suggestions.push(type));
+    const intel=OPERATOR_INTELLIGENCE&&OPERATOR_INTELLIGENCE[effectiveOperator];
+    if(intel){ suggestions.push("Operator USPs Available"); if(intel.dawsonUrl||getOperatorLandingUrl(effectiveOperator)) suggestions.push("Landing Page Available"); }
+    const item=(kind,icon,label)=>`<div class="offer-intel-item ${kind}"><span class="offer-intel-icon">${icon}</span><span>${label}</span></div>`;
+    const section=(heading,html,empty="")=>`<div class="offer-intel-section"><div class="offer-intel-heading">${heading}</div><div class="offer-intel-list">${html||`<div class="offer-intel-empty">${empty}</div>`}</div></div>`;
+    panel.innerHTML=`<div class="offer-intel-title">Offer Intelligence</div>`+
+      section("Detected",detected.map(label=>item("detected","✓",label)).join(""),"No core fields detected yet.")+
+      (inclusions.length?section("Inclusions Detected",inclusions.map(label=>item("detected","✓",label)).join("")):"")+
+      section("Suggestions / Missing Information",missing.map(label=>item("missing","⚠",label)).concat(suggestions.map(label=>item("suggestion","💡",label))).join(""),"No suggestions or missing fields.");
+    panel.classList.add("active");
+  }catch(err){ console.warn("Offer Intelligence could not run",err); }
+}
+
+function setParseStatus(msg,level){if(msg==="Nothing to parse"&&typeof clearOfferIntelligencePanel==="function") clearOfferIntelligencePanel(); const el=document.getElementById('parse-result'); if(!el) return; el.textContent=msg; el.className='parse-result '+(level||'');}
 function showParsePreview(){const modal=document.getElementById('parse-preview-modal'); if(!modal||!pendingParseResult) return false; const {parsed,confidence,score}=pendingParseResult; const body=document.getElementById('parse-preview-body'); const conf=document.getElementById('parse-confidence-badge'); const label=confidence==='high'?'High Confidence':confidence==='partial'?'Partial Match':'Needs Review'; conf.className='parse-result '+confidence; conf.textContent=`${label} (${score})`; const keys=['operatorKey','tags','name','ship','day','month','nights','price','board','boardlbl','incl','ports']; body.innerHTML=keys.filter(k=>parsed[k]).map(k=>{const typos=getLikelyTypos(parsed[k]); return `<div class="parse-preview-item ${typos.length?'spell-flag':''}"><strong>${k}</strong>${parsed[k]}</div>`;}).join('')||'<div class="parse-preview-item">No fields confidently detected.</div>'; const parseTypos=Object.values(parsed).flatMap(v=>getLikelyTypos(v)); setSpellWarn("spell-warn-parse-preview",parseTypos.length?`Spelling QA: ${[...new Set(parseTypos)].slice(0,6).join(", ")}`:""); modal.classList.add('active'); runSpellQA(); return true;}
 function cancelParsedOffer(){const m=document.getElementById('parse-preview-modal'); if(m) m.classList.remove('active'); pendingParseResult=null;}
 function prepareOfferSlotForParsedOffer(parsed){
