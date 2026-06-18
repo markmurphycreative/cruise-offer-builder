@@ -32,15 +32,19 @@ function createHarness() {
     document: { getElementById(id) { return id === 'offer-intel-panel' ? panel : null; } },
     console: { warn() {} },
     AIRPORT_WORDS: ['newcastle', 'manchester'],
-    OPERATOR_SHIPS: { po: ['Arvia'], cunard: ['Queen Anne'], fred: ['Bolette'], virgin: ['Scarlet Lady'], msc: ['MSC Virtuosa'] },
-    OPERATOR_HEADERS: { po: { name: 'P&O Cruises' }, cunard: { name: 'Cunard' }, fred: { name: 'Fred. Olsen Cruise Lines' }, virgin: { name: 'Virgin Voyages' }, msc: { name: 'MSC Cruises' } },
-    OPERATOR_INTELLIGENCE: { po: { name: 'P&O Cruises', category: 'Mainstream ocean cruise', dawsonUrl: 'https://example.test/po' }, cunard: { name: 'Cunard', category: 'Heritage ocean cruise', dawsonUrl: 'https://example.test/cunard' }, virgin: { name: 'Virgin Voyages', category: 'Adults-only lifestyle cruise' }, msc: { name: 'MSC Cruises', category: 'Mainstream ocean cruise' } },
+    ITINERARY_FOOTER_LABEL: /^(?:luggage\s*(?:&|and)\s*transfers?\s+included|flights?\s+included|inclusions?|what(?:'|’)?s included|price|from £|terms(?:\s*&\s*conditions)?|book now|call to book|cabin|accommodation)\b/i,
+    OPERATOR_ALIASES: { po: [/\bp\s*&\s*o\b/i], cunard: [/\bcunard\b/i], ncl: [/\bnorwegian\b/i, /\bncl\b/i], msc: [/\bmsc\b/i], virgin: [/\bvirgin\b/i] },
+    OPERATOR_SHIPS: { po: ['Arvia', 'Iona'], cunard: ['Queen Anne'], fred: ['Bolette'], virgin: ['Scarlet Lady'], msc: ['MSC Virtuosa'], ncl: ['Norwegian Prima', 'Pride of America'] },
+    OPERATOR_HEADERS: { po: { name: 'P&O Cruises' }, cunard: { name: 'Cunard' }, fred: { name: 'Fred. Olsen Cruise Lines' }, virgin: { name: 'Virgin Voyages' }, msc: { name: 'MSC Cruises' }, ncl: { name: 'Norwegian Cruise Line' } },
+    OPERATOR_INTELLIGENCE: { po: { name: 'P&O Cruises', category: 'Mainstream ocean cruise', dawsonUrl: 'https://example.test/po' }, cunard: { name: 'Cunard', category: 'Heritage ocean cruise', dawsonUrl: 'https://example.test/cunard' }, virgin: { name: 'Virgin Voyages', category: 'Adults-only lifestyle cruise' }, msc: { name: 'MSC Cruises', category: 'Mainstream ocean cruise' }, ncl: { name: 'Norwegian Cruise Line', category: 'Mainstream ocean cruise' } },
     getOperatorLandingUrl(key) { return key === 'po' ? 'https://example.test/po' : ''; }
   };
   vm.createContext(context);
   vm.runInContext([
     extractFunction('escapeRegExp'),
     extractFunction('getOfferIntelligenceShipOperator'),
+    extractFunction('findKnownOperatorShip'),
+    extractFunction('getStandalonePortLines'),
     extractFunction('getOfferIntelligenceCruiseTypes'),
     extractFunction('getOfferIntelligenceCruiseKnowledge'),
     extractFunction('detectOfferIntelligenceInclusions'),
@@ -72,6 +76,54 @@ test('Offer Intelligence infers known ship operators without changing parsed dat
   assert.match(panel.innerHTML, /Price: £1669pp/);
   assert.doesNotMatch(panel.innerHTML, /Operator USPs Available/);
   assert.doesNotMatch(panel.innerHTML, /Landing Page Available/);
+});
+
+
+test('Offer Intelligence infers Queen Anne as Cunard premium knowledge only', () => {
+  const { context, panel } = createHarness();
+  const parsed = { ship: 'Queen Anne', price: '1199' };
+  const inferred = vm.runInContext('getOfferIntelligenceShipOperator("Queen Anne");', context);
+
+  assert.equal(inferred.operatorKey, 'cunard');
+  assert.notEqual(inferred.operatorKey, 'ncl');
+  vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, { parsed, raw: 'Queen Anne\nNorwegian Fjords\n£1199pp' }));
+
+  assert.match(panel.innerHTML, /Operator inferred from ship: Cunard/);
+  assert.match(panel.innerHTML, /Cruise Knowledge/);
+  assert.match(panel.innerHTML, /Operator: Cunard/);
+  assert.match(panel.innerHTML, /Cruise Type: Ocean Cruise/);
+  assert.match(panel.innerHTML, /Audience: Premium/);
+  assert.doesNotMatch(panel.innerHTML, /Norwegian Cruise Line/);
+  assert.doesNotMatch(panel.innerHTML, /Family Friendly/);
+});
+
+test('Offer Intelligence detects standalone port lines without exposing each port in panel', () => {
+  const { context, panel } = createHarness();
+  const raw = 'Queen Anne\nSouthampton\nStavanger\nOlden\nGeiranger\nBergen\nSouthampton';
+  const portLines = vm.runInContext('getStandalonePortLines(raw.split(/\\n/));', Object.assign(context, { raw }));
+
+  assert.deepEqual(JSON.parse(JSON.stringify(portLines)), ['Southampton', 'Stavanger', 'Olden', 'Geiranger', 'Bergen', 'Southampton']);
+  vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, { parsed: { ship: 'Queen Anne', ports: portLines.join(' • ') }, raw }));
+
+  assert.match(panel.innerHTML, /You’ll Visit Ports: Detected/);
+  assert.doesNotMatch(panel.innerHTML, /Stavanger • Olden/);
+});
+
+test('Known ship inference remains exact and avoids generic or ambiguous matches', () => {
+  const { context } = createHarness();
+
+  for (const [ship, operatorKey] of [['Arvia', 'po'], ['Iona', 'po'], ['MSC Virtuosa', 'msc'], ['Scarlet Lady', 'virgin']]) {
+    const match = vm.runInContext('findKnownOperatorShip(ship);', Object.assign(context, { ship }));
+    assert.equal(match.operatorKey, operatorKey);
+    assert.equal(match.ship, ship);
+  }
+
+  assert.equal(vm.runInContext('findKnownOperatorShip("Queen")', context), null);
+  assert.equal(vm.runInContext('findKnownOperatorShip("Norwegian Fjords on Queen Anne")', context).operatorKey, 'cunard');
+  assert.equal(vm.runInContext('findKnownOperatorShip("Operator Ship Cruise")', context), null);
+
+  context.OPERATOR_SHIPS.ncl.push('Queen Anne');
+  assert.equal(vm.runInContext('findKnownOperatorShip("Queen Anne")', context), null);
 });
 
 test('Offer Intelligence reports missing fields and avoids false operator matches for unknown ships', () => {
