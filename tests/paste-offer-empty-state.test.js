@@ -45,6 +45,14 @@ Punta Del Este
 Overnight Port Stay
 Luggage & Transfers Included.`;
 
+
+function extractConst(name) {
+  const start = html.indexOf(`const ${name}=`);
+  assert.notEqual(start, -1, `Could not find ${name}`);
+  const end = html.indexOf(';', start);
+  return html.slice(start, end + 1);
+}
+
 function extractFunction(name) {
   const start = html.indexOf(`function ${name}(`);
   assert.notEqual(start, -1, `Could not find ${name}`);
@@ -161,6 +169,13 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('getOperatorBoardDefault'),
     extractFunction('formatAirportName'),
     extractFunction('detectFlightAirport'),
+    extractFunction('joinOfferIntelligenceSuggestionParts'),
+    extractConst('EMBARKATION_PORTS'),
+    extractConst('PORT_COUNTRIES'),
+    extractConst('PORT_REGIONS'),
+    extractFunction('normalisePortIntelligenceName'),
+    extractFunction('getPortIntelligence'),
+    extractFunction('isRecognisedPortTitleLine'),
     extractFunction('parseOffer'),
     extractFunction('setParseStatus'),
     extractFunction('showParsePreview'),
@@ -633,6 +648,22 @@ St Lucia`);
   assert.equal(harness.context.offers[0].ship, 'Arvia');
   assert.equal(harness.context.offers[0].ports, 'Barbados • Martinique • St Kitts • Tortola • Antigua • St Lucia');
   assert.doesNotMatch(harness.context.offers[0].ports, /P&O Cruises|Arvia|14 Nights|20 November|Full Board|1669|Flights|Family Friendly|Premium|Adults Only|Ocean Cruise/);
+});
+
+
+test('Paste Offer promotes high-confidence Ports Intelligence over recognised port title candidates', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+
+  harness.parse(`Southampton
+Le Havre
+Bilbao
+La Coruna
+Vigo
+Cherbourg
+Southampton`);
+
+  assert.equal(harness.context.offers[0].name, 'Spain & France');
+  assert.equal(harness.context.offers[0].ports, 'Southampton • Le Havre • Bilbao • La Coruna • Vigo • Cherbourg • Southampton');
 });
 
 test('Paste Offer does not infer Norwegian Cruise Line from Norwegian Fjords without a ship', () => {

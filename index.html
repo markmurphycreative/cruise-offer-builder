@@ -5388,9 +5388,16 @@ function parseOffer(){
   else { const mm=txt.match(new RegExp(`\\b(${months})\\s+(\\d{4})\\b`,'i')); if(mm){ const mn=new Date(`${mm[1]} 1, ${mm[2]}`); parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+mm[2]; score+=10; } }
   const itineraryLines=getItineraryLines(lines);
   const shipLineIndex=parsed.ship?lines.findIndex(line=>line===parsed.ship):-1;
-  const title=lines.find((l,index)=>!Object.values(OPERATOR_ALIASES).flat().some(r=>r.test(l))&&!(itineraryLines||[]).includes(l)&&(shipLineIndex<0||index<shipLineIndex)&&!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b|\b(?:full board|half board|all inclusive|self catering|inside|outside|balcony|suite|based on|sharing|solo traveller|solo traveler|single occupancy|sole occupancy|single traveller|single traveler)\b/i.test(l))&&l.length>8&&l!==parsed.ship); if(title){parsed.name=title.replace(/^[-•\s]+/,'');score+=8;}
+  const title=lines.find((l,index)=>!Object.values(OPERATOR_ALIASES).flat().some(r=>r.test(l))&&!(itineraryLines||[]).includes(l)&&!(typeof isRecognisedPortTitleLine==="function"&&isRecognisedPortTitleLine(l))&&(shipLineIndex<0||index<shipLineIndex)&&!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b|\b(?:full board|half board|all inclusive|self catering|inside|outside|balcony|suite|based on|sharing|solo traveller|solo traveler|single occupancy|sole occupancy|single traveller|single traveler)\b/i.test(l))&&l.length>8&&l!==parsed.ship); if(title){parsed.name=title.replace(/^[-•\s]+/,'');score+=8;}
   const portExclusions=[parsed.name].filter(Boolean);
   const standalonePortLines=getStandalonePortLines(lines,{exclude:portExclusions}); const portLines=itineraryLines||(standalonePortLines.length?standalonePortLines:null)||lines.filter(l=>/[•·,]|\s+-\s+/.test(l)&&/(?:[A-Za-z]{3,}\s*){2,}/.test(l)&&!/from|£|nights?|nts?|included|flights?/i.test(l)); const ports=cleanParsedPorts(portLines,{exclude:portExclusions}); if(ports){parsed.ports=ports;score+=8;}
+  if(typeof getPortIntelligence==="function"){
+    const portsIntelligence=getPortIntelligence(parsed.ports||ports||"");
+    if(portsIntelligence&&portsIntelligence.confidence==="High"&&portsIntelligence.suggestedRoute&&(!parsed.name||(typeof isRecognisedPortTitleLine==="function"&&isRecognisedPortTitleLine(parsed.name)))){
+      if(parsed.name!==portsIntelligence.suggestedRoute) score+=8;
+      parsed.name=portsIntelligence.suggestedRoute;
+    }
+  }
   const uspTags=inferUspTagsFromLines(lines); if(uspTags){parsed.tags=uspTags;score+=8;}
   const detectedInclusions=typeof detectOfferIntelligenceInclusions==="function"?detectOfferIntelligenceInclusions(parsed,raw):[];
   const inclusionSuggestion=typeof getOfferIntelligenceCardInclusionSuggestion==="function"?getOfferIntelligenceCardInclusionSuggestion(detectedInclusions):"";
