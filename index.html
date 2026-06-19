@@ -5631,11 +5631,19 @@ function getCruiseTitleRecoverySuggestion(parsed,rawText){
   const p=parsed||{};
   if(String(p.name||"").trim()) return null;
   const lines=String(rawText||"").split(/\n/).map(normaliseCruiseTitleCandidate).filter(Boolean);
-  if(!lines.length) return null;
+  if(!lines.length){
+    const portsIntelligence=typeof getPortIntelligence==="function"?getPortIntelligence(p.ports||""):null;
+    if(portsIntelligence&&portsIntelligence.suggestedRoute) return {id:"cruise-title-recovery-ports",title:"Cruise Title",value:portsIntelligence.suggestedRoute,confidenceLabel:portsIntelligence.confidence==="High"?"Medium Confidence":"Low Confidence",targetLabel:"Cruise Title",fieldKey:"name",fieldId:"f-name"};
+    return null;
+  }
   const candidates=lines.map((line,index)=>({value:line,index,score:scoreCruiseTitleRecoveryCandidate(line,index,p,lines)}))
     .filter(candidate=>!isCruiseTitleRecoveryExcludedLine(candidate.value,p,lines)&&candidate.score>=8)
     .sort((a,b)=>b.score-a.score||a.index-b.index);
-  if(!candidates.length) return null;
+  if(!candidates.length){
+    const portsIntelligence=typeof getPortIntelligence==="function"?getPortIntelligence(p.ports||""):null;
+    if(portsIntelligence&&portsIntelligence.suggestedRoute) return {id:"cruise-title-recovery-ports",title:"Cruise Title",value:portsIntelligence.suggestedRoute,confidenceLabel:portsIntelligence.confidence==="High"?"Medium Confidence":"Low Confidence",targetLabel:"Cruise Title",fieldKey:"name",fieldId:"f-name"};
+    return null;
+  }
   const top=candidates[0];
   const tied=candidates.filter(candidate=>candidate.score>=top.score-1);
   const confidenceLabel=tied.length===1&&top.score>=14?"High Confidence":top.score>=10?"Medium Confidence":"Low Confidence";
@@ -5819,6 +5827,53 @@ function getOfferIntelligenceActionSuggestions(parsed,rawText,inclusions,effecti
   if(copyThemes.length) actions.push(`Copy Themes: ${copyThemes.join(" • ")}`);
   return actions;
 }
+
+const EMBARKATION_PORTS=new Set(["southampton","newcastle","barcelona","athens","piraeus athens","miami","fort lauderdale","tampa","port canaveral","vancouver","seattle","singapore","dubai"]);
+const PORT_COUNTRIES={
+  "barcelona":"Spain","palma":"Spain","palma de mallorca":"Spain","ibiza":"Spain","valencia":"Spain","malaga":"Spain","cadiz":"Spain","cartagena spain":"Spain","bilbao":"Spain","la coruna":"Spain","vigo":"Spain","alicante":"Spain","tarragona":"Spain","santa cruz de tenerife":"Spain","tenerife":"Spain","lanzarote":"Spain","arrecife":"Spain","gran canaria":"Spain","las palmas":"Spain","fuerteventura":"Spain",
+  "marseille":"France","nice":"France","cannes":"France","toulon":"France","ajaccio":"France","corsica":"France","le havre":"France","cherbourg":"France","bordeaux":"France","la rochelle":"France","villefranche":"France",
+  "civitavecchia":"Italy","rome":"Italy","naples":"Italy","sorrento":"Italy","livorno":"Italy","florence pisa":"Italy","genoa":"Italy","venice":"Italy","trieste":"Italy","ravenna":"Italy","palermo":"Italy","messina":"Italy","catania":"Italy","syracuse":"Italy","salerno":"Italy","amalfi":"Italy","bari":"Italy","brindisi":"Italy","olbia":"Italy","cagliari":"Italy",
+  "valletta":"Malta","malta":"Malta",
+  "athens":"Greece","piraeus":"Greece","piraeus athens":"Greece","mykonos":"Greece","santorini":"Greece","rhodes":"Greece","corfu":"Greece","katakolon":"Greece","heraklion":"Greece","crete":"Greece","souda":"Greece","chania":"Greece","souda chania crete":"Greece","patmos":"Greece","kos":"Greece","volos":"Greece","thessaloniki":"Greece","nafplio":"Greece",
+  "dubrovnik":"Croatia","split":"Croatia","zadar":"Croatia","hvar":"Croatia","rijeka":"Croatia","korcula":"Croatia","kotor":"Montenegro","bar montenegro":"Montenegro","budva":"Montenegro",
+  "lisbon":"Portugal","porto":"Portugal","leixoes":"Portugal","funchal":"Portugal","madeira":"Portugal","gibraltar":"Gibraltar","rotterdam":"Netherlands","amsterdam":"Netherlands","zeebrugge":"Belgium","bruges":"Belgium","antwerp":"Belgium","hamburg":"Germany","bremerhaven":"Germany","kiel":"Germany","copenhagen":"Denmark","aarhus":"Denmark","stockholm":"Sweden","gothenburg":"Sweden","visby":"Sweden","helsinki":"Finland","tallinn":"Estonia","riga":"Latvia","klaipeda":"Lithuania","gdansk":"Poland","warnemunde":"Germany","oslo":"Norway","bergen":"Norway","stavanger":"Norway","olden":"Norway","geiranger":"Norway","flam":"Norway","alesund":"Norway","trondheim":"Norway","tromso":"Norway","haugesund":"Norway","kristiansand":"Norway","molde":"Norway","skjolden":"Norway","nordfjordeid":"Norway","honningsvag":"Norway",
+  "barbados":"Barbados","bridgetown":"Barbados","martinique":"Martinique","fort de france":"Martinique","st kitts":"St Kitts and Nevis","basseterre":"St Kitts and Nevis","tortola":"British Virgin Islands","st maarten":"Sint Maarten","philipsburg":"Sint Maarten","antigua":"Antigua and Barbuda","st johns antigua":"Antigua and Barbuda","st lucia":"Saint Lucia","castries":"Saint Lucia","grenada":"Grenada","st georges":"Grenada","aruba":"Aruba","oranjestad":"Aruba","curacao":"Curaçao","willemstad":"Curaçao","bonaire":"Bonaire","kralendijk":"Bonaire","cozumel":"Mexico","costa maya":"Mexico","grand cayman":"Cayman Islands","jamaica":"Jamaica","ocho rios":"Jamaica","san juan":"Puerto Rico","nassau":"Bahamas"
+};
+const PORT_REGIONS={"Spain":"Western Europe","France":"Western Europe","Portugal":"Western Europe","Gibraltar":"Western Europe","Netherlands":"Western Europe","Belgium":"Western Europe","Germany":"Western Europe","Italy":"Mediterranean","Malta":"Mediterranean","Greece":"Greek Islands","Norway":"Norwegian Fjords","Croatia":"Adriatic","Montenegro":"Adriatic","Denmark":"Baltic","Sweden":"Baltic","Finland":"Baltic","Estonia":"Baltic","Latvia":"Baltic","Lithuania":"Baltic","Poland":"Baltic","Barbados":"Caribbean","Martinique":"Caribbean","St Kitts and Nevis":"Caribbean","British Virgin Islands":"Caribbean","Sint Maarten":"Caribbean","Antigua and Barbuda":"Caribbean","Saint Lucia":"Caribbean","Grenada":"Caribbean","Aruba":"Caribbean","Curaçao":"Caribbean","Bonaire":"Caribbean","Mexico":"Caribbean","Cayman Islands":"Caribbean","Jamaica":"Caribbean","Puerto Rico":"Caribbean","Bahamas":"Caribbean"};
+function normalisePortIntelligenceName(port){
+  return String(port||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\([^)]*\)/g," ").replace(/\b(?:port of|port|cruise terminal)\b/g," ").replace(/[^a-z0-9]+/g," ").replace(/\b(?:spain|france|italy|greece|norway|croatia|montenegro|portugal|malta|canary islands)\b/g," ").replace(/\s+/g," ").trim();
+}
+function getPortIntelligence(ports){
+  const list=Array.isArray(ports)?ports:String(ports||"").split("•").map(port=>port.trim()).filter(Boolean);
+  const countries={};
+  list.forEach((port,index)=>{
+    const normalised=normalisePortIntelligenceName(port);
+    if((index===0||index===list.length-1)&&EMBARKATION_PORTS.has(normalised)) return;
+    const country=PORT_COUNTRIES[normalised];
+    if(country) countries[country]=(countries[country]||0)+1;
+  });
+  const countryList=Object.keys(countries).sort((a,b)=>countries[b]-countries[a]||a.localeCompare(b));
+  const regionCounts={};
+  countryList.forEach(country=>{ const region=PORT_REGIONS[country]; if(region) regionCounts[region]=(regionCounts[region]||0)+countries[country]; });
+  const regions=Object.keys(regionCounts).sort((a,b)=>regionCounts[b]-regionCounts[a]||a.localeCompare(b));
+  const region=regions[0]||"";
+  const regionConfidence=region&&regions.length===1?"High":region?"Medium":"Low";
+  let suggestedRoute="";
+  if(region==="Greek Islands"&&countryList.length===1&&countryList[0]==="Greece") suggestedRoute="Greek Islands";
+  else if(region==="Norwegian Fjords"&&countryList.length===1&&countryList[0]==="Norway") suggestedRoute="Norwegian Fjords";
+  else if(region==="Adriatic"&&countryList.includes("Croatia")&&countryList.includes("Montenegro")) suggestedRoute="Adriatic Coastlines";
+  else if(countryList.length===1) suggestedRoute=countryList[0];
+  else if(countryList.length>1) suggestedRoute=joinOfferIntelligenceSuggestionParts(countryList.slice(0,2));
+  return {countries,countryList,region,regionConfidence,suggestedRoute,confidence:countryList.length?regionConfidence:"Low"};
+}
+function renderPortsIntelligenceSection(parsed,item,section){
+  const intelligence=getPortIntelligence((parsed||{}).ports||"");
+  if(!intelligence.countryList.length) return "";
+  const countryHtml=intelligence.countryList.map(country=>item("detected","✓",country)).join("");
+  const details=[`Region: ${intelligence.region||"Unknown"}`,`Suggested Route: ${intelligence.suggestedRoute||"Unknown"}`,`Confidence: ${intelligence.confidence}`].map(label=>item("detected","✓",label)).join("");
+  return section("PORTS INTELLIGENCE",section("Countries",countryHtml)+details);
+}
+
 function clearOfferIntelligencePanel(){
   if(typeof resetPoaSuggestionState==="function") resetPoaSuggestionState(); if(typeof window!=="undefined"){ window.currentPoaSuggestions=[]; window.currentPoaParsed={}; window.currentPoaRawText=""; }
   const panel=document.getElementById("offer-intel-panel");
@@ -5914,6 +5969,7 @@ function renderOfferIntelligencePanel(parsed,rawText){
     panel.innerHTML=`<div class="offer-intel-title">Offer Intelligence</div>`+
       summaryHtml+
       section("Detected",detected.map(label=>item("detected","✓",label)).join(""),"No core fields detected yet.")+
+      (typeof renderPortsIntelligenceSection==="function"?renderPortsIntelligenceSection(p,item,section):"")+
       (typeof renderOfferQualitySection==="function"?renderOfferQualitySection(p,rawText,effectiveOperator,item):"")+
       (cruiseKnowledge.length?section("Cruise Knowledge",cruiseKnowledge.map(label=>item("detected","✓",label)).join("")):"")+
       (typeof renderPoaAssistedApplySuggestions==="function"?renderPoaAssistedApplySuggestions(poaSuggestions):"")+

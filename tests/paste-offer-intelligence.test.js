@@ -5,6 +5,13 @@ import vm from 'node:vm';
 
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
+function extractConst(name) {
+  const start = html.indexOf(`const ${name}=`);
+  assert.notEqual(start, -1, `Could not find ${name}`);
+  const end = html.indexOf(';', start);
+  return html.slice(start, end + 1);
+}
+
 function extractFunction(name) {
   const start = html.indexOf(`function ${name}(`);
   assert.notEqual(start, -1, `Could not find ${name}`);
@@ -62,6 +69,12 @@ function createHarness() {
     extractFunction('getOfferIntelligenceCopyThemes'),
     extractFunction('getOfferIntelligenceQualityScore'),
     extractFunction('getOfferIntelligenceActionSuggestions'),
+    extractConst('EMBARKATION_PORTS'),
+    extractConst('PORT_COUNTRIES'),
+    extractConst('PORT_REGIONS'),
+    extractFunction('normalisePortIntelligenceName'),
+    extractFunction('getPortIntelligence'),
+    extractFunction('renderPortsIntelligenceSection'),
     extractFunction('clearOfferIntelligencePanel'),
     extractFunction('formatOfferIntelligencePorts'),
     extractFunction('getOfferIntelligenceDetectedFields'),
@@ -77,6 +90,49 @@ function createHarness() {
   ].join('\n'), context);
   return { context, panel };
 }
+
+
+test('Ports Intelligence detects Spain and France with embarkation exclusions', () => {
+  const { context, panel } = createHarness();
+  const intelligence = vm.runInContext('getPortIntelligence("Southampton • Le Havre • Bilbao • La Coruna • Vigo • Cherbourg • Southampton");', context);
+  assert.deepEqual(JSON.parse(JSON.stringify(intelligence.countries)), { Spain: 3, France: 2 });
+  assert.equal(intelligence.region, 'Western Europe');
+  assert.equal(intelligence.suggestedRoute, 'Spain & France');
+  assert.equal(intelligence.confidence, 'High');
+  vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, { parsed: { ports: 'Southampton • Le Havre • Bilbao • La Coruna • Vigo • Cherbourg • Southampton' }, raw: '' }));
+  assert.match(panel.innerHTML, /PORTS INTELLIGENCE/);
+  assert.match(panel.innerHTML, /Spain/);
+  assert.match(panel.innerHTML, /France/);
+  assert.match(panel.innerHTML, /Suggested Route: Spain &amp; France|Suggested Route: Spain & France/);
+  assert.doesNotMatch(panel.innerHTML, /Apply/);
+});
+
+test('Ports Intelligence covers Italy Malta Greek Islands Norwegian Fjords Adriatic duplicates unknowns and empty lists', () => {
+  const { context } = createHarness();
+  const cases = [
+    ['Civitavecchia • Naples • Valletta', { Italy: 2, Malta: 1 }, 'Mediterranean', 'Italy & Malta'],
+    ['Athens • Santorini • Mykonos • Rhodes', { Greece: 3 }, 'Greek Islands', 'Greek Islands'],
+    ['Southampton • Bergen • Olden • Geiranger • Stavanger • Southampton', { Norway: 4 }, 'Norwegian Fjords', 'Norwegian Fjords'],
+    ['Dubrovnik • Split • Kotor • Budva', { Croatia: 2, Montenegro: 2 }, 'Adriatic', 'Adriatic Coastlines'],
+    ['Bilbao • Bilbao • Mystery Port', { Spain: 2 }, 'Western Europe', 'Spain'],
+    ['Southampton • Mystery Port • Southampton', {}, '', ''],
+    ['', {}, '', '']
+  ];
+  for (const [ports, countries, region, route] of cases) {
+    const result = vm.runInContext('getPortIntelligence(ports);', Object.assign(context, { ports }));
+    assert.deepEqual(JSON.parse(JSON.stringify(result.countries)), countries);
+    assert.equal(result.region, region);
+    assert.equal(result.suggestedRoute, route);
+  }
+});
+
+test('Cruise Title recovery falls back to Ports Intelligence suggestion only when title is missing', () => {
+  const { context } = createHarness();
+  let suggestion = vm.runInContext('getCruiseTitleRecoverySuggestion(parsed, raw);', Object.assign(context, { parsed: { ports: 'Civitavecchia • Naples • Valletta' }, raw: '' }));
+  assert.equal(suggestion.value, 'Italy & Malta');
+  suggestion = vm.runInContext('getCruiseTitleRecoverySuggestion(parsed, raw);', Object.assign(context, { parsed: { name: 'Existing Title', ports: 'Civitavecchia • Naples • Valletta' }, raw: '' }));
+  assert.equal(suggestion, null);
+});
 
 test('Offer Intelligence infers known ship operators without changing parsed data', () => {
   const { context, panel } = createHarness();
