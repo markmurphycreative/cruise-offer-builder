@@ -914,6 +914,18 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       </div>
     </div>
 
+    <!-- ── 6. MULTI OFFER IMPORT ── -->
+    <div class="section" data-section-key="multi-offer-import">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M4 4h16"></path><path d="M4 10h16"></path><path d="M4 16h10"></path><path d="m16 17 2 2 4-4"></path></svg>MULTI OFFER IMPORT</h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body parse-area hidden">
+        <textarea id="multi-offer-paste" spellcheck="true" placeholder="Paste up to 4 offers here..."></textarea>
+        <button class="parse-btn" onclick="loadAllOffers()"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h6"></path></svg>Load All Offers</button>
+        <div class="parse-result" id="multi-offer-result"></div>
+      </div>
+    </div>
+
     <!-- ── 7. EXPORT ── -->
     <div class="section export-section" data-section-key="export-cards">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
@@ -1198,7 +1210,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v2.2.2";
+const APP_VERSION = "v3.4.0";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -5415,9 +5427,107 @@ function handlePasteOfferKeydown(event){
   event.preventDefault();
   parseOffer();
 }
+
+function isDividerLine(line){ return /^\s*(?:[-–—_*]{3,}|={3,}|\.{3,})\s*$/.test(String(line||"")); }
+function isOfferLabelLine(line){ return /^\s*offer\s*\d{1,2}\s*:?\s*$/i.test(String(line||"")); }
+function isLikelyOfferStartLine(line){
+  const value=String(line||"").trim();
+  if(!value) return false;
+  if(isOfferLabelLine(value)) return true;
+  if(typeof findKnownOperatorShip==="function"&&findKnownOperatorShip(value)) return true;
+  if(typeof OPERATOR_HEADERS!=="undefined"&&OPERATOR_HEADERS){
+    for(const op of Object.values(OPERATOR_HEADERS)){ if(op&&op.name&&new RegExp('^\\s*'+escapeRegExp(op.name)+'\\s*$','i').test(value)) return true; }
+  }
+  if(typeof OPERATOR_ALIASES!=="undefined"&&OPERATOR_ALIASES){
+    for(const aliases of Object.values(OPERATOR_ALIASES)){ if((aliases||[]).some(pattern=>pattern.test(value))) return true; }
+  }
+  return false;
+}
+function splitMultiOfferImport(raw){
+  const text=String(raw||"").replace(/\r\n?/g,"\n").trim();
+  if(!text) return [];
+  let blocks=text.split(/\n\s*(?:[-–—_*]{3,}|={3,}|\.{3,})\s*\n/g).map(block=>block.trim()).filter(Boolean);
+  if(blocks.length===1){
+    const lines=text.split("\n");
+    blocks=[]; let current=[]; let blankRun=0;
+    lines.forEach(line=>{
+      const trimmed=line.trim();
+      if(!trimmed){ blankRun+=1; current.push(line); return; }
+      const shouldSplit=current.join("\n").trim() && (blankRun>=2 || isOfferLabelLine(trimmed) || (isLikelyOfferStartLine(trimmed)&&current.filter(item=>item.trim()).length>=2));
+      if(shouldSplit){ blocks.push(current.join("\n").trim()); current=[]; }
+      blankRun=0;
+      if(!isOfferLabelLine(trimmed)) current.push(line);
+    });
+    if(current.join("\n").trim()) blocks.push(current.join("\n").trim());
+  }
+  return blocks.map(block=>block.split("\n").filter(line=>!isDividerLine(line)&&!isOfferLabelLine(line)).join("\n").trim()).filter(Boolean);
+}
+function setMultiOfferStatus(html,level){ const el=document.getElementById("multi-offer-result"); if(!el) return; el.innerHTML=html||""; el.className='parse-result '+(level||''); }
+function getParsedOfferMissingCount(parsed){
+  const p=parsed||{};
+  return ['operatorKey','name','ship','price','boardlbl','nights'].filter(key=>!p[key]).length;
+}
+function applyParsedOfferToSlot(result,index){
+  if(!result||!result.parsed) return false;
+  while(offers.length<4) offers.push({});
+  const parsed=result.parsed;
+  offers[index]={...(offers[index]||{})};
+  for(const k of Object.keys(PARSE_FIELD_MAP)){
+    if(parsed[k]===undefined||parsed[k]==='') continue;
+    if(k==='operatorKey') offers[index].operator=parsed[k];
+    else offers[index][k]=String(parsed[k]);
+  }
+  stripTransientPasteOfferFields(offers[index]);
+  return Object.keys(parsed).some(key=>parsed[key]!==undefined&&parsed[key]!=="");
+}
+function loadAllOffers(){ return performMultiOfferImport(false); }
+function cancelMultiOfferReplace(){ setMultiOfferStatus("Import cancelled","low"); }
+function performMultiOfferImport(replaceConfirmed){
+  const raw=(document.getElementById("multi-offer-paste")||{}).value||"";
+  const blocks=splitMultiOfferImport(raw);
+  if(!blocks.length){ setMultiOfferStatus("No offers detected","low"); return; }
+  const existing=(offers||[]).slice(0,4).some(isOfferLoaded);
+  if(existing&&!replaceConfirmed){
+    setMultiOfferStatus(`Replace existing offers?<br><button class="abtn btn-compact" type="button" onclick="cancelMultiOfferReplace()">Cancel</button> <button class="abtn btn-compact" type="button" onclick="performMultiOfferImport(true)">Replace All</button>`,"partial");
+    return;
+  }
+  while(offers.length<4) offers.push({});
+  if(existing){ for(let i=0;i<4;i+=1) offers[i]={}; }
+  const selected=blocks.slice(0,4);
+  const results=selected.map(block=>parseOfferText(block,{renderIntelligence:false})).filter(Boolean);
+  results.forEach((result,index)=>applyParsedOfferToSlot(result,index));
+  cur=0;
+  try{ loadOfferToEditor(cur); }catch(e){ try{ load(cur); }catch(_e){} }
+  try{ document.querySelectorAll(".otab").forEach((t,idx)=>t.classList.toggle("active",idx===cur)); }catch(e){}
+  try{ rv(); }catch(e){}
+  try{ updateAllStatus(); }catch(e){}
+  try{ genUtm(); }catch(e){}
+  try{ checkPortsWarn(); }catch(e){}
+  try{ updateExportFilenames(); }catch(e){}
+  try{ runSpellQA(); }catch(e){}
+  try{ queueAutosave(); }catch(e){}
+  if(results.length&&typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Multi offer import");
+  const rows=results.map((result,index)=>{
+    const missing=getParsedOfferMissingCount(result.parsed);
+    const ok=missing===0||result.confidence==='high';
+    const label=ok?`✓ Offer ${index+1} Loaded`:`⚠ Offer ${index+1} Needs Review`;
+    const cls=ok?'high':'partial';
+    return `<div><button class="abtn btn-compact" type="button" onclick="cur=${index};loadOfferToEditor(${index});rv();document.querySelectorAll('.otab').forEach((t,idx)=>t.classList.toggle('active',idx===${index}))">${label}</button> <span class="parse-result ${cls}">Confidence ${result.score} · ${missing} missing fields</span></div>`;
+  });
+  if(blocks.length>4) rows.push(`<div>4 offers loaded. ${blocks.length-4} additional offers ignored.</div>`);
+  setMultiOfferStatus(rows.join(""),results.some(r=>r.confidence!=='high')?'partial':'high');
+}
+
 function parseOffer(){
   if(typeof resetPoaSuggestionState==="function") resetPoaSuggestionState();
   const raw=(document.getElementById("raw-paste")||{}).value||""; if(!raw.trim()) return resetActiveOfferFromEmptyPaste();
+  const result=parseOfferText(raw,{renderIntelligence:true}); if(!result) return;
+  pendingParseResult=result; if(!showParsePreview()) applyParsedOffer();
+}
+function parseOfferText(raw,options){
+  raw=String(raw||"");
+  if(!raw.trim()) return null;
+  const renderIntelligence=!!(options&&options.renderIntelligence);
   const lines=raw.split(/\n/).map(l=>l.trim()).filter(Boolean); const txt=lines.join(" \n "); const parsed={}; let score=0;
   const earlyShipMatch=findKnownOperatorShip(txt);
   if(earlyShipMatch){ parsed.operatorKey=earlyShipMatch.operatorKey; parsed.ship=earlyShipMatch.ship; score+=26; }
@@ -5454,8 +5564,8 @@ function parseOffer(){
   if(!parsed.board&&!parsed.boardlbl){const defaultBoard=getOperatorBoardDefault(parsed.operatorKey); if(defaultBoard){parsed.board=defaultBoard[0];parsed.boardlbl=defaultBoard[1];score+=6;}}
   if(!parsed.ship){const shipLine=lines.find(l=>/\b(cruise|explorer|symphony|arvia|voyager|queen|discovery)\b/i.test(l)); if(shipLine){const m=shipLine.match(/\b([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+){0,3})\b/); if(m) parsed.ship=m[1];}}
   const confidence=score>=62?'high':score>=35?'partial':'low';
-  if(typeof renderOfferIntelligencePanel==="function") renderOfferIntelligencePanel(parsed,raw);
-  pendingParseResult={parsed,confidence,score,rawText:raw}; if(!showParsePreview()) applyParsedOffer();
+  if(renderIntelligence&&typeof renderOfferIntelligencePanel==="function") renderOfferIntelligencePanel(parsed,raw);
+  return {parsed,confidence,score,rawText:raw};
 }
 function getOfferIntelligenceShipOperator(shipName){
   const value=String(shipName||"").trim();
