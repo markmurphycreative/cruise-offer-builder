@@ -5588,9 +5588,14 @@ function getPoaSuggestionConfidenceLabel(parsed,rawText){
 function normaliseCruiseTitleCandidate(line){
   return String(line||"").replace(/^[\s•·▪◦●|:-]+|[\s•·▪◦●|:-]+$/g,"").replace(/\s+/g," ").trim();
 }
+function isRecognisedPortTitleLine(value){
+  const normalised=normalisePortIntelligenceName(value);
+  return !!(normalised&&(EMBARKATION_PORTS.has(normalised)||PORT_COUNTRIES[normalised]));
+}
 function isCruiseTitleRecoveryExcludedLine(line,parsed,rawLines){
   const value=normaliseCruiseTitleCandidate(line);
   if(!value||value.length<5||value.length>70) return true;
+  if(isRecognisedPortTitleLine(value)) return true;
   if(/^(?:ship|ship name|vessel|cruise ship|operator|cruise line|line|price|from|departure|departure date|date|nights|board basis|board|cabin|cabin type|room|room type|airport|departure airport|flights|luggage|transfers|inclusions|included|missing):\s*/i.test(value)) return true;
   if(parsed&&[parsed.operatorKey,parsed.ship,parsed.nights,parsed.price,parsed.board,parsed.boardlbl,parsed.incl,parsed.ports].some(item=>String(item||"").trim().toLowerCase()===value.toLowerCase())) return true;
   if(Object.values(OPERATOR_ALIASES||{}).flat().some(pattern=>pattern.test(value))) return true;
@@ -5627,23 +5632,27 @@ function scoreCruiseTitleRecoveryCandidate(line,index,parsed,lines){
   if(/\bcruise\b/i.test(value)) score+=1;
   return score;
 }
+function getCruiseTitleRecoveryPortsIntelligence(parsed,lines){
+  const p=parsed||{};
+  const parsedPorts=String(p.ports||"").trim();
+  const detectedPorts=parsedPorts||(typeof cleanParsedPorts==="function"?cleanParsedPorts(lines||[],{exclude:[]}):"");
+  return typeof getPortIntelligence==="function"?getPortIntelligence(detectedPorts):null;
+}
+function getCruiseTitleRecoveryPortsSuggestion(portsIntelligence){
+  if(!portsIntelligence||!portsIntelligence.suggestedRoute) return null;
+  return {id:"cruise-title-recovery-ports",title:"Cruise Title",value:portsIntelligence.suggestedRoute,confidenceLabel:portsIntelligence.confidence==="High"?"High Confidence":"Low Confidence",targetLabel:"Cruise Title",fieldKey:"name",fieldId:"f-name"};
+}
 function getCruiseTitleRecoverySuggestion(parsed,rawText){
   const p=parsed||{};
   if(String(p.name||"").trim()) return null;
   const lines=String(rawText||"").split(/\n/).map(normaliseCruiseTitleCandidate).filter(Boolean);
-  if(!lines.length){
-    const portsIntelligence=typeof getPortIntelligence==="function"?getPortIntelligence(p.ports||""):null;
-    if(portsIntelligence&&portsIntelligence.suggestedRoute) return {id:"cruise-title-recovery-ports",title:"Cruise Title",value:portsIntelligence.suggestedRoute,confidenceLabel:portsIntelligence.confidence==="High"?"Medium Confidence":"Low Confidence",targetLabel:"Cruise Title",fieldKey:"name",fieldId:"f-name"};
-    return null;
-  }
+  const portsIntelligence=getCruiseTitleRecoveryPortsIntelligence(p,lines);
+  const portsSuggestion=getCruiseTitleRecoveryPortsSuggestion(portsIntelligence);
+  if(!lines.length) return portsSuggestion;
   const candidates=lines.map((line,index)=>({value:line,index,score:scoreCruiseTitleRecoveryCandidate(line,index,p,lines)}))
     .filter(candidate=>!isCruiseTitleRecoveryExcludedLine(candidate.value,p,lines)&&candidate.score>=8)
     .sort((a,b)=>b.score-a.score||a.index-b.index);
-  if(!candidates.length){
-    const portsIntelligence=typeof getPortIntelligence==="function"?getPortIntelligence(p.ports||""):null;
-    if(portsIntelligence&&portsIntelligence.suggestedRoute) return {id:"cruise-title-recovery-ports",title:"Cruise Title",value:portsIntelligence.suggestedRoute,confidenceLabel:portsIntelligence.confidence==="High"?"Medium Confidence":"Low Confidence",targetLabel:"Cruise Title",fieldKey:"name",fieldId:"f-name"};
-    return null;
-  }
+  if(!candidates.length) return portsSuggestion;
   const top=candidates[0];
   const tied=candidates.filter(candidate=>candidate.score>=top.score-1);
   const confidenceLabel=tied.length===1&&top.score>=14?"High Confidence":top.score>=10?"Medium Confidence":"Low Confidence";

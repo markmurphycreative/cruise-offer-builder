@@ -83,8 +83,11 @@ function createHarness() {
     extractFunction('renderOfferQualitySection'),
     extractFunction('getOfferIntelligenceSummary'),
     extractFunction('normaliseCruiseTitleCandidate'),
+    extractFunction('isRecognisedPortTitleLine'),
     extractFunction('isCruiseTitleRecoveryExcludedLine'),
     extractFunction('scoreCruiseTitleRecoveryCandidate'),
+    extractFunction('getCruiseTitleRecoveryPortsIntelligence'),
+    extractFunction('getCruiseTitleRecoveryPortsSuggestion'),
     extractFunction('getCruiseTitleRecoverySuggestion'),
     extractFunction('renderOfferIntelligencePanel')
   ].join('\n'), context);
@@ -130,8 +133,26 @@ test('Cruise Title recovery falls back to Ports Intelligence suggestion only whe
   const { context } = createHarness();
   let suggestion = vm.runInContext('getCruiseTitleRecoverySuggestion(parsed, raw);', Object.assign(context, { parsed: { ports: 'Civitavecchia • Naples • Valletta' }, raw: '' }));
   assert.equal(suggestion.value, 'Italy & Malta');
+  assert.equal(suggestion.confidenceLabel, 'High Confidence');
   suggestion = vm.runInContext('getCruiseTitleRecoverySuggestion(parsed, raw);', Object.assign(context, { parsed: { name: 'Existing Title', ports: 'Civitavecchia • Naples • Valletta' }, raw: '' }));
   assert.equal(suggestion, null);
+});
+
+test('Cruise Title recovery uses high-confidence Ports Intelligence for port-only pastes', () => {
+  const { context } = createHarness();
+  const examples = [
+    { raw: 'Southampton\nLe Havre\nBilbao\nLa Coruna\nVigo\nCherbourg', expected: 'Spain & France' },
+    { raw: 'Athens\nSantorini\nMykonos\nRhodes', expected: 'Greek Islands' },
+    { raw: 'Civitavecchia\nNaples\nMessina\nValletta', expected: 'Italy & Malta' },
+    { raw: 'Southampton\nBergen\nOlden\nGeiranger\nStavanger', expected: 'Norwegian Fjords' }
+  ];
+
+  for (const example of examples) {
+    const suggestion = vm.runInContext('getCruiseTitleRecoverySuggestion(parsed, raw);', Object.assign(context, { parsed: {}, raw: example.raw }));
+    assert.equal(suggestion.value, example.expected);
+    assert.equal(suggestion.confidenceLabel, 'High Confidence');
+    assert.equal(suggestion.id, 'cruise-title-recovery-ports');
+  }
 });
 
 test('Offer Intelligence infers known ship operators without changing parsed data', () => {
@@ -441,8 +462,11 @@ test('POA Suggestions render only card and USP suggestions with confidence and c
     extractFunction('setPoaSuggestionHighlight'),
     extractFunction('getPoaSuggestionConfidenceLabel'),
     extractFunction('normaliseCruiseTitleCandidate'),
+    extractFunction('isRecognisedPortTitleLine'),
     extractFunction('isCruiseTitleRecoveryExcludedLine'),
     extractFunction('scoreCruiseTitleRecoveryCandidate'),
+    extractFunction('getCruiseTitleRecoveryPortsIntelligence'),
+    extractFunction('getCruiseTitleRecoveryPortsSuggestion'),
     extractFunction('getCruiseTitleRecoverySuggestion'),
     extractFunction('getPoaAssistedApplySuggestions'),
     extractFunction('escapePoaSuggestionHtml'),
@@ -532,7 +556,8 @@ Southampton - Madeira - Tenerife
 £1599pp`;
   const suggestion = vm.runInContext('getCruiseTitleRecoverySuggestion(parsed, raw);', Object.assign(context, { parsed: { operatorKey: 'po', ship: 'Arvia', nights: '14', day: '20', month: 'November 2026', price: '1599' }, raw }));
 
-  assert.equal(suggestion, null);
+  assert.equal(suggestion.value, 'Portugal & Spain');
+  assert.equal(suggestion.id, 'cruise-title-recovery-ports');
 });
 
 test('Cruise Title recovery rejects labelled data fields as title candidates', () => {
