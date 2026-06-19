@@ -5525,6 +5525,7 @@ function normaliseCruiseTitleCandidate(line){
 function isCruiseTitleRecoveryExcludedLine(line,parsed,rawLines){
   const value=normaliseCruiseTitleCandidate(line);
   if(!value||value.length<5||value.length>70) return true;
+  if(/^(?:ship|ship name|vessel|cruise ship|operator|cruise line|line|price|from|departure|departure date|date|nights|board basis|board|cabin|cabin type|room|room type|airport|departure airport|flights|luggage|transfers|inclusions|included|missing):\s*/i.test(value)) return true;
   if(parsed&&[parsed.operatorKey,parsed.ship,parsed.nights,parsed.price,parsed.board,parsed.boardlbl,parsed.incl,parsed.ports].some(item=>String(item||"").trim().toLowerCase()===value.toLowerCase())) return true;
   if(Object.values(OPERATOR_ALIASES||{}).flat().some(pattern=>pattern.test(value))) return true;
   if(findKnownOperatorShip(value)) return true;
