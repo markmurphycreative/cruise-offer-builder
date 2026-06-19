@@ -920,7 +920,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M4 4h16"></path><path d="M4 10h16"></path><path d="M4 16h10"></path><path d="m16 17 2 2 4-4"></path></svg>MULTI OFFER IMPORT</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body parse-area hidden">
-        <textarea id="multi-offer-paste" spellcheck="true" placeholder="Paste up to 4 offers here..."></textarea>
+        <textarea id="multi-offer-paste" spellcheck="true" oninput="handleMultiOfferImportInput(event)" placeholder="Paste up to 4 offers here..."></textarea>
         <button class="parse-btn" onclick="loadAllOffers()"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h6"></path></svg>Load All Offers</button>
         <div class="parse-result" id="multi-offer-result"></div>
       </div>
@@ -4334,6 +4334,9 @@ function syncPasteOfferStateAfterHistoryRestore(){
     resetPasteOfferState();
   }
 }
+function syncMultiOfferImportStateAfterHistoryRestore(){
+  resetMultiOfferImportState();
+}
 function restoreCampaignHistorySnapshot(snapshot){
   const data=decodeCampaignHistoryImages(clonePlain(snapshot));
   campaignHistoryState.isRestoring=true;
@@ -4358,6 +4361,7 @@ function restoreCampaignHistorySnapshot(snapshot){
     if(typeof syncOfferSelector === "function") syncOfferSelector();
     if(typeof loadOfferToEditor === "function") loadOfferToEditor(cur); else if(typeof load === "function") load(cur);
     if(typeof syncPasteOfferStateAfterHistoryRestore === "function") syncPasteOfferStateAfterHistoryRestore();
+    if(typeof syncMultiOfferImportStateAfterHistoryRestore === "function") syncMultiOfferImportStateAfterHistoryRestore();
     if(typeof refreshAfterRestore === "function") refreshAfterRestore();
     else { try{ updateAllStatus(); }catch(e){} try{ renderPreviewMode(true); }catch(e){} }
   }finally{
@@ -5463,6 +5467,16 @@ function splitMultiOfferImport(raw){
   return blocks.map(block=>block.split("\n").filter(line=>!isDividerLine(line)&&!isOfferLabelLine(line)).join("\n").trim()).filter(Boolean);
 }
 function setMultiOfferStatus(html,level){ const el=document.getElementById("multi-offer-result"); if(!el) return; el.innerHTML=html||""; el.className='parse-result '+(level||''); }
+function resetMultiOfferImportState(options){
+  const opts=options||{};
+  const raw=document.getElementById("multi-offer-paste");
+  if(raw && opts.clearText !== false) raw.value="";
+  setMultiOfferStatus("","");
+}
+function handleMultiOfferImportInput(event){
+  const raw=(document.getElementById("multi-offer-paste")||{}).value||"";
+  if(!raw.trim()) resetMultiOfferImportState({clearText:false});
+}
 function getParsedOfferMissingCount(parsed){
   const p=parsed||{};
   return ['operatorKey','name','ship','price','boardlbl','nights'].filter(key=>!p[key]).length;
