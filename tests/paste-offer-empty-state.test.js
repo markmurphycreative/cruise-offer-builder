@@ -163,7 +163,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('applyParsedOffer')
   ].join('\n'), context);
   return {
-    context, fields, modal, status, tabs, calls, rawPaste,
+    context, fields, modal, status, tabs, calls, rawPaste, previewBody,
     apply(parsed, confidence = 'high') {
       context.__parsed = parsed;
       context.__confidence = confidence;
@@ -222,9 +222,39 @@ test('Paste Offer does not create a blank offer when parsing detected no fields'
 
 test('empty pasted text resets the active pasted offer instead of keeping stale rendered data', () => {
   assert.match(extractFunction('parseOffer'), /if\(!raw\.trim\(\)\) return resetActiveOfferFromEmptyPaste\(\);/);
-  assert.match(extractFunction('handlePasteOfferInput'), /if\(!raw\.trim\(\)\) resetActiveOfferFromEmptyPaste\(\);/);
+  assert.match(extractFunction('handlePasteOfferInput'), /if\(!hasText\)\{\n\s+pasteOfferClearedByInput=resetActiveOfferFromEmptyPaste\(\);/);
+  assert.match(extractFunction('handlePasteOfferInput'), /if\(pasteOfferClearedByInput && isUndoRestore\)\{/);
 });
 
+
+
+test('restoring Paste Offer text after an empty clear re-runs parsing and preview state', () => {
+  const harness = createHarness([{ name: 'Old Offer', price: '999' }], 0, { hasParsePreviewModal: true });
+  vm.runInContext([
+    'let pasteOfferClearedByInput=false;',
+    'function resetActiveOfferFromEmptyPaste(){ offers[cur]={}; return true; }',
+    extractFunction('handlePasteOfferInput')
+  ].join('\n'), harness.context);
+
+  harness.rawPaste.value = '';
+  vm.runInContext('handlePasteOfferInput({ inputType: "deleteContentBackward" });', harness.context);
+  assert.deepEqual(JSON.parse(JSON.stringify(harness.context.offers[0])), {});
+
+  harness.rawPaste.value = CELEBRITY_CRUISES_OFFER;
+  vm.runInContext('handlePasteOfferInput({ inputType: "historyUndo" });', harness.context);
+
+  assert.equal(harness.modal.classList.contains('active'), true);
+  const restoredParse = vm.runInContext('pendingParseResult', harness.context);
+  assert.ok(restoredParse, 'expected restored text to recreate pending parse state');
+  assert.equal(restoredParse.parsed.name, 'Panama Canal & Southern Caribbean');
+  assert.equal(restoredParse.parsed.ship, 'Celebrity Ascent');
+  assert.equal(harness.previewBody.innerHTML.includes('Panama Canal & Southern Caribbean'), true);
+
+  vm.runInContext('applyParsedOffer();', harness.context);
+  assert.equal(harness.context.offers[0].name, 'Panama Canal & Southern Caribbean');
+  assert.equal(harness.context.offers[0].ship, 'Celebrity Ascent');
+  assert.equal(harness.context.offers[0].price, '2849');
+});
 
 
 test('clearing Paste Offer resets only the selected offer, editor, preview and intelligence state', () => {

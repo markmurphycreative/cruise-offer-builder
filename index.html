@@ -899,7 +899,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M11 14h10"></path><path d="m17 10 4 4-4 4"></path><path d="M9 5V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"></path><path d="M17 5h1a2 2 0 0 1 2 2v3"></path><path d="M9 18H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1"></path><rect width="8" height="5" x="8" y="4" rx="1"></rect></svg>Paste Offer</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body parse-area hidden">
-        <textarea id="raw-paste" spellcheck="true" oninput="handlePasteOfferInput()" onkeydown="handlePasteOfferKeydown(event)" placeholder="Paste Trello / operator copy here...
+        <textarea id="raw-paste" spellcheck="true" oninput="handlePasteOfferInput(event)" onkeydown="handlePasteOfferKeydown(event)" placeholder="Paste Trello / operator copy here...
 
 P&amp;O Cruises | Arvia
 Eastern Caribbean Islands Fly-Cruise
@@ -5296,9 +5296,19 @@ function resetActiveOfferFromEmptyPaste(){
   try { queueAutosave(); } catch(e){}
   return true;
 }
-function handlePasteOfferInput(){
+let pasteOfferClearedByInput=false;
+function handlePasteOfferInput(event){
   const raw=(document.getElementById("raw-paste")||{}).value||"";
-  if(!raw.trim()) resetActiveOfferFromEmptyPaste();
+  const hasText=!!raw.trim();
+  const isUndoRestore=!!(event && /historyUndo|historyRedo/i.test(event.inputType||""));
+  if(!hasText){
+    pasteOfferClearedByInput=resetActiveOfferFromEmptyPaste();
+    return;
+  }
+  if(pasteOfferClearedByInput && isUndoRestore){
+    pasteOfferClearedByInput=false;
+    parseOffer();
+  }
 }
 function handlePasteOfferKeydown(event){
   if(!event || event.defaultPrevented || event.shiftKey) return;
