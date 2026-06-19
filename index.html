@@ -6082,15 +6082,16 @@ function cleanPortsDisplay(str){
     .filter(Boolean)
     .join(" • ");
 }
+const RETURN_EMBARKATION_PORTS=new Set(["southampton","newcastle","barcelona","athens","miami","fort lauderdale","tampa","port canaveral","vancouver","seattle","singapore","dubai"]);
 function getDestinationComparisonValue(destination){
-  return String(destination||"").trim().toLowerCase();
+  return cleanEmbarkationPortDisplay(destination).trim().toLowerCase();
 }
 function removeDuplicateReturnToOriginDestination(ports){
   const renderedPorts=Array.isArray(ports)?ports.slice():[];
   if(renderedPorts.length>1){
     const first=getDestinationComparisonValue(renderedPorts[0]);
     const last=getDestinationComparisonValue(renderedPorts[renderedPorts.length-1]);
-    if(first&&first===last) renderedPorts.pop();
+    if(first&&RETURN_EMBARKATION_PORTS.has(first)&&first===last) renderedPorts.pop();
   }
   return renderedPorts;
 }
@@ -6158,10 +6159,11 @@ function packItineraryLines(ports,options){
   return lines;
 }
 function getRenderedItineraryPorts(str){
-  return cleanPortsDisplay(str)
+  const ports=cleanPortsDisplay(str)
     .split("•")
     .map(s=>s.trim())
     .filter(Boolean);
+  return removeDuplicateReturnToOriginDestination(ports);
 }
 function cleanEmbarkationPortDisplay(port){
   return String(port||"").split(",").map(part=>part.trim()).filter(Boolean)[0]||"";

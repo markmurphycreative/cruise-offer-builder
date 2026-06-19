@@ -17,6 +17,7 @@ function createItineraryContext() {
     extractFunction('getVisitSectionMinHeight'),
     extractFunction('normaliseDestinationName'),
     extractFunction('cleanPortsDisplay'),
+    extractConstant('RETURN_EMBARKATION_PORTS'),
     extractFunction('getDestinationComparisonValue'),
     extractFunction('removeDuplicateReturnToOriginDestination'),
     extractFunction('estimateItineraryTextWidth'),
@@ -127,7 +128,7 @@ test('long destinations wrap according to rendered width without overflowing', (
   for (const line of lines) assert.ok(measureText(line) <= 530, `${line} overflowed safe width`);
 });
 
-test('duplicate return-to-origin destination is retained after normalisation for card and POA consistency', () => {
+test('duplicate return-to-origin destination is retained when it is not a recognised embarkation port', () => {
   const context = createItineraryContext();
 
   const rendered = context.chunkBullets(' Corfu • Souda (for Chania), Crete • Rhodes • Patmos • Heraklion, Crete • Katakolon, Olympia • corfu ');
@@ -135,6 +136,16 @@ test('duplicate return-to-origin destination is retained after normalisation for
 
   assert.equal(text, 'Corfu • Souda, Chania, Crete • Rhodes • Patmos • Heraklion, Crete • Katakolon, Olympia • corfu');
   assert.equal((text.match(/Corfu/gi) || []).length, 2);
+});
+
+test('recognised embarkation return port is removed only from the final rendered itinerary position', () => {
+  const context = createItineraryContext();
+
+  const rendered = context.chunkBullets('Southampton • Le Havre • Southampton • Bilbao • La Coruna • Vigo • Cherbourg • Southampton');
+  const text = renderedLines(rendered).map(textFromRenderedLine).join(' • ');
+
+  assert.equal(text, 'Southampton • Le Havre • Southampton • Bilbao • La Coruna • Vigo • Cherbourg');
+  assert.equal((text.match(/Southampton/g) || []).length, 2);
 });
 
 test('different start and end destinations remain rendered', () => {
@@ -147,7 +158,7 @@ test('different start and end destinations remain rendered', () => {
   assert.match(rendered, /<span class="port-unit">Barcelona,&nbsp;Spain<\/span>/);
 });
 
-test('itinerary packing remains width based with return-to-origin ports retained', () => {
+test('itinerary packing remains width based with non-embarkation return-to-origin ports retained', () => {
   const context = createItineraryContext();
   const measureText = itineraryMeasureStub({
     Corfu: 80,

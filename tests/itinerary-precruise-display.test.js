@@ -77,6 +77,7 @@ function createRenderContext() {
     extractConstant('ITINERARY_SEPARATOR'),
     extractFunction('normaliseDestinationName'),
     extractFunction('cleanPortsDisplay'),
+    extractConstant('RETURN_EMBARKATION_PORTS'),
     extractFunction('getDestinationComparisonValue'),
     extractFunction('removeDuplicateReturnToOriginDestination'),
     extractFunction('estimateItineraryTextWidth'),
@@ -185,12 +186,12 @@ test('pre-cruise note renders above You\'ll Visit while passenger basis remains 
   assert.match(card, /<div class="pbasis">Based On 2 Adults Sharing<\/div>/);
 });
 
-test('cards without pre-cruise stay keep the existing itinerary section HTML unchanged', () => {
+test('cards without pre-cruise stay keep the existing itinerary section HTML while cleaning duplicated return embarkation ports', () => {
   const { renderCardHTML } = createRenderContext();
   const card = renderCardHTML({ ship: 'Liberty of the Seas', ports: 'Southampton • Lisbon • Southampton', basis: 'Based On 2 Adults Sharing' });
 
   assert.match(card, /<div class="sname">Sailing on Liberty of the Seas from Southampton<\/div>/);
-  assert.match(card, /<div class="vsec"><div class="visit-inner"><div class="vtit">You'll Visit<\/div><div class="vpts"><span class="port-line"><span class="port-unit">Southampton<\/span> <span class="port-separator">•<\/span> <span class="port-unit">Lisbon<\/span> <span class="port-separator">•<\/span> <span class="port-unit">Southampton<\/span><\/span><\/div><\/div><\/div>/);
+  assert.match(card, /<div class="vsec"><div class="visit-inner"><div class="vtit">You'll Visit<\/div><div class="vpts"><span class="port-line"><span class="port-unit">Southampton<\/span> <span class="port-separator">•<\/span> <span class="port-unit">Lisbon<\/span><\/span><\/div><\/div><\/div>/);
   assert.doesNotMatch(card, /precruise-note|Pre-Cruise|Bed & Breakfast/);
 });
 
