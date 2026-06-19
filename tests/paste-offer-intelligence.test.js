@@ -444,3 +444,53 @@ Southampton - Madeira - Tenerife
 
   assert.equal(suggestion, null);
 });
+
+test('Cruise Title recovery rejects labelled data fields as title candidates', () => {
+  const { context } = createHarness();
+  const raw = `Ship: Liberty of the Seas
+Departure Date: 25 September 2026
+Price: £1689pp
+Missing:
+Cruise Title`;
+  const suggestion = vm.runInContext('getCruiseTitleRecoverySuggestion(parsed, raw);', Object.assign(context, { parsed: { operatorKey: 'royal', ship: 'Liberty of the Seas', day: '25', month: 'September 2026', price: '1689' }, raw }));
+
+  assert.equal(suggestion, null);
+});
+
+test('Cruise Title recovery still suggests standalone itinerary-style lines', () => {
+  const { context } = createHarness();
+  const examples = [
+    {
+      raw: `Royal Caribbean
+Liberty of the Seas
+Spain & France
+8 Nights
+25 September 2026`,
+      parsed: { operatorKey: 'royal', ship: 'Liberty of the Seas', nights: '8', day: '25', month: 'September 2026' },
+      expected: 'Spain & France'
+    },
+    {
+      raw: `Cunard
+Queen Anne
+Norwegian Fjords
+12 Nights
+15 May 2027`,
+      parsed: { operatorKey: 'cunard', ship: 'Queen Anne', nights: '12', day: '15', month: 'May 2027' },
+      expected: 'Norwegian Fjords'
+    },
+    {
+      raw: `P&O Cruises
+Arvia
+Eastern Caribbean Islands Fly-Cruise
+14 Nights
+20 November 2026`,
+      parsed: { operatorKey: 'po', ship: 'Arvia', nights: '14', day: '20', month: 'November 2026' },
+      expected: 'Eastern Caribbean Islands Fly-Cruise'
+    }
+  ];
+
+  for (const example of examples) {
+    const suggestion = vm.runInContext('getCruiseTitleRecoverySuggestion(parsed, raw);', Object.assign(context, { parsed: example.parsed, raw: example.raw }));
+    assert.equal(suggestion.value, example.expected);
+  }
+});
