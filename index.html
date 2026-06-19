@@ -49,7 +49,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .offer-tab-number{font-size:7px;font-weight:600;text-transform:uppercase;letter-spacing:.065em;color:var(--muted);opacity:.58;}
 .offer-tab-operator{font-size:9px;font-weight:700;letter-spacing:0;color:var(--text);opacity:.58;}
 .offer-tab-ship{font-size:8px;font-weight:500;letter-spacing:.01em;color:var(--muted);opacity:.64;}
-.offer-tab-quality{font-size:8px;font-weight:700;letter-spacing:.02em;color:var(--navy);opacity:.68;}
+.offer-tab-quality{font-size:8px;font-weight:500;letter-spacing:.02em;color:var(--muted);opacity:.72;}
 .otab:not(.active) .offer-tab-operator{font-weight:500;}
 .otab:hover:not(.active){color:var(--navy);background:rgba(160,146,103,.07);}
 .otab:hover:not(.active) .offer-tab-operator{opacity:.88;color:var(--navy);}
@@ -195,6 +195,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .poa-suggestion-actions{display:flex;align-items:center;gap:5px;justify-content:flex-start;}
 .poa-suggestion-applied{font-size:9px;font-weight:700;color:var(--green);}
 .poa-suggestion-toolbar{display:flex;align-items:center;gap:5px;margin-bottom:5px;}
+.poa-applied-enhancements{margin-top:5px;}
 .offer-quality-missing{margin-top:4px;}
 .offer-quick-action{margin-left:4px;}
 .field.poa-target-highlight input,.field.poa-target-highlight textarea{border-color:var(--gold);background:rgba(184,167,110,0.08);}
@@ -5505,11 +5506,18 @@ function getPoaSuggestionCurrentValue(suggestion){
   if(input) return input.value;
   return offers[cur]&&suggestion?offers[cur][suggestion.fieldKey]||"":"";
 }
+function renderPoaAppliedEnhancements(suggestions){
+  const applied=(suggestions||[]).filter(s=>s&&s.id&&poaAppliedSuggestions[s.id]);
+  if(!applied.length) return "";
+  const rows=applied.map(s=>`<div class="offer-intel-item detected"><span class="offer-intel-icon">✓</span><span>${escapePoaSuggestionHtml(s.value||s.title)}</span></div>`).join("");
+  return `<div class="offer-intel-section poa-applied-enhancements"><div class="offer-intel-heading">Applied Enhancements</div><div class="offer-intel-list">${rows}</div></div>`;
+}
 function renderPoaAssistedApplySuggestions(suggestions){
   const visible=(suggestions||[]).filter(s=>s&&s.id&&s.fieldId&&document.getElementById(s.fieldId));
   if(!visible.length) return "";
-  const appliedCount=visible.filter(s=>poaAppliedSuggestions[s.id]).length;
-  const toolbar=`<div class="poa-suggestion-toolbar"><button class="abtn btn-compact" type="button" onclick="applyAllPoaSuggestions()">Apply All</button>${appliedCount?`<button class="abtn btn-compact" type="button" onclick="removeAllPoaSuggestions()">Remove All</button>`:""}</div>`;
+  const unappliedCount=visible.filter(s=>!poaAppliedSuggestions[s.id]).length;
+  const appliedCount=visible.length-unappliedCount;
+  const toolbar=(unappliedCount||appliedCount)?`<div class="poa-suggestion-toolbar">${unappliedCount?`<button class="abtn btn-compact" type="button" onclick="applyAllPoaSuggestions()">Apply All (${unappliedCount})</button>`:""}${appliedCount?`<button class="abtn btn-compact" type="button" onclick="removeAllPoaSuggestions()">Remove All</button>`:""}</div>`:"";
   const cards=visible.map(s=>{
     const applied=poaAppliedSuggestions[s.id];
     const current=applied&&Object.prototype.hasOwnProperty.call(applied,"previousValue")?applied.previousValue:getPoaSuggestionCurrentValue(s);
@@ -5518,7 +5526,8 @@ function renderPoaAssistedApplySuggestions(suggestions){
       : `<button class="abtn btn-compact" type="button" onclick="applyPoaSuggestion('${s.id}')">Apply</button>`;
     return `<div class="poa-suggestion-card" onmouseenter="setPoaSuggestionHighlight('${s.fieldKey}',true)" onmouseleave="setPoaSuggestionHighlight('${s.fieldKey}',false)"><div class="poa-suggestion-title">${escapePoaSuggestionHtml(s.title)}</div><div class="poa-suggestion-confidence">${escapePoaSuggestionHtml(s.confidenceLabel||"Low Confidence")}</div><div class="poa-suggestion-compare"><div><span class="poa-suggestion-compare-label">Current:</span>${formatPoaSuggestionValue(current)}</div><div><span class="poa-suggestion-compare-label">Suggested:</span>${formatPoaSuggestionValue(s.value)}</div></div><div class="poa-suggestion-actions">${actions}</div></div>`;
   }).join("");
-  return `<div class="offer-intel-section"><div class="offer-intel-heading">POA Suggestions (${visible.length})</div>${toolbar}<div class="offer-intel-list">${cards}</div></div>`;
+  const appliedPanel=typeof renderPoaAppliedEnhancements==="function"?renderPoaAppliedEnhancements(visible):"";
+  return `<div class="offer-intel-section"><div class="offer-intel-heading">Available Enhancements (${visible.length})</div>${toolbar}<div class="offer-intel-list">${cards}</div></div>${appliedPanel}`;
 }
 
 function getVisiblePoaSuggestions(){
@@ -5581,16 +5590,16 @@ function getOfferIntelligenceQualityDetails(parsed,rawText,effectiveOperator){
   const p=parsed||{};
   const has=value=>!!String(value==null?"":value).trim();
   const checks=[
-    {label:"Operator",points:15,ok:!!effectiveOperator},
-    {label:"Ship",points:15,ok:has(p.ship)},
-    {label:"Cruise Title",points:10,ok:has(p.name)},
-    {label:"Departure Date",points:10,ok:has([p.day,p.month].filter(Boolean).join(" "))},
-    {label:"Nights",points:10,ok:has(p.nights)},
-    {label:"Price",points:10,ok:has(p.price)},
-    {label:"Board Basis",points:10,ok:has(p.boardlbl||p.board)},
-    {label:"Ports",points:10,ok:has(p.ports)},
-    {label:"Cabin Type",points:5,ok:/\b(inside|outside|balcony|suite)(?:\s+(?:cabin|stateroom))?\b|\b(?:cabin|stateroom)\b/i.test(String(rawText||""))},
-    {label:"Departure Airport",points:5,ok:has(getOfferIntelligenceAirport(p,rawText))}
+    {label:"Operator",points:12,core:true,ok:!!effectiveOperator},
+    {label:"Cruise Title",points:12,core:true,ok:has(p.name)},
+    {label:"Ship",points:12,core:true,ok:has(p.ship)},
+    {label:"Departure Date",points:12,core:true,ok:has([p.day,p.month].filter(Boolean).join(" "))},
+    {label:"Nights",points:12,core:true,ok:has(p.nights)},
+    {label:"Price",points:12,core:true,ok:has(p.price)},
+    {label:"Board Basis",points:12,core:true,ok:has(p.boardlbl||p.board)},
+    {label:"Ports",points:12,core:true,ok:has(p.ports)},
+    {label:"Departure Airport",points:2,core:false,ok:has(getOfferIntelligenceAirport(p,rawText))},
+    {label:"Cabin Type",points:2,core:false,ok:/\b(inside|outside|balcony|suite)(?:\s+(?:cabin|stateroom))?\b|\b(?:cabin|stateroom)\b/i.test(String(rawText||""))}
   ];
   return {score:checks.reduce((sum,item)=>sum+(item.ok?item.points:0),0),checks};
 }
@@ -5602,7 +5611,23 @@ function getOfferIntelligenceQualityScore(parsed,rawText,effectiveOperator){
 function renderOfferQualitySection(parsed,rawText,effectiveOperator,item){
   const quality=getOfferIntelligenceQualityDetails(parsed,rawText,effectiveOperator);
   const missing=quality.checks.filter(c=>!c.ok).map(c=>item("missing","⚠",c.label)).join("");
-  return `<div class="offer-intel-section"><div class="offer-intel-heading">Offer Quality</div><div class="offer-intel-list">${missing?`<div class="offer-quality-missing"><div class="offer-intel-heading">Missing:</div>${missing}</div>`:`<div class="offer-intel-empty">No missing core fields.</div>`}</div></div>`;
+  return `<div class="offer-intel-section"><div class="offer-intel-heading">OFFER QUALITY</div><div class="offer-intel-list">${missing?`<div class="offer-quality-missing"><div class="offer-intel-heading">Missing:</div>${missing}</div>`:`<div class="offer-intel-empty">No missing core fields</div>`}</div></div>`;
+}
+function getPoaQualityAnalytics(){
+  const loaded=(offers||[]).filter(o=>isOfferLoaded(o));
+  const aggregate={offerCount:loaded.length,missingFieldFrequency:{},enhancementOpportunityFrequency:{},confidenceTrend:{high:0,partial:0,low:0},parserFailures:{}};
+  loaded.forEach((o,index)=>{
+    const raw=[o.name,o.ship,o.incl,o.ports,o.tags].filter(Boolean).join(" ");
+    const parsed={operatorKey:o.operator,name:o.name,ship:o.ship,day:o.day,month:o.month,nights:o.nights,price:o.price,board:o.board,boardlbl:o.boardlbl,ports:o.ports,incl:o.incl};
+    const previousCur=cur; cur=index;
+    const effective=o.operator||((getOfferIntelligenceShipOperator(o.ship)||{}).operatorKey)||"";
+    getOfferIntelligenceQualityDetails(parsed,raw,effective).checks.filter(c=>!c.ok).forEach(c=>{aggregate.missingFieldFrequency[c.label]=(aggregate.missingFieldFrequency[c.label]||0)+1;});
+    getPoaAssistedApplySuggestions(parsed,raw,detectOfferIntelligenceInclusions(parsed,raw),effective).forEach(s=>{aggregate.enhancementOpportunityFrequency[s.title]=(aggregate.enhancementOpportunityFrequency[s.title]||0)+1;});
+    const summary=getOfferIntelligenceSummary(parsed,raw); aggregate.confidenceTrend[summary.level]=(aggregate.confidenceTrend[summary.level]||0)+1;
+    ["ship","board","nights"].filter(k=>!parsed[k]).forEach(k=>{aggregate.parserFailures[k]=(aggregate.parserFailures[k]||0)+1;});
+    cur=previousCur;
+  });
+  return aggregate;
 }
 function getPoaVisibleSuggestionCount(suggestions){
   return (suggestions||[]).filter(s=>s&&s.id&&s.fieldId&&document.getElementById(s.fieldId)).length;
@@ -5715,7 +5740,7 @@ function renderOfferIntelligencePanel(parsed,rawText){
       missing.push(`Departure Airport not detected${quick}`);
     }
     if(typeof window!=="undefined"){ window.currentPoaSuggestions=poaSuggestions; window.currentPoaParsed=p; window.currentPoaRawText=rawText; }
-    const item=(kind,icon,label)=>`<div class="offer-intel-item ${kind}"><span class="offer-intel-icon">${icon}</span><span>${label}</span></div>`;
+    const item=(kind,icon,label)=>`<div class="offer-intel-item ${kind}"><span class="offer-intel-icon">${icon}</span><span>${String(label).replace(/^Quality Score:/,"<strong>Quality Score:</strong>")}</span></div>`;
     const section=(heading,html,empty="")=>`<div class="offer-intel-section"><div class="offer-intel-heading">${heading}</div><div class="offer-intel-list">${html||`<div class="offer-intel-empty">${empty}</div>`}</div></div>`;
     const summaryHtml=section("POA Summary",[summary.label,`${summary.count} Fields Detected`,`${visibleSuggestionCount} Suggestions Available`,`Quality Score: ${quality.score}`].map(label=>item("detected","✓",label)).join(""));
     panel.innerHTML=`<div class="offer-intel-title">Offer Intelligence</div>`+
