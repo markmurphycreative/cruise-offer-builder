@@ -5511,8 +5511,68 @@ function getPoaSuggestionConfidenceLabel(parsed,rawText){
   if(level==="partial") return "Medium Confidence";
   return "Low Confidence";
 }
+
+function normaliseCruiseTitleCandidate(line){
+  return String(line||"").replace(/^[\s•·▪◦●|:-]+|[\s•·▪◦●|:-]+$/g,"").replace(/\s+/g," ").trim();
+}
+function isCruiseTitleRecoveryExcludedLine(line,parsed,rawLines){
+  const value=normaliseCruiseTitleCandidate(line);
+  if(!value||value.length<5||value.length>70) return true;
+  if(parsed&&[parsed.operatorKey,parsed.ship,parsed.nights,parsed.price,parsed.board,parsed.boardlbl,parsed.incl,parsed.ports].some(item=>String(item||"").trim().toLowerCase()===value.toLowerCase())) return true;
+  if(Object.values(OPERATOR_ALIASES||{}).flat().some(pattern=>pattern.test(value))) return true;
+  if(findKnownOperatorShip(value)) return true;
+  if(/[£$€]\s*\d|\b(?:from\s*)?\d{3,5}(?:,\d{3})?\s*pp?\b/i.test(value)) return true;
+  if(/\b\d{1,2}(?:st|nd|rd|th)?\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|january|february|march|april|june|july|august|september|october|november|december)\s+\d{2,4}\b|\b\d{1,2}\/\d{1,2}\/\d{2,4}\b|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|january|february|march|april|june|july|august|september|october|november|december)\s+\d{4}\b/i.test(value)) return true;
+  if(/\b\d{1,2}\s*(?:nights?|nts?)\b/i.test(value)) return true;
+  if(/\b(?:full board|half board|all inclusive|self catering|room only|bed\s*&\s*breakfast|inside|outside|balcony|suite|cabin|stateroom)\b/i.test(value)) return true;
+  if(/\b(?:flights?|luggage|baggage|transfers?|drinks? package|gratuities|tips|included|on\s*board spend|wi[-\s]?fi|shore excursions?)\b/i.test(value)) return true;
+  if(/^sailing\s+from\b|\b(?:sails?|depart(?:ing|s)?)\s+from\b/i.test(value)) return true;
+  if(ITINERARY_SECTION_LABEL.test(value)||ITINERARY_FOOTER_LABEL.test(value)) return true;
+  if(/[•·▪◦●]|\s+-\s+|,/.test(value)){
+    const ports=cleanParsedPorts([value],{exclude:[]});
+    if(ports&&ports.split("•").map(port=>port.trim()).filter(Boolean).length>=2) return true;
+  }
+  const matchingPortLines=getStandalonePortLines(rawLines||[],{exclude:[]});
+  if(matchingPortLines.includes(value)) return true;
+  return false;
+}
+function scoreCruiseTitleRecoveryCandidate(line,index,parsed,lines){
+  const value=normaliseCruiseTitleCandidate(line);
+  let score=0;
+  const shipIndex=parsed&&parsed.ship?lines.findIndex(item=>normaliseCruiseTitleCandidate(item).toLowerCase()===String(parsed.ship).trim().toLowerCase()):-1;
+  const nightsIndex=lines.findIndex(item=>/\b\d{1,2}\s*(?:nights?|nts?)\b/i.test(item));
+  const dateIndex=lines.findIndex(item=>/\b\d{1,2}(?:st|nd|rd|th)?\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|january|february|march|april|june|july|august|september|october|november|december)\s+\d{2,4}\b|\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/i.test(item));
+  if(shipIndex>=0&&index>shipIndex) score+=4;
+  if(nightsIndex>=0&&index<nightsIndex) score+=4;
+  if(dateIndex>=0&&index<dateIndex) score+=2;
+  if(shipIndex>=0&&nightsIndex>=0&&index>shipIndex&&index<nightsIndex) score+=6;
+  if(/\b(?:caribbean|mediterranean|fjords?|norwegian|canaries|madeira|greek|islands?|spain|france|eastern|western|northern|southern|escape|explorer|glow|premium|adriatic|canary|norway|baltic|iceland|italy|portugal|europe|arabian|asia|alaska)\b/i.test(value)) score+=5;
+  const words=value.split(/\s+/).filter(Boolean).length;
+  if(words>=2&&words<=6) score+=4;
+  if(/^[A-Z0-9&][A-Za-z0-9À-ÖØ-öø-ÿ'’& -]+$/.test(value)) score+=2;
+  if(/\bcruise\b/i.test(value)) score+=1;
+  return score;
+}
+function getCruiseTitleRecoverySuggestion(parsed,rawText){
+  const p=parsed||{};
+  if(String(p.name||"").trim()) return null;
+  const lines=String(rawText||"").split(/\n/).map(normaliseCruiseTitleCandidate).filter(Boolean);
+  if(!lines.length) return null;
+  const candidates=lines.map((line,index)=>({value:line,index,score:scoreCruiseTitleRecoveryCandidate(line,index,p,lines)}))
+    .filter(candidate=>!isCruiseTitleRecoveryExcludedLine(candidate.value,p,lines)&&candidate.score>=8)
+    .sort((a,b)=>b.score-a.score||a.index-b.index);
+  if(!candidates.length) return null;
+  const top=candidates[0];
+  const tied=candidates.filter(candidate=>candidate.score>=top.score-1);
+  const confidenceLabel=tied.length===1&&top.score>=14?"High Confidence":top.score>=10?"Medium Confidence":"Low Confidence";
+  if(confidenceLabel==="Low Confidence") return null;
+  return {id:"cruise-title-recovery",title:"Cruise Title",value:top.value,confidenceLabel,targetLabel:"Cruise Title",fieldKey:"name",fieldId:"f-name"};
+}
+
 function getPoaAssistedApplySuggestions(parsed,rawText,inclusions,effectiveOperator){
   const suggestions=[];
+  const titleRecovery=typeof getCruiseTitleRecoverySuggestion==="function"?getCruiseTitleRecoverySuggestion(parsed,rawText):null;
+  if(titleRecovery) suggestions.push(titleRecovery);
   const confidenceLabel=getPoaSuggestionConfidenceLabel(parsed,rawText);
   const card=getPoaCardInclusionSuggestion(inclusions);
   if(card) suggestions.push({id:"card-inclusion",title:"Card Inclusion",value:card,confidenceLabel,targetLabel:"Card Inclusion Line",fieldKey:"incl",fieldId:"f-incl"});
@@ -5582,6 +5642,7 @@ function applyPoaSuggestion(id,silent){
   input.value=suggestion.value;
   if(!offers[cur]) offers[cur]={};
   offers[cur][suggestion.fieldKey]=suggestion.value;
+  if(window.currentPoaParsed) window.currentPoaParsed[suggestion.fieldKey]=suggestion.value;
   poaAppliedSuggestions[id]={previousValue};
   clearPoaSuggestionHighlights();
   if(!silent){ up();
@@ -5597,6 +5658,7 @@ function removePoaSuggestion(id,silent){
   input.value=previousValue;
   if(!offers[cur]) offers[cur]={};
   offers[cur][suggestion.fieldKey]=previousValue;
+  if(window.currentPoaParsed) window.currentPoaParsed[suggestion.fieldKey]=previousValue;
   delete poaAppliedSuggestions[id];
   clearPoaSuggestionHighlights();
   if(!silent){ up();
