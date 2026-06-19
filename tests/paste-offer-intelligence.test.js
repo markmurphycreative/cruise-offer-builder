@@ -52,6 +52,14 @@ function createHarness() {
     extractFunction('escapeRegExp'),
     extractFunction('getOfferIntelligenceShipOperator'),
     extractFunction('findKnownOperatorShip'),
+    extractConst('CABIN_TYPE_EXCLUSIONS'),
+    extractConst('NON_PORT_EXTRACTION_EXCLUSION_PATTERNS'),
+    extractFunction('normaliseExtractionExclusionValue'),
+    extractFunction('isCabinTypeExclusion'),
+    extractFunction('isNonPortExtractionValue'),
+    extractFunction('extractOfferPrice'),
+    extractFunction('formatParsedPriceDisplay'),
+    extractFunction('cleanDestinationOnlyLines'),
     extractFunction('normalisePortComparisonValue'),
     extractFunction('isExcludedParsedPort'),
     extractFunction('isStandalonePortCandidate'),
@@ -73,6 +81,7 @@ function createHarness() {
     extractConst('PORT_COUNTRIES'),
     extractConst('PORT_REGIONS'),
     extractFunction('normalisePortIntelligenceName'),
+    extractFunction('removeDuplicateReturnEmbarkationPortsString'),
     extractFunction('getPortIntelligence'),
     extractFunction('renderPortsIntelligenceSection'),
     extractFunction('clearOfferIntelligencePanel'),
@@ -81,6 +90,7 @@ function createHarness() {
     extractFunction('getOfferIntelligenceAirport'),
     extractFunction('getOfferIntelligenceQualityDetails'),
     extractFunction('renderOfferQualitySection'),
+    extractFunction('detectCabinType'),
     extractFunction('getOfferIntelligenceSummary'),
     extractFunction('normaliseCruiseTitleCandidate'),
     extractFunction('isRecognisedPortTitleLine'),
@@ -180,7 +190,7 @@ test('Offer Intelligence infers known ship operators without changing parsed dat
   assert.match(panel.innerHTML, /Ship: Arvia/);
   assert.match(panel.innerHTML, /Nights: 14/);
   assert.match(panel.innerHTML, /Board Basis: Full Board/);
-  assert.match(panel.innerHTML, /Price: £1669pp/);
+  assert.match(panel.innerHTML, /Price: £1,669pp/);
   assert.doesNotMatch(panel.innerHTML, /Operator USPs Available/);
   assert.doesNotMatch(panel.innerHTML, /Landing Page Available/);
 });
