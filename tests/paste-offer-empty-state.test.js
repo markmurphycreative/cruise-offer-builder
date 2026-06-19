@@ -119,11 +119,11 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
       querySelectorAll(selector) { return selector === '.otab' ? tabs : []; }
     },
     isOfferLoaded: offer => !!(offer && (offer.name || offer.ship || offer.price || offer._img)),
-    BOARD_MAP: { FB: ['FB', 'Full Board'], 'FULL BOARD': ['FB', 'Full Board'] },
+    BOARD_MAP: { FB: ['FB', 'Full Board'], 'FULL BOARD': ['FB', 'Full Board'], AI: ['AI', 'All Inclusive'], 'ALL INCLUSIVE': ['AI', 'All Inclusive'], HB: ['HB', 'Half Board'], 'HALF BOARD': ['HB', 'Half Board'] },
     OPERATOR_HEADERS: { cunard: { name: 'Cunard' }, ncl: { name: 'Norwegian Cruise Line' }, po: { name: 'P&O Cruises' } },
     OPERATOR_SHIPS: { celebrity: ['Celebrity Ascent'], amawaterways: ['AmaBella', 'AmaDouro', 'AmaMagna', 'Zambezi Queen'], cunard: ['Queen Anne'], ncl: ['Norwegian Prima', 'Pride of America'], po: ['Arvia'] },
     OPERATOR_ALIASES: { celebrity: [/\bcelebrity\b/i, /\bcelebrity\s+cruises\b/i], cunard: [/\bcunard\b/i], ncl: [/\bnorwegian\s+cruise\s+line\b/i, /\bncl\b/i], po: [/\bp\s*&\s*o\b/i, /\bp&o\s+cruises\b/i] },
-    AIRPORT_WORDS: ['newcastle'],
+    AIRPORT_WORDS: ['newcastle', 'manchester', 'edinburgh', 'leeds bradford', 'glasgow', 'birmingham', 'london', 'heathrow', 'gatwick', 'stansted'],
     getLikelyTypos() { return []; },
     setSpellWarn() {},
     operatorChanged() {},
@@ -155,6 +155,12 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('findKnownOperatorShip'),
     extractFunction('getStandalonePortLines'),
     extractFunction('parseFamilyPassengerBasis'),
+    'const PASTE_OPERATOR_BOARD_DEFAULTS={po:["FB","Full Board"],celebrity:["FB","Full Board"],fred:["FB","Full Board"],amawaterways:["FB","Full Board"],ambassador:["FB","Full Board"],ncl:["FB","Full Board"],cunard:["FB","Full Board"],marella:["AI","All Inclusive"],princess:["AI","All Inclusive"],msc:["AI","All Inclusive"],virgin:["AI","All Inclusive"],riviera:["AI","All Inclusive"]};',
+    extractFunction('detectPassengerBasis'),
+    extractFunction('detectBoardBasis'),
+    extractFunction('getOperatorBoardDefault'),
+    extractFunction('formatAirportName'),
+    extractFunction('detectFlightAirport'),
     extractFunction('parseOffer'),
     extractFunction('setParseStatus'),
     extractFunction('showParsePreview'),
@@ -209,6 +215,66 @@ test('Paste Offer preserves the selected slot when offers are already loaded', (
   assert.deepEqual(harness.context.offers, [{ name: 'Existing Offer 1' }, { name: 'Updated Offer 2', price: '2049' }, {}, {}]);
   assert.equal(harness.tabs[1].classList.contains('active'), true);
   assert.equal(harness.calls.autosave, 1);
+});
+
+test('Trello hardening detects occupancy variants and default sharing basis', () => {
+  const cases = [
+    ['£1249 per person based on 2 sharing', 'Based On 2 Adults Sharing'],
+    ['£1689 for a family of two adults & 1 child', 'Based On 2 Adults & 1 Child Sharing'],
+    ['£1189pp based on 2 adults sharing', 'Based On 2 Adults Sharing'],
+    ['solo traveller', 'Based On Solo Occupancy']
+  ];
+  for (const [raw, expected] of cases) {
+    const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+    harness.parse(`P&O Cruises\nArvia\n7 nights\n${raw}`);
+    assert.equal(harness.context.offers[0].basis, expected);
+  }
+});
+
+test('Trello hardening detects board variants and applies operator defaults without overriding pasted board', () => {
+  const variants = [
+    ['Full Board', 'FB', 'Full Board'],
+    ['Full Board dining', 'FB', 'Full Board'],
+    ['All Inclusive - drinks and tips included', 'AI', 'All Inclusive'],
+    ['Half Board', 'HB', 'Half Board']
+  ];
+  for (const [raw, code, label] of variants) {
+    const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+    harness.parse(`P&O Cruises\nArvia\n7 nights\n£999pp\n${raw}`);
+    assert.equal(harness.context.offers[0].board, code);
+    assert.equal(harness.context.offers[0].boardlbl, label);
+  }
+
+  const po = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  po.parse('P&O Cruises\nArvia\n7 nights\n£999pp');
+  assert.equal(po.context.offers[0].boardlbl, 'Full Board');
+
+  const marella = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  marella.context.OPERATOR_HEADERS.marella = { name: 'Marella Cruises' };
+  marella.context.OPERATOR_ALIASES.marella = [/\bmarella\b/i, /\bmarella\s+cruises\b/i];
+  marella.parse('Marella Cruises\nMarella Explorer\n7 nights\n£999pp');
+  assert.equal(marella.context.offers[0].boardlbl, 'All Inclusive');
+
+  const pasted = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  pasted.parse('P&O Cruises\nArvia\n7 nights\n£999pp\nAll Inclusive');
+  assert.equal(pasted.context.offers[0].boardlbl, 'All Inclusive');
+});
+
+test('Trello hardening detects UK airports only from flight wording', () => {
+  const phrases = [
+    ['Flights included from Newcastle', 'Newcastle'],
+    ['Direct flight from Newcastle', 'Newcastle'],
+    ['Flying from Newcastle', 'Newcastle'],
+    ['Flights from Manchester', 'Manchester'],
+    ['Flights included from Edinburgh', 'Edinburgh'],
+    ['Fly from Newcastle', 'Newcastle']
+  ];
+  for (const [phrase, airport] of phrases) {
+    const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+    assert.equal(vm.runInContext('detectFlightAirport(raw)', Object.assign(harness.context, { raw: phrase })), airport);
+  }
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  assert.equal(vm.runInContext('detectFlightAirport(raw)', Object.assign(harness.context, { raw: 'Sailing from Southampton to Barcelona' })), '');
 });
 
 test('Paste Offer does not create a blank offer when parsing detected no fields', () => {
@@ -403,11 +469,11 @@ test('Paste Offer sets family passenger basis for multiple children with numeric
   assert.equal(harness.context.offers[0].basis, 'Based On 2 Adults & 2 Children Sharing');
 });
 
-test('Paste Offer leaves standard per-person passenger basis unchanged', () => {
+test('Paste Offer normalises standard per-person passenger basis', () => {
   const harness = createHarness([], 0, { hasParsePreviewModal: false });
   harness.parse(CELEBRITY_CRUISES_OFFER);
 
-  assert.equal(harness.context.offers[0].basis, undefined);
+  assert.equal(harness.context.offers[0].basis, 'Based On 2 Adults Sharing');
 });
 
 test("Paste Offer recognises Itinerary, Ports, and You'll Visit labels with line and bullet-separated destinations", () => {

@@ -1570,7 +1570,7 @@ const BOARD_MAP = {
   "AI":["AI","All Inclusive"],"ALL INCLUSIVE":["AI","All Inclusive"],
   "FB":["FB","Full Board"],"FULL BOARD":["FB","Full Board"],
   "HB":["HB","Half Board"],"HALF BOARD":["HB","Half Board"],
-  "BB":["BB","B&B"],"BED AND BREAKFAST":["BB","B&B"],"B&B":["BB","B&B"],"BED & BREAKFAST":["BB","B&B"],
+  "BB":["BB","Bed & Breakfast"],"BED AND BREAKFAST":["BB","Bed & Breakfast"],"B&B":["BB","Bed & Breakfast"],"BED & BREAKFAST":["BB","Bed & Breakfast"],
   "SC":["SC","Self Catering"],"SELF CATERING":["SC","Self Catering"],
   "RO":["RO","Room Only"],"ROOM ONLY":["RO","Room Only"]
 };
@@ -5196,7 +5196,51 @@ function getOrdinal(n){ const s=["th","st","nd","rd"],v=n%100; return s[(v-20)%1
 let pendingParseResult=null;
 const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};
 const OPERATOR_ALIASES={po:[/\bp\s*&\s*o\b/i,/\bp\s*and\s*o\b/i,/\bp&o\s+cruises\b/i],royal:[/\broyal\b/i,/\brci\b/i,/\broyal\s+caribbean\b/i],marella:[/\bmarella\b/i,/\bmarella\s+cruises\b/i],celebrity:[/\bcelebrity\b/i,/\bcelebrity\s+cruises\b/i],fred:[/\bfred\s+olsen\b/i,/\bfred\.?\s*olsen\b/i],cunard:[/\bcunard\b/i],msc:[/\bmsc\b/i],ncl:[/\bnorwegian\s+cruise\s+line\b/i,/\bncl\b/i],princess:[/\bprincess\b/i],ambassador:[/\bambassador\b/i],virgin:[/\bvirgin\b/i]};
-const AIRPORT_WORDS=["newcastle","manchester","heathrow","gatwick","birmingham","bristol","glasgow","edinburgh","london"];
+const AIRPORT_WORDS=["newcastle","manchester","edinburgh","leeds bradford","glasgow","birmingham","london","heathrow","gatwick","stansted","bristol"];
+const PASTE_OPERATOR_BOARD_DEFAULTS={po:["FB","Full Board"],celebrity:["FB","Full Board"],fred:["FB","Full Board"],amawaterways:["FB","Full Board"],ambassador:["FB","Full Board"],ncl:["FB","Full Board"],cunard:["FB","Full Board"],marella:["AI","All Inclusive"],princess:["AI","All Inclusive"],msc:["AI","All Inclusive"],virgin:["AI","All Inclusive"],riviera:["AI","All Inclusive"]};
+function detectPassengerBasis(text){
+  const value=String(text||"").replace(/\u00a0/g," ");
+  if(/\b(?:solo\s+travell?er|single\s+occupancy|sole\s+occupancy|single\s+travell?er)\b/i.test(value)) return "Based On Solo Occupancy";
+  if(/\b(?:family\s+of\s+)?(?:2|two)\s+adults?\s*(?:&|and|\+)\s*(?:2|two)\s+children\b/i.test(value)) return "Based On 2 Adults & 2 Children Sharing";
+  if(/\b(?:family\s+of\s+)?(?:2|two)\s+adults?\s*(?:&|and|\+)\s*(?:1|one)\s+child\b/i.test(value)) return "Based On 2 Adults & 1 Child Sharing";
+  if(/\b(?:per\s+person\s+)?based\s+on\s+(?:2|two)(?:\s+(?:adults?|people))?(?:\s+sharing)?\b/i.test(value)||
+     /\b(?:2|two)\s+adults?\s+sharing\b/i.test(value)||
+     /\bbased\s+on\s+twin\s+share\b|\btwin\s+share\b/i.test(value)) return "Based On 2 Adults Sharing";
+  return "";
+}
+function detectBoardBasis(text){
+  const value=String(text||"").replace(/\u00a0/g," ");
+  const checks=[
+    [["AI","All Inclusive"],/\b(?:all[\s-]*inclusive(?:\s+(?:drinks?|drinks\s+and\s+tips\s+included))?|allinclusive|a[\s/-]*i|a\s+inclusive|all\s+inc|all[\s-]*incl|ai\s+package|all[\s-]*inclusive\s*-\s*drinks\s+and\s+tips\s+included|all[\s-]*inclusive\s+drinks\s+package)\b/i],
+    [["FB","Full Board"],/\b(?:full[\s-]*board(?:\s+dining)?|fullboard|f[\s/-]*b|f\s*board|fboard|full\s*bd)\b/i],
+    [["HB","Half Board"],/\b(?:half[\s-]*board|halfboard|h[\s/-]*b|h\s*board|half\s*bd)\b/i],
+    [["BB","Bed & Breakfast"],/\b(?:bed\s*(?:&|and)\s*breakfast|b\s*&\s*b|\bbb\b|b\s+and\s+b|bed\s+breakfast)\b/i],
+    [["SC","Self Catering"],/\b(?:self[\s-]*catering|s[\s/-]*c)\b/i],
+    [["RO","Room Only"],/\b(?:room\s+only|r[\s/-]*o)\b/i]
+  ];
+  const found=checks.find(([,pattern])=>pattern.test(value));
+  return found?found[0]:null;
+}
+function getOperatorBoardDefault(operatorKey){
+  return (PASTE_OPERATOR_BOARD_DEFAULTS&&PASTE_OPERATOR_BOARD_DEFAULTS[operatorKey]) || null;
+}
+function formatAirportName(airport){
+  return String(airport||"").split(/\s+/).map(part=>part.charAt(0).toUpperCase()+part.slice(1).toLowerCase()).join(" ");
+}
+function detectFlightAirport(text){
+  const value=String(text||"").replace(/\u00a0/g," ");
+  for(const airport of AIRPORT_WORDS){
+    const escaped=escapeRegExp(airport);
+    const patterns=[
+      new RegExp(`\\b(?:direct\\s+)?flights?\\s+(?:included\\s+)?(?:direct\\s+)?from\\s+${escaped}\\b`,"i"),
+      new RegExp(`\\bflights?\\s+direct\\s+from\\s+${escaped}\\b`,"i"),
+      new RegExp(`\\bfly(?:ing)?\\s+from\\s+${escaped}(?:\\s+direct)?\\b`,"i"),
+      new RegExp(`\\b${escaped}\\s+flights?\\b`,"i")
+    ];
+    if(patterns.some(pattern=>pattern.test(value))) return formatAirportName(airport);
+  }
+  return "";
+}
 const ITINERARY_SECTION_LABEL=/^(?:itinerary|ports|you(?:'|’)?ll visit)\s*:?\s*(.*)$/i;
 const ITINERARY_FOOTER_LABEL=/^(?:luggage\s*(?:&|and)\s*transfers?\s+included|flights?\s+included|inclusions?|what(?:'|’)?s included|price|from £|terms(?:\s*&\s*conditions)?|book now|call to book|cabin|accommodation)\b/i;
 const USP_TAG_LABEL=/^(?:top\s*bar\s*)?(?:usp|usps|tags?|tag\s*row|top\s*bar\s*usp\s*text)\s*:?\s*(.*)$/i;
@@ -5336,21 +5380,25 @@ function parseOffer(){
   const pipe=lines.find(l=>l.includes('|')); if(pipe){const parts=pipe.split('|').map(s=>s.trim()); if(!parsed.operatorKey&&parts[0]){for(const[k,op]of Object.entries(OPERATOR_HEADERS)){if(op.name&&new RegExp('\\b'+op.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i').test(parts[0])){parsed.operatorKey=k;score+=18;break;}} if(!parsed.operatorKey){for(const[k,arr]of Object.entries(OPERATOR_ALIASES)){if(arr.some(r=>r.test(parts[0]))){parsed.operatorKey=k;score+=18;break;}}}} if(parts[1]){parsed.ship=parts[1];score+=8;} }
   const nm=txt.match(/\b(\d{1,2})\s*(?:nights?|nts?)\b/i); if(nm){parsed.nights=nm[1];score+=14;}
   const pm=txt.match(/(?:from\s*)?£?\s*(\d{3,5}(?:,\d{3})?)\s*pp?\b|(?:from\s*)?£\s*(\d{3,5}(?:,\d{3})?)/i); if(pm){parsed.price=(pm[1]||pm[2]||'').replace(/,/g,'');score+=14;}
-  const familyBasis=parseFamilyPassengerBasis(txt); if(familyBasis){parsed.basis=familyBasis;}
-  const bm=txt.match(/\b(AI|FB|HB|SC|ALL INCLUSIVE|FULL BOARD|HALF BOARD|SELF CATERING)\b/i); if(bm&&BOARD_MAP[bm[1].toUpperCase()]){const mappedBoard=BOARD_MAP[bm[1].toUpperCase()];parsed.board=mappedBoard[0];parsed.boardlbl=mappedBoard[1];score+=10;}
+  const passengerBasis=detectPassengerBasis(txt)||parseFamilyPassengerBasis(txt)||"Based On 2 Adults Sharing"; if(passengerBasis){parsed.basis=passengerBasis; if(detectPassengerBasis(txt)||parseFamilyPassengerBasis(txt)) score+=6;}
+  const detectedBoard=detectBoardBasis(txt); if(detectedBoard){parsed.board=detectedBoard[0];parsed.boardlbl=detectedBoard[1];score+=10;}
   const months='january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec';
   let dm=txt.match(new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${months})\\s+(\\d{2,4})\\b`,'i'))||txt.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);
   if(dm){ if(dm[0].includes('/')){const y=dm[3].length===2?'20'+dm[3]:dm[3]; const date=new Date(`${y}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}`); parsed.day=String(date.getDate()); parsed.month=date.toLocaleString('en-GB',{month:'long'})+' '+date.getFullYear(); } else {const y=dm[3].length===2?'20'+dm[3]:dm[3]; const mn=new Date(`${dm[2]} 1, ${y}`); parsed.day=dm[1]; parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+y;} score+=16; }
   else { const mm=txt.match(new RegExp(`\\b(${months})\\s+(\\d{4})\\b`,'i')); if(mm){ const mn=new Date(`${mm[1]} 1, ${mm[2]}`); parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+mm[2]; score+=10; } }
   const itineraryLines=getItineraryLines(lines);
   const shipLineIndex=parsed.ship?lines.findIndex(line=>line===parsed.ship):-1;
-  const title=lines.find((l,index)=>!Object.values(OPERATOR_ALIASES).flat().some(r=>r.test(l))&&!(itineraryLines||[]).includes(l)&&(shipLineIndex<0||index<shipLineIndex)&&!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b|\b(?:full board|half board|all inclusive|self catering|inside|outside|balcony|suite)\b/i.test(l))&&l.length>8&&l!==parsed.ship); if(title){parsed.name=title.replace(/^[-•\s]+/,'');score+=8;}
+  const title=lines.find((l,index)=>!Object.values(OPERATOR_ALIASES).flat().some(r=>r.test(l))&&!(itineraryLines||[]).includes(l)&&(shipLineIndex<0||index<shipLineIndex)&&!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b|\b(?:full board|half board|all inclusive|self catering|inside|outside|balcony|suite|based on|sharing|solo traveller|solo traveler|single occupancy|sole occupancy|single traveller|single traveler)\b/i.test(l))&&l.length>8&&l!==parsed.ship); if(title){parsed.name=title.replace(/^[-•\s]+/,'');score+=8;}
   const portExclusions=[parsed.name].filter(Boolean);
   const standalonePortLines=getStandalonePortLines(lines,{exclude:portExclusions}); const portLines=itineraryLines||(standalonePortLines.length?standalonePortLines:null)||lines.filter(l=>/[•·,]|\s+-\s+/.test(l)&&/(?:[A-Za-z]{3,}\s*){2,}/.test(l)&&!/from|£|nights?|nts?|included|flights?/i.test(l)); const ports=cleanParsedPorts(portLines,{exclude:portExclusions}); if(ports){parsed.ports=ports;score+=8;}
   const uspTags=inferUspTagsFromLines(lines); if(uspTags){parsed.tags=uspTags;score+=8;}
-  const incl=lines.find(l=>/flights?|luggage|transfer|included|all inclusive/i.test(l)); if(incl){parsed.incl=incl;score+=6;}
-  const airport=AIRPORT_WORDS.find(a=>new RegExp('\\b'+a+'\\b','i').test(txt)); if(airport&&!parsed.incl){parsed.incl=airport[0].toUpperCase()+airport.slice(1)+' departures';score+=4;}
+  const detectedInclusions=typeof detectOfferIntelligenceInclusions==="function"?detectOfferIntelligenceInclusions(parsed,raw):[];
+  const inclusionSuggestion=typeof getOfferIntelligenceCardInclusionSuggestion==="function"?getOfferIntelligenceCardInclusionSuggestion(detectedInclusions):"";
+  if(inclusionSuggestion){parsed.incl=inclusionSuggestion;score+=6;}
+  else { const incl=lines.find(l=>/flights?|luggage|transfer|included|all inclusive/i.test(l)); if(incl){parsed.incl=incl;score+=6;} }
+  const airport=detectFlightAirport(txt); if(airport&&!parsed.incl){parsed.incl=airport+' Flights';score+=4;}
   const knownShipMatch=findKnownOperatorShip(txt,parsed.operatorKey); if(knownShipMatch){ if(!parsed.ship){parsed.ship=knownShipMatch.ship;score+=8;} if(!parsed.operatorKey){parsed.operatorKey=knownShipMatch.operatorKey;score+=18;} }
+  if(!parsed.board&&!parsed.boardlbl){const defaultBoard=getOperatorBoardDefault(parsed.operatorKey); if(defaultBoard){parsed.board=defaultBoard[0];parsed.boardlbl=defaultBoard[1];score+=6;}}
   if(!parsed.ship){const shipLine=lines.find(l=>/\b(cruise|explorer|symphony|arvia|voyager|queen|discovery)\b/i.test(l)); if(shipLine){const m=shipLine.match(/\b([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+){0,3})\b/); if(m) parsed.ship=m[1];}}
   const confidence=score>=62?'high':score>=35?'partial':'low';
   if(typeof renderOfferIntelligencePanel==="function") renderOfferIntelligencePanel(parsed,raw);
@@ -5414,20 +5462,20 @@ function hasOfferIntelligenceNegativeContext(text,matchIndex,matchText){
   const before=source.slice(Math.max(0,matchIndex-80),matchIndex);
   const after=source.slice(matchIndex+String(matchText||"").length,matchIndex+String(matchText||"").length+80);
   const combined=`${before} ${matchText||""} ${after}`;
-  return /\b(?:not\s+included|excludes?|excluding|optional|available\s+at\s+(?:a\s+)?supplement|available\s+at\s+(?:an\s+)?extra\s+cost|upgrade\s+available|extra\s+cost|payable\s+locally)\b/i.test(combined);
+  return /\b(?:not\s+included|excludes?|excluding|optional|available\s+at\s+(?:a\s+)?supplement|available\s+at\s+(?:an\s+)?extra\s+cost|upgrade\s+available|extra\s+cost|payable\s+locally|from\s+£\s*\d+(?:\.\d{2})?\s*pp?\s+per\s+day|buy\s+drinks?\s+packages?|available\s+to\s+buy)\b/i.test(combined);
 }
 function detectOfferIntelligenceInclusions(parsed,rawText){
   const text=[rawText,parsed&&parsed.incl].filter(Boolean).join(" ");
   const checks=[
-    ["Flights Included",/\b(?:flights?\s+included|includes?\s+flights?|return\s+flights?|regional\s+flights?|flights?\s+from\s+[a-z][a-z .'-]+|[a-z][a-z .'-]+\s+flights?)\b/i],
-    ["Luggage Included",/\b(?:luggage\s*(?:&|and)\s*transfers?\s+included|luggage\s+included|baggage\s+included|checked\s+baggage|checked\s+luggage|hold\s+luggage|includes?\s+luggage|includes?\s+baggage)\b/i],
-    ["Transfers Included",/\b(?:transfers?\s+included|includes?\s+transfers?|airport\s+transfers?|overseas\s+transfers?|return\s+transfers?|coach\s+transfers?|private\s+transfers?)\b/i],
-    ["Drinks Package Included",/\b(?:drinks?\s+package\s+included|drinks?\s+included|all[-\s]?inclusive\s+drinks?|premium\s+drinks?|classic\s+drinks?\s+package|drinks?\s+package)\b/i],
-    ["Wi-Fi Included",/\b(?:wi[-\s]?fi\s+included|wi[-\s]?fi\s+package|internet\s+package|includes?\s+wi[-\s]?fi|includes?\s+internet)\b/i],
-    ["Gratuities Included",/\b(?:gratuities\s+included|tips\s+included|service\s+charges?\s+included|includes?\s+gratuities|includes?\s+tips)\b/i],
-    ["Onboard Spend Included",/\b(?:on\s*board\s+spend|on-board\s+spend|onboard\s+spend|on\s*board\s+credit|on-board\s+credit|onboard\s+credit|shipboard\s+credit|spending\s+money|obs)\b/i],
-    ["Shore Excursions Included",/\b(?:shore\s+excursions?\s+included|excursions?\s+included|guided\s+excursions?|selected\s+excursions?\s+included|includes?\s+(?:shore\s+)?excursions?)\b/i],
-    ["Hotel Stay Included",/\b(?:hotel\s+stay\s+included|pre[-\s]?cruise\s+hotel|post[-\s]?cruise\s+hotel|hotel\s+nights?\s+included|includes?\s+hotel\s+stay|pre[-\s]?cruise\s+stay|post[-\s]?cruise\s+stay)\b/i],
+    ["Flights Included",/\b(?:direct\s+)?flights?\s+(?:included\s+)?(?:direct\s+)?from\s+[a-z][a-z .'-]+|\bflights?\s+direct\s+from\s+[a-z][a-z .'-]+|\bfly(?:ing)?\s+from\s+[a-z][a-z .'-]+|\b(?:direct\s+)?flights?\s+included\b|\bincludes?\s+flights?|\breturn\s+flights?|\bregional\s+flights?|\b[a-z][a-z .'-]+\s+flights?\b/i],
+    ["Luggage Included",/\b(?:luggage\s*(?:&|and)\s*transfers?\s+included|all\s+luggage(?:\s*(?:&|and)\s*transfers?)?(?:\s+included)?|luggage\s+included|baggage\s+included|checked\s+baggage|checked\s+luggage|hold\s+luggage|(?:20|22|23)kg\s+(?:checked\s+)?luggage|includes?\s+luggage|includes?\s+baggage)\b/i],
+    ["Transfers Included",/\b(?:luggage\s*(?:&|and)\s*transfers?(?:\s+included)?|transfers?\s*(?:&|and)\s*luggage\s+included|transfers?\s+included|includes?\s+transfers?|airport\s+transfers?|overseas\s+transfers?|return\s+transfers?|coach\s+transfers?|private\s+transfers?|coach\s+from\s+[a-z][a-z .'-]+|includes?\s+return\s+coach\s+transfers?|free\s+coach)\b/i],
+    ["Drinks Package Included",/\b(?:drinks?\s+package\s+included|drinks?\s+included|all[-\s]?inclusive\s+drinks?(?:\s+package)?|premium\s+drinks?(?:\s+included)?|classic\s+drinks?\s+package|free\s+all[-\s]?inclusive\s+drinks?\s+package|drinks?\s+with\s+lunch\s+and\s+dinner|complimentary\s+soft\s+drinks?|local\s+beers?\s+and\s+spirits?|drinks?\s+and\s+tips\s+included)\b/i],
+    ["Wi-Fi Included",/\b(?:wi[-\s]?fi\s+included|free\s+wi[-\s]?fi|\bwi[-\s]?fi\b|wireless\s+internet\s+included|internet\s+included|wi[-\s]?fi\s+package|internet\s+package|includes?\s+wi[-\s]?fi|includes?\s+internet)\b/i],
+    ["Gratuities Included",/\b(?:gratuities\s+included|tips\s+included|drinks?\s+and\s+tips\s+included|luggage,\s*transfers?\s+and\s+gratuities\s+included|service\s+charges?\s+included|includes?\s+gratuities|includes?\s+tips)\b/i],
+    ["Onboard Spend Included",/\b(?:£\s*\d+(?:\.\d{2})?\s*(?:pp|per\s+person)?\s+(?:on\s*board|on-board|onboard)\s+(?:spend|credit)|£\s*\d+(?:\.\d{2})?\s*pp\s+obc|(?:on\s*board|on-board|onboard)\s+spend|(?:on\s*board|on-board|onboard)\s+credit|\bobc\b|shipboard\s+credit|spending\s+money)\b/i],
+    ["Shore Excursions Included",/\b(?:(?:\d+\s+)?included\s+experiences?|included\s+excursions?|shore\s+excursions?\s+included|excursions?\s+included|guided\s+excursions?|selected\s+excursions?\s+included|pre[-\s]?cruise\s+excursions?|fully\s+escorted|includes?\s+(?:shore\s+)?excursions?)\b/i],
+    ["Hotel Stay Included",/\b(?:\d+\s+nights?\s+pre[-\s]?cruise\s+(?:stay|hotel)|hotel\s+stay\s+included|hotel\s+stay|hotel\s+included|[45]\s*\*\s*hotel|pre[-\s]?cruise\s+hotel|post[-\s]?cruise\s+hotel|hotel\s+nights?\s+included|includes?\s+hotel\s+stay|pre[-\s]?cruise\s+stay|post[-\s]?cruise\s+stay)\b/i],
     ["Rail Included",/\b(?:rail\s+included|train\s+included|eurostar\s+included|rail\s+travel\s+included|includes?\s+rail|includes?\s+train)\b/i],
     ["Speciality Dining Included",/\b(?:speciality\s+dining\s+included|specialty\s+dining\s+included|dining\s+package\s+included|includes?\s+(?:speciality|specialty)\s+dining)\b/i],
     ["Cabin Upgrade Included",/\b(?:cabin\s+upgrade\s+included|free\s+cabin\s+upgrade|balcony\s+upgrade|ocean\s+view\s+upgrade|outside\s+cabin\s+upgrade)\b/i],
@@ -5694,10 +5742,12 @@ function removePoaSuggestion(id,silent){
 function getOfferIntelligenceAirport(parsed,rawText){
   const p=parsed||{};
   const text=String(rawText||"")+" "+String(p.incl||"");
-  const airport=AIRPORT_WORDS.find(a=>new RegExp('\\b'+escapeRegExp(a)+'\\b','i').test(text));
+  const detectedAirport=typeof detectFlightAirport==="function"?detectFlightAirport(text):"";
+  if(detectedAirport) return detectedAirport;
+  const airport=AIRPORT_WORDS.find(a=>new RegExp('\\b'+escapeRegExp(a)+'\\b','i').test(text)&&/\b(?:flights?|fly|flying)\b/i.test(text));
   if(airport){
     const match=text.match(new RegExp('\\b('+escapeRegExp(airport)+')\\b','i'));
-    return match?match[1]:airport;
+    return match?formatAirportName(match[1]):formatAirportName(airport);
   }
   return (typeof offers!=="undefined"&&offers&&offers[cur]&&offers[cur]._poaDepartureAirport)||"";
 }
@@ -5803,10 +5853,13 @@ function getOfferIntelligenceDetectedFields(parsed,rawText){
     if(portsDisplay) fields.push(`You’ll Visit Ports: ${portsDisplay}`);
   }
   let airport="";
-  const airportWord=AIRPORT_WORDS.find(a=>new RegExp('\\b'+escapeRegExp(a)+'\\b','i').test(text));
-  if(airportWord){
+  const detectedAirport=typeof detectFlightAirport==="function"?detectFlightAirport(text):"";
+  const airportWord=detectedAirport?"":AIRPORT_WORDS.find(a=>new RegExp('\\b'+escapeRegExp(a)+'\\b','i').test(text)&&/\b(?:flights?|fly|flying)\b/i.test(text));
+  if(detectedAirport){
+    airport=detectedAirport;
+  }else if(airportWord){
     const airportMatch=text.match(new RegExp('\\b('+escapeRegExp(airportWord)+')\\b','i'));
-    airport=airportMatch?airportMatch[1]:airportWord;
+    airport=airportMatch?formatAirportName(airportMatch[1]):formatAirportName(airportWord);
   }else if(typeof offers!=="undefined"&&offers&&offers[cur]&&offers[cur]._poaDepartureAirport){
     airport=offers[cur]._poaDepartureAirport;
   }

@@ -50,6 +50,8 @@ function createHarness() {
     extractFunction('isStandalonePortCandidate'),
     extractFunction('cleanParsedPorts'),
     extractFunction('getStandalonePortLines'),
+    extractFunction('formatAirportName'),
+    extractFunction('detectFlightAirport'),
     extractFunction('getOfferIntelligenceCruiseTypes'),
     extractFunction('getOfferIntelligenceCruiseKnowledge'),
     extractFunction('hasOfferIntelligenceNegativeContext'),
@@ -208,7 +210,7 @@ test('Offer Intelligence shows ports detection only when parsed ports exist', ()
 test('Offer Intelligence summary counts detected panel fields using simple confidence labels', () => {
   const { context } = createHarness();
   const high = vm.runInContext('getOfferIntelligenceSummary(parsed, raw);', Object.assign(context, { parsed: { operatorKey: 'po', name: 'Caribbean Escape', ship: 'Arvia', day: '20', month: 'November 2026', nights: '14', boardlbl: 'Full Board', price: '1669', ports: 'Barbados • Martinique' }, raw: 'Inside Cabin from Newcastle' }));
-  assert.deepEqual(JSON.parse(JSON.stringify(high)), { count: 10, label: 'High Confidence', level: 'high' });
+  assert.deepEqual(JSON.parse(JSON.stringify(high)), { count: 9, label: 'High Confidence', level: 'high' });
 
   const partial = vm.runInContext('getOfferIntelligenceSummary(parsed, raw);', Object.assign(context, { parsed: { ship: 'Arvia', nights: '14', price: '1669', ports: 'Barbados • Martinique' }, raw: '' }));
   assert.deepEqual(JSON.parse(JSON.stringify(partial)), { count: 4, label: 'Partial Match', level: 'partial' });
@@ -298,6 +300,38 @@ test('POA v3 detects requested real-world inclusion wording variants', () => {
       assert.ok(inclusions.includes(label), `${phrase} should detect ${label}`);
     }
   }
+});
+
+test('Trello hardening detects required inclusion wording variants', () => {
+  const { context } = createHarness();
+  const cases = [
+    ['Includes checked luggage & transfers', ['Luggage Included', 'Transfers Included']],
+    ['Luggage & Transfers included', ['Luggage Included', 'Transfers Included']],
+    ['All luggage and transfers included', ['Luggage Included', 'Transfers Included']],
+    ['Coach from Washington Services', ['Transfers Included']],
+    ['Includes return coach transfer', ['Transfers Included']],
+    ['£50.00 per person onboard spend', ['Onboard Spend Included']],
+    ['£20pp OBC', ['Onboard Spend Included']],
+    ['1 night pre-cruise hotel', ['Hotel Stay Included']],
+    ['10 included experiences', ['Shore Excursions Included']],
+    ['Free WIFI', ['Wi-Fi Included']],
+    ['drinks and tips included', ['Drinks Package Included', 'Gratuities Included']]
+  ];
+
+  for (const [raw, expectedLabels] of cases) {
+    const inclusions = vm.runInContext('detectOfferIntelligenceInclusions({}, raw);', Object.assign(context, { raw }));
+    for (const label of expectedLabels) assert.ok(inclusions.includes(label), `${raw} should detect ${label}`);
+  }
+});
+
+test('Trello hardening negative upsell wording does not mark drinks dining or Wi-Fi included', () => {
+  const { context } = createHarness();
+  const raw = 'Go all inclusive with drinks, speciality dining and WIFI from £40pp per day';
+  const inclusions = vm.runInContext('detectOfferIntelligenceInclusions({}, raw);', Object.assign(context, { raw }));
+
+  assert.equal(inclusions.includes('Drinks Package Included'), false);
+  assert.equal(inclusions.includes('Speciality Dining Included'), false);
+  assert.equal(inclusions.includes('Wi-Fi Included'), false);
 });
 
 test('POA v3 negative inclusion phrases do not create false positives', () => {
