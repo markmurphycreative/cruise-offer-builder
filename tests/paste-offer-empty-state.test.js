@@ -779,3 +779,59 @@ test('canonical editor save and reload paths strip transient Paste Offer aliases
   assert.match(extractFunction('visibleFieldsToData'), /stripTransientPasteOfferFields\(Object\.assign/);
   assert.match(extractFunction('commitVisibleFields'), /offers\[cur\] = stripTransientPasteOfferFields\(Object\.assign/);
 });
+
+test('Paste Offer textarea Enter submits through the existing Load Offer path', () => {
+  assert.match(html, /<textarea id="raw-paste"[^>]* onkeydown="handlePasteOfferKeydown\(event\)"/);
+  const context = {
+    calls: 0,
+    parseOffer() { context.calls += 1; }
+  };
+  vm.createContext(context);
+  vm.runInContext(extractFunction('handlePasteOfferKeydown'), context);
+  let prevented = false;
+  context.handlePasteOfferKeydown({
+    key: 'Enter',
+    target: { id: 'raw-paste' },
+    preventDefault() { prevented = true; }
+  });
+
+  assert.equal(prevented, true);
+  assert.equal(context.calls, 1);
+});
+
+test('Paste Offer textarea Shift Enter keeps the native newline behaviour', () => {
+  const context = {
+    calls: 0,
+    parseOffer() { context.calls += 1; }
+  };
+  vm.createContext(context);
+  vm.runInContext(extractFunction('handlePasteOfferKeydown'), context);
+  let prevented = false;
+  context.handlePasteOfferKeydown({
+    key: 'Enter',
+    shiftKey: true,
+    target: { id: 'raw-paste' },
+    preventDefault() { prevented = true; }
+  });
+
+  assert.equal(prevented, false);
+  assert.equal(context.calls, 0);
+});
+
+test('Paste Offer Enter handler ignores other textareas', () => {
+  const context = {
+    calls: 0,
+    parseOffer() { context.calls += 1; }
+  };
+  vm.createContext(context);
+  vm.runInContext(extractFunction('handlePasteOfferKeydown'), context);
+  let prevented = false;
+  context.handlePasteOfferKeydown({
+    key: 'Enter',
+    target: { id: 'f-ports' },
+    preventDefault() { prevented = true; }
+  });
+
+  assert.equal(prevented, false);
+  assert.equal(context.calls, 0);
+});
