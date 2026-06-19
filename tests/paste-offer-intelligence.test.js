@@ -29,13 +29,14 @@ function createHarness() {
     }
   };
   const context = {
-    document: { getElementById(id) { return id === 'offer-intel-panel' ? panel : null; } },
+    document: { getElementById(id) { return id === 'offer-intel-panel' ? panel : (id === 'f-name' ? { value: '' } : null); } },
     console: { warn() {} },
     AIRPORT_WORDS: ['newcastle', 'manchester'],
+    ITINERARY_SECTION_LABEL: /^(?:itinerary|you(?:'|’)?ll visit)\b/i,
     ITINERARY_FOOTER_LABEL: /^(?:luggage\s*(?:&|and)\s*transfers?\s+included|flights?\s+included|inclusions?|what(?:'|’)?s included|price|from £|terms(?:\s*&\s*conditions)?|book now|call to book|cabin|accommodation)\b/i,
-    OPERATOR_ALIASES: { po: [/\bp\s*&\s*o\b/i], cunard: [/\bcunard\b/i], ncl: [/\bnorwegian\s+cruise\s+line\b/i, /\bncl\b/i], msc: [/\bmsc\b/i], virgin: [/\bvirgin\b/i] },
-    OPERATOR_SHIPS: { po: ['Arvia', 'Iona'], cunard: ['Queen Anne'], fred: ['Bolette'], virgin: ['Scarlet Lady'], msc: ['MSC Virtuosa'], ncl: ['Norwegian Prima', 'Pride of America'] },
-    OPERATOR_HEADERS: { po: { name: 'P&O Cruises' }, cunard: { name: 'Cunard' }, fred: { name: 'Fred. Olsen Cruise Lines' }, virgin: { name: 'Virgin Voyages' }, msc: { name: 'MSC Cruises' }, ncl: { name: 'Norwegian Cruise Line' } },
+    OPERATOR_ALIASES: { royal: [/\broyal caribbean\b/i], po: [/\bp\s*&\s*o\b/i], cunard: [/\bcunard\b/i], ncl: [/\bnorwegian\s+cruise\s+line\b/i, /\bncl\b/i], msc: [/\bmsc\b/i], virgin: [/\bvirgin\b/i] },
+    OPERATOR_SHIPS: { royal: ['Liberty of the Seas'], po: ['Arvia', 'Iona'], cunard: ['Queen Anne'], fred: ['Bolette'], virgin: ['Scarlet Lady'], msc: ['MSC Virtuosa'], ncl: ['Norwegian Prima', 'Pride of America'] },
+    OPERATOR_HEADERS: { royal: { name: 'Royal Caribbean' }, po: { name: 'P&O Cruises' }, cunard: { name: 'Cunard' }, fred: { name: 'Fred. Olsen Cruise Lines' }, virgin: { name: 'Virgin Voyages' }, msc: { name: 'MSC Cruises' }, ncl: { name: 'Norwegian Cruise Line' } },
     OPERATOR_INTELLIGENCE: { po: { name: 'P&O Cruises', category: 'Mainstream ocean cruise', dawsonUrl: 'https://example.test/po' }, cunard: { name: 'Cunard', category: 'Heritage ocean cruise', dawsonUrl: 'https://example.test/cunard' }, virgin: { name: 'Virgin Voyages', category: 'Adults-only lifestyle cruise' }, msc: { name: 'MSC Cruises', category: 'Mainstream ocean cruise' }, ncl: { name: 'Norwegian Cruise Line', category: 'Mainstream ocean cruise' } },
     getOperatorLandingUrl(key) { return key === 'po' ? 'https://example.test/po' : ''; }
   };
@@ -47,6 +48,7 @@ function createHarness() {
     extractFunction('normalisePortComparisonValue'),
     extractFunction('isExcludedParsedPort'),
     extractFunction('isStandalonePortCandidate'),
+    extractFunction('cleanParsedPorts'),
     extractFunction('getStandalonePortLines'),
     extractFunction('getOfferIntelligenceCruiseTypes'),
     extractFunction('getOfferIntelligenceCruiseKnowledge'),
@@ -65,6 +67,10 @@ function createHarness() {
     extractFunction('getOfferIntelligenceQualityDetails'),
     extractFunction('renderOfferQualitySection'),
     extractFunction('getOfferIntelligenceSummary'),
+    extractFunction('normaliseCruiseTitleCandidate'),
+    extractFunction('isCruiseTitleRecoveryExcludedLine'),
+    extractFunction('scoreCruiseTitleRecoveryCandidate'),
+    extractFunction('getCruiseTitleRecoverySuggestion'),
     extractFunction('renderOfferIntelligencePanel')
   ].join('\n'), context);
   return { context, panel };
@@ -85,8 +91,8 @@ test('Offer Intelligence infers known ship operators without changing parsed dat
   assert.match(panel.innerHTML, /Cabin Type: Inside Cabin/);
   assert.match(panel.innerHTML, /Offer Intelligence/);
   assert.match(panel.innerHTML, /💡<\/span><span>Card Inclusion: Flights, Luggage &amp; Transfers Included|💡<\/span><span>Card Inclusion: Flights, Luggage & Transfers Included/);
-  assert.match(panel.innerHTML, /Quality Score: 80/);
-  assert.match(panel.innerHTML, /Offer Quality/);
+  assert.match(panel.innerHTML, /Quality Score:<\/strong> 76/);
+  assert.match(panel.innerHTML, /OFFER QUALITY/);
   assert.match(panel.innerHTML, /Missing:/);
   assert.match(panel.innerHTML, /Departure Date/);
   assert.match(panel.innerHTML, /You’ll Visit Ports|Ports/);
@@ -111,8 +117,8 @@ test('Offer Intelligence actions suggest compact card inclusion and USP strip li
   assert.match(panel.innerHTML, /Card Inclusion: Drinks, Wi-Fi &amp; Onboard Spend Included|Card Inclusion: Drinks, Wi-Fi & Onboard Spend Included/);
   assert.match(panel.innerHTML, /Suggested USP Strip: Onboard Spend • Drinks Package • Wi-Fi/);
   assert.match(panel.innerHTML, /Copy Themes: Family • Mediterranean • Entertainment/);
-  assert.match(panel.innerHTML, /Quality Score: 90/);
-  assert.match(panel.innerHTML, /Offer Quality/);
+  assert.match(panel.innerHTML, /Quality Score:<\/strong> 96/);
+  assert.match(panel.innerHTML, /OFFER QUALITY/);
   assert.match(panel.innerHTML, /Missing:/);
   assert.match(panel.innerHTML, /Departure Airport/);
   assert.doesNotMatch(panel.innerHTML, /95 \/ 100/);
@@ -344,6 +350,10 @@ test('POA Suggestions render only card and USP suggestions with confidence and c
     extractFunction('clearPoaSuggestionHighlights'),
     extractFunction('setPoaSuggestionHighlight'),
     extractFunction('getPoaSuggestionConfidenceLabel'),
+    extractFunction('normaliseCruiseTitleCandidate'),
+    extractFunction('isCruiseTitleRecoveryExcludedLine'),
+    extractFunction('scoreCruiseTitleRecoveryCandidate'),
+    extractFunction('getCruiseTitleRecoverySuggestion'),
     extractFunction('getPoaAssistedApplySuggestions'),
     extractFunction('escapePoaSuggestionHtml'),
     extractFunction('formatPoaSuggestionValue'),
@@ -400,4 +410,37 @@ test('POA Suggestions remove restores each suggestion previous value independent
 
   vm.runInContext('removePoaSuggestion("usp-strip");', context);
   assert.equal(fields['f-tags'].value, 'Original USP');
+});
+
+
+test('Cruise Title recovery suggests strong missing titles without accepting noisy lines', () => {
+  const { context } = createHarness();
+  const raw = `Royal Caribbean
+Liberty of the Seas
+Spain & France Explorer
+8 Nights
+25 September 2026
+Flights Included
+£1299pp`;
+  const suggestion = vm.runInContext('getCruiseTitleRecoverySuggestion(parsed, raw);', Object.assign(context, { parsed: { operatorKey: 'royal', ship: 'Liberty of the Seas', nights: '8', day: '25', month: 'September 2026', price: '1299' }, raw }));
+
+  assert.equal(suggestion.title, 'Cruise Title');
+  assert.equal(suggestion.value, 'Spain & France Explorer');
+  assert.equal(suggestion.confidenceLabel, 'High Confidence');
+  assert.equal(suggestion.fieldKey, 'name');
+});
+
+test('Cruise Title recovery rejects prices dates inclusions cabins and port lists', () => {
+  const { context } = createHarness();
+  const raw = `P&O Cruises
+Arvia
+14 Nights
+20 November 2026
+Flights Included
+Inside Cabin
+Southampton - Madeira - Tenerife
+£1599pp`;
+  const suggestion = vm.runInContext('getCruiseTitleRecoverySuggestion(parsed, raw);', Object.assign(context, { parsed: { operatorKey: 'po', ship: 'Arvia', nights: '14', day: '20', month: 'November 2026', price: '1599' }, raw }));
+
+  assert.equal(suggestion, null);
 });
