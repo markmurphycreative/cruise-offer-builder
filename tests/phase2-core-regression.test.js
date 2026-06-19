@@ -28,7 +28,7 @@ function extractBlock(startMarker, endMarker) {
 const campaignConstants = [
   'const CAMPAIGN_FILE_TYPE = "cruise-offer-builder-campaign";',
   'const CAMPAIGN_FILE_SCHEMA_VERSION = "1.0";',
-  'const APP_VERSION = "v2.2.2";',
+  'const APP_VERSION = "v3.4.0";',
   'const AUTOSAVE_KEY = "cobSessionAutosaveV1";',
   'const CTA_DEFAULTS = {enabled:false,text:"Click To Call Us For More Info",phone:"01912229701"};'
 ].join('\n');

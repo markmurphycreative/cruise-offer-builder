@@ -185,6 +185,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('removeDuplicateReturnEmbarkationPortsString'),
     extractFunction('getPortIntelligence'),
     extractFunction('isRecognisedPortTitleLine'),
+    extractFunction('parseOfferText'),
     extractFunction('parseOffer'),
     extractFunction('setParseStatus'),
     extractFunction('showParsePreview'),
