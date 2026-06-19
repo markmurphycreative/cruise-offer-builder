@@ -129,7 +129,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     isOfferLoaded: offer => !!(offer && (offer.name || offer.ship || offer.price || offer._img)),
     BOARD_MAP: { FB: ['FB', 'Full Board'], 'FULL BOARD': ['FB', 'Full Board'], AI: ['AI', 'All Inclusive'], 'ALL INCLUSIVE': ['AI', 'All Inclusive'], HB: ['HB', 'Half Board'], 'HALF BOARD': ['HB', 'Half Board'] },
     OPERATOR_HEADERS: { cunard: { name: 'Cunard' }, ncl: { name: 'Norwegian Cruise Line' }, po: { name: 'P&O Cruises' } },
-    OPERATOR_SHIPS: { celebrity: ['Celebrity Ascent'], amawaterways: ['AmaBella', 'AmaDouro', 'AmaMagna', 'Zambezi Queen'], cunard: ['Queen Anne'], ncl: ['Norwegian Prima', 'Pride of America'], po: ['Arvia'] },
+    OPERATOR_SHIPS: { celebrity: ['Celebrity Apex', 'Celebrity Ascent'], amawaterways: ['AmaBella', 'AmaDouro', 'AmaMagna', 'Zambezi Queen'], cunard: ['Queen Anne'], ncl: ['Norwegian Prima', 'Pride of America'], po: ['Arvia'] },
     OPERATOR_ALIASES: { celebrity: [/\bcelebrity\b/i, /\bcelebrity\s+cruises\b/i], cunard: [/\bcunard\b/i], ncl: [/\bnorwegian\s+cruise\s+line\b/i, /\bncl\b/i], po: [/\bp\s*&\s*o\b/i, /\bp&o\s+cruises\b/i] },
     AIRPORT_WORDS: ['newcastle', 'manchester', 'edinburgh', 'leeds bradford', 'glasgow', 'birmingham', 'london', 'heathrow', 'gatwick', 'stansted'],
     getLikelyTypos() { return []; },
@@ -155,6 +155,14 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('normaliseUspTagText'),
     extractFunction('inferUspTagsFromLines'),
     extractFunction('getItineraryLines'),
+    extractConst('CABIN_TYPE_EXCLUSIONS'),
+    extractConst('NON_PORT_EXTRACTION_EXCLUSION_PATTERNS'),
+    extractFunction('normaliseExtractionExclusionValue'),
+    extractFunction('isCabinTypeExclusion'),
+    extractFunction('isNonPortExtractionValue'),
+    extractFunction('extractOfferPrice'),
+    extractFunction('formatParsedPriceDisplay'),
+    extractFunction('cleanDestinationOnlyLines'),
     extractFunction('normalisePortComparisonValue'),
     extractFunction('isExcludedParsedPort'),
     extractFunction('isStandalonePortCandidate'),
@@ -174,6 +182,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractConst('PORT_COUNTRIES'),
     extractConst('PORT_REGIONS'),
     extractFunction('normalisePortIntelligenceName'),
+    extractFunction('removeDuplicateReturnEmbarkationPortsString'),
     extractFunction('getPortIntelligence'),
     extractFunction('isRecognisedPortTitleLine'),
     extractFunction('parseOffer'),
@@ -579,7 +588,7 @@ Southampton`);
 
   assert.equal(harness.context.offers[0].operator, 'cunard');
   assert.equal(harness.context.offers[0].ship, 'Queen Anne');
-  assert.equal(harness.context.offers[0].ports, 'Southampton • Stavanger • Olden • Geiranger • Bergen • Southampton');
+  assert.equal(harness.context.offers[0].ports, 'Southampton • Stavanger • Olden • Geiranger • Bergen');
   assert.notEqual(harness.context.offers[0].operator, 'ncl');
 });
 
@@ -618,7 +627,7 @@ Southampton`);
   assert.equal(harness.context.offers[0].operator, 'cunard');
   assert.equal(harness.context.offers[0].ship, 'Queen Anne');
   assert.equal(harness.context.offers[0].name, 'Norwegian Fjords');
-  assert.equal(harness.context.offers[0].ports, 'Southampton • Stavanger • Olden • Geiranger • Bergen • Southampton');
+  assert.equal(harness.context.offers[0].ports, 'Southampton • Stavanger • Olden • Geiranger • Bergen');
   assert.doesNotMatch(harness.context.offers[0].ports, /Norwegian Fjords/);
 });
 
@@ -663,7 +672,7 @@ Cherbourg
 Southampton`);
 
   assert.equal(harness.context.offers[0].name, 'Spain & France');
-  assert.equal(harness.context.offers[0].ports, 'Southampton • Le Havre • Bilbao • La Coruna • Vigo • Cherbourg • Southampton');
+  assert.equal(harness.context.offers[0].ports, 'Southampton • Le Havre • Bilbao • La Coruna • Vigo • Cherbourg');
 });
 
 test('Paste Offer does not infer Norwegian Cruise Line from Norwegian Fjords without a ship', () => {
@@ -961,4 +970,50 @@ test('Paste Offer Enter handler ignores other textareas', () => {
 
   assert.equal(prevented, false);
   assert.equal(context.calls, 0);
+});
+
+test('Ports Intelligence QA fix pack acceptance offer stays destination-only with formatted price', () => {
+  const harness = createHarness([], 0, { hasParsePreviewModal: false });
+
+  harness.parse(`Celebrity Cruises
+Celebrity Apex
+7 Nights
+Departing 14 September 2027
+Inside Stateroom
+Flights from Newcastle Included
+Drinks, Wi-Fi & Gratuities Included
+Southampton
+Vigo
+Lisbon
+Porto (Leixoes)
+La Coruna
+Southampton
+From £1,899pp
+Based on 2 Adults Sharing`);
+
+  assert.equal(harness.context.offers[0].operator, 'celebrity');
+  assert.equal(harness.context.offers[0].ship, 'Celebrity Apex');
+  assert.equal(harness.context.offers[0].name, 'Portugal & Spain');
+  assert.equal(harness.context.offers[0].boardlbl, 'Full Board');
+  assert.equal(harness.context.offers[0].price, '1899');
+  assert.equal(harness.context.offers[0].ports, 'Southampton • Vigo • Lisbon • Porto (Leixoes) • La Coruna');
+  assert.doesNotMatch(harness.context.offers[0].ports, /Inside|Stateroom|Adults|Included|£/);
+});
+
+test('Paste Offer price parser preserves leading digits for comma-separated prices', () => {
+  const harness = createHarness([], 0, { hasParsePreviewModal: false });
+  const examples = [
+    ['From £899pp', '899'],
+    ['From £1,899pp', '1899'],
+    ['From £2,499pp', '2499'],
+    ['From £10,999pp', '10999'],
+    ['From £12,499pp', '12499']
+  ];
+
+  for (const [input, expected] of examples) {
+    harness.context.offers = [];
+    harness.context.cur = 0;
+    harness.parse(`Celebrity Cruises\nCelebrity Apex\n7 Nights\n${input}\nSouthampton\nVigo\nSouthampton`);
+    assert.equal(harness.context.offers[0].price, expected);
+  }
 });
