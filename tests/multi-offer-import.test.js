@@ -110,8 +110,18 @@ Greek Island Glow`);
 
 test('Multi Offer Import UI and parser reuse hooks are present', () => {
   assert.match(html, /MULTI OFFER IMPORT/);
-  assert.match(html, /id="multi-offer-paste"/);
+  assert.match(html, /id="multi-offer-paste"[^>]*oninput="handleMultiOfferImportInput\(event\)"/);
   assert.match(html, /Load All Offers/);
   assert.match(extractFunction('performMultiOfferImport'), /parseOfferText\(block,\{renderIntelligence:false\}\)/);
   assert.match(extractFunction('performMultiOfferImport'), /Replace existing offers\?/);
 });
+
+
+test('Multi Offer Import empty input and history restore clear transient result state only', () => {
+  assert.match(extractFunction('handleMultiOfferImportInput'), /if\(!raw\.trim\(\)\) resetMultiOfferImportState\(\{clearText:false\}\)/);
+  assert.doesNotMatch(extractFunction('handleMultiOfferImportInput'), /offers\s*=/);
+  assert.match(extractFunction('syncMultiOfferImportStateAfterHistoryRestore'), /resetMultiOfferImportState\(\)/);
+  const restoreBlock = html.match(/function restoreCampaignHistorySnapshot\(snapshot\)\{[\s\S]*?finally\{/)[0];
+  assert.match(restoreBlock, /syncMultiOfferImportStateAfterHistoryRestore\(\);[\s\S]*?refreshAfterRestore\(\)/);
+});
+
