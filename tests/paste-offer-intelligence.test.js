@@ -61,6 +61,9 @@ function createHarness() {
     extractFunction('clearOfferIntelligencePanel'),
     extractFunction('formatOfferIntelligencePorts'),
     extractFunction('getOfferIntelligenceDetectedFields'),
+    extractFunction('getOfferIntelligenceAirport'),
+    extractFunction('getOfferIntelligenceQualityDetails'),
+    extractFunction('renderOfferQualitySection'),
     extractFunction('getOfferIntelligenceSummary'),
     extractFunction('renderOfferIntelligencePanel')
   ].join('\n'), context);
@@ -82,7 +85,12 @@ test('Offer Intelligence infers known ship operators without changing parsed dat
   assert.match(panel.innerHTML, /Cabin Type: Inside Cabin/);
   assert.match(panel.innerHTML, /Offer Intelligence/);
   assert.match(panel.innerHTML, /💡<\/span><span>Card Inclusion: Flights, Luggage &amp; Transfers Included|💡<\/span><span>Card Inclusion: Flights, Luggage & Transfers Included/);
-  assert.match(panel.innerHTML, /Offer Quality: Good/);
+  assert.match(panel.innerHTML, /Quality Score: 80/);
+  assert.match(panel.innerHTML, /Offer Quality/);
+  assert.match(panel.innerHTML, /Missing:/);
+  assert.match(panel.innerHTML, /Departure Date/);
+  assert.match(panel.innerHTML, /You’ll Visit Ports|Ports/);
+  assert.doesNotMatch(panel.innerHTML, /85 \/ 100/);
   assert.match(panel.innerHTML, /Cruise Title: Caribbean Escape/);
   assert.match(panel.innerHTML, /Ship: Arvia/);
   assert.match(panel.innerHTML, /Nights: 14/);
@@ -103,7 +111,11 @@ test('Offer Intelligence actions suggest compact card inclusion and USP strip li
   assert.match(panel.innerHTML, /Card Inclusion: Drinks, Wi-Fi &amp; Onboard Spend Included|Card Inclusion: Drinks, Wi-Fi & Onboard Spend Included/);
   assert.match(panel.innerHTML, /Suggested USP Strip: Onboard Spend • Drinks Package • Wi-Fi/);
   assert.match(panel.innerHTML, /Copy Themes: Family • Mediterranean • Entertainment/);
-  assert.match(panel.innerHTML, /Offer Quality: Excellent/);
+  assert.match(panel.innerHTML, /Quality Score: 90/);
+  assert.match(panel.innerHTML, /Offer Quality/);
+  assert.match(panel.innerHTML, /Missing:/);
+  assert.match(panel.innerHTML, /Departure Airport/);
+  assert.doesNotMatch(panel.innerHTML, /95 \/ 100/);
 });
 
 test('Offer Intelligence copy themes stay theme-only and support premium, adults-only and river signals', () => {
@@ -172,7 +184,7 @@ test('Offer Intelligence reports missing fields and avoids false operator matche
   vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, { parsed: { ship: 'Mystery Ship', price: '999' }, raw: 'Mystery Ship\n£999pp' }));
 
   assert.match(panel.innerHTML, /Board Basis not detected/);
-  assert.match(panel.innerHTML, /Departure Airport not detected/);
+  assert.match(panel.innerHTML, /Departure Airport/);
   assert.match(panel.innerHTML, /Nights not detected/);
   assert.doesNotMatch(panel.innerHTML, /Operator inferred from ship/);
 });

@@ -195,7 +195,6 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .poa-suggestion-actions{display:flex;align-items:center;gap:5px;justify-content:flex-start;}
 .poa-suggestion-applied{font-size:9px;font-weight:700;color:var(--green);}
 .poa-suggestion-toolbar{display:flex;align-items:center;gap:5px;margin-bottom:5px;}
-.offer-quality-score{font-size:18px;font-weight:700;color:var(--navy);line-height:1.1;margin:1px 0 4px;}
 .offer-quality-missing{margin-top:4px;}
 .offer-quick-action{margin-left:4px;}
 .field.poa-target-highlight input,.field.poa-target-highlight textarea{border-color:var(--gold);background:rgba(184,167,110,0.08);}
@@ -5602,9 +5601,8 @@ function getOfferIntelligenceQualityScore(parsed,rawText,effectiveOperator){
 }
 function renderOfferQualitySection(parsed,rawText,effectiveOperator,item){
   const quality=getOfferIntelligenceQualityDetails(parsed,rawText,effectiveOperator);
-  const present=quality.checks.filter(c=>c.ok).map(c=>item("detected","✓",c.label)).join("");
   const missing=quality.checks.filter(c=>!c.ok).map(c=>item("missing","⚠",c.label)).join("");
-  return `<div class="offer-intel-section"><div class="offer-intel-heading">Offer Quality</div><div class="offer-quality-score">${quality.score} / 100</div><div class="offer-intel-list">${present}${missing?`<div class="offer-quality-missing"><div class="offer-intel-heading">Missing:</div>${missing}</div>`:""}</div></div>`;
+  return `<div class="offer-intel-section"><div class="offer-intel-heading">Offer Quality</div><div class="offer-intel-list">${missing?`<div class="offer-quality-missing"><div class="offer-intel-heading">Missing:</div>${missing}</div>`:`<div class="offer-intel-empty">No missing core fields.</div>`}</div></div>`;
 }
 function getPoaVisibleSuggestionCount(suggestions){
   return (suggestions||[]).filter(s=>s&&s.id&&s.fieldId&&document.getElementById(s.fieldId)).length;
