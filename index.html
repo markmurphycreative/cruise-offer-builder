@@ -899,7 +899,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M11 14h10"></path><path d="m17 10 4 4-4 4"></path><path d="M9 5V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"></path><path d="M17 5h1a2 2 0 0 1 2 2v3"></path><path d="M9 18H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1"></path><rect width="8" height="5" x="8" y="4" rx="1"></rect></svg>Paste Offer</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body parse-area hidden">
-        <textarea id="raw-paste" spellcheck="true" placeholder="Paste Trello / operator copy here...
+        <textarea id="raw-paste" spellcheck="true" oninput="handlePasteOfferInput()" placeholder="Paste Trello / operator copy here...
 
 P&amp;O Cruises | Arvia
 Eastern Caribbean Islands Fly-Cruise
@@ -5273,9 +5273,36 @@ function resetPasteOfferState(){
   if(typeof clearOfferIntelligencePanel==="function") clearOfferIntelligencePanel();
   cancelParsedOffer();
 }
+function resetActiveOfferFromEmptyPaste(){
+  if(typeof isOfferLocked==="function" && isOfferLocked(cur)){
+    if(typeof setParseStatus==="function") setParseStatus(getLockedOfferMessage(cur),"low");
+    return false;
+  }
+  if(!offers[cur]) offers[cur]={};
+  offers[cur]={};
+  if(typeof resetPoaSuggestionState==="function") resetPoaSuggestionState();
+  if(typeof clearOfferIntelligencePanel==="function") clearOfferIntelligencePanel();
+  cancelParsedOffer();
+  const status=document.getElementById("parse-result"); if(status){status.textContent="";status.className="parse-result";}
+  try { loadOfferToEditor(cur); } catch(e) { try { load(cur); } catch(_e){} }
+  try { renderOfferIndex(cur); } catch(e) { try { rv(true); } catch(_e){} }
+  try { updateAllStatus(); } catch(e){}
+  try { checkPortsWarn(); } catch(e){}
+  try { genUtm(); } catch(e){}
+  try { genStandardUtms(); } catch(e){}
+  try { updateExportFilenames(); } catch(e){}
+  try { updateMoveOfferButtons(); } catch(e){}
+  try { runSpellQA(); } catch(e){}
+  try { queueAutosave(); } catch(e){}
+  return true;
+}
+function handlePasteOfferInput(){
+  const raw=(document.getElementById("raw-paste")||{}).value||"";
+  if(!raw.trim()) resetActiveOfferFromEmptyPaste();
+}
 function parseOffer(){
   if(typeof resetPoaSuggestionState==="function") resetPoaSuggestionState();
-  const raw=(document.getElementById("raw-paste")||{}).value||""; if(!raw.trim()) return setParseStatus("Nothing to parse","low");
+  const raw=(document.getElementById("raw-paste")||{}).value||""; if(!raw.trim()) return resetActiveOfferFromEmptyPaste();
   const lines=raw.split(/\n/).map(l=>l.trim()).filter(Boolean); const txt=lines.join(" \n "); const parsed={}; let score=0;
   const earlyShipMatch=findKnownOperatorShip(txt);
   if(earlyShipMatch){ parsed.operatorKey=earlyShipMatch.operatorKey; parsed.ship=earlyShipMatch.ship; score+=26; }
@@ -5655,7 +5682,7 @@ function getOfferIntelligenceActionSuggestions(parsed,rawText,inclusions,effecti
   return actions;
 }
 function clearOfferIntelligencePanel(){
-  if(typeof resetPoaSuggestionState==="function") resetPoaSuggestionState(); if(typeof window!=="undefined") window.currentPoaSuggestions=[];
+  if(typeof resetPoaSuggestionState==="function") resetPoaSuggestionState(); if(typeof window!=="undefined"){ window.currentPoaSuggestions=[]; window.currentPoaParsed={}; window.currentPoaRawText=""; }
   const panel=document.getElementById("offer-intel-panel");
   if(!panel) return;
   panel.innerHTML="";

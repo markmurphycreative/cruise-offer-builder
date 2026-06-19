@@ -220,8 +220,104 @@ test('Paste Offer does not create a blank offer when parsing detected no fields'
   assert.equal(harness.status.textContent, 'No offer fields detected');
 });
 
-test('empty pasted text keeps the existing warning and cannot create an offer', () => {
-  assert.match(extractFunction('parseOffer'), /if\(!raw\.trim\(\)\) return setParseStatus\("Nothing to parse","low"\);/);
+test('empty pasted text resets the active pasted offer instead of keeping stale rendered data', () => {
+  assert.match(extractFunction('parseOffer'), /if\(!raw\.trim\(\)\) return resetActiveOfferFromEmptyPaste\(\);/);
+  assert.match(extractFunction('handlePasteOfferInput'), /if\(!raw\.trim\(\)\) resetActiveOfferFromEmptyPaste\(\);/);
+});
+
+
+
+test('clearing Paste Offer resets only the selected offer, editor, preview and intelligence state', () => {
+  const rawPaste = { value: '   \n  ' };
+  const status = { textContent: '✓ Detected 9 fields — High Confidence', className: 'parse-result high' };
+  const modal = { classList: createClassList() };
+  const panel = { innerHTML: '<div>Offer Intelligence</div>', classList: createClassList() };
+  panel.classList.add('active');
+  const fields = {
+    'f-operator': { value: 'po' },
+    'f-tags': { value: 'Drinks Package' },
+    'f-name': { value: 'Loaded Offer 3' },
+    'f-ship': { value: 'Arvia' },
+    'f-incl': { value: 'Flights Included' },
+    'f-price': { value: '1669' },
+    'f-board': { value: 'FB' },
+    'f-boardlbl': { value: 'Full Board' },
+    'f-day': { value: '20' },
+    'f-month': { value: 'November 2026' },
+    'f-nights': { value: '14' },
+    'f-ports': { value: 'Barbados • Martinique' },
+    'f-basis': { value: 'Based On 2 Adults Sharing' },
+    'f-url': { value: 'https://example.com' },
+    'f-utm_content': { value: 'utm' },
+    'f-logo-display': { value: 'operator' }
+  };
+  const calls = [];
+  const context = {
+    console,
+    document: {
+      getElementById(id) {
+        if(id === 'raw-paste') return rawPaste;
+        if(id === 'parse-result') return status;
+        if(id === 'parse-preview-modal') return modal;
+        if(id === 'offer-intel-panel') return panel;
+        return fields[id] || null;
+      },
+      querySelectorAll() { return []; }
+    },
+    window: { currentPoaSuggestions: [{ id: 'card-inclusion' }], currentPoaParsed: { price: '1669' }, currentPoaRawText: 'old raw' },
+    clearPoaSuggestionHighlights() { calls.push('clear-highlights'); },
+    loadOfferToEditor(index) {
+      calls.push(`load:${index}`);
+      Object.entries(fields).forEach(([id, field]) => {
+        if(id === 'f-logo-display') field.value = 'operator';
+        else field.value = '';
+      });
+    },
+    renderOfferIndex(index) { calls.push(`render:${index}`); },
+    updateAllStatus() { calls.push('status'); },
+    checkPortsWarn() { calls.push('ports'); },
+    genUtm() { calls.push('utm'); },
+    genStandardUtms() { calls.push('standard-utms'); },
+    updateExportFilenames() { calls.push('filenames'); },
+    updateMoveOfferButtons() { calls.push('move-buttons'); },
+    runSpellQA() { calls.push('spell'); },
+    queueAutosave() { calls.push('autosave'); }
+  };
+  context.offers = [
+    { name: 'Offer 1', price: '999' },
+    { name: 'Offer 2', price: '1099' },
+    { operator: 'po', name: 'Loaded Offer 3', ship: 'Arvia', price: '1669', ports: 'Barbados • Martinique', incl: 'Flights Included', tags: 'Drinks Package', _poaDepartureAirport: 'Newcastle', _logoCustom: 'logo', _img: 'hero' },
+    { name: 'Offer 4', price: '1299' }
+  ];
+  vm.createContext(context);
+  vm.runInContext([
+    'const FLDS=["tags","theme_tags","name","ship","incl","price","basis","board","boardlbl","day","month","nights","ports","url","utm_content"]; let offers=globalThis.offers; let cur=2; let pendingParseResult={parsed:{name:"Loaded Offer 3"}}; let poaAppliedSuggestions={"card-inclusion":{previousValue:""}};',
+    extractFunction('resetPoaSuggestionState'),
+    extractFunction('clearOfferIntelligencePanel'),
+    extractFunction('cancelParsedOffer'),
+    extractFunction('resetActiveOfferFromEmptyPaste'),
+    extractFunction('handlePasteOfferInput')
+  ].join('\n'), context);
+
+  vm.runInContext('handlePasteOfferInput();', context);
+
+  assert.deepEqual(context.offers[0], { name: 'Offer 1', price: '999' });
+  assert.deepEqual(context.offers[1], { name: 'Offer 2', price: '1099' });
+  assert.deepEqual(JSON.parse(JSON.stringify(context.offers[2])), {});
+  assert.deepEqual(context.offers[3], { name: 'Offer 4', price: '1299' });
+  assert.equal(fields['f-name'].value, '');
+  assert.equal(fields['f-ship'].value, '');
+  assert.equal(fields['f-price'].value, '');
+  assert.equal(fields['f-ports'].value, '');
+  assert.equal(fields['f-operator'].value, '');
+  assert.equal(panel.innerHTML, '');
+  assert.equal(panel.classList.contains('active'), false);
+  assert.equal(context.window.currentPoaSuggestions.length, 0);
+  assert.deepEqual(JSON.parse(JSON.stringify(context.window.currentPoaParsed)), {});
+  assert.equal(context.window.currentPoaRawText, '');
+  assert.equal(status.textContent, '');
+  assert.equal(status.className, 'parse-result');
+  assert.deepEqual(calls, ['clear-highlights', 'clear-highlights', 'load:2', 'render:2', 'status', 'ports', 'utm', 'standard-utms', 'filenames', 'move-buttons', 'spell', 'autosave']);
 });
 
 test('real Load Offer runtime path applies the supplied Celebrity offer when the preview modal is absent', () => {
