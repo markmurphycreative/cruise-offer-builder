@@ -4315,6 +4315,13 @@ function scheduleCampaignHistoryEntry(label="Campaign change", delay=CAMPAIGN_HI
   clearTimeout(campaignHistoryState.timer);
   campaignHistoryState.timer=setTimeout(()=>commitCampaignHistoryEntry(label), Math.max(0, Number(delay)||0));
 }
+function syncPasteOfferStateAfterHistoryRestore(){
+  const activeOffer=(offers||[])[cur]||{};
+  const hasLoadedOffers=Array.isArray(offers)&&offers.some(isOfferLoaded);
+  if(!hasLoadedOffers || !isOfferLoaded(activeOffer)){
+    resetPasteOfferState();
+  }
+}
 function restoreCampaignHistorySnapshot(snapshot){
   const data=decodeCampaignHistoryImages(clonePlain(snapshot));
   campaignHistoryState.isRestoring=true;
@@ -4338,6 +4345,7 @@ function restoreCampaignHistorySnapshot(snapshot){
     cur=Number.isInteger(data.cur) ? Math.min(3,Math.max(0,data.cur)) : 0;
     if(typeof syncOfferSelector === "function") syncOfferSelector();
     if(typeof loadOfferToEditor === "function") loadOfferToEditor(cur); else if(typeof load === "function") load(cur);
+    if(typeof syncPasteOfferStateAfterHistoryRestore === "function") syncPasteOfferStateAfterHistoryRestore();
     if(typeof refreshAfterRestore === "function") refreshAfterRestore();
     else { try{ updateAllStatus(); }catch(e){} try{ renderPreviewMode(true); }catch(e){} }
   }finally{

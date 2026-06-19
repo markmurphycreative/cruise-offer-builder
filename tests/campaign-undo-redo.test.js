@@ -30,6 +30,16 @@ test('campaign history snapshots restore campaign state instead of reversing ind
   assert.match(block, /refreshAfterRestore\(\)/);
 });
 
+
+test('history restore clears transient Paste Offer UI when undo returns active offer to blank', () => {
+  const block = extract(/function syncPasteOfferStateAfterHistoryRestore[\s\S]*?function restoreCampaignHistorySnapshot/, 'paste offer history restore sync block');
+  assert.match(block, /const activeOffer=\(offers\|\|\[\]\)\[cur\]\|\|\{\};/);
+  assert.match(block, /const hasLoadedOffers=Array\.isArray\(offers\)&&offers\.some\(isOfferLoaded\);/);
+  assert.match(block, /if\(!hasLoadedOffers \|\| !isOfferLoaded\(activeOffer\)\)\{[\s\S]*?resetPasteOfferState\(\);[\s\S]*?\}/);
+  const restoreBlock = extract(/function restoreCampaignHistorySnapshot\(snapshot\)\{[\s\S]*?finally\{[\s\S]*?\n  \}/, 'campaign history restore function');
+  assert.match(restoreBlock, /syncPasteOfferStateAfterHistoryRestore\(\);[\s\S]*?refreshAfterRestore\(\)/);
+});
+
 test('history snapshots intern unchanged image payloads by reference', () => {
   const block = extract(/function encodeCampaignHistoryImages[\s\S]*?function decodeCampaignHistoryImages/, 'image interning helpers');
   assert.match(block, /campaignHistoryImageRefs\.get\(imageKey\)/);
