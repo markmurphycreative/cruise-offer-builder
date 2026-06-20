@@ -153,24 +153,50 @@ test('Multi Offer Import textarea Shift Enter keeps native newline behaviour', (
   assert.equal(context.calls, 0);
 });
 
-test('Multi Offer Import manual clear removes stale result rows only', () => {
+test('Multi Offer Import manual clear removes stale result rows and imported offers', () => {
   const result = { innerHTML: 'Offer 1 Loaded', className: 'parse-result high' };
   const field = { value: '' };
+  const calls = [];
+  const tabs = Array.from({ length: 4 }, () => ({ classList: { toggle(name, state) { calls.push(['tab', name, state]); } } }));
   const context = {
+    Number,
+    offers: [{ name: 'Imported 1' }, { name: 'Imported 2' }, { name: 'Sheet offer' }, {}],
+    cur: 0,
+    activeMultiOfferImportIndexes: [0, 1],
+    isOfferLoaded(offer) { return !!(offer && offer.name); },
+    loadOfferToEditor(index) { calls.push(['loadOfferToEditor', index]); },
+    renderOfferIndex(index) { calls.push(['renderOfferIndex', index]); },
+    updateAllStatus() { calls.push(['updateAllStatus']); },
+    queueAutosave() { calls.push(['queueAutosave']); },
+    recordCampaignHistoryAfterAsyncChange(label) { calls.push(['history', label]); },
     document: {
       getElementById(id) {
         if (id === 'multi-offer-result') return result;
         if (id === 'multi-offer-paste') return field;
         return null;
+      },
+      querySelectorAll(selector) {
+        assert.equal(selector, '.otab');
+        return tabs;
       }
     }
   };
   vm.createContext(context);
-  vm.runInContext([extractFunction('setMultiOfferStatus'), extractFunction('handleMultiOfferInput')].join('\n'), context);
+  vm.runInContext([
+    extractFunction('setMultiOfferStatus'),
+    extractFunction('refreshOfferWorkspaceAfterEmptyPaste'),
+    extractFunction('resetMultiImportedOffersFromEmptyPaste'),
+    extractFunction('handleMultiOfferInput')
+  ].join('\n'), context);
   context.handleMultiOfferInput({ inputType: 'deleteContentBackward' });
 
   assert.equal(result.innerHTML, '');
   assert.equal(result.className, 'parse-result ');
+  assert.deepEqual(JSON.parse(JSON.stringify(context.offers)), [{}, {}, { name: 'Sheet offer' }, {}]);
+  assert.equal(context.cur, 2);
+  assert.deepEqual(JSON.parse(JSON.stringify(context.activeMultiOfferImportIndexes)), []);
+  assert.ok(calls.some(call => call[0] === 'updateAllStatus'));
+  assert.ok(calls.some(call => call[0] === 'history' && call[1] === 'Multi offer import cleared'));
 });
 
 test('Multi Offer Import result rows are clickable navigation shortcuts without buttons', () => {

@@ -1222,7 +1222,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v3.4.13";
+const APP_VERSION = "v3.4.14";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -5536,6 +5536,18 @@ function resetPasteOfferState(){
   if(typeof clearOfferIntelligencePanel==="function") clearOfferIntelligencePanel();
   cancelParsedOffer();
 }
+function refreshOfferWorkspaceAfterEmptyPaste(){
+  try { loadOfferToEditor(cur); } catch(e) { try { load(cur); } catch(_e){} }
+  try { renderOfferIndex(cur); } catch(e) { try { rv(true); } catch(_e){} }
+  try { updateAllStatus(); } catch(e){}
+  try { checkPortsWarn(); } catch(e){}
+  try { genUtm(); } catch(e){}
+  try { genStandardUtms(); } catch(e){}
+  try { updateExportFilenames(); } catch(e){}
+  try { updateMoveOfferButtons(); } catch(e){}
+  try { runSpellQA(); } catch(e){}
+  try { queueAutosave(); } catch(e){}
+}
 function resetActiveOfferFromEmptyPaste(){
   if(typeof isOfferLocked==="function" && isOfferLocked(cur)){
     if(typeof setParseStatus==="function") setParseStatus(getLockedOfferMessage(cur),"low");
@@ -5547,16 +5559,7 @@ function resetActiveOfferFromEmptyPaste(){
   if(typeof clearOfferIntelligencePanel==="function") clearOfferIntelligencePanel();
   cancelParsedOffer();
   const status=document.getElementById("parse-result"); if(status){status.textContent="";status.className="parse-result";}
-  try { loadOfferToEditor(cur); } catch(e) { try { load(cur); } catch(_e){} }
-  try { renderOfferIndex(cur); } catch(e) { try { rv(true); } catch(_e){} }
-  try { updateAllStatus(); } catch(e){}
-  try { checkPortsWarn(); } catch(e){}
-  try { genUtm(); } catch(e){}
-  try { genStandardUtms(); } catch(e){}
-  try { updateExportFilenames(); } catch(e){}
-  try { updateMoveOfferButtons(); } catch(e){}
-  try { runSpellQA(); } catch(e){}
-  try { queueAutosave(); } catch(e){}
+  refreshOfferWorkspaceAfterEmptyPaste();
   return true;
 }
 let pasteOfferClearedByInput=false;
@@ -5632,13 +5635,33 @@ function jumpToMultiOfferStatus(index){
   if(section&&typeof section.scrollIntoView==="function") section.scrollIntoView({block:"start"});
   return true;
 }
+let activeMultiOfferImportIndexes=[];
 function resetMultiOfferState(){
   const raw=document.getElementById("multi-offer-paste"); if(raw) raw.value="";
+  activeMultiOfferImportIndexes=[];
   setMultiOfferStatus("","");
+}
+function resetMultiImportedOffersFromEmptyPaste(){
+  setMultiOfferStatus("","");
+  const indexes=(activeMultiOfferImportIndexes||[]).filter(index=>Number.isInteger(index)&&index>=0&&index<4);
+  activeMultiOfferImportIndexes=[];
+  if(!indexes.length) return false;
+  indexes.forEach(index=>{ offers[index]={}; });
+  if(!isOfferLoaded(offers[cur])){
+    const next=(offers||[]).slice(0,4).findIndex(isOfferLoaded);
+    cur=next>=0?next:0;
+  }
+  try{ document.querySelectorAll(".otab").forEach((t,idx)=>t.classList.toggle("active",idx===cur)); }catch(e){}
+  if(typeof resetPoaSuggestionState==="function") resetPoaSuggestionState();
+  if(typeof clearOfferIntelligencePanel==="function") clearOfferIntelligencePanel();
+  try{ cancelParsedOffer(); }catch(e){}
+  refreshOfferWorkspaceAfterEmptyPaste();
+  if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Multi offer import cleared");
+  return true;
 }
 function handleMultiOfferInput(event){
   const raw=(document.getElementById("multi-offer-paste")||{}).value||"";
-  if(!raw.trim()) setMultiOfferStatus("","");
+  if(!raw.trim()) resetMultiImportedOffersFromEmptyPaste();
 }
 function handleMultiOfferKeydown(event){
   if(!event || event.defaultPrevented || event.shiftKey) return;
@@ -5684,6 +5707,7 @@ function performMultiOfferImport(replaceConfirmed){
   if(existing){ for(let i=0;i<4;i+=1) offers[i]={}; }
   const selected=blocks.slice(0,4);
   const results=selected.map(block=>parseOfferText(block,{renderIntelligence:false})).filter(Boolean);
+  activeMultiOfferImportIndexes=results.map((result,index)=>index);
   results.forEach((result,index)=>applyParsedOfferToSlot(result,index));
   cur=0;
   try{ loadOfferToEditor(cur); }catch(e){ try{ load(cur); }catch(_e){} }
