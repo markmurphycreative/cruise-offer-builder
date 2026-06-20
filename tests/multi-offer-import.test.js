@@ -182,7 +182,7 @@ test('Multi Offer Import result rows are clickable navigation shortcuts without 
   assert.match(html, /\.multi-offer-status-row\{[^}]*cursor:pointer;/);
 });
 
-test('jumpToMultiOfferStatus reuses tab selection, opens Offer Details, and scrolls it into view', () => {
+test('jumpToMultiOfferStatus reuses tab selection, switches to Single view, opens Offer Details, and scrolls it into view', () => {
   const calls = [];
   const offerDetailsHeader = {
     classList: {
@@ -207,6 +207,7 @@ test('jumpToMultiOfferStatus reuses tab selection, opens Offer Details, and scro
     Number,
     calls,
     sv(index) { calls.push(['sv', index]); },
+    setView(mode) { calls.push(['setView', mode]); },
     document: {
       querySelector(selector) {
         assert.equal(selector, '.section[data-section-key="offer-details"]');
@@ -224,6 +225,7 @@ test('jumpToMultiOfferStatus reuses tab selection, opens Offer Details, and scro
   assert.equal(context.jumpToMultiOfferStatus(2), true);
   assert.deepEqual(calls, [
     ['sv', 2],
+    ['setView', 'single'],
     ['toggle-header', 'collapsed', false],
     ['toggle-body', 'hidden', false],
     ['scroll', 'start']

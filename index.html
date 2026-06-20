@@ -5482,6 +5482,7 @@ function jumpToMultiOfferStatus(index){
   const next=Number(index);
   if(!Number.isInteger(next)||next<0||next>=4) return false;
   sv(next);
+  setView("single");
   const section=openOfferDetailsSection();
   if(section&&typeof section.scrollIntoView==="function") section.scrollIntoView({block:"start"});
   return true;
