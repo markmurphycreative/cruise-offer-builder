@@ -172,3 +172,60 @@ test('Multi Offer Import manual clear removes stale result rows only', () => {
   assert.equal(result.innerHTML, '');
   assert.equal(result.className, 'parse-result ');
 });
+
+test('Multi Offer Import result rows are clickable navigation shortcuts without buttons', () => {
+  const performMultiOfferImport = extractFunction('performMultiOfferImport');
+  assert.match(performMultiOfferImport, /class="multi-offer-status-row"/);
+  assert.match(performMultiOfferImport, /title="Jump to Offer"/);
+  assert.match(performMultiOfferImport, /onclick="jumpToMultiOfferStatus\(\$\{index\}\)"/);
+  assert.doesNotMatch(performMultiOfferImport, /<button class="abtn btn-compact" type="button" onclick="cur=\$\{index\}/);
+  assert.match(html, /\.multi-offer-status-row\{[^}]*cursor:pointer;/);
+});
+
+test('jumpToMultiOfferStatus reuses tab selection, opens Offer Details, and scrolls it into view', () => {
+  const calls = [];
+  const offerDetailsHeader = {
+    classList: {
+      contains(value) { return value === 'collapsed'; },
+      toggle(value, state) { calls.push(['toggle-header', value, state]); }
+    },
+    nextElementSibling: {
+      classList: {
+        contains(value) { return value === 'section-body'; },
+        toggle(value, state) { calls.push(['toggle-body', value, state]); }
+      }
+    }
+  };
+  const offerDetailsSection = {
+    querySelector(selector) {
+      assert.equal(selector, '.section-hdr');
+      return offerDetailsHeader;
+    },
+    scrollIntoView(options) { calls.push(['scroll', options.block]); }
+  };
+  const context = {
+    Number,
+    calls,
+    sv(index) { calls.push(['sv', index]); },
+    document: {
+      querySelector(selector) {
+        assert.equal(selector, '.section[data-section-key="offer-details"]');
+        return offerDetailsSection;
+      }
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext([
+    extractFunction('setSectionCollapsedByHeader'),
+    extractFunction('openOfferDetailsSection'),
+    extractFunction('jumpToMultiOfferStatus')
+  ].join('\n'), context);
+
+  assert.equal(context.jumpToMultiOfferStatus(2), true);
+  assert.deepEqual(calls, [
+    ['sv', 2],
+    ['toggle-header', 'collapsed', false],
+    ['toggle-body', 'hidden', false],
+    ['scroll', 'start']
+  ]);
+});
