@@ -71,7 +71,7 @@ test('Offer 1–4 selector reuses the sliding segmented-control pill while retai
   }
   assert.match(html, /function syncOfferSelector\(\)\{[\s\S]*?updateEmptyOfferState\(\);[\s\S]*?t\.classList\.toggle\('active', idx === activeIndex\);[\s\S]*?updateOfferPill\(\);/);
   assert.match(html, /function updateOfferPill\(\)\{\s*const activeTab=document\.getElementById\('ot' \+ cur\);\s*updateSegmentedPill\(document\.getElementById\('offer-pill'\), activeTab&&activeTab\.parentElement\);/);
-  assert.match(html, /function openCampaignImportFromEmptyState\(\)\{[\s\S]*?openSectionByKey\("csv-import"\);[\s\S]*?scrollIntoView\(\{block:"start",behavior:"smooth"\}\);[\s\S]*?document\.getElementById\("sheets-url"\);[\s\S]*?focus\(\{preventScroll:true\}\);[\s\S]*?queueAutosave\(\);/);
+  assert.match(html, /function openCampaignImportFromEmptyState\(\)\{[\s\S]*?const isExpanded=isSectionExpandedByKey\(sectionKey\);[\s\S]*?if\(isExpanded\)\{[\s\S]*?setSectionCollapsedByHeader\(hdr, true\);[\s\S]*?return;[\s\S]*?openSectionByKey\(sectionKey\);[\s\S]*?scrollIntoView\(\{block:"start",behavior:"smooth"\}\);[\s\S]*?document\.getElementById\("sheets-url"\);[\s\S]*?focus\(\{preventScroll:true\}\);[\s\S]*?queueAutosave\(\);/);
   assert.match(html, /function handleEmptyOfferStateKeydown\(event\)\{[\s\S]*?event\.key!=="Enter"&&event\.key!==" "[\s\S]*?event\.preventDefault\(\);[\s\S]*?openCampaignImportFromEmptyState\(\);/);
 });
 

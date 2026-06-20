@@ -1222,7 +1222,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v3.4.7";
+const APP_VERSION = "v3.4.8";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -1865,9 +1865,22 @@ function openSectionByKey(sectionKey){
   });
 }
 
+function isSectionExpandedByKey(sectionKey){
+  const section=document.querySelector(`.section[data-section-key="${sectionKey}"]`);
+  const hdr=section&&section.querySelector ? section.querySelector(".section-hdr") : null;
+  return !!(hdr&&!hdr.classList.contains("collapsed"));
+}
 function openCampaignImportFromEmptyState(){
-  openSectionByKey("csv-import");
-  const section=document.querySelector('.section[data-section-key="csv-import"]');
+  const sectionKey="csv-import";
+  const section=document.querySelector(`.section[data-section-key="${sectionKey}"]`);
+  const hdr=section&&section.querySelector ? section.querySelector(".section-hdr") : null;
+  const isExpanded=isSectionExpandedByKey(sectionKey);
+  if(isExpanded){
+    setSectionCollapsedByHeader(hdr, true);
+    queueAutosave();
+    return;
+  }
+  openSectionByKey(sectionKey);
   if(section&&typeof section.scrollIntoView === "function") section.scrollIntoView({block:"start",behavior:"smooth"});
   const sheetUrl=document.getElementById("sheets-url");
   if(sheetUrl&&typeof sheetUrl.focus === "function") sheetUrl.focus({preventScroll:true});
