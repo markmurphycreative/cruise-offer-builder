@@ -179,6 +179,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('getOperatorBoardDefault'),
     extractFunction('formatAirportName'),
     extractFunction('normaliseShortAirportIncludedLines'),
+    extractFunction('detectAirportInclusion'),
     extractFunction('detectFlightAirport'),
     extractFunction('joinOfferIntelligenceSuggestionParts'),
     extractConst('EMBARKATION_PORTS'),
@@ -299,8 +300,61 @@ Sailing on Bolette from ${airport}
 ${airport} Included
 7 nights
 From £999pp`, { renderIntelligence: false });
-    assert.equal(result.parsed.incl, 'Flights Included');
+    assert.equal(result.parsed.incl, `${airport} Flights Included`);
     assert.equal(harness.context.getOfferIntelligenceAirport(result.parsed, result.rawText), airport);
+  }
+});
+
+
+test('Paste Offer prefers detected airport inclusions over sailing port subtitle fallback examples', () => {
+  const harness = createHarness([{}, {}, {}, {}]);
+  const examples = [
+    [`Royal Caribbean | Independence of the Seas
+Spain, Portugal & France
+11 Nights • 14th September 2027
+
+Manchester Included
+Balcony Cabin
+From £1,649pp
+
+You'll visit:
+Southampton • Vigo, Spain • Lisbon, Portugal • Cadiz, Spain • Paris, Le Havre, France • Southampton
+
+Full Board
+Balcony Cabin • Family • Premium Ship`, 'Manchester Flights Included', 'Southampton • Vigo • Lisbon • Cadiz • Paris, Le Havre'],
+    [`MSC Cruises | MSC World Europa
+Western Mediterranean
+10 Nights • 3rd June 2027
+
+Glasgow Included
+Inside Cabin
+From £1,199pp
+
+You'll visit:
+Barcelona • Marseille, France • Genoa, Italy • Naples, Italy • Messina, Sicily • Valletta, Malta • Barcelona
+
+Full Board
+Family • Value • Entertainment`, 'Glasgow Flights Included', 'Barcelona • Marseille • Genoa • Naples • Messina • Valletta'],
+    [`Princess Cruises | Regal Princess
+Italian Riviera & Spain
+12 Nights • 4th September 2027
+
+Leeds Bradford Flights Included
+Mini Suite
+From £1,999pp
+
+You'll visit:
+Southampton • Rome, for Civitavecchia • Naples • Palma, Majorca • Barcelona • Gibraltar • Southampton
+
+Full Board
+Mini Suite • Med Fly-Cruise • Premium Ship`, 'Leeds Bradford Flights Included', 'Southampton • Rome, for Civitavecchia • Naples • Palma, Majorca • Barcelona • Gibraltar']
+  ];
+
+  for (const [raw, expectedIncl, expectedPorts] of examples) {
+    const result = harness.context.parseOfferText(raw, { renderIntelligence: false });
+    assert.equal(result.parsed.incl, expectedIncl);
+    assert.equal(result.parsed.ports, expectedPorts);
+    assert.ok(result.score <= 100);
   }
 });
 
