@@ -145,13 +145,13 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .copy-qa-status{font-size:9px;line-height:1.35;color:var(--muted);margin-bottom:4px;}
 .copy-qa-status.ok{color:var(--green);font-weight:600;}
 .copy-qa-status.warn{color:var(--amber);font-weight:600;}
-.copy-qa-checklist{display:grid;gap:2px;margin:2px 0 0;}
-.copy-qa-item{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:9px;color:var(--muted);line-height:1.3;}
-.copy-qa-item strong{font-weight:600;color:var(--text);}
-.copy-qa-item .state{font-variant-numeric:tabular-nums;}
-.copy-qa-item.checked .state{color:var(--green);}
-.copy-qa-item.review .state{color:var(--amber);font-weight:600;}
-.copy-qa-item.empty .state{color:#9a9a9a;}
+.copy-qa-checklist{display:grid;gap:4px;margin:2px 0 0;}
+.copy-qa-item{display:grid;grid-template-columns:minmax(82px,auto) 1fr;gap:4px 7px;font-size:9px;color:var(--muted);line-height:1.3;align-items:start;}
+.copy-qa-item strong{font-weight:600;color:var(--text);display:flex;align-items:center;gap:3px;white-space:nowrap;}
+.copy-qa-item .state{font-variant-numeric:tabular-nums;overflow-wrap:anywhere;color:var(--text);}
+.copy-qa-item.checked strong::before{content:"✓";color:var(--green);font-weight:700;}
+.copy-qa-item.review strong::before,.copy-qa-item.empty strong::before{content:"⚠";color:var(--amber);font-weight:700;}
+.copy-qa-item.review .state,.copy-qa-item.empty .state{color:var(--amber);font-weight:600;}
 .copy-qa-note{font-size:9px;color:var(--muted);margin-top:4px;line-height:1.35;}
 .hero-restore-note{display:none;margin-top:5px;font-size:9px;color:#8a5000;background:#fff8f0;border:1px solid #f0c080;border-radius:var(--radius);padding:4px 6px;}
 .hero-restore-note.active{display:block;}
@@ -1224,7 +1224,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v3.4.14";
+const APP_VERSION = "v3.4.15";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -2875,9 +2875,13 @@ const SPELLCHECK_FIELDS=[
   {id:"f-name",warnId:"spell-warn-name",label:"Cruise name"},
   {id:"f-ship",warnId:"spell-warn-name",label:"Ship name"},
   {id:"f-incl",warnId:"spell-warn-name",label:"Inclusions"},
+  {id:"f-boardlbl",warnId:"spell-warn-name",label:"Board basis",notRelevant:true},
   {id:"f-ports",warnId:"spell-warn-ports",label:"Ports"},
   {id:"f-tags",warnId:"spell-warn-tags",label:"USP text"},
-  {id:"raw-paste",warnId:"spell-warn-raw",label:"Parsed offer text"}
+  {id:"f-price",warnId:"spell-warn-name",label:"Price",formatter:"price"},
+  {id:"f-saildate",warnId:"spell-warn-name",label:"Date",notRelevant:true},
+  {id:"f-nights",warnId:"spell-warn-name",label:"Nights"},
+  {id:"raw-paste",warnId:"spell-warn-raw",label:"Parsed offer text",checkedOnly:true,notRelevant:true}
 ];
 const PROTECTED_WORDS=new Set(["p&o","p and o","marella","arvia","msc","caribbean","martinique","st","maarten","tenerife","klaviyo","cunard","antigua","grenada","tortola","barbados","lucia","kitts"]);
 let copyQaRunCount=0;
@@ -2921,7 +2925,8 @@ function setSpellWarn(warnId,msg){const el=document.getElementById(warnId); if(!
 function buildQaChecklist(rows){
   const host=document.getElementById("copy-qa-checklist");
   if(!host) return;
-  host.innerHTML=rows.map(row=>`<div class="copy-qa-item ${row.stateClass}"><strong>${row.label}</strong><span class="state">${row.state}</span></div>`).join('');
+  const escapeQaHtml=value=>String(value||"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+  host.innerHTML=rows.map(row=>`<div class="copy-qa-item ${row.stateClass}"><strong>${escapeQaHtml(row.label)}</strong><span class="state">${escapeQaHtml(row.state)}</span></div>`).join('');
 }
 function getCurrentOfferUspText(){
   const visible=document.getElementById("f-tags");
@@ -2947,14 +2952,19 @@ function runSpellQA(){
   SPELLCHECK_FIELDS.forEach(f=>{
     const el=document.getElementById(f.id);
     if(!el) return;
-    const value=f.id==="f-tags"?getCurrentOfferUspText():String(el.value||"").trim();
-    const bad=value?getLikelyTypos(value):[];
+    const rawValue=f.id==="f-tags"?(typeof getCurrentOfferUspText==="function"?getCurrentOfferUspText():String(el.value||"").trim()):String(el.value||"").trim();
+    let value=String(rawValue||"").trim();
+    if(value&&f.formatter==="price"){
+      const numeric=value.replace(/[^\d]/g,"");
+      value=numeric?`£${Number(numeric).toLocaleString("en-GB")}pp`:value;
+    }
+    const bad=rawValue?getLikelyTypos(rawValue):[];
     const shipIssue=f.id==="f-ship"?getOperatorShipQaIssue((document.getElementById("f-operator")||{}).value,value):"";
     const issues=[...(bad.length?[`${f.label}: ${bad.join(', ')}`]:[]),...(shipIssue?[shipIssue]:[])];
-    const isEmpty=!value;
+    const isEmpty=!rawValue;
     el.classList.toggle('spell-flag',issues.length>0);
     if(issues.length){ (byWarn[f.warnId]||(byWarn[f.warnId]=[])).push(...issues); }
-    const state=isEmpty?"— Empty / not checked":(issues.length?"⚠ Review":"✓ Checked");
+    const state=isEmpty?(f.notRelevant?"Not detected":"Missing"):(f.checkedOnly?"Checked":value);
     const stateClass=isEmpty?"empty":(issues.length?"review":"checked");
     rows.push({label:f.label,state,stateClass});
   });

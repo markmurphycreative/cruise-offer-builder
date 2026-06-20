@@ -71,8 +71,8 @@ test('Copy QA marks USP text as checked when the existing f-tags value is popula
   vm.runInContext(source, context);
   context.runSpellQA();
 
-  assert.match(elements['copy-qa-checklist'].innerHTML, /<strong>USP text<\/strong><span class="state">✓ Checked<\/span>/);
-  assert.doesNotMatch(elements['copy-qa-checklist'].innerHTML, /<strong>USP text<\/strong><span class="state">— Empty \/ not checked<\/span>/);
+  assert.match(elements['copy-qa-checklist'].innerHTML, /<strong>USP text<\/strong><span class="state">Adult Only Options · Cuisine · Entertainment · Family<\/span>/);
+  assert.doesNotMatch(elements['copy-qa-checklist'].innerHTML, /<strong>USP text<\/strong><span class="state">Missing<\/span>/);
 });
 
 
@@ -107,7 +107,7 @@ test('Copy QA checks current selected offer tags when the visible USP field has 
   vm.runInContext(source, context);
   context.runSpellQA();
 
-  assert.match(elements['copy-qa-checklist'].innerHTML, /<strong>USP text<\/strong><span class="state">✓ Checked<\/span>/);
+  assert.match(elements['copy-qa-checklist'].innerHTML, /<strong>USP text<\/strong><span class="state">Cuisine · Entertainment · Family<\/span>/);
 });
 
 test('Copy QA marks USP text empty only when f-tags and current offer tags are both empty', () => {
@@ -141,7 +141,7 @@ test('Copy QA marks USP text empty only when f-tags and current offer tags are b
   vm.runInContext(source, context);
   context.runSpellQA();
 
-  assert.match(elements['copy-qa-checklist'].innerHTML, /<strong>USP text<\/strong><span class="state">— Empty \/ not checked<\/span>/);
+  assert.match(elements['copy-qa-checklist'].innerHTML, /<strong>USP text<\/strong><span class="state">Missing<\/span>/);
 });
 
 test('imported offer tags restore into f-tags when switching selected offers', () => {
@@ -186,5 +186,5 @@ test('Copy QA marks imported USP text checked without manual f-tags typing', () 
   vm.runInContext(source, context);
   context.runSpellQA();
 
-  assert.match(elements['copy-qa-checklist'].innerHTML, /<strong>USP text<\/strong><span class="state">✓ Checked<\/span>/);
+  assert.match(elements['copy-qa-checklist'].innerHTML, /<strong>USP text<\/strong><span class="state">Accessible · All Inclusive · Entertainment · Family<\/span>/);
 });
