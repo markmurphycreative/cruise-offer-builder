@@ -5337,13 +5337,26 @@ function normaliseShortAirportIncludedLines(raw){
     return original;
   }).join("\n");
 }
+function normaliseAirportInclusionPhrase(phrase){
+  const value=String(phrase||"").replace(/\u00a0/g," ").replace(/\s+/g," ").trim();
+  if(!value) return "";
+  if(/^included$/i.test(value)) return "Flights Included";
+  const clean=value.replace(/\s+(?:included)$/i," Included");
+  if(/^(?:flights?|luggage|baggage|transfers?)(?:\b|\s*,|\s*(?:&|and)\s*)/i.test(clean)&&/\bincluded$/i.test(clean)){
+    return clean.replace(/\bflights?\b/ig,"Flights").replace(/\bluggage\b/ig,"Luggage").replace(/\bbaggage\b/ig,"Luggage").replace(/\btransfers?\b/ig,"Transfers").replace(/\bincluded\b/ig,"Included").replace(/\s*,\s*/g,", ").replace(/\s*&\s*/g," & ").replace(/\s+and\s+/ig," & ").replace(/\s+/g," ").trim();
+  }
+  return "";
+}
 function detectAirportInclusion(text){
   const value=String(text||"").replace(/\u00a0/g," ");
   const airports=[...(Array.isArray(AIRPORT_WORDS)?AIRPORT_WORDS:[])].sort((a,b)=>String(b).length-String(a).length);
   for(const airport of airports){
     const escaped=escapeRegExp(airport);
-    const match=value.match(new RegExp(`(?:^|[\\n\\r])\\s*(${escaped})\\s+(?:flights?\\s+)?included\\s*(?=$|[\\n\\r])`,"i"));
-    if(match) return `${formatAirportName(match[1])} Flights Included`;
+    const match=value.match(new RegExp(`(?:^|[\\n\\r])\\s*(${escaped})\\s+([^\\n\\r]*?included)\\s*(?=$|[\\n\\r])`,"i"));
+    if(match){
+      const phrase=normaliseAirportInclusionPhrase(match[2]);
+      if(phrase) return `${formatAirportName(match[1])} ${phrase}`;
+    }
   }
   return "";
 }
