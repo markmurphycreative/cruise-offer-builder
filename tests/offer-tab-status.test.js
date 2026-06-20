@@ -140,13 +140,15 @@ test('offer tab labels switch from fallback text to operator and ship identifier
   vm.runInContext([
     extractFunction('isOfferLoaded'),
     extractFunction('getOfferTabOperatorLabel'),
+    extractFunction('isRoyalCaribbeanOfferTabOperator'),
+    extractFunction('getOfferTabShipLabel'),
     extractFunction('getOfferTabLabelParts')
   ].join('\n'), context);
 
   assert.deepEqual(JSON.parse(JSON.stringify([0, 1, 2, 3].map(index => context.getOfferTabLabelParts(index)))), [
     { number: 'Offer 1', operator: 'Celebrity', ship: 'Celebrity Apex' },
     { number: 'Offer 2', operator: 'Cunard', ship: 'Queen Anne' },
-    { number: 'Offer 3', operator: 'RCI', ship: 'Icon of the Seas' },
+    { number: 'Offer 3', operator: 'RCI', ship: 'Icon OTS' },
     { number: 'Offer 4', operator: '', ship: '' }
   ]);
 });
@@ -176,16 +178,56 @@ test('offer tab aliases apply to long operator names without changing stored ope
     }) + ';',
     extractFunction('isOfferLoaded'),
     extractFunction('getOfferTabOperatorLabel'),
+    extractFunction('isRoyalCaribbeanOfferTabOperator'),
+    extractFunction('getOfferTabShipLabel'),
     extractFunction('getOfferTabLabelParts')
   ].join('\n'), context);
 
   assert.deepEqual(JSON.parse(JSON.stringify([0, 1, 2, 3].map(index => context.getOfferTabLabelParts(index)))), [
     { number: 'Offer 1', operator: 'AMA', ship: 'AmaSerena' },
-    { number: 'Offer 2', operator: 'RCI', ship: 'Liberty of the Seas' },
+    { number: 'Offer 2', operator: 'RCI', ship: 'Liberty OTS' },
     { number: 'Offer 3', operator: 'Fred.Olsen', ship: 'Bolette' },
     { number: 'Offer 4', operator: 'Unlisted Long Operator Name', ship: 'Discovery' }
   ]);
   assert.deepEqual(context.offers.map(offer => offer.operator), ['amawaterways', 'Royal Caribbean', 'fred', 'Unlisted Long Operator Name']);
+});
+
+
+test('Royal Caribbean offer tab ship aliases shorten known and unknown of the Seas names only in tab labels', () => {
+  const context = {
+    offers: [
+      { operator: 'Royal Caribbean', ship: 'Utopia of the Seas' },
+      { operator: 'rci', ship: 'Mystery of the Seas' },
+      { operator: 'celebrity', ship: 'Celebrity of the Seas' },
+      { operator: 'Royal Caribbean', ship: 'Spectrum Princess' }
+    ],
+    OPERATOR_HEADERS: {
+      celebrity: { name: 'Celebrity Cruises' }
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext([
+    'const OFFER_TAB_OPERATOR_LABELS = ' + JSON.stringify({
+      royal: 'RCI',
+      'Royal Caribbean': 'RCI',
+      rci: 'RCI',
+      celebrity: 'Celebrity',
+      'Celebrity Cruises': 'Celebrity'
+    }) + ';',
+    extractFunction('isOfferLoaded'),
+    extractFunction('getOfferTabOperatorLabel'),
+    extractFunction('isRoyalCaribbeanOfferTabOperator'),
+    extractFunction('getOfferTabShipLabel'),
+    extractFunction('getOfferTabLabelParts')
+  ].join('\n'), context);
+
+  assert.deepEqual(JSON.parse(JSON.stringify([0, 1, 2, 3].map(index => context.getOfferTabLabelParts(index)))), [
+    { number: 'Offer 1', operator: 'RCI', ship: 'Utopia OTS' },
+    { number: 'Offer 2', operator: 'RCI', ship: 'Mystery OTS' },
+    { number: 'Offer 3', operator: 'Celebrity', ship: 'Celebrity of the Seas' },
+    { number: 'Offer 4', operator: 'RCI', ship: 'Spectrum Princess' }
+  ]);
+  assert.deepEqual(context.offers.map(offer => offer.ship), ['Utopia of the Seas', 'Mystery of the Seas', 'Celebrity of the Seas', 'Spectrum Princess']);
 });
 
 test('offer tab labels fall back cleanly when ship or operator details are missing', () => {
@@ -203,6 +245,8 @@ test('offer tab labels fall back cleanly when ship or operator details are missi
   vm.runInContext([
     extractFunction('isOfferLoaded'),
     extractFunction('getOfferTabOperatorLabel'),
+    extractFunction('isRoyalCaribbeanOfferTabOperator'),
+    extractFunction('getOfferTabShipLabel'),
     extractFunction('getOfferTabLabelParts')
   ].join('\n'), context);
 

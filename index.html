@@ -1222,7 +1222,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v3.4.4";
+const APP_VERSION = "v3.4.5";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -3034,13 +3034,28 @@ function getOfferTabOperatorLabel(o){
   if(Object.prototype.hasOwnProperty.call(OFFER_TAB_OPERATOR_LABELS,fullName)) return OFFER_TAB_OPERATOR_LABELS[fullName];
   return fullName;
 }
+function isRoyalCaribbeanOfferTabOperator(o){
+  const key=String((o&&o.operator)||"").trim();
+  if(!key) return false;
+  if(key.toLowerCase()==="rci") return true;
+  if(getOfferTabOperatorLabel(o)==="RCI") return true;
+  const meta=(typeof OPERATOR_HEADERS!=="undefined"&&OPERATOR_HEADERS&&OPERATOR_HEADERS[key])||null;
+  const fullName=String((meta&&meta.name)||key).trim();
+  return /^(royal caribbean|rci)$/i.test(fullName);
+}
+function getOfferTabShipLabel(o){
+  const ship=String((o&&o.ship)||"").trim();
+  if(!ship) return "";
+  if(!isRoyalCaribbeanOfferTabOperator(o)) return ship;
+  return ship.replace(/^(.+?)\s+of\s+the\s+seas$/i,"$1 OTS");
+}
 function getOfferTabLabelParts(i){
   const o=offers[i]||{};
   const fallback="Offer "+(i+1);
   if(!isOfferLoaded(o)) return {number:fallback,operator:"",ship:""};
   const operatorLabel=getOfferTabOperatorLabel(o);
   if(!operatorLabel) return {number:fallback,operator:"",ship:""};
-  return {number:"Offer "+(i+1),operator:operatorLabel,ship:String(o.ship||"").trim()};
+  return {number:"Offer "+(i+1),operator:operatorLabel,ship:getOfferTabShipLabel(o)};
 }
 function getOfferTabQualityScore(i){
   const o=offers[i]||{};
