@@ -6,8 +6,8 @@ import vm from 'node:vm';
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const shortcuts = html.match(/\/\/ Lightweight global shortcuts:[\s\S]*?document\.addEventListener\('change',releaseSelectShortcutFocus\);/)?.[0];
 
-test('visible app version is v3.4.3', () => {
-  assert.match(html, /const APP_VERSION = \"v3\.4\.3\";/);
+test('visible app version is v3.4.4', () => {
+  assert.match(html, /const APP_VERSION = \"v3\.4\.4\";/);
 });
 
 function setup(){

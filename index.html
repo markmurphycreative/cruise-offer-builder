@@ -1222,7 +1222,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v3.4.3";
+const APP_VERSION = "v3.4.4";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -3003,10 +3003,24 @@ function getOfferStatusTooltip(i){
   return "Missing non-critical items";
 }
 const OFFER_TAB_OPERATOR_LABELS = {
+  amawaterways: "AMA",
+  "AmaWaterways": "AMA",
   po: "P&O",
+  "P&O Cruises": "P&O",
   marella: "Marella",
+  "Marella Cruises": "Marella",
   celebrity: "Celebrity",
-  fred: "Fred. Olsen",
+  "Celebrity Cruises": "Celebrity",
+  fred: "Fred.Olsen",
+  "Fred. Olsen Cruise Lines": "Fred.Olsen",
+  royal: "RCI",
+  "Royal Caribbean": "RCI",
+  ambassador: "Ambassador",
+  "Ambassador Cruise Line": "Ambassador",
+  cunard: "Cunard",
+  "Cunard": "Cunard",
+  virgin: "Virgin",
+  "Virgin Voyages": "Virgin",
   msc: "MSC",
   ncl: "Norwegian",
   princess: "Princess"
@@ -3016,7 +3030,9 @@ function getOfferTabOperatorLabel(o){
   if(!key) return "";
   if(Object.prototype.hasOwnProperty.call(OFFER_TAB_OPERATOR_LABELS,key)) return OFFER_TAB_OPERATOR_LABELS[key];
   const meta=(typeof OPERATOR_HEADERS!=="undefined"&&OPERATOR_HEADERS&&OPERATOR_HEADERS[key])||null;
-  return String((meta&&meta.name)||key).trim();
+  const fullName=String((meta&&meta.name)||key).trim();
+  if(Object.prototype.hasOwnProperty.call(OFFER_TAB_OPERATOR_LABELS,fullName)) return OFFER_TAB_OPERATOR_LABELS[fullName];
+  return fullName;
 }
 function getOfferTabLabelParts(i){
   const o=offers[i]||{};
