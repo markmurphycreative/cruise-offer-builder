@@ -179,6 +179,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('getOperatorBoardDefault'),
     extractFunction('formatAirportName'),
     extractFunction('normaliseShortAirportIncludedLines'),
+    extractFunction('normaliseAirportInclusionPhrase'),
     extractFunction('detectAirportInclusion'),
     extractFunction('detectFlightAirport'),
     extractFunction('joinOfferIntelligenceSuggestionParts'),
@@ -357,6 +358,26 @@ Mini Suite • Med Fly-Cruise • Premium Ship`, 'Leeds Bradford Flights Include
     assert.ok(result.score <= 100);
   }
 });
+
+test('Paste Offer preserves airport names on airport-specific inclusion lines', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  const examples = [
+    ['Leeds Bradford Flights, Luggage & Transfers Included', 'Leeds Bradford Flights, Luggage & Transfers Included'],
+    ['Manchester Luggage Included', 'Manchester Luggage Included'],
+    ['Glasgow Transfers Included', 'Glasgow Transfers Included'],
+    ['Belfast Included', 'Belfast Flights Included']
+  ];
+
+  for (const [raw, expected] of examples) {
+    const result = harness.context.parseOfferText(`P&O Cruises
+Arvia
+7 nights
+${raw}
+From £999pp`, { renderIntelligence: false });
+    assert.equal(result.parsed.incl, expected);
+  }
+});
+
 
 test('Paste Offer does not normalise generic Included lines as departure airport inclusions', () => {
   const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
