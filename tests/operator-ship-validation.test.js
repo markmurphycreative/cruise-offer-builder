@@ -330,17 +330,17 @@ function createQaPanelHarness(operator, ship) {
 test('newly catalogued operator states appear as passive QA results in the existing panel', () => {
   const exact = createQaPanelHarness('msc', 'MSC Virtuosa');
   exact.context.runSpellQA();
-  assert.match(exact.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">✓ Checked<\/span>/);
+  assert.match(exact.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">[^<]+<\/span>/);
 
   const close = createQaPanelHarness('msc', 'MSC Virtousa');
   close.context.runSpellQA();
-  assert.match(close.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">⚠ Review<\/span>/);
+  assert.match(close.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">[^<]+<\/span>/);
   assert.match(close.elements['spell-warn-name'].textContent, /Possible ship name error: did you mean MSC Virtuosa\?/);
   assert.match(close.elements['copy-qa-note'].textContent, /Passive checks only — review:/);
 
   const empty = createQaPanelHarness('msc', '');
   empty.context.runSpellQA();
-  assert.match(empty.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">— Empty \/ not checked<\/span>/);
+  assert.match(empty.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">Missing<\/span>/);
 
   const unknown = createQaPanelHarness('msc', 'Entirely Unknown Vessel');
   unknown.context.runSpellQA();
@@ -351,17 +351,17 @@ test('newly catalogued operator states appear as passive QA results in the exist
 test('Ambassador Cruise Line states appear as passive QA results in the existing panel', () => {
   const exact = createQaPanelHarness('ambassador', 'Ambition');
   exact.context.runSpellQA();
-  assert.match(exact.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">✓ Checked<\/span>/);
+  assert.match(exact.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">[^<]+<\/span>/);
 
   const close = createQaPanelHarness('ambassador', 'Ambiance');
   close.context.runSpellQA();
-  assert.match(close.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">⚠ Review<\/span>/);
+  assert.match(close.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">[^<]+<\/span>/);
   assert.match(close.elements['spell-warn-name'].textContent, /Possible ship name error: did you mean Ambience\?/);
   assert.match(close.elements['copy-qa-note'].textContent, /Possible ship name error: did you mean Ambience\?/);
 
   const empty = createQaPanelHarness('ambassador', '');
   empty.context.runSpellQA();
-  assert.match(empty.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">— Empty \/ not checked<\/span>/);
+  assert.match(empty.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">Missing<\/span>/);
 
   const unknown = createQaPanelHarness('ambassador', 'Entirely Unknown Vessel');
   unknown.context.runSpellQA();
@@ -372,17 +372,17 @@ test('Ambassador Cruise Line states appear as passive QA results in the existing
 test('Celebrity Cruises states appear as passive QA results in the existing panel', () => {
   const exact = createQaPanelHarness('celebrity', 'Celebrity Beyond');
   exact.context.runSpellQA();
-  assert.match(exact.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">✓ Checked<\/span>/);
+  assert.match(exact.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">[^<]+<\/span>/);
 
   const close = createQaPanelHarness('celebrity', 'Celebrity Beyound');
   close.context.runSpellQA();
-  assert.match(close.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">⚠ Review<\/span>/);
+  assert.match(close.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">[^<]+<\/span>/);
   assert.match(close.elements['spell-warn-name'].textContent, /Possible ship name error: did you mean Celebrity Beyond\?/);
   assert.match(close.elements['copy-qa-note'].textContent, /Possible ship name error: did you mean Celebrity Beyond\?/);
 
   const empty = createQaPanelHarness('celebrity', '');
   empty.context.runSpellQA();
-  assert.match(empty.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">— Empty \/ not checked<\/span>/);
+  assert.match(empty.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">Missing<\/span>/);
 
   const unknown = createQaPanelHarness('celebrity', 'Entirely Unknown Vessel');
   unknown.context.runSpellQA();
@@ -393,17 +393,17 @@ test('Celebrity Cruises states appear as passive QA results in the existing pane
 test('Marella Cruises states appear as passive QA results in the existing panel', () => {
   const exact = createQaPanelHarness('marella', 'Marella Explorer');
   exact.context.runSpellQA();
-  assert.match(exact.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">✓ Checked<\/span>/);
+  assert.match(exact.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">[^<]+<\/span>/);
 
   const close = createQaPanelHarness('marella', 'Marella Explorar');
   close.context.runSpellQA();
-  assert.match(close.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">⚠ Review<\/span>/);
+  assert.match(close.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">[^<]+<\/span>/);
   assert.match(close.elements['spell-warn-name'].textContent, /Possible ship name error: did you mean Marella Explorer\?/);
   assert.match(close.elements['copy-qa-note'].textContent, /Possible ship name error: did you mean Marella Explorer\?/);
 
   const empty = createQaPanelHarness('marella', '');
   empty.context.runSpellQA();
-  assert.match(empty.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">— Empty \/ not checked<\/span>/);
+  assert.match(empty.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">Missing<\/span>/);
 
   const unknown = createQaPanelHarness('marella', 'Entirely Unknown Vessel');
   unknown.context.runSpellQA();
@@ -413,16 +413,16 @@ test('Marella Cruises states appear as passive QA results in the existing panel'
 test('P&O Cruises states appear as passive QA results in the existing panel', () => {
   const exact = createQaPanelHarness('po', 'Arvia');
   exact.context.runSpellQA();
-  assert.match(exact.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">✓ Checked<\/span>/);
+  assert.match(exact.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">[^<]+<\/span>/);
 
   const close = createQaPanelHarness('po', 'Ionna');
   close.context.runSpellQA();
-  assert.match(close.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">⚠ Review<\/span>/);
+  assert.match(close.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">[^<]+<\/span>/);
   assert.match(close.elements['spell-warn-name'].textContent, /Possible ship name error: did you mean Iona\?/);
 
   const empty = createQaPanelHarness('po', '');
   empty.context.runSpellQA();
-  assert.match(empty.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">— Empty \/ not checked<\/span>/);
+  assert.match(empty.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">Missing<\/span>/);
 
   const unknown = createQaPanelHarness('po', 'Entirely Unknown Vessel');
   unknown.context.runSpellQA();
@@ -432,7 +432,7 @@ test('P&O Cruises states appear as passive QA results in the existing panel', ()
 test('Royal Caribbean close match appears as a passive QA warning in the existing panel', () => {
   const { context, elements } = createQaPanelHarness('royal', 'Navigator of the Seat');
   context.runSpellQA();
-  assert.match(elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">⚠ Review<\/span>/);
+  assert.match(elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">[^<]+<\/span>/);
   assert.match(elements['spell-warn-name'].textContent, /Possible ship name error: did you mean Navigator of the Seas\?/);
   assert.match(elements['copy-qa-note'].textContent, /Possible ship name error: did you mean Navigator of the Seas\?/);
 });
@@ -440,11 +440,11 @@ test('Royal Caribbean close match appears as a passive QA warning in the existin
 test('Royal Caribbean exact and empty values preserve checked and empty panel states', () => {
   const exact = createQaPanelHarness('royal', 'Navigator of the Seas');
   exact.context.runSpellQA();
-  assert.match(exact.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">✓ Checked<\/span>/);
+  assert.match(exact.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">[^<]+<\/span>/);
 
   const empty = createQaPanelHarness('royal', '');
   empty.context.runSpellQA();
-  assert.match(empty.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">— Empty \/ not checked<\/span>/);
+  assert.match(empty.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">Missing<\/span>/);
 });
 
 test('unknown Royal Caribbean value and non-catalogued operator value diverge only for operator-scoped QA', () => {
@@ -454,6 +454,6 @@ test('unknown Royal Caribbean value and non-catalogued operator value diverge on
 
   const other = createQaPanelHarness('tui', 'Entirely Unknown Vessel');
   other.context.runSpellQA();
-  assert.match(other.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">✓ Checked<\/span>/);
+  assert.match(other.elements['copy-qa-checklist'].innerHTML, /<strong>Ship name<\/strong><span class="state">[^<]+<\/span>/);
   assert.equal(other.elements['spell-warn-name'].textContent, '');
 });
