@@ -51,10 +51,12 @@ test('view selector indicator updates instantly while retaining segmented-contro
 
 test('Offer 1–4 selector reuses the sliding segmented-control pill while retaining status dots and offer switching hooks', () => {
   assert.match(html, /<div class="offer-tabs">\s*<span class="offer-pill" id="offer-pill" aria-hidden="true"><\/span>/);
-  assert.match(html, /<div class="offer-empty-state" id="offer-empty-state" role="status" aria-live="polite">[\s\S]*?No offers loaded[\s\S]*?Load a campaign, sheet, CSV or paste an offer to begin\./);
+  assert.match(html, /<div class="offer-empty-state" id="offer-empty-state" role="status" aria-live="polite">[\s\S]*?NO OFFERS LOADED[\s\S]*?Load a campaign, sheet, CSV or paste an offer to begin\./);
   assert.match(html, /\.offer-tabs\{[^}]*border:1px solid var\(--border\);[^}]*border-radius:0;[^}]*overflow:hidden;[^}]*isolation:isolate;/);
   assert.match(html, /\.offer-tabs\.empty-hidden\{display:none;\}/);
-  assert.match(html, /\.offer-empty-state\{[^}]*border:1px solid var\(--border\);[^}]*background:#fafaf8;[^}]*text-align:center;/);
+  assert.match(html, /\.offer-empty-state\{[^}]*border:1px solid var\(--gold\);[^}]*background:var\(--gold\);[^}]*text-align:center;/);
+  assert.match(html, /\.offer-empty-state-title\{[^}]*font-weight:700;[^}]*text-transform:uppercase;[^}]*color:var\(--navy\);/);
+  assert.match(html, /\.offer-empty-state-copy\{[^}]*color:#fff;[^}]*text-shadow:0 1px 1px rgba\(14,27,42,\.45\);/);
   assert.match(html, /\.offer-pill\{[^}]*border-radius:0;[^}]*background:linear-gradient\(180deg,#b2a374 0%,var\(--gold\) 100%\);[^}]*transform:translateX\(0\);[^}]*transition:transform \.2s ease,width \.2s ease;/);
   assert.match(html, /\.otab\.active\{color:var\(--navy\);border-radius:0;box-shadow:inset 0 -2px 0 rgba\(14,27,42,\.18\);\}/);
   assert.doesNotMatch(html, /\.otab\.active\{[^}]*border-bottom/);
