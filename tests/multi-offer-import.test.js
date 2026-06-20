@@ -110,8 +110,65 @@ Greek Island Glow`);
 
 test('Multi Offer Import UI and parser reuse hooks are present', () => {
   assert.match(html, /MULTI OFFER IMPORT/);
-  assert.match(html, /id="multi-offer-paste"/);
+  assert.match(html, /<textarea id="multi-offer-paste"[^>]* oninput="handleMultiOfferInput\(event\)"[^>]* onkeydown="handleMultiOfferKeydown\(event\)"/);
   assert.match(html, /Load All Offers/);
   assert.match(extractFunction('performMultiOfferImport'), /parseOfferText\(block,\{renderIntelligence:false\}\)/);
   assert.match(extractFunction('performMultiOfferImport'), /Replace existing offers\?/);
+});
+
+test('Multi Offer Import textarea Enter submits through Load All Offers', () => {
+  const context = {
+    calls: 0,
+    loadAllOffers() { context.calls += 1; }
+  };
+  vm.createContext(context);
+  vm.runInContext(extractFunction('handleMultiOfferKeydown'), context);
+  let prevented = false;
+  context.handleMultiOfferKeydown({
+    key: 'Enter',
+    target: { id: 'multi-offer-paste' },
+    preventDefault() { prevented = true; }
+  });
+
+  assert.equal(prevented, true);
+  assert.equal(context.calls, 1);
+});
+
+test('Multi Offer Import textarea Shift Enter keeps native newline behaviour', () => {
+  const context = {
+    calls: 0,
+    loadAllOffers() { context.calls += 1; }
+  };
+  vm.createContext(context);
+  vm.runInContext(extractFunction('handleMultiOfferKeydown'), context);
+  let prevented = false;
+  context.handleMultiOfferKeydown({
+    key: 'Enter',
+    shiftKey: true,
+    target: { id: 'multi-offer-paste' },
+    preventDefault() { prevented = true; }
+  });
+
+  assert.equal(prevented, false);
+  assert.equal(context.calls, 0);
+});
+
+test('Multi Offer Import manual clear removes stale result rows only', () => {
+  const result = { innerHTML: 'Offer 1 Loaded', className: 'parse-result high' };
+  const field = { value: '' };
+  const context = {
+    document: {
+      getElementById(id) {
+        if (id === 'multi-offer-result') return result;
+        if (id === 'multi-offer-paste') return field;
+        return null;
+      }
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext([extractFunction('setMultiOfferStatus'), extractFunction('handleMultiOfferInput')].join('\n'), context);
+  context.handleMultiOfferInput({ inputType: 'deleteContentBackward' });
+
+  assert.equal(result.innerHTML, '');
+  assert.equal(result.className, 'parse-result ');
 });
