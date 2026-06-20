@@ -41,10 +41,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 /* ── OFFER SEGMENTED CONTROL ── */
 .offer-tabs{position:relative;display:flex;margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:0;background:#fafaf8;flex-shrink:0;overflow:hidden;isolation:isolate;}
 .offer-tabs.empty-hidden{display:none;}
-.offer-empty-state{display:none;margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);min-height:74px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:#fff;text-align:center;flex-shrink:0;cursor:pointer;align-items:center;justify-content:center;flex-direction:column;}
+.offer-empty-state{display:none;margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);min-height:56px;padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius);background:transparent;text-align:left;flex-shrink:0;cursor:pointer;align-items:flex-start;justify-content:center;flex-direction:column;}
 .offer-empty-state.active{display:flex;}
-.offer-empty-state-title{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--navy);margin-bottom:4px;}
-.offer-empty-state-copy{font-size:10px;line-height:1.35;color:var(--muted);}
+.offer-empty-state-title{font-size:11px;font-weight:600;letter-spacing:0;color:var(--navy);margin-bottom:3px;}
+.offer-empty-state-copy{font-size:9.5px;line-height:1.3;color:var(--muted);white-space:normal;}
 .offer-context-label.empty-hidden{display:none;}
 .offer-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:0;background:linear-gradient(180deg,#b2a374 0%,var(--gold) 100%);box-shadow:0 1px 4px rgba(14,27,42,.22),inset 0 0 0 1px rgba(255,255,255,.18);transform:translateX(0);transition:transform .2s ease,width .2s ease;pointer-events:none;}
 .offer-tab-item{position:relative;z-index:1;flex:1;min-width:0;}
@@ -694,8 +694,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <div class="offer-tab-item"><button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3" title="No offer loaded" aria-label="Offer 4 status: No offer loaded"><span class="offer-tab-label"><span class="offer-tab-number">Offer 4</span></span><span class="offer-lock-toggle" role="button" tabindex="0" id="lock-toggle-3" onclick="toggleOfferLockFromTile(event,3)" onkeydown="if(event.key==='Enter'||event.key===' ') toggleOfferLockFromTile(event,3)" aria-label="Lock offer" title="Lock offer"><svg class="lock-icon-open" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 7.2-2.4"></path></svg><svg class="lock-icon-locked" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span><span class="status-dot" id="sd3" title="No offer loaded" aria-hidden="true"></span></button></div>
   </div>
   <div class="offer-empty-state active" id="offer-empty-state" role="button" tabindex="0" title="Open Campaign Import" aria-label="Open Campaign Import" onclick="openCampaignImportFromEmptyState()" onkeydown="handleEmptyOfferStateKeydown(event)">
-    <div class="offer-empty-state-title">NO OFFERS LOADED</div>
-    <div class="offer-empty-state-copy">Load a campaign, sheet, CSV or paste an offer to begin.</div>
+    <div class="offer-empty-state-title">No offers loaded</div>
+    <div class="offer-empty-state-copy">Load a sheet, CSV, campaign or paste an offer.</div>
   </div>
   <div class="offer-context-label empty-hidden" id="active-offer-label" aria-live="polite">Editing Offer 1 of 4</div>
   <div class="reorder-group">
