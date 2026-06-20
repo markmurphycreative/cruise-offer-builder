@@ -1222,7 +1222,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v3.4.10";
+const APP_VERSION = "v3.4.11";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -5337,6 +5337,16 @@ function normaliseShortAirportIncludedLines(raw){
     return original;
   }).join("\n");
 }
+function detectAirportInclusion(text){
+  const value=String(text||"").replace(/\u00a0/g," ");
+  const airports=[...(Array.isArray(AIRPORT_WORDS)?AIRPORT_WORDS:[])].sort((a,b)=>String(b).length-String(a).length);
+  for(const airport of airports){
+    const escaped=escapeRegExp(airport);
+    const match=value.match(new RegExp(`(?:^|[\\n\\r])\\s*(${escaped})\\s+(?:flights?\\s+)?included\\s*(?=$|[\\n\\r])`,"i"));
+    if(match) return `${formatAirportName(match[1])} Flights Included`;
+  }
+  return "";
+}
 function detectFlightAirport(text){
   const value=String(text||"").replace(/\u00a0/g," ");
   for(const airport of AIRPORT_WORDS){
@@ -5435,8 +5445,9 @@ function isExcludedParsedPort(item,options){
 function isStandalonePortCandidate(line){
   const value=String(line||"").trim();
   const likelyPort=/^[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’().-]*(?:\s+(?:\(?[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’().-]*|of|and|the)){0,4}$/;
+  const commaAliasPort=/^[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’().-]+,\s*for\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’().-]+$/;
   const reject=/^(?:at sea|sea day|overnight|inside|outside|balcony|suite|full board|half board|all inclusive|self catering|family(?: friendly)?|premium|adults? only|ocean cruise|river cruise|cruise|ship|operator|price|from|ports?|itinerary|you(?:'|’)?ll visit)$/i;
-  const candidate=value.includes(",")?value.split(",").map(part=>part.trim()).filter(Boolean).every(part=>likelyPort.test(part)&&!reject.test(part)):likelyPort.test(value);
+  const candidate=commaAliasPort.test(value)||(value.includes(",")?value.split(",").map(part=>part.trim()).filter(Boolean).every(part=>likelyPort.test(part)&&!reject.test(part)):likelyPort.test(value));
   return candidate&&
     !isNonPortExtractionValue(value)&&
     !reject.test(value)&&
@@ -5446,7 +5457,7 @@ function isStandalonePortCandidate(line){
     !/[£$€]|\d|\b(?:nights?|nts?|included|flights?|transfers?|luggage|cabin|from)\b/i.test(value);
 }
 const PARSED_PORT_COUNTRY_SUFFIXES=[
-  "Norway","France","Spain","Portugal","Italy"
+  "Norway","France","Spain","Portugal","Italy","Malta","Sicily"
 ];
 function removeParsedPortCountrySuffix(label){
   let value=String(label||"").replace(/\s+/g," ").trim();
@@ -5466,7 +5477,10 @@ function removeParsedPortCountrySuffix(label){
 }
 function cleanParsedPorts(lines,options){
   const ignored=/^(?:at sea|(?:\d+\s+)?days?\s+at\s+sea|(?:\d+\s+)?sea\s+days?|overnight port stay|overnight stay|overnight|luggage\s*(?:&|and)\s*transfers?\s+included|flights?\s+included)[.!]?$/i;
-  return cleanDestinationOnlyLines(lines).flatMap(line=>line.split(/(?:[•·▪◦●]|\s+[-–—]\s+|[-–—]\s*$)/)).map(item=>removeParsedPortCountrySuffix(item.trim().replace(/^[-–—]\s*/,""))).filter(item=>item&&!ignored.test(item)&&!isExcludedParsedPort(item,options)&&isStandalonePortCandidate(item)).join(" • ");
+  return cleanDestinationOnlyLines(lines).flatMap(line=>line.split(/(?:[•·▪◦●]|\s+[-–—]\s+|[-–—]\s*$)/)).map(item=>{
+    const cleaned=item.trim().replace(/^[-–—]\s*/,"");
+    return typeof removeParsedPortCountrySuffix==="function"?removeParsedPortCountrySuffix(cleaned):cleaned;
+  }).filter(item=>item&&!ignored.test(item)&&!isExcludedParsedPort(item,options)&&isStandalonePortCandidate(item)).join(" • ");
 }
 function escapeRegExp(value){ return String(value||"").replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 function findKnownOperatorShip(text,operatorKey){
@@ -5715,9 +5729,13 @@ function parseOfferText(raw,options){
   const inclusionSuggestion=typeof getOfferIntelligenceCardInclusionSuggestion==="function"?getOfferIntelligenceCardInclusionSuggestion(detectedInclusions):"";
   if(inclusionSuggestion){parsed.incl=inclusionSuggestion;score+=6;}
   else { const incl=lines.find(l=>/flights?|luggage|transfer|included|all inclusive/i.test(l)); if(incl){parsed.incl=incl;score+=6;} }
+  const airportInclusion=detectAirportInclusion(raw);
   const airport=detectFlightAirport(txt);
-  if(airport&&parsed.incl&&new RegExp(`^${escapeRegExp(airport)}\\s+flights?\\s+included$`,"i").test(String(parsed.incl||"").trim())) parsed.incl="Flights Included";
-  if(airport&&!parsed.incl){parsed.incl=airport+' Flights';score+=4;}
+  if(airportInclusion){
+    if(parsed.incl!==airportInclusion) score+=4;
+    parsed.incl=airportInclusion;
+  }
+  else if(airport&&!parsed.incl){parsed.incl=airport+' Flights Included';score+=4;}
   const knownShipMatch=findKnownOperatorShip(txt,parsed.operatorKey); if(knownShipMatch){ if(!parsed.ship){parsed.ship=knownShipMatch.ship;score+=8;} if(!parsed.operatorKey){parsed.operatorKey=knownShipMatch.operatorKey;score+=18;} }
   if(!parsed.board&&!parsed.boardlbl){const defaultBoard=getOperatorBoardDefault(parsed.operatorKey); if(defaultBoard){parsed.board=defaultBoard[0];parsed.boardlbl=defaultBoard[1];score+=6;}}
   if(!parsed.ship){const shipLine=lines.find(l=>/\b(cruise|explorer|symphony|arvia|voyager|queen|discovery)\b/i.test(l)); if(shipLine){const m=shipLine.match(/\b([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+){0,3})\b/); if(m) parsed.ship=m[1];}}
