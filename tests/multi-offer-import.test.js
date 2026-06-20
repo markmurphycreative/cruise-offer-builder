@@ -231,3 +231,20 @@ test('jumpToMultiOfferStatus reuses tab selection, switches to Single view, open
     ['scroll', 'start']
   ]);
 });
+
+
+test('Multi Offer Import clamps displayed confidence scores to 100', () => {
+  const context = {};
+  vm.createContext(context);
+  vm.runInContext(extractFunction('clampParseConfidenceScore'), context);
+
+  assert.equal(context.clampParseConfidenceScore(110), 100);
+  assert.equal(context.clampParseConfidenceScore(105), 100);
+  assert.equal(context.clampParseConfidenceScore(98), 98);
+});
+
+test('Multi Offer Import status rows use the clamped confidence score for display', () => {
+  const performMultiOfferImport = extractFunction('performMultiOfferImport');
+  assert.match(performMultiOfferImport, /Confidence \$\{clampParseConfidenceScore\(result\.score\)\}/);
+  assert.doesNotMatch(performMultiOfferImport, /Confidence \$\{result\.score\}/);
+});

@@ -1222,7 +1222,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v3.4.8";
+const APP_VERSION = "v3.4.9";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -5347,6 +5347,7 @@ const NON_PORT_EXTRACTION_EXCLUSION_PATTERNS=[
   /\b(?:flights?|drinks?|wi[-\s]?fi|gratuities|tips|transfers?|luggage|baggage|hotel\s+stay)\s+(?:from\s+[a-z\s]+\s+)?included\b/i,
   /\b(?:included|inclusions?|what(?:'|’)?s included)\b/i,
   /\b(?:full\s*board|half\s*board|all[\s-]*inclusive|self\s*catering|room\s+only|bed\s*(?:&|and)\s*breakfast)\b/i,
+  /\b(?:premium\s+ship|smaller\s+ship|adults?\s+only|family(?:\s+friendly)?|med\s+fly[-\s]*cruise|fjords?|ocean\s+cruise|river\s+cruise|feature|features?)\b/i,
   /(?:^|\s)(?:from\s*)?[£$€]\s*\d[\d,]*(?:\.\d{2})?\s*(?:pp|per\s+person)?\b/i,
   /\b(?:save|saving|offer|deal|sale|exclusive|limited|book\s+now|call\s+to\s+book|terms|t&cs?|subject\s+to\s+availability)\b/i
 ];
@@ -5385,7 +5386,7 @@ function cleanDestinationOnlyLines(lines){
 const ITINERARY_SECTION_LABEL=/^(?:itinerary|ports|you(?:'|’)?ll visit)\s*:?\s*(.*)$/i;
 const ITINERARY_FOOTER_LABEL=/^(?:based\s+on|solo\s+travell?er|luggage\s*(?:&|and)\s*transfers?\s+included|flights?\s+included|inclusions?|what(?:'|’)?s included|price|from £|terms(?:\s*&\s*conditions)?|book now|call to book|cabin|accommodation)\b/i;
 const USP_TAG_LABEL=/^(?:top\s*bar\s*)?(?:usp|usps|tags?|tag\s*row|top\s*bar\s*usp\s*text)\s*:?\s*(.*)$/i;
-const USP_TAG_KEYWORDS=/\b(adult(?:s)?\s*only|accessible|all\s*inclusive|cuisine|dining|entertainment|family|families|luxury|wellness|destinations|cultural\s+experiences|overnight\s+port\s+stays?)\b/i;
+const USP_TAG_KEYWORDS=/\b(adult(?:s)?\s*only|accessible|all\s*inclusive|cuisine|dining|entertainment|family|families|luxury|wellness|destinations|cultural\s+experiences|overnight\s+port\s+stays?|premium\s+ship|smaller\s+ship|med\s+fly[-\s]*cruise|flights?\s+included|luggage\s+included|fjords?|cabin)\b/i;
 function normaliseUspTagText(value){
   return String(value||"").replace(/^[\s•·|:-]+|[\s•·|:-]+$/g, "").replace(/\s*(?:[•·|]|\s+-\s+)\s*/g, " · ").replace(/\s{2,}/g, " ").trim();
 }
@@ -5394,7 +5395,7 @@ function inferUspTagsFromLines(lines){
     const labelled=line.match(USP_TAG_LABEL);
     if(labelled && normaliseUspTagText(labelled[1])) return normaliseUspTagText(labelled[1]);
   }
-  const candidates=lines.map(normaliseUspTagText).filter(line=>line && / · /.test(line) && USP_TAG_KEYWORDS.test(line) && !ITINERARY_FOOTER_LABEL.test(line));
+  const candidates=lines.map(normaliseUspTagText).filter(line=>line && / · /.test(line) && USP_TAG_KEYWORDS.test(line));
   return candidates[0] || "";
 }
 function getItineraryLines(lines){
@@ -5403,8 +5404,9 @@ function getItineraryLines(lines){
   const labelMatch=lines[sectionIndex].match(ITINERARY_SECTION_LABEL);
   const itineraryLines=labelMatch&&labelMatch[1]?[labelMatch[1]]:[];
   for(let index=sectionIndex+1;index<lines.length;index+=1){
-    if(ITINERARY_FOOTER_LABEL.test(lines[index])) break;
-    itineraryLines.push(lines[index]);
+    const line=lines[index];
+    if(ITINERARY_FOOTER_LABEL.test(line)||isNonPortExtractionValue(line)||(itineraryLines.length&&USP_TAG_KEYWORDS.test(line))) break;
+    itineraryLines.push(line);
   }
   return itineraryLines;
 }
@@ -5583,6 +5585,11 @@ function getParsedOfferMissingCount(parsed){
   const p=parsed||{};
   return ['operatorKey','name','ship','price','boardlbl','nights'].filter(key=>!p[key]).length;
 }
+function clampParseConfidenceScore(score){
+  const numeric=Number(score);
+  if(!Number.isFinite(numeric)) return 0;
+  return Math.max(0,Math.min(100,Math.round(numeric)));
+}
 function applyParsedOfferToSlot(result,index){
   if(!result||!result.parsed) return false;
   while(offers.length<4) offers.push({});
@@ -5628,7 +5635,7 @@ function performMultiOfferImport(replaceConfirmed){
     const ok=missing===0||result.confidence==='high';
     const label=ok?`✓ Offer ${index+1} Loaded`:`⚠ Offer ${index+1} Needs Review`;
     const cls=ok?'high':'partial';
-    return `<div class="multi-offer-status-row" role="button" tabindex="0" title="Jump to Offer" onclick="jumpToMultiOfferStatus(${index})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();jumpToMultiOfferStatus(${index});}"><span class="multi-offer-status-label">${label}</span> <span class="parse-result ${cls}">Confidence ${result.score} · ${missing} missing fields</span></div>`;
+    return `<div class="multi-offer-status-row" role="button" tabindex="0" title="Jump to Offer" onclick="jumpToMultiOfferStatus(${index})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();jumpToMultiOfferStatus(${index});}"><span class="multi-offer-status-label">${label}</span> <span class="parse-result ${cls}">Confidence ${clampParseConfidenceScore(result.score)} · ${missing} missing fields</span></div>`;
   });
   if(blocks.length>4) rows.push(`<div>4 offers loaded. ${blocks.length-4} additional offers ignored.</div>`);
   setMultiOfferStatus(rows.join(""),results.some(r=>r.confidence!=='high')?'partial':'high');
