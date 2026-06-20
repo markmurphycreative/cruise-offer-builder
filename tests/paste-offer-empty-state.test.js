@@ -363,8 +363,8 @@ test('Paste Offer preserves airport names on airport-specific inclusion lines', 
   const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
   const examples = [
     ['Leeds Bradford Flights, Luggage & Transfers Included', 'Leeds Bradford Flights, Luggage & Transfers Included'],
-    ['Manchester Luggage Included', 'Manchester Luggage Included'],
-    ['Glasgow Transfers Included', 'Glasgow Transfers Included'],
+    ['Manchester Luggage Included', 'Manchester Flights, Luggage Included'],
+    ['Glasgow Transfers Included', 'Glasgow Flights, Transfers Included'],
     ['Belfast Included', 'Belfast Flights Included']
   ];
 
@@ -1188,7 +1188,7 @@ Barcelona • Marseille, France • Rome, for Civitavecchia • Ibiza • Palma,
 All Inclusive
 Adults Only • Premium Ship • Overnight Port Stays`, { renderIntelligence: false });
 
-  assert.equal(luggageResult.parsed.incl, 'Manchester Luggage Included');
+  assert.equal(luggageResult.parsed.incl, 'Manchester Flights, Luggage Included');
 
   const transfersResult = harness.context.parseOfferText(`MSC Cruises | MSC World Europa
 Eastern Mediterranean Discovery
@@ -1204,7 +1204,7 @@ Athens • Kusadasi, Turkey • Istanbul, Turkey • Mykonos • Athens
 Full Board
 Family • Entertainment • Value`, { renderIntelligence: false });
 
-  assert.equal(transfersResult.parsed.incl, 'Glasgow Transfers Included');
+  assert.equal(transfersResult.parsed.incl, 'Glasgow Flights, Transfers Included');
   assert.equal(transfersResult.parsed.ports, 'Athens • Kusadasi • Istanbul • Mykonos');
 });
 
