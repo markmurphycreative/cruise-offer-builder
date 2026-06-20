@@ -5293,7 +5293,7 @@ function getOrdinal(n){ const s=["th","st","nd","rd"],v=n%100; return s[(v-20)%1
 let pendingParseResult=null;
 const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};
 const OPERATOR_ALIASES={po:[/\bp\s*&\s*o\b/i,/\bp\s*and\s*o\b/i,/\bp&o\s+cruises\b/i],royal:[/\broyal\b/i,/\brci\b/i,/\broyal\s+caribbean\b/i],marella:[/\bmarella\b/i,/\bmarella\s+cruises\b/i],celebrity:[/\bcelebrity\b/i,/\bcelebrity\s+cruises\b/i],fred:[/\bfred\s+olsen\b/i,/\bfred\.?\s*olsen\b/i],cunard:[/\bcunard\b/i],msc:[/\bmsc\b/i],ncl:[/\bnorwegian\s+cruise\s+line\b/i,/\bncl\b/i],princess:[/\bprincess\b/i],ambassador:[/\bambassador\b/i],virgin:[/\bvirgin\b/i]};
-const AIRPORT_WORDS=["newcastle","manchester","edinburgh","leeds bradford","glasgow","birmingham","london","heathrow","gatwick","stansted","bristol"];
+const AIRPORT_WORDS=["newcastle","manchester","edinburgh","leeds bradford","glasgow","birmingham","london","heathrow","gatwick","stansted","bristol","belfast"];
 const PASTE_OPERATOR_BOARD_DEFAULTS={po:["FB","Full Board"],celebrity:["FB","Full Board"],fred:["FB","Full Board"],amawaterways:["FB","Full Board"],ambassador:["FB","Full Board"],ncl:["FB","Full Board"],cunard:["FB","Full Board"],marella:["AI","All Inclusive"],princess:["AI","All Inclusive"],msc:["AI","All Inclusive"],virgin:["AI","All Inclusive"],riviera:["AI","All Inclusive"]};
 function detectPassengerBasis(text){
   const value=String(text||"").replace(/\u00a0/g," ");
@@ -5323,6 +5323,19 @@ function getOperatorBoardDefault(operatorKey){
 }
 function formatAirportName(airport){
   return String(airport||"").split(/\s+/).map(part=>part.charAt(0).toUpperCase()+part.slice(1).toLowerCase()).join(" ");
+}
+function normaliseShortAirportIncludedLines(raw){
+  const airports=Array.isArray(AIRPORT_WORDS)?AIRPORT_WORDS:[];
+  return String(raw||"").split(/\n/).map(line=>{
+    const original=String(line||"");
+    const trimmed=original.trim();
+    if(!trimmed) return original;
+    for(const airport of airports){
+      const match=trimmed.match(new RegExp(`^(${escapeRegExp(airport)})\\s+included$`,"i"));
+      if(match) return `${formatAirportName(match[1])} Flights Included`;
+    }
+    return original;
+  }).join("\n");
 }
 function detectFlightAirport(text){
   const value=String(text||"").replace(/\u00a0/g," ");
@@ -5668,7 +5681,7 @@ function parseOffer(){
   pendingParseResult=result; if(!showParsePreview()) applyParsedOffer();
 }
 function parseOfferText(raw,options){
-  raw=String(raw||"");
+  raw=normaliseShortAirportIncludedLines(String(raw||""));
   if(!raw.trim()) return null;
   const renderIntelligence=!!(options&&options.renderIntelligence);
   const lines=raw.split(/\n/).map(l=>l.trim()).filter(Boolean); const txt=lines.join(" \n "); const parsed={}; let score=0;
@@ -5702,7 +5715,9 @@ function parseOfferText(raw,options){
   const inclusionSuggestion=typeof getOfferIntelligenceCardInclusionSuggestion==="function"?getOfferIntelligenceCardInclusionSuggestion(detectedInclusions):"";
   if(inclusionSuggestion){parsed.incl=inclusionSuggestion;score+=6;}
   else { const incl=lines.find(l=>/flights?|luggage|transfer|included|all inclusive/i.test(l)); if(incl){parsed.incl=incl;score+=6;} }
-  const airport=detectFlightAirport(txt); if(airport&&!parsed.incl){parsed.incl=airport+' Flights';score+=4;}
+  const airport=detectFlightAirport(txt);
+  if(airport&&parsed.incl&&new RegExp(`^${escapeRegExp(airport)}\\s+flights?\\s+included$`,"i").test(String(parsed.incl||"").trim())) parsed.incl="Flights Included";
+  if(airport&&!parsed.incl){parsed.incl=airport+' Flights';score+=4;}
   const knownShipMatch=findKnownOperatorShip(txt,parsed.operatorKey); if(knownShipMatch){ if(!parsed.ship){parsed.ship=knownShipMatch.ship;score+=8;} if(!parsed.operatorKey){parsed.operatorKey=knownShipMatch.operatorKey;score+=18;} }
   if(!parsed.board&&!parsed.boardlbl){const defaultBoard=getOperatorBoardDefault(parsed.operatorKey); if(defaultBoard){parsed.board=defaultBoard[0];parsed.boardlbl=defaultBoard[1];score+=6;}}
   if(!parsed.ship){const shipLine=lines.find(l=>/\b(cruise|explorer|symphony|arvia|voyager|queen|discovery)\b/i.test(l)); if(shipLine){const m=shipLine.match(/\b([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+){0,3})\b/); if(m) parsed.ship=m[1];}}

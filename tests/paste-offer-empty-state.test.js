@@ -131,7 +131,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     OPERATOR_HEADERS: { cunard: { name: 'Cunard' }, ncl: { name: 'Norwegian Cruise Line' }, po: { name: 'P&O Cruises' } },
     OPERATOR_SHIPS: { celebrity: ['Celebrity Apex', 'Celebrity Ascent'], amawaterways: ['AmaBella', 'AmaDouro', 'AmaMagna', 'Zambezi Queen'], cunard: ['Queen Anne'], ncl: ['Norwegian Prima', 'Pride of America'], po: ['Arvia'] },
     OPERATOR_ALIASES: { celebrity: [/\bcelebrity\b/i, /\bcelebrity\s+cruises\b/i], cunard: [/\bcunard\b/i], ncl: [/\bnorwegian\s+cruise\s+line\b/i, /\bncl\b/i], po: [/\bp\s*&\s*o\b/i, /\bp&o\s+cruises\b/i] },
-    AIRPORT_WORDS: ['newcastle', 'manchester', 'edinburgh', 'leeds bradford', 'glasgow', 'birmingham', 'london', 'heathrow', 'gatwick', 'stansted'],
+    AIRPORT_WORDS: ['newcastle', 'manchester', 'edinburgh', 'leeds bradford', 'glasgow', 'birmingham', 'london', 'heathrow', 'gatwick', 'stansted', 'belfast'],
     getLikelyTypos() { return []; },
     setSpellWarn() {},
     operatorChanged() {},
@@ -178,6 +178,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('detectBoardBasis'),
     extractFunction('getOperatorBoardDefault'),
     extractFunction('formatAirportName'),
+    extractFunction('normaliseShortAirportIncludedLines'),
     extractFunction('detectFlightAirport'),
     extractFunction('joinOfferIntelligenceSuggestionParts'),
     extractConst('EMBARKATION_PORTS'),
@@ -188,6 +189,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('getPortIntelligence'),
     extractFunction('isRecognisedPortTitleLine'),
     extractFunction('parseOfferText'),
+    extractFunction('getOfferIntelligenceAirport'),
     extractFunction('parseOffer'),
     extractFunction('setParseStatus'),
     extractFunction('showParsePreview'),
@@ -285,6 +287,29 @@ test('Trello hardening detects board variants and applies operator defaults with
   const pasted = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
   pasted.parse('P&O Cruises\nArvia\n7 nights\n£999pp\nAll Inclusive');
   assert.equal(pasted.context.offers[0].boardlbl, 'All Inclusive');
+});
+
+test('Paste Offer normalises shortened UK departure airport inclusion lines before parsing', () => {
+  const airports = ['Newcastle', 'Manchester', 'Glasgow', 'Edinburgh', 'Belfast'];
+  for (const airport of airports) {
+    const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+    const result = harness.context.parseOfferText(`Fred. Olsen Cruise Lines
+Bolette
+Sailing on Bolette from ${airport}
+${airport} Included
+7 nights
+From £999pp`, { renderIntelligence: false });
+    assert.equal(result.parsed.incl, 'Flights Included');
+    assert.equal(harness.context.getOfferIntelligenceAirport(result.parsed, result.rawText), airport);
+  }
+});
+
+test('Paste Offer does not normalise generic Included lines as departure airport inclusions', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  const examples = ['Flights Included', 'Luggage Included', 'Hotel Included', 'Transfers Included'];
+  for (const example of examples) {
+    assert.equal(harness.context.normaliseShortAirportIncludedLines(example), example);
+  }
 });
 
 test('Trello hardening detects UK airports only from flight wording', () => {
