@@ -1222,7 +1222,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v3.4.11";
+const APP_VERSION = "v3.4.12";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -5470,7 +5470,7 @@ function isStandalonePortCandidate(line){
     !/[£$€]|\d|\b(?:nights?|nts?|included|flights?|transfers?|luggage|cabin|from)\b/i.test(value);
 }
 const PARSED_PORT_COUNTRY_SUFFIXES=[
-  "Norway","France","Spain","Portugal","Italy","Malta","Sicily"
+  "Norway","France","Spain","Portugal","Italy","Malta","Sicily","Turkey"
 ];
 function removeParsedPortCountrySuffix(label){
   let value=String(label||"").replace(/\s+/g," ").trim();
