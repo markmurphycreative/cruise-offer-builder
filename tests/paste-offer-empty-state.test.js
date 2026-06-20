@@ -518,6 +518,7 @@ test('clearing Paste Offer resets only the selected offer, editor, preview and i
     extractFunction('resetPoaSuggestionState'),
     extractFunction('clearOfferIntelligencePanel'),
     extractFunction('cancelParsedOffer'),
+    extractFunction('refreshOfferWorkspaceAfterEmptyPaste'),
     extractFunction('resetActiveOfferFromEmptyPaste'),
     extractFunction('handlePasteOfferInput')
   ].join('\n'), context);
