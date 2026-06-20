@@ -166,6 +166,8 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('normalisePortComparisonValue'),
     extractFunction('isExcludedParsedPort'),
     extractFunction('isStandalonePortCandidate'),
+    extractConst('PARSED_PORT_COUNTRY_SUFFIXES'),
+    extractFunction('removeParsedPortCountrySuffix'),
     extractFunction('cleanParsedPorts'),
     extractFunction('escapeRegExp'),
     extractFunction('findKnownOperatorShip'),
@@ -519,19 +521,19 @@ test('Paste Offer captures every Patagonia & Argentina destination across the fu
   harness.parse(PATAGONIA_AND_ARGENTINA_OFFER);
 
   assert.equal(harness.context.offers[0].ports, [
-    'Buenos Aires', 'Montevideo', 'Port Stanley', 'Falkland Islands', 'Cape Horn', 'Chile', 'Ushuaia',
+    'Buenos Aires', 'Montevideo', 'Port Stanley, Falkland Islands', 'Cape Horn, Chile', 'Ushuaia',
     'Strait of Magellan', 'Punta Arenas', 'Puerto Madryn', 'Punta Del Este'
   ].join(' • '));
   assert.doesNotMatch(harness.context.offers[0].ports, /At Sea|Overnight|Luggage|Transfers/i);
 });
 
-test('Paste Offer keeps the existing Panama Canal & Southern Caribbean parser output unchanged', () => {
+test('Paste Offer keeps comma-qualified Panama Canal & Southern Caribbean ports atomic', () => {
   const harness = createHarness([], 0, { hasParsePreviewModal: false });
   harness.parse(CELEBRITY_CRUISES_OFFER);
 
   assert.equal(harness.context.offers[0].ports, [
-    'Fort Lauderdale', 'Florida', 'Cartagena', 'Colombia', 'Panama Canal (Cruising)', 'Colon', 'Panama',
-    'Oranjestad', 'Aruba', 'Willemstad', 'Curacao', 'Kralendijk', 'Bonaire', 'Fort Lauderdale', 'Florida'
+    'Fort Lauderdale, Florida', 'Cartagena, Colombia', 'Panama Canal (Cruising)', 'Colon, Panama',
+    'Oranjestad, Aruba', 'Willemstad, Curacao', 'Kralendijk, Bonaire', 'Fort Lauderdale, Florida'
   ].join(' • '));
 });
 
@@ -541,15 +543,13 @@ test('Paste Offer itinerary cleanup excludes sea days and overnight labels while
 Overnight Port Stay - overnight stay - Overnight - AT SEA`);
 
   const ports = harness.context.offers[0].ports.split(' • ');
-  assert.equal(ports.includes('Fort Lauderdale'), true);
-  assert.equal(ports.includes('Cartagena'), true);
+  assert.equal(ports.includes('Fort Lauderdale, Florida'), true);
+  assert.equal(ports.includes('Cartagena, Colombia'), true);
   assert.equal(ports.includes('Panama Canal (Cruising)'), true);
-  assert.equal(ports.includes('Colon'), true);
-  assert.equal(ports.includes('Oranjestad'), true);
-  assert.equal(ports.includes('Willemstad'), true);
-  assert.equal(ports.includes('Curacao'), true);
-  assert.equal(ports.includes('Kralendijk'), true);
-  assert.equal(ports.includes('Bonaire'), true);
+  assert.equal(ports.includes('Colon, Panama'), true);
+  assert.equal(ports.includes('Oranjestad, Aruba'), true);
+  assert.equal(ports.includes('Willemstad, Curacao'), true);
+  assert.equal(ports.includes('Kralendijk, Bonaire'), true);
   assert.equal(ports.some(port => /^(?:at sea|overnight port stay|overnight stay|overnight)$/i.test(port)), false);
 });
 
@@ -1037,6 +1037,39 @@ Balcony Cabin • Premium Ship • Fjords`, { renderIntelligence: false });
   assert.equal(result.parsed.ports, 'Southampton • Stavanger • Olden • Geiranger • Bergen');
   assert.equal(result.parsed.tags, 'Balcony Cabin · Premium Ship · Fjords');
   assert.doesNotMatch(result.parsed.ports, /Premium Ship|Fjords|Balcony Cabin|Full Board/);
+});
+
+test('Paste Offer removes comma country qualifiers without creating standalone country ports', () => {
+  const harness = createHarness([{}, {}, {}, {}]);
+  const result = harness.context.parseOfferText(`Celebrity Cruises | Celebrity Apex
+Norwegian Fjords
+7 Nights • 18th July 2027
+
+Newcastle Flights Included
+Balcony Cabin
+From £1,899pp
+
+You'll visit:
+Southampton • Stavanger, Norway • Olden, Norway • Geiranger, Norway • Bergen, Norway • Southampton
+
+Full Board
+Balcony Cabin • Premium Ship • Fjords`, { renderIntelligence: false });
+
+  assert.equal(result.parsed.ports, 'Southampton • Stavanger • Olden • Geiranger • Bergen');
+  assert.doesNotMatch(result.parsed.ports, /Norway|Premium Ship|Fjords/);
+});
+
+test('Paste Offer preserves comma aliases inside port labels while removing trailing country suffixes', () => {
+  const harness = createHarness([{}, {}, {}, {}]);
+  const result = harness.context.parseOfferText(`Royal Caribbean | Liberty of the Seas
+Spain & France
+8 Nights • 25th September 2026
+
+You'll visit:
+Southampton • Paris, Le Havre, France • Bilbao, Spain • La Coruna, Spain • Vigo, Spain • Cherbourg, France • Southampton`, { renderIntelligence: false });
+
+  assert.equal(result.parsed.ports, 'Southampton • Paris, Le Havre • Bilbao • La Coruna • Vigo • Cherbourg');
+  assert.doesNotMatch(result.parsed.ports, /France|Spain/);
 });
 
 test('Paste Offer rejects marketing labels, cabin types, USPs and board basis as ports', () => {
