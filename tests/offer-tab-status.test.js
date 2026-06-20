@@ -93,11 +93,20 @@ test('empty offer state hides tabs only when no offers are loaded', () => {
   const toggles = [];
   const tabs = { classList: { toggle(name, active){ toggles.push(['tabs', name, active]); } } };
   const empty = { classList: { toggle(name, active){ toggles.push(['empty', name, active]); } } };
+  const activeLabel = { classList: { toggle(name, active){ toggles.push(['label', name, active]); } } };
   const context = {
     offers: [{}, {}, {}, {}],
     document: {
-      querySelector(selector){ return selector === '.offer-tabs' ? tabs : null; },
-      getElementById(id){ return id === 'offer-empty-state' ? empty : null; }
+      querySelector(selector){
+        if(selector === '.offer-tabs') return tabs;
+        if(selector === '.reorder-actions') return { classList: { toggle: (cls, value) => toggles.push(['actions', cls, value]) } };
+        return null;
+      },
+      getElementById(id){
+        if(id === 'offer-empty-state') return empty;
+        if(id === 'active-offer-label') return activeLabel;
+        return null;
+      }
     }
   };
   vm.createContext(context);
@@ -108,11 +117,11 @@ test('empty offer state hides tabs only when no offers are loaded', () => {
   ].join('\n'), context);
 
   context.updateEmptyOfferState();
-  assert.deepEqual(toggles.splice(0), [['tabs', 'empty-hidden', true], ['empty', 'active', true]]);
+  assert.deepEqual(toggles.splice(0), [['tabs', 'empty-hidden', true], ['empty', 'active', true], ['actions', 'empty-hidden', true], ['label', 'empty-hidden', true]]);
 
   context.offers[0] = { name: 'Loaded Offer' };
   context.updateEmptyOfferState();
-  assert.deepEqual(toggles.splice(0), [['tabs', 'empty-hidden', false], ['empty', 'active', false]]);
+  assert.deepEqual(toggles.splice(0), [['tabs', 'empty-hidden', false], ['empty', 'active', false], ['actions', 'empty-hidden', false], ['label', 'empty-hidden', false]]);
 });
 
 test('offer tab labels switch from fallback text to operator and ship identifiers for loaded offers', () => {
