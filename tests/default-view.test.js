@@ -51,11 +51,11 @@ test('view selector indicator updates instantly while retaining segmented-contro
 
 test('Offer 1–4 selector reuses the sliding segmented-control pill while retaining status dots and offer switching hooks', () => {
   assert.match(html, /<div class="offer-tabs">\s*<span class="offer-pill" id="offer-pill" aria-hidden="true"><\/span>/);
-  assert.match(html, /<div class="offer-empty-state" id="offer-empty-state" role="status" aria-live="polite">[\s\S]*?NO OFFERS LOADED[\s\S]*?Load a campaign, sheet, CSV or paste an offer to begin\./);
+  assert.match(html, /<div class="offer-empty-state" id="offer-empty-state" role="button" tabindex="0" title="Open Campaign Import" aria-label="Open Campaign Import" onclick="openCampaignImportFromEmptyState\(\)" onkeydown="handleEmptyOfferStateKeydown\(event\)">[\s\S]*?NO OFFERS LOADED[\s\S]*?Load a campaign, sheet, CSV or paste an offer to begin\./);
   assert.match(html, /\.offer-tabs\{[^}]*border:1px solid var\(--border\);[^}]*border-radius:0;[^}]*overflow:hidden;[^}]*isolation:isolate;/);
   assert.match(html, /\.offer-tabs\.empty-hidden\{display:none;\}/);
-  assert.match(html, /\.offer-empty-state\{[^}]*border:1px solid var\(--gold\);[^}]*background:var\(--gold\);[^}]*text-align:center;/);
-  assert.match(html, /\.offer-empty-state-title\{[^}]*font-weight:700;[^}]*text-transform:uppercase;[^}]*color:var\(--navy\);/);
+  assert.match(html, /\.offer-empty-state\{[^}]*border:1px solid var\(--gold\);[^}]*background:var\(--gold\);[^}]*text-align:center;[^}]*cursor:pointer;/);
+  assert.match(html, /\.offer-empty-state-title\{[^}]*font-weight:600;[^}]*text-transform:uppercase;[^}]*color:var\(--navy\);/);
   assert.match(html, /\.offer-empty-state-copy\{[^}]*color:#fff;/);
   assert.doesNotMatch(html, /\.offer-empty-state-copy\{[^}]*text-shadow:/);
   assert.match(html, /\.offer-pill\{[^}]*border-radius:0;[^}]*background:linear-gradient\(180deg,#b2a374 0%,var\(--gold\) 100%\);[^}]*transform:translateX\(0\);[^}]*transition:transform \.2s ease,width \.2s ease;/);
@@ -71,6 +71,8 @@ test('Offer 1–4 selector reuses the sliding segmented-control pill while retai
   }
   assert.match(html, /function syncOfferSelector\(\)\{[\s\S]*?updateEmptyOfferState\(\);[\s\S]*?t\.classList\.toggle\('active', idx === activeIndex\);[\s\S]*?updateOfferPill\(\);/);
   assert.match(html, /function updateOfferPill\(\)\{\s*const activeTab=document\.getElementById\('ot' \+ cur\);\s*updateSegmentedPill\(document\.getElementById\('offer-pill'\), activeTab&&activeTab\.parentElement\);/);
+  assert.match(html, /function openCampaignImportFromEmptyState\(\)\{[\s\S]*?openSectionByKey\("csv-import"\);[\s\S]*?scrollIntoView\(\{block:"start",behavior:"smooth"\}\);[\s\S]*?document\.getElementById\("sheets-url"\);[\s\S]*?focus\(\{preventScroll:true\}\);[\s\S]*?queueAutosave\(\);/);
+  assert.match(html, /function handleEmptyOfferStateKeydown\(event\)\{[\s\S]*?event\.key!=="Enter"&&event\.key!==" "[\s\S]*?event\.preventDefault\(\);[\s\S]*?openCampaignImportFromEmptyState\(\);/);
 });
 
 test('Single and Email previews display at 75% of their prior on-screen scale while All 4 retains its fit scale', () => {
