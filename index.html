@@ -168,6 +168,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .parse-result.high{color:var(--green);}
 .parse-result.partial{color:var(--amber);}
 .parse-result.low{color:var(--red);}
+.multi-offer-status-row{display:flex;align-items:center;gap:6px;width:100%;margin-top:4px;padding:2px 0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;}
+.multi-offer-status-row:hover .multi-offer-status-label{text-decoration:underline;}
+.multi-offer-status-label{font-weight:700;}
 .parse-field-flash{animation:parseFlash 1.6s ease-out;}
 @keyframes parseFlash{0%{background:#fff8d6;border-color:var(--gold);}100%{background:#fafaf8;border-color:var(--border);}}
 .parse-preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;}
@@ -640,6 +643,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       <img class="splash-icon" src="assets/operator-logos/cb-icon.png" alt="" aria-hidden="true">
       <div class="splash-title">Cruise Offer Builder</div>
       <div class="splash-brand">Dawson &amp; Sanderson</div>
+      <div class="version-tag" data-app-version></div>
       <div class="splash-actions">
         <button class="splash-btn gold" id="splash-continue-session-btn" type="button" style="display:none;">Continue Last Session</button>
         <button class="splash-btn gold" id="splash-open-builder-btn" type="button">New Campaign</button>
@@ -1210,7 +1214,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v3.4.0";
+const APP_VERSION = "v3.4.1";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -5467,6 +5471,21 @@ function splitMultiOfferImport(raw){
   return blocks.map(block=>block.split("\n").filter(line=>!isDividerLine(line)&&!isOfferLabelLine(line)).join("\n").trim()).filter(Boolean);
 }
 function setMultiOfferStatus(html,level){ const el=document.getElementById("multi-offer-result"); if(!el) return; el.innerHTML=html||""; el.className='parse-result '+(level||''); }
+function openOfferDetailsSection(){
+  const section=document.querySelector('.section[data-section-key="offer-details"]');
+  const hdr=section&&section.querySelector('.section-hdr');
+  if(!hdr) return null;
+  if(hdr.classList.contains("collapsed")) setSectionCollapsedByHeader(hdr,false);
+  return section;
+}
+function jumpToMultiOfferStatus(index){
+  const next=Number(index);
+  if(!Number.isInteger(next)||next<0||next>=4) return false;
+  sv(next);
+  const section=openOfferDetailsSection();
+  if(section&&typeof section.scrollIntoView==="function") section.scrollIntoView({block:"start"});
+  return true;
+}
 function resetMultiOfferState(){
   const raw=document.getElementById("multi-offer-paste"); if(raw) raw.value="";
   setMultiOfferStatus("","");
@@ -5531,7 +5550,7 @@ function performMultiOfferImport(replaceConfirmed){
     const ok=missing===0||result.confidence==='high';
     const label=ok?`✓ Offer ${index+1} Loaded`:`⚠ Offer ${index+1} Needs Review`;
     const cls=ok?'high':'partial';
-    return `<div><button class="abtn btn-compact" type="button" onclick="cur=${index};loadOfferToEditor(${index});rv();document.querySelectorAll('.otab').forEach((t,idx)=>t.classList.toggle('active',idx===${index}))">${label}</button> <span class="parse-result ${cls}">Confidence ${result.score} · ${missing} missing fields</span></div>`;
+    return `<div class="multi-offer-status-row" role="button" tabindex="0" title="Jump to Offer" onclick="jumpToMultiOfferStatus(${index})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();jumpToMultiOfferStatus(${index});}"><span class="multi-offer-status-label">${label}</span> <span class="parse-result ${cls}">Confidence ${result.score} · ${missing} missing fields</span></div>`;
   });
   if(blocks.length>4) rows.push(`<div>4 offers loaded. ${blocks.length-4} additional offers ignored.</div>`);
   setMultiOfferStatus(rows.join(""),results.some(r=>r.confidence!=='high')?'partial':'high');
