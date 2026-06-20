@@ -54,12 +54,13 @@ test('Offer 1–4 selector reuses the sliding segmented-control pill while retai
   assert.match(html, /<div class="offer-empty-state active" id="offer-empty-state" role="button" tabindex="0" title="Open Campaign Import" aria-label="Open Campaign Import" onclick="openCampaignImportFromEmptyState\(\)" onkeydown="handleEmptyOfferStateKeydown\(event\)">[\s\S]*?NO OFFERS LOADED[\s\S]*?Load a campaign, sheet, CSV or paste an offer to begin\./);
   assert.match(html, /\.offer-tabs\{[^}]*border:1px solid var\(--border\);[^}]*border-radius:0;[^}]*overflow:hidden;[^}]*isolation:isolate;/);
   assert.match(html, /\.offer-tabs\.empty-hidden\{display:none;\}/);
-  assert.match(html, /\.offer-empty-state\{[^}]*min-height:94px;[^}]*border:1px solid var\(--gold\);[^}]*background:var\(--gold\);[^}]*text-align:center;[^}]*cursor:pointer;[^}]*justify-content:center;/);
+  assert.match(html, /\.offer-empty-state\{[^}]*min-height:74px;[^}]*padding:8px 12px;[^}]*border:1px solid var\(--border\);[^}]*border-radius:var\(--radius\);[^}]*background:#fff;[^}]*text-align:center;[^}]*cursor:pointer;[^}]*justify-content:center;/);
   assert.match(html, /\.offer-empty-state\.active\{display:flex;\}/);
   assert.match(html, /\.offer-empty-state-title\{[^}]*font-weight:600;[^}]*text-transform:uppercase;[^}]*color:var\(--navy\);/);
-  assert.match(html, /\.offer-empty-state-copy\{[^}]*color:#fff;/);
+  assert.match(html, /\.offer-empty-state-copy\{[^}]*color:var\(--muted\);/);
   assert.match(html, /<div class="offer-context-label empty-hidden" id="active-offer-label" aria-live="polite">Editing Offer 1 of 4<\/div>/);
   assert.match(html, /\.offer-context-label\.empty-hidden\{display:none;\}/);
+  assert.doesNotMatch(html, /\.offer-empty-state\{[^}]*background:var\(--gold\)/);
   assert.doesNotMatch(html, /\.offer-empty-state-copy\{[^}]*text-shadow:/);
   assert.match(html, /\.offer-pill\{[^}]*border-radius:0;[^}]*background:linear-gradient\(180deg,#b2a374 0%,var\(--gold\) 100%\);[^}]*transform:translateX\(0\);[^}]*transition:transform \.2s ease,width \.2s ease;/);
   assert.match(html, /\.otab\.active\{color:var\(--navy\);border-radius:0;box-shadow:inset 0 -2px 0 rgba\(14,27,42,\.18\);\}/);
