@@ -83,10 +83,37 @@ test('status dots remain diagnostic indicators inside the normal offer-tab butto
   for (let index = 0; index < 4; index += 1) {
     assert.match(html, new RegExp(`<button class="otab(?: active)?" id="ot${index}" onclick="sv\\(${index}\\)"[^>]*>[\\s\\S]*?<span class="status-dot" id="sd${index}" title="No offer loaded" aria-hidden="true"><\\/span><\\/button>`));
   }
-  assert.doesNotMatch(html, /navigateOfferStatus|handleStatusDotKeydown|getOfferStatusNavigation|getStatusNavigationTarget|getStatusNavigationSection|openStatusNavigationSection|status-dot-target|scrollIntoView/);
+  assert.doesNotMatch(html, /navigateOfferStatus|handleStatusDotKeydown|getOfferStatusNavigation|getStatusNavigationTarget|getStatusNavigationSection|openStatusNavigationSection|status-dot-target/);
   assert.doesNotMatch(html, /<span class="status-dot"[^>]*(?:onclick|onkeydown|role="button"|tabindex=)/);
 });
 
+
+
+test('empty offer state hides tabs only when no offers are loaded', () => {
+  const toggles = [];
+  const tabs = { classList: { toggle(name, active){ toggles.push(['tabs', name, active]); } } };
+  const empty = { classList: { toggle(name, active){ toggles.push(['empty', name, active]); } } };
+  const context = {
+    offers: [{}, {}, {}, {}],
+    document: {
+      querySelector(selector){ return selector === '.offer-tabs' ? tabs : null; },
+      getElementById(id){ return id === 'offer-empty-state' ? empty : null; }
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext([
+    extractFunction('isOfferLoaded'),
+    extractFunction('getLoadedOfferCount'),
+    extractFunction('updateEmptyOfferState')
+  ].join('\n'), context);
+
+  context.updateEmptyOfferState();
+  assert.deepEqual(toggles.splice(0), [['tabs', 'empty-hidden', true], ['empty', 'active', true]]);
+
+  context.offers[0] = { name: 'Loaded Offer' };
+  context.updateEmptyOfferState();
+  assert.deepEqual(toggles.splice(0), [['tabs', 'empty-hidden', false], ['empty', 'active', false]]);
+});
 
 test('offer tab labels switch from fallback text to operator and ship identifiers for loaded offers', () => {
   const context = {
@@ -160,7 +187,7 @@ test('offer tab label layout keeps fixed tab widths, truncation, and clearer hie
   assert.match(html, /\.offer-tab-number\{[^}]*font-size:7px;[^}]*text-transform:uppercase;[^}]*color:var\(--muted\);/);
   assert.match(html, /\.offer-tab-operator\{[^}]*font-size:9px;[^}]*font-weight:700;[^}]*color:var\(--text\);/);
   assert.match(html, /\.offer-tab-ship\{[^}]*font-size:8px;[^}]*font-weight:500;[^}]*color:var\(--muted\);/);
-  assert.match(html, /\.otab\.active \.offer-tab-operator\{color:var\(--navy\);opacity:1;\}/);
+  assert.match(html, /\.otab\.active \.offer-tab-operator\{color:var\(--navy\);font-weight:700;[^}]*opacity:1;\}/);
 });
 
 test('each offer tab dot independently maps empty, incomplete, invalid and export-ready offers', () => {

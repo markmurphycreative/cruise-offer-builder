@@ -51,19 +51,22 @@ test('view selector indicator updates instantly while retaining segmented-contro
 
 test('Offer 1–4 selector reuses the sliding segmented-control pill while retaining status dots and offer switching hooks', () => {
   assert.match(html, /<div class="offer-tabs">\s*<span class="offer-pill" id="offer-pill" aria-hidden="true"><\/span>/);
+  assert.match(html, /<div class="offer-empty-state" id="offer-empty-state" role="status" aria-live="polite">[\s\S]*?No offers loaded[\s\S]*?Load a campaign, sheet, CSV or paste an offer to begin\./);
   assert.match(html, /\.offer-tabs\{[^}]*border:1px solid var\(--border\);[^}]*border-radius:0;[^}]*overflow:hidden;[^}]*isolation:isolate;/);
+  assert.match(html, /\.offer-tabs\.empty-hidden\{display:none;\}/);
+  assert.match(html, /\.offer-empty-state\{[^}]*border:1px solid var\(--border\);[^}]*background:#fafaf8;[^}]*text-align:center;/);
   assert.match(html, /\.offer-pill\{[^}]*border-radius:0;[^}]*background:linear-gradient\(180deg,#b2a374 0%,var\(--gold\) 100%\);[^}]*transform:translateX\(0\);[^}]*transition:transform \.2s ease,width \.2s ease;/);
   assert.match(html, /\.otab\.active\{color:var\(--navy\);border-radius:0;box-shadow:inset 0 -2px 0 rgba\(14,27,42,\.18\);\}/);
   assert.doesNotMatch(html, /\.otab\.active\{[^}]*border-bottom/);
   assert.match(html, /\.offer-tab-item\{[^}]*position:relative;[^}]*flex:1;[^}]*min-width:0;/);
-  assert.match(html, /\.otab\{[^}]*width:100%;[^}]*min-height:47px;[^}]*padding:7px 4px 15px;[^}]*font-size:10px;/);
+  assert.match(html, /\.otab\{[^}]*width:100%;[^}]*min-height:47px;[^}]*padding:7px 5px 15px;[^}]*font-size:10px;/);
   assert.match(html, /\.offer-tab-label\{[^}]*gap:2px;[^}]*line-height:1\.12;/);
   assert.match(html, /\.status-dot\{[^}]*position:absolute;[^}]*width:5\.8px;[^}]*height:5\.8px;[^}]*border-radius:50%;/);
   assert.match(html, /\.status-dot\.green\{background:var\(--green\);\}\s*\.status-dot\.amber\{background:var\(--amber\);\}\s*\.status-dot\.red\{background:var\(--red\);\}/);
   for(let i = 0; i < 4; i += 1){
-    assert.match(html, new RegExp('<div class="offer-tab-item"><button class="otab(?: active)?" id="ot' + i + '" onclick="sv\\(' + i + '\\)"[^>]*><span>Offer ' + (i + 1) + '<\/span><span class="status-dot" id="sd' + i + '" title="No offer loaded" aria-hidden="true"><\/span><\/button><\/div>'));
+    assert.match(html, new RegExp('<div class="offer-tab-item"><button class="otab(?: active)?" id="ot' + i + '" onclick="sv\\(' + i + '\\)"[\\s\\S]*?<span class="status-dot" id="sd' + i + '" title="No offer loaded" aria-hidden="true"><\\/span><\\/button><\\/div>'));
   }
-  assert.match(html, /function syncOfferSelector\(\)\{[\s\S]*?t\.classList\.toggle\('active', idx === activeIndex\);[\s\S]*?updateOfferPill\(\);/);
+  assert.match(html, /function syncOfferSelector\(\)\{[\s\S]*?updateEmptyOfferState\(\);[\s\S]*?t\.classList\.toggle\('active', idx === activeIndex\);[\s\S]*?updateOfferPill\(\);/);
   assert.match(html, /function updateOfferPill\(\)\{\s*const activeTab=document\.getElementById\('ot' \+ cur\);\s*updateSegmentedPill\(document\.getElementById\('offer-pill'\), activeTab&&activeTab\.parentElement\);/);
 });
 

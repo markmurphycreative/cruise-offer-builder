@@ -40,6 +40,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 
 /* ── OFFER SEGMENTED CONTROL ── */
 .offer-tabs{position:relative;display:flex;margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:0;background:#fafaf8;flex-shrink:0;overflow:hidden;isolation:isolate;}
+.offer-tabs.empty-hidden{display:none;}
+.offer-empty-state{display:none;margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);padding:14px 12px;border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;text-align:center;flex-shrink:0;}
+.offer-empty-state.active{display:block;}
+.offer-empty-state-title{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--navy);margin-bottom:4px;}
+.offer-empty-state-copy{font-size:10px;line-height:1.4;color:var(--muted);}
 .offer-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:0;background:linear-gradient(180deg,#b2a374 0%,var(--gold) 100%);box-shadow:0 1px 4px rgba(14,27,42,.22),inset 0 0 0 1px rgba(255,255,255,.18);transform:translateX(0);transition:transform .2s ease,width .2s ease;pointer-events:none;}
 .offer-tab-item{position:relative;z-index:1;flex:1;min-width:0;}
 .otab{position:relative;width:100%;height:100%;min-height:47px;padding:7px 5px 15px;font-size:10px;font-weight:500;border:none;background:transparent;color:var(--muted);cursor:pointer;letter-spacing:.035em;transition:color .18s ease,background .18s ease,box-shadow .18s ease,opacity .18s ease;display:flex;align-items:flex-start;justify-content:center;}
@@ -686,6 +691,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <div class="offer-tab-item"><button class="otab" id="ot2" onclick="sv(2)" draggable="true" data-offer-tab="2" title="No offer loaded" aria-label="Offer 3 status: No offer loaded"><span class="offer-tab-label"><span class="offer-tab-number">Offer 3</span></span><span class="offer-lock-toggle" role="button" tabindex="0" id="lock-toggle-2" onclick="toggleOfferLockFromTile(event,2)" onkeydown="if(event.key==='Enter'||event.key===' ') toggleOfferLockFromTile(event,2)" aria-label="Lock offer" title="Lock offer"><svg class="lock-icon-open" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 7.2-2.4"></path></svg><svg class="lock-icon-locked" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span><span class="status-dot" id="sd2" title="No offer loaded" aria-hidden="true"></span></button></div>
     <div class="offer-tab-item"><button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3" title="No offer loaded" aria-label="Offer 4 status: No offer loaded"><span class="offer-tab-label"><span class="offer-tab-number">Offer 4</span></span><span class="offer-lock-toggle" role="button" tabindex="0" id="lock-toggle-3" onclick="toggleOfferLockFromTile(event,3)" onkeydown="if(event.key==='Enter'||event.key===' ') toggleOfferLockFromTile(event,3)" aria-label="Lock offer" title="Lock offer"><svg class="lock-icon-open" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 7.2-2.4"></path></svg><svg class="lock-icon-locked" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span><span class="status-dot" id="sd3" title="No offer loaded" aria-hidden="true"></span></button></div>
   </div>
+  <div class="offer-empty-state" id="offer-empty-state" role="status" aria-live="polite">
+    <div class="offer-empty-state-title">No offers loaded</div>
+    <div class="offer-empty-state-copy">Load a campaign, sheet, CSV or paste an offer to begin.</div>
+  </div>
   <div class="offer-context-label" id="active-offer-label" aria-live="polite">Editing Offer 1 of 4</div>
   <div class="reorder-group">
     <div class="reorder-label"><h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="m3 6 1 1 2-2"></path><path d="m3 12 1 1 2-2"></path><path d="m3 18 1 1 2-2"></path></svg>Reorder Cards</h3><div class="reorder-actions" aria-label="Reorder selected card"><button class="abtn reorder-btn" id="move-left-btn" onclick="moveOfferLeft()" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button><button class="abtn reorder-btn" id="move-right-btn" onclick="moveOfferRight()" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button></div></div>
@@ -1213,7 +1222,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v3.4.2.1";
+const APP_VERSION = "v3.4.3";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -3114,8 +3123,19 @@ function updateSectionCompletionIndicators(){
   const state=getCurrentSectionCompletionState();
   Object.keys(state).forEach(key=>setSectionCompletionIndicator(key,state[key]));
 }
+function getLoadedOfferCount(){
+  return offers.filter(isOfferLoaded).length;
+}
+function updateEmptyOfferState(){
+  const hasLoadedOffers=getLoadedOfferCount()>0;
+  const tabs=document.querySelector(".offer-tabs");
+  const empty=document.getElementById("offer-empty-state");
+  if(tabs) tabs.classList.toggle("empty-hidden", !hasLoadedOffers);
+  if(empty) empty.classList.toggle("active", !hasLoadedOffers);
+}
 function updateAllStatus(){
   if(typeof updateOfferTabLabels==="function") updateOfferTabLabels();
+  if(typeof updateEmptyOfferState==="function") updateEmptyOfferState();
   for(let i=0;i<4;i++){
     const dot=document.getElementById("sd"+i); if(!dot) continue;
     const s=getOfferStatus(i); dot.className="status-dot"+(s?" "+s:"");
@@ -3142,7 +3162,7 @@ function getPreviewOfferStatusLabel(i){
 function updatePreviewTitle(){
   const title=document.getElementById("preview-title");
   if(!title) return;
-  const loadedOffers=offers.filter(isOfferLoaded).length;
+  const loadedOffers=typeof getLoadedOfferCount==="function"?getLoadedOfferCount():offers.filter(isOfferLoaded).length;
   if(viewMode==="all"){
     title.textContent="ALL 4 CARDS"+(loadedOffers?` • ${loadedOffers}/${offers.length} LOADED`:"");
     return;
@@ -7045,6 +7065,7 @@ function updateActiveOfferLabel(){
   label.textContent=`Editing Offer ${cur+1} of 4`;
 }
 function syncOfferSelector(){
+  if(typeof updateEmptyOfferState==="function") updateEmptyOfferState();
   const activeIndex = cur;
   document.querySelectorAll('.otab').forEach(function(t, idx){
     t.classList.toggle('active', idx === activeIndex);
