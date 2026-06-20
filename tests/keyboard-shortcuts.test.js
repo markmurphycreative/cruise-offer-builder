@@ -6,8 +6,8 @@ import vm from 'node:vm';
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const shortcuts = html.match(/\/\/ Lightweight global shortcuts:[\s\S]*?document\.addEventListener\('change',releaseSelectShortcutFocus\);/)?.[0];
 
-test('visible app version is v3.4.5', () => {
-  assert.match(html, /const APP_VERSION = \"v3\.4\.5\";/);
+test('visible app version is v3.4.6', () => {
+  assert.match(html, /const APP_VERSION = \"v3\.4\.6\";/);
 });
 
 function setup(){
@@ -73,7 +73,7 @@ test('the global keyboard shortcut listener is attached exactly once', () => {
 
 test('shortcuts modal and small toolbar trigger list the supported keyboard shortcuts', () => {
   assert.match(html, /<button class="shortcuts-trigger"[^>]*onclick="openShortcutsModal\(\)"[^>]*>Shortcuts<\/button>/);
-  assert.match(html, /id="shortcuts-modal"[\s\S]*?Keyboard Shortcuts[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>Z<\/kbd>[\s\S]*?<kbd>1<\/kbd>[\s\S]*?<kbd>Tab<\/kbd>[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>S<\/kbd>[\s\S]*?<kbd>R<\/kbd>[\s\S]*?<kbd>H<\/kbd>[\s\S]*?<kbd>O<\/kbd>[\s\S]*?<kbd>P<\/kbd>[\s\S]*?<kbd>C<\/kbd>[\s\S]*?<kbd>U<\/kbd>[\s\S]*?<kbd>L<\/kbd>[\s\S]*?<kbd>I<\/kbd>[\s\S]*?<kbd>X<\/kbd>[\s\S]*?<kbd>Shift<\/kbd> \+ <kbd>C<\/kbd>[\s\S]*?<kbd>←<\/kbd> \/ <kbd>→<\/kbd>[\s\S]*?<dt>Campaign Summary<\/dt><dd><kbd>M<\/kbd><\/dd>[\s\S]*?<kbd>\?<\/kbd>[\s\S]*?<kbd>Esc<\/kbd>/);
+  assert.match(html, /id="shortcuts-modal"[\s\S]*?Keyboard Shortcuts[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>Z<\/kbd>[\s\S]*?<kbd>1<\/kbd>[\s\S]*?<kbd>Tab<\/kbd>[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>S<\/kbd>[\s\S]*?<kbd>R<\/kbd>[\s\S]*?<kbd>H<\/kbd>[\s\S]*?<kbd>O<\/kbd>[\s\S]*?<kbd>P<\/kbd>[\s\S]*?<kbd>C<\/kbd>[\s\S]*?<kbd>U<\/kbd>[\s\S]*?<kbd>L<\/kbd>[\s\S]*?<dt>Open \/ Close AI Copy<\/dt><dd><kbd>G<\/kbd><\/dd>[\s\S]*?<kbd>X<\/kbd>[\s\S]*?<kbd>Shift<\/kbd> \+ <kbd>C<\/kbd>[\s\S]*?<kbd>←<\/kbd> \/ <kbd>→<\/kbd>[\s\S]*?<dt>Campaign Summary<\/dt><dd><kbd>M<\/kbd><\/dd>[\s\S]*?<kbd>\?<\/kbd>[\s\S]*?<kbd>Esc<\/kbd>/);
 });
 
 test('card, view, undo, redo, export, refresh, UTM, CTA, help, and Escape shortcuts reuse existing actions', () => {
@@ -145,6 +145,7 @@ test('section shortcuts toggle each sidebar section, scroll opened sections, and
     ['c','cta-assets','cta-enabled'],
     ['u','utm-link',null],
     ['l','campaign-library',null],
+    ['g','ai-copy','ai-prompt-type'],
     ['i','ai-copy','ai-prompt-type'],
     ['x','export-cards',null]
   ];
@@ -201,7 +202,7 @@ test('normal typing and unrelated section shortcuts remain blocked inside form f
 });
 
 test('all section shortcuts collapse their own open section when focus is inside that section', () => {
-  const cases=[['h','hero-image'],['c','cta-assets'],['u','utm-link'],['l','campaign-library'],['i','ai-copy'],['x','export-cards']];
+  const cases=[['h','hero-image'],['c','cta-assets'],['u','utm-link'],['l','campaign-library'],['g','ai-copy'],['i','ai-copy'],['x','export-cards']];
   for(const [key,section] of cases){
     const {calls,document}=setup();
     assert.equal(fire(document,key),true);
@@ -221,7 +222,7 @@ test('section shortcuts do not trigger while typing in form and contenteditable 
     {closest:selector=>selector === 'input,textarea,select,[contenteditable]'}
   ]){
     const {calls,document}=setup();
-    for(const key of ['h','o','p','c','u','l','i','x','k']) assert.equal(fire(document,key,{target}),false);
+    for(const key of ['h','o','p','c','u','l','g','i','x','k']) assert.equal(fire(document,key,{target}),false);
     assert.deepEqual(calls,[]);
   }
 });
