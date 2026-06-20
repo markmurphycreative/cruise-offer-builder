@@ -148,10 +148,10 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
   vm.createContext(context);
   vm.runInContext([
     'let pendingParseResult=null;',
-    `const ITINERARY_SECTION_LABEL=/^(?:itinerary|ports|you(?:'|’)?ll visit)\\s*:?\\s*(.*)$/i;`,
-    `const ITINERARY_FOOTER_LABEL=/^(?:luggage\\s*(?:&|and)\\s*transfers?\\s+included|flights?\\s+included|inclusions?|what(?:'|’)?s included|price|from £|terms(?:\\s*&\\s*conditions)?|book now|call to book|cabin|accommodation)\\b/i;`,
-    `const USP_TAG_LABEL=/^(?:top\\s*bar\\s*)?(?:usp|usps|tags?|tag\\s*row|top\\s*bar\\s*usp\\s*text)\\s*:?\\s*(.*)$/i;`,
-    `const USP_TAG_KEYWORDS=/\\b(adult(?:s)?\\s*only|accessible|all\\s*inclusive|cuisine|dining|entertainment|family|families|luxury|wellness|destinations|cultural\\s+experiences|overnight\\s+port\\s+stays?)\\b/i;`,
+    extractConst('ITINERARY_SECTION_LABEL'),
+    extractConst('ITINERARY_FOOTER_LABEL'),
+    extractConst('USP_TAG_LABEL'),
+    extractConst('USP_TAG_KEYWORDS'),
     extractFunction('normaliseUspTagText'),
     extractFunction('inferUspTagsFromLines'),
     extractFunction('getItineraryLines'),
@@ -1017,4 +1017,33 @@ test('Paste Offer price parser preserves leading digits for comma-separated pric
     harness.parse(`Celebrity Cruises\nCelebrity Apex\n7 Nights\n${input}\nSouthampton\nVigo\nSouthampton`);
     assert.equal(harness.context.offers[0].price, expected);
   }
+});
+
+
+test('Paste Offer stops labelled itinerary parsing before board basis and USP lines', () => {
+  const harness = createHarness([{}, {}, {}, {}]);
+  const result = harness.context.parseOfferText(`Celebrity Cruises | Celebrity Apex
+Norwegian Fjords
+7th June 2027
+7 nights
+From £1299pp
+You'll visit:
+Southampton • Stavanger • Olden • Geiranger • Bergen • Southampton
+
+Full Board
+
+Balcony Cabin • Premium Ship • Fjords`, { renderIntelligence: false });
+
+  assert.equal(result.parsed.ports, 'Southampton • Stavanger • Olden • Geiranger • Bergen');
+  assert.equal(result.parsed.tags, 'Balcony Cabin · Premium Ship · Fjords');
+  assert.doesNotMatch(result.parsed.ports, /Premium Ship|Fjords|Balcony Cabin|Full Board/);
+});
+
+test('Paste Offer rejects marketing labels, cabin types, USPs and board basis as ports', () => {
+  const harness = createHarness([{}, {}, {}, {}]);
+  const lines = ['Balcony Cabin', 'Ocean View Cabin', 'Inside Cabin', 'Premium Ship', 'Adults Only', 'Family', 'Med Fly-Cruise', 'All Inclusive', 'Luggage Included', 'Flights Included', 'Fjords', 'Smaller Ship'];
+
+  const parsedPorts = harness.context.cleanParsedPorts(lines);
+
+  assert.equal(parsedPorts, '');
 });
