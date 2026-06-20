@@ -643,13 +643,12 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       <img class="splash-icon" src="assets/operator-logos/cb-icon.png" alt="" aria-hidden="true">
       <div class="splash-title">Cruise Offer Builder</div>
       <div class="splash-brand">Dawson &amp; Sanderson</div>
-      <div class="version-tag" data-app-version></div>
       <div class="splash-actions">
         <button class="splash-btn gold" id="splash-continue-session-btn" type="button" style="display:none;">Continue Last Session</button>
         <button class="splash-btn gold" id="splash-open-builder-btn" type="button">New Campaign</button>
         <button class="splash-btn secondary" id="splash-load-campaign-btn" type="button">Load Campaign</button>
         <button class="splash-btn secondary" id="splash-load-csv-btn" type="button">Load CSV</button>
-              </div>
+      </div>
     </div>
   </div>
   <footer id="splash-recent-session" class="splash-footer" aria-live="polite">
@@ -1214,7 +1213,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v3.4.1";
+const APP_VERSION = "v3.4.2.1";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
