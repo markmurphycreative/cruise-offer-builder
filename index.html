@@ -1222,7 +1222,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v3.4.9";
+const APP_VERSION = "v3.4.10";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -5423,7 +5423,8 @@ function isStandalonePortCandidate(line){
   const value=String(line||"").trim();
   const likelyPort=/^[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’().-]*(?:\s+(?:\(?[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’().-]*|of|and|the)){0,4}$/;
   const reject=/^(?:at sea|sea day|overnight|inside|outside|balcony|suite|full board|half board|all inclusive|self catering|family(?: friendly)?|premium|adults? only|ocean cruise|river cruise|cruise|ship|operator|price|from|ports?|itinerary|you(?:'|’)?ll visit)$/i;
-  return likelyPort.test(value)&&
+  const candidate=value.includes(",")?value.split(",").map(part=>part.trim()).filter(Boolean).every(part=>likelyPort.test(part)&&!reject.test(part)):likelyPort.test(value);
+  return candidate&&
     !isNonPortExtractionValue(value)&&
     !reject.test(value)&&
     !ITINERARY_FOOTER_LABEL.test(value)&&
@@ -5431,9 +5432,28 @@ function isStandalonePortCandidate(line){
     !findKnownOperatorShip(value)&&
     !/[£$€]|\d|\b(?:nights?|nts?|included|flights?|transfers?|luggage|cabin|from)\b/i.test(value);
 }
+const PARSED_PORT_COUNTRY_SUFFIXES=[
+  "Norway","France","Spain","Portugal","Italy"
+];
+function removeParsedPortCountrySuffix(label){
+  let value=String(label||"").replace(/\s+/g," ").trim();
+  let changed=true;
+  while(changed){
+    changed=false;
+    for(const country of PARSED_PORT_COUNTRY_SUFFIXES){
+      const pattern=new RegExp(`,\\s*${escapeRegExp(country)}\\s*$`,"i");
+      if(pattern.test(value)){
+        value=value.replace(pattern,"").trim();
+        changed=true;
+        break;
+      }
+    }
+  }
+  return value;
+}
 function cleanParsedPorts(lines,options){
   const ignored=/^(?:at sea|(?:\d+\s+)?days?\s+at\s+sea|(?:\d+\s+)?sea\s+days?|overnight port stay|overnight stay|overnight|luggage\s*(?:&|and)\s*transfers?\s+included|flights?\s+included)[.!]?$/i;
-  return cleanDestinationOnlyLines(lines).flatMap(line=>line.split(/(?:[•·▪◦●]|\s+[-–—]\s+|[-–—]\s*$|,)/)).map(item=>item.trim().replace(/^[-–—]\s*/,"")).filter(item=>item&&!ignored.test(item)&&!isExcludedParsedPort(item,options)&&isStandalonePortCandidate(item)).join(" • ");
+  return cleanDestinationOnlyLines(lines).flatMap(line=>line.split(/(?:[•·▪◦●]|\s+[-–—]\s+|[-–—]\s*$)/)).map(item=>removeParsedPortCountrySuffix(item.trim().replace(/^[-–—]\s*/,""))).filter(item=>item&&!ignored.test(item)&&!isExcludedParsedPort(item,options)&&isStandalonePortCandidate(item)).join(" • ");
 }
 function escapeRegExp(value){ return String(value||"").replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 function findKnownOperatorShip(text,operatorKey){
