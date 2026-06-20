@@ -1172,6 +1172,42 @@ Southampton • Paris, Le Havre, France • Bilbao, Spain • La Coruna, Spain �
   assert.doesNotMatch(result.parsed.ports, /France|Spain/);
 });
 
+test('Paste Offer keeps airport-specific non-flight inclusions and removes Turkey port suffixes', () => {
+  const harness = createHarness([{}, {}, {}, {}]);
+  const luggageResult = harness.context.parseOfferText(`Virgin Voyages | Valiant Lady
+Mediterranean Icons
+10 Nights • 14th September 2027
+
+Manchester Luggage Included
+Sea Terrace
+From £1,899pp
+
+You'll visit:
+Barcelona • Marseille, France • Rome, for Civitavecchia • Ibiza • Palma, Majorca • Barcelona
+
+All Inclusive
+Adults Only • Premium Ship • Overnight Port Stays`, { renderIntelligence: false });
+
+  assert.equal(luggageResult.parsed.incl, 'Manchester Luggage Included');
+
+  const transfersResult = harness.context.parseOfferText(`MSC Cruises | MSC World Europa
+Eastern Mediterranean Discovery
+7 Nights • 22nd August 2027
+
+Glasgow Transfers Included
+Inside Cabin
+From £999pp
+
+You'll visit:
+Athens • Kusadasi, Turkey • Istanbul, Turkey • Mykonos • Athens
+
+Full Board
+Family • Entertainment • Value`, { renderIntelligence: false });
+
+  assert.equal(transfersResult.parsed.incl, 'Glasgow Transfers Included');
+  assert.equal(transfersResult.parsed.ports, 'Athens • Kusadasi • Istanbul • Mykonos');
+});
+
 test('Paste Offer rejects marketing labels, cabin types, USPs and board basis as ports', () => {
   const harness = createHarness([{}, {}, {}, {}]);
   const lines = ['Balcony Cabin', 'Ocean View Cabin', 'Inside Cabin', 'Premium Ship', 'Adults Only', 'Family', 'Med Fly-Cruise', 'All Inclusive', 'Luggage Included', 'Flights Included', 'Fjords', 'Smaller Ship'];
