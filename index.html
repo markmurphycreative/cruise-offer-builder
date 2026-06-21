@@ -3151,14 +3151,18 @@ function getOfferTabShipPrefixes(o){
   const prefixes=[...(OFFER_TAB_SHIP_PREFIXES[key]||[]),fullName,label];
   return prefixes.map(prefix=>String(prefix||"").trim()).filter((prefix,index,self)=>prefix&&self.findIndex(item=>item.toLowerCase()===prefix.toLowerCase())===index).sort((a,b)=>b.length-a.length);
 }
+function formatRoyalCaribbeanOfferTabShipLabel(ship){
+  return String(ship||"").trim().replace(/\s+of\s+the\s+seas$/i," OTS");
+}
 function getOfferTabShipLabel(o){
   const ship=String((o&&o.ship)||"").trim();
   if(!ship) return "";
+  let label=ship;
   for(const prefix of getOfferTabShipPrefixes(o)){
     const cleaned=ship.replace(new RegExp("^"+escapeOfferTabRegExp(prefix)+"\\s+","i"),"").trim();
-    if(cleaned&&cleaned!==ship) return cleaned;
+    if(cleaned&&cleaned!==ship){ label=cleaned; break; }
   }
-  return ship;
+  return isRoyalCaribbeanOfferTabOperator(o) ? formatRoyalCaribbeanOfferTabShipLabel(label) : label;
 }
 function getOfferTabLabelParts(i){
   const o=offers[i]||{};
