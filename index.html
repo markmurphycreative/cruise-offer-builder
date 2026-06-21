@@ -1224,7 +1224,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v3.4.19";
+const APP_VERSION = "v3.4.20";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -1249,6 +1249,30 @@ const OPERATOR_USP_PRESETS = {
   wendy: "Culture · Adventure · Asia · Discovery",
   custom: ""
 };
+
+function getOperatorUspPreset(operatorKey){
+  const key=String(operatorKey||"");
+  return (typeof OPERATOR_USP_PRESETS!=="undefined"&&Object.prototype.hasOwnProperty.call(OPERATOR_USP_PRESETS,key)) ? OPERATOR_USP_PRESETS[key] : "";
+}
+function defaultTopBarUspForOperator(operatorKey){
+  return getOperatorUspPreset(operatorKey)||"Cruise · Destinations · Entertainment";
+}
+function shouldRefreshTopBarUsp(offer){
+  return !(offer&&offer._tagsManualOverride);
+}
+function applyOperatorTopBarUspDefault(offer,operatorKey){
+  if(!offer||!shouldRefreshTopBarUsp(offer)) return false;
+  const usp=defaultTopBarUspForOperator(operatorKey);
+  offer.tags=usp;
+  const field=document.getElementById("f-tags");
+  if(field) field.value=usp;
+  return true;
+}
+function syncTopBarUspManualState(offer){
+  if(!offer) return;
+  const preset=defaultTopBarUspForOperator(offer.operator||"");
+  offer._tagsManualOverride=String(offer.tags||"").trim()!==String(preset||"").trim();
+}
 
 const OPERATOR_SHIPS = {
   amawaterways: [
@@ -2086,7 +2110,9 @@ function up(){
 // ═══════════════════════════════════════════════════════
 function operatorChanged(silent){
   const key=(document.getElementById("f-operator")||{}).value||"";
+  const previousOperator=(offers[cur]||{}).operator||"";
   offers[cur].operator=key;
+  if(!silent&&previousOperator!==key) offers[cur]._tagsManualOverride=false;
   document.getElementById("logo-override-area").style.display=(key==="custom"||key==="")?  "block":"none";
   const op=OPERATOR_HEADERS[key];
   const cfg=OPERATOR_CONFIG[key];
@@ -2096,10 +2122,11 @@ function operatorChanged(silent){
     urlInput.value = landingUrl;
     offers[cur].url = landingUrl;
   }
-  if(op&&!silent&&Object.prototype.hasOwnProperty.call(OPERATOR_USP_PRESETS,key)){
-    const usp=OPERATOR_USP_PRESETS[key];
+  if(op&&!silent&&!offers[cur]._tagsManualOverride){
+    const usp=(typeof OPERATOR_USP_PRESETS!=="undefined"&&OPERATOR_USP_PRESETS[key])||"Cruise · Destinations · Entertainment";
     offers[cur].tags=usp;
-    document.getElementById("f-tags").value=usp;
+    const tagsField=document.getElementById("f-tags");
+    if(tagsField) tagsField.value=usp;
   }
   if(!silent) rv();
   genUtm(); genStandardUtms();
@@ -3612,6 +3639,21 @@ function parseFamilyPassengerBasis(text){
 }
 
 const LAST_SUCCESSFUL_CSV_KEY = "cobLastSuccessfulCsvV1";
+
+const CSV_TOP_BAR_USP_PRESET_FALLBACKS = {
+  ambassador: "Adult Only Options · Entertainment · Sustainability · Value",
+  celebrity: "Cuisine · Cultural Experiences · Entertainment · Overnight Port Stays",
+  cunard: "Cuisine · Entertainment · Luxury · Wellness",
+  fred: "Cultural Experiences · Education · Entertainment · Unique Itineraries",
+  marella: "Accessible · Adult Only Options · All-inclusive · Entertainment",
+  msc: "All-inclusive · Entertainment · Family · Diverse Itineraries",
+  po: "Adult Only Options · Cuisine · Entertainment · Family",
+  princess: "All-inclusive · Cuisine · Entertainment · Family",
+  royal: "Amenities · Family · Entertainment · Kids' Clubs"
+};
+function getCsvTopBarUspPreset(operatorKey){
+  return (typeof OPERATOR_USP_PRESETS!=="undefined"&&OPERATOR_USP_PRESETS[operatorKey]) || CSV_TOP_BAR_USP_PRESET_FALLBACKS[operatorKey] || "Cruise · Destinations · Entertainment";
+}
 let restoringLastSuccessfulCsv = false;
 function storeLastSuccessfulCsv(csv){
   try{ localStorage.setItem(LAST_SUCCESSFUL_CSV_KEY, String(csv||"")); }catch(e){}
@@ -3952,13 +3994,14 @@ function processSheetCSV(csv,status){
         [val(row,headers,["price"]),row.map(cell=>norm(cell)).join(" ")].join(" ")
       ),
       url: val(row,headers,["url","destination_url"]) || offers[loaded].url || "https://dawsonandsanderson.co.uk/cruises",
-      tags: val(row,headers,["tags","tag","usp","usps","usp_text","top_bar_usp","top_bar_usp_text"]) || offers[loaded].tags
+      tags: getCsvTopBarUspPreset(resolvedOperator),
+      _tagsManualOverride: false
     };
 
     if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(loaded);
     ["_img","_imgSource","_imgNeedsReupload","_cropZoom","_cropX","_cropY","_cropPosVersion","_heroFitMode","heroLocked"].forEach(key=>{ delete newOffer[key]; });
     newOffer.incl=buildCSVDetailsLine(row,headers,boardParts,newOffer.basis,newOffer.name,newOffer.ship);
-    if(!newOffer.tags) newOffer.tags=(typeof OPERATOR_USP_PRESETS!=="undefined"&&OPERATOR_USP_PRESETS[newOffer.operator])||"Cruise · Destinations · Entertainment";
+    newOffer.tags=getCsvTopBarUspPreset(newOffer.operator);
     if(hero){ newOffer._img=hero; }
     const hdr=val(row,headers,["operator_header","header"]);
     if(hdr){
@@ -5757,8 +5800,11 @@ function applyParsedOfferToSlot(result,index){
   for(const k of Object.keys(PARSE_FIELD_MAP)){
     if(parsed[k]===undefined||parsed[k]==='') continue;
     if(k==='operatorKey') offers[index].operator=parsed[k];
+    else if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offers[index].operator)){ continue; }
     else offers[index][k]=String(parsed[k]);
   }
+  offers[index]._tagsManualOverride=false;
+  applyOperatorTopBarUspDefault(offers[index],offers[index].operator||parsed.operatorKey||"");
   stripTransientPasteOfferFields(offers[index]);
   return Object.keys(parsed).some(key=>parsed[key]!==undefined&&parsed[key]!=="");
 }
@@ -6459,7 +6505,7 @@ function prepareOfferSlotForParsedOffer(parsed){
   if(!offers[cur]) offers[cur]={};
   return true;
 }
-function applyParsedOffer(){if(!pendingParseResult) return; if(typeof isOfferLocked==="function" && isOfferLocked(cur)){ setParseStatus(getLockedOfferMessage(cur),"low"); cancelParsedOffer(); return; } const {parsed,confidence,rawText}=pendingParseResult; if(!prepareOfferSlotForParsedOffer(parsed)){ setParseStatus('No offer fields detected','low'); cancelParsedOffer(); return; } if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(cur); const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
+function applyParsedOffer(){if(!pendingParseResult) return; if(typeof isOfferLocked==="function" && isOfferLocked(cur)){ setParseStatus(getLockedOfferMessage(cur),"low"); cancelParsedOffer(); return; } const {parsed,confidence,rawText}=pendingParseResult; if(!prepareOfferSlotForParsedOffer(parsed)){ setParseStatus('No offer fields detected','low'); cancelParsedOffer(); return; } if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(cur); const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offers[cur].operator)){ continue; } const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; offers[cur]._tagsManualOverride=false; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
   touched.forEach(el=>{el.classList.remove('parse-field-flash'); void el.offsetWidth; el.classList.add('parse-field-flash'); setTimeout(()=>el.classList.remove('parse-field-flash'),1700);});
   const applied=touched.length; const summary=typeof getOfferIntelligenceSummary==="function"?getOfferIntelligenceSummary(parsed,rawText):{count:applied,label:(confidence==='high'?'High Confidence':confidence==='partial'?'Partial Match':'Needs Review'),level:confidence};
   setParseStatus(`✓ Detected ${summary.count} fields — ${summary.label}`,summary.level); cancelParsedOffer(); rv(); updateAllStatus(); genUtm(); checkPortsWarn(); updateExportFilenames(); runSpellQA(); if(applied){ if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Offer loaded"); queueAutosave(); }}
@@ -6870,6 +6916,7 @@ function saveEditorToOffer(){
   });
   const op=document.getElementById('f-operator');
   if(op) o.operator=op.value;
+  syncTopBarUspManualState(o);
   const logoDisplay=document.getElementById('f-logo-display');
   if(logoDisplay) o._logoDisplay=logoDisplay.value||'operator';
   const z=document.getElementById('crop-zoom');
@@ -6884,7 +6931,7 @@ function saveEditorToOffer(){
 
 function loadOfferToEditor(i){
   const o = stripTransientPasteOfferFields(offers[i] || {});
-  if(!o.tags && (o.operator||o.name||o.ship||o.price||o.incl||o.ports)) o.tags=(typeof OPERATOR_USP_PRESETS!=="undefined"&&OPERATOR_USP_PRESETS[o.operator||""])||"Cruise · Destinations · Entertainment";
+  if(o.operator||o.name||o.ship||o.price||o.incl||o.ports) applyOperatorTopBarUspDefault(o,o.operator||"");
   normalizeCropPositionForOffer(o);
   FLDS.forEach(f=>{
     const e=document.getElementById('f-'+f);
@@ -7021,6 +7068,7 @@ function visibleFieldsToData(){
 function commitVisibleFields(){
   try { autoBoardLabel(); } catch(e){}
   offers[cur] = stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}, visibleFieldsToData()));
+  syncTopBarUspManualState(offers[cur]);
 }
 function renderVisibleCard(){
   const scaler = document.getElementById('preview-scaler');
