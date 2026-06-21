@@ -49,7 +49,7 @@ test('view selector indicator updates instantly while retaining segmented-contro
 
 
 
-test('Offer 1–4 selector reuses the sliding segmented-control pill while retaining status dots and offer switching hooks', () => {
+test('Offer 1–4 selector reuses the sliding segmented-control pill while retaining status accents and offer switching hooks', () => {
   assert.match(html, /<div class="offer-tabs empty-hidden">\s*<span class="offer-pill" id="offer-pill" aria-hidden="true"><\/span>/);
   assert.match(html, /<div class="offer-empty-state active" id="offer-empty-state" role="button" tabindex="0" title="Open Campaign Import" aria-label="Open Campaign Import" onclick="openCampaignImportFromEmptyState\(\)" onkeydown="handleEmptyOfferStateKeydown\(event\)">[\s\S]*?No offers loaded[\s\S]*?Load a sheet, CSV, campaign or paste an offer\./);
   assert.match(html, /\.offer-tabs\{[^}]*border:1px solid var\(--border\);[^}]*border-radius:0;[^}]*overflow:hidden;[^}]*isolation:isolate;/);
@@ -63,17 +63,18 @@ test('Offer 1–4 selector reuses the sliding segmented-control pill while retai
   assert.doesNotMatch(html, /\.offer-empty-state\{[^}]*background:var\(--gold\)/);
   assert.doesNotMatch(html, /\.offer-empty-state-title\{[^}]*text-transform:uppercase/);
   assert.doesNotMatch(html, /\.offer-empty-state-copy\{[^}]*text-shadow:/);
-  assert.match(html, /\.offer-pill\{[^}]*border-radius:0;[^}]*background:linear-gradient\(180deg,#b2a374 0%,var\(--gold\) 100%\);[^}]*transform:translateX\(0\);[^}]*transition:transform \.2s ease,width \.2s ease;/);
+  assert.match(html, /\.offer-pill\{[^}]*border-radius:0;[^}]*background:#dedbd3;[^}]*transform:translateX\(0\);[^}]*transition:transform \.2s ease,width \.2s ease;/);
   assert.match(html, /\.otab\.active\{color:var\(--navy\);border-radius:0;box-shadow:inset 0 -2px 0 rgba\(14,27,42,\.18\);\}/);
   assert.doesNotMatch(html, /\.otab\.active\{[^}]*border-bottom/);
   assert.match(html, /\.offer-tab-item\{[^}]*position:relative;[^}]*flex:1;[^}]*min-width:0;/);
   assert.match(html, /\.otab\{[^}]*width:100%;[^}]*min-height:47px;[^}]*padding:7px 5px 15px;[^}]*font-size:10px;/);
   assert.match(html, /\.offer-tab-label\{[^}]*gap:2px;[^}]*line-height:1\.12;/);
-  assert.match(html, /\.status-dot\{[^}]*position:absolute;[^}]*width:5\.8px;[^}]*height:5\.8px;[^}]*border-radius:50%;/);
-  assert.match(html, /\.status-dot\.green\{background:var\(--green\);\}\s*\.status-dot\.amber\{background:var\(--amber\);\}\s*\.status-dot\.red\{background:var\(--red\);\}/);
+  assert.match(html, /\.otab::after\{[^}]*position:absolute;[^}]*bottom:0;[^}]*height:2px;[^}]*background:transparent;/);
+  assert.match(html, /\.otab\.status-green::after\{background:rgba\(42,122,74,\.72\);\}\s*\.otab\.status-amber::after\{background:rgba\(212,130,10,\.72\);\}\s*\.otab\.status-red::after\{background:rgba\(192,57,43,\.72\);\}/);
   for(let i = 0; i < 4; i += 1){
-    assert.match(html, new RegExp('<div class="offer-tab-item"><button class="otab(?: active)?" id="ot' + i + '" onclick="sv\\(' + i + '\\)"[\\s\\S]*?<span class="status-dot" id="sd' + i + '" title="No offer loaded" aria-hidden="true"><\\/span><\\/button><\\/div>'));
+    assert.match(html, new RegExp('<div class="offer-tab-item"><button class="otab(?: active)?" id="ot' + i + '" onclick="sv\\(' + i + '\\)"[\\s\\S]*?<span class="offer-lock-toggle"[\\s\\S]*?<\\/span><\\/button><\\/div>'));
   }
+  assert.doesNotMatch(html, /class="status-dot"|\.status-dot/);
   assert.match(html, /function syncOfferSelector\(\)\{[\s\S]*?updateEmptyOfferState\(\);[\s\S]*?t\.classList\.toggle\('active', idx === activeIndex\);[\s\S]*?updateOfferPill\(\);/);
   assert.match(html, /\.reorder-actions\.empty-hidden\{display:none;\}/);
   assert.match(html, /function updateEmptyOfferState\(\)\{[\s\S]*?reorderActions[\s\S]*?reorderActions\.classList\.toggle\("empty-hidden", !hasLoadedOffers\);[\s\S]*?activeLabel\.classList\.toggle\("empty-hidden", !hasLoadedOffers\);/);
