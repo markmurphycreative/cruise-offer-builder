@@ -219,3 +219,42 @@ test('CSV import writes the same fallback top-bar USP text into offer.tags when 
 
   assert.equal(offer.tags, 'Cruise · Destinations · Entertainment');
 });
+
+test('Google Sheet imported airport inclusions use Paste Offer airport normalisation before cabin subtitle generation', () => {
+  const offer = importCSV([
+    'Operator,Ship,Title,Date,Nights,Inclusions,Cabin,Board Basis,Price,Itinerary,Tags',
+    'Celebrity Cruises,Celebrity Millennium,Best of Japan - Golden Week,29 April 2027,12,Flights from Newcastle,Inside Cabin,Full Board,3089,Tokyo • Kyoto (Osaka) • Kochi • Busan • Nagasaki • Kagoshima • Mt Fuji (Shimizu) • Tokyo,Inside Cabin • Japan • Hotel Stay'
+  ].join('\n'));
+
+  assert.equal(offer.incl, 'Newcastle Flights Included • Inside Cabin');
+  assert.match(offer.incl, /Newcastle Flights Included • Inside Cabin/);
+  assert.doesNotMatch(offer.incl, /^Flights •/);
+});
+
+test('Google Sheet imported inclusion values match required airport and non-flight mappings', () => {
+  const cases = [
+    ['Flights from Newcastle', 'Newcastle Flights Included'],
+    ['Flights included from Newcastle', 'Newcastle Flights Included'],
+    ['Direct flights included from Newcastle', 'Newcastle Flights Included'],
+    ['Fly from Newcastle', 'Newcastle Flights Included'],
+    ['Flying from Newcastle', 'Newcastle Flights Included'],
+    ['Flights from Manchester', 'Manchester Flights Included'],
+    ['Flights from Leeds Bradford', 'Leeds Bradford Flights Included'],
+    ['Flights from Glasgow', 'Glasgow Flights Included'],
+    ['Flights from Belfast', 'Belfast Flights Included'],
+    ['Newcastle Flights, Luggage & Transfers Included', 'Newcastle Flights, Luggage & Transfers Included'],
+    ['Manchester Luggage Included', 'Manchester Flights, Luggage Included'],
+    ['Glasgow Transfers Included', 'Glasgow Flights, Transfers Included'],
+    ['Luggage Included', 'Luggage Included'],
+    ['Coach Included', 'Coach Included'],
+    ['No Fly', 'No Fly']
+  ];
+
+  for (const [input, expected] of cases) {
+    const offer = importCSV([
+      'Operator,Title,Price,Ship,Inclusions,Itinerary',
+      `Celebrity Cruises,Mapping Case,£999,Celebrity Millennium,"${input}",Tokyo | Kyoto`
+    ].join('\n'));
+    assert.equal(offer.incl, expected, `${input} should normalise to ${expected}`);
+  }
+});

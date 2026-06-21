@@ -1224,7 +1224,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v3.4.15";
+const APP_VERSION = "v3.4.16";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -3770,9 +3770,48 @@ function processSheetCSV(csv,status){
       .filter(Boolean)
       .join(" • ");
   }
+  function normaliseImportedInclusionText(rawText){
+    const value=norm(stripPreCruiseStayText(rawText));
+    if(!value) return "";
+    if(/^no\s*fly$/i.test(value)) return "No Fly";
+    if(/^coach\s+included$/i.test(value)) return "Coach Included";
+    const airportSource=(typeof AIRPORT_WORDS!=="undefined" && Array.isArray(AIRPORT_WORDS)) ? AIRPORT_WORDS : ["newcastle","manchester","edinburgh","leeds bradford","glasgow","birmingham","london","heathrow","gatwick","stansted","bristol","belfast"];
+    const airports=[...airportSource].sort((a,b)=>String(b).length-String(a).length);
+    const esc=typeof escapeRegExp==="function" ? escapeRegExp : value=>String(value||"").replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const fmt=typeof formatAirportName==="function" ? formatAirportName : airport=>String(airport||"").split(/\s+/).map(part=>part.charAt(0).toUpperCase()+part.slice(1).toLowerCase()).join(" ");
+    let airportName="";
+    for(const airport of airports){
+      const escaped=esc(airport);
+      const patterns=[
+        new RegExp(`\\b(?:direct\\s+)?flights?\\s+(?:included\\s+)?(?:direct\\s+)?from\\s+${escaped}\\b`,"i"),
+        new RegExp(`\\bflights?\\s+direct\\s+from\\s+${escaped}\\b`,"i"),
+        new RegExp(`\\bfly(?:ing)?\\s+from\\s+${escaped}(?:\\s+direct)?\\b`,"i"),
+        new RegExp(`\\b${escaped}\\s+flights?\\b`,"i"),
+        new RegExp(`\\b${escaped}\\b`,"i")
+      ];
+      if(patterns.some(pattern=>pattern.test(value))){ airportName=fmt(airport); break; }
+    }
+    const hasFlights=/\b(?:flights?|fly|flying|airfare)\b/i.test(value);
+    const hasLuggage=/\b(?:luggage|baggage|checked\s+bags?)\b/i.test(value);
+    const hasTransfers=/\btransfers?\b/i.test(value);
+    if(airportName){
+      const parts=["Flights"];
+      if(hasLuggage) parts.push("Luggage");
+      if(hasTransfers) parts.push("Transfers");
+      const joined=parts.length===3 ? `${parts[0]}, ${parts[1]} & ${parts[2]}` : parts.join(", ");
+      return `${airportName} ${joined} Included`;
+    }
+    if(hasFlights && /\bincluded\b/i.test(value)) return "Flights Included";
+    if(hasLuggage && hasTransfers) return "Luggage & Transfers Included";
+    if(hasLuggage) return "Luggage Included";
+    if(hasTransfers) return "Transfers Included";
+    return "";
+  }
   function buildCSVDetailsLine(row,headers,boardParts,passengerBasis,title,ship){
     const parts=[];
     const inclusionText=val(row,headers,["inclusions","inclusion","included"]);
+    const normalisedInclusion=normaliseImportedInclusionText(inclusionText);
+    if(normalisedInclusion) addUnique(parts,normalisedInclusion);
     const combined=norm([
       stripPreCruiseStayText(inclusionText),
       val(row,headers,["flights","flight","flight_included"]),
@@ -3789,12 +3828,19 @@ function processSheetCSV(csv,status){
     const isNoFlyCruise=/\bno\s*fly\s*cruise\b/i.test(departureType);
     const isFlyCruise=!isNoFlyCruise && /\b(fly|flight|flights|flying)\b/i.test(departureType);
     const hasFlightInclusion=hasAnyValue(row,headers,["flights","flight","flight_included"]) || /\b(flights?|fly|flying|airfare)\b/i.test(combined);
-    if(isFlyCruise || (!departureType && hasFlightInclusion)) addUnique(parts,departureAirport ? departureAirport+" Flights" : "Flights");
+    const normalisedHasFlights=/\bflights?\b/i.test(normalisedInclusion);
+    const normalisedNoFly=/^No Fly$/i.test(normalisedInclusion);
+    if((isFlyCruise || (!departureType && hasFlightInclusion)) && !normalisedHasFlights && !normalisedNoFly){
+      const flightPart=departureAirport ? departureAirport+" Flights" : "Flights";
+      if(!parts.some(item=>item.toLowerCase()===flightPart.toLowerCase())) parts.unshift(flightPart);
+    }
     const hasLuggageInclusion=hasAnyValue(row,headers,["luggage","baggage"]) || /\b(luggage|baggage|checked\s+bags?)\b/i.test(combined);
     const hasTransferInclusion=hasAnyValue(row,headers,["transfers","transfer"]) || /\btransfers?\b/i.test(combined);
-    if(hasLuggageInclusion && hasTransferInclusion) addUnique(parts,"Luggage & Transfers Included");
-    else if(hasLuggageInclusion) addUnique(parts,"Luggage Included");
-    else if(hasTransferInclusion) addUnique(parts,"Transfers Included");
+    const normalisedHasLuggage=/\b(?:luggage|baggage)\b/i.test(normalisedInclusion);
+    const normalisedHasTransfers=/\btransfers?\b/i.test(normalisedInclusion);
+    if(hasLuggageInclusion && hasTransferInclusion && !(normalisedHasLuggage&&normalisedHasTransfers)) addUnique(parts,"Luggage & Transfers Included");
+    else if(hasLuggageInclusion && !normalisedHasLuggage) addUnique(parts,"Luggage Included");
+    else if(hasTransferInclusion && !normalisedHasTransfers) addUnique(parts,"Transfers Included");
     if(/\bpremium\s+drinks?\b/i.test(combined)) addUnique(parts,"Premium Drinks");
     else if(hasAnyValue(row,headers,["drinks","drinks_package","beverage_package"]) || /\b(drinks?\s+package|beverage\s+package|drinks?\s+included)\b/i.test(combined)) addUnique(parts,"Drinks Package");
     if(hasAnyValue(row,headers,["wifi","wi_fi","wi-fi"]) || /\bwi[ -]?fi\b/i.test(combined)) addUnique(parts,"Wi-Fi Included");
@@ -3805,13 +3851,14 @@ function processSheetCSV(csv,status){
     if(cabin) addUnique(parts,cabin.replace(/\b\w/g,ch=>ch.toUpperCase()).replace(/\bAnd\b/g,"and"));
     if(/\bchild(?:ren)?\b/i.test(passengerBasis)) addUnique(parts,"Family");
     const banned=[title,ship,passengerBasis,val(row,headers,["price"])].map(v=>norm(v).toLowerCase()).filter(Boolean);
+    const separator=(parts.some(part=>/\bflights included\b/i.test(part)) && parts.some(part=>/\b(?:inside|outside|ocean\s+view|balcony|suite|veranda|interior)\b/i.test(part))) ? " • " : " · ";
     return parts.filter(part=>{
       const lower=part.toLowerCase();
       if(banned.includes(lower)) return false;
       if(/£|\b\d{3,}\b/.test(part)) return false;
       if(/^based\s+on\b/i.test(part)) return false;
       return true;
-    }).join(" · ");
+    }).join(separator);
   }
 
   let rows=parseCSV(csv).filter(r=>r.some(c=>norm(c)));
