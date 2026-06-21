@@ -55,15 +55,18 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .offer-tab-number{font-size:7px;font-weight:600;text-transform:uppercase;letter-spacing:.065em;color:var(--muted);opacity:.58;}
 .offer-tab-operator{font-size:9px;font-weight:700;letter-spacing:0;color:var(--text);opacity:.58;}
 .offer-tab-ship{font-size:8px;font-weight:500;letter-spacing:.01em;color:var(--muted);opacity:.64;}
-.offer-tab-quality{font-size:8px;font-weight:500;letter-spacing:.02em;color:var(--muted);opacity:.72;}
+.offer-tab-quality{font-size:8px;font-weight:600;letter-spacing:.02em;color:var(--muted);opacity:.72;}
 .otab:not(.active) .offer-tab-operator{font-weight:500;}
 .otab:hover:not(.active){color:var(--navy);background:rgba(160,146,103,.07);}
 .otab:hover:not(.active) .offer-tab-operator{opacity:.88;color:var(--navy);}
 .otab:not(.active) .offer-tab-ship{display:none;}
 .otab.active{color:var(--navy);border-radius:0;box-shadow:inset 0 -2px 0 rgba(14,27,42,.18);}
-.otab.active .offer-tab-number{color:rgba(14,27,42,.72);font-weight:700;letter-spacing:.08em;opacity:1;}
+.otab.active .offer-tab-number{color:var(--navy);font-weight:700;letter-spacing:.08em;opacity:1;}
 .otab.active .offer-tab-operator{color:var(--navy);font-weight:700;letter-spacing:.01em;opacity:1;}
-.otab.active .offer-tab-ship{color:rgba(14,27,42,.76);opacity:1;}
+.otab.active .offer-tab-ship{color:var(--navy);font-weight:600;opacity:1;}
+.otab.active .offer-tab-quality{color:var(--navy);font-weight:700;opacity:1;}
+.otab.active .status-dot{box-shadow:0 0 0 1px rgba(14,27,42,.42);}
+.otab.active .offer-lock-toggle{color:var(--navy);opacity:1;}
 .otab.dragging{opacity:.55;}
 .otab.drag-over{background:rgba(160,146,103,.18);box-shadow:inset 0 0 0 1px rgba(160,146,103,.42);}
 .otab.move-preflash{background:rgba(160,146,103,.14);box-shadow:inset 0 0 0 1px rgba(160,146,103,.32);}
@@ -1224,7 +1227,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v3.4.20";
+const APP_VERSION = "v3.4.21";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -3136,16 +3139,17 @@ function getOfferTabLabelParts(i){
   if(!operatorLabel) return {number:fallback,operator:"",ship:""};
   return {number:"Offer "+(i+1),operator:operatorLabel,ship:getOfferTabShipLabel(o)};
 }
-function getOfferTabQualityScore(i){
+function getOfferTabReadinessLabel(i){
   const o=offers[i]||{};
-  if(!isOfferLoaded(o)) return "";
-  const raw=[o.name,o.ship,o.incl,o.ports,o.tags].filter(Boolean).join(" ");
-  const parsed={operatorKey:o.operator,name:o.name,ship:o.ship,day:o.day,month:o.month,nights:o.nights,price:o.price,board:o.board,boardlbl:o.boardlbl,ports:o.ports,incl:o.incl};
-  const previousCur=cur;
-  cur=i;
-  const score=(typeof getOfferIntelligenceQualityScore==="function")?getOfferIntelligenceQualityScore(parsed,raw,o.operator):"";
-  cur=previousCur;
-  return score;
+  const readiness=getOfferReadiness(o);
+  if(!readiness.loaded) return "";
+  if(!readiness.criticalContentPresent) return "Blocked";
+  if(readiness.ready) return "100";
+  if(!readiness.heroLoaded) return "Needs image";
+  return "Incomplete";
+}
+function getOfferTabQualityScore(i){
+  return getOfferTabReadinessLabel(i);
 }
 function updateOfferTabLabels(){
   for(let i=0;i<4;i++){
