@@ -163,6 +163,7 @@ test('offer tab labels switch from fallback text to operator and ship identifier
     extractFunction('escapeOfferTabRegExp'),
     extractFunction('getOfferTabOperatorFullName'),
     extractFunction('getOfferTabShipPrefixes'),
+    extractFunction('formatRoyalCaribbeanOfferTabShipLabel'),
     extractFunction('getOfferTabShipLabel'),
     extractFunction('getOfferTabLabelParts')
   ].join('\n'), context);
@@ -170,7 +171,7 @@ test('offer tab labels switch from fallback text to operator and ship identifier
   assert.deepEqual(JSON.parse(JSON.stringify([0, 1, 2, 3].map(index => context.getOfferTabLabelParts(index)))), [
     { number: 'Offer 1', operator: 'Celebrity', ship: 'Apex' },
     { number: 'Offer 2', operator: 'Cunard', ship: 'Queen Anne' },
-    { number: 'Offer 3', operator: 'RCI', ship: 'Icon of the Seas' },
+    { number: 'Offer 3', operator: 'RCI', ship: 'Icon OTS' },
     { number: 'Offer 4', operator: '', ship: '' }
   ]);
 });
@@ -205,13 +206,14 @@ test('offer tab aliases apply to long operator names without changing stored ope
     extractFunction('escapeOfferTabRegExp'),
     extractFunction('getOfferTabOperatorFullName'),
     extractFunction('getOfferTabShipPrefixes'),
+    extractFunction('formatRoyalCaribbeanOfferTabShipLabel'),
     extractFunction('getOfferTabShipLabel'),
     extractFunction('getOfferTabLabelParts')
   ].join('\n'), context);
 
   assert.deepEqual(JSON.parse(JSON.stringify([0, 1, 2, 3].map(index => context.getOfferTabLabelParts(index)))), [
     { number: 'Offer 1', operator: 'AMA', ship: 'AmaSerena' },
-    { number: 'Offer 2', operator: 'RCI', ship: 'Liberty of the Seas' },
+    { number: 'Offer 2', operator: 'RCI', ship: 'Liberty OTS' },
     { number: 'Offer 3', operator: 'Fred.Olsen', ship: 'Bolette' },
     { number: 'Offer 4', operator: 'Unlisted Long Operator Name', ship: 'Discovery' }
   ]);
@@ -247,13 +249,14 @@ test('Royal Caribbean offer tab ship labels strip only selected operator prefixe
     extractFunction('escapeOfferTabRegExp'),
     extractFunction('getOfferTabOperatorFullName'),
     extractFunction('getOfferTabShipPrefixes'),
+    extractFunction('formatRoyalCaribbeanOfferTabShipLabel'),
     extractFunction('getOfferTabShipLabel'),
     extractFunction('getOfferTabLabelParts')
   ].join('\n'), context);
 
   assert.deepEqual(JSON.parse(JSON.stringify([0, 1, 2, 3].map(index => context.getOfferTabLabelParts(index)))), [
-    { number: 'Offer 1', operator: 'RCI', ship: 'Utopia of the Seas' },
-    { number: 'Offer 2', operator: 'RCI', ship: 'Mystery of the Seas' },
+    { number: 'Offer 1', operator: 'RCI', ship: 'Utopia OTS' },
+    { number: 'Offer 2', operator: 'RCI', ship: 'Mystery OTS' },
     { number: 'Offer 3', operator: 'Celebrity', ship: 'of the Seas' },
     { number: 'Offer 4', operator: 'RCI', ship: 'Spectrum Princess' }
   ]);
@@ -290,6 +293,7 @@ test('offer tab ship prefix cleanup handles recognised operator examples only in
   vm.createContext(context);
   vm.runInContext([
     extractFunction('getOfferTabOperatorLabel'),
+    extractFunction('isRoyalCaribbeanOfferTabOperator'),
     'const OFFER_TAB_SHIP_PREFIXES = ' + JSON.stringify({
       po: ['P&O'],
       marella: ['Marella'],
@@ -302,6 +306,7 @@ test('offer tab ship prefix cleanup handles recognised operator examples only in
     extractFunction('escapeOfferTabRegExp'),
     extractFunction('getOfferTabOperatorFullName'),
     extractFunction('getOfferTabShipPrefixes'),
+    extractFunction('formatRoyalCaribbeanOfferTabShipLabel'),
     extractFunction('getOfferTabShipLabel')
   ].join('\n'), context);
 
@@ -315,8 +320,8 @@ test('offer tab ship prefix cleanup handles recognised operator examples only in
     [{ operator: 'po', ship: 'P&O Arvia' }, 'Arvia'],
     [{ operator: 'po', ship: 'P&O Britannia' }, 'Britannia'],
     [{ operator: 'po', ship: 'P&O Iona' }, 'Iona'],
-    [{ operator: 'royal', ship: 'Royal Caribbean Liberty of the Seas' }, 'Liberty of the Seas'],
-    [{ operator: 'royal', ship: 'Royal Caribbean Icon of the Seas' }, 'Icon of the Seas'],
+    [{ operator: 'royal', ship: 'Royal Caribbean Liberty of the Seas' }, 'Liberty OTS'],
+    [{ operator: 'royal', ship: 'Royal Caribbean Icon of the Seas' }, 'Icon OTS'],
     [{ operator: 'ambassador', ship: 'Ambassador Ambience' }, 'Ambience'],
     [{ operator: 'fred', ship: 'Fred. Olsen Balmoral' }, 'Balmoral'],
     [{ operator: 'cunard', ship: 'Cunard Queen Anne' }, 'Queen Anne'],
@@ -348,6 +353,7 @@ test('offer tab labels fall back cleanly when ship or operator details are missi
     extractFunction('escapeOfferTabRegExp'),
     extractFunction('getOfferTabOperatorFullName'),
     extractFunction('getOfferTabShipPrefixes'),
+    extractFunction('formatRoyalCaribbeanOfferTabShipLabel'),
     extractFunction('getOfferTabShipLabel'),
     extractFunction('getOfferTabLabelParts')
   ].join('\n'), context);
