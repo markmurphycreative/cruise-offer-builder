@@ -54,6 +54,21 @@ test('new campaign defaults to today, British ordinal naming, weekday, descripti
   assert.equal(elements['g-auto-campaign'].checked, true);
 });
 
+
+test('CSV filename fallback only updates campaign name when detailed parsing fails', () => {
+  const { context, elements } = createHarness();
+  context.initialiseCampaignNamingDefaults(new Date('2026-06-21T12:00:00'));
+  elements['g-date'].value = '21st June 2026';
+  elements['g-description'].value = 'Previous Description';
+  elements['g-owner'].value = 'Previous Owner';
+
+  assert.equal(context.applyCsvFilenameCampaignMetadata('Ad hoc campaign upload.csv'), true);
+  assert.equal(elements['g-campaign'].value, 'Ad hoc campaign upload');
+  assert.equal(elements['g-date'].value, '21st June 2026');
+  assert.equal(elements['g-description'].value, 'Previous Description');
+  assert.equal(elements['g-owner'].value, 'Previous Owner');
+});
+
 test('ordinal generation handles British suffix edge cases', () => {
   const { context } = createHarness();
   assert.deepEqual([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 31].map(context.ordinalDay), [
@@ -128,17 +143,26 @@ test('CSV filename parsing strips supported extensions, cleans underscores and e
   assert.equal(elements['g-campaign'].value, '30th May 2026 - Saturday - Cruise Worldwide Mixed (Mark)');
   assert.equal(elements['g-date'].value, '30th May 2026');
   assert.equal(elements['g-owner'].value, 'Mark');
+
+  assert.equal(context.applyCsvFilenameCampaignMetadata('1st July 2026 - Saturday - Cruise Worldwide Mixed (Mark).csv'), true);
+  assert.equal(elements['g-campaign'].value, '1st July 2026 - Saturday - Cruise Worldwide Mixed (Mark)');
+  assert.equal(elements['g-date'].value, '1st July 2026');
+  assert.equal(elements['g-description'].value, 'Cruise Worldwide Mixed');
+  assert.equal(elements['g-owner'].value, 'Mark');
 });
 
-test('manual names outrank CSV filenames and sheet names while sheets use reliable names or generated fallback', () => {
+test('CSV filenames overwrite stale metadata while manual names still outrank sheet names', () => {
   const { context, elements } = createHarness();
   context.initialiseCampaignNamingDefaults(new Date('2026-06-03T12:00:00'));
   assert.equal(context.applySheetSourceCampaignName('Reliable Sheet Source'), true);
   assert.equal(elements['g-campaign'].value, 'Reliable Sheet Source');
   elements['g-campaign'].value = 'Manual override';
   context.handleCampaignNameInput();
-  assert.equal(context.applyCsvFilenameCampaignMetadata('30th May 2026 - Saturday - Cruise Worldwide Mixed (Mark).csv'), false);
-  assert.equal(elements['g-campaign'].value, 'Manual override');
+  assert.equal(context.applyCsvFilenameCampaignMetadata('30th May 2026 - Saturday - Cruise Worldwide Mixed (Mark).csv'), true);
+  assert.equal(elements['g-campaign'].value, '30th May 2026 - Saturday - Cruise Worldwide Mixed (Mark)');
+  assert.equal(elements['g-date'].value, '30th May 2026');
+  assert.equal(elements['g-description'].value, 'Cruise Worldwide Mixed');
+  assert.equal(elements['g-owner'].value, 'Mark');
 
   const fallback = createHarness();
   fallback.context.initialiseCampaignNamingDefaults(new Date('2026-06-03T12:00:00'));
@@ -146,7 +170,7 @@ test('manual names outrank CSV filenames and sheet names while sheets use reliab
   assert.equal(fallback.elements['g-campaign'].value, '3rd June 2026 - Wednesday - Cruise Worldwide Mixed (Mark)');
 });
 
-test('saved campaign restoration preserves exact name, metadata and auto state without regeneration', () => {
+test('saved campaign restoration preserves exact name, metadata and auto state without regeneration until a CSV filename is loaded', () => {
   const { context, elements } = createHarness();
   context.initialiseCampaignNamingDefaults(new Date('2026-06-03T12:00:00'));
   elements['g-campaign'].value = 'Saved exact custom name';
@@ -155,6 +179,9 @@ test('saved campaign restoration preserves exact name, metadata and auto state w
   assert.equal(elements['g-owner'].value, 'Wendy');
   assert.equal(elements['g-description'].value, 'Japan Educational');
   assert.equal(elements['g-auto-campaign'].checked, true);
-  assert.equal(context.applyCsvFilenameCampaignMetadata('30th May 2026 - Saturday - Cruise Worldwide Mixed (Mark).csv'), false);
-  assert.equal(elements['g-campaign'].value, 'Saved exact custom name');
+  assert.equal(context.applyCsvFilenameCampaignMetadata('30th May 2026 - Saturday - Cruise Worldwide Mixed (Mark).csv'), true);
+  assert.equal(elements['g-campaign'].value, '30th May 2026 - Saturday - Cruise Worldwide Mixed (Mark)');
+  assert.equal(elements['g-date'].value, '30th May 2026');
+  assert.equal(elements['g-description'].value, 'Cruise Worldwide Mixed');
+  assert.equal(elements['g-owner'].value, 'Mark');
 });

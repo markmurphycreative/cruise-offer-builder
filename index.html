@@ -1224,7 +1224,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v3.4.18";
+const APP_VERSION = "v3.4.19";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -4089,7 +4089,7 @@ function parseCampaignNameFromFilename(filename){
   if(!match) return null;
   const sendDate=`${Number(match[1])}${match[2].toLowerCase()} ${match[3]} ${match[4]}`;
   const date=parseCampaignSendDate(sendDate);
-  if(!date || formatCampaignWeekday(date).toLowerCase()!==match[5].toLowerCase()) return null;
+  if(!date) return null;
   return {name,sendDate:formatCampaignDate(date),description:match[6].trim(),owner:match[7].trim()};
 }
 function getAutoCampaignNameState(){
@@ -4147,7 +4147,9 @@ function handleAutoCampaignNameToggle(){
 }
 function applyCsvFilenameCampaignMetadata(filename){
   const metadata=parseCampaignNameFromFilename(filename);
-  return metadata ? applyCampaignMetadata(metadata,"csv") : false;
+  if(metadata) return applyCampaignMetadata(metadata,"csv",true);
+  const name=cleanCampaignSourceName(filename);
+  return name ? applyCampaignMetadata({name},"csv",true) : false;
 }
 function applySheetSourceCampaignName(sourceName){
   const parsed=parseCampaignNameFromFilename(sourceName);
