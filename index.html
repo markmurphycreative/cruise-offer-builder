@@ -3794,7 +3794,7 @@ function processSheetCSV(csv,status){
     const hasFlights=/\b(?:flights?|fly|flying|airfare)\b/i.test(value);
     const hasLuggage=/\b(?:luggage|baggage|checked\s+bags?)\b/i.test(value);
     const hasTransfers=/\btransfers?\b/i.test(value);
-    if(airportName){
+    if(airportName&&hasFlights){
       const parts=["Flights"];
       if(hasLuggage) parts.push("Luggage");
       if(hasTransfers) parts.push("Transfers");
@@ -3823,15 +3823,13 @@ function processSheetCSV(csv,status){
       val(row,headers,["gratuities","service_charges"]),
       val(row,headers,["cabin","cabin_type"])
     ].filter(Boolean).join(" "));
-    const departureType=val(row,headers,["departure_type"]);
     const departureAirport=val(row,headers,["departure","departure_airport","airport"]);
-    const isNoFlyCruise=/\bno\s*fly\s*cruise\b/i.test(departureType);
-    const isFlyCruise=!isNoFlyCruise && /\b(fly|flight|flights|flying)\b/i.test(departureType);
-    const hasFlightInclusion=hasAnyValue(row,headers,["flights","flight","flight_included"]) || /\b(flights?|fly|flying|airfare)\b/i.test(combined);
     const normalisedHasFlights=/\bflights?\b/i.test(normalisedInclusion);
     const normalisedNoFly=/^No Fly$/i.test(normalisedInclusion);
-    if((isFlyCruise || (!departureType && hasFlightInclusion)) && !normalisedHasFlights && !normalisedNoFly){
-      const flightPart=departureAirport ? departureAirport+" Flights" : "Flights";
+    const explicitFlightValue=val(row,headers,["flights","flight","flight_included"]);
+    const explicitFlightInclusion=/\b(flights?|fly|flying|airfare)\b/i.test(inclusionText);
+    if((explicitFlightValue||explicitFlightInclusion)&&!normalisedHasFlights&&!normalisedNoFly){
+      const flightPart=departureAirport ? departureAirport+" Flights Included" : "Flights Included";
       if(!parts.some(item=>item.toLowerCase()===flightPart.toLowerCase())) parts.unshift(flightPart);
     }
     const hasLuggageInclusion=hasAnyValue(row,headers,["luggage","baggage"]) || /\b(luggage|baggage|checked\s+bags?)\b/i.test(combined);
