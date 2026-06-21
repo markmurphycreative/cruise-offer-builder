@@ -1224,7 +1224,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v3.4.16";
+const APP_VERSION = "v3.4.17";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
@@ -3851,7 +3851,7 @@ function processSheetCSV(csv,status){
     if(cabin) addUnique(parts,cabin.replace(/\b\w/g,ch=>ch.toUpperCase()).replace(/\bAnd\b/g,"and"));
     if(/\bchild(?:ren)?\b/i.test(passengerBasis)) addUnique(parts,"Family");
     const banned=[title,ship,passengerBasis,val(row,headers,["price"])].map(v=>norm(v).toLowerCase()).filter(Boolean);
-    const separator=(parts.some(part=>/\bflights included\b/i.test(part)) && parts.some(part=>/\b(?:inside|outside|ocean\s+view|balcony|suite|veranda|interior)\b/i.test(part))) ? " • " : " · ";
+    const separator=(parts.some(part=>/\b(?:flights included|luggage included|transfers included|coach included|no fly)\b/i.test(part)) && parts.some(part=>/\b(?:inside|outside|ocean\s+view|balcony|suite|veranda|interior)\b/i.test(part))) ? " - " : " · ";
     return parts.filter(part=>{
       const lower=part.toLowerCase();
       if(banned.includes(lower)) return false;
@@ -6622,9 +6622,12 @@ function chunkBullets(str,options){
     .map(line=>`<span class="port-line">${renderItineraryLine(line)}</span>`)
     .join(" ");
 }
+function normaliseSubtitleSeparator(value){
+  return String(value||"").replace(/\s*•\s*/g," - ").replace(/\s{2,}/g," ").trim();
+}
 function renderCardHTML(d){
   const name=d.name||"";
-  const incl=d.incl||"";
+  const incl=typeof normaliseSubtitleSeparator==="function"?normaliseSubtitleSeparator(d.incl):String(d.incl||"").replace(/\s*•\s*/g," - ").replace(/\s{2,}/g," ").trim();
   const ship=d.ship||"";
   const priceRaw=(d.price||"").toString().replace(/[^0-9]/g,"");
   const price=priceRaw?Number(priceRaw).toLocaleString("en-GB"):"";
@@ -6784,7 +6787,7 @@ function getSummaryOfferDetails(o,i){
     ["Board",summaryDisplay(board)],
     ["USP",summaryDisplay(o.tags)],
     ["Ports",summaryDisplay(o.ports)],
-    ["Inclusions",summaryDisplay(o.incl)],
+    ["Inclusions",summaryDisplay(typeof normaliseSubtitleSeparator==="function"?normaliseSubtitleSeparator(o.incl):o.incl)],
     ["Price basis",summaryDisplay(o.basis)],
     ["Destination URL",summaryDisplay(o.url)],
     ["Hero image",imageStatus,o._img?"sum-ok":"sum-bad"],

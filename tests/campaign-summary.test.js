@@ -51,6 +51,7 @@ test('campaign summary offer headings are compact and visually prominent', () =>
 test('campaign summary reuses existing offer readiness status and presents full review fields', () => {
   const details = extractFunction('getSummaryOfferDetails');
   assert.match(details, /getOfferStatus\(i\)==="green"/);
+  assert.match(details, /normaliseSubtitleSeparator\(o\.incl\)/);
   ['Operator', 'Ship', 'Price', 'Date', 'Duration', 'Board', 'USP', 'Ports', 'Inclusions', 'Price basis', 'Destination URL', 'Hero image', 'UTM', 'Export readiness'].forEach(label => {
     assert.match(details, new RegExp(`\\["${label}"`));
   });
