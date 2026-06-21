@@ -226,9 +226,9 @@ test('Google Sheet imported airport inclusions use Paste Offer airport normalisa
     'Celebrity Cruises,Celebrity Millennium,Best of Japan - Golden Week,29 April 2027,12,Flights from Newcastle,Inside Cabin,Full Board,3089,Tokyo • Kyoto (Osaka) • Kochi • Busan • Nagasaki • Kagoshima • Mt Fuji (Shimizu) • Tokyo,Inside Cabin • Japan • Hotel Stay'
   ].join('\n'));
 
-  assert.equal(offer.incl, 'Newcastle Flights Included • Inside Cabin');
-  assert.match(offer.incl, /Newcastle Flights Included • Inside Cabin/);
-  assert.doesNotMatch(offer.incl, /^Flights •/);
+  assert.equal(offer.incl, 'Newcastle Flights Included - Inside Cabin');
+  assert.match(offer.incl, /Newcastle Flights Included - Inside Cabin/);
+  assert.doesNotMatch(offer.incl, /^Flights -/);
 });
 
 test('Google Sheet imported inclusion values match required airport and non-flight mappings', () => {

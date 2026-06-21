@@ -88,6 +88,7 @@ function createRenderContext() {
     extractFunction('cleanEmbarkationPortDisplay'),
     extractFunction('getEmbarkationPort'),
     extractFunction('chunkBullets'),
+    extractFunction('normaliseSubtitleSeparator'),
     extractFunction('renderCardHTML'),
     extractFunction('bc')
   ].join('\n'), context);
@@ -117,6 +118,26 @@ test('destination normalisation improves readability without trailing bullet opp
   assert.doesNotMatch(rendered, /<br>/);
   assert.doesNotMatch(rendered, /<span class="port-line">\s*<span class="port-separator">•<\/span>/);
   assert.doesNotMatch(rendered, /<span class="port-separator">•<\/span>\s*<\/span>/);
+});
+
+test('card subtitle separators render hyphens while itinerary separators stay bullets', () => {
+  const { renderCardHTML, normaliseSubtitleSeparator } = createRenderContext();
+  const cases = [
+    ['Luggage Included • Ocean View Cabin', 'Luggage Included - Ocean View Cabin'],
+    ['Newcastle Flights Included • Inside Cabin', 'Newcastle Flights Included - Inside Cabin'],
+    ['Manchester Flights, Luggage Included • Balcony Cabin', 'Manchester Flights, Luggage Included - Balcony Cabin'],
+    ['No Fly • Ocean View Cabin', 'No Fly - Ocean View Cabin'],
+    ['Coach Included • Inside Cabin', 'Coach Included - Inside Cabin']
+  ];
+
+  for (const [input, expected] of cases) {
+    assert.equal(normaliseSubtitleSeparator(input), expected);
+    const card = renderCardHTML({ name: 'Cruise Title', incl: input, ports: 'Barbados • Martinique' });
+    assert.match(card, new RegExp(`<div class="incl">${expected}</div>`));
+  }
+
+  const card = renderCardHTML({ name: 'Cruise Title', incl: 'Luggage Included • Ocean View Cabin', ports: 'Barbados • Martinique' });
+  assert.match(card, /<span class="port-unit">Barbados<\/span> <span class="port-separator">•<\/span> <span class="port-unit">Martinique<\/span>/);
 });
 
 test('CSV pre-cruise stay is detected and excluded from title, details, sailing and destinations', () => {
