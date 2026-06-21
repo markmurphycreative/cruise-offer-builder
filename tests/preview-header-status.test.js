@@ -102,7 +102,7 @@ test('Single preview header reuses readiness state for the selected offer status
   assert.equal(title.textContent, 'LIVE PREVIEW — OFFER 1');
 });
 
-test('existing status refresh path also refreshes the preview title without changing status-dot logic', () => {
+test('existing status refresh path also refreshes the preview title without changing tab status logic', () => {
   const statusRefresh = extractFunction('updateAllStatus');
   assert.match(statusRefresh, /updateProductionStatus\(\);[\s\S]*if\(typeof updatePreviewTitle===\"function\"\) updatePreviewTitle\(\);/);
   assert.match(statusRefresh, /if\(typeof updateSectionCompletionIndicators===\"function\"\) updateSectionCompletionIndicators\(\);/);
