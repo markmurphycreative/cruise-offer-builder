@@ -1218,3 +1218,7 @@ test('Paste Offer rejects marketing labels, cabin types, USPs and board basis as
 
   assert.equal(parsedPorts, '');
 });
+
+test('Paste Offer clears stale hero data only on the selected slot before applying parsed fields', () => {
+  assert.match(extractFunction('applyParsedOffer'), /clearHeroImageDataFromOffer\(cur\)/);
+});
