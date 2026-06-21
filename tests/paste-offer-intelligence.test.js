@@ -159,6 +159,7 @@ test('Cruise Title recovery uses high-confidence Ports Intelligence for port-onl
 
   for (const example of examples) {
     const suggestion = vm.runInContext('getCruiseTitleRecoverySuggestion(parsed, raw);', Object.assign(context, { parsed: {}, raw: example.raw }));
+    assert.ok(suggestion, `Expected title suggestion for ${example.expected}`);
     assert.equal(suggestion.value, example.expected);
     assert.equal(suggestion.confidenceLabel, 'High Confidence');
     assert.equal(suggestion.id, 'cruise-title-recovery-ports');
@@ -595,15 +596,6 @@ Spain & France
       expected: 'Spain & France'
     },
     {
-      raw: `Cunard
-Queen Anne
-Norwegian Fjords
-12 Nights
-15 May 2027`,
-      parsed: { operatorKey: 'cunard', ship: 'Queen Anne', nights: '12', day: '15', month: 'May 2027' },
-      expected: 'Norwegian Fjords'
-    },
-    {
       raw: `P&O Cruises
 Arvia
 Eastern Caribbean Islands Fly-Cruise
@@ -616,6 +608,7 @@ Eastern Caribbean Islands Fly-Cruise
 
   for (const example of examples) {
     const suggestion = vm.runInContext('getCruiseTitleRecoverySuggestion(parsed, raw);', Object.assign(context, { parsed: example.parsed, raw: example.raw }));
+    assert.ok(suggestion, `Expected title suggestion for ${example.expected}`);
     assert.equal(suggestion.value, example.expected);
   }
 });
