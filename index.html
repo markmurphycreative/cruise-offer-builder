@@ -6629,8 +6629,11 @@ function chunkBullets(str,options){
 function normaliseSubtitleSeparator(value){
   return String(value||"").replace(/\s*•\s*/g," - ").replace(/\s{2,}/g," ").trim();
 }
+function renderCruiseTitle(value){
+  return String(value||"").replace(/-/g,"‑");
+}
 function renderCardHTML(d){
-  const name=d.name||"";
+  const name=renderCruiseTitle(d.name);
   const incl=typeof normaliseSubtitleSeparator==="function"?normaliseSubtitleSeparator(d.incl):String(d.incl||"").replace(/\s*•\s*/g," - ").replace(/\s{2,}/g," ").trim();
   const ship=d.ship||"";
   const priceRaw=(d.price||"").toString().replace(/[^0-9]/g,"");
