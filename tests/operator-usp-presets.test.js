@@ -75,7 +75,7 @@ test('every supported cruise operator has the exact requested USP preset', () =>
   );
 });
 
-test('selecting and switching operators always replaces the current USP field value', () => {
+test('selecting and switching operators replaces non-overridden USP field values', () => {
   const { context, fields } = createOperatorHarness();
   for (const [key, expected] of Object.entries(EXPECTED_CRUISE_PRESETS)) {
     fields['f-tags'].value = 'Previously edited USP value';
@@ -87,7 +87,7 @@ test('selecting and switching operators always replaces the current USP field va
   }
 });
 
-test('the populated USP input remains user-editable until the next operator selection', () => {
+test('the populated USP input remains user-editable and preserves a manual override', () => {
   const { context, fields } = createOperatorHarness();
   fields['f-operator'].value = 'po';
   context.operatorChanged();

@@ -218,13 +218,13 @@ test('card layout render order remains unchanged for imported and manually built
   );
 });
 
-test('CSV imported USP/tag text is written to offer.tags for f-tags persistence', () => {
+test('CSV imported USP/tag text does not override the operator top-bar preset', () => {
   const offer = importCSV([
     'Operator,Title,Ship,Price,Nights,Date,Board Basis,Tags,Inclusions,Itinerary',
     'Marella Cruises,Greek Island Gems,Marella Voyager,£1249,7,12 May 2027,All Inclusive,Accessible · All Inclusive · Entertainment · Family,Flights included,Corfu | Rhodes | Patmos'
   ].join('\n'));
 
-  assert.equal(offer.tags, 'Accessible · All Inclusive · Entertainment · Family');
+  assert.equal(offer.tags, 'Accessible · Adult Only Options · All-inclusive · Entertainment');
 });
 
 test('CSV import writes the same fallback top-bar USP text into offer.tags when no tag column is supplied', () => {
@@ -233,7 +233,7 @@ test('CSV import writes the same fallback top-bar USP text into offer.tags when 
     'Marella Cruises,Greek Island Gems,Marella Voyager,£1249,7,12 May 2027,All Inclusive,Flights included,Corfu | Rhodes | Patmos'
   ].join('\n'));
 
-  assert.equal(offer.tags, 'Cruise · Destinations · Entertainment');
+  assert.equal(offer.tags, 'Accessible · Adult Only Options · All-inclusive · Entertainment');
 });
 
 test('Google Sheet imported airport inclusions use Paste Offer airport normalisation before cabin subtitle generation', () => {

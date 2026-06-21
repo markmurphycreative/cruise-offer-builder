@@ -144,8 +144,8 @@ test('Copy QA marks USP text empty only when f-tags and current offer tags are b
   assert.match(elements['copy-qa-checklist'].innerHTML, /<strong>USP text<\/strong><span class="state">Missing<\/span>/);
 });
 
-test('imported offer tags restore into f-tags when switching selected offers', () => {
-  assert.match(html, /if\(!o\.tags && \(o\.operator\|\|o\.name\|\|o\.ship\|\|o\.price\|\|o\.incl\|\|o\.ports\)\) o\.tags=\(typeof OPERATOR_USP_PRESETS!=="undefined"&&OPERATOR_USP_PRESETS\[o\.operator\|\|""\]\)\|\|"Cruise · Destinations · Entertainment";/, 'load path should materialise top-bar USP fallback on the offer');
+test('imported offers materialise operator top-bar presets when switching selected offers', () => {
+  assert.match(html, /if\(o\.operator\|\|o\.name\|\|o\.ship\|\|o\.price\|\|o\.incl\|\|o\.ports\) applyOperatorTopBarUspDefault\(o,o\.operator\|\|""\);/, 'load path should materialise top-bar USP fallback on the offer');
   assert.match(html, /FLDS\.forEach\(f=>\{\n    const e=document\.getElementById\('f-'\+f\);\n    if\(e\) e\.value = o\[f\] \|\| '';\n  \}\);/, 'load path should restore offer.tags into the visible f-tags field through FLDS');
 });
 
