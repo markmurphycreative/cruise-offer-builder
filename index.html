@@ -397,7 +397,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .abtn.red{background:var(--red);color:#fff;border-color:var(--red);}
 .abtn.amber{background:var(--amber);color:#fff;border-color:var(--amber);}
 .sb-actions .act-row{align-items:stretch;gap:5px;}
-.sb-actions .abtn{min-height:28px;padding:4px 7px;border:none;border-radius:3px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(14,27,42,.24);}
+.sb-actions .abtn{min-height:28px;padding:4px 7px;border:none;border-radius:3px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(14,27,42,.24);font-weight:400;}
 .sb-actions .abtn.gold{box-shadow:0 2px 6px rgba(160,146,103,.35);}
 .sb-actions .abtn:hover{opacity:.88;transform:translateY(-1px);}
 .btn-compact{font-size:9px;padding:4px;}
@@ -414,7 +414,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .section.csv-core-section .section-toggle{color:var(--gold);}
 .section.csv-core-section .section-hdr.collapsed .section-toggle{color:var(--muted);}
 .summary-action{padding:8px 10px;}
-.summary-action .abtn{width:100%;min-height:28px;display:flex;align-items:center;justify-content:center;}
+.summary-action .abtn{width:100%;min-height:28px;display:flex;align-items:center;justify-content:center;font-weight:400;}
 
 /* ── PREVIEW ── */
 .preview-toolbar{background:var(--navy);padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;}
@@ -1227,7 +1227,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 <script>
 // Single source of truth for application version
-const APP_VERSION = "v3.4.21";
+const APP_VERSION = "v3.4.22";
 document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
