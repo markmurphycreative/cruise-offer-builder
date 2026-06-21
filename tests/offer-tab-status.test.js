@@ -284,6 +284,36 @@ test('offer tab label layout keeps fixed tab widths, truncation, and clearer hie
   assert.match(html, /\.otab\.active \.offer-tab-operator\{color:var\(--navy\);font-weight:700;[^}]*opacity:1;\}/);
 });
 
+test('offer tab readiness label reflects export blockers instead of parser confidence', () => {
+  const context = {
+    offers: [
+      createCleanOffer('Ready'),
+      { ...createCleanOffer('Missing hero'), _img: '' },
+      { ...createCleanOffer('Missing title'), name: '' },
+      { ...createCleanOffer('Missing UTM'), _utm: '' }
+    ],
+    OPERATOR_HEADERS: { po: { pngData: 'assets/operator-logos/po-cruises-logo.png' } }
+  };
+  vm.createContext(context);
+  vm.runInContext([
+    extractFunction('isOfferLoaded'),
+    extractFunction('getMissingCriticalOfferFields'),
+    extractFunction('hasCriticalOfferContent'),
+    extractFunction('hasOperatorLogo'),
+    extractFunction('getOfferReadiness'),
+    extractFunction('getOfferTabReadinessLabel'),
+    extractFunction('getOfferTabQualityScore')
+  ].join('\n'), context);
+
+  assert.deepEqual([0, 1, 2, 3].map(index => context.getOfferTabReadinessLabel(index)), [
+    '100',
+    'Needs image',
+    'Blocked',
+    'Incomplete'
+  ]);
+  assert.equal(context.getOfferTabQualityScore(1), 'Needs image');
+});
+
 test('each offer tab dot independently maps empty, incomplete, invalid and export-ready offers', () => {
   const green = createCleanOffer('Ready');
   const amber = { ...createCleanOffer('Incomplete'), _img: '' };
