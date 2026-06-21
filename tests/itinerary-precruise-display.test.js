@@ -89,6 +89,7 @@ function createRenderContext() {
     extractFunction('getEmbarkationPort'),
     extractFunction('chunkBullets'),
     extractFunction('normaliseSubtitleSeparator'),
+    extractFunction('renderCruiseTitle'),
     extractFunction('renderCardHTML'),
     extractFunction('bc')
   ].join('\n'), context);
@@ -138,6 +139,21 @@ test('card subtitle separators render hyphens while itinerary separators stay bu
 
   const card = renderCardHTML({ name: 'Cruise Title', incl: 'Luggage Included • Ocean View Cabin', ports: 'Barbados • Martinique' });
   assert.match(card, /<span class="port-unit">Barbados<\/span> <span class="port-separator">•<\/span> <span class="port-unit">Martinique<\/span>/);
+});
+
+test('card title rendering converts hyphenated cruise title terms to non-breaking hyphens only in title output', () => {
+  const { renderCardHTML, renderCruiseTitle } = createRenderContext();
+  const card = renderCardHTML({
+    name: 'Eastern Caribbean Fly-Cruise Back-to-Back',
+    incl: 'Pre-Cruise Stay • Adults-Only Venue',
+    ports: 'Barbados • Martinique'
+  });
+
+  assert.equal(renderCruiseTitle('Fly-Cruise Mini-Break Adults-Only Pre-Cruise Post-Cruise Back-to-Back'), 'Fly‑Cruise Mini‑Break Adults‑Only Pre‑Cruise Post‑Cruise Back‑to‑Back');
+  assert.match(card, /<div class="cname">Eastern Caribbean Fly‑Cruise Back‑to‑Back<\/div>/);
+  assert.doesNotMatch(card, /<div class="cname">[^<]*Fly-Cruise/);
+  assert.match(card, /<div class="incl">Pre-Cruise Stay - Adults-Only Venue<\/div>/);
+  assert.match(card, /<span class="port-unit">Barbados<\/span>/);
 });
 
 test('CSV pre-cruise stay is detected and excluded from title, details, sailing and destinations', () => {
