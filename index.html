@@ -3121,11 +3121,44 @@ function isRoyalCaribbeanOfferTabOperator(o){
   const fullName=String((meta&&meta.name)||key).trim();
   return /^(royal caribbean|rci)$/i.test(fullName);
 }
+const OFFER_TAB_SHIP_PREFIXES = {
+  amawaterways: ["AmaWaterways"],
+  po: ["P&O"],
+  marella: ["Marella"],
+  celebrity: ["Celebrity"],
+  fred: ["Fred. Olsen","Fred.Olsen"],
+  royal: ["Royal Caribbean","RCI"],
+  ambassador: ["Ambassador"],
+  cunard: ["Cunard"],
+  virgin: ["Virgin Voyages","Virgin"],
+  msc: ["MSC"],
+  ncl: ["Norwegian Cruise Line","Norwegian"],
+  princess: ["Princess"]
+};
+function escapeOfferTabRegExp(value){
+  return String(value||"").replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+}
+function getOfferTabOperatorFullName(o){
+  const key=String((o&&o.operator)||"").trim();
+  if(!key) return "";
+  const meta=(typeof OPERATOR_HEADERS!=="undefined"&&OPERATOR_HEADERS&&OPERATOR_HEADERS[key])||null;
+  return String((meta&&meta.name)||key).trim();
+}
+function getOfferTabShipPrefixes(o){
+  const key=String((o&&o.operator)||"").trim();
+  const fullName=getOfferTabOperatorFullName(o);
+  const label=getOfferTabOperatorLabel(o);
+  const prefixes=[...(OFFER_TAB_SHIP_PREFIXES[key]||[]),fullName,label];
+  return prefixes.map(prefix=>String(prefix||"").trim()).filter((prefix,index,self)=>prefix&&self.findIndex(item=>item.toLowerCase()===prefix.toLowerCase())===index).sort((a,b)=>b.length-a.length);
+}
 function getOfferTabShipLabel(o){
   const ship=String((o&&o.ship)||"").trim();
   if(!ship) return "";
-  if(!isRoyalCaribbeanOfferTabOperator(o)) return ship;
-  return ship.replace(/^(.+?)\s+of\s+the\s+seas$/i,"$1 OTS");
+  for(const prefix of getOfferTabShipPrefixes(o)){
+    const cleaned=ship.replace(new RegExp("^"+escapeOfferTabRegExp(prefix)+"\\s+","i"),"").trim();
+    if(cleaned&&cleaned!==ship) return cleaned;
+  }
+  return ship;
 }
 function getOfferTabLabelParts(i){
   const o=offers[i]||{};
