@@ -274,3 +274,7 @@ test('Multi Offer Import status rows use the clamped confidence score for displa
   assert.match(performMultiOfferImport, /Confidence \$\{clampParseConfidenceScore\(result\.score\)\}/);
   assert.doesNotMatch(performMultiOfferImport, /Confidence \$\{result\.score\}/);
 });
+
+test('Multi Offer Import clears stale hero data on imported slots', () => {
+  assert.match(extractFunction('applyParsedOfferToSlot'), /clearHeroImageDataFromOffer\(index\)/);
+});

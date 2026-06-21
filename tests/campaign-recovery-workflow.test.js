@@ -91,9 +91,10 @@ test('hero image lock preserves imagery and crop fields while allowing text refr
   assert.equal(merged.heroLocked, true);
 });
 
-test('CSV and sheet import path checks hero locks before writing sheet image data', () => {
-  assert.match(html, /if\(hero && !\(typeof isHeroImageLocked==="function" && isHeroImageLocked\(loaded\)\)\)\{ newOffer\._img=hero; \}/);
-  assert.match(html, /if\(typeof preserveLockedHeroImageData==="function"\) preserveLockedHeroImageData\(newOffer, loaded, offers\[loaded\]\);/);
+test('CSV and sheet import clears stale hero data before applying new offer rows', () => {
+  assert.match(html, /if\(typeof clearHeroImageDataFromOffer==="function"\) clearHeroImageDataFromOffer\(loaded\);/);
+  assert.match(html, /\["_img","_imgSource","_imgNeedsReupload","_cropZoom","_cropX","_cropY","_cropPosVersion","_heroFitMode","heroLocked"\]\.forEach\(key=>\{ delete newOffer\[key\]; \}\);/);
+  assert.match(html, /if\(hero\)\{ newOffer\._img=hero; \}/);
 });
 
 
