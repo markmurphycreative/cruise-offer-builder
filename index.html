@@ -5386,17 +5386,7 @@ function formatAirportName(airport){
   return String(airport||"").split(/\s+/).map(part=>part.charAt(0).toUpperCase()+part.slice(1).toLowerCase()).join(" ");
 }
 function normaliseShortAirportIncludedLines(raw){
-  const airports=Array.isArray(AIRPORT_WORDS)?AIRPORT_WORDS:[];
-  return String(raw||"").split(/\n/).map(line=>{
-    const original=String(line||"");
-    const trimmed=original.trim();
-    if(!trimmed) return original;
-    for(const airport of airports){
-      const match=trimmed.match(new RegExp(`^(${escapeRegExp(airport)})\\s+included$`,"i"));
-      if(match) return `${formatAirportName(match[1])} Flights Included`;
-    }
-    return original;
-  }).join("\n");
+  return String(raw||"");
 }
 function normaliseAirportInclusionPhrase(phrase){
   const value=String(phrase||"").replace(/\u00a0/g," ").replace(/\s+/g," ").trim();
@@ -5798,8 +5788,15 @@ function parseOffer(){
   const result=parseOfferText(raw,{renderIntelligence:true}); if(!result) return;
   pendingParseResult=result; if(!showParsePreview()) applyParsedOffer();
 }
+
+function extractSourceInclusionLine(lines){
+  const inclusionPattern=/\b(?:flights?|fly(?:ing)?\s+from|luggage|baggage|transfers?|hotel\s+(?:stay|included|night)|drinks?\s+(?:package|included)|wi[-\s]?fi|gratuities|tips\s+included|on\s*board\s+(?:spend|credit)|on-board\s+(?:spend|credit)|onboard\s+(?:spend|credit)|included|all[\s-]*inclusive|adult(?:s)?\s*only|inside\s+cabin|outside\s+cabin|balcony\s+cabin|suite\s+cabin|cabin\s+upgrade)\b/i;
+  const negativePattern=/\b(?:not\s+included|excludes?|excluding|optional|available\s+at\s+(?:a\s+)?supplement|available\s+at\s+(?:an\s+)?extra\s+cost|extra\s+cost|payable\s+locally|available\s+to\s+buy)\b/i;
+  const sourceLine=(lines||[]).find(line=>inclusionPattern.test(line)&&!negativePattern.test(line));
+  return sourceLine?String(sourceLine).trim():"";
+}
 function parseOfferText(raw,options){
-  raw=normaliseShortAirportIncludedLines(String(raw||""));
+  raw=String(raw||"");
   if(!raw.trim()) return null;
   const renderIntelligence=!!(options&&options.renderIntelligence);
   const lines=raw.split(/\n/).map(l=>l.trim()).filter(Boolean); const txt=lines.join(" \n "); const parsed={}; let score=0;
@@ -5810,7 +5807,7 @@ function parseOfferText(raw,options){
   const pipe=lines.find(l=>l.includes('|')); if(pipe){const parts=pipe.split('|').map(s=>s.trim()); if(!parsed.operatorKey&&parts[0]){for(const[k,op]of Object.entries(OPERATOR_HEADERS)){if(op.name&&new RegExp('\\b'+op.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i').test(parts[0])){parsed.operatorKey=k;score+=18;break;}} if(!parsed.operatorKey){for(const[k,arr]of Object.entries(OPERATOR_ALIASES)){if(arr.some(r=>r.test(parts[0]))){parsed.operatorKey=k;score+=18;break;}}}} if(parts[1]){parsed.ship=parts[1];score+=8;} }
   const nm=txt.match(/\b(\d{1,2})\s*(?:nights?|nts?)\b/i); if(nm){parsed.nights=nm[1];score+=14;}
   const extractedPrice=extractOfferPrice(txt); if(extractedPrice){parsed.price=extractedPrice;score+=14;}
-  const passengerBasis=detectPassengerBasis(txt)||parseFamilyPassengerBasis(txt)||"Based On 2 Adults Sharing"; if(passengerBasis){parsed.basis=passengerBasis; if(detectPassengerBasis(txt)||parseFamilyPassengerBasis(txt)) score+=6;}
+  const passengerBasis=detectPassengerBasis(txt)||parseFamilyPassengerBasis(txt); if(passengerBasis){parsed.basis=passengerBasis; score+=6;}
   const detectedBoard=detectBoardBasis(txt); if(detectedBoard){parsed.board=detectedBoard[0];parsed.boardlbl=detectedBoard[1];score+=10;}
   const months='january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec';
   let dm=txt.match(new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${months})\\s+(\\d{2,4})\\b`,'i'))||txt.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);
@@ -5829,19 +5826,9 @@ function parseOfferText(raw,options){
     }
   }
   const uspTags=inferUspTagsFromLines(lines); if(uspTags){parsed.tags=uspTags;score+=8;}
-  const detectedInclusions=typeof detectOfferIntelligenceInclusions==="function"?detectOfferIntelligenceInclusions(parsed,raw):[];
-  const inclusionSuggestion=typeof getOfferIntelligenceCardInclusionSuggestion==="function"?getOfferIntelligenceCardInclusionSuggestion(detectedInclusions):"";
-  if(inclusionSuggestion){parsed.incl=inclusionSuggestion;score+=6;}
-  else { const incl=lines.find(l=>/flights?|luggage|transfer|included|all inclusive/i.test(l)); if(incl){parsed.incl=incl;score+=6;} }
-  const airportInclusion=detectAirportInclusion(raw);
-  const airport=detectFlightAirport(txt);
-  if(airportInclusion){
-    if(parsed.incl!==airportInclusion) score+=4;
-    parsed.incl=airportInclusion;
-  }
-  else if(airport&&!parsed.incl){parsed.incl=airport+' Flights Included';score+=4;}
+  const sourceInclusion=extractSourceInclusionLine(lines);
+  if(sourceInclusion){parsed.incl=sourceInclusion;score+=6;}
   const knownShipMatch=findKnownOperatorShip(txt,parsed.operatorKey); if(knownShipMatch){ if(!parsed.ship){parsed.ship=knownShipMatch.ship;score+=8;} if(!parsed.operatorKey){parsed.operatorKey=knownShipMatch.operatorKey;score+=18;} }
-  if(!parsed.board&&!parsed.boardlbl){const defaultBoard=getOperatorBoardDefault(parsed.operatorKey); if(defaultBoard){parsed.board=defaultBoard[0];parsed.boardlbl=defaultBoard[1];score+=6;}}
   if(!parsed.ship){const shipLine=lines.find(l=>/\b(cruise|explorer|symphony|arvia|voyager|queen|discovery)\b/i.test(l)); if(shipLine){const m=shipLine.match(/\b([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+){0,3})\b/); if(m) parsed.ship=m[1];}}
   const confidence=score>=62?'high':score>=35?'partial':'low';
   if(renderIntelligence&&typeof renderOfferIntelligencePanel==="function") renderOfferIntelligencePanel(parsed,raw);

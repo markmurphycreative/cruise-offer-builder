@@ -190,6 +190,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('removeDuplicateReturnEmbarkationPortsString'),
     extractFunction('getPortIntelligence'),
     extractFunction('isRecognisedPortTitleLine'),
+    extractFunction('extractSourceInclusionLine'),
     extractFunction('parseOfferText'),
     extractFunction('getOfferIntelligenceAirport'),
     extractFunction('parseOffer'),
@@ -262,7 +263,7 @@ test('Trello hardening detects occupancy variants and default sharing basis', ()
   }
 });
 
-test('Trello hardening detects board variants and applies operator defaults without overriding pasted board', () => {
+test('Trello hardening detects board variants without applying operator defaults', () => {
   const variants = [
     ['Full Board', 'FB', 'Full Board'],
     ['Full Board dining', 'FB', 'Full Board'],
@@ -278,20 +279,20 @@ test('Trello hardening detects board variants and applies operator defaults with
 
   const po = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
   po.parse('P&O Cruises\nArvia\n7 nights\n£999pp');
-  assert.equal(po.context.offers[0].boardlbl, 'Full Board');
+  assert.equal(po.context.offers[0].boardlbl, undefined);
 
   const marella = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
   marella.context.OPERATOR_HEADERS.marella = { name: 'Marella Cruises' };
   marella.context.OPERATOR_ALIASES.marella = [/\bmarella\b/i, /\bmarella\s+cruises\b/i];
   marella.parse('Marella Cruises\nMarella Explorer\n7 nights\n£999pp');
-  assert.equal(marella.context.offers[0].boardlbl, 'All Inclusive');
+  assert.equal(marella.context.offers[0].boardlbl, undefined);
 
   const pasted = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
   pasted.parse('P&O Cruises\nArvia\n7 nights\n£999pp\nAll Inclusive');
   assert.equal(pasted.context.offers[0].boardlbl, 'All Inclusive');
 });
 
-test('Paste Offer normalises shortened UK departure airport inclusion lines before parsing', () => {
+test('Paste Offer preserves shortened UK departure airport inclusion source lines', () => {
   const airports = ['Newcastle', 'Manchester', 'Glasgow', 'Edinburgh', 'Belfast'];
   for (const airport of airports) {
     const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
@@ -301,8 +302,8 @@ Sailing on Bolette from ${airport}
 ${airport} Included
 7 nights
 From £999pp`, { renderIntelligence: false });
-    assert.equal(result.parsed.incl, `${airport} Flights Included`);
-    assert.equal(harness.context.getOfferIntelligenceAirport(result.parsed, result.rawText), airport);
+    assert.equal(result.parsed.incl, `${airport} Included`);
+    assert.equal(harness.context.getOfferIntelligenceAirport(result.parsed, result.rawText), "");
   }
 });
 
@@ -322,7 +323,7 @@ You'll visit:
 Southampton • Vigo, Spain • Lisbon, Portugal • Cadiz, Spain • Paris, Le Havre, France • Southampton
 
 Full Board
-Balcony Cabin • Family • Premium Ship`, 'Manchester Flights Included', 'Southampton • Vigo • Lisbon • Cadiz • Paris, Le Havre'],
+Balcony Cabin • Family • Premium Ship`, 'Manchester Included', 'Southampton • Vigo • Lisbon • Cadiz • Paris, Le Havre'],
     [`MSC Cruises | MSC World Europa
 Western Mediterranean
 10 Nights • 3rd June 2027
@@ -335,7 +336,7 @@ You'll visit:
 Barcelona • Marseille, France • Genoa, Italy • Naples, Italy • Messina, Sicily • Valletta, Malta • Barcelona
 
 Full Board
-Family • Value • Entertainment`, 'Glasgow Flights Included', 'Barcelona • Marseille • Genoa • Naples • Messina • Valletta'],
+Family • Value • Entertainment`, 'Glasgow Included', 'Barcelona • Marseille • Genoa • Naples • Messina • Valletta'],
     [`Princess Cruises | Regal Princess
 Italian Riviera & Spain
 12 Nights • 4th September 2027
@@ -363,9 +364,9 @@ test('Paste Offer preserves airport names on airport-specific inclusion lines', 
   const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
   const examples = [
     ['Leeds Bradford Flights, Luggage & Transfers Included', 'Leeds Bradford Flights, Luggage & Transfers Included'],
-    ['Manchester Luggage Included', 'Manchester Flights, Luggage Included'],
-    ['Glasgow Transfers Included', 'Glasgow Flights, Transfers Included'],
-    ['Belfast Included', 'Belfast Flights Included']
+    ['Manchester Luggage Included', 'Manchester Luggage Included'],
+    ['Glasgow Transfers Included', 'Glasgow Transfers Included'],
+    ['Belfast Included', 'Belfast Included']
   ];
 
   for (const [raw, expected] of examples) {
@@ -1096,7 +1097,7 @@ Based on 2 Adults Sharing`);
   assert.equal(harness.context.offers[0].operator, 'celebrity');
   assert.equal(harness.context.offers[0].ship, 'Celebrity Apex');
   assert.equal(harness.context.offers[0].name, 'Portugal & Spain');
-  assert.equal(harness.context.offers[0].boardlbl, 'Full Board');
+  assert.equal(harness.context.offers[0].boardlbl, undefined);
   assert.equal(harness.context.offers[0].price, '1899');
   assert.equal(harness.context.offers[0].ports, 'Southampton • Vigo • Lisbon • Porto (Leixoes) • La Coruna');
   assert.doesNotMatch(harness.context.offers[0].ports, /Inside|Stateroom|Adults|Included|£/);
@@ -1189,7 +1190,7 @@ Barcelona • Marseille, France • Rome, for Civitavecchia • Ibiza • Palma,
 All Inclusive
 Adults Only • Premium Ship • Overnight Port Stays`, { renderIntelligence: false });
 
-  assert.equal(luggageResult.parsed.incl, 'Manchester Flights, Luggage Included');
+  assert.equal(luggageResult.parsed.incl, 'Manchester Luggage Included');
 
   const transfersResult = harness.context.parseOfferText(`MSC Cruises | MSC World Europa
 Eastern Mediterranean Discovery
@@ -1205,7 +1206,7 @@ Athens • Kusadasi, Turkey • Istanbul, Turkey • Mykonos • Athens
 Full Board
 Family • Entertainment • Value`, { renderIntelligence: false });
 
-  assert.equal(transfersResult.parsed.incl, 'Glasgow Flights, Transfers Included');
+  assert.equal(transfersResult.parsed.incl, 'Glasgow Transfers Included');
   assert.equal(transfersResult.parsed.ports, 'Athens • Kusadasi • Istanbul • Mykonos');
 });
 
