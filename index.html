@@ -432,20 +432,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .campaign-library-category .section-hdr{padding:5px 7px;}
 .campaign-library-category .section-hdr h4{font-size:9px;font-weight:400;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);display:flex;align-items:center;gap:4px;}
 .campaign-library-category .section-body{padding:5px;background:#fafaf8;}
-.campaign-library-category[data-campaign-category="recent"]{border-left:2px solid rgba(42,122,74,.46);}
-.campaign-library-category[data-campaign-category="recent"] .section-hdr{background:rgba(42,122,74,.07);}
-.campaign-library-category[data-campaign-category="recent"] .section-hdr:not(.collapsed){background:rgba(42,122,74,.10);box-shadow:inset 2px 0 0 var(--green);}
-.campaign-library-category[data-campaign-category="pinned"] .section-hdr:not(.collapsed){background:rgba(160,146,103,.10);box-shadow:inset 4px 0 0 var(--gold);}
+.campaign-library-category[data-campaign-category="recent"] .section-hdr:not(.collapsed),.campaign-library-category[data-campaign-category="pinned"] .section-hdr:not(.collapsed){background:#fff;box-shadow:inset 2px 0 0 rgba(160,146,103,.34);}
 .campaign-history-list{display:grid;gap:4px;}
 .offer-context-label{margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);font-size:9px;font-weight:400;text-transform:uppercase;letter-spacing:.045em;color:var(--muted);opacity:.72;line-height:1.2;}
-.count-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:16px;padding:0 5px;border-radius:999px;background:rgba(160,146,103,.16);border:1px solid rgba(160,146,103,.34);color:var(--navy);font-size:9px;font-weight:700;line-height:1;margin-left:2px;font-variant-numeric:tabular-nums;}
-.count-badge--saved{background:rgba(42,122,74,.12);border-color:rgba(42,122,74,.34);color:var(--green);}
-.campaign-library-dashboard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin-bottom:5px;}
-.campaign-library-stat{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:4px 5px;font-size:9px;color:var(--muted);line-height:1.25;}
-.campaign-library-stat strong{display:block;font-size:10px;color:var(--navy);font-weight:700;font-variant-numeric:tabular-nums;}
-.campaign-library-stat strong.campaign-library-stat-value--saved{color:var(--gold-d);}
-.campaign-library-stat strong.campaign-library-stat-value--pinned{color:var(--navy);}
-.campaign-library-stat strong.campaign-library-stat-value--last-saved{color:var(--green);}
+.campaign-library-dashboard{display:none;}
 .empty-state{border:1px dashed var(--border);border-radius:var(--radius);background:#fff;padding:6px;color:var(--muted);font-size:9px;line-height:1.35;}
 .empty-state strong{display:block;color:var(--navy);font-size:10px;margin-bottom:1px;}
 #sheets-status.empty-state{margin-top:5px;white-space:normal;}
@@ -982,20 +972,14 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     </div>
 
     <div class="section" data-section-key="campaign-summary">
-      <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M3 3v18h18"></path><rect width="3" height="7" x="7" y="10"></rect><rect width="3" height="11" x="12" y="6"></rect><rect width="3" height="5" x="17" y="12"></rect></svg>Campaign Summary</h3><span class="section-toggle">▾</span>
-      </div>
-      <div class="section-body hidden">
-        <div class="summary-body" id="summary-inline-content"></div>
-        <div class="summary-actions">
-          <button class="summary-btn" type="button" onclick="copyAllUtms()">Copy All UTMs</button>
-        </div>
+      <div class="section-hdr collapsed" role="button" tabindex="0" onclick="openSummary()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSummary();}">
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M3 3v18h18"></path><rect width="3" height="7" x="7" y="10"></rect><rect width="3" height="11" x="12" y="6"></rect><rect width="3" height="5" x="17" y="12"></rect></svg>Campaign Summary</h3>
       </div>
     </div>
 
     <div class="section campaign-library-section" id="campaign-library-panel">
       <div class="section-hdr collapsed" onclick="toggleCampaignLibraryMain(this)">
-        <h3 class="campaign-library-title"><span class="campaign-library-title-main">CAMPAIGN LIBRARY <span class="count-badge" id="campaign-library-count">0</span></span><span class="campaign-library-subtitle">Saved campaigns and backups</span></h3><span class="section-toggle">▾</span>
+        <h3 class="campaign-library-title"><span class="campaign-library-title-main">Campaign Library</span><span class="campaign-library-subtitle">Saved campaigns and backups</span></h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body hidden">
         <div class="campaign-library-dashboard" id="campaign-library-dashboard" aria-live="polite"></div>
@@ -1010,7 +994,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
           </div>
           <div class="campaign-library-category" data-campaign-category="recent">
             <div class="section-hdr" onclick="toggleCampaignLibraryCategory(this)">
-              <h4>SAVED CAMPAIGNS <span class="count-badge count-badge--saved" id="saved-campaign-count">0</span></h4><span class="section-toggle">▾</span>
+              <h4>Saved Campaigns</h4><span class="section-toggle">▾</span>
             </div>
             <div class="section-body">
               <div id="recent-campaign-list" class="campaign-history-list"></div>
@@ -1018,7 +1002,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
           </div>
           <div class="campaign-library-category" data-campaign-category="backups">
             <div class="section-hdr collapsed" onclick="toggleCampaignLibraryCategory(this)">
-              <h4>CAMPAIGN BACKUPS <span class="count-badge count-badge--saved" id="backup-campaign-count">0</span></h4><span class="section-toggle">▾</span>
+              <h4>Campaign Backups</h4><span class="section-toggle">▾</span>
             </div>
             <div class="section-body hidden">
               <div id="backup-campaign-list" class="campaign-history-list"></div>
@@ -1849,7 +1833,6 @@ function toggleSec(hdr){
     });
   }
   setSectionCollapsedByHeader(hdr, !willOpen);
-  if(willOpen && sectionKey === "campaign-summary") renderCampaignSummaryInto("summary-inline-content");
   if(willOpen && sectionKey === "export-cards" && typeof autoExpandCampaignHealthForExport === "function") autoExpandCampaignHealthForExport();
   queueAutosave();
 }
@@ -5100,24 +5083,8 @@ function campaignHistoryLastSaved(list){
   catch(e){ return ""; }
 }
 function renderCampaignLibraryDashboard(buckets){
-  const list=readCampaignHistory();
-  const count=document.getElementById("campaign-library-count");
-  if(count) count.textContent=String(list.length);
-  const campaignCount=list.filter(isCampaignHistoryCampaign).length;
-  const backupCount=list.filter(isCampaignHistoryBackup).length;
-  const savedCount=document.getElementById("saved-campaign-count");
-  if(savedCount) savedCount.textContent=String(campaignCount);
-  const backupCountEl=document.getElementById("backup-campaign-count");
-  if(backupCountEl) backupCountEl.textContent=String(backupCount);
   const dashboard=document.getElementById("campaign-library-dashboard");
-  if(!dashboard) return;
-  const stats=[
-    {label:"Saved", value:list.length, valueClass:"campaign-library-stat-value--saved"},
-    {label:"Pinned", value:(buckets&&buckets.pinned ? buckets.pinned.length : 0), valueClass:"campaign-library-stat-value--pinned"}
-  ];
-  const lastSaved=campaignHistoryLastSaved(list);
-  if(lastSaved) stats.push({label:"Last saved", value:lastSaved, valueClass:"campaign-library-stat-value--last-saved"});
-  dashboard.innerHTML=stats.map(({label,value,valueClass})=>`<div class="campaign-library-stat"><strong class="${valueClass}">${escapeCampaignHistoryText(value)}</strong>${escapeCampaignHistoryText(label)}</div>`).join("");
+  if(dashboard) dashboard.innerHTML="";
 }
 function refreshCampaignHistoryUI(){
   const buckets=getCampaignLibraryBuckets();

@@ -127,7 +127,7 @@ test('restoring persisted sidebar state keeps its recorded last-open section onl
 
 
 test('campaign library is collapsed in the shipped builder markup while saved campaigns are the default open nested list', () => {
-  assert.match(html, /<div class="section campaign-library-section" id="campaign-library-panel">\s*<div class="section-hdr collapsed" onclick="toggleCampaignLibraryMain\(this\)">[\s\S]*?<\/div>\s*<div class="section-body hidden">[\s\S]*?data-campaign-category="pinned">\s*<div class="section-hdr collapsed"[\s\S]*?<h4>Pinned Campaigns<\/h4>[\s\S]*?<div class="section-body hidden">[\s\S]*?data-campaign-category="recent">\s*<div class="section-hdr"[\s\S]*?<h4>SAVED CAMPAIGNS <span class="count-badge count-badge--saved" id="saved-campaign-count">0<\/span><\/h4>[\s\S]*?<div class="section-body">/);
+  assert.match(html, /<div class="section campaign-library-section" id="campaign-library-panel">\s*<div class="section-hdr collapsed" onclick="toggleCampaignLibraryMain\(this\)">[\s\S]*?<\/div>\s*<div class="section-body hidden">[\s\S]*?data-campaign-category="pinned">\s*<div class="section-hdr collapsed"[\s\S]*?<h4>Pinned Campaigns<\/h4>[\s\S]*?<div class="section-body hidden">[\s\S]*?data-campaign-category="recent">\s*<div class="section-hdr"[\s\S]*?<h4>Saved Campaigns<\/h4>[\s\S]*?<div class="section-body">/);
 });
 
 test('campaign library startup reset forces the parent closed without changing nested category state', () => {
@@ -202,48 +202,23 @@ test('sidebar polish adds subtle spacing, compact active-offer context and profe
   assert.match(html, /<div id="utm-visible-output" class="generated-utm-empty empty-state" role="status"><strong>No UTMs generated yet\.<\/strong>Add offer details and a landing page to generate tracking links\.<\/div>/);
 });
 
-test('saved campaign count badge and dashboard are refreshed from existing campaign history data', () => {
-  assert.match(html, /<span class="count-badge" id="campaign-library-count">0<\/span>/);
+test('campaign library removes dashboard count badges while refresh keeps lists current', () => {
+  assert.doesNotMatch(html, /id="campaign-library-count"/);
   assert.match(html, /<div class="campaign-library-dashboard" id="campaign-library-dashboard" aria-live="polite"><\/div>/);
   assert.match(html, /function refreshCampaignHistoryUI\(\)\{[\s\S]*?renderCampaignLibraryDashboard\(buckets\);/);
 
-  const history = [
-    { id: 'one', title: 'One', savedAt: '2026-06-10T09:15:00.000Z', updatedAt: '2026-06-10T09:15:00.000Z', recentAt: '2026-06-10T09:15:00.000Z', pinned: true },
-    { id: 'two', title: 'Two', savedAt: '2026-06-10T13:47:00.000Z', updatedAt: '2026-06-10T13:47:00.000Z', recentAt: '2026-06-10T13:47:00.000Z', pinned: false },
-    { id: 'three', title: 'Three', savedAt: '2026-06-09T12:00:00.000Z', updatedAt: '2026-06-09T12:00:00.000Z', recentAt: '2026-06-09T12:00:00.000Z', pinned: false }
-  ];
-  const elements = {
-    'campaign-library-count': { textContent: '' },
-    'saved-campaign-count': { textContent: '' },
-    'campaign-library-dashboard': { innerHTML: '' }
-  };
-  const context = {
-    document: { getElementById: id => elements[id] || null },
-    readCampaignHistory: () => history
-  };
+  const elements = { 'campaign-library-dashboard': { innerHTML: 'stale' } };
+  const context = { document: { getElementById: id => elements[id] || null }, readCampaignHistory: () => [] };
   vm.createContext(context);
-  vm.runInContext([
-    extractFunction('campaignHistoryTime'),
-    extractFunction('sortCampaignHistoryNewest'),
-    extractFunction('escapeCampaignHistoryText'),
-    extractFunction('campaignHistoryLastSaved'),
-    extractFunction('renderCampaignLibraryDashboard')
-  ].join('\n'), context);
+  vm.runInContext(extractFunction('renderCampaignLibraryDashboard'), context);
 
-  context.renderCampaignLibraryDashboard({ pinned: [history[0]], recent: history });
-  assert.equal(elements['campaign-library-count'].textContent, '3');
-  assert.equal(elements['saved-campaign-count'].textContent, '3');
-  assert.match(elements['campaign-library-dashboard'].innerHTML, /<strong class="campaign-library-stat-value--saved">3<\/strong>Saved/);
-  assert.match(elements['campaign-library-dashboard'].innerHTML, /<strong class="campaign-library-stat-value--pinned">1<\/strong>Pinned/);
-  assert.match(elements['campaign-library-dashboard'].innerHTML, /<strong class="campaign-library-stat-value--last-saved">[^<]+<\/strong>Last saved/);
-  assert.doesNotMatch(elements['campaign-library-dashboard'].innerHTML, /Recent/);
+  context.renderCampaignLibraryDashboard({ pinned: [], recent: [] });
+  assert.equal(elements['campaign-library-dashboard'].innerHTML, '');
 });
 
 
-test('campaign library saved and pinned categories use distinct understated visual identities', () => {
-  assert.match(html, /\.campaign-library-category\[data-campaign-category="recent"\]\{border-left:2px solid rgba\(42,122,74,\.46\);\}/);
-  assert.match(html, /\.campaign-library-category\[data-campaign-category="recent"\] \.section-hdr\{background:rgba\(42,122,74,\.07\);\}/);
-  assert.match(html, /\.campaign-library-category\[data-campaign-category="recent"\] \.section-hdr:not\(\.collapsed\)\{background:rgba\(42,122,74,\.10\);box-shadow:inset 2px 0 0 var\(--green\);\}/);
-  assert.match(html, /\.campaign-library-category\[data-campaign-category="pinned"\] \.section-hdr:not\(\.collapsed\)\{background:rgba\(160,146,103,\.10\);box-shadow:inset 4px 0 0 var\(--gold\);\}/);
-  assert.match(html, /\.count-badge--saved\{background:rgba\(42,122,74,\.12\);border-color:rgba\(42,122,74,\.34\);color:var\(--green\);\}/);
+test('campaign library saved and pinned categories use understated visual identities', () => {
+  assert.match(html, /\.campaign-library-category\[data-campaign-category="recent"\] \.section-hdr:not\(\.collapsed\),\.campaign-library-category\[data-campaign-category="pinned"\] \.section-hdr:not\(\.collapsed\)\{background:#fff;box-shadow:inset 2px 0 0 rgba\(160,146,103,\.34\);\}/);
+  assert.doesNotMatch(html, /\.count-badge/);
 });
+
