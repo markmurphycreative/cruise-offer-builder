@@ -130,7 +130,8 @@ test('restoring persisted sidebar state keeps its recorded last-open section onl
 
 test('Manage Campaigns ships as a modal trigger with campaign lists moved out of nested sidebar accordions', () => {
   assert.match(html, /<div class="section campaign-library-section manage-campaigns-section" id="campaign-library-panel" data-section-key="manage-campaigns">\s*<div class="section-hdr collapsed" role="button" tabindex="0" onclick="openManageCampaignsModal\(\)"/);
-  assert.match(html, /<h3><svg class="section-icon"[\s\S]*?<\/svg>Manage Campaigns<\/h3>/);
+  assert.match(html, /<h3><svg class="section-icon"[\s\S]*?<\/svg>Manage Campaigns<\/h3><svg class="manage-campaigns-launch-icon"[^>]+>[\s\S]*?<\/svg>/);
+  assert.doesNotMatch(extract(/<div class="section campaign-library-section manage-campaigns-section"[\s\S]*?<\/div>\s*<\/div>/, 'Manage Campaigns sidebar row'), /section-toggle/);
   assert.match(html, /<div class="modal-overlay" id="manage-campaigns-modal"/);
   assert.match(html, /<h2 id="manage-campaigns-title">[\s\S]*?Manage Campaigns<\/h2>/);
   assert.match(html, /<section class="campaign-library-category" data-campaign-category="pinned">[\s\S]*?<h3>Pinned Campaigns<\/h3>[\s\S]*?<div id="pinned-campaign-list" class="campaign-history-list"><\/div>/);
