@@ -31,6 +31,7 @@ test('Campaign Summary renders as a collapsed modal trigger section', () => {
   assert.doesNotMatch(html, /<div class="summary-action">/);
   assert.match(summarySection, /<div class="section-hdr collapsed" role="button" tabindex="0" onclick="openSummary\(\)"/);
   assert.match(summarySection, /<h3><svg class="section-icon"[\s\S]*?<\/svg>Campaign Summary<\/h3>/);
+  assert.match(summarySection, /<h3><svg class="section-icon"[\s\S]*?<\/svg>Campaign Summary<\/h3><svg class="manage-campaigns-launch-icon"[^>]+>[\s\S]*?<\/svg>/);
   assert.doesNotMatch(summarySection, /<div class="section-body hidden">/);
   assert.doesNotMatch(summarySection, /<span class="section-toggle">▾<\/span>/);
 });
