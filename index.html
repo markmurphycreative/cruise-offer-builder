@@ -424,6 +424,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-lock-toggle.locked{color:var(--gold);}
 .hero-lock-state{display:inline-flex;align-items:center;gap:4px;}
 .manage-campaigns-section .section-hdr{cursor:pointer;}
+.manage-campaigns-launch-icon{width:15px;height:15px;flex-shrink:0;color:var(--muted);stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;}
 .manage-campaigns-modal{background:#fff;border-radius:12px;width:min(94vw,760px);max-height:84vh;overflow:hidden;border:1px solid rgba(14,27,42,.16);box-shadow:0 18px 40px rgba(14,27,42,.28);display:flex;flex-direction:column;}
 .manage-campaigns-head{background:var(--navy);color:#fff;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .manage-campaigns-head h2{margin:0;color:#fff;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;display:flex;align-items:center;gap:7px;}
@@ -990,7 +991,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
     <div class="section campaign-library-section manage-campaigns-section" id="campaign-library-panel" data-section-key="manage-campaigns">
       <div class="section-hdr collapsed" role="button" tabindex="0" onclick="openManageCampaignsModal()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openManageCampaignsModal();}">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M3 10h18"></path></svg>Manage Campaigns</h3>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M3 10h18"></path></svg>Manage Campaigns</h3><svg class="manage-campaigns-launch-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg>
       </div>
     </div>
 
