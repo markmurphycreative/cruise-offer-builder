@@ -79,6 +79,15 @@ test('campaign summary footer keeps only the Copy All UTMs workflow', () => {
   assert.doesNotMatch(html, /function downloadSummaryTxt\(/);
 });
 
+
+test('campaign summary modal supports header-only dragging without persisting position', () => {
+  assert.match(html, /\.summary-head\{[^}]*cursor:grab;/);
+  assert.match(html, /\.summary-head\.dragging\{cursor:grabbing;\}/);
+  assert.match(html, /initDraggableModal\('summary-modal','\.summary-modal','\.summary-head'\)/);
+  assert.match(extractFunction('openSummary'), /resetDraggableModalPosition\("summary-modal"\)/);
+  assert.doesNotMatch(html, /localStorage\.setItem\([^)]*summary-modal|summary-modal[^\n]*localStorage/);
+});
+
 test('campaign summary header close button remains wired to close the modal', () => {
   const modalStart = html.indexOf('<div class="modal-overlay" id="summary-modal"');
   const modalEnd = html.indexOf('</div>\n\n<script>', modalStart);
