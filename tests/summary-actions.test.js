@@ -6,7 +6,7 @@ const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
 function extractSummarySection() {
   const start = html.indexOf('<div class="section" data-section-key="campaign-summary">');
-  const end = html.indexOf('<div class="section campaign-library-section"', start);
+  const end = html.indexOf('<div class="section campaign-library-section manage-campaigns-section"', start);
   assert.notEqual(start, -1, 'Expected Campaign Summary modal trigger to exist');
   assert.notEqual(end, -1, 'Expected Campaign Summary modal trigger boundary to exist');
   return html.slice(start, end);

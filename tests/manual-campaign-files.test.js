@@ -31,11 +31,11 @@ function runFunctions(names, context = {}) {
 
 test('manual campaign save/load controls separate primary workflows from recovery and autosave controls', () => {
   assert.match(html, /<div class="act-row">\s*<button class="abtn gold" type="button" onclick="saveCampaignFile\(\)">Save Campaign<\/button>\s*<button class="abtn navy" type="button" onclick="triggerLoadCampaignFile\(\)">Load Campaign<\/button>/);
-  assert.match(html, /<div class="campaign-library-category" data-campaign-category="utility">[\s\S]*?<button class="abtn btn-compact" type="button" onclick="triggerLoadCampaignBackup\(\)">Load Campaign Backup<\/button>\s*<input id="campaign-backup-input" type="file" accept="\.json,application\/json"[^>]+onchange="loadCampaignBackup\(event\)"/);
+  assert.match(html, /<section class="campaign-library-category" data-campaign-category="utility">[\s\S]*?<button class="abtn btn-compact" type="button" onclick="triggerLoadCampaignBackup\(\)">Load Campaign Backup<\/button>\s*<input id="campaign-backup-input" type="file" accept="\.json,application\/json"[^>]+onchange="loadCampaignBackup\(event\)"/);
   assert.doesNotMatch(html, /<div class="act-row">\s*<button class="abtn" type="button" onclick="triggerLoadCampaignBackup\(\)">Load Campaign Backup<\/button>/);
   assert.match(html, /id="campaign-file-input" type="file" accept="\.json,application\/json"[^>]+onchange="loadCampaignFile\(event\)"/);
   assert.doesNotMatch(html, /Campaign files are reusable backups\. Autosave handles day-to-day recovery\./);
-  assert.match(html, /<h4>Campaign Actions<\/h4><span class="section-toggle">▾<\/span>/);
+  assert.match(html, /<h3>Campaign Actions<\/h3>/);
   assert.match(html, /onclick="clearSavedSession\(\)">Clear Current Session<\/button>/);
 });
 
