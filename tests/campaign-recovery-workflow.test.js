@@ -143,16 +143,18 @@ test('campaign restore can recover hero lock state from campaign-data heroImages
 });
 
 
-test('campaign history renders the live campaign library sidebar with required labels and actions', () => {
+test('campaign history renders the Manage Campaigns modal with required labels and actions', () => {
   assert.match(html, /const CAMPAIGN_HISTORY_KEY = "cobCampaignHistoryV1";/);
   assert.match(html, /const CAMPAIGN_RECENT_MAX = 20;/);
   assert.doesNotMatch(html, /id="recent-campaigns-panel"/);
   assert.match(html, /id="campaign-library-panel"/);
-  assert.match(html, /<h3 class="campaign-library-title"><span class="campaign-library-title-main"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24">[\s\S]*?<\/svg>Campaign Library<\/span><\/h3><span class="section-toggle">▾<\/span>/);
+  assert.match(html, /onclick="openManageCampaignsModal\(\)"/);
+  assert.match(html, /<h3><svg class="section-icon"[\s\S]*?<\/svg>Manage Campaigns<\/h3>/);
+  assert.match(html, /<div class="modal-overlay" id="manage-campaigns-modal"/);
   assert.doesNotMatch(html, /<h3>SAVED CAMPAIGNS <span class="count-badge" id="campaign-library-count">0<\/span><\/h3>/);
-  assert.match(html, /<h4>Pinned Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
-  assert.match(html, /<h4>Saved Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
-  assert.match(html, /<h4>Campaign Backups<\/h4><span class="section-toggle">▾<\/span>/);
+  assert.match(html, /<h3>Pinned Campaigns<\/h3>/);
+  assert.match(html, /<h3>Saved Campaigns<\/h3>/);
+  assert.match(html, /<h3>Campaign Backups<\/h3>/);
   assert.doesNotMatch(html, /<h4>Recent Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
   assert.doesNotMatch(html, /id="campaign-library-count"/);
   assert.doesNotMatch(html, /\["Recent",/);
@@ -167,7 +169,7 @@ test('campaign history renders the live campaign library sidebar with required l
   assert.match(html, /deleteCampaignHistoryEntry\('\$\{safeId\}'\)">Delete<\/button>/);
   assert.doesNotMatch(html, /restoreCampaignHistoryEntry\('\$\{safeId\}'\)">Open<\/button>/);
   assert.doesNotMatch(html, /<div class="act-row">[\s\S]*?Clear Saved Session[\s\S]*?<\/div>/);
-  assert.match(html, /<h4>Campaign Actions<\/h4><span class="section-toggle">▾<\/span>[\s\S]*?onclick="clearSavedSession\(\)">Clear Current Session<\/button>/);
+  assert.match(html, /<h3>Campaign Actions<\/h3>[\s\S]*?onclick="clearSavedSession\(\)">Clear Current Session<\/button>/);
   assert.match(html, /const payload=buildCampaignFilePayload\(\);[\s\S]*?addCampaignHistoryEntry\(buildCampaignHistoryEntryFromPayload\(payload, "saved"\)\)/);
   assert.match(html, /addCampaignHistoryEntry\(buildCampaignHistoryEntryFromPayload\(parsed, "backup"\)\)/);
 });

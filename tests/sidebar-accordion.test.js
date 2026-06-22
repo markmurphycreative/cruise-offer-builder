@@ -15,6 +15,8 @@ function createClassList(initial = []) {
   const classes = new Set(initial);
   return {
     contains: name => classes.has(name),
+    add: name => classes.add(name),
+    remove: name => classes.delete(name),
     toggle(name, force) {
       if (force === undefined ? !classes.has(name) : force) classes.add(name);
       else classes.delete(name);
@@ -126,43 +128,37 @@ test('restoring persisted sidebar state keeps its recorded last-open section onl
 });
 
 
-test('campaign library is collapsed in the shipped builder markup while saved campaigns are the default open nested list', () => {
-  assert.match(html, /<div class="section campaign-library-section" id="campaign-library-panel">\s*<div class="section-hdr collapsed" onclick="toggleCampaignLibraryMain\(this\)">[\s\S]*?<\/div>\s*<div class="section-body hidden">[\s\S]*?data-campaign-category="pinned">\s*<div class="section-hdr collapsed"[\s\S]*?<h4>Pinned Campaigns<\/h4>[\s\S]*?<div class="section-body hidden">[\s\S]*?data-campaign-category="recent">\s*<div class="section-hdr"[\s\S]*?<h4>Saved Campaigns<\/h4>[\s\S]*?<div class="section-body">/);
+test('Manage Campaigns ships as a modal trigger with campaign lists moved out of nested sidebar accordions', () => {
+  assert.match(html, /<div class="section campaign-library-section manage-campaigns-section" id="campaign-library-panel" data-section-key="manage-campaigns">\s*<div class="section-hdr collapsed" role="button" tabindex="0" onclick="openManageCampaignsModal\(\)"/);
+  assert.match(html, /<h3><svg class="section-icon"[\s\S]*?<\/svg>Manage Campaigns<\/h3>/);
+  assert.match(html, /<div class="modal-overlay" id="manage-campaigns-modal"/);
+  assert.match(html, /<h2 id="manage-campaigns-title">[\s\S]*?Manage Campaigns<\/h2>/);
+  assert.match(html, /<section class="campaign-library-category" data-campaign-category="pinned">[\s\S]*?<h3>Pinned Campaigns<\/h3>[\s\S]*?<div id="pinned-campaign-list" class="campaign-history-list"><\/div>/);
+  assert.match(html, /<section class="campaign-library-category" data-campaign-category="recent">[\s\S]*?<h3>Saved Campaigns<\/h3>[\s\S]*?<div id="recent-campaign-list" class="campaign-history-list"><\/div>/);
+  assert.match(html, /<section class="campaign-library-category" data-campaign-category="backups">[\s\S]*?<h3>Campaign Backups<\/h3>[\s\S]*?<div id="backup-campaign-list" class="campaign-history-list"><\/div>/);
+  assert.match(html, /<h3>Campaign Actions<\/h3>[\s\S]*?onclick="clearSavedSession\(\)">Clear Current Session<\/button>[\s\S]*?onclick="triggerLoadCampaignBackup\(\)">Load Campaign Backup<\/button>/);
+  assert.doesNotMatch(html, /toggleCampaignLibraryCategory\(this\)/);
 });
 
-test('campaign library startup reset forces the parent closed without changing nested category state', () => {
-  const parentBody = { classList: createClassList(['section-body']) };
-  const parentHdr = { classList: createClassList([]), nextElementSibling: parentBody };
-  const pinnedBody = { classList: createClassList(['section-body', 'hidden']) };
-  const pinnedHdr = { classList: createClassList(['collapsed']), nextElementSibling: pinnedBody };
-  const panel = { firstElementChild: parentHdr };
+test('Manage Campaigns modal opens and closes without mutating campaign state helpers', () => {
+  const modal = { classList: createClassList([]) };
+  let refreshed = 0;
   const context = {
-    document: { getElementById: id => (id === 'campaign-library-panel' ? panel : null) }
+    refreshCampaignHistoryUI() { refreshed += 1; },
+    document: { getElementById: id => (id === 'manage-campaigns-modal' ? modal : null) }
   };
   const source = [
-    extract(/function setSectionCollapsedByHeader\(hdr, collapsed\)\{[\s\S]*?\n\}/, 'setSectionCollapsedByHeader'),
-    extract(/function getCampaignLibraryHeader\(\)\{[\s\S]*?\n\}/, 'getCampaignLibraryHeader'),
-    extract(/function setCampaignLibraryCollapsed\(collapsed=true\)\{[\s\S]*?\n\}/, 'setCampaignLibraryCollapsed'),
-    extract(/function resetCampaignLibraryStartupState\(\)\{[\s\S]*?\n\}/, 'resetCampaignLibraryStartupState'),
-    extract(/function toggleCampaignLibraryMain\(hdr\)\{[\s\S]*?\n\}/, 'toggleCampaignLibraryMain'),
-    extract(/function toggleCampaignLibraryCategory\(hdr\)\{[\s\S]*?\n\}/, 'toggleCampaignLibraryCategory')
+    extract(/function openManageCampaignsModal\(\)\{[\s\S]*?\n\}/, 'openManageCampaignsModal'),
+    extract(/function closeManageCampaignsModal\(\)\{[\s\S]*?\n\}/, 'closeManageCampaignsModal')
   ].join('\n');
   vm.createContext(context);
   vm.runInContext(source, context);
 
-  context.resetCampaignLibraryStartupState();
-  assert.equal(parentHdr.classList.contains('collapsed'), true);
-  assert.equal(parentBody.classList.contains('hidden'), true);
-  assert.equal(pinnedHdr.classList.contains('collapsed'), true);
-  assert.equal(pinnedBody.classList.contains('hidden'), true);
-
-  context.toggleCampaignLibraryMain(parentHdr);
-  assert.equal(parentHdr.classList.contains('collapsed'), false);
-  assert.equal(parentBody.classList.contains('hidden'), false);
-
-  context.toggleCampaignLibraryCategory(pinnedHdr);
-  assert.equal(pinnedHdr.classList.contains('collapsed'), false);
-  assert.equal(pinnedBody.classList.contains('hidden'), false);
+  context.openManageCampaignsModal();
+  assert.equal(refreshed, 1);
+  assert.equal(modal.classList.contains('active'), true);
+  context.closeManageCampaignsModal();
+  assert.equal(modal.classList.contains('active'), false);
 });
 
 test('builder startup, splash dismissal, session restore, and campaign file restore all force campaign library collapsed', () => {

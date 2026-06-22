@@ -423,7 +423,18 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 #cta-enabled:not(:disabled):checked::after{transform:translateY(-0.35px) rotate(45deg) scale(1);}
 .hero-lock-toggle.locked{color:var(--gold);}
 .hero-lock-state{display:inline-flex;align-items:center;gap:4px;}
-.campaign-library-section .section-body{padding:6px;background:#fafaf8;}
+.manage-campaigns-section .section-hdr{cursor:pointer;}
+.manage-campaigns-modal{background:#fff;border-radius:12px;width:min(94vw,760px);max-height:84vh;overflow:hidden;border:1px solid rgba(14,27,42,.16);box-shadow:0 18px 40px rgba(14,27,42,.28);display:flex;flex-direction:column;}
+.manage-campaigns-head{background:var(--navy);color:#fff;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.manage-campaigns-head h2{margin:0;color:#fff;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;display:flex;align-items:center;gap:7px;}
+.manage-campaigns-head .section-icon{color:var(--gold);}
+.manage-campaigns-close{width:28px;height:28px;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:rgba(255,255,255,.08);color:#fff;font-size:20px;line-height:1;cursor:pointer;}
+.manage-campaigns-close:hover{background:rgba(255,255,255,.16);}
+.manage-campaigns-body{padding:12px;background:#fafaf8;overflow:auto;}
+.campaign-modal-category-head{padding:7px 8px;border-bottom:1px solid var(--border);background:#fff;}
+.campaign-modal-category-head h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin:0;}
+.manage-campaigns-modal .campaign-library-category{overflow:visible;}
+.manage-campaigns-modal .campaign-history-list,.manage-campaigns-modal .campaign-library-utility{padding:8px;}
 .campaign-library-title{min-width:0;}
 .campaign-library-title-main{display:flex;align-items:center;gap:6px;}
 .campaign-library-title-main .section-icon{transform:translateX(-1px);}
@@ -977,50 +988,9 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       </div>
     </div>
 
-    <div class="section campaign-library-section" id="campaign-library-panel">
-      <div class="section-hdr collapsed" onclick="toggleCampaignLibraryMain(this)">
-        <h3 class="campaign-library-title"><span class="campaign-library-title-main"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M3 10h18"></path></svg>Campaign Library</span></h3><span class="section-toggle">▾</span>
-      </div>
-      <div class="section-body hidden">
-        <div class="campaign-library-dashboard" id="campaign-library-dashboard" aria-live="polite"></div>
-        <div class="campaign-library-categories">
-          <div class="campaign-library-category" data-campaign-category="pinned">
-            <div class="section-hdr collapsed" onclick="toggleCampaignLibraryCategory(this)">
-              <h4>Pinned Campaigns</h4><span class="section-toggle">▾</span>
-            </div>
-            <div class="section-body hidden">
-              <div id="pinned-campaign-list" class="campaign-history-list"></div>
-            </div>
-          </div>
-          <div class="campaign-library-category" data-campaign-category="recent">
-            <div class="section-hdr" onclick="toggleCampaignLibraryCategory(this)">
-              <h4>Saved Campaigns</h4><span class="section-toggle">▾</span>
-            </div>
-            <div class="section-body">
-              <div id="recent-campaign-list" class="campaign-history-list"></div>
-            </div>
-          </div>
-          <div class="campaign-library-category" data-campaign-category="backups">
-            <div class="section-hdr collapsed" onclick="toggleCampaignLibraryCategory(this)">
-              <h4>Campaign Backups</h4><span class="section-toggle">▾</span>
-            </div>
-            <div class="section-body hidden">
-              <div id="backup-campaign-list" class="campaign-history-list"></div>
-            </div>
-          </div>
-          <div class="campaign-library-category" data-campaign-category="utility">
-            <div class="section-hdr" onclick="toggleCampaignLibraryCategory(this)">
-              <h4>Campaign Actions</h4><span class="section-toggle">▾</span>
-            </div>
-            <div class="section-body">
-              <div class="campaign-library-utility">
-                <button class="abtn btn-compact" type="button" onclick="clearSavedSession()">Clear Current Session</button>
-                <button class="abtn btn-compact" type="button" onclick="triggerLoadCampaignBackup()">Load Campaign Backup</button>
-                <input id="campaign-backup-input" type="file" accept=".json,application/json" style="display:none" onchange="loadCampaignBackup(event)">
-              </div>
-            </div>
-          </div>
-        </div>
+    <div class="section campaign-library-section manage-campaigns-section" id="campaign-library-panel" data-section-key="manage-campaigns">
+      <div class="section-hdr collapsed" role="button" tabindex="0" onclick="openManageCampaignsModal()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openManageCampaignsModal();}">
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M3 10h18"></path></svg>Manage Campaigns</h3>
       </div>
     </div>
 
@@ -1164,6 +1134,41 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 <div id="export-render-area"></div>
 
 
+
+<div class="modal-overlay" id="manage-campaigns-modal" onclick="if(event.target===this) closeManageCampaignsModal()">
+  <div class="manage-campaigns-modal" role="dialog" aria-modal="true" aria-labelledby="manage-campaigns-title">
+    <div class="manage-campaigns-head">
+      <h2 id="manage-campaigns-title"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M3 10h18"></path></svg>Manage Campaigns</h2>
+      <button class="manage-campaigns-close" type="button" aria-label="Close Manage Campaigns" onclick="closeManageCampaignsModal()">×</button>
+    </div>
+    <div class="manage-campaigns-body">
+      <div class="campaign-library-dashboard" id="campaign-library-dashboard" aria-live="polite"></div>
+      <div class="campaign-library-categories">
+        <section class="campaign-library-category" data-campaign-category="pinned">
+          <div class="campaign-modal-category-head"><h3>Pinned Campaigns</h3></div>
+          <div id="pinned-campaign-list" class="campaign-history-list"></div>
+        </section>
+        <section class="campaign-library-category" data-campaign-category="recent">
+          <div class="campaign-modal-category-head"><h3>Saved Campaigns</h3></div>
+          <div id="recent-campaign-list" class="campaign-history-list"></div>
+        </section>
+        <section class="campaign-library-category" data-campaign-category="backups">
+          <div class="campaign-modal-category-head"><h3>Campaign Backups</h3></div>
+          <div id="backup-campaign-list" class="campaign-history-list"></div>
+        </section>
+        <section class="campaign-library-category" data-campaign-category="utility">
+          <div class="campaign-modal-category-head"><h3>Campaign Actions</h3></div>
+          <div class="campaign-library-utility">
+            <button class="abtn btn-compact" type="button" onclick="clearSavedSession()">Clear Current Session</button>
+            <button class="abtn btn-compact" type="button" onclick="triggerLoadCampaignBackup()">Load Campaign Backup</button>
+            <input id="campaign-backup-input" type="file" accept=".json,application/json" style="display:none" onchange="loadCampaignBackup(event)">
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="shortcuts-modal" onclick="if(event.target===this) closeShortcutsModal()">
   <div class="modal shortcuts-modal" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">
     <button class="modal-close" id="shortcuts-close" type="button" aria-label="Close keyboard shortcuts" onclick="closeShortcutsModal()">×</button>
@@ -1182,7 +1187,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <dt>Paste Offer section</dt><dd><kbd>P</kbd></dd>
       <dt>CTA Assets section</dt><dd><kbd>C</kbd></dd>
       <dt>UTM Link section</dt><dd><kbd>U</kbd></dd>
-      <dt>Campaign Library section</dt><dd><kbd>L</kbd></dd>
+      <dt>Manage Campaigns modal</dt><dd><kbd>L</kbd></dd>
       <dt>Open / Close AI Copy</dt><dd><kbd>G</kbd></dd>
       <dt>Export Cards section</dt><dd><kbd>X</kbd></dd>
       <dt>Toggle CTA preview</dt><dd><kbd>Shift</kbd> + <kbd>C</kbd></dd>
@@ -5093,23 +5098,20 @@ function refreshCampaignHistoryUI(){
   renderCampaignHistoryList("recent-campaign-list", buckets.recent, "No saved campaigns yet.");
   renderCampaignHistoryList("backup-campaign-list", buckets.backup, "No campaign backups yet.");
 }
-function getCampaignLibraryHeader(){
-  const panel=document.getElementById("campaign-library-panel");
-  return panel ? panel.firstElementChild : null;
+function openManageCampaignsModal(){
+  refreshCampaignHistoryUI();
+  const modal=document.getElementById("manage-campaigns-modal");
+  if(modal) modal.classList.add("active");
 }
-function setCampaignLibraryCollapsed(collapsed=true){
-  const hdr=getCampaignLibraryHeader();
-  if(hdr) setSectionCollapsedByHeader(hdr, collapsed);
+function closeManageCampaignsModal(){
+  const modal=document.getElementById("manage-campaigns-modal");
+  if(modal) modal.classList.remove("active");
 }
-function resetCampaignLibraryStartupState(){
-  setCampaignLibraryCollapsed(true);
-}
-function toggleCampaignLibraryMain(hdr){
-  setSectionCollapsedByHeader(hdr, !hdr.classList.contains("collapsed") );
-}
-function toggleCampaignLibraryCategory(hdr){
-  setSectionCollapsedByHeader(hdr, !hdr.classList.contains("collapsed") );
-}
+function getCampaignLibraryHeader(){ return null; }
+function setCampaignLibraryCollapsed(collapsed=true){}
+function resetCampaignLibraryStartupState(){}
+function toggleCampaignLibraryMain(hdr){ openManageCampaignsModal(); }
+function toggleCampaignLibraryCategory(hdr){}
 function triggerLoadCampaignBackup(){
   const input=document.getElementById("campaign-backup-input");
   if(input) input.click();
@@ -8402,10 +8404,11 @@ function getShortcutSectionFocusTarget(sectionKey){
   return selector && document.querySelector ? document.querySelector(selector) : null;
 }
 function getShortcutSection(sectionKey){
-  const selector=sectionKey === "campaign-library" ? "#campaign-library-panel" : `.section[data-section-key="${sectionKey}"]`;
+  const selector=sectionKey === "campaign-library" ? `.section[data-section-key="manage-campaigns"]` : `.section[data-section-key="${sectionKey}"]`;
   return document.querySelector ? document.querySelector(selector) : null;
 }
 function openShortcutSection(sectionKey){
+  if(sectionKey === "campaign-library" || sectionKey === "manage-campaigns"){ openManageCampaignsModal(); return; }
   const section=getShortcutSection(sectionKey);
   const hdr=section && section.querySelector ? section.querySelector(".section-hdr") : null;
   if(!hdr) return;
@@ -8442,6 +8445,14 @@ function handleKeyboardShortcut(event){
   if(shortcutsModal && shortcutsModal.classList.contains('active')){
     if(event.key === 'Escape' || isQuestionMarkShortcut(event)){
       closeShortcutsModal();
+      event.preventDefault();
+    }
+    return;
+  }
+  const manageCampaignsModal=document.getElementById('manage-campaigns-modal');
+  if(manageCampaignsModal && manageCampaignsModal.classList.contains('active')){
+    if(event.key === 'Escape'){
+      closeManageCampaignsModal();
       event.preventDefault();
     }
     return;
