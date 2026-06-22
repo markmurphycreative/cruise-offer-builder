@@ -141,6 +141,15 @@ test('Manage Campaigns ships as a modal trigger with campaign lists moved out of
   assert.doesNotMatch(html, /toggleCampaignLibraryCategory\(this\)/);
 });
 
+
+test('Manage Campaigns modal supports header-only dragging without persisting position', () => {
+  assert.match(html, /\.manage-campaigns-head\{[^}]*cursor:grab;/);
+  assert.match(html, /\.manage-campaigns-head\.dragging\{cursor:grabbing;\}/);
+  assert.match(html, /initDraggableModal\('manage-campaigns-modal','\.manage-campaigns-modal','\.manage-campaigns-head'\)/);
+  assert.match(extractFunction('openManageCampaignsModal'), /resetDraggableModalPosition\("manage-campaigns-modal"\)/);
+  assert.doesNotMatch(html, /localStorage\.setItem\([^)]*manage-campaigns-modal|manage-campaigns-modal[^\n]*localStorage/);
+});
+
 test('Manage Campaigns modal opens and closes without mutating campaign state helpers', () => {
   const modal = { classList: createClassList([]) };
   let refreshed = 0;
