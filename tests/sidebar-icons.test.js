@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const sectionHeaders = [...html.matchAll(/<div class="section-hdr(?: collapsed)?" onclick="toggleSec\(this\)">\s*<h3>([\s\S]*?)<\/h3><span class="section-toggle">▾<\/span>/g)]
+const sectionHeaders = [...html.matchAll(/<div class="section-hdr(?: collapsed)?"[^>]*?(?:onclick="toggleSec\(this\)"|onclick="openSummary\(\)")[^>]*>\s*<h3>([\s\S]*?)<\/h3>(?:<span class="section-toggle">▾<\/span>)?/g)]
   .map(([, heading]) => heading);
 
 const headingLabels = sectionHeaders.map(heading => heading

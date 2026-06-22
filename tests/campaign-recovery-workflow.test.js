@@ -148,12 +148,13 @@ test('campaign history renders the live campaign library sidebar with required l
   assert.match(html, /const CAMPAIGN_RECENT_MAX = 20;/);
   assert.doesNotMatch(html, /id="recent-campaigns-panel"/);
   assert.match(html, /id="campaign-library-panel"/);
-  assert.match(html, /<h3 class="campaign-library-title"><span class="campaign-library-title-main">CAMPAIGN LIBRARY <span class="count-badge" id="campaign-library-count">0<\/span><\/span><span class="campaign-library-subtitle">Saved campaigns and backups<\/span><\/h3><span class="section-toggle">▾<\/span>/);
+  assert.match(html, /<h3 class="campaign-library-title"><span class="campaign-library-title-main">Campaign Library<\/span><span class="campaign-library-subtitle">Saved campaigns and backups<\/span><\/h3><span class="section-toggle">▾<\/span>/);
   assert.doesNotMatch(html, /<h3>SAVED CAMPAIGNS <span class="count-badge" id="campaign-library-count">0<\/span><\/h3>/);
   assert.match(html, /<h4>Pinned Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
-  assert.match(html, /<h4>SAVED CAMPAIGNS <span class="count-badge count-badge--saved" id="saved-campaign-count">0<\/span><\/h4><span class="section-toggle">▾<\/span>/);
+  assert.match(html, /<h4>Saved Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
+  assert.match(html, /<h4>Campaign Backups<\/h4><span class="section-toggle">▾<\/span>/);
   assert.doesNotMatch(html, /<h4>Recent Campaigns<\/h4><span class="section-toggle">▾<\/span>/);
-  assert.match(html, /id="campaign-library-dashboard" aria-live="polite"/);
+  assert.doesNotMatch(html, /id="campaign-library-count"/);
   assert.doesNotMatch(html, /\["Recent",/);
   assert.match(html, /id="pinned-campaign-list" class="campaign-history-list"/);
   assert.match(html, /id="recent-campaign-list" class="campaign-history-list"/);

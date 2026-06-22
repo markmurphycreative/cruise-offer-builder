@@ -7,8 +7,8 @@ const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 function extractSummarySection() {
   const start = html.indexOf('<div class="section" data-section-key="campaign-summary">');
   const end = html.indexOf('<div class="section campaign-library-section"', start);
-  assert.notEqual(start, -1, 'Expected Campaign Summary accordion to exist');
-  assert.notEqual(end, -1, 'Expected Campaign Summary accordion boundary to exist');
+  assert.notEqual(start, -1, 'Expected Campaign Summary modal trigger to exist');
+  assert.notEqual(end, -1, 'Expected Campaign Summary modal trigger boundary to exist');
   return html.slice(start, end);
 }
 
@@ -27,18 +27,18 @@ function extractFunction(name) {
 
 const summarySection = extractSummarySection();
 
-test('Campaign Summary renders as a collapsed accordion section', () => {
+test('Campaign Summary renders as a collapsed modal trigger section', () => {
   assert.doesNotMatch(html, /<div class="summary-action">/);
-  assert.match(summarySection, /<div class="section-hdr collapsed" onclick="toggleSec\(this\)">/);
-  assert.match(summarySection, /<h3><svg class="section-icon"[\s\S]*?<\/svg>Campaign Summary<\/h3><span class="section-toggle">▾<\/span>/);
-  assert.match(summarySection, /<div class="section-body hidden">/);
-  assert.doesNotMatch(summarySection, /<button class="abtn navy" id="open-summary-btn"/);
+  assert.match(summarySection, /<div class="section-hdr collapsed" role="button" tabindex="0" onclick="openSummary\(\)"/);
+  assert.match(summarySection, /<h3><svg class="section-icon"[\s\S]*?<\/svg>Campaign Summary<\/h3>/);
+  assert.doesNotMatch(summarySection, /<div class="section-body hidden">/);
+  assert.doesNotMatch(summarySection, /<span class="section-toggle">▾<\/span>/);
 });
 
-test('Campaign Summary accordion contains existing summary content container and actions', () => {
-  assert.match(summarySection, /<div class="summary-body" id="summary-inline-content"><\/div>/);
-  assert.match(summarySection, /copyAllUtms\(\)">Copy All UTMs/);
-  assert.doesNotMatch(summarySection, /Open Summary|Reset Offer|resetOffer\(\)/);
+test('Campaign Summary modal trigger does not render inline summary content or actions', () => {
+  assert.doesNotMatch(summarySection, /summary-inline-content/);
+  assert.doesNotMatch(summarySection, /copyAllUtms\(\)">Copy All UTMs/);
+  assert.doesNotMatch(summarySection, /Reset Offer|resetOffer\(\)/);
 });
 
 test('Campaign Summary modal remains available for existing shortcut behaviour', () => {

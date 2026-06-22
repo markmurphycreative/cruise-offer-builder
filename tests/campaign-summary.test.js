@@ -20,23 +20,25 @@ function extractFunction(name) {
 
 test('campaign summary opens read-only and consumes existing status output', () => {
   const openSummary = extractFunction('openSummary');
+  const renderer = extractFunction('getCampaignSummaryHtml');
   assert.doesNotMatch(openSummary, /\bsave\s*\(/);
-  assert.match(openSummary, /getCampaignHealthReviewHtml\(\)/);
-  assert.match(openSummary, /isOfferLoaded\(o\)/);
-  assert.match(openSummary, /Offer \$\{i\+1\} — Empty/);
+  assert.match(openSummary, /content\.innerHTML=getCampaignSummaryHtml\(\);/);
+  assert.match(renderer, /getCampaignHealthReviewHtml\(\)/);
+  assert.match(renderer, /isOfferLoaded\(o\)/);
+  assert.match(renderer, /Offer \$\{i\+1\} — Empty/);
 });
 
 test('campaign summary offer headers reuse available operator logos without changing no-logo fallbacks', () => {
   const logo = extractFunction('getSummaryOperatorLogoHtml');
-  const openSummary = extractFunction('openSummary');
+  const renderer = extractFunction('getCampaignSummaryHtml');
   assert.match(logo, /hasOperatorLogo\(resolvedOffer\)/);
   assert.match(logo, /detectOperatorKey\(o\.operator\)\|\|o\.operator/);
   assert.match(logo, /o\._logoCustom\|\|op\.pngData\|\|op\.svgData/);
   assert.match(logo, /class="summary-offer-logo-wrap"/);
   assert.match(logo, /class="summary-offer-logo"/);
   assert.match(logo, /onerror="this\.parentElement\.remove\(\)"/);
-  assert.match(openSummary, /\$\{getSummaryOperatorLogoHtml\(o\)\}/);
-  assert.match(openSummary, /Offer \$\{i\+1\} — Empty/);
+  assert.match(renderer, /\$\{getSummaryOperatorLogoHtml\(o\)\}/);
+  assert.match(renderer, /Offer \$\{i\+1\} — Empty/);
 });
 
 test('campaign summary offer headings are compact and visually prominent', () => {
