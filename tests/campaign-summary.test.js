@@ -80,6 +80,21 @@ test('campaign summary footer keeps only the Copy All UTMs workflow', () => {
   assert.doesNotMatch(html, /function downloadSummaryTxt\(/);
 });
 
+test('campaign summary supports a detached read-only browser window with manual refresh', () => {
+  const modalStart = html.indexOf('<div class="modal-overlay" id="summary-modal"');
+  const modalEnd = html.indexOf('</div>\n\n<script>', modalStart);
+  const modal = html.slice(modalStart, modalEnd);
+  assert.match(modal, /openDetachedSummaryWindow\(\)">Open in New Window/);
+
+  const detachedHtml = extractFunction('getDetachedSummaryWindowHtml');
+  const openDetached = extractFunction('openDetachedSummaryWindow');
+  assert.match(openDetached, /window\.open\("","campaign-summary-detached",features\)/);
+  assert.match(detachedHtml, /function refreshSummary\(\)/);
+  assert.match(detachedHtml, /window\.opener\.getCampaignSummaryHtml\(\)/);
+  assert.match(detachedHtml, /onclick=\"refreshSummary\(\)\">Refresh/);
+  assert.match(detachedHtml, /onclick=\"copyAllUtmsFromOpener\(\)\">Copy All UTMs/);
+  assert.doesNotMatch(detachedHtml, /localStorage/);
+});
 
 test('campaign summary modal supports header-only dragging without persisting position', () => {
   assert.match(html, /\.summary-head\{[^}]*cursor:grab;/);
