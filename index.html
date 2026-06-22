@@ -409,8 +409,6 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .section.csv-core-section .section-hdr h3{color:#fff;}
 .section.csv-core-section .section-toggle{color:var(--gold);}
 .section.csv-core-section .section-hdr.collapsed .section-toggle{color:var(--muted);}
-.summary-action{padding:8px 10px;}
-.summary-action .abtn{width:100%;min-height:28px;display:flex;align-items:center;justify-content:center;font-weight:400;}
 
 /* ── PREVIEW ── */
 .preview-toolbar{background:var(--navy);padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;}
@@ -506,8 +504,6 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cta-preview-group{width:1200px;background:#fff;overflow:hidden;}
 .cta-preview-asset{width:1200px;height:338px;background:#fff;position:relative;font-family:'Montserrat',sans-serif;}
 .cta-preview-button{position:absolute;left:73px;top:72px;width:1054px;height:197px;box-sizing:border-box;border-radius:0;background:var(--cta-accent,var(--gold));display:flex;align-items:center;justify-content:center;text-align:center;padding:0 26px;color:#fff;font-size:43px;font-weight:300;letter-spacing:.018em;line-height:1.15;text-transform:none;}
-.cta-link-info{margin-top:5px;padding:5px 7px;border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;color:var(--navy);font-size:9px;line-height:1.35;word-break:break-all;}
-.cta-link-info strong{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px;}
 .email-footer{background:#fff;padding:14px;text-align:center;font-size:11px;color:#888;border-top:1px solid #eee;}
 
 /* ── SAFE ZONE ── */
@@ -902,7 +898,6 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
         <label class="hero-lock-toggle"><input id="cta-enabled" type="checkbox" onchange="ctaSettingsChanged()"> <span>Enable CTA</span></label>
         <div class="field"><label>CTA Text</label><input id="cta-text" spellcheck="true" placeholder="Click To Call Us For More Info" oninput="ctaSettingsChanged()"></div>
         <div class="field"><label>CTA Phone Number</label><input id="cta-phone" inputmode="tel" placeholder="01912229701" oninput="ctaSettingsChanged()"></div>
-        <div class="cta-link-info"><strong>Generated CTA Link</strong><span id="cta-link-output">tel:01912229701</span></div>
       </div>
     </div>
 
@@ -986,8 +981,16 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       </div>
     </div>
 
-    <div class="summary-action">
-      <button class="abtn navy" id="open-summary-btn" type="button" onclick="openSummary()">Campaign Summary</button>
+    <div class="section" data-section-key="campaign-summary">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M3 3v18h18"></path><rect width="3" height="7" x="7" y="10"></rect><rect width="3" height="11" x="12" y="6"></rect><rect width="3" height="5" x="17" y="12"></rect></svg>Campaign Summary</h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body hidden">
+        <div class="summary-body" id="summary-inline-content"></div>
+        <div class="summary-actions">
+          <button class="summary-btn" type="button" onclick="copyAllUtms()">Copy All UTMs</button>
+        </div>
+      </div>
     </div>
 
     <div class="section campaign-library-section" id="campaign-library-panel">
@@ -1846,6 +1849,7 @@ function toggleSec(hdr){
     });
   }
   setSectionCollapsedByHeader(hdr, !willOpen);
+  if(willOpen && sectionKey === "campaign-summary") renderCampaignSummaryInto("summary-inline-content");
   if(willOpen && sectionKey === "export-cards" && typeof autoExpandCampaignHealthForExport === "function") autoExpandCampaignHealthForExport();
   queueAutosave();
 }
@@ -6862,13 +6866,7 @@ function getSummaryOfferDetails(o,i){
     ["Export readiness",ready?"Ready":"Needs checks",ready?"sum-ok":"sum-warn"]
   ];
 }
-function openSummary(){
-  const modal=document.getElementById("summary-modal");
-  const content=document.getElementById("summary-content");
-  if(!modal||!content){
-    console.warn("Summary modal unavailable: #summary-modal or #summary-content is missing.");
-    return;
-  }
+function getCampaignSummaryHtml(){
   const name=summaryHtml(document.getElementById("g-campaign").value,"(unnamed)");
   const date=summaryHtml(document.getElementById("g-date").value,"(TBC)");
   const lockedSummary=(typeof lockedOffers!=="undefined"&&Array.isArray(lockedOffers)?lockedOffers:[]).map((locked,index)=>locked?`Offer ${index+1}`:"").filter(Boolean).join(", ") || "None";
@@ -6877,8 +6875,20 @@ function openSummary(){
     const rows=getSummaryOfferDetails(o,i).map(([label,value,statusClass])=>`<div><strong>${label}</strong><span${statusClass?` class="${statusClass}"`:""}>${summaryHtml(value)}</span></div>`).join("");
     return `<div class="summary-offer-card"><div class="summary-offer-head">${getSummaryOperatorLogoHtml(o)}<div class="summary-offer-title">Offer ${i+1} — ${summaryHtml(o.name,"Unnamed offer")}</div></div><div class="summary-list">${rows}</div></div>`;
   }).join("");
-  const html=`<div class="summary-health"><strong>Campaign Health</strong><br>${getCampaignHealthReviewHtml()}</div><div class="summary-meta"><div class="summary-chip"><strong>Campaign</strong><br>${name}</div><div class="summary-chip"><strong>Send date</strong><br>${date}</div><div class="summary-chip"><strong>Export pack hints</strong><br>offer-cards/, utms/all-utms.csv, summary/campaign-summary.txt, summary/utm_lookup.csv</div><div class="summary-chip"><strong>Locked cards</strong><br>${summaryHtml(lockedSummary)}</div></div><div class="summary-grid">${offerCards}</div>`;
-  content.innerHTML=html;
+  return `<div class="summary-health"><strong>Campaign Health</strong><br>${getCampaignHealthReviewHtml()}</div><div class="summary-meta"><div class="summary-chip"><strong>Campaign</strong><br>${name}</div><div class="summary-chip"><strong>Send date</strong><br>${date}</div><div class="summary-chip"><strong>Export pack hints</strong><br>offer-cards/, utms/all-utms.csv, summary/campaign-summary.txt, summary/utm_lookup.csv</div><div class="summary-chip"><strong>Locked cards</strong><br>${summaryHtml(lockedSummary)}</div></div><div class="summary-grid">${offerCards}</div>`;
+}
+function renderCampaignSummaryInto(targetId){
+  const content=document.getElementById(targetId);
+  if(content) content.innerHTML=getCampaignSummaryHtml();
+}
+function openSummary(){
+  const modal=document.getElementById("summary-modal");
+  const content=document.getElementById("summary-content");
+  if(!modal||!content){
+    console.warn("Summary modal unavailable: #summary-modal or #summary-content is missing.");
+    return;
+  }
+  content.innerHTML=getCampaignSummaryHtml();
   modal.classList.add("active");
 }
 function getSummaryText(){

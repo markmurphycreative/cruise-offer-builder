@@ -22,7 +22,8 @@ test('CTA asset controls are additive and default to disabled with Dawson & Sand
   assert.match(html, /id="cta-enabled" type="checkbox"/);
   assert.match(html, /id="cta-text"[^>]+placeholder="Click To Call Us For More Info"/);
   assert.match(html, /id="cta-phone"[^>]+placeholder="01912229701"/);
-  assert.match(html, /id="cta-link-output">tel:01912229701<\/span>/);
+  assert.doesNotMatch(html, /Generated CTA Link/);
+  assert.doesNotMatch(html, /id="cta-link-output"/);
 });
 
 
