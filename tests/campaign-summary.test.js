@@ -41,13 +41,14 @@ test('campaign summary offer headers reuse available operator logos without chan
   assert.match(renderer, /Offer \$\{i\+1\} — Empty/);
 });
 
-test('campaign summary offer headings are compact and visually prominent', () => {
+test('campaign summary offer headings are title case and visually aligned with builder hierarchy', () => {
   assert.match(html, /\.summary-grid\{display:grid;gap:6px;\}/);
   assert.match(html, /\.summary-offer-head\{display:flex;align-items:center;gap:10px;margin-bottom:4px;\}/);
   assert.match(html, /\.summary-offer-logo-wrap\{width:70px;height:40px;[^}]*border-radius:0;[^}]*background:var\(--navy\);/);
   assert.match(html, /\.summary-offer-logo\{display:block;max-width:62px;max-height:32px;width:auto;height:auto;object-fit:contain;/);
   assert.match(html, /\.summary-offer-logo\[src=\"assets\/operator-logos\/po-cruises-logo\.png\"\]\{transform:translateY\(2px\);\}/);
-  assert.match(html, /\.summary-offer-title\{font-size:11px;font-weight:800;/);
+  assert.match(html, /\.summary-offer-title\{font-size:11px;font-weight:400;color:var\(--navy\);letter-spacing:\.04em;\}/);
+  assert.doesNotMatch(html, /\.summary-offer-title\{[^}]*text-transform:uppercase/);
 });
 
 test('campaign summary reuses existing offer readiness status and presents full review fields', () => {
