@@ -35,7 +35,7 @@ test('named export and campaign prompt actions inherit restrained button weights
   assert.match(html, /<button class="export-btn secondary" onclick="exportCurrentJPG\(\)" id="exp-single-jpg-btn">[\s\S]*?<span aria-hidden="true">Card<\/span>/);
   assert.match(html, /<button class="export-btn secondary" onclick="exportAllJPG\(\)" id="exp-all-jpg-btn">[\s\S]*?<span aria-hidden="true">All Cards<\/span>/);
   assert.match(html, /<button class="export-btn primary" onclick="exportCampaignPack\(\)" id="exp-pack-btn">[\s\S]*?<span aria-hidden="true">Campaign<\/span>/);
-  assert.match(html, /<button class="abtn navy" id="open-summary-btn" type="button" onclick="openSummary\(\)">Campaign Summary<\/button>/);
+  assert.match(html, /<div class="section" data-section-key="campaign-summary">/);
   assert.match(html, /<button class="abtn navy" type="button" style="width:100%;margin-bottom:6px;" onclick="generateAiCopyPrompt\(\)">Generate Prompt<\/button>/);
   assert.match(cssRuleFor('.export-btn'), /font-weight:400;/);
   assert.match(cssRuleFor('.abtn'), /font-weight:400;/);
