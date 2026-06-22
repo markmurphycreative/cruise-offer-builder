@@ -468,9 +468,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .ptool span{font-size:9px;color:rgba(255,255,255,.6);white-space:nowrap;}
 .ptool input[type=range]{accent-color:var(--gold);width:70px;height:3px;}
 .ptool .pval{font-size:9px;color:rgba(255,255,255,.8);min-width:28px;}
-.view-btns{position:relative;display:flex;border:1px solid rgba(255,255,255,.26);border-radius:6px;overflow:hidden;isolation:isolate;}
-.view-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:4px;background:var(--gold);box-shadow:0 1px 3px rgba(0,0,0,.2);transform:translateX(0);pointer-events:none;}
-.vbtn{position:relative;z-index:1;padding:3px 8px;font-size:9px;font-weight:400;border:none;background:transparent;color:rgba(255,255,255,.5);letter-spacing:.04em;transition:color .18s ease;}
+.view-btns{position:relative;display:flex;flex:0 0 auto;align-items:stretch;border:1px solid rgba(255,255,255,.26);border-radius:6px;overflow:hidden;isolation:isolate;}
+.view-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:4px;background:var(--gold);box-shadow:0 1px 3px rgba(0,0,0,.2);transform:translateX(0);box-sizing:border-box;pointer-events:none;}
+.vbtn{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:max-content;box-sizing:border-box;padding:3px 8px;font-size:9px;font-weight:400;line-height:1.2;border:none;background:transparent;color:rgba(255,255,255,.5);letter-spacing:.04em;white-space:nowrap;transition:color .18s ease;}
 .vbtn:hover:not(.active){color:rgba(255,255,255,.88);}
 .vbtn.active{color:var(--navy);}
 .tbtn{padding:3px 7px;font-size:9px;font-weight:400;border:1px solid rgba(255,255,255,.2);border-radius:3px;background:transparent;color:rgba(255,255,255,.6);margin-left:3px;}
@@ -7332,8 +7332,24 @@ function normalisePreviewMode(v){
 
 function updateSegmentedPill(pill, activeButton){
   if(!pill || !activeButton) return;
-  pill.style.width = activeButton.offsetWidth + 'px';
-  pill.style.transform = 'translateX(' + activeButton.offsetLeft + 'px)';
+  const container = pill.parentElement;
+  if(!container) return;
+  const buttonRect = activeButton.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
+  const width = buttonRect.width;
+  const x = buttonRect.left - containerRect.left + container.scrollLeft;
+  if(width <= 0) return;
+  pill.style.width = width + 'px';
+  pill.style.transform = 'translate3d(' + x + 'px,0,0)';
+}
+
+function queueSegmentedPillSync(){
+  updateViewPill();
+  updateOfferPill();
+  requestAnimationFrame(function(){
+    updateViewPill();
+    updateOfferPill();
+  });
 }
 
 function updateActiveOfferLabel(){
@@ -8522,14 +8538,18 @@ function handleKeyboardShortcut(event){
 document.addEventListener('keydown',handleKeyboardShortcut);
 document.addEventListener('change',releaseSelectShortcutFocus);
 
-window.addEventListener('resize', function(){
-  updateViewPill();
-  updateOfferPill();
-});
-requestAnimationFrame(function(){
-  updateViewPill();
-  updateOfferPill();
-});
+window.addEventListener('resize', queueSegmentedPillSync);
+if(window.ResizeObserver){
+  const segmentedPillObserver = new ResizeObserver(queueSegmentedPillSync);
+  ['view-pill','offer-pill'].forEach(function(id){
+    const pill = document.getElementById(id);
+    if(pill && pill.parentElement) segmentedPillObserver.observe(pill.parentElement);
+  });
+}
+if(document.fonts && document.fonts.ready){
+  document.fonts.ready.then(queueSegmentedPillSync).catch(function(){});
+}
+requestAnimationFrame(queueSegmentedPillSync);
 
 </script>
 
