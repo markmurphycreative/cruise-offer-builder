@@ -181,6 +181,7 @@ test('Manage Campaigns supports a detached live-synced browser window using shar
   assert.notEqual(modalStart, -1, 'Expected Manage Campaigns modal to exist');
   assert.notEqual(modalEnd, -1, 'Expected Manage Campaigns modal boundary to exist');
   const modal = html.slice(modalStart, modalEnd);
+  assert.match(modal, /<button class="summary-btn primary" type="button" onclick="refreshCampaignHistoryUI\(\)">Refresh<\/button>/);
   assert.match(modal, /openDetachedManageCampaignsWindow\(\)">Open in New Window/);
 
   const contentRenderer = extractFunction('getManageCampaignsContentHtml');

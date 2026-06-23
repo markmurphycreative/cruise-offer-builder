@@ -44,7 +44,7 @@ test('Campaign Summary modal trigger does not render inline summary content or a
 
 test('Campaign Summary modal remains available for existing shortcut behaviour', () => {
   assert.match(html, /<div class="modal-overlay" id="summary-modal"/);
-  assert.match(html, /<h2 id="summary-title">Campaign Summary<\/h2>/);
+  assert.match(html, /<h2 id="summary-title"><svg class="section-icon"[\s\S]*?<\/svg>Campaign Summary<\/h2>/);
   const openSummary = extractFunction('openSummary');
   assert.match(openSummary, /document\.getElementById\("summary-modal"\)/);
   assert.match(openSummary, /document\.getElementById\("summary-content"\)/);
