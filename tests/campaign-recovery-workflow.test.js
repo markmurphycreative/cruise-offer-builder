@@ -194,6 +194,9 @@ test('Manage Campaigns supports a detached live-synced browser window using shar
   assert.match(contentRenderer, /Campaign Backups/);
   assert.match(contentRenderer, /Campaign Actions/);
   assert.match(contentRenderer, /getCampaignHistoryListHtml\(buckets\.pinned/);
+  assert.match(detachedHtml, /<div class="detached-manage-actions"><button class="summary-btn primary" type="button" onclick="refreshManageCampaigns\(\)">Refresh<\/button><\/div>/);
+  assert.match(detachedHtml, /\.summary-btn\{padding:8px 10px;font-size:10px;font-weight:400;letter-spacing:\.04em;border-radius:var\(--radius\);border:1px solid rgba\(255,255,255,\.35\);background:#fff;color:var\(--navy\);text-transform:uppercase;cursor:pointer;\}\.summary-btn\.primary\{background:var\(--gold\);border-color:var\(--gold\);color:#fff;\}/);
+  assert.match(detachedHtml, /function refreshManageCampaigns\(\)\{[\s\S]*content\.innerHTML=window\.opener\.getManageCampaignsContentHtml\(\);/);
   assert.match(openDetached, /detachedManageCampaignsWindow&&!detachedManageCampaignsWindow\.closed/);
   assert.match(openDetached, /detachedManageCampaignsWindow\.focus\(\);/);
   assert.match(openDetached, /window\.open\("","manage-campaigns-detached",features\)/);
