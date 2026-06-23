@@ -2041,6 +2041,7 @@ function ctaSettingsChanged(){
   try { renderPreviewMode(true); } catch(e){}
   try { updateAllStatus(); } catch(e){}
   queueAutosave();
+  if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow();
 }
 function getOperatorAccentColor(offerData){
   const skin=getOperatorSkin(offerData);
@@ -2153,6 +2154,7 @@ function refreshOfferUi(opts={}){
   if(spell) runSpellQA();
   updateExportFilenames();
   if(autosave) queueAutosave();
+  if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow();
 }
 function up(){
   save();
@@ -2215,6 +2217,7 @@ function toggleHeroImageLock(){
   setHeroImageLocked(cur,!!(document.getElementById("hero-lock-toggle")||{}).checked);
   updateHeroImageLockUI();
   queueAutosave();
+  if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow();
 }
 function updateHeroTabLockIndicators(){
   document.querySelectorAll(".otab").forEach((tab,index)=>{
@@ -2279,6 +2282,7 @@ function setOfferLocked(index,locked){
   lockedOffers[Number(index)]=!!locked;
   updateLockUI();
   queueAutosave();
+  if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow();
 }
 function toggleLock(){ setOfferLocked(cur,!isOfferLocked(cur)); }
 function toggleOfferLockFromTile(event,index){
@@ -4463,6 +4467,7 @@ function refreshAfterRestore(){
   renderPreviewMode(true);
   updateHeroRestoreNote();
   runSpellQA();
+  if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow();
 }
 function updateHeroRestoreNote(){
   const note=document.getElementById('hero-restore-note');
@@ -6946,6 +6951,19 @@ window.addEventListener('load', refreshSummary);
 </`+`script></body></html>`;
 }
 let detachedSummaryWindow=null;
+function syncDetachedSummaryWindow(){
+  if(!detachedSummaryWindow) return;
+  if(detachedSummaryWindow.closed){
+    detachedSummaryWindow=null;
+    return;
+  }
+  try{
+    const content=detachedSummaryWindow.document&&detachedSummaryWindow.document.getElementById('detached-summary-content');
+    if(content) content.innerHTML=getCampaignSummaryHtml();
+  }catch(e){
+    console.warn("Detached summary sync failed", e);
+  }
+}
 function closeSummaryModalAfterDetachedOpen(){
   if(typeof closeModal==="function") closeModal("summary-modal");
 }
@@ -7131,6 +7149,7 @@ function up(){
   updateExportFilenames();
   updateMoveOfferButtons();
   queueAutosave();
+  if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow();
 }
 
 function load(i){
@@ -7142,6 +7161,7 @@ function load(i){
   updateExportFilenames();
   runSpellQA();
   updateMoveOfferButtons();
+  if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow();
 }
 
 // Override Sheet/CSV post-load behaviour so it always lands on Offer 1 cleanly.
@@ -7278,6 +7298,7 @@ function refreshAfterOfferReorder(){
   try { updateMoveOfferButtons(); } catch(e){}
   if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Card reorder");
   queueAutosave();
+  if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow();
 }
 
 
@@ -7892,10 +7913,11 @@ function updateUtmOutput(showAll){
   const allText = results.map(item => item.result.message).join("\n");
   return showAll ? allText : current.result.url;
 }
-function genUtm(){ return updateUtmOutput(false); }
+function genUtm(){ const result=updateUtmOutput(false); if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow(); return result; }
 function genAllUtms(silent){
   const txt = updateUtmOutput(true);
   if(!silent) console.log("All UTMs generated", txt);
+  if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow();
   return txt;
 }
 function copyUtm(index, btn){
@@ -7970,6 +7992,7 @@ function genStandardUtms(){
     const disabled = full.indexOf("http")===0 ? "" : "disabled";
     return `<div class="std-utm-item"><div class="std-utm-head"><strong>${item.label}</strong><button class="abtn" id="std-copy-${idx}" onclick="copyStandardUtm(${idx})" style="font-size:9px;padding:3px 6px;flex:0 0 auto;" ${disabled}>Copy</button></div><div class="std-utm-url">${full}</div></div>`;
   }).join("");
+  if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow();
 }
 
 function filenameWithExt(i, ext){
