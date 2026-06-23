@@ -1169,6 +1169,9 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         </section>
       </div>
     </div>
+    <div class="summary-actions">
+      <button class="summary-btn" type="button" onclick="openDetachedManageCampaignsWindow()">Open in New Window</button>
+    </div>
   </div>
 </div>
 
@@ -5123,15 +5126,18 @@ function renderCampaignThumbnail(item,loadId){
   const loadAttrs=loadId ? ` role="button" tabindex="0" title="Load campaign" aria-label="Load campaign" onclick="restoreCampaignHistoryEntry('${loadId}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();restoreCampaignHistoryEntry('${loadId}');}"` : ` aria-label="${name} campaign thumbnail"`;
   return `<div class="campaign-thumbnail"${loadAttrs}><div class="campaign-thumbnail-operators">${operators}</div><div class="campaign-thumbnail-name">${name}</div><div class="campaign-thumbnail-meta">${escapeCampaignHistoryText(meta)}</div></div>`;
 }
-function renderCampaignHistoryList(targetId,items,emptyLabel){
-  const el=document.getElementById(targetId);
-  if(!el) return;
-  if(!items.length){ el.innerHTML=renderCampaignHistoryEmptyState(emptyLabel); return; }
-  el.innerHTML=items.map(item=>{
+function getCampaignHistoryListHtml(items,emptyLabel){
+  if(!items.length) return renderCampaignHistoryEmptyState(emptyLabel);
+  return items.map(item=>{
     const safeId=escapeCampaignHistoryText(item.id);
     const safeMeta=escapeCampaignHistoryText(campaignHistoryMeta(item));
     return `<div class="campaign-history-item">${renderCampaignThumbnail(item,safeId)}<div class="campaign-history-meta">${safeMeta}</div><div class="campaign-history-actions"><button class="abtn btn-compact" onclick="restoreCampaignHistoryEntry('${safeId}')">Load</button><button class="abtn btn-compact" onclick="togglePinCampaignHistoryEntry('${safeId}')">Pin</button><button class="abtn red btn-compact" onclick="deleteCampaignHistoryEntry('${safeId}')">Delete</button></div></div>`;
   }).join("");
+}
+function renderCampaignHistoryList(targetId,items,emptyLabel){
+  const el=document.getElementById(targetId);
+  if(!el) return;
+  el.innerHTML=getCampaignHistoryListHtml(items,emptyLabel);
 }
 function isCampaignHistoryBackup(item){
   return item && item.type === "backup";
@@ -5159,12 +5165,17 @@ function renderCampaignLibraryDashboard(buckets){
   const dashboard=document.getElementById("campaign-library-dashboard");
   if(dashboard) dashboard.innerHTML="";
 }
+function getManageCampaignsContentHtml(){
+  const buckets=getCampaignLibraryBuckets();
+  return `<div class="campaign-library-dashboard" id="detached-campaign-library-dashboard" aria-live="polite"></div><div class="campaign-library-categories"><section class="campaign-library-category" data-campaign-category="pinned"><div class="campaign-modal-category-head"><h3>Pinned Campaigns</h3></div><div id="detached-pinned-campaign-list" class="campaign-history-list">${getCampaignHistoryListHtml(buckets.pinned, "No pinned campaigns yet.")}</div></section><section class="campaign-library-category" data-campaign-category="recent"><div class="campaign-modal-category-head"><h3>Saved Campaigns</h3></div><div id="detached-recent-campaign-list" class="campaign-history-list">${getCampaignHistoryListHtml(buckets.recent, "No saved campaigns yet.")}</div></section><section class="campaign-library-category" data-campaign-category="backups"><div class="campaign-modal-category-head"><h3>Campaign Backups</h3></div><div id="detached-backup-campaign-list" class="campaign-history-list">${getCampaignHistoryListHtml(buckets.backup, "No campaign backups yet.")}</div></section><section class="campaign-library-category" data-campaign-category="utility"><div class="campaign-modal-category-head"><h3>Campaign Actions</h3></div><div class="campaign-library-utility"><button class="abtn btn-compact" type="button" onclick="clearSavedSession()">Clear Current Session</button><button class="abtn btn-compact" type="button" onclick="triggerLoadCampaignBackup()">Load Campaign Backup</button></div></section></div>`;
+}
 function refreshCampaignHistoryUI(){
   const buckets=getCampaignLibraryBuckets();
   renderCampaignLibraryDashboard(buckets);
   renderCampaignHistoryList("pinned-campaign-list", buckets.pinned, "No pinned campaigns yet.");
   renderCampaignHistoryList("recent-campaign-list", buckets.recent, "No saved campaigns yet.");
   renderCampaignHistoryList("backup-campaign-list", buckets.backup, "No campaign backups yet.");
+  if(typeof syncDetachedManageCampaignsWindow==="function") syncDetachedManageCampaignsWindow();
 }
 function openManageCampaignsModal(){
   refreshCampaignHistoryUI();
@@ -5189,6 +5200,74 @@ function triggerLoadCampaignBackup(){
 }
 function loadCampaignBackup(event){
   return loadCampaignFile(event);
+}
+function getDetachedManageCampaignsWindowHtml(initialContentHtml){
+  const contentHtml=typeof initialContentHtml==="string"?initialContentHtml:"";
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Manage Campaigns — Cruise Offer Builder</title><style>
+:root{--navy:#0e1b2a;--gold:#c6a15b;--border:#d8d2c7;--muted:#667085;--red:#b42318;--radius:6px;font-family:Arial,Helvetica,sans-serif;color:#0e1b2a;background:#f7f6f3;}
+*{box-sizing:border-box;} body{margin:0;background:#f7f6f3;color:var(--navy);font-family:Arial,Helvetica,sans-serif;}.detached-manage-shell{min-height:100vh;display:flex;flex-direction:column;}.detached-manage-head{position:sticky;top:0;z-index:2;background:var(--navy);color:#fff;padding:14px 18px;border-bottom:3px solid var(--gold);display:flex;align-items:center;justify-content:space-between;gap:12px;}.detached-manage-head h1{font-size:14px;font-weight:400;letter-spacing:.04em;margin:0;}.detached-manage-body{padding:12px;background:#fafaf8;overflow:auto;flex:1;}.campaign-library-categories{display:grid;gap:5px;}.campaign-library-category{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:#fff;}.campaign-modal-category-head{padding:7px 8px;border-bottom:1px solid var(--border);background:#fff;}.campaign-modal-category-head h3{font-size:10px;font-weight:400;letter-spacing:.04em;color:var(--navy);margin:0;}.campaign-history-list,.campaign-library-utility{padding:8px;}.campaign-history-list{display:grid;gap:4px;}.campaign-history-item{border:1px solid var(--border);border-radius:var(--radius);padding:7px;background:#fff;display:grid;gap:5px;}.campaign-history-meta{font-size:9px;color:var(--muted);}.campaign-history-actions,.campaign-library-utility{display:flex;gap:5px;flex-wrap:wrap;}.abtn{padding:6px 9px;border-radius:var(--radius);border:1px solid var(--border);background:#fff;color:var(--navy);font-size:10px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;}.abtn.red{color:var(--red);border-color:rgba(180,35,24,.35);}.btn-compact{padding:5px 8px;font-size:9px;}.campaign-thumbnail{border:1px solid rgba(216,210,199,.8);border-radius:6px;padding:7px;background:#fdfdfc;cursor:pointer;display:grid;gap:5px;}.campaign-thumbnail-operators{display:flex;gap:4px;flex-wrap:wrap;}.campaign-thumbnail-pill{display:inline-flex;border:1px solid rgba(160,146,103,.36);border-radius:999px;padding:2px 5px;font-size:8px;font-weight:700;}.campaign-thumbnail-name{font-size:11px;color:var(--navy);}.campaign-thumbnail-meta,.empty-state{font-size:9px;color:var(--muted);}.empty-state{padding:8px;}.empty-state strong{display:block;color:var(--navy);font-size:10px;margin-bottom:2px;}
+</style></head><body><div class="detached-manage-shell"><header class="detached-manage-head"><h1>Manage Campaigns</h1></header><main class="detached-manage-body" id="detached-manage-campaigns-content">${contentHtml}</main></div><script>
+function refreshManageCampaigns(){
+  const content=document.getElementById('detached-manage-campaigns-content');
+  if(!content) return;
+  if(window.opener&&!window.opener.closed&&typeof window.opener.getManageCampaignsContentHtml==='function') content.innerHTML=window.opener.getManageCampaignsContentHtml();
+  else content.innerHTML='<div class="empty-state"><strong>Manage Campaigns unavailable</strong>The Cruise Offer Builder window is closed or unavailable.</div>';
+}
+function callOpener(name){
+  if(window.opener&&!window.opener.closed&&typeof window.opener[name]==='function'){
+    const args=Array.prototype.slice.call(arguments,1);
+    window.opener[name].apply(window.opener,args);
+    refreshManageCampaigns();
+  }
+}
+function restoreCampaignHistoryEntry(id){ callOpener('restoreCampaignHistoryEntry',id); }
+function togglePinCampaignHistoryEntry(id){ callOpener('togglePinCampaignHistoryEntry',id); }
+function deleteCampaignHistoryEntry(id){ callOpener('deleteCampaignHistoryEntry',id); }
+function clearSavedSession(){ callOpener('clearSavedSession'); }
+function triggerLoadCampaignBackup(){ callOpener('triggerLoadCampaignBackup'); }
+window.addEventListener('load', refreshManageCampaigns);
+</`+`script></body></html>`;
+}
+let detachedManageCampaignsWindow=null;
+function syncDetachedManageCampaignsWindow(){
+  if(!detachedManageCampaignsWindow) return;
+  if(detachedManageCampaignsWindow.closed){
+    detachedManageCampaignsWindow=null;
+    return;
+  }
+  try{
+    const content=detachedManageCampaignsWindow.document&&detachedManageCampaignsWindow.document.getElementById('detached-manage-campaigns-content');
+    if(content) content.innerHTML=getManageCampaignsContentHtml();
+  }catch(e){
+    console.warn("Detached Manage Campaigns sync failed", e);
+  }
+}
+function closeManageCampaignsModalAfterDetachedOpen(){
+  if(typeof closeManageCampaignsModal==="function") closeManageCampaignsModal();
+}
+function openDetachedManageCampaignsWindow(){
+  if(detachedManageCampaignsWindow&&!detachedManageCampaignsWindow.closed){
+    detachedManageCampaignsWindow.focus();
+    closeManageCampaignsModalAfterDetachedOpen();
+    return;
+  }
+  const features="popup=yes,width=920,height=760,resizable=yes,scrollbars=yes";
+  const detached=window.open("","manage-campaigns-detached",features);
+  if(!detached){
+    alert("Unable to open the Manage Campaigns window. Please allow pop-ups for Cruise Offer Builder and try again.");
+    return;
+  }
+  detachedManageCampaignsWindow=detached;
+  detached.document.open();
+  detached.document.write(getDetachedManageCampaignsWindowHtml(getManageCampaignsContentHtml()));
+  detached.document.close();
+  try{
+    detached.addEventListener("beforeunload",function(){
+      if(detachedManageCampaignsWindow===detached) detachedManageCampaignsWindow=null;
+    });
+  }catch(_e){}
+  detached.focus();
+  closeManageCampaignsModalAfterDetachedOpen();
 }
 
 function saveCampaignFile(){
