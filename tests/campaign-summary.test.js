@@ -104,6 +104,31 @@ test('campaign summary supports a detached read-only browser window with manual 
   assert.doesNotMatch(detachedHtml, /localStorage/);
 });
 
+test('detached campaign summary can live-sync through the shared renderer without refocusing the window', () => {
+  const syncDetached = extractFunction('syncDetachedSummaryWindow');
+  const refreshAfterRestore = extractFunction('refreshAfterRestore');
+  const refreshAfterOfferReorder = extractFunction('refreshAfterOfferReorder');
+  const genUtm = extractFunction('genUtm');
+  const genAllUtms = extractFunction('genAllUtms');
+  const genStandardUtms = extractFunction('genStandardUtms');
+  const setOfferLocked = extractFunction('setOfferLocked');
+
+  assert.match(syncDetached, /if\(!detachedSummaryWindow\) return;/);
+  assert.match(syncDetached, /if\(detachedSummaryWindow\.closed\)/);
+  assert.match(syncDetached, /detachedSummaryWindow=null;/);
+  assert.match(syncDetached, /getElementById\('detached-summary-content'\)/);
+  assert.match(syncDetached, /content\.innerHTML=getCampaignSummaryHtml\(\);/);
+  assert.doesNotMatch(syncDetached, /\.focus\(\)/);
+  assert.doesNotMatch(syncDetached, /window\.open\(/);
+  assert.match(refreshAfterRestore, /syncDetachedSummaryWindow\(\);/);
+  assert.match(refreshAfterOfferReorder, /syncDetachedSummaryWindow\(\);/);
+  assert.match(html, /function refreshOfferUi\(opts=\{\}\)\{[\s\S]*?syncDetachedSummaryWindow\(\);\s*\}/);
+  assert.match(genUtm, /syncDetachedSummaryWindow\(\);/);
+  assert.match(genAllUtms, /syncDetachedSummaryWindow\(\);/);
+  assert.match(genStandardUtms, /syncDetachedSummaryWindow\(\);/);
+  assert.match(setOfferLocked, /syncDetachedSummaryWindow\(\);/);
+});
+
 test('campaign summary modal supports header-only dragging without persisting position', () => {
   assert.match(html, /\.summary-head\{[^}]*cursor:grab;/);
   assert.match(html, /\.summary-head\.dragging\{cursor:grabbing;\}/);
