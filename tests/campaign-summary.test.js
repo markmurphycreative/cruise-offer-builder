@@ -88,7 +88,11 @@ test('campaign summary supports a detached read-only browser window with manual 
 
   const detachedHtml = extractFunction('getDetachedSummaryWindowHtml');
   const openDetached = extractFunction('openDetachedSummaryWindow');
+  assert.match(openDetached, /detachedSummaryWindow&&!detachedSummaryWindow\.closed/);
+  assert.match(openDetached, /detachedSummaryWindow\.focus\(\);/);
   assert.match(openDetached, /window\.open\("","campaign-summary-detached",features\)/);
+  assert.match(openDetached, /detachedSummaryWindow=detached/);
+  assert.match(openDetached, /closeSummaryModalAfterDetachedOpen\(\);/);
   assert.match(detachedHtml, /function refreshSummary\(\)/);
   assert.match(detachedHtml, /window\.opener\.getCampaignSummaryHtml\(\)/);
   assert.match(detachedHtml, /onclick=\"refreshSummary\(\)\">Refresh/);

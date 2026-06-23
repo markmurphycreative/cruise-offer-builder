@@ -6944,17 +6944,33 @@ function copyAllUtmsFromOpener(){
 window.addEventListener('load', refreshSummary);
 </`+`script></body></html>`;
 }
+let detachedSummaryWindow=null;
+function closeSummaryModalAfterDetachedOpen(){
+  if(typeof closeModal==="function") closeModal("summary-modal");
+}
 function openDetachedSummaryWindow(){
+  if(detachedSummaryWindow&&!detachedSummaryWindow.closed){
+    detachedSummaryWindow.focus();
+    closeSummaryModalAfterDetachedOpen();
+    return;
+  }
   const features="popup=yes,width=920,height=760,resizable=yes,scrollbars=yes";
   const detached=window.open("","campaign-summary-detached",features);
   if(!detached){
     alert("Unable to open the Campaign Summary window. Please allow pop-ups for Cruise Offer Builder and try again.");
     return;
   }
+  detachedSummaryWindow=detached;
   detached.document.open();
   detached.document.write(getDetachedSummaryWindowHtml());
   detached.document.close();
+  try{
+    detached.addEventListener("beforeunload",function(){
+      if(detachedSummaryWindow===detached) detachedSummaryWindow=null;
+    });
+  }catch(_e){}
   detached.focus();
+  closeSummaryModalAfterDetachedOpen();
 }
 function openSummary(){
   const modal=document.getElementById("summary-modal");
