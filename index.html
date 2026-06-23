@@ -6916,7 +6916,8 @@ function renderCampaignSummaryInto(targetId){
   const content=document.getElementById(targetId);
   if(content) content.innerHTML=getCampaignSummaryHtml();
 }
-function getDetachedSummaryWindowHtml(){
+function getDetachedSummaryWindowHtml(initialSummaryHtml){
+  const summaryHtml=typeof initialSummaryHtml==="string"?initialSummaryHtml:"";
   return `<!doctype html><html><head><meta charset="utf-8"><title>Campaign Summary — Cruise Offer Builder</title><style>
 :root{--navy:#0e1b2a;--gold:#c6a15b;--border:#d8d2c7;--muted:#667085;--green:#1f7a4d;--amber:#b7791f;--radius:6px;font-family:Arial,Helvetica,sans-serif;color:#0e1b2a;background:#f7f6f3;}
 *{box-sizing:border-box;} body{margin:0;background:#f7f6f3;color:var(--navy);font-family:Arial,Helvetica,sans-serif;}
@@ -6928,7 +6929,7 @@ function getDetachedSummaryWindowHtml(){
 .summary-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:6px;}.summary-chip{background:#f7f6f3;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:10px;line-height:1.35;}.summary-health{background:#f7f6f3;border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:6px;padding:7px 9px;font-size:10px;line-height:1.45;}.summary-health strong{color:var(--navy);font-weight:400;}.summary-grid{display:grid;gap:6px;}.summary-offer-card{border:1px solid var(--border);border-radius:8px;padding:8px;background:#fdfdfc;}.summary-offer-head{display:flex;align-items:center;gap:10px;margin-bottom:4px;}.summary-offer-logo-wrap{width:70px;height:40px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;padding:3px 4px;box-sizing:border-box;border-radius:0;background:var(--navy);}.summary-offer-logo{display:block;max-width:62px;max-height:32px;width:auto;height:auto;object-fit:contain;object-position:center;}.summary-offer-logo[src="assets/operator-logos/po-cruises-logo.png"]{transform:translateY(2px);}.summary-offer-title{font-size:11px;font-weight:400;color:var(--navy);letter-spacing:.04em;}.summary-list{display:grid;gap:3px;font-size:10px;}.summary-list div{display:flex;justify-content:space-between;gap:8px;}.summary-list strong{color:var(--muted);font-weight:700;}.summary-list span{text-align:right;}.sum-ok{color:var(--green);font-weight:700;}.sum-warn{color:var(--amber);font-weight:700;}.sum-bad{color:#b42318;font-weight:700;}
 .summary-btn{padding:8px 10px;font-size:10px;font-weight:400;letter-spacing:.04em;border-radius:var(--radius);border:1px solid rgba(255,255,255,.35);background:#fff;color:var(--navy);text-transform:uppercase;cursor:pointer;}.summary-btn.primary{background:var(--gold);border-color:var(--gold);color:#fff;}
 .detached-summary-note{padding:8px 16px;background:#fff;border-top:1px solid var(--border);font-size:10px;color:var(--muted);}
-</style></head><body><div class="detached-summary-shell"><header class="detached-summary-head"><h1>Campaign Summary</h1><div class="detached-summary-actions"><button class="summary-btn primary" type="button" onclick="refreshSummary()">Refresh</button><button class="summary-btn" type="button" onclick="copyAllUtmsFromOpener()">Copy All UTMs</button></div></header><main class="summary-body" id="detached-summary-content"></main><div class="detached-summary-note">Read-only detached summary. Use Refresh to pull the latest builder data.</div></div><script>
+</style></head><body><div class="detached-summary-shell"><header class="detached-summary-head"><h1>Campaign Summary</h1><div class="detached-summary-actions"><button class="summary-btn primary" type="button" onclick="refreshSummary()">Refresh</button><button class="summary-btn" type="button" onclick="copyAllUtmsFromOpener()">Copy All UTMs</button></div></header><main class="summary-body" id="detached-summary-content">${summaryHtml}</main><div class="detached-summary-note">Read-only detached summary. Use Refresh to pull the latest builder data.</div></div><script>
 function refreshSummary(){
   const content=document.getElementById('detached-summary-content');
   if(!content) return;
@@ -6962,7 +6963,7 @@ function openDetachedSummaryWindow(){
   }
   detachedSummaryWindow=detached;
   detached.document.open();
-  detached.document.write(getDetachedSummaryWindowHtml());
+  detached.document.write(getDetachedSummaryWindowHtml(getCampaignSummaryHtml()));
   detached.document.close();
   try{
     detached.addEventListener("beforeunload",function(){
