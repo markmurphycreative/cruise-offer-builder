@@ -174,6 +174,45 @@ test('campaign history renders the Manage Campaigns modal with required labels a
   assert.match(html, /addCampaignHistoryEntry\(buildCampaignHistoryEntryFromPayload\(parsed, "backup"\)\)/);
 });
 
+
+test('Manage Campaigns supports a detached live-synced browser window using shared rendering', () => {
+  const modalStart = html.indexOf('<div class="modal-overlay" id="manage-campaigns-modal"');
+  const modalEnd = html.indexOf('<div class="modal-overlay" id="shortcuts-modal"', modalStart);
+  assert.notEqual(modalStart, -1, 'Expected Manage Campaigns modal to exist');
+  assert.notEqual(modalEnd, -1, 'Expected Manage Campaigns modal boundary to exist');
+  const modal = html.slice(modalStart, modalEnd);
+  assert.match(modal, /openDetachedManageCampaignsWindow\(\)">Open in New Window/);
+
+  const contentRenderer = extractFunction('getManageCampaignsContentHtml');
+  const detachedHtml = extractFunction('getDetachedManageCampaignsWindowHtml');
+  const syncDetached = extractFunction('syncDetachedManageCampaignsWindow');
+  const openDetached = extractFunction('openDetachedManageCampaignsWindow');
+  const refresh = extractFunction('refreshCampaignHistoryUI');
+
+  assert.match(contentRenderer, /Pinned Campaigns/);
+  assert.match(contentRenderer, /Saved Campaigns/);
+  assert.match(contentRenderer, /Campaign Backups/);
+  assert.match(contentRenderer, /Campaign Actions/);
+  assert.match(contentRenderer, /getCampaignHistoryListHtml\(buckets\.pinned/);
+  assert.match(openDetached, /detachedManageCampaignsWindow&&!detachedManageCampaignsWindow\.closed/);
+  assert.match(openDetached, /detachedManageCampaignsWindow\.focus\(\);/);
+  assert.match(openDetached, /window\.open\("","manage-campaigns-detached",features\)/);
+  assert.match(openDetached, /getDetachedManageCampaignsWindowHtml\(getManageCampaignsContentHtml\(\)\)/);
+  assert.match(openDetached, /closeManageCampaignsModalAfterDetachedOpen\(\);/);
+  assert.match(syncDetached, /if\(!detachedManageCampaignsWindow\) return;/);
+  assert.match(syncDetached, /if\(detachedManageCampaignsWindow\.closed\)/);
+  assert.match(syncDetached, /detachedManageCampaignsWindow=null;/);
+  assert.match(syncDetached, /getElementById\('detached-manage-campaigns-content'\)/);
+  assert.match(syncDetached, /content\.innerHTML=getManageCampaignsContentHtml\(\);/);
+  assert.match(refresh, /syncDetachedManageCampaignsWindow\(\);/);
+  assert.match(detachedHtml, /function restoreCampaignHistoryEntry\(id\)\{ callOpener\('restoreCampaignHistoryEntry',id\); \}/);
+  assert.match(detachedHtml, /function togglePinCampaignHistoryEntry\(id\)\{ callOpener\('togglePinCampaignHistoryEntry',id\); \}/);
+  assert.match(detachedHtml, /function deleteCampaignHistoryEntry\(id\)\{ callOpener\('deleteCampaignHistoryEntry',id\); \}/);
+  assert.match(detachedHtml, /function clearSavedSession\(\)\{ callOpener\('clearSavedSession'\); \}/);
+  assert.match(detachedHtml, /function triggerLoadCampaignBackup\(\)\{ callOpener\('triggerLoadCampaignBackup'\); \}/);
+  assert.doesNotMatch(detachedHtml, /setInterval|localStorage/);
+});
+
 test('campaign thumbnails render synthetic identity cards from saved campaign data without images', () => {
   const context = runFunctions([
     'escapeCampaignHistoryText',
@@ -310,6 +349,7 @@ test('campaign history list keeps existing actions while inserting reusable thum
     'getCampaignThumbnailOfferCount',
     'getCampaignThumbnailSavedTime',
     'renderCampaignThumbnail',
+    'getCampaignHistoryListHtml',
     'renderCampaignHistoryList'
   ], {
     formatCampaignDate: () => '09 Jun 2026',
@@ -350,6 +390,7 @@ test('campaign history cards render the campaign title once while preserving met
     'getCampaignThumbnailOfferCount',
     'getCampaignThumbnailSavedTime',
     'renderCampaignThumbnail',
+    'getCampaignHistoryListHtml',
     'renderCampaignHistoryList'
   ], {
     formatCampaignDate: () => '09 Jun 2026',
@@ -397,6 +438,7 @@ test('campaign library thumbnail uses the same restore handler as the Load butto
     'getCampaignThumbnailOfferCount',
     'getCampaignThumbnailSavedTime',
     'renderCampaignThumbnail',
+    'getCampaignHistoryListHtml',
     'renderCampaignHistoryList'
   ], {
     formatCampaignDate: () => '09 Jun 2026',
