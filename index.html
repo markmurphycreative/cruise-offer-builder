@@ -716,10 +716,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
             <label for="sheets-url">Google Sheet URL</label>
             <input id="sheets-url" type="url" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
           </div>
-          <div class="utm-btn-row sheet-action-row">
-            <button class="abtn navy" onclick="loadFromSheets()">Load Sheet</button>
-            <button class="abtn" onclick="refreshOffers()">Refresh Offers</button>
-          </div>
+          <button class="abtn navy" onclick="loadFromSheets()" style="width:100%;">Load Sheet</button>
           <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values,.json,application/json" style="display:none">
           <button class="abtn" onclick="triggerCsvFilePicker()" style="width:100%;margin-top:4px;">Load Campaign File</button>
           <div id="sheets-status" aria-live="polite"></div>
@@ -1190,7 +1187,6 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <dt>Single / Email / All 4 view</dt><dd><kbd>S</kbd> / <kbd>E</kbd> / <kbd>A</kbd></dd>
       <dt>Export card</dt><dd><kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>S</kbd></dd>
       <dt>Export all cards</dt><dd><kbd>Cmd</kbd>/<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd></dd>
-      <dt>Refresh offers</dt><dd><kbd>R</kbd></dd>
       <dt>Toggle card lock</dt><dd><kbd>K</kbd></dd>
       <dt>Hero Image section</dt><dd><kbd>H</kbd></dd>
       <dt>Offer Details section</dt><dd><kbd>O</kbd></dd>
@@ -3610,15 +3606,6 @@ async function loadFromSheets(){
   storeGoogleSheetSource(source);
   return loadSheetCsvUrl(csvUrl,"Offers loaded",sheetSource.type);
 }
-async function refreshOffers(){
-  const source=getSavedGoogleSheetSource();
-  if(!source){ setSheetsStatus("No saved source"); return false; }
-  const sheetSource=parseGoogleSheetSource(source);
-  const csvUrl=googleSheetUrlToCsvUrl(source);
-  if(!csvUrl){ setSheetsStatus("Failed to load","csv-error"); return false; }
-  return loadSheetCsvUrl(csvUrl,"Refresh complete",sheetSource.type);
-}
-
 function triggerCsvFilePicker(){
   const input=document.getElementById("sheets-file");
   if(input) input.click();
@@ -8775,7 +8762,6 @@ function handleKeyboardShortcut(event){
   if(key === 'a'){ setView('all'); event.preventDefault(); return; }
   if(sectionShortcuts[key]){ openShortcutSection(sectionShortcuts[key]); event.preventDefault(); return; }
   if(key === 'm'){ openSummary(); event.preventDefault(); return; }
-  if(key === 'r'){ refreshOffers(); event.preventDefault(); return; }
   if(key === 'k'){ toggleLock(); event.preventDefault(); return; }
   if(isQuestionMarkShortcut(event)){ openShortcutsModal(); event.preventDefault(); }
 }

@@ -79,7 +79,7 @@ test('fresh previews use the whole blank workspace as a subtle upload zone befor
   assert.match(html, /\.preview-empty-state p \+ p\{margin-top:7px;\}/);
   assert.doesNotMatch(html, /\.preview-empty-state(?: h2| p)?\{[^}]*background:var\(--(?:navy|gold)\)/);
   assert.doesNotMatch(html, /preview-empty-rule/);
-  assert.match(html, /<h2>Ready To Build<\/h2><p>Load a Google Sheet or CSV to generate your cruise cards instantly\.<\/p><p>Click anywhere or drag a CSV or campaign file into this workspace\.<\/p>/);
+  assert.match(html, /<h2>Ready To Build<\/h2><p>Load a Google Sheet, CSV or campaign file to generate your cruise cards instantly\.<\/p><p>Click anywhere or drag a CSV or campaign file into this workspace\.<\/p>/);
 
   const renderPreviewMode = extractFunction('renderPreviewMode');
   assert.ok(renderPreviewMode.indexOf('if(renderEmptyPreviewIfNeeded()) return;') < renderPreviewMode.indexOf("if(viewMode === 'email')"));
@@ -120,7 +120,7 @@ test('loaded and session-restored offers bypass the empty upload zone and keep n
 
 test('CSV import button and zero-offer workspace share the existing hidden file input click path', () => {
   assert.equal((html.match(/id="sheets-file"/g) || []).length, 1);
-  assert.match(html, /<button class="abtn" onclick="triggerCsvFilePicker\(\)"[^>]*>Load Downloaded CSV File<\/button>/);
+  assert.match(html, /<button class="abtn" onclick="triggerCsvFilePicker\(\)"[^>]*>Load Campaign File<\/button>/);
   assert.match(extractFunction('triggerCsvFilePicker'), /const input=document\.getElementById\("sheets-file"\);[\s\S]*if\(input\) input\.click\(\);/);
   assert.match(extractFunction('renderEmptyPreviewIfNeeded'), /const showEmptyState = !offers\.some\(isOfferLoaded\);[\s\S]*wrap\.classList\.toggle\('empty-upload-zone', showEmptyState\);/);
   assert.match(extractFunction('initEmptyWorkspaceUploadZone'), /wrap\.addEventListener\('click',[\s\S]*triggerCsvFilePicker\(\);/);
