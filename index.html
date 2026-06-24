@@ -96,8 +96,6 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .section-hdr:not(.collapsed){box-shadow:inset 4px 0 0 var(--navy);}
 .section-hdr h3{font-size:10px;font-weight:400;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);display:flex;align-items:center;gap:6px;}
 .section-actions{margin-left:auto;display:flex;align-items:center;gap:8px;}
-.detached-offer-details-btn{width:18px;height:18px;padding:0;border:0;background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;}
-.detached-offer-details-btn:hover{color:var(--navy);}
 .section-icon{width:18px;height:18px;flex-shrink:0;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;transition:color .18s ease,opacity .18s ease;}
 .section-hdr.complete .section-icon{color:var(--green);}
 .section-hdr:not(.collapsed) .section-icon{color:var(--gold);stroke-width:2.25;}
@@ -871,7 +869,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <!-- ── 4. OFFER DETAILS ── -->
     <div class="section" data-section-key="offer-details">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M16 13H8"></path><path d="M16 17H8"></path><path d="M10 9H8"></path></svg>Offer Details</h3><span class="section-actions"><span class="detached-offer-details-btn" role="button" tabindex="0" aria-label="Open Offer Details in new window" title="Open Offer Details in new window" onclick="event.stopPropagation();openDetachedOfferDetailsWindow();" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();openDetachedOfferDetailsWindow();}"><svg class="manage-campaigns-launch-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg></span><span class="section-toggle">▾</span></span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M16 13H8"></path><path d="M16 17H8"></path><path d="M10 9H8"></path></svg>Offer Details</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body hidden">
         <div class="fg2">
@@ -2050,7 +2048,6 @@ function ctaSettingsChanged(){
   try { updateAllStatus(); } catch(e){}
   queueAutosave();
   if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow();
-  if(typeof syncDetachedOfferDetailsWindow==="function") syncDetachedOfferDetailsWindow();
 }
 function getOperatorAccentColor(offerData){
   const skin=getOperatorSkin(offerData);
@@ -7007,110 +7004,6 @@ function renderCampaignSummaryInto(targetId){
   if(content) content.innerHTML=getCampaignSummaryHtml();
 }
 
-function getOfferDetailsWindowTitle(){
-  const offer=offers[cur]||{};
-  return `Cruise Builder - Offer Details - ${offer.name?summaryDisplay(offer.name):`Offer ${cur+1}`}`;
-}
-function getOfferDetailsRows(offer,index){
-  const o=offer||{};
-  const op=OPERATOR_HEADERS[o.operator];
-  const board=[o.board,o.boardlbl].filter(Boolean).join(" / ");
-  const date=[o.day,o.month].filter(Boolean).join(" ") || o.saildate || "";
-  const locked=typeof isOfferLocked==="function" && isOfferLocked(index);
-  const heroLocked=typeof isHeroImageLocked==="function" && isHeroImageLocked(index);
-  return [
-    ["Operator",op?op.name:summaryDisplay(o.operator)],
-    ["Cruise Name",summaryDisplay(o.name)],
-    ["Ship Name",summaryDisplay(o.ship)],
-    ["Top Bar USP Text",summaryDisplay(o.tags)],
-    ["Inclusions",summaryDisplay(typeof normaliseSubtitleSeparator==="function"?normaliseSubtitleSeparator(o.incl):o.incl)],
-    ["Theme Tags",summaryDisplay(o.theme_tags)],
-    ["Price",o.price?`£${o.price}`:"Missing"],
-    ["Price Basis",summaryDisplay(o.basis)],
-    ["Board",summaryDisplay(board)],
-    ["Date",summaryDisplay(date)],
-    ["Nights",o.nights?`${o.nights} nights`:"Missing"],
-    ["Ports",summaryDisplay(o.ports)],
-    ["Destination URL",summaryDisplay(o.url)],
-    ["Offer Lock",locked?"Locked":"Unlocked"],
-    ["Hero Image Lock",heroLocked?"Protected":"Editable"]
-  ];
-}
-function getOfferDetailsHtml(){
-  const offer=offers[cur]||{};
-  const rows=getOfferDetailsRows(offer,cur).map(([label,value])=>`<div class="offer-detail-row"><strong>${summaryHtml(label)}</strong><span>${summaryHtml(value)}</span></div>`).join("");
-  const status=typeof getOfferStatus==="function"?getOfferStatus(cur):"";
-  const statusText=status==="green"?"Ready":(status==="amber"?"Needs review":"Incomplete");
-  return `<section class="offer-details-card"><div class="offer-details-title">Offer ${cur+1} — ${summaryHtml(offer.name,"Unnamed offer")}</div><div class="offer-details-status">${summaryHtml(statusText)}</div><div class="offer-details-list">${rows}</div></section>`;
-}
-function getDetachedOfferDetailsWindowHtml(initialOfferDetailsHtml){
-  const detailsHtml=typeof initialOfferDetailsHtml==="string"?initialOfferDetailsHtml:"";
-  const title=summaryHtml(getOfferDetailsWindowTitle());
-  return `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>
-:root{--navy:#0e1b2a;--gold:#c6a15b;--border:#d8d2c7;--muted:#667085;--green:#1f7a4d;--amber:#b7791f;--radius:6px;font-family:Arial,Helvetica,sans-serif;color:#0e1b2a;background:#f7f6f3;}
-*{box-sizing:border-box;} body{margin:0;background:#f7f6f3;color:var(--navy);font-family:Arial,Helvetica,sans-serif;}.detached-offer-shell{min-height:100vh;display:flex;flex-direction:column;}.detached-offer-head{position:sticky;top:0;z-index:2;background:var(--navy);color:#fff;padding:14px 18px;border-bottom:3px solid var(--gold);display:flex;align-items:center;justify-content:space-between;gap:12px;}.detached-offer-head h1{font-size:14px;font-weight:400;letter-spacing:.04em;margin:0;}.detached-offer-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}.summary-btn{padding:8px 10px;font-size:10px;font-weight:400;letter-spacing:.04em;border-radius:var(--radius);border:1px solid rgba(255,255,255,.35);background:#fff;color:var(--navy);text-transform:uppercase;cursor:pointer;}.summary-btn.primary{background:var(--gold);border-color:var(--gold);color:#fff;}.detached-offer-body{background:#fff;padding:14px 16px 16px;overflow-y:auto;display:grid;gap:8px;}.offer-details-card{border:1px solid var(--border);border-radius:8px;padding:10px;background:#fdfdfc;display:grid;gap:8px;}.offer-details-title{font-size:12px;font-weight:400;color:var(--navy);letter-spacing:.04em;}.offer-details-status{display:inline-flex;width:max-content;border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:6px;padding:5px 8px;font-size:10px;color:var(--muted);background:#f7f6f3;}.offer-details-list{display:grid;gap:4px;font-size:10px;}.offer-detail-row{display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:10px;border-top:1px solid rgba(216,210,199,.7);padding-top:5px;line-height:1.4;}.offer-detail-row strong{color:var(--muted);font-weight:700;}.offer-detail-row span{white-space:pre-wrap;word-break:break-word;}.detached-offer-note{padding:8px 16px;background:#fff;border-top:1px solid var(--border);font-size:10px;color:var(--muted);}
-</style></head><body><div class="detached-offer-shell"><header class="detached-offer-head"><h1 id="detached-offer-title">${title}</h1><div class="detached-offer-actions"><button class="summary-btn primary" type="button" onclick="refreshOfferDetails()">Refresh</button></div></header><main class="detached-offer-body" id="detached-offer-details-content">${detailsHtml}</main><div class="detached-offer-note">Read-only detached offer details. Editing remains in the main builder window.</div></div><script>
-function refreshOfferDetails(){
-  const content=document.getElementById('detached-offer-details-content');
-  if(!content) return;
-  if(window.opener&&!window.opener.closed&&typeof window.opener.getOfferDetailsHtml==='function'){
-    content.innerHTML=window.opener.getOfferDetailsHtml();
-    if(typeof window.opener.getOfferDetailsWindowTitle==='function'){
-      const title=window.opener.getOfferDetailsWindowTitle();
-      document.title=title;
-      const head=document.getElementById('detached-offer-title');
-      if(head) head.textContent=title;
-    }
-  }else{
-    content.innerHTML='<section class="offer-details-card"><div class="offer-details-title">Offer Details unavailable</div><div class="offer-details-status">The Cruise Offer Builder window is closed or unavailable.</div></section>';
-  }
-}
-window.addEventListener('load', refreshOfferDetails);
-</`+`script></body></html>`;
-}
-let detachedOfferDetailsWindow=null;
-function syncDetachedOfferDetailsWindow(){
-  if(!detachedOfferDetailsWindow) return;
-  if(detachedOfferDetailsWindow.closed){
-    detachedOfferDetailsWindow=null;
-    return;
-  }
-  try{
-    const content=detachedOfferDetailsWindow.document&&detachedOfferDetailsWindow.document.getElementById('detached-offer-details-content');
-    if(content) content.innerHTML=getOfferDetailsHtml();
-    const title=getOfferDetailsWindowTitle();
-    detachedOfferDetailsWindow.document.title=title;
-    const head=detachedOfferDetailsWindow.document.getElementById('detached-offer-title');
-    if(head) head.textContent=title;
-  }catch(e){
-    console.warn("Detached Offer Details sync failed", e);
-  }
-}
-function openDetachedOfferDetailsWindow(){
-  try{ commitVisibleFields(); }catch(e){ try{ save(); }catch(_e){} }
-  if(detachedOfferDetailsWindow&&!detachedOfferDetailsWindow.closed){
-    detachedOfferDetailsWindow.focus();
-    syncDetachedOfferDetailsWindow();
-    return;
-  }
-  const features="popup=yes,width=920,height=760,resizable=yes,scrollbars=yes";
-  const detached=window.open("","offer-details-detached",features);
-  if(!detached){
-    alert("Unable to open the Offer Details window. Please allow pop-ups for Cruise Offer Builder and try again.");
-    return;
-  }
-  detachedOfferDetailsWindow=detached;
-  detached.document.open();
-  detached.document.write(getDetachedOfferDetailsWindowHtml(getOfferDetailsHtml()));
-  detached.document.close();
-  try{
-    detached.addEventListener("beforeunload",function(){
-      if(detachedOfferDetailsWindow===detached) detachedOfferDetailsWindow=null;
-    });
-  }catch(_e){}
-  detached.focus();
-}
-
 function getDetachedSummaryWindowHtml(initialSummaryHtml){
   const summaryHtml=typeof initialSummaryHtml==="string"?initialSummaryHtml:"";
   return `<!doctype html><html><head><meta charset="utf-8"><title>Campaign Summary — Cruise Offer Builder</title><style>
@@ -8713,20 +8606,6 @@ function syncSailDateFromHidden(){
   refreshStandardUtmsSafe();
 })();
 
-
-// Keep the detached Offer Details inspector live-synced with all existing data refresh paths.
-(function(){
-  function syncOfferDetailsSafe(){ try { if(typeof syncDetachedOfferDetailsWindow==="function") syncDetachedOfferDetailsWindow(); } catch(e){} }
-  ["loadOfferToEditor","load","rv","sv","up","processSheetCSV","applySessionPayload","restoreCampaignHistorySnapshot","restoreCampaignFilePayload","refreshAfterRestore","refreshAfterOfferReorder","setOfferLocked","toggleHeroImageLock","operatorChanged","genUtm","genAllUtms","genStandardUtms"].forEach(function(fnName){
-    if(typeof window[fnName] !== "function") return;
-    const previous = window[fnName];
-    window[fnName] = function(){
-      const result = previous.apply(this, arguments);
-      syncOfferDetailsSafe();
-      return result;
-    };
-  });
-})();
 
 // Lightweight global shortcuts: including campaign-level undo/redo.
 let shortcutsPreviousFocus = null;
