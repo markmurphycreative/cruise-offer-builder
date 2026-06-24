@@ -699,14 +699,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <div class="offer-empty-state-copy">Load a sheet, CSV, campaign or paste an offer.</div>
   </div>
   <div class="offer-context-label empty-hidden" id="active-offer-label" aria-live="polite">Editing Offer 1 of 4</div>
-  <div class="reorder-group">
-    <div class="reorder-label"><h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="m3 6 1 1 2-2"></path><path d="m3 12 1 1 2-2"></path><path d="m3 18 1 1 2-2"></path></svg>Reorder Cards</h3><div class="reorder-actions" aria-label="Reorder selected card"><button class="abtn reorder-btn" id="move-left-btn" onclick="moveOfferLeft()" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button><button class="abtn reorder-btn" id="move-right-btn" onclick="moveOfferRight()" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button></div></div>
-  </div>
+
 
   <div class="sb-body">
     <div class="lock-ind" id="lock-ind">Card locked — unlock it to edit</div>
 
-    <!-- ── CAMPAIGN IMPORT (CORE WORKFLOW) ── -->
     <div class="section csv-core-section" data-section-key="csv-import">
       <div class="section-hdr" onclick="toggleSec(this)">
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>Campaign Import</h3><span class="section-toggle">▾</span>
@@ -725,32 +722,134 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     </div>
 
 
-    <!-- ── CAMPAIGN PRESETS ── -->
-    <div class="section campaign-presets-hidden" data-section-key="campaign-presets">
+    <!-- ── PASTE OFFER ── -->
+    <div class="section" data-section-key="paste-raw-offer">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path><path d="M17 21v-8H7v8"></path><path d="M7 3v5h8"></path></svg>Campaign Presets</h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M11 14h10"></path><path d="m17 10 4 4-4 4"></path><path d="M9 5V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"></path><path d="M17 5h1a2 2 0 0 1 2 2v3"></path><path d="M9 18H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1"></path><rect width="8" height="5" x="8" y="4" rx="1"></rect></svg>Paste Offer</h3><span class="section-toggle">▾</span>
       </div>
-      <div class="section-body hidden">
-        <div class="field">
-          <label>Preset Name</label>
-          <input id="preset-name" placeholder="May 2026 Cruise Campaign">
-        </div>
-        <div class="field">
-          <label>Saved Presets</label>
-          <select id="preset-select" onchange="updatePresetButtons()"></select>
-        </div>
-        <div class="utm-btn-row">
-          <button class="abtn navy" onclick="saveCampaignPreset()">Save Current Campaign</button>
-          <button class="abtn" id="preset-load-btn" onclick="loadCampaignPreset()">Load Preset</button>
-        </div>
-        <div class="utm-btn-row">
-          <button class="abtn red" id="preset-delete-btn" onclick="deleteCampaignPreset()">Delete Preset</button>
-        </div>
-        <div id="preset-status" style="font-size:9px;color:var(--muted);margin-top:4px;min-height:12px;"></div>
+      <div class="section-body parse-area hidden">
+        <textarea id="raw-paste" spellcheck="true" oninput="handlePasteOfferInput(event)" onkeydown="handlePasteOfferKeydown(event)" placeholder="Paste Trello / operator copy here...
+
+P&amp;O Cruises | Arvia
+Eastern Caribbean Islands Fly-Cruise
+14 Nights · 20th November 2026
+FB / Full Board · £1669pp
+Newcastle Flights, Luggage &amp; Transfers Included
+Barbados • Martinique • St Kitts • Tortola"></textarea>
+        <button class="parse-btn" onclick="parseOffer()"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M12 18v-6"></path><path d="m9 15 3 3 3-3"></path></svg>Load Offer</button>
+        <div class="parse-result" id="parse-result"></div>
+        <div class="offer-intel-panel" id="offer-intel-panel" aria-live="polite"></div>
+        <div class="spell-warn" id="spell-warn-raw"></div>
       </div>
     </div>
 
-    <!-- ── 2. OPERATOR ── -->
+    <!-- ── MULTI OFFER IMPORT ── -->
+    <div class="section" data-section-key="multi-offer-import">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M4 4h16"></path><path d="M4 10h16"></path><path d="M4 16h10"></path><path d="m16 17 2 2 4-4"></path></svg>MULTI OFFER IMPORT</h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body parse-area hidden">
+        <textarea id="multi-offer-paste" spellcheck="true" oninput="handleMultiOfferInput(event)" onkeydown="handleMultiOfferKeydown(event)" placeholder="Paste up to 4 offers here..."></textarea>
+        <button class="parse-btn" onclick="loadAllOffers()"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h6"></path></svg>Load All Offers</button>
+        <div class="parse-result" id="multi-offer-result"></div>
+      </div>
+    </div>
+
+    <!-- ── OFFER DETAILS ── -->
+    <div class="section" data-section-key="offer-details">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M16 13H8"></path><path d="M16 17H8"></path><path d="M10 9H8"></path></svg>Offer Details</h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body hidden">
+        <div class="fg2">
+          <div class="field"><label>Cruise Name</label><input id="f-name" spellcheck="true" placeholder="Eastern Caribbean..." oninput="up()"></div>
+          <div class="field"><label>Ship Name</label><input id="f-ship" spellcheck="true" placeholder="Arvia" oninput="up()"></div>
+        </div>
+        <div class="spell-warn" id="spell-warn-name"></div>
+        <div class="field" id="field-tags"><label>Top Bar USP Text</label><input id="f-tags" spellcheck="true" placeholder="Adult Only Options · Cuisine · Entertainment · Family" oninput="up()"></div>
+        <div class="spell-warn" id="spell-warn-tags"></div>
+        <div class="field" id="field-incl"><label>Inclusions</label><input id="f-incl" spellcheck="true" placeholder="Newcastle Flights, Luggage &amp; Transfers Included" oninput="up()"></div>
+        <div class="field" id="field-theme_tags"><label>Theme Tags</label><input id="f-theme_tags" spellcheck="true" placeholder="Luxury · Scenic Cruising · Norwegian Fjords" oninput="up()"></div>
+        <div class="fg2">
+          <div class="field"><label>Price (£)</label><input id="f-price" placeholder="1669" oninput="up()"></div>
+          <div class="field"><label>Price Basis</label><input id="f-basis" placeholder="Based On 2 Adults Sharing" oninput="up()"></div>
+          <div class="field"><label>Board Code</label><input id="f-board" placeholder="FB" oninput="autoBoardLabel(); up()"></div>
+          <div class="field"><label>Board Basis</label><input id="f-boardlbl" placeholder="Full Board" oninput="up()"></div>
+          <div class="field"><label>Date</label><input id="f-saildate" placeholder="20 November 2026" oninput="splitSailDate();up()"><input type="hidden" id="f-day" value=""><input type="hidden" id="f-month" value=""></div>
+          <div class="field"><label>Nights</label><input id="f-nights" placeholder="14" oninput="up()"></div>
+        </div>
+        <div class="field"><label>Ports — separate with •</label><textarea id="f-ports" spellcheck="true" placeholder="Barbados • Martinique • St Kitts • Tortola • St Maarten • Antigua • St Lucia • Grenada" oninput="up();checkPortsWarn()"></textarea></div>
+        <div class="warn-box" id="ports-warn"></div>
+        <div class="spell-warn" id="spell-warn-ports"></div>
+      </div>
+    </div>
+
+    <!-- ── UTM LINK ── -->
+    <div class="section" data-section-key="utm-link">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>UTM Link</h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body hidden">
+        <div class="field"><label>Operator Landing Page</label><input id="f-url" placeholder="https://dawsonandsanderson.co.uk/cruises" oninput="genUtm()"></div>
+        <div class="utm-out" id="utm-out" aria-hidden="true"></div>
+        <div id="utm-current-card" class="generated-utm-panel utm-current-card">
+          <div class="generated-utm-title"><strong id="utm-panel-title">Generated UTMs</strong></div>
+          <div id="utm-generated-list" class="generated-utm-list" role="list" aria-live="polite">
+            <div id="utm-visible-output" class="generated-utm-empty empty-state" role="status"><strong>No UTMs generated yet.</strong>Add offer details and a landing page to generate tracking links.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
+    <!-- ── EXPORT CARDS ── -->
+    <div class="section export-section" data-section-key="export-cards">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>Export Cards <span class="export-health-count ready" id="export-health-count">Ready</span></h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body hidden">
+        <details class="prod-status" id="prod-status">
+          <summary class="prod-status-toggle">
+            <span class="prod-status-title">Campaign Health</span>
+            <span class="prod-status-collapsed-summary" id="prod-status-collapsed-summary"></span>
+            <span class="section-toggle" aria-hidden="true">▾</span>
+          </summary>
+          <div class="prod-status-summary" id="prod-status-summary"></div>
+          <div class="prod-status-list" id="prod-status-list"></div>
+        </details>
+        <div class="copy-qa-panel">
+          <div class="copy-qa-title">Copy QA</div>
+          <div class="copy-qa-status" id="copy-qa-status">— QA not run yet</div>
+          <div class="copy-qa-checklist" id="copy-qa-checklist"></div>
+          <div class="copy-qa-note" id="copy-qa-note">Passive checks only — no auto-correction. Export is never blocked.</div>
+        </div>
+      <div class="export-group export-toolbar-group">
+        <div class="export-actions export-toolbar" role="group" aria-label="Exports">
+          <button class="export-btn secondary" onclick="exportCurrentJPG()" id="exp-single-jpg-btn">
+            <span>⬇</span><span class="export-label-state" id="exp-single-jpg-lbl">Export Card</span><span aria-hidden="true">Card</span><span class="export-complete" id="exp-single-jpg-complete" aria-label="Export completed">✓</span>
+          </button>
+          <button class="export-btn secondary" onclick="exportAllJPG()" id="exp-all-jpg-btn">
+            <span>⬇</span><span class="export-label-state" id="exp-all-jpg-lbl">Export All Cards</span><span aria-hidden="true">All Cards</span><span class="export-complete" id="exp-all-jpg-complete" aria-label="Export completed">✓</span>
+          </button>
+          <button class="export-btn primary" onclick="exportCampaignPack()" id="exp-pack-btn">
+            <span>⬇</span><span class="export-label-state" id="exp-pack-lbl">Export Campaign Pack</span><span aria-hidden="true">Campaign</span><span class="export-complete" id="exp-pack-complete" aria-label="Export completed">✓</span>
+          </button>
+        </div>
+      </div>
+      <div class="export-progress" id="export-progress"></div>
+      <div class="export-warn" id="export-warn">
+        <strong>⚠ Export Warning</strong><br>
+        One or more cards uses an external image URL which may not render in the export due to browser CORS restrictions.<br><br>
+        <strong>For best results:</strong> Upload images directly using the drag-and-drop area, or download your Adobe Stock image and drop it in locally.
+      </div>
+        <div class="export-filenames" id="export-filenames">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px;">Export filenames:</div>
+          <div id="filename-list"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="section" data-section-key="operator-logo">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><circle cx="10" cy="13" r="2"></circle><path d="m20 17-1.1-1.1a2 2 0 0 0-2.8 0L12 20"></path></svg>Operator Logo</h3><span class="section-toggle">▾</span>
@@ -804,7 +903,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       </div>
     </div>
 
-    <!-- ── 3. HERO IMAGE ── -->
+    <!-- ── HERO IMAGE ── -->
     <div class="section" data-section-key="hero-image">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"></path></svg>Hero Image</h3><span class="section-toggle">▾</span>
@@ -864,35 +963,6 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       </div>
     </div>
 
-    <!-- ── 4. OFFER DETAILS ── -->
-    <div class="section" data-section-key="offer-details">
-      <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M16 13H8"></path><path d="M16 17H8"></path><path d="M10 9H8"></path></svg>Offer Details</h3><span class="section-toggle">▾</span>
-      </div>
-      <div class="section-body hidden">
-        <div class="fg2">
-          <div class="field"><label>Cruise Name</label><input id="f-name" spellcheck="true" placeholder="Eastern Caribbean..." oninput="up()"></div>
-          <div class="field"><label>Ship Name</label><input id="f-ship" spellcheck="true" placeholder="Arvia" oninput="up()"></div>
-        </div>
-        <div class="spell-warn" id="spell-warn-name"></div>
-        <div class="field" id="field-tags"><label>Top Bar USP Text</label><input id="f-tags" spellcheck="true" placeholder="Adult Only Options · Cuisine · Entertainment · Family" oninput="up()"></div>
-        <div class="spell-warn" id="spell-warn-tags"></div>
-        <div class="field" id="field-incl"><label>Inclusions</label><input id="f-incl" spellcheck="true" placeholder="Newcastle Flights, Luggage &amp; Transfers Included" oninput="up()"></div>
-        <div class="field" id="field-theme_tags"><label>Theme Tags</label><input id="f-theme_tags" spellcheck="true" placeholder="Luxury · Scenic Cruising · Norwegian Fjords" oninput="up()"></div>
-        <div class="fg2">
-          <div class="field"><label>Price (£)</label><input id="f-price" placeholder="1669" oninput="up()"></div>
-          <div class="field"><label>Price Basis</label><input id="f-basis" placeholder="Based On 2 Adults Sharing" oninput="up()"></div>
-          <div class="field"><label>Board Code</label><input id="f-board" placeholder="FB" oninput="autoBoardLabel(); up()"></div>
-          <div class="field"><label>Board Basis</label><input id="f-boardlbl" placeholder="Full Board" oninput="up()"></div>
-          <div class="field"><label>Date</label><input id="f-saildate" placeholder="20 November 2026" oninput="splitSailDate();up()"><input type="hidden" id="f-day" value=""><input type="hidden" id="f-month" value=""></div>
-          <div class="field"><label>Nights</label><input id="f-nights" placeholder="14" oninput="up()"></div>
-        </div>
-        <div class="field"><label>Ports — separate with •</label><textarea id="f-ports" spellcheck="true" placeholder="Barbados • Martinique • St Kitts • Tortola • St Maarten • Antigua • St Lucia • Grenada" oninput="up();checkPortsWarn()"></textarea></div>
-        <div class="warn-box" id="ports-warn"></div>
-        <div class="spell-warn" id="spell-warn-ports"></div>
-      </div>
-    </div>
-
     <!-- ── CTA ASSETS ── -->
     <div class="section" data-section-key="cta-assets">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
@@ -905,118 +975,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       </div>
     </div>
 
-    <!-- ── 5. PASTE OFFER ── -->
-    <div class="section" data-section-key="paste-raw-offer">
-      <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M11 14h10"></path><path d="m17 10 4 4-4 4"></path><path d="M9 5V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"></path><path d="M17 5h1a2 2 0 0 1 2 2v3"></path><path d="M9 18H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1"></path><rect width="8" height="5" x="8" y="4" rx="1"></rect></svg>Paste Offer</h3><span class="section-toggle">▾</span>
-      </div>
-      <div class="section-body parse-area hidden">
-        <textarea id="raw-paste" spellcheck="true" oninput="handlePasteOfferInput(event)" onkeydown="handlePasteOfferKeydown(event)" placeholder="Paste Trello / operator copy here...
-
-P&amp;O Cruises | Arvia
-Eastern Caribbean Islands Fly-Cruise
-14 Nights · 20th November 2026
-FB / Full Board · £1669pp
-Newcastle Flights, Luggage &amp; Transfers Included
-Barbados • Martinique • St Kitts • Tortola"></textarea>
-        <button class="parse-btn" onclick="parseOffer()"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M12 18v-6"></path><path d="m9 15 3 3 3-3"></path></svg>Load Offer</button>
-        <div class="parse-result" id="parse-result"></div>
-        <div class="offer-intel-panel" id="offer-intel-panel" aria-live="polite"></div>
-        <div class="spell-warn" id="spell-warn-raw"></div>
-      </div>
+    <!-- ── REORDER CARDS ── -->
+    <div class="reorder-group">
+      <div class="reorder-label"><h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="m3 6 1 1 2-2"></path><path d="m3 12 1 1 2-2"></path><path d="m3 18 1 1 2-2"></path></svg>Reorder Cards</h3><div class="reorder-actions" aria-label="Reorder selected card"><button class="abtn reorder-btn" id="move-left-btn" onclick="moveOfferLeft()" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button><button class="abtn reorder-btn" id="move-right-btn" onclick="moveOfferRight()" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button></div></div>
     </div>
 
-    <!-- ── 6. MULTI OFFER IMPORT ── -->
-    <div class="section" data-section-key="multi-offer-import">
-      <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M4 4h16"></path><path d="M4 10h16"></path><path d="M4 16h10"></path><path d="m16 17 2 2 4-4"></path></svg>MULTI OFFER IMPORT</h3><span class="section-toggle">▾</span>
-      </div>
-      <div class="section-body parse-area hidden">
-        <textarea id="multi-offer-paste" spellcheck="true" oninput="handleMultiOfferInput(event)" onkeydown="handleMultiOfferKeydown(event)" placeholder="Paste up to 4 offers here..."></textarea>
-        <button class="parse-btn" onclick="loadAllOffers()"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h6"></path></svg>Load All Offers</button>
-        <div class="parse-result" id="multi-offer-result"></div>
-      </div>
-    </div>
-
-    <!-- ── 7. EXPORT ── -->
-    <div class="section export-section" data-section-key="export-cards">
-      <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>Export Cards <span class="export-health-count ready" id="export-health-count">Ready</span></h3><span class="section-toggle">▾</span>
-      </div>
-      <div class="section-body hidden">
-        <details class="prod-status" id="prod-status">
-          <summary class="prod-status-toggle">
-            <span class="prod-status-title">Campaign Health</span>
-            <span class="prod-status-collapsed-summary" id="prod-status-collapsed-summary"></span>
-            <span class="section-toggle" aria-hidden="true">▾</span>
-          </summary>
-          <div class="prod-status-summary" id="prod-status-summary"></div>
-          <div class="prod-status-list" id="prod-status-list"></div>
-        </details>
-        <div class="copy-qa-panel">
-          <div class="copy-qa-title">Copy QA</div>
-          <div class="copy-qa-status" id="copy-qa-status">— QA not run yet</div>
-          <div class="copy-qa-checklist" id="copy-qa-checklist"></div>
-          <div class="copy-qa-note" id="copy-qa-note">Passive checks only — no auto-correction. Export is never blocked.</div>
-        </div>
-      <div class="export-group export-toolbar-group">
-        <div class="export-actions export-toolbar" role="group" aria-label="Exports">
-          <button class="export-btn secondary" onclick="exportCurrentJPG()" id="exp-single-jpg-btn">
-            <span>⬇</span><span class="export-label-state" id="exp-single-jpg-lbl">Export Card</span><span aria-hidden="true">Card</span><span class="export-complete" id="exp-single-jpg-complete" aria-label="Export completed">✓</span>
-          </button>
-          <button class="export-btn secondary" onclick="exportAllJPG()" id="exp-all-jpg-btn">
-            <span>⬇</span><span class="export-label-state" id="exp-all-jpg-lbl">Export All Cards</span><span aria-hidden="true">All Cards</span><span class="export-complete" id="exp-all-jpg-complete" aria-label="Export completed">✓</span>
-          </button>
-          <button class="export-btn primary" onclick="exportCampaignPack()" id="exp-pack-btn">
-            <span>⬇</span><span class="export-label-state" id="exp-pack-lbl">Export Campaign Pack</span><span aria-hidden="true">Campaign</span><span class="export-complete" id="exp-pack-complete" aria-label="Export completed">✓</span>
-          </button>
-        </div>
-      </div>
-      <div class="export-progress" id="export-progress"></div>
-      <div class="export-warn" id="export-warn">
-        <strong>⚠ Export Warning</strong><br>
-        One or more cards uses an external image URL which may not render in the export due to browser CORS restrictions.<br><br>
-        <strong>For best results:</strong> Upload images directly using the drag-and-drop area, or download your Adobe Stock image and drop it in locally.
-      </div>
-        <div class="export-filenames" id="export-filenames">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px;">Export filenames:</div>
-          <div id="filename-list"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section" data-section-key="campaign-summary">
-      <div class="section-hdr collapsed" role="button" tabindex="0" onclick="openSummary()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSummary();}">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M3 3v18h18"></path><rect width="3" height="7" x="7" y="10"></rect><rect width="3" height="11" x="12" y="6"></rect><rect width="3" height="5" x="17" y="12"></rect></svg>Campaign Summary</h3><svg class="manage-campaigns-launch-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg>
-      </div>
-    </div>
-
-    <div class="section campaign-library-section manage-campaigns-section" id="campaign-library-panel" data-section-key="manage-campaigns">
-      <div class="section-hdr collapsed" role="button" tabindex="0" onclick="openManageCampaignsModal()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openManageCampaignsModal();}">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M3 10h18"></path></svg>Manage Campaigns</h3><svg class="manage-campaigns-launch-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg>
-      </div>
-    </div>
-
-    <!-- ── 5. UTM ── -->
-    <div class="section" data-section-key="utm-link">
-      <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>UTM Link</h3><span class="section-toggle">▾</span>
-      </div>
-      <div class="section-body hidden">
-        <div class="field"><label>Operator Landing Page</label><input id="f-url" placeholder="https://dawsonandsanderson.co.uk/cruises" oninput="genUtm()"></div>
-        <div class="utm-out" id="utm-out" aria-hidden="true"></div>
-        <div id="utm-current-card" class="generated-utm-panel utm-current-card">
-          <div class="generated-utm-title"><strong id="utm-panel-title">Generated UTMs</strong></div>
-          <div id="utm-generated-list" class="generated-utm-list" role="list" aria-live="polite">
-            <div id="utm-visible-output" class="generated-utm-empty empty-state" role="status"><strong>No UTMs generated yet.</strong>Add offer details and a landing page to generate tracking links.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-
-
-    <!-- ── 6. STANDARD UTMs ── -->
     <div class="section" data-section-key="standard-utms">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>Standard UTMs</h3><span class="section-toggle">▾</span>
@@ -1031,6 +994,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 
     <!-- ── AI COPY ── -->
+
     <div class="section" data-section-key="ai-copy">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M12 3l1.7 5.1L19 10l-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9L12 3z"></path><path d="M5 15l.8 2.2L8 18l-2.2.8L5 21l-.8-2.2L2 18l2.2-.8L5 15z"></path><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8L19 14z"></path></svg>AI Copy</h3><span class="section-toggle">▾</span>
@@ -1082,6 +1046,43 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
           </button>
         </div>
         <div id="ai-prompt-copy-status" style="font-size:9px;color:var(--green);margin-top:4px;min-height:12px;" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <div class="section" data-section-key="campaign-summary">
+      <div class="section-hdr collapsed" role="button" tabindex="0" onclick="openSummary()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSummary();}">
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M3 3v18h18"></path><rect width="3" height="7" x="7" y="10"></rect><rect width="3" height="11" x="12" y="6"></rect><rect width="3" height="5" x="17" y="12"></rect></svg>Campaign Summary</h3><svg class="manage-campaigns-launch-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg>
+      </div>
+    </div>
+
+    <div class="section campaign-library-section manage-campaigns-section" id="campaign-library-panel" data-section-key="manage-campaigns">
+      <div class="section-hdr collapsed" role="button" tabindex="0" onclick="openManageCampaignsModal()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openManageCampaignsModal();}">
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M3 10h18"></path></svg>Manage Campaigns</h3><svg class="manage-campaigns-launch-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg>
+      </div>
+    </div>
+
+    <!-- ── CAMPAIGN PRESETS ── -->
+    <div class="section campaign-presets-hidden" data-section-key="campaign-presets">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path><path d="M17 21v-8H7v8"></path><path d="M7 3v5h8"></path></svg>Campaign Presets</h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body hidden">
+        <div class="field">
+          <label>Preset Name</label>
+          <input id="preset-name" placeholder="May 2026 Cruise Campaign">
+        </div>
+        <div class="field">
+          <label>Saved Presets</label>
+          <select id="preset-select" onchange="updatePresetButtons()"></select>
+        </div>
+        <div class="utm-btn-row">
+          <button class="abtn navy" onclick="saveCampaignPreset()">Save Current Campaign</button>
+          <button class="abtn" id="preset-load-btn" onclick="loadCampaignPreset()">Load Preset</button>
+        </div>
+        <div class="utm-btn-row">
+          <button class="abtn red" id="preset-delete-btn" onclick="deleteCampaignPreset()">Delete Preset</button>
+        </div>
+        <div id="preset-status" style="font-size:9px;color:var(--muted);margin-top:4px;min-height:12px;"></div>
       </div>
     </div>
 

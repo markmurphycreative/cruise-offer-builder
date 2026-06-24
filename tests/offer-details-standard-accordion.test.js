@@ -5,11 +5,9 @@ import test from 'node:test';
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
 function extractOfferDetailsSection() {
-  const start = html.indexOf('<!-- ── 4. OFFER DETAILS ── -->');
-  const end = html.indexOf('<!-- ── 6. MULTI OFFER IMPORT ── -->');
-  assert.notEqual(start, -1, 'Expected Offer Details section to exist');
-  assert.notEqual(end, -1, 'Expected Offer Details section boundary to exist');
-  return html.slice(start, end);
+  const section = html.match(/<div class="section" data-section-key="offer-details">[\s\S]*?\n    <\/div>\n\n/);
+  assert.ok(section, 'Expected Offer Details section to exist');
+  return section[0];
 }
 
 const offerDetailsSection = extractOfferDetailsSection();
