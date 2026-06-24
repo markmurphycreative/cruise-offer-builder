@@ -5385,6 +5385,12 @@ function stripTransientPasteOfferFields(offer){
   TRANSIENT_PASTE_OFFER_KEYS.forEach(key=>{ delete offer[key]; });
   return offer;
 }
+const TRANSIENT_PASTE_OFFER_KEYS=["rawPaste","pasteText","parsedRaw"];
+function stripTransientPasteOfferFields(offer){
+  if(!offer) return offer;
+  TRANSIENT_PASTE_OFFER_KEYS.forEach(key=>{ delete offer[key]; });
+  return offer;
+}
 function resetPasteOfferState(){
   const raw=document.getElementById("raw-paste"); if(raw) raw.value="";
   const status=document.getElementById("parse-result"); if(status){status.textContent="";status.className="parse-result";}
