@@ -718,6 +718,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
           </div>
           <div class="utm-btn-row sheet-action-row">
             <button class="abtn navy" onclick="loadFromSheets()">Load Sheet</button>
+            <button class="abtn" onclick="refreshOffers()">Refresh Offers</button>
           </div>
           <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values,.json,application/json" style="display:none">
           <button class="abtn" onclick="triggerCsvFilePicker()" style="width:100%;margin-top:4px;">Load Campaign File</button>
@@ -3771,6 +3772,20 @@ function processSheetCSV(csv,status){
     }
     return "";
   }
+  function csvTopBarUspPreset(operatorKey){
+    const fallbackPresets = (typeof CSV_TOP_BAR_USP_PRESET_FALLBACKS!=="undefined") ? CSV_TOP_BAR_USP_PRESET_FALLBACKS : {
+      ambassador: "Adult Only Options · Entertainment · Sustainability · Value",
+      celebrity: "Cuisine · Cultural Experiences · Entertainment · Overnight Port Stays",
+      cunard: "Cuisine · Entertainment · Luxury · Wellness",
+      fred: "Cultural Experiences · Education · Entertainment · Unique Itineraries",
+      marella: "Accessible · Adult Only Options · All-inclusive · Entertainment",
+      msc: "All-inclusive · Entertainment · Family · Diverse Itineraries",
+      po: "Adult Only Options · Cuisine · Entertainment · Family",
+      princess: "All-inclusive · Cuisine · Entertainment · Family",
+      royal: "Amenities · Family · Entertainment · Kids' Clubs"
+    };
+    return (typeof OPERATOR_USP_PRESETS!=="undefined"&&OPERATOR_USP_PRESETS[operatorKey]) || fallbackPresets[operatorKey] || "Cruise · Destinations · Entertainment";
+  }
   function opKey(s){
     const v=norm(s).toLowerCase();
     for(const [k,cfg] of Object.entries(OPERATOR_CONFIG)){ if((cfg.aliases||[]).some(r=>r.test(v))) return k; }
@@ -4073,14 +4088,14 @@ function processSheetCSV(csv,status){
         [val(row,headers,["price"]),row.map(cell=>norm(cell)).join(" ")].join(" ")
       ),
       url: val(row,headers,["url","destination_url"]) || offers[loaded].url || "https://dawsonandsanderson.co.uk/cruises",
-      tags: getCsvTopBarUspPreset(resolvedOperator),
+      tags: csvTopBarUspPreset(resolvedOperator),
       _tagsManualOverride: false
     };
 
     if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(loaded);
     ["_img","_imgSource","_imgNeedsReupload","_cropZoom","_cropX","_cropY","_cropPosVersion","_heroFitMode","heroLocked"].forEach(key=>{ delete newOffer[key]; });
     newOffer.incl=buildCSVDetailsLine(row,headers,boardParts,newOffer.basis,newOffer.name,newOffer.ship);
-    newOffer.tags=getCsvTopBarUspPreset(newOffer.operator);
+    newOffer.tags=csvTopBarUspPreset(newOffer.operator);
     if(hero){ newOffer._img=hero; }
     const hdr=val(row,headers,["operator_header","header"]);
     if(hdr){
