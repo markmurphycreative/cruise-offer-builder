@@ -13,20 +13,23 @@ function extract(pattern, label) {
 test('Offer selector, Reorder Cards and scrolling section stack share the sidebar content edges', () => {
   assert.match(html, /\.sidebar\{--sidebar-content-inset:9px;--sidebar-scrollbar-width:3px;--sidebar-content-right-inset:calc\(var\(--sidebar-content-inset\) \+ var\(--sidebar-scrollbar-width\)\);/);
   assert.match(html, /\.offer-tabs\{[^}]*margin:5px var\(--sidebar-content-right-inset\) 0 var\(--sidebar-content-inset\);[^}]*border:1px solid var\(--border\);/);
-  assert.match(html, /\.reorder-group\{[^}]*margin:5px var\(--sidebar-content-right-inset\) 0 var\(--sidebar-content-inset\);[^}]*border:1px solid var\(--border\);[^}]*border-radius:var\(--radius\);/);
+  assert.match(html, /\.section\{[^}]*margin-bottom:6px;[^}]*border:1px solid var\(--border\);[^}]*border-radius:var\(--radius\);/);
+  assert.match(html, /\.reorder-group\{background:#fafaf8;\}/);
   assert.match(html, /\.sb-body\{[^}]*scrollbar-gutter:stable;[^}]*padding:5px var\(--sidebar-content-inset\) 3px;/);
   assert.match(html, /\.sb-body::-webkit-scrollbar\{width:var\(--sidebar-scrollbar-width\);/);
 });
 
-test('Reorder Cards header matches compact panel styling and exposes a list icon', () => {
-  const reorderGroup = extract(/<div class="reorder-group">[\s\S]*?\n  <\/div>/, 'Reorder Cards panel');
-  assert.match(reorderGroup, /<div class="reorder-label"><h3><svg class="section-icon"[^>]*>[\s\S]*?<path d="M8 6h13"><\/path>[\s\S]*?<\/svg>Reorder Cards<\/h3><div class="reorder-actions"/);
-  assert.match(html, /\.reorder-label\{[^}]*padding:5px 9px;[^}]*background:var\(--panel\);[^}]*cursor:default;[^}]*list-style:none;/);
-  assert.match(html, /\.reorder-label h3\{[^}]*font-size:10px;[^}]*font-weight:400;[^}]*text-transform:uppercase;[^}]*letter-spacing:\.08em;[^}]*color:var\(--navy\);[^}]*gap:6px;/);
+test('Reorder Cards collapsed header matches standard accordion styling and exposes a list icon', () => {
+  const reorderGroup = extract(/<div class="section reorder-group" data-section-key="reorder-cards">[\s\S]*?\n    <\/div>/, 'Reorder Cards accordion');
+  assert.match(reorderGroup, /<div class="section-hdr collapsed" onclick="toggleSec\(this\)">/);
+  assert.match(reorderGroup, /<h3><svg class="section-icon"[^>]*>[\s\S]*?<path d="M8 6h13"><\/path>[\s\S]*?<\/svg>Reorder Cards<\/h3><span class="section-toggle">▾<\/span>/);
+  assert.match(reorderGroup, /<div class="section-body hidden">[\s\S]*<div class="reorder-actions"/);
+  assert.match(html, /\.section-hdr\{[^}]*background:var\(--panel\);[^}]*padding:5px 9px;[^}]*cursor:pointer;/);
+  assert.match(html, /\.section-hdr h3\{[^}]*font-size:10px;[^}]*font-weight:400;[^}]*text-transform:uppercase;[^}]*letter-spacing:\.08em;[^}]*color:var\(--navy\);[^}]*gap:6px;/);
 });
 
 test('Reorder Cards presents compact accessible chevron controls without changing handlers', () => {
-  const reorderGroup = extract(/<div class="reorder-group">[\s\S]*?\n  <\/div>/, 'Reorder Cards panel');
+  const reorderGroup = extract(/<div class="section reorder-group" data-section-key="reorder-cards">[\s\S]*?\n    <\/div>/, 'Reorder Cards accordion');
   assert.match(reorderGroup, /id="move-left-btn" onclick="moveOfferLeft\(\)" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"><\/polyline><\/svg><\/button>/);
   assert.match(reorderGroup, /id="move-right-btn" onclick="moveOfferRight\(\)" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"><\/polyline><\/svg><\/button>/);
   assert.doesNotMatch(reorderGroup, /[◀▶]/);
