@@ -50,7 +50,7 @@ test('history snapshots intern unchanged image payloads by reference', () => {
 test('meaningful campaign changes are recorded while view-only changes are excluded', () => {
   assert.match(html, /isCampaignHistoryMeaningfulTarget\(el\)[\s\S]*?\["zoom-slider","sheets-url","preset-select"\]\.includes\(el\.id\)/);
   assert.match(html, /el\.id\.startsWith\("g-"\) \|\| el\.id\.startsWith\("f-"\) \|\| el\.id\.startsWith\("cta-"\) \|\| el\.id\.startsWith\("crop-"\)/);
-  assert.match(html, /recordCampaignHistoryAfterAsyncChange\(type==="hero"\?"Hero image change":"Logo image change"\)/);
+  assert.match(html, /recordCampaignHistoryAfterAsyncChange\(type==="hero"\?"Hero image change":\(type==="itinerary"\?"Itinerary image change":"Logo image change"\)\)/);
   assert.match(html, /recordCampaignHistoryAfterAsyncChange\("Card reorder"\)/);
   assert.match(html, /recordCampaignHistoryAfterAsyncChange\("CSV import"\)/);
   assert.match(html, /recordCampaignHistoryAfterAsyncChange\("Google Sheet import"\)/);

@@ -47,6 +47,8 @@ function createRenderContext(extra = {}) {
     extractFunction('chunkBullets'),
     extractFunction('escapeAttr'),
     extractFunction('getHeroImageSource'),
+    extractFunction('getItineraryImageSource'),
+    extractFunction('renderItineraryImageHTML'),
     extractFunction('renderHeroHTML'),
     extractFunction('renderCardHTML')
   ].join('\n'), context);
@@ -162,4 +164,16 @@ test('campaign save and load paths preserve hero image data', () => {
   assert.match(restorePayload, /const restored=JSON\.parse\(JSON\.stringify\(state\)\)/);
   assert.match(restorePayload, /applySessionPayload\(restored\)/);
   assert.match(loadEditor, /setThumb\('hero', o\._img \|\| ''\)/);
+});
+
+
+test('optional itinerary image renders between offer details and Youll Visit only when provided', () => {
+  const { renderCardHTML } = createRenderContext();
+  const cardWithoutItinerary = renderCardHTML({ operator: 'ncl', _img: 'data:image/jpeg;base64,hero' });
+  const cardWithItinerary = renderCardHTML({ operator: 'ncl', _img: 'data:image/jpeg;base64,hero', _itineraryImg: 'data:image/png;base64,map' });
+
+  assert.doesNotMatch(cardWithoutItinerary, /itinerary-wrap/);
+  assert.match(cardWithItinerary, /<div class="itinerary-wrap"><img class="itinerary-img" src="data:image\/png;base64,map"/);
+  assert.ok(cardWithItinerary.indexOf('<div class="ibar">') < cardWithItinerary.indexOf('<div class="itinerary-wrap">'));
+  assert.ok(cardWithItinerary.indexOf('<div class="itinerary-wrap">') < cardWithItinerary.indexOf('<div class="vsec">'));
 });
