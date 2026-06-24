@@ -14,22 +14,22 @@ test('Offer selector, Reorder Cards and scrolling section stack share the sideba
   assert.match(html, /\.sidebar\{--sidebar-content-inset:9px;--sidebar-scrollbar-width:3px;--sidebar-content-right-inset:calc\(var\(--sidebar-content-inset\) \+ var\(--sidebar-scrollbar-width\)\);/);
   assert.match(html, /\.offer-tabs\{[^}]*margin:5px var\(--sidebar-content-right-inset\) 0 var\(--sidebar-content-inset\);[^}]*border:1px solid var\(--border\);/);
   assert.match(html, /\.section\{[^}]*margin-bottom:6px;[^}]*border:1px solid var\(--border\);[^}]*border-radius:var\(--radius\);/);
-  assert.match(html, /\.reorder-group\{background:#fafaf8;\}/);
+  assert.match(html, /\.reorder-group\{[^}]*margin:5px var\(--sidebar-content-right-inset\) 0 var\(--sidebar-content-inset\);[^}]*border:1px solid var\(--border\);[^}]*background:#fafaf8;/);
   assert.match(html, /\.sb-body\{[^}]*scrollbar-gutter:stable;[^}]*padding:5px var\(--sidebar-content-inset\) 3px;/);
   assert.match(html, /\.sb-body::-webkit-scrollbar\{width:var\(--sidebar-scrollbar-width\);/);
 });
 
-test('Reorder Cards collapsed header matches standard accordion styling and exposes a list icon', () => {
-  const reorderGroup = extract(/<div class="section reorder-group" data-section-key="reorder-cards">[\s\S]*?\n    <\/div>/, 'Reorder Cards accordion');
-  assert.match(reorderGroup, /<div class="section-hdr collapsed" onclick="toggleSec\(this\)">/);
-  assert.match(reorderGroup, /<h3><svg class="section-icon"[^>]*>[\s\S]*?<path d="M8 6h13"><\/path>[\s\S]*?<\/svg>Reorder Cards<\/h3><span class="section-toggle">▾<\/span>/);
-  assert.match(reorderGroup, /<div class="section-body hidden">[\s\S]*<div class="reorder-actions"/);
-  assert.match(html, /\.section-hdr\{[^}]*background:var\(--panel\);[^}]*padding:5px 9px;[^}]*cursor:pointer;/);
-  assert.match(html, /\.section-hdr h3\{[^}]*font-size:10px;[^}]*font-weight:400;[^}]*text-transform:uppercase;[^}]*letter-spacing:\.08em;[^}]*color:var\(--navy\);[^}]*gap:6px;/);
+test('Reorder Cards is a persistent compact quick control instead of an accordion section', () => {
+  const reorderGroup = extract(/<div class="reorder-group" aria-label="Reorder Cards quick controls">[\s\S]*?\n  <\/div>/, 'Reorder Cards quick control');
+  assert.match(reorderGroup, /<div class="reorder-title"><svg class="section-icon"[^>]*>[\s\S]*?<path d="M8 6h13"><\/path>[\s\S]*?<\/svg><span>Reorder Cards<\/span><\/div>/);
+  assert.match(reorderGroup, /<div class="reorder-actions"/);
+  assert.doesNotMatch(reorderGroup, /section-hdr|section-body|section-toggle|toggleSec|data-section-key="reorder-cards"/);
+  assert.match(html, /<div class="offer-context-label empty-hidden" id="active-offer-label"[\s\S]*?<!-- ── REORDER CARDS ── -->[\s\S]*?<div class="sb-body">/);
+  assert.match(html, /\.reorder-title\{[^}]*font-size:10px;[^}]*text-transform:uppercase;[^}]*color:var\(--navy\);/);
 });
 
 test('Reorder Cards presents compact accessible chevron controls without changing handlers', () => {
-  const reorderGroup = extract(/<div class="section reorder-group" data-section-key="reorder-cards">[\s\S]*?\n    <\/div>/, 'Reorder Cards accordion');
+  const reorderGroup = extract(/<div class="reorder-group" aria-label="Reorder Cards quick controls">[\s\S]*?\n  <\/div>/, 'Reorder Cards quick control');
   assert.match(reorderGroup, /id="move-left-btn" onclick="moveOfferLeft\(\)" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"><\/polyline><\/svg><\/button>/);
   assert.match(reorderGroup, /id="move-right-btn" onclick="moveOfferRight\(\)" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"><\/polyline><\/svg><\/button>/);
   assert.doesNotMatch(reorderGroup, /[◀▶]/);
