@@ -139,6 +139,8 @@ test('supported cruise operators receive their recommended empty hero imagery pl
     extractFunction('chunkBullets'),
     extractFunction('escapeAttr'),
     extractFunction('getHeroImageSource'),
+    extractFunction('getItineraryImageSource'),
+    extractFunction('renderItineraryImageHTML'),
     extractFunction('renderHeroHTML'),
     extractFunction('renderCardHTML'),
     'result = Object.fromEntries(Object.keys(OPERATOR_HERO_PLACEHOLDERS).map(operator => [operator, { empty: renderCardHTML({operator}), image: renderCardHTML({operator, _img:"hero.jpg"}) }]));',

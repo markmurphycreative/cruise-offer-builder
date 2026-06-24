@@ -232,9 +232,12 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .dz-lbl{font-size:10px;font-weight:600;color:var(--text);}
 .dz-sub{font-size:9px;color:var(--muted);margin-top:1px;}
 .dz-thumb{width:100%;height:36px;object-fit:contain;border-radius:3px;margin-top:4px;display:none;background:var(--navy);padding:2px;}
+.dz-thumb.hero-t,.dz-thumb.itinerary-t{object-fit:contain;background:#fafaf8;padding:2px;height:170px;width:100%;}
 .dz-thumb.hero-t{object-fit:contain;background:#fafaf8;padding:2px;height:170px;width:100%;}
 .hero-thumb-helper,.hero-thumb-dimensions{display:none;margin-top:4px;font-size:9px;color:var(--muted);line-height:1.35;}
 .hero-thumb-helper.active,.hero-thumb-dimensions.active{display:block;}
+.itinerary-actions{display:none;grid-template-columns:1fr 1fr;gap:4px;margin-top:6px;}
+.itinerary-actions.active{display:grid;}
 .sz-row{display:flex;align-items:center;gap:5px;margin-top:4px;}
 .sz-row span{font-size:9px;color:var(--muted);white-space:nowrap;}
 .sz-row input[type=range]{flex:1;accent-color:var(--gold);height:3px;}
@@ -593,6 +596,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cc .operator-logo-fallback{font-family:'Montserrat',sans-serif;font-size:58px;font-weight:500;letter-spacing:.12em;line-height:1.15;color:#fff;text-align:center;}
 .cc .hero-wrap{width:1200px;height:849px;overflow:hidden;position:relative;background:var(--operator-bg,var(--navy));line-height:0;}
 .cc .hero{width:100%;height:calc(100% + 1px);object-fit:cover;display:block;position:absolute;top:-1px;left:0;transform-origin:center center;}
+.cc .itinerary-wrap{width:1200px;height:536px;overflow:hidden;position:relative;background:#fff;line-height:0;}
+.cc .itinerary-img{width:100%;height:100%;object-fit:cover;display:block;}
 .cc .hph{width:1200px;height:849px;background:#435465;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;}
 .cc .hph span{display:none;}
 .cc .hph::before{content:"";display:block;width:92px;height:92px;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/%3E%3Cpolyline points='17 8 12 3 7 8'/%3E%3Cline x1='12' x2='12' y1='3' y2='15'/%3E%3C/svg%3E");pointer-events:none;}
@@ -965,6 +970,26 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       </div>
     </div>
 
+
+    <!-- ── ITINERARY IMAGE ── -->
+    <div class="section" data-section-key="itinerary-image">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"></path></svg>Itinerary Image</h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body hidden">
+        <div class="dz-wrap">
+          <div class="dropzone hero-dropzone" id="dz-itinerary" ondragover="dzOver(event,'dz-itinerary')" ondragleave="dzOut('dz-itinerary')" ondrop="dzDrop(event,'itinerary')">
+            <input type="file" accept="image/*" onchange="fileChosen(event,'itinerary')">
+            <div class="dz-inner"><div class="dz-icon"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"></path></svg></div><div class="dz-lbl">ADD ITINERARY IMAGE</div><div class="dz-sub">JPG/PNG · map, route or destination artwork</div></div>
+            <img class="dz-thumb itinerary-t" id="itinerary-thumb" alt="itinerary" style="display: none;">
+          </div>
+        </div>
+        <div class="itinerary-actions" id="itinerary-actions-panel">
+          <button class="abtn red btn-compact" onclick="removeItineraryImage()">Remove Image</button>
+          <button class="abtn btn-compact" onclick="replaceItineraryImage()">Replace Image</button>
+        </div>
+      </div>
+    </div>
     <!-- ── CTA ASSETS ── -->
     <div class="section" data-section-key="cta-assets">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
@@ -2133,6 +2158,7 @@ function load(i){
   const logoDisplay=document.getElementById("f-logo-display"); if(logoDisplay) logoDisplay.value=offers[i]._logoDisplay||"operator";
   setThumb("logo",offers[i]._logoCustom||"");
   setThumb("hero",offers[i]._img||"");
+  setThumb("itinerary",offers[i]._itineraryImg||"");
   const sz=offers[i]._logoSize||50;
   const lsr=document.getElementById("logo-size-row"); if(lsr) lsr.style.display=offers[i]._logoCustom?"flex":"none";
   const lsz=document.getElementById("logo-size"); if(lsz) lsz.value=sz;
@@ -2142,6 +2168,7 @@ function load(i){
   setCropControlValue("y",offers[i]._cropY??50);
   if(!offers[i]._heroFitMode) offers[i]._heroFitMode="fill";
   syncHeroUi();
+  syncItineraryUi();
   updateHeroImageLockUI();
   if(offers[i]._img) document.getElementById("crop-controls").classList.add("active");
   else document.getElementById("crop-controls").classList.remove("active");
@@ -2243,7 +2270,7 @@ function clearHeroImageDataFromOffer(index){
   if(!Number.isInteger(offerIndex) || offerIndex<0 || offerIndex>3) return false;
   while(offers.length<=offerIndex) offers.push({});
   const offer=offers[offerIndex] || {};
-  ["_img","_imgSource","_imgNeedsReupload","_cropZoom","_cropX","_cropY","_cropPosVersion","_heroFitMode","heroLocked"].forEach(key=>{ delete offer[key]; });
+  ["_img","_imgSource","_imgNeedsReupload","_cropZoom","_cropX","_cropY","_cropPosVersion","_heroFitMode","heroLocked","_itineraryImg","_itineraryImgSource","_itineraryImgNeedsReupload"].forEach(key=>{ delete offer[key]; });
   offers[offerIndex]=offer;
   if(typeof setHeroImageLocked==="function") setHeroImageLocked(offerIndex,false);
   else if(Array.isArray(lockedHeroImages)) lockedHeroImages[offerIndex]=false;
@@ -2252,7 +2279,7 @@ function clearHeroImageDataFromOffer(index){
 
 function preserveLockedHeroImageData(nextOffer,index,previousOffer){
   if(!isHeroImageLocked(index)) return nextOffer;
-  const protectedKeys=["_img","_imgSource","_imgNeedsReupload","_cropZoom","_cropX","_cropY","_cropPosVersion","_heroFitMode","heroLocked"];
+  const protectedKeys=["_img","_imgSource","_imgNeedsReupload","_cropZoom","_cropX","_cropY","_cropPosVersion","_heroFitMode","heroLocked","_itineraryImg","_itineraryImgSource","_itineraryImgNeedsReupload"];
   protectedKeys.forEach(key=>{
     if(previousOffer && Object.prototype.hasOwnProperty.call(previousOffer,key)) nextOffer[key]=previousOffer[key];
     else if(key==="heroLocked") nextOffer[key]=true;
@@ -2350,7 +2377,8 @@ function resetAll(){
 // ═══════════════════════════════════════════════════════
 function dzOver(e,id){e.preventDefault();document.getElementById(id).classList.add("over");}
 function dzOut(id){document.getElementById(id).classList.remove("over");}
-function dzDrop(e,type){e.preventDefault();dzOut(type==="logo"?"dz-logo":"dz-hero");const f=e.dataTransfer.files[0];if(f)readFile(f,type);}
+function getDropzoneIdForType(type){ return type==="logo"?"dz-logo":(type==="itinerary"?"dz-itinerary":"dz-hero"); }
+function dzDrop(e,type){e.preventDefault();dzOut(getDropzoneIdForType(type));const f=e.dataTransfer.files[0];if(f)readFile(f,type);}
 function fileChosen(e,type){const f=e.target.files[0];if(f)readFile(f,type);}
 function isAcceptedHeroImageType(type){
   return /^(image\/jpeg|image\/png|image\/webp|image\/gif)$/i.test(type||"");
@@ -2472,7 +2500,7 @@ function enhanceClickableHeroPlaceholders(root, offerIndex){
   });
 }
 function readFile(file,type){
-  if(type==="hero" && typeof isOfferLocked==="function" && isOfferLocked(cur)) return showOfferLockStatus(cur);
+  if((type==="hero"||type==="itinerary") && typeof isOfferLocked==="function" && isOfferLocked(cur)) return showOfferLockStatus(cur);
   const isSvg=file.type==="image/svg+xml"||file.name.endsWith(".svg");
   if(type==="logo"&&isSvg){
     const r=new FileReader(); r.onload=ev=>{
@@ -2485,13 +2513,14 @@ function readFile(file,type){
     const r=new FileReader(); r.onload=ev=>{
       const src=ev.target.result;
       if(type==="logo"){ offers[cur]._logoCustom=src; if(!offers[cur]._logoSize) offers[cur]._logoSize=50; setThumb("logo",src); document.getElementById("logo-size-row").style.display="flex"; }
+      else if(type==="itinerary"){ offers[cur]._itineraryImg=src; setThumb("itinerary",src); syncItineraryUi(); }
       else{ offers[cur]._img=src; setThumb("hero",src); syncHeroUi(); }
-      refreshOfferUi({utm:false,spell:false}); if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange(type==="hero"?"Hero image change":"Logo image change");
+      refreshOfferUi({utm:false,spell:false}); if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange(type==="hero"?"Hero image change":(type==="itinerary"?"Itinerary image change":"Logo image change"));
     }; r.readAsDataURL(file);
   }
 }
 function setThumb(type,src){
-  const el=document.getElementById(type==="logo"?"logo-thumb":"hero-thumb");
+  const el=document.getElementById(type==="logo"?"logo-thumb":(type==="itinerary"?"itinerary-thumb":"hero-thumb"));
   if(!el) return;
   if(src){
     el.src=src;
@@ -2522,6 +2551,23 @@ function updateHeroThumbInfo(imgEl,src){
 }
 function logoSz(val){ offers[cur]._logoSize=parseInt(val); document.getElementById("logo-size-val").textContent=val+"%"; refreshOfferUi({status:false,utm:false,spell:false}); }
 function imgUrlCh(){ offers[cur]._img=document.getElementById("f-img-url").value; setThumb("hero",offers[cur]._img); syncHeroUi(); refreshOfferUi({utm:false,spell:false}); }
+function syncItineraryUi(){
+  const hasImg=!!(offers[cur]&&offers[cur]._itineraryImg);
+  const panel=document.getElementById("itinerary-actions-panel");
+  if(panel) panel.classList.toggle("active",hasImg);
+}
+function removeItineraryImage(){
+  if(typeof isOfferLocked==="function" && isOfferLocked(cur)) return showOfferLockStatus(cur);
+  offers[cur]._itineraryImg="";
+  setThumb("itinerary","");
+  syncItineraryUi();
+  refreshOfferUi({utm:false,spell:false});
+  if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Itinerary image removal");
+}
+function replaceItineraryImage(){
+  const input=document.querySelector("#dz-itinerary input[type=file]");
+  if(input){ input.value=""; input.click(); }
+}
 
 // ═══════════════════════════════════════════════════════
 // CROP
@@ -2695,6 +2741,14 @@ function escapeAttr(value){
 }
 function getHeroImageSource(offer){
   return String((offer && offer._img) || '').trim();
+}
+function getItineraryImageSource(offer){
+  return String((offer && offer._itineraryImg) || '').trim();
+}
+function renderItineraryImageHTML(d){
+  const src=getItineraryImageSource(d);
+  if(!src) return "";
+  return `<div class="itinerary-wrap"><img class="itinerary-img" src="${escapeAttr(src)}" alt="" onerror="this.parentElement.remove()"></div>`;
 }
 function renderHeroHTML(d, heroPlaceholder){
   const heroSrc=getHeroImageSource(d);
@@ -3296,6 +3350,7 @@ function getCurrentSectionCompletionState(){
   return {
     "operator-logo": hasOperatorLogo(o),
     "hero-image": !!(o&&o._img),
+    "itinerary-image": !!(o&&o._itineraryImg),
     "offer-details": hasCriticalOfferContent(o),
     "cta-assets": !!(cta.enabled&&String(cta.text||"").trim()&&String(cta.phone||"").trim())
   };
@@ -4042,6 +4097,7 @@ function processSheetCSV(csv,status){
     const operatorKey=opKey(operatorText);
     const resolvedOperator=(operatorKey&&operatorKey!=="custom") ? operatorKey : (opKeyFromShip(shipText)||operatorKey);
     const hero=val(row,headers,["hero_image","image","image_url"]);
+    const itineraryImage=val(row,headers,["itinerary_image","itinerary_image_url","map_image","route_image"]);
 
     const previousOffer=offers[loaded] || {};
     const newOffer={
@@ -4078,10 +4134,11 @@ function processSheetCSV(csv,status){
     };
 
     if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(loaded);
-    ["_img","_imgSource","_imgNeedsReupload","_cropZoom","_cropX","_cropY","_cropPosVersion","_heroFitMode","heroLocked"].forEach(key=>{ delete newOffer[key]; });
+    ["_img","_imgSource","_imgNeedsReupload","_cropZoom","_cropX","_cropY","_cropPosVersion","_heroFitMode","heroLocked","_itineraryImg","_itineraryImgSource","_itineraryImgNeedsReupload"].forEach(key=>{ delete newOffer[key]; });
     newOffer.incl=buildCSVDetailsLine(row,headers,boardParts,newOffer.basis,newOffer.name,newOffer.ship);
     newOffer.tags=csvTopBarUspPreset(newOffer.operator);
     if(hero){ newOffer._img=hero; }
+    if(itineraryImage){ newOffer._itineraryImg=itineraryImage; }
     const hdr=val(row,headers,["operator_header","header"]);
     if(hdr){
       const hdrKey=opKey(hdr);
@@ -4436,6 +4493,10 @@ function applySessionPayload(data){
       delete o._img;
       o._imgNeedsReupload = true;
     }
+    if(!allowLargeEmbeddedImagesDuringRestore && o._itineraryImg && typeof o._itineraryImg === "string" && o._itineraryImg.startsWith("data:") && o._itineraryImg.length > 6_000_000){
+      delete o._itineraryImg;
+      o._itineraryImgNeedsReupload = true;
+    }
     return o;
   }); while(offers.length<4) offers.push({});
   lockedOffers = Array.isArray(data.lockedOffers) ? data.lockedOffers.slice(0,4) : [false,false,false,false];
@@ -4489,7 +4550,7 @@ function showSessionFeedback(msg,isWarn){
   el.classList.toggle('active',!!msg);
 }
 function sessionHasMissingHeroImages(payload){
-  return !!(((payload&&payload.offers)||[]).find(o=>o&&o._imgNeedsReupload));
+  return !!(((payload&&payload.offers)||[]).find(o=>o&&(o._imgNeedsReupload||o._itineraryImgNeedsReupload)));
 }
 
 
@@ -4531,7 +4592,7 @@ function encodeCampaignHistoryImages(value){
     const out={};
     Object.keys(value).forEach(key=>{
       const v=value[key];
-      const imageKey=(key === "_img" || key === "_logoCustom") ? campaignHistoryImageKey(v) : "";
+      const imageKey=(key === "_img" || key === "_itineraryImg" || key === "_logoCustom") ? campaignHistoryImageKey(v) : "";
       if(imageKey){
         let ref=campaignHistoryImageRefs.get(imageKey);
         if(!ref){
@@ -4842,12 +4903,12 @@ function makePortableCampaignOffers(sourceOffers){
   return cloned.slice(0,4).map((offer={},index)=>{
     const heroLocks=(typeof lockedHeroImages!=="undefined" && Array.isArray(lockedHeroImages)) ? lockedHeroImages : [];
     offer.heroLocked=!!(offer.heroLocked || heroLocks[index]);
-    ["_img","_logoCustom"].forEach(key=>{
+    ["_img","_itineraryImg","_logoCustom"].forEach(key=>{
       const value=offer[key];
       if(typeof value !== "string" || !/^(?:blob:|file:)/i.test(value)) return;
       offer[`${key}Source`]=value;
       delete offer[key];
-      offer[key === "_img" ? "_imgNeedsReupload" : "_logoNeedsReupload"]=true;
+      offer[key === "_img" ? "_imgNeedsReupload" : (key === "_itineraryImg" ? "_itineraryImgNeedsReupload" : "_logoNeedsReupload")]=true;
     });
     return offer;
   });
@@ -4896,6 +4957,7 @@ function buildCampaignFilePayload(){
     operatorSettings:{source:"state.offers",byCard:portableOffers.map(({operator="",url="",tags="",_logoDisplay="operator"},cardIndex)=>({cardIndex,operator,url,tags,_logoDisplay}))},
     logoSettings:{source:"state.offers",byCard:portableOffers.map(({_logoDisplay="operator",_logoCustom="",_logoSize="",_logoNeedsReupload=false},cardIndex)=>({cardIndex,_logoDisplay,hasCustomLogo:!!_logoCustom,_logoSize,_logoNeedsReupload}))},
     heroImages:{source:"state.offers",byCard:portableOffers.map(({_img="",_imgSource="",_imgNeedsReupload=false,_cropZoom=100,_cropX=50,_cropY=50,_cropPosVersion=2,_heroFitMode="fill"},cardIndex)=>({cardIndex,imageType:_img ? (/^data:/i.test(_img) ? "embedded-data-url" : "url") : (_imgSource ? "local-reference" : "none"),_img,_imgSource,_imgNeedsReupload,_cropZoom,_cropX,_cropY,_cropPosVersion,_heroFitMode,locked:isHeroImageLocked(cardIndex),heroLocked:isHeroImageLocked(cardIndex)}))},
+    itineraryImages:{source:"state.offers",byCard:portableOffers.map(({_itineraryImg="",_itineraryImgSource="",_itineraryImgNeedsReupload=false},cardIndex)=>({cardIndex,imageType:_itineraryImg ? (/^data:/i.test(_itineraryImg) ? "embedded-data-url" : "url") : (_itineraryImgSource ? "local-reference" : "none"),_itineraryImg,_itineraryImgSource,_itineraryImgNeedsReupload}))},
     ctaData:getCtaSummaryRows(),
     utmData:portableOffers.map(({url="",_utm="",utm_content=""})=>({url,_utm,utm_content})),
     operatorLandingPages:portableOffers.map(({url=""})=>url),
@@ -5533,7 +5595,7 @@ function confirmDeleteCampaignPreset(name,status){
 function saveDraft(){
   save();
   const clean=JSON.parse(JSON.stringify({offers,campaign:{name:document.getElementById("g-campaign").value,date:document.getElementById("g-date").value,airport:document.getElementById("g-airport").value,terms:document.getElementById("g-terms").value}}));
-  clean.offers.forEach(o=>{if(o._img&&o._img.startsWith("data:"))o._imgNote="[local-image-not-saved]";if(o._logoCustom&&o._logoCustom.startsWith("data:"))o._logoCustomNote="[local-logo-not-saved]";});
+  clean.offers.forEach(o=>{if(o._img&&o._img.startsWith("data:"))o._imgNote="[local-image-not-saved]";if(o._itineraryImg&&o._itineraryImg.startsWith("data:"))o._itineraryImgNote="[local-itinerary-image-not-saved]";if(o._logoCustom&&o._logoCustom.startsWith("data:"))o._logoCustomNote="[local-logo-not-saved]";});
   localStorage.setItem("draftCampaign",JSON.stringify(clean));
   document.getElementById("save-status").textContent="✓ Saved at "+new Date().toLocaleTimeString();
 }
@@ -6836,11 +6898,12 @@ function renderCardHTML(d){
   const terms=document.getElementById("g-terms").value||"T&Cs Apply";
   const heroPlaceholder=OPERATOR_HERO_PLACEHOLDERS[d.operator];
   const heroHTML=renderHeroHTML(d, heroPlaceholder);
+  const itineraryImageHTML=renderItineraryImageHTML(d);
   const shipLine=ship?`Sailing on ${ship}${embarkationPort?` from ${embarkationPort}`:""}`:"";
   const priceHTML=price?`<div class="pfrom">From</div><div class="pmain">£${price}<span class="ppp">pp</span></div>`:`<div class="pfrom"></div><div class="pmain"></div>`;
   const dateHTML=(day||month)?`${day}`:"";
   const nightLabel=nights?"Nights":"";
-  return `<div class="cc"${getOperatorSkinStyle(d)}>${getHeaderHTML(d)}${heroHTML}<div class="isec"><div class="isec-content"><div class="cname">${name}</div><div class="incl">${incl}</div><div class="sname">${shipLine}</div><div class="price-block">${priceHTML}<div class="pbasis">${basis}</div></div></div></div><div class="ibar"><div class="icell gold"><div class="ival">${board}</div><div class="ilbl">${boardlbl}</div></div><div class="icell blk"><div class="ival">${dateHTML}</div><div class="ilbl">${month}</div></div><div class="icell gold"><div class="ival">${nights}</div><div class="ilbl">${nightLabel}</div></div></div><div class="vsec"><div class="visit-inner">${preCruiseHTML}<div class="vtit">You'll Visit</div><div class="vpts">${portsHTML}</div></div></div><div class="tcbar">${terms}</div></div>`;
+  return `<div class="cc"${getOperatorSkinStyle(d)}>${getHeaderHTML(d)}${heroHTML}<div class="isec"><div class="isec-content"><div class="cname">${name}</div><div class="incl">${incl}</div><div class="sname">${shipLine}</div><div class="price-block">${priceHTML}<div class="pbasis">${basis}</div></div></div></div><div class="ibar"><div class="icell gold"><div class="ival">${board}</div><div class="ilbl">${boardlbl}</div></div><div class="icell blk"><div class="ival">${dateHTML}</div><div class="ilbl">${month}</div></div><div class="icell gold"><div class="ival">${nights}</div><div class="ilbl">${nightLabel}</div></div></div>${itineraryImageHTML}<div class="vsec"><div class="visit-inner">${preCruiseHTML}<div class="vtit">You'll Visit</div><div class="vpts">${portsHTML}</div></div></div><div class="tcbar">${terms}</div></div>`;
 }
 function bc(d){ return renderCardHTML(d); }
 
@@ -7170,6 +7233,7 @@ function loadOfferToEditor(i){
   setCropControlValue('y', o._cropY??50);
   if(!o._heroFitMode) o._heroFitMode='fill';
   syncHeroUi();
+  syncItineraryUi();
   updateHeroImageLockUI();
   const logoArea=document.getElementById('logo-override-area'); if(logoArea) logoArea.style.display=(o.operator==='custom'||!o.operator)?'block':'none';
   updateHeroRestoreNote();

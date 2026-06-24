@@ -90,6 +90,9 @@ function createRenderContext() {
     extractFunction('chunkBullets'),
     extractFunction('normaliseSubtitleSeparator'),
     extractFunction('renderCruiseTitle'),
+    extractFunction('escapeAttr'),
+    extractFunction('getItineraryImageSource'),
+    extractFunction('renderItineraryImageHTML'),
     extractFunction('renderCardHTML'),
     extractFunction('bc')
   ].join('\n'), context);

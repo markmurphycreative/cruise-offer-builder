@@ -116,7 +116,7 @@ function createCampaignHarness() {
 test('Phase 2 JSON campaign save includes expected keys and export metadata', () => {
   const { context } = createCampaignHarness();
   const payload = context.buildCampaignFilePayload();
-  assert.deepEqual(Object.keys(payload).sort(), ['appVersion', 'campaign', 'ctaData', 'ctaSettings', 'exportedAt', 'fileType', 'heroImages', 'logoSettings', 'operatorLandingPages', 'operatorSettings', 'qa', 'schemaVersion', 'sessionMetadata', 'sourceInfo', 'state', 'utmData'].sort());
+  assert.deepEqual(Object.keys(payload).sort(), ['appVersion', 'campaign', 'ctaData', 'ctaSettings', 'exportedAt', 'fileType', 'heroImages', 'itineraryImages', 'logoSettings', 'operatorLandingPages', 'operatorSettings', 'qa', 'schemaVersion', 'sessionMetadata', 'sourceInfo', 'state', 'utmData'].sort());
   assert.equal(payload.campaign.name, 'Phase 2 Campaign');
   assert.equal(payload.state.activeOfferIndex, 2);
   assert.deepEqual(payload.operatorSettings.byCard.map(card => card.operator), ['msc', 'cunard', 'princess', 'ncl']);
