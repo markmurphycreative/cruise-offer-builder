@@ -162,7 +162,7 @@ test('empty hero placeholder uses a centred upload icon and CTA without changing
   assert.match(html, /\.cc \.hph::before\{content:"";display:block;width:92px;height:92px;[^}]*stroke=\'%23fff\'/);
   assert.doesNotMatch(html, /Image Recommended/);
   assert.match(html, /\.all-preview-card \.hph::before\{width:72px;height:72px;\}/);
-  assert.match(html, /\.preview-pane \.hph\.clickable-hero-placeholder::after\{content:"ADD HERO IMAGE";[^}]*font-size:38px;[^}]*background:rgba\(255,255,255,.18\);border:0;border-radius:3px;padding:19px 35px;/);
+  assert.match(html, /\.preview-pane \.hph\.clickable-hero-placeholder::after\{content:"ADD HERO IMAGE";[^}]*font-size:38px;[^}]*background:transparent;border:0;border-radius:0;padding:0;/);
 });
 
 test('required hero QA retains passive logic while adding a stronger warning treatment', () => {

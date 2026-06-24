@@ -44,7 +44,7 @@ function setup(){
     querySelector(selector){ const match=String(selector).match(/data-section-key="([^"]+)"/); if(match) return sectionNodes[match[1]]; if(selector === '#campaign-library-panel') return sectionNodes['campaign-library']; return focusNodes[selector] || null; },
     addEventListener(type,handler){ if(type === 'keydown') this.handler=handler; if(type === 'change') this.changeHandler=handler; }
   };
-  const context={document,cur:0,offers:[{name:'One'},{name:'Two'},{name:'Three'},{name:'Four'}],isOfferLoaded:offer=>!!offer.name,sv:i=>{ context.cur=i; calls.push(['sv',i]); },setView:v=>calls.push(['view',v]),toggleSec:hdr=>{ hdr.collapsed=!hdr.collapsed; calls.push(['toggle',hdr.collapsed ? 'closed' : 'open']); },exportCurrentJPG:()=>calls.push(['jpg']),exportAllJPG:()=>calls.push(['zip']),refreshOffers:()=>calls.push(['refresh']),toggleLock:()=>calls.push(['lock']),moveOfferLeft:()=>calls.push(['move-left']),moveOfferRight:()=>calls.push(['move-right']),ctaSettingsChanged:()=>calls.push(['cta-changed',context.document.getElementById('cta-enabled').checked]),undoCampaignChange:()=>calls.push(['undo']),redoCampaignChange:()=>calls.push(['redo']),openSummary:()=>{ summaryModal.classList.add('active'); calls.push(['summary-open']); },closeModal:id=>{ if(id === 'summary-modal') summaryModal.classList.remove('active'); calls.push(['close-modal',id]); }};
+  const context={document,cur:0,offers:[{name:'One'},{name:'Two'},{name:'Three'},{name:'Four'}],isOfferLoaded:offer=>!!offer.name,sv:i=>{ context.cur=i; calls.push(['sv',i]); },setView:v=>calls.push(['view',v]),toggleSec:hdr=>{ hdr.collapsed=!hdr.collapsed; calls.push(['toggle',hdr.collapsed ? 'closed' : 'open']); },exportCurrentJPG:()=>calls.push(['jpg']),exportAllJPG:()=>calls.push(['zip']),openManageCampaignsModal:()=>calls.push(['campaign-library-open']),toggleLock:()=>calls.push(['lock']),moveOfferLeft:()=>calls.push(['move-left']),moveOfferRight:()=>calls.push(['move-right']),ctaSettingsChanged:()=>calls.push(['cta-changed',context.document.getElementById('cta-enabled').checked]),undoCampaignChange:()=>calls.push(['undo']),redoCampaignChange:()=>calls.push(['redo']),openSummary:()=>{ summaryModal.classList.add('active'); calls.push(['summary-open']); },closeModal:id=>{ if(id === 'summary-modal') summaryModal.classList.remove('active'); calls.push(['close-modal',id]); }};
   vm.runInNewContext(shortcuts,context);
   return {calls,context,document,modal,summaryModal,sectionNodes,previousFocus,close};
 }
@@ -73,10 +73,10 @@ test('the global keyboard shortcut listener is attached exactly once', () => {
 
 test('shortcuts modal and small toolbar trigger list the supported keyboard shortcuts', () => {
   assert.match(html, /<button class="shortcuts-trigger"[^>]*onclick="openShortcutsModal\(\)"[^>]*>Shortcuts<\/button>/);
-  assert.match(html, /id="shortcuts-modal"[\s\S]*?Keyboard Shortcuts[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>Z<\/kbd>[\s\S]*?<kbd>1<\/kbd>[\s\S]*?<kbd>Tab<\/kbd>[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>S<\/kbd>[\s\S]*?<kbd>R<\/kbd>[\s\S]*?<kbd>H<\/kbd>[\s\S]*?<kbd>O<\/kbd>[\s\S]*?<kbd>P<\/kbd>[\s\S]*?<kbd>C<\/kbd>[\s\S]*?<kbd>U<\/kbd>[\s\S]*?<kbd>L<\/kbd>[\s\S]*?<dt>Open \/ Close AI Copy<\/dt><dd><kbd>G<\/kbd><\/dd>[\s\S]*?<kbd>X<\/kbd>[\s\S]*?<kbd>Shift<\/kbd> \+ <kbd>C<\/kbd>[\s\S]*?<kbd>←<\/kbd> \/ <kbd>→<\/kbd>[\s\S]*?<dt>Campaign Summary<\/dt><dd><kbd>M<\/kbd><\/dd>[\s\S]*?<kbd>\?<\/kbd>[\s\S]*?<kbd>Esc<\/kbd>/);
+  assert.match(html, /id="shortcuts-modal"[\s\S]*?Keyboard Shortcuts[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>Z<\/kbd>[\s\S]*?<kbd>1<\/kbd>[\s\S]*?<kbd>Tab<\/kbd>[\s\S]*?<kbd>Cmd<\/kbd>\/<kbd>Ctrl<\/kbd> \+ <kbd>S<\/kbd>[\s\S]*?<kbd>H<\/kbd>[\s\S]*?<kbd>O<\/kbd>[\s\S]*?<kbd>P<\/kbd>[\s\S]*?<kbd>C<\/kbd>[\s\S]*?<kbd>U<\/kbd>[\s\S]*?<kbd>L<\/kbd>[\s\S]*?<dt>Open \/ Close AI Copy<\/dt><dd><kbd>G<\/kbd><\/dd>[\s\S]*?<kbd>X<\/kbd>[\s\S]*?<kbd>Shift<\/kbd> \+ <kbd>C<\/kbd>[\s\S]*?<kbd>←<\/kbd> \/ <kbd>→<\/kbd>[\s\S]*?<dt>Campaign Summary<\/dt><dd><kbd>M<\/kbd><\/dd>[\s\S]*?<kbd>\?<\/kbd>[\s\S]*?<kbd>Esc<\/kbd>/);
 });
 
-test('card, view, undo, redo, export, refresh, UTM, CTA, help, and Escape shortcuts reuse existing actions', () => {
+test('card, view, undo, redo, export, UTM, CTA, help, and Escape shortcuts reuse existing actions', () => {
   const {calls,context,document,modal}=setup();
   for(const [key,index] of [['1',0],['2',1],['3',2],['4',3]]){ assert.equal(fire(document,key),true); assert.deepEqual(calls.splice(-2),[['sv',index],['view','single']]); }
   context.cur=3; fire(document,'Tab'); assert.deepEqual(calls.splice(-2),[['sv',0],['view','single']]);
@@ -86,7 +86,7 @@ test('card, view, undo, redo, export, refresh, UTM, CTA, help, and Escape shortc
   fire(document,'Z',{metaKey:true,shiftKey:true}); assert.deepEqual(calls.pop(),['redo']);
   fire(document,'s',{ctrlKey:true}); assert.deepEqual(calls.pop(),['jpg']);
   fire(document,'S',{metaKey:true,shiftKey:true}); assert.deepEqual(calls.pop(),['zip']);
-  fire(document,'r'); assert.deepEqual(calls.pop(),['refresh']);
+  assert.equal(fire(document,'r'), false);
   assert.equal(fire(document,'k'), true); assert.deepEqual(calls.pop(), ['lock']);
   fire(document,'u'); assert.deepEqual(calls.splice(-2),[['toggle','open'],['scroll','utm-link']]);
   fire(document,'u'); assert.deepEqual(calls.splice(-1),[['toggle','closed']]);
@@ -144,7 +144,6 @@ test('section shortcuts toggle each sidebar section, scroll opened sections, and
     ['p','paste-raw-offer','raw-paste'],
     ['c','cta-assets','cta-enabled'],
     ['u','utm-link',null],
-    ['l','campaign-library',null],
     ['g','ai-copy','ai-prompt-type'],
     ['i','ai-copy','ai-prompt-type'],
     ['x','export-cards',null]
@@ -202,7 +201,7 @@ test('normal typing and unrelated section shortcuts remain blocked inside form f
 });
 
 test('all section shortcuts collapse their own open section when focus is inside that section', () => {
-  const cases=[['h','hero-image'],['c','cta-assets'],['u','utm-link'],['l','campaign-library'],['g','ai-copy'],['i','ai-copy'],['x','export-cards']];
+  const cases=[['h','hero-image'],['c','cta-assets'],['u','utm-link'],['g','ai-copy'],['i','ai-copy'],['x','export-cards']];
   for(const [key,section] of cases){
     const {calls,document}=setup();
     assert.equal(fire(document,key),true);
@@ -292,8 +291,7 @@ test('shortcuts help toggles with question mark, closes with Escape, and restore
   assert.equal(fire(document,'Escape'),true);
   assert.equal(modal.classList.active,false);
   assert.equal(calls.pop()[0],'focus-previous');
-  assert.equal(fire(document,'r'),true);
-  assert.deepEqual(calls.pop(),['refresh']);
+  assert.equal(fire(document,'r'),false);
 });
 
 test('Shortcuts button path reuses the existing modal and close controls', () => {

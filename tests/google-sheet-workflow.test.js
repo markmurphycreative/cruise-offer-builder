@@ -54,8 +54,9 @@ function createHarness({ savedSource = '', csv = 'operator,offer_name\nP&O,Carib
 
 test('Google Sheet input and actions replace the CSV URL workflow', () => {
   assert.match(html, /<label for="sheets-url">Google Sheet URL<\/label>/);
-  assert.match(html, /onclick="loadFromSheets\(\)">Load Sheet<\/button>/);
-  assert.match(html, /onclick="refreshOffers\(\)">Refresh Offers<\/button>/);
+  assert.match(html, /onclick="loadFromSheets\(\)"[^>]*>Load Sheet<\/button>/);
+  assert.doesNotMatch(html, /Refresh Offers/);
+  assert.doesNotMatch(html, /onclick="refreshOffers\(\)"/);
   assert.doesNotMatch(html, /Paste CSV URL first/);
 });
 
@@ -91,13 +92,6 @@ test('successful Sheet loads move focus from the action control to the shortcut-
   assert.equal(context.document.activeElement, app);
   assert.equal(app.focusOptions.preventScroll, true);
   assert.match(html, /<div class="app start-hidden" id="builder-app" aria-hidden="true" tabindex="-1">/);
-});
-
-test('successful Refresh Offers also moves focus to the shortcut-safe app container', async () => {
-  const { context, app } = createHarness({ savedSource: 'https://docs.google.com/spreadsheets/d/saved123/edit' });
-  context.document.activeElement = { tagName: 'BUTTON' };
-  assert.equal(await context.refreshOffers(), true);
-  assert.equal(context.document.activeElement, app);
 });
 
 test('Load Sheet uses the existing remote CSV fallback path and forwards successful response text to processSheetCSV', async () => {
@@ -176,23 +170,14 @@ test('saved source repopulates on startup without automatically loading offers',
   assert.doesNotMatch(html, /function initBuilderApp\(\)[\s\S]*?load\(0\);\s*restoreLastSuccessfulCsv\(\);/);
 });
 
-test('Refresh Offers uses the saved source instead of unsaved input changes', async () => {
+test('Load Sheet always uses the current input URL instead of the saved source', async () => {
   const savedSource = 'https://docs.google.com/spreadsheets/d/saved123/edit?gid=9';
-  const { context, status, input, fetched } = createHarness({ savedSource });
-  input.value = 'https://docs.google.com/spreadsheets/d/unsaved/edit';
-  assert.equal(await context.refreshOffers(), true);
-  assert.deepEqual(fetched, ['https://docs.google.com/spreadsheets/d/saved123/export?format=csv&gid=9']);
+  const { context, status, input, fetched, storage } = createHarness({ savedSource });
+  input.value = 'https://docs.google.com/spreadsheets/d/current123/edit?gid=4';
+  assert.equal(await context.loadFromSheets(), true);
+  assert.deepEqual(fetched, ['https://docs.google.com/spreadsheets/d/current123/export?format=csv&gid=4']);
+  assert.equal(storage.get('cobGoogleSheetSourceV1'), input.value);
   assert.equal(status.textContent, '✓ 1 offer loaded');
-});
-
-test('Refresh without a saved source is non-blocking and leaves offers unchanged', async () => {
-  const { context, status, fetched } = createHarness();
-  const before = context.offers;
-  assert.equal(await context.refreshOffers(), false);
-  assert.equal(status.className, '');
-  assert.equal(status.textContent, '');
-  assert.equal(context.offers, before);
-  assert.deepEqual(fetched, []);
 });
 
 test('failed normal Sheet load shows publish guidance and leaves existing campaign offers unchanged', async () => {
@@ -208,8 +193,7 @@ test('failed normal Sheet load shows publish guidance and leaves existing campai
 });
 
 test('failed import rolls back partially changed offers and campaign data', async () => {
-  const { context, status, campaign } = createHarness({
-    savedSource: 'https://docs.google.com/spreadsheets/d/saved123/edit',
+  const { context, status, campaign, input } = createHarness({
     processSheetCSV: (csv, loadedStatus) => {
       context.offers[0] = { name: 'Partial mutation' };
       campaign.value = 'Partial campaign mutation';
@@ -217,7 +201,8 @@ test('failed import rolls back partially changed offers and campaign data', asyn
       loadedStatus.textContent = 'bad import';
     }
   });
-  assert.equal(await context.refreshOffers(), false);
+  input.value = 'https://docs.google.com/spreadsheets/d/saved123/edit';
+  assert.equal(await context.loadFromSheets(), false);
   assert.equal(status.textContent, 'Load failed. Try the published Google Sheet link from File > Share > Publish to web.');
   assert.equal(context.offers[0].name, 'Existing offer');
   assert.equal(campaign.value, 'Existing campaign');
