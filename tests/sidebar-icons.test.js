@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const sectionHeaders = [...html.matchAll(/<div class="section-hdr(?: collapsed)?"[^>]*?(?:onclick="toggleSec\(this\)"|onclick="openSummary\(\)")[^>]*>\s*<h3>([\s\S]*?)<\/h3>(?:<span class="section-toggle">▾<\/span>)?/g)]
+const sectionHeaders = [...html.matchAll(/<div class="section-hdr(?: collapsed)?"[^>]*?>\s*<h3>([\s\S]*?)<\/h3>(?:<span class="section-toggle">▾<\/span>)?/g)]
   .map(([, heading]) => heading);
 
 const headingLabels = sectionHeaders.map(heading => heading
@@ -12,7 +12,7 @@ const headingLabels = sectionHeaders.map(heading => heading
   .trim());
 
 test('every sidebar section heading uses one inline monochrome SVG icon', () => {
-  assert.equal(sectionHeaders.length, 13);
+  assert.equal(sectionHeaders.length, 14);
   sectionHeaders.forEach(heading => {
     assert.match(heading, /^<svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24">[\s\S]*<\/svg>[^<]+(?:<span class="section-complete"[^>]*>✓<\/span>)?(?:<span class="export-health-count ready" id="export-health-count">Ready<\/span>)?$/);
     assert.doesNotMatch(heading, /\p{Extended_Pictographic}/u);
@@ -23,18 +23,19 @@ test('every sidebar section heading uses one inline monochrome SVG icon', () => 
 test('sidebar section names follow the primary workflow and use the requested display labels', () => {
   assert.deepEqual(headingLabels, [
     'Campaign Import',
-    'Campaign Presets',
-    'Operator Logo',
-    'Hero Image',
-    'Offer Details',
-    'CTA Assets',
     'Paste Offer',
     'MULTI OFFER IMPORT',
-    'Export Cards',
-    'Campaign Summary',
+    'Offer Details',
     'UTM Link',
+    'Export Cards',
+    'Operator Logo',
+    'Hero Image',
+    'CTA Assets',
     'Standard UTMs',
     'AI Copy',
+    'Campaign Summary',
+    'Manage Campaigns',
+    'Campaign Presets',
   ]);
 });
 
@@ -49,19 +50,19 @@ test('completion indicators tint existing icons without standalone checkmarks', 
 });
 
 test('required workflow headings expose the requested icon shapes', () => {
-  const [upload, save, logoAsset, image, fileText, ctaAssets, clipboardPaste] = sectionHeaders;
-  assert.match(upload, /<polyline points="17 8 12 3 7 8"><\/polyline>/);
-  assert.match(save, /<path d="M17 21v-8H7v8"><\/path>/);
-  assert.match(ctaAssets, /<rect width="18" height="10" x="3" y="7" rx="2"><\/rect>/);
-  assert.match(clipboardPaste, /<path d="m17 10 4 4-4 4"><\/path>/);
-  assert.match(logoAsset, /<circle cx="10" cy="13" r="2"><\/circle>/);
-  assert.match(image, /<circle cx="9" cy="9" r="2"><\/circle>/);
-  assert.match(fileText, /<path d="M16 13H8"><\/path>/);
+  const headingByLabel = Object.fromEntries(headingLabels.map((label, index) => [label, sectionHeaders[index]]));
+  assert.match(headingByLabel['Campaign Import'], /<polyline points="17 8 12 3 7 8"><\/polyline>/);
+  assert.match(headingByLabel['Campaign Presets'], /<path d="M17 21v-8H7v8"><\/path>/);
+  assert.match(headingByLabel['CTA Assets'], /<rect width="18" height="10" x="3" y="7" rx="2"><\/rect>/);
+  assert.match(headingByLabel['Paste Offer'], /<path d="m17 10 4 4-4 4"><\/path>/);
+  assert.match(headingByLabel['Operator Logo'], /<circle cx="10" cy="13" r="2"><\/circle>/);
+  assert.match(headingByLabel['Hero Image'], /<circle cx="9" cy="9" r="2"><\/circle>/);
+  assert.match(headingByLabel['Offer Details'], /<path d="M16 13H8"><\/path>/);
 });
 
 
 test('hero drop zone reuses the Hero Image heading SVG instead of an emoji', () => {
-  const heroImageSvg = sectionHeaders[3].match(/<svg[\s\S]*?<\/svg>/)[0];
+  const heroImageSvg = sectionHeaders[headingLabels.indexOf('Hero Image')].match(/<svg[\s\S]*?<\/svg>/)[0];
   const heroDropzone = html.match(/<div class="dropzone hero-dropzone"[\s\S]*?<img class="dz-thumb hero-t"/)[0];
   assert.match(heroDropzone, new RegExp(heroImageSvg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.doesNotMatch(heroDropzone, /🖼/);
