@@ -107,7 +107,6 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .section-body.hidden{display:none;}
 .reorder-group{margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;overflow:hidden;}
 .reorder-label{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 9px;background:var(--panel);cursor:default;user-select:none;list-style:none;}
-.reorder-group[open] .reorder-label{background:rgba(160,146,103,.12);box-shadow:inset 2px 0 0 var(--gold);}
 .reorder-label h3{font-size:10px;font-weight:400;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);display:flex;align-items:center;gap:6px;min-width:0;}
 .reorder-label::-webkit-details-marker{display:none;}
 .reorder-actions{margin-left:auto;display:flex;align-items:center;gap:2px;}
@@ -566,8 +565,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .sum-ok{color:var(--green);font-weight:700;}
 .sum-warn{color:var(--amber);font-weight:700;}
 .sum-bad{color:var(--red);font-weight:700;}
-.summary-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;padding:0 16px 16px;background:#fff;}
-.summary-btn{padding:8px 10px;font-size:10px;font-weight:400;letter-spacing:.04em;border-radius:var(--radius);border:1px solid var(--border);background:#fff;color:var(--navy);text-transform:uppercase;}
+.summary-actions,.modal-footer-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;padding:12px 16px 16px;background:#fff;border-top:1px solid rgba(216,210,199,.72);}
+.summary-btn{display:inline-flex;align-items:center;justify-content:center;min-height:34px;width:100%;padding:8px 10px;font-size:10px;font-weight:400;letter-spacing:.04em;border-radius:var(--radius);border:1px solid var(--border);background:#fff;color:var(--navy);text-transform:uppercase;cursor:pointer;}
 .summary-btn.primary{background:var(--gold);border-color:var(--gold);color:#fff;}
 @media (max-width:520px){
   .session-restore-actions{grid-template-columns:1fr;}
@@ -802,6 +801,10 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
     </div>
 
 
+    <!-- ── REORDER CARDS ── -->
+    <div class="reorder-group">
+      <div class="reorder-label"><h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="m3 6 1 1 2-2"></path><path d="m3 12 1 1 2-2"></path><path d="m3 18 1 1 2-2"></path></svg>Reorder Cards</h3><div class="reorder-actions" aria-label="Reorder selected card"><button class="abtn reorder-btn" id="move-left-btn" onclick="moveOfferLeft()" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button><button class="abtn reorder-btn" id="move-right-btn" onclick="moveOfferRight()" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button></div></div>
+    </div>
 
     <!-- ── EXPORT CARDS ── -->
     <div class="section export-section" data-section-key="export-cards">
@@ -973,11 +976,6 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         <div class="field"><label>CTA Text</label><input id="cta-text" spellcheck="true" placeholder="Click To Call Us For More Info" oninput="ctaSettingsChanged()"></div>
         <div class="field"><label>CTA Phone Number</label><input id="cta-phone" inputmode="tel" placeholder="01912229701" oninput="ctaSettingsChanged()"></div>
       </div>
-    </div>
-
-    <!-- ── REORDER CARDS ── -->
-    <div class="reorder-group">
-      <div class="reorder-label"><h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="m3 6 1 1 2-2"></path><path d="m3 12 1 1 2-2"></path><path d="m3 18 1 1 2-2"></path></svg>Reorder Cards</h3><div class="reorder-actions" aria-label="Reorder selected card"><button class="abtn reorder-btn" id="move-left-btn" onclick="moveOfferLeft()" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button><button class="abtn reorder-btn" id="move-right-btn" onclick="moveOfferRight()" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button></div></div>
     </div>
 
     <div class="section" data-section-key="standard-utms">
@@ -1170,7 +1168,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
         </section>
       </div>
     </div>
-    <div class="summary-actions">
+    <div class="summary-actions modal-footer-actions">
       <button class="summary-btn primary" type="button" onclick="refreshCampaignHistoryUI()">Refresh</button>
       <button class="summary-btn" type="button" onclick="openDetachedManageCampaignsWindow()">Open in New Window</button>
     </div>
@@ -1214,7 +1212,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
       <button class="summary-close" type="button" aria-label="Close summary" onclick="closeModal('summary-modal')">×</button>
     </div>
     <div class="summary-body" id="summary-content"></div>
-    <div class="summary-actions">
+    <div class="summary-actions modal-footer-actions">
       <button class="summary-btn" type="button" onclick="openDetachedSummaryWindow()">Open in New Window</button>
       <button class="summary-btn" type="button" onclick="copyAllUtms()">Copy All UTMs</button>
     </div>
@@ -8688,8 +8686,30 @@ function isQuestionMarkShortcut(event){
 function isCampaignSummaryShortcut(event){
   return event.key.toLowerCase() === 'm' && !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey;
 }
+
+function getActiveBuilderModal(){
+  if(!document.querySelectorAll) return null;
+  const activeModals=Array.from(document.querySelectorAll('.modal-overlay.active'));
+  return activeModals.length ? activeModals[activeModals.length - 1] : null;
+}
+function closeActiveBuilderModal(modal){
+  const activeModal=modal || getActiveBuilderModal();
+  if(!activeModal) return false;
+  if(activeModal.id === 'shortcuts-modal') closeShortcutsModal();
+  else if(activeModal.id === 'manage-campaigns-modal') closeManageCampaignsModal();
+  else if(activeModal.id === 'summary-modal') closeModal('summary-modal');
+  else activeModal.classList.remove('active');
+  return true;
+}
+function isCloseWindowShortcut(event){
+  return !!((event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && String(event.key || '').toLowerCase() === 'w');
+}
 function handleKeyboardShortcut(event){
   if(event.defaultPrevented) return;
+  if(isCloseWindowShortcut(event) && closeActiveBuilderModal()){
+    event.preventDefault();
+    return;
+  }
   const shortcutsModal=document.getElementById('shortcuts-modal');
   if(shortcutsModal && shortcutsModal.classList.contains('active')){
     if(event.key === 'Escape' || isQuestionMarkShortcut(event)){
