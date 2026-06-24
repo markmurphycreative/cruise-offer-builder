@@ -12,7 +12,7 @@ const headingLabels = sectionHeaders.map(heading => heading
   .trim());
 
 test('every sidebar section heading uses one inline monochrome SVG icon', () => {
-  assert.equal(sectionHeaders.length, 14);
+  assert.equal(sectionHeaders.length, 15);
   sectionHeaders.forEach(heading => {
     assert.match(heading, /^<svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24">[\s\S]*<\/svg>[^<]+(?:<span class="section-complete"[^>]*>✓<\/span>)?(?:<span class="export-health-count ready" id="export-health-count">Ready<\/span>)?$/);
     assert.doesNotMatch(heading, /\p{Extended_Pictographic}/u);
@@ -27,6 +27,7 @@ test('sidebar section names follow the primary workflow and use the requested di
     'MULTI OFFER IMPORT',
     'Offer Details',
     'UTM Link',
+    'Reorder Cards',
     'Export Cards',
     'Operator Logo',
     'Hero Image',

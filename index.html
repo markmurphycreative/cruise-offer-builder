@@ -105,11 +105,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .section-hdr.collapsed .section-toggle{color:var(--muted);transform:rotate(-90deg);}
 .section-body{padding:7px 9px;}
 .section-body.hidden{display:none;}
-.reorder-group{margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;overflow:hidden;}
-.reorder-label{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 9px;background:var(--panel);cursor:default;user-select:none;list-style:none;}
-.reorder-label h3{font-size:10px;font-weight:400;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);display:flex;align-items:center;gap:6px;min-width:0;}
-.reorder-label::-webkit-details-marker{display:none;}
-.reorder-actions{margin-left:auto;display:flex;align-items:center;gap:2px;}
+.reorder-group{background:#fafaf8;}
+.reorder-actions{display:flex;align-items:center;gap:4px;}
 .reorder-actions.empty-hidden{display:none;}
 .reorder-btn{flex:0 0 20px;}
 .reorder-btn.abtn{flex:0 0 20px;width:20px;height:18px;min-height:0;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:3px;background:transparent;color:rgba(14,27,42,.68);box-shadow:none;letter-spacing:0;}
@@ -802,8 +799,13 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
 
 
     <!-- ── REORDER CARDS ── -->
-    <div class="reorder-group">
-      <div class="reorder-label"><h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="m3 6 1 1 2-2"></path><path d="m3 12 1 1 2-2"></path><path d="m3 18 1 1 2-2"></path></svg>Reorder Cards</h3><div class="reorder-actions" aria-label="Reorder selected card"><button class="abtn reorder-btn" id="move-left-btn" onclick="moveOfferLeft()" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button><button class="abtn reorder-btn" id="move-right-btn" onclick="moveOfferRight()" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button></div></div>
+    <div class="section reorder-group" data-section-key="reorder-cards">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="m3 6 1 1 2-2"></path><path d="m3 12 1 1 2-2"></path><path d="m3 18 1 1 2-2"></path></svg>Reorder Cards</h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body hidden">
+        <div class="reorder-actions" aria-label="Reorder selected card"><button class="abtn reorder-btn" id="move-left-btn" onclick="moveOfferLeft()" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button><button class="abtn reorder-btn" id="move-right-btn" onclick="moveOfferRight()" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button></div>
+      </div>
     </div>
 
     <!-- ── EXPORT CARDS ── -->
