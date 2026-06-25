@@ -95,6 +95,15 @@ test('fit image centres non-overflowing axes and pans overflowing axes', () => {
   assertClose(zoomedRight.top, (frame[1] - zoomedRight.height) / 2, 'non-overflowing vertical axis stays centred after fit zoom');
 });
 
+
+test('route map crop engine uses the rendered route map viewport instead of hero dimensions', () => {
+  assert.match(html, /itinerary:\{[^}]+viewport:\{width:1076,height:620\}/);
+  assert.match(html, /hero:\{[^}]+viewport:\{width:1200,height:849\}/);
+  assert.match(extractFunction('applyHeroCropPositions'), /applyEditableImageCropToImage\(img,img\.closest\('\.itinerary-wrap'\),620,'itinerary'\)/);
+  assert.match(extractFunction('applyEditableImageCropToImage'), /const viewport=getEditableImageViewport\(type\|\|"hero"\)/);
+  assert.match(extractFunction('applyEditableImageCropToImage'), /frameWidth=wrap\.offsetWidth\|\|wrap\.clientWidth\|\|frame\.width\|\|viewport\.width/);
+});
+
 test('hero crop rendering uses the restored img source path rather than background-image helpers', () => {
   const css = html.match(/\.cc \.hero\{[^}]+\}/)[0];
   const renderCard = extractFunction('renderCardHTML');
