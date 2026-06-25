@@ -178,7 +178,7 @@ test('optional itinerary image renders between offer details and Youll Visit onl
   const cardWithItinerary = renderCardHTML({ operator: 'ncl', _img: 'data:image/jpeg;base64,hero', _itineraryImg: 'data:image/png;base64,map' });
 
   assert.doesNotMatch(cardWithoutItinerary, /itinerary-wrap/);
-  assert.match(cardWithItinerary, /<div class="route-map-section" style=""><img class="itinerary-img" src="data:image\/png;base64,map"/);
+  assert.match(cardWithItinerary, /<div class="route-map-section" style="background:#eef2e8;"><img class="itinerary-img" src="data:image\/png;base64,map"/);
   assert.ok(cardWithItinerary.indexOf('<div class="ibar">') < cardWithItinerary.indexOf('<div class="route-map-section"'));
   assert.ok(cardWithItinerary.indexOf('<div class="route-map-section"') < cardWithItinerary.indexOf('<div class="vsec">'));
 });
@@ -186,8 +186,10 @@ test('optional itinerary image renders between offer details and Youll Visit onl
 test('route map upload resolves against the offer active when the file was selected', () => {
   const readFileSource = extractFunction('readFile');
   assert.match(readFileSource, /const targetOfferIndex=cur;/);
-  assert.match(readFileSource, /offers\[targetOfferIndex\]\._itineraryImg=src/);
-  assert.match(readFileSource, /offers\[targetOfferIndex\]\._itineraryFitMode="fit"/);
-  assert.match(readFileSource, /if\(targetOfferIndex===cur\)\{ setThumb\("itinerary",src\); syncItineraryUi\(\); \}/);
+  assert.match(readFileSource, /normaliseRouteMapImageSource\(src\)\.then\(normalisedSrc=>applyRouteMapImageSourceToOffer\(normalisedSrc,targetOfferIndex\)\)/);
+  const applyRouteMapSource = extractFunction('applyRouteMapImageSourceToOffer');
+  assert.match(applyRouteMapSource, /offers\[offerIndex\]\._itineraryImg=src/);
+  assert.match(applyRouteMapSource, /offers\[offerIndex\]\._itineraryFitMode="fill"/);
+  assert.match(applyRouteMapSource, /if\(offerIndex===cur\)\{ setThumb\("itinerary",src\); syncItineraryUi\(\); \}/);
   assert.doesNotMatch(readFileSource, /offers\[cur\]\._itineraryImg=src/);
 });

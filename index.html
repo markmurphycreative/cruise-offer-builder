@@ -596,8 +596,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cc .operator-logo-fallback{font-family:'Montserrat',sans-serif;font-size:58px;font-weight:500;letter-spacing:.12em;line-height:1.15;color:#fff;text-align:center;}
 .cc .hero-wrap{width:1200px;height:849px;overflow:hidden;position:relative;background:var(--operator-bg,var(--navy));line-height:0;}
 .cc .hero{width:100%;height:calc(100% + 1px);object-fit:cover;display:block;position:absolute;top:-1px;left:0;transform-origin:center center;}
-.cc .route-map-section{width:1200px;height:620px;background:#fff;box-sizing:border-box;padding:0;overflow:hidden;position:relative;display:block;line-height:0;}
-.cc .itinerary-wrap{width:100%;height:100%;overflow:hidden;position:relative;background:#fff;line-height:0;display:block;}
+.cc .route-map-section{width:1200px;height:620px;background:#eef2e8;box-sizing:border-box;padding:0;overflow:hidden;position:relative;display:block;line-height:0;}
+.cc .itinerary-wrap{width:100%;height:100%;overflow:hidden;position:relative;background:#eef2e8;line-height:0;display:block;}
 .cc .hero{max-width:none;max-height:none;}
 .cc .itinerary-img{width:100%;height:100%;object-fit:fill;object-position:center center;display:block;position:absolute;left:0;top:0;max-width:none;max-height:none;}
 .cc .hph{width:1200px;height:849px;background:#435465;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;}
@@ -987,7 +987,7 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
           </div>
         </div>
         <div class="hero-thumb-dimensions" id="itinerary-image-dimensions"></div>
-        <div class="hero-thumb-helper" id="itinerary-thumb-helper">Thumbnail shows full source image. Card preview shows cropped result.</div>
+        <div class="hero-thumb-helper" id="itinerary-thumb-helper">Route Maps are normalised to a fixed 1200 × 620px frame on import.</div>
         <div class="hero-crop-status" id="itinerary-crop-status" aria-live="polite">
           <div class="hero-crop-status-item"><span class="hero-crop-status-label">Zoom</span><span class="hero-crop-status-value" id="itinerary-crop-status-zoom">100%</span></div>
           <div class="hero-crop-status-item"><span class="hero-crop-status-label">Mode</span><span class="hero-crop-status-value" id="itinerary-crop-status-mode">Fill Frame</span></div>
@@ -2182,7 +2182,7 @@ function normalizeCropPositionForOffer(offer){
   offer._itineraryCropZoom=Math.max(100,Math.min(200,parseInt(offer._itineraryCropZoom??100,10)));
   offer._itineraryCropX=Math.max(0,Math.min(100,parseInt(offer._itineraryCropX??50,10)));
   offer._itineraryCropY=Math.max(0,Math.min(100,parseInt(offer._itineraryCropY??50,10)));
-  offer._itineraryFitMode=offer._itineraryFitMode==="fill"?"fill":"fit";
+  offer._itineraryFitMode=offer._itineraryFitMode==="fit"?"fit":"fill";
 }
 function load(i){
   normalizeCropPositionForOffer(offers[i]);
@@ -2203,7 +2203,7 @@ function load(i){
   setEditableImageControlValue("itinerary","x",offers[i]._itineraryCropX??50);
   setEditableImageControlValue("itinerary","y",offers[i]._itineraryCropY??50);
   if(!offers[i]._heroFitMode) offers[i]._heroFitMode="fill";
-  if(!offers[i]._itineraryFitMode) offers[i]._itineraryFitMode="fit";
+  if(!offers[i]._itineraryFitMode) offers[i]._itineraryFitMode="fill";
   syncHeroUi();
   syncItineraryUi();
   updateHeroImageLockUI();
@@ -2466,6 +2466,50 @@ function readHeroDropFile(file,index){
   r.readAsDataURL(file);
   return true;
 }
+function normaliseRouteMapImageSource(src){
+  return new Promise(resolve=>{
+    const cfg=getEditableImageConfig("itinerary");
+    const viewport=getEditableImageViewport("itinerary");
+    const canvas=document.createElement("canvas");
+    canvas.width=viewport.width;
+    canvas.height=viewport.height;
+    const ctx=canvas.getContext&&canvas.getContext("2d");
+    if(!ctx){ resolve(src); return; }
+    const img=new Image();
+    img.onload=()=>{
+      const naturalWidth=img.naturalWidth||img.width;
+      const naturalHeight=img.naturalHeight||img.height;
+      ctx.fillStyle=cfg.background||"#eef2e8";
+      ctx.fillRect(0,0,viewport.width,viewport.height);
+      if(naturalWidth&&naturalHeight){
+        const scale=Math.min(viewport.width/naturalWidth,viewport.height/naturalHeight);
+        const width=naturalWidth*scale;
+        const height=naturalHeight*scale;
+        const left=(viewport.width-width)/2;
+        const top=(viewport.height-height)/2;
+        ctx.drawImage(img,left,top,width,height);
+      }
+      try{ resolve(canvas.toDataURL("image/png")); }
+      catch(_err){ resolve(src); }
+    };
+    img.onerror=()=>resolve(src);
+    img.src=src;
+  });
+}
+function applyRouteMapImageSourceToOffer(src,index){
+  const offerIndex=Number(index);
+  if(!Number.isInteger(offerIndex)||offerIndex<0||offerIndex>=offers.length) return false;
+  offers[offerIndex]=offers[offerIndex]||{};
+  offers[offerIndex]._itineraryImg=src;
+  offers[offerIndex]._itineraryCropZoom=100;
+  offers[offerIndex]._itineraryCropX=50;
+  offers[offerIndex]._itineraryCropY=50;
+  offers[offerIndex]._itineraryFitMode="fill";
+  if(offerIndex===cur){ setThumb("itinerary",src); syncItineraryUi(); }
+  refreshOfferUi({utm:false,spell:false});
+  if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Route map change");
+  return true;
+}
 function clearHeroDragOver(target){
   if(target&&target.classList) target.classList.remove("hero-drag-over");
 }
@@ -2551,7 +2595,10 @@ function readFile(file,type){
     const r=new FileReader(); r.onload=ev=>{
       const src=ev.target.result;
       if(type==="logo"){ offers[targetOfferIndex]._logoCustom=src; if(!offers[targetOfferIndex]._logoSize) offers[targetOfferIndex]._logoSize=50; if(targetOfferIndex===cur){ setThumb("logo",src); document.getElementById("logo-size-row").style.display="flex"; } }
-      else if(type==="itinerary"){ offers[targetOfferIndex]._itineraryImg=src; offers[targetOfferIndex]._itineraryCropZoom=100; offers[targetOfferIndex]._itineraryCropX=50; offers[targetOfferIndex]._itineraryCropY=50; offers[targetOfferIndex]._itineraryFitMode="fit"; if(targetOfferIndex===cur){ setThumb("itinerary",src); syncItineraryUi(); } }
+      else if(type==="itinerary"){
+        normaliseRouteMapImageSource(src).then(normalisedSrc=>applyRouteMapImageSourceToOffer(normalisedSrc,targetOfferIndex));
+        return;
+      }
       else{ offers[targetOfferIndex]._img=src; offers[targetOfferIndex]._cropZoom=100; offers[targetOfferIndex]._cropX=50; offers[targetOfferIndex]._cropY=50; offers[targetOfferIndex]._cropPosVersion=2; offers[targetOfferIndex]._heroFitMode="fill"; if(targetOfferIndex===cur){ setThumb("hero",src); syncHeroUi(); } }
       refreshOfferUi({utm:false,spell:false}); if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange(type==="hero"?"Hero image change":(type==="itinerary"?"Route map change":"Logo image change"));
     }; r.readAsDataURL(file);
@@ -2624,7 +2671,7 @@ const CROP_CONTROLS={
 };
 const EDITABLE_IMAGE_CONFIG={
   hero:{imageKey:"_img",zoomKey:"_cropZoom",xKey:"_cropX",yKey:"_cropY",modeKey:"_heroFitMode",prefix:"hero",controlsPrefix:"crop",label:"Hero image",historyLabel:"Hero",viewport:{width:1200,height:849},defaultFitMode:"fill"},
-  itinerary:{imageKey:"_itineraryImg",zoomKey:"_itineraryCropZoom",xKey:"_itineraryCropX",yKey:"_itineraryCropY",modeKey:"_itineraryFitMode",prefix:"itinerary",controlsPrefix:"itinerary-crop",label:"Route Map",historyLabel:"Route map",viewport:{width:1200,height:620},defaultFitMode:"fit"}
+  itinerary:{imageKey:"_itineraryImg",zoomKey:"_itineraryCropZoom",xKey:"_itineraryCropX",yKey:"_itineraryCropY",modeKey:"_itineraryFitMode",prefix:"itinerary",controlsPrefix:"itinerary-crop",label:"Route Map",historyLabel:"Route map",viewport:{width:1200,height:620},defaultFitMode:"fill",background:"#eef2e8"}
 };
 function getEditableImageConfig(type){ return EDITABLE_IMAGE_CONFIG[type]||EDITABLE_IMAGE_CONFIG.hero; }
 
@@ -2892,7 +2939,7 @@ function renderEditableImageHTML(type,d){
   const frameClass=type==="itinerary"?"route-map-section":"hero-wrap";
   const imgClass=type==="itinerary"?"itinerary-img":"hero";
   const dataHero=type==="hero"?` data-hero-src="${escapeAttr(src)}"`:"";
-  const frameStyle=type==="hero"&&fitMode==="fit"?"background:#0e1b2a;":"";
+  const frameStyle=type==="itinerary"?`background:${cfg.background||"#eef2e8"};`:(type==="hero"&&fitMode==="fit"?"background:#0e1b2a;":"");
   const errorHandler=type==="itinerary"?"this.closest('.route-map-section').remove()":"this.parentElement.innerHTML='<div class=hph><span>Image failed to load</span></div>'";
   return `<div class="${frameClass}" style="${frameStyle}"><img class="${imgClass}" src="${escapeAttr(src)}"${dataHero} data-editable-image-type="${type}" data-crop-x="${cx}" data-crop-y="${cy}" data-crop-zoom="${cz}" data-fit-mode="${fitMode}" style="object-fit:fill;object-position:50% 50%;transform:none;left:0;top:0;width:100%;height:100%;" onload="if(typeof applyHeroCropPositions==='function') applyHeroCropPositions(document)" onerror="${errorHandler}"></div>`;
 }
@@ -2926,8 +2973,7 @@ function applyEditableImageCropToImage(img,wrap,fallbackHeight,type){
     wrap.style.width=viewport.width+'px';
     wrap.style.height=viewport.height+'px';
     frameHeight=viewport.height;
-    const artworkBounds=type==="itinerary"&&img.dataset.fitMode==="fit"?detectRouteMapArtworkBounds(img):null;
-    layout=calculateRouteMapImageLayout(frameWidth,frameHeight,naturalWidth,naturalHeight,img.dataset.cropX,img.dataset.cropY,img.dataset.cropZoom,img.dataset.fitMode,artworkBounds);
+    layout=calculateRouteMapImageLayout(frameWidth,frameHeight,naturalWidth,naturalHeight,img.dataset.cropX,img.dataset.cropY,img.dataset.cropZoom,img.dataset.fitMode,null);
   }else{
     const adjustedFrame=wrap.getBoundingClientRect ? wrap.getBoundingClientRect() : {width:frameWidth,height:0};
     frameHeight=wrap.offsetHeight||wrap.clientHeight||adjustedFrame.height||fallbackHeight||viewport.height;

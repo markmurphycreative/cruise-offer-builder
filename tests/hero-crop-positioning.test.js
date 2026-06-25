@@ -162,6 +162,7 @@ test('hero upload thumbnail shows the full source image and helper metadata', ()
   assert.match(html, /\.dz-thumb\.hero-t\{object-fit:contain/);
   assert.doesNotMatch(html, /\.dz-thumb\.hero-t\{object-fit:cover/);
   assert.match(html, /Thumbnail shows full source image\. Card preview shows cropped result\./);
+  assert.match(html, /Route Maps are normalised to a fixed 1200 × 620px frame on import\./);
   assert.match(extractFunction('updateHeroThumbInfo'), /dims\.textContent="Image: "\+w\+" × "\+h\+"px"/);
 });
 
@@ -260,9 +261,12 @@ test('copy and paste crop transfers zoom, position and fill fit mode between off
   assert.equal(context.elements['hero-crop-status-mode'].textContent, 'Fit Image');
 });
 
-test('route maps default to fit image instead of fill frame', () => {
-  assert.match(html, /itinerary:\{[\s\S]*?defaultFitMode:"fit"/);
-  assert.match(extractFunction('normalizeCropPositionForOffer'), /offer\._itineraryFitMode=offer\._itineraryFitMode==="fill"\?"fill":"fit"/);
+test('route maps default to the fixed imported frame instead of fitting source images at render time', () => {
+  assert.match(html, /itinerary:\{[\s\S]*?defaultFitMode:"fill"[\s\S]*?background:"#eef2e8"/);
+  assert.match(extractFunction('normalizeCropPositionForOffer'), /offer\._itineraryFitMode=offer\._itineraryFitMode==="fit"\?"fit":"fill"/);
+  assert.match(extractFunction('normaliseRouteMapImageSource'), /canvas\.width=viewport\.width/);
+  assert.match(extractFunction('normaliseRouteMapImageSource'), /canvas\.height=viewport\.height/);
+  assert.match(extractFunction('normaliseRouteMapImageSource'), /const scale=Math\.min\(viewport\.width\/naturalWidth,viewport\.height\/naturalHeight\)/);
   assert.match(extractFunction('renderEditableImageHTML'), /const fitMode=d\[cfg\.modeKey\]==="fit"\?"fit":"fill"/);
 });
 
@@ -296,10 +300,10 @@ test('fit image leaves fill frame calculations unchanged when artwork bounds are
   assert.deepEqual(withBounds, withoutBounds);
 });
 
-test('route map fit image detects artwork bounds before applying contain layout', () => {
-  assert.match(extractFunction('applyEditableImageCropToImage'), /type==="itinerary"&&img\.dataset\.fitMode==="fit"\?detectRouteMapArtworkBounds\(img\):null/);
-  assert.match(extractFunction('calculateHeroCropLayout'), /normaliseArtworkBounds\(artworkBounds,nw,nh\)/);
-  assert.match(extractFunction('detectRouteMapArtworkBounds'), /r>245&&g>245&&b>245/);
+test('route map rendering bypasses source artwork-bound detection after import normalisation', () => {
+  assert.match(extractFunction('applyEditableImageCropToImage'), /calculateRouteMapImageLayout\(frameWidth,frameHeight,naturalWidth,naturalHeight,img\.dataset\.cropX,img\.dataset\.cropY,img\.dataset\.cropZoom,img\.dataset\.fitMode,null\)/);
+  assert.match(extractFunction('calculateRouteMapImageLayout'), /const fixedFrameHeight=viewport\.height/);
+  assert.match(extractFunction('normaliseRouteMapImageSource'), /ctx\.fillStyle=cfg\.background\|\|"#eef2e8"/);
 });
 
 test('route map viewport stays fixed instead of adapting to uploaded artwork aspect ratio', () => {
