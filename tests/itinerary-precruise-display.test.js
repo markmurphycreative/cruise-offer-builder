@@ -92,6 +92,9 @@ function createRenderContext() {
     extractFunction('renderCruiseTitle'),
     extractFunction('escapeAttr'),
     extractFunction('getItineraryImageSource'),
+    html.slice(html.indexOf('const EDITABLE_IMAGE_CONFIG='), html.indexOf('function getEditableImageViewport')),
+    extractFunction('getEditableImageConfig'),
+    extractFunction('renderEditableImageHTML'),
     extractFunction('renderItineraryImageHTML'),
     extractFunction('renderCardHTML'),
     extractFunction('bc')

@@ -99,7 +99,7 @@ test('fit image centres non-overflowing axes and pans overflowing axes', () => {
 test('route map crop engine uses the full edge-to-edge route map viewport instead of hero dimensions', () => {
   assert.match(html, /itinerary:\{[^}]+viewport:\{width:1200,height:620\}/);
   assert.match(html, /hero:\{[^}]+viewport:\{width:1200,height:849\}/);
-  assert.match(extractFunction('applyHeroCropPositions'), /applyEditableImageCropToImage\(img,img\.closest\('\.itinerary-wrap'\),620,'itinerary'\)/);
+  assert.match(extractFunction('applyHeroCropPositions'), /applyEditableImageCropToImage\(img,img\.closest\('\.route-map-section'\),null,'itinerary'\)/);
   assert.match(extractFunction('applyEditableImageCropToImage'), /const viewport=getEditableImageViewport\(type\|\|"hero"\)/);
   assert.match(extractFunction('applyEditableImageCropToImage'), /frameWidth=wrap\.offsetWidth\|\|wrap\.clientWidth\|\|frame\.width\|\|viewport\.width/);
 });
@@ -107,27 +107,27 @@ test('route map crop engine uses the full edge-to-edge route map viewport instea
 test('hero crop rendering uses the restored img source path rather than background-image helpers', () => {
   const css = html.match(/\.cc \.hero\{[^}]+\}/)[0];
   const renderCard = extractFunction('renderCardHTML');
-  const renderHero = extractFunction('renderHeroHTML');
+  const renderHero = extractFunction('renderEditableImageHTML');
   const applyCrop = extractFunction('applyHeroCropPositions');
 
   assert.match(renderCard, /renderHeroHTML\(d, heroPlaceholder\)/);
-  assert.match(renderHero, /<img class="hero" src="\$\{escapeAttr\(heroSrc\)\}"/);
-  assert.match(renderHero, /data-hero-src="\$\{escapeAttr\(heroSrc\)\}"/);
+  assert.match(renderHero, /<img class="\$\{imgClass\}" src="\$\{escapeAttr\(src\)\}"/);
+  assert.match(renderHero, /dataHero=type==="hero"/);
   assert.doesNotMatch(renderHero, /background-image|cssUrl/);
   assert.match(css, /object-fit:cover/);
   assert.match(css, /position:absolute/);
   assert.doesNotMatch(css, /background-repeat|background-position|background-size/);
   assert.match(applyCrop, /scope\.querySelectorAll\('\.hero-wrap img\.hero'\)/);
-  assert.match(applyCrop, /img\.style\.width=layout\.width\+'px'/);
-  assert.match(applyCrop, /img\.style\.left=layout\.left\+'px'/);
+  assert.match(extractFunction('applyEditableImageCropToImage'), /img\.style\.width=layout\.width\+'px'/);
+  assert.match(extractFunction('applyEditableImageCropToImage'), /img\.style\.left=layout\.left\+'px'/);
   assert.doesNotMatch(applyCrop, /backgroundSize|backgroundPosition/);
 });
 
 test('preview and export share the same img crop application path', () => {
-  const renderHero = extractFunction('renderHeroHTML');
+  const renderHero = extractFunction('renderEditableImageHTML');
   assert.match(extractFunction('renderCardHTML'), /renderHeroHTML\(d, heroPlaceholder\)/);
   assert.match(renderHero, /data-crop-x="\$\{cx\}"/);
-  assert.match(renderHero, /data-fit-mode="\$\{heroFitMode\}"/);
+  assert.match(renderHero, /data-fit-mode="\$\{fitMode\}"/);
   assert.match(extractFunction('renderVisibleCard'), /scheduleHeroCropPositions\(out\)/);
   assert.match(extractFunction('renderCardToImageBlob'), /scheduleHeroCropPositions\(wrap\)/);
   assert.doesNotMatch(extractFunction('renderCardToImageBlob'), /heroBackgrounds|new Image\(\)/);
@@ -259,7 +259,7 @@ test('copy and paste crop transfers zoom, position and fill fit mode between off
 test('route maps default to fit image instead of fill frame', () => {
   assert.match(html, /itinerary:\{[\s\S]*?defaultFitMode:"fit"/);
   assert.match(extractFunction('normalizeCropPositionForOffer'), /offer\._itineraryFitMode=offer\._itineraryFitMode==="fill"\?"fill":"fit"/);
-  assert.match(extractFunction('renderItineraryImageHTML'), /const fitMode=d\._itineraryFitMode==="fit"\?"fit":"fill"/);
+  assert.match(extractFunction('renderEditableImageHTML'), /const fitMode=d\[cfg\.modeKey\]==="fit"\?"fit":"fill"/);
 });
 
 test('fit image preserves full Malta-style route map visibility by default', () => {
