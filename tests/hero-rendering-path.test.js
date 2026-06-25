@@ -48,6 +48,9 @@ function createRenderContext(extra = {}) {
     extractFunction('escapeAttr'),
     extractFunction('getHeroImageSource'),
     extractFunction('getItineraryImageSource'),
+    html.slice(html.indexOf('const EDITABLE_IMAGE_CONFIG='), html.indexOf('function getEditableImageViewport')),
+    extractFunction('getEditableImageConfig'),
+    extractFunction('renderEditableImageHTML'),
     extractFunction('renderItineraryImageHTML'),
     extractFunction('renderHeroHTML'),
     extractFunction('renderCardHTML')
@@ -175,9 +178,9 @@ test('optional itinerary image renders between offer details and Youll Visit onl
   const cardWithItinerary = renderCardHTML({ operator: 'ncl', _img: 'data:image/jpeg;base64,hero', _itineraryImg: 'data:image/png;base64,map' });
 
   assert.doesNotMatch(cardWithoutItinerary, /itinerary-wrap/);
-  assert.match(cardWithItinerary, /<div class="route-map-section"><div class="itinerary-wrap"><img class="itinerary-img" src="data:image\/png;base64,map"/);
-  assert.ok(cardWithItinerary.indexOf('<div class="ibar">') < cardWithItinerary.indexOf('<div class="itinerary-wrap">'));
-  assert.ok(cardWithItinerary.indexOf('<div class="itinerary-wrap">') < cardWithItinerary.indexOf('<div class="vsec">'));
+  assert.match(cardWithItinerary, /<div class="route-map-section" style=""><img class="itinerary-img" src="data:image\/png;base64,map"/);
+  assert.ok(cardWithItinerary.indexOf('<div class="ibar">') < cardWithItinerary.indexOf('<div class="route-map-section"'));
+  assert.ok(cardWithItinerary.indexOf('<div class="route-map-section"') < cardWithItinerary.indexOf('<div class="vsec">'));
 });
 
 test('route map upload resolves against the offer active when the file was selected', () => {
