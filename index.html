@@ -2538,7 +2538,7 @@ function enhanceClickableHeroPlaceholders(root, offerIndex){
 }
 function readFile(file,type){
   const targetOfferIndex=cur;
-  if((type==="hero"||type==="itinerary") && typeof isOfferLocked==="function" && isOfferLocked(targetOfferIndex)) return showOfferLockStatus(targetOfferIndex);
+  if(type==="hero" && typeof isOfferLocked==="function" && isOfferLocked(targetOfferIndex)) return showOfferLockStatus(targetOfferIndex);
   const isSvg=file.type==="image/svg+xml"||file.name.endsWith(".svg");
   if(type==="logo"&&isSvg){
     const r=new FileReader(); r.onload=ev=>{
@@ -2906,6 +2906,12 @@ function renderHeroHTML(d, heroPlaceholder){
     ? `<div class="hph"><span>${heroPlaceholder[0]}</span><span>${heroPlaceholder[1]}</span></div>`
     : `<div class="hph"><span></span></div>`;
 }
+function calculateRouteMapImageLayout(frameWidth, frameHeight, naturalWidth, naturalHeight, cropX, cropY, cropZoom, fitMode, artworkBounds){
+  const viewport=getEditableImageViewport("itinerary");
+  const fixedFrameWidth=Math.max(1,Number(frameWidth)||viewport.width);
+  const fixedFrameHeight=viewport.height;
+  return calculateHeroCropLayout(fixedFrameWidth,fixedFrameHeight,naturalWidth,naturalHeight,cropX,cropY,cropZoom,fitMode,artworkBounds);
+}
 function applyEditableImageCropToImage(img,wrap,fallbackHeight,type){
   if(!wrap) return;
   const frame=wrap.getBoundingClientRect ? wrap.getBoundingClientRect() : {width:0,height:0};
@@ -2914,13 +2920,19 @@ function applyEditableImageCropToImage(img,wrap,fallbackHeight,type){
   const naturalWidth=img.naturalWidth||parseFloat(img.getAttribute('width'))||frameWidth;
   const naturalHeight=img.naturalHeight||parseFloat(img.getAttribute('height'))||fallbackHeight||viewport.height;
   if(!naturalWidth||!naturalHeight) return;
+  let frameHeight;
+  let layout;
   if(type==="itinerary"){
-    wrap.style.height=calculateControlledRouteMapHeight()+'px';
+    wrap.style.width=viewport.width+'px';
+    wrap.style.height=viewport.height+'px';
+    frameHeight=viewport.height;
+    const artworkBounds=type==="itinerary"&&img.dataset.fitMode==="fit"?detectRouteMapArtworkBounds(img):null;
+    layout=calculateRouteMapImageLayout(frameWidth,frameHeight,naturalWidth,naturalHeight,img.dataset.cropX,img.dataset.cropY,img.dataset.cropZoom,img.dataset.fitMode,artworkBounds);
+  }else{
+    const adjustedFrame=wrap.getBoundingClientRect ? wrap.getBoundingClientRect() : {width:frameWidth,height:0};
+    frameHeight=wrap.offsetHeight||wrap.clientHeight||adjustedFrame.height||fallbackHeight||viewport.height;
+    layout=calculateHeroCropLayout(frameWidth,frameHeight,naturalWidth,naturalHeight,img.dataset.cropX,img.dataset.cropY,img.dataset.cropZoom,img.dataset.fitMode,null);
   }
-  const adjustedFrame=wrap.getBoundingClientRect ? wrap.getBoundingClientRect() : {width:frameWidth,height:0};
-  const frameHeight=wrap.offsetHeight||wrap.clientHeight||adjustedFrame.height||fallbackHeight||viewport.height;
-  const artworkBounds=type==="itinerary"&&img.dataset.fitMode==="fit"?detectRouteMapArtworkBounds(img):null;
-  const layout=calculateHeroCropLayout(frameWidth,frameHeight,naturalWidth,naturalHeight,img.dataset.cropX,img.dataset.cropY,img.dataset.cropZoom,img.dataset.fitMode,artworkBounds);
   img.style.objectFit='fill';
   img.style.objectPosition='50% 50%';
   img.style.transform='none';
