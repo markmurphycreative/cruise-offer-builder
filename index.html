@@ -2181,7 +2181,7 @@ function normalizeCropPositionForOffer(offer){
   offer._itineraryCropZoom=Math.max(100,Math.min(200,parseInt(offer._itineraryCropZoom??100,10)));
   offer._itineraryCropX=Math.max(0,Math.min(100,parseInt(offer._itineraryCropX??50,10)));
   offer._itineraryCropY=Math.max(0,Math.min(100,parseInt(offer._itineraryCropY??50,10)));
-  offer._itineraryFitMode=offer._itineraryFitMode==="fit"?"fit":"fill";
+  offer._itineraryFitMode=offer._itineraryFitMode==="fill"?"fill":"fit";
 }
 function load(i){
   normalizeCropPositionForOffer(offers[i]);
@@ -2202,7 +2202,7 @@ function load(i){
   setEditableImageControlValue("itinerary","x",offers[i]._itineraryCropX??50);
   setEditableImageControlValue("itinerary","y",offers[i]._itineraryCropY??50);
   if(!offers[i]._heroFitMode) offers[i]._heroFitMode="fill";
-  if(!offers[i]._itineraryFitMode) offers[i]._itineraryFitMode="fill";
+  if(!offers[i]._itineraryFitMode) offers[i]._itineraryFitMode="fit";
   syncHeroUi();
   syncItineraryUi();
   updateHeroImageLockUI();
@@ -2550,7 +2550,7 @@ function readFile(file,type){
     const r=new FileReader(); r.onload=ev=>{
       const src=ev.target.result;
       if(type==="logo"){ offers[targetOfferIndex]._logoCustom=src; if(!offers[targetOfferIndex]._logoSize) offers[targetOfferIndex]._logoSize=50; if(targetOfferIndex===cur){ setThumb("logo",src); document.getElementById("logo-size-row").style.display="flex"; } }
-      else if(type==="itinerary"){ offers[targetOfferIndex]._itineraryImg=src; offers[targetOfferIndex]._itineraryCropZoom=100; offers[targetOfferIndex]._itineraryCropX=50; offers[targetOfferIndex]._itineraryCropY=50; offers[targetOfferIndex]._itineraryFitMode="fill"; if(targetOfferIndex===cur){ setThumb("itinerary",src); syncItineraryUi(); } }
+      else if(type==="itinerary"){ offers[targetOfferIndex]._itineraryImg=src; offers[targetOfferIndex]._itineraryCropZoom=100; offers[targetOfferIndex]._itineraryCropX=50; offers[targetOfferIndex]._itineraryCropY=50; offers[targetOfferIndex]._itineraryFitMode="fit"; if(targetOfferIndex===cur){ setThumb("itinerary",src); syncItineraryUi(); } }
       else{ offers[targetOfferIndex]._img=src; offers[targetOfferIndex]._cropZoom=100; offers[targetOfferIndex]._cropX=50; offers[targetOfferIndex]._cropY=50; offers[targetOfferIndex]._cropPosVersion=2; offers[targetOfferIndex]._heroFitMode="fill"; if(targetOfferIndex===cur){ setThumb("hero",src); syncHeroUi(); } }
       refreshOfferUi({utm:false,spell:false}); if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange(type==="hero"?"Hero image change":(type==="itinerary"?"Route map change":"Logo image change"));
     }; r.readAsDataURL(file);
@@ -2623,7 +2623,7 @@ const CROP_CONTROLS={
 };
 const EDITABLE_IMAGE_CONFIG={
   hero:{imageKey:"_img",zoomKey:"_cropZoom",xKey:"_cropX",yKey:"_cropY",modeKey:"_heroFitMode",prefix:"hero",controlsPrefix:"crop",label:"Hero image",historyLabel:"Hero",viewport:{width:1200,height:849},defaultFitMode:"fill"},
-  itinerary:{imageKey:"_itineraryImg",zoomKey:"_itineraryCropZoom",xKey:"_itineraryCropX",yKey:"_itineraryCropY",modeKey:"_itineraryFitMode",prefix:"itinerary",controlsPrefix:"itinerary-crop",label:"Route Map",historyLabel:"Route map",viewport:{width:1200,height:620},defaultFitMode:"fill"}
+  itinerary:{imageKey:"_itineraryImg",zoomKey:"_itineraryCropZoom",xKey:"_itineraryCropX",yKey:"_itineraryCropY",modeKey:"_itineraryFitMode",prefix:"itinerary",controlsPrefix:"itinerary-crop",label:"Route Map",historyLabel:"Route map",viewport:{width:1200,height:620},defaultFitMode:"fit"}
 };
 function getEditableImageConfig(type){ return EDITABLE_IMAGE_CONFIG[type]||EDITABLE_IMAGE_CONFIG.hero; }
 
@@ -5052,7 +5052,7 @@ function buildCampaignFilePayload(){
     operatorSettings:{source:"state.offers",byCard:portableOffers.map(({operator="",url="",tags="",_logoDisplay="operator"},cardIndex)=>({cardIndex,operator,url,tags,_logoDisplay}))},
     logoSettings:{source:"state.offers",byCard:portableOffers.map(({_logoDisplay="operator",_logoCustom="",_logoSize="",_logoNeedsReupload=false},cardIndex)=>({cardIndex,_logoDisplay,hasCustomLogo:!!_logoCustom,_logoSize,_logoNeedsReupload}))},
     heroImages:{source:"state.offers",byCard:portableOffers.map(({_img="",_imgSource="",_imgNeedsReupload=false,_cropZoom=100,_cropX=50,_cropY=50,_cropPosVersion=2,_heroFitMode="fill"},cardIndex)=>({cardIndex,imageType:_img ? (/^data:/i.test(_img) ? "embedded-data-url" : "url") : (_imgSource ? "local-reference" : "none"),_img,_imgSource,_imgNeedsReupload,_cropZoom,_cropX,_cropY,_cropPosVersion,_heroFitMode,locked:isHeroImageLocked(cardIndex),heroLocked:isHeroImageLocked(cardIndex)}))},
-    itineraryImages:{source:"state.offers",byCard:portableOffers.map(({_itineraryImg="",_itineraryImgSource="",_itineraryImgNeedsReupload=false,_itineraryCropZoom=100,_itineraryCropX=50,_itineraryCropY=50,_itineraryFitMode="fill"},cardIndex)=>({cardIndex,imageType:_itineraryImg ? (/^data:/i.test(_itineraryImg) ? "embedded-data-url" : "url") : (_itineraryImgSource ? "local-reference" : "none"),_itineraryImg,_itineraryImgSource,_itineraryImgNeedsReupload,_itineraryCropZoom,_itineraryCropX,_itineraryCropY,_itineraryFitMode}))},
+    itineraryImages:{source:"state.offers",byCard:portableOffers.map(({_itineraryImg="",_itineraryImgSource="",_itineraryImgNeedsReupload=false,_itineraryCropZoom=100,_itineraryCropX=50,_itineraryCropY=50,_itineraryFitMode="fit"},cardIndex)=>({cardIndex,imageType:_itineraryImg ? (/^data:/i.test(_itineraryImg) ? "embedded-data-url" : "url") : (_itineraryImgSource ? "local-reference" : "none"),_itineraryImg,_itineraryImgSource,_itineraryImgNeedsReupload,_itineraryCropZoom,_itineraryCropX,_itineraryCropY,_itineraryFitMode}))},
     ctaData:getCtaSummaryRows(),
     utmData:portableOffers.map(({url="",_utm="",utm_content=""})=>({url,_utm,utm_content})),
     operatorLandingPages:portableOffers.map(({url=""})=>url),
@@ -7309,7 +7309,7 @@ function saveEditorToOffer(){
   if(iz) o._itineraryCropZoom=parseInt(iz.value||100,10);
   if(ix) o._itineraryCropX=parseInt(ix.value||50,10);
   if(iy) o._itineraryCropY=parseInt(iy.value||50,10);
-  o._itineraryFitMode = o._itineraryFitMode==="fit" ? "fit" : "fill";
+  o._itineraryFitMode = o._itineraryFitMode==="fill" ? "fill" : "fit";
 }
 
 function loadOfferToEditor(i){
@@ -7326,6 +7326,8 @@ function loadOfferToEditor(i){
   if(logoDisplay) logoDisplay.value = o._logoDisplay || 'operator';
   setThumb('logo', o._logoCustom || '');
   setThumb('hero', o._img || '');
+  setThumb('itinerary', o._itineraryImg || '');
+  const itineraryInput=document.querySelector('#dz-itinerary input[type="file"]'); if(itineraryInput) itineraryInput.value='';
   const sz=o._logoSize||50;
   const lsr=document.getElementById('logo-size-row'); if(lsr) lsr.style.display=o._logoCustom?'flex':'none';
   const lsz=document.getElementById('logo-size'); if(lsz) lsz.value=sz;
@@ -7337,7 +7339,7 @@ function loadOfferToEditor(i){
   setEditableImageControlValue('itinerary','x', o._itineraryCropX??50);
   setEditableImageControlValue('itinerary','y', o._itineraryCropY??50);
   if(!o._heroFitMode) o._heroFitMode='fill';
-  if(!o._itineraryFitMode) o._itineraryFitMode='fill';
+  if(!o._itineraryFitMode) o._itineraryFitMode='fit';
   syncHeroUi();
   syncItineraryUi();
   updateHeroImageLockUI();
@@ -7453,6 +7455,13 @@ function visibleFieldsToData(){
   if(x) base._cropX = parseInt(x.value || base._cropX || 50, 10);
   if(y) base._cropY = parseInt(y.value || base._cropY || 50, 10);
   base._cropPosVersion = 2;
+  const iz = document.getElementById('itinerary-crop-zoom');
+  const ix = document.getElementById('itinerary-crop-x');
+  const iy = document.getElementById('itinerary-crop-y');
+  if(iz) base._itineraryCropZoom = parseInt(iz.value || base._itineraryCropZoom || 100, 10);
+  if(ix) base._itineraryCropX = parseInt(ix.value || base._itineraryCropX || 50, 10);
+  if(iy) base._itineraryCropY = parseInt(iy.value || base._itineraryCropY || 50, 10);
+  base._itineraryFitMode = base._itineraryFitMode === 'fill' ? 'fill' : 'fit';
   return base;
 }
 function commitVisibleFields(){

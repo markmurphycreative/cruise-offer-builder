@@ -255,3 +255,20 @@ test('copy and paste crop transfers zoom, position and fill fit mode between off
   assert.equal(context.elements['hero-crop-status-zoom'].textContent, '125%');
   assert.equal(context.elements['hero-crop-status-mode'].textContent, 'Fit Image');
 });
+
+test('route maps default to fit image instead of fill frame', () => {
+  assert.match(html, /itinerary:\{[\s\S]*?defaultFitMode:"fit"/);
+  assert.match(extractFunction('normalizeCropPositionForOffer'), /offer\._itineraryFitMode=offer\._itineraryFitMode==="fill"\?"fill":"fit"/);
+  assert.match(extractFunction('renderItineraryImageHTML'), /const fitMode=d\._itineraryFitMode==="fit"\?"fit":"fill"/);
+});
+
+test('fit image preserves full Malta-style route map visibility by default', () => {
+  const { calculateHeroCropLayout } = cropContext();
+  const layout = calculateHeroCropLayout(1200, 620, 1200, 900, 50, 50, 100, 'fit');
+
+  assertClose(layout.height, 620);
+  assert.ok(layout.width < 1200, 'narrow/tall maps should be pillarboxed rather than clipped');
+  assertClose(layout.top, 0);
+  assertClose(layout.left, (1200 - layout.width) / 2);
+  assertClose(layout.overflowY, 0);
+});
