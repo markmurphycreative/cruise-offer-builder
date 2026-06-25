@@ -30,7 +30,7 @@ test('sidebar section names follow the primary workflow and use the requested di
     'Export Cards',
     'Operator Logo',
     'Hero Image',
-    'Itinerary Image',
+    'Route Map',
     'CTA Assets',
     'Standard UTMs',
     'AI Copy',
@@ -58,7 +58,7 @@ test('required workflow headings expose the requested icon shapes', () => {
   assert.match(headingByLabel['Paste Offer'], /<path d="m17 10 4 4-4 4"><\/path>/);
   assert.match(headingByLabel['Operator Logo'], /<circle cx="10" cy="13" r="2"><\/circle>/);
   assert.match(headingByLabel['Hero Image'], /<circle cx="9" cy="9" r="2"><\/circle>/);
-  assert.match(headingByLabel['Itinerary Image'], /<circle cx="9" cy="9" r="2"><\/circle>/);
+  assert.match(headingByLabel['Route Map'], /<circle cx="9" cy="9" r="2"><\/circle>/);
   assert.match(headingByLabel['Offer Details'], /<path d="M16 13H8"><\/path>/);
 });
 
