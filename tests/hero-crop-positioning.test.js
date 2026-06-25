@@ -96,8 +96,8 @@ test('fit image centres non-overflowing axes and pans overflowing axes', () => {
 });
 
 
-test('route map crop engine uses the rendered route map viewport instead of hero dimensions', () => {
-  assert.match(html, /itinerary:\{[^}]+viewport:\{width:1076,height:620\}/);
+test('route map crop engine uses the full edge-to-edge route map viewport instead of hero dimensions', () => {
+  assert.match(html, /itinerary:\{[^}]+viewport:\{width:1200,height:620\}/);
   assert.match(html, /hero:\{[^}]+viewport:\{width:1200,height:849\}/);
   assert.match(extractFunction('applyHeroCropPositions'), /applyEditableImageCropToImage\(img,img\.closest\('\.itinerary-wrap'\),620,'itinerary'\)/);
   assert.match(extractFunction('applyEditableImageCropToImage'), /const viewport=getEditableImageViewport\(type\|\|"hero"\)/);
