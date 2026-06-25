@@ -26,7 +26,7 @@ function cropContext() {
     extractFunction('getEditableImageConfig'),
     extractFunction('clampHeroCropValue'),
     extractFunction('normaliseArtworkBounds'),
-    extractFunction('calculateAdaptiveRouteMapHeight'),
+    extractFunction('calculateControlledRouteMapHeight'),
     extractFunction('calculateHeroCropLayout')
   ].join('\n'), context);
   return context;
@@ -302,19 +302,19 @@ test('route map fit image detects artwork bounds before applying contain layout'
   assert.match(extractFunction('detectRouteMapArtworkBounds'), /r>245&&g>245&&b>245/);
 });
 
-test('fit image route map viewport adapts to uploaded artwork aspect ratio', () => {
-  const { calculateAdaptiveRouteMapHeight, calculateHeroCropLayout } = cropContext();
-  const tallPanelHeight = calculateAdaptiveRouteMapHeight(1200, 1200, 900);
-  const widePanelHeight = calculateAdaptiveRouteMapHeight(1200, 2400, 900);
-  const veryTallPanelHeight = calculateAdaptiveRouteMapHeight(1200, 900, 1600);
+test('route map viewport stays fixed instead of adapting to uploaded artwork aspect ratio', () => {
+  const { calculateControlledRouteMapHeight, calculateHeroCropLayout } = cropContext();
+  const tallPanelHeight = calculateControlledRouteMapHeight();
+  const widePanelHeight = calculateControlledRouteMapHeight();
+  const veryTallPanelHeight = calculateControlledRouteMapHeight();
 
-  assert.equal(tallPanelHeight, 900, 'portrait and near-square maps should be allowed to fill more vertical space');
-  assert.equal(widePanelHeight, 450, 'wide maps should not be forced into a fixed-height viewport with empty vertical space');
-  assert.equal(veryTallPanelHeight, 900, 'extremely tall maps should stay within the route-map section maximum');
+  assert.equal(tallPanelHeight, 620, 'portrait and near-square maps must not grow the route map section');
+  assert.equal(widePanelHeight, 620, 'wide maps use the same controlled route map section height');
+  assert.equal(veryTallPanelHeight, 620, 'extremely tall maps must be clipped inside the controlled route map section');
 
   const layout = calculateHeroCropLayout(1200, tallPanelHeight, 1200, 900, 50, 50, 100, 'fit');
-  assertClose(layout.width, 1200);
-  assertClose(layout.height, 900);
-  assertClose(layout.left, 0);
+  assertClose(layout.width, 826.6666666666666);
+  assertClose(layout.height, 620);
+  assertClose(layout.left, 186.66666666666669);
   assertClose(layout.top, 0);
 });
