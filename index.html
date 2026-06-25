@@ -2803,7 +2803,18 @@ function clampHeroCropValue(value, fallback){
   if(!Number.isFinite(num)) return fallback;
   return Math.max(0,Math.min(100,num));
 }
-function calculateHeroCropLayout(frameWidth, frameHeight, naturalWidth, naturalHeight, cropX, cropY, cropZoom, fitMode){
+function normaliseArtworkBounds(bounds,naturalWidth,naturalHeight){
+  const nw=Math.max(0,Number(naturalWidth)||0);
+  const nh=Math.max(0,Number(naturalHeight)||0);
+  if(!bounds||!nw||!nh) return null;
+  const x=Math.max(0,Math.min(nw,Number(bounds.x)||0));
+  const y=Math.max(0,Math.min(nh,Number(bounds.y)||0));
+  const width=Math.max(1,Math.min(nw-x,Number(bounds.width)||0));
+  const height=Math.max(1,Math.min(nh-y,Number(bounds.height)||0));
+  if(width>=nw&&height>=nh) return null;
+  return {x,y,width,height};
+}
+function calculateHeroCropLayout(frameWidth, frameHeight, naturalWidth, naturalHeight, cropX, cropY, cropZoom, fitMode, artworkBounds){
   const fw=Math.max(0,Number(frameWidth)||0);
   const fh=Math.max(0,Number(frameHeight)||0);
   const nw=Math.max(0,Number(naturalWidth)||0);
@@ -2814,14 +2825,59 @@ function calculateHeroCropLayout(frameWidth, frameHeight, naturalWidth, naturalH
   if(!fw||!fh||!nw||!nh){
     return {width:fw,height:fh,left:0,top:0,overflowX:0,overflowY:0};
   }
-  const baseScale=(fitMode==="fit") ? Math.min(fw/nw,fh/nh) : Math.max(fw/nw,fh/nh);
+  const visibleBounds=fitMode==="fit"?normaliseArtworkBounds(artworkBounds,nw,nh):null;
+  const scaleWidth=visibleBounds?visibleBounds.width:nw;
+  const scaleHeight=visibleBounds?visibleBounds.height:nh;
+  const baseScale=(fitMode==="fit") ? Math.min(fw/scaleWidth,fh/scaleHeight) : Math.max(fw/nw,fh/nh);
   const width=nw*baseScale*zoom;
   const height=nh*baseScale*zoom;
+  const fittedWidth=scaleWidth*baseScale*zoom;
+  const fittedHeight=scaleHeight*baseScale*zoom;
   const overflowX=Math.max(0,width-fw);
   const overflowY=Math.max(0,height-fh);
-  const left=overflowX>0 ? -overflowX*xPct : (fw-width)/2;
-  const top=overflowY>0 ? -overflowY*yPct : (fh-height)/2;
+  let left=overflowX>0 ? -overflowX*xPct : (fw-width)/2;
+  let top=overflowY>0 ? -overflowY*yPct : (fh-height)/2;
+  if(visibleBounds){
+    const extraX=Math.max(0,fw-fittedWidth);
+    const extraY=Math.max(0,fh-fittedHeight);
+    left=(extraX/2)-(visibleBounds.x*baseScale*zoom);
+    top=(extraY/2)-(visibleBounds.y*baseScale*zoom);
+  }
   return {width,height,left,top,overflowX,overflowY};
+}
+function detectRouteMapArtworkBounds(img){
+  if(!img||!img.naturalWidth||!img.naturalHeight) return null;
+  if(img._routeMapArtworkBounds!==undefined) return img._routeMapArtworkBounds;
+  try{
+    const maxSample=500;
+    const scale=Math.min(1,maxSample/Math.max(img.naturalWidth,img.naturalHeight));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));
+    canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+    const ctx=canvas.getContext&&canvas.getContext('2d',{willReadFrequently:true});
+    if(!ctx) return null;
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+    let minX=canvas.width,minY=canvas.height,maxX=-1,maxY=-1;
+    for(let y=0;y<canvas.height;y+=1){
+      for(let x=0;x<canvas.width;x+=1){
+        const i=(y*canvas.width+x)*4;
+        const a=data[i+3];
+        if(a<12) continue;
+        const r=data[i],g=data[i+1],b=data[i+2];
+        if(r>245&&g>245&&b>245) continue;
+        if(x<minX) minX=x; if(y<minY) minY=y; if(x>maxX) maxX=x; if(y>maxY) maxY=y;
+      }
+    }
+    if(maxX<minX||maxY<minY){ img._routeMapArtworkBounds=null; return null; }
+    const pad=Math.max(2,Math.round(8*scale));
+    minX=Math.max(0,minX-pad); minY=Math.max(0,minY-pad); maxX=Math.min(canvas.width-1,maxX+pad); maxY=Math.min(canvas.height-1,maxY+pad);
+    img._routeMapArtworkBounds={x:minX/scale,y:minY/scale,width:(maxX-minX+1)/scale,height:(maxY-minY+1)/scale};
+    return img._routeMapArtworkBounds;
+  }catch(err){
+    img._routeMapArtworkBounds=null;
+    return null;
+  }
 }
 function escapeAttr(value){
   return String(value||'').replace(/&/g,'&amp;').replace(/\"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'');
@@ -2870,7 +2926,8 @@ function applyEditableImageCropToImage(img,wrap,fallbackHeight,type){
   }
   const adjustedFrame=wrap.getBoundingClientRect ? wrap.getBoundingClientRect() : {width:frameWidth,height:0};
   const frameHeight=wrap.offsetHeight||wrap.clientHeight||adjustedFrame.height||fallbackHeight||viewport.height;
-  const layout=calculateHeroCropLayout(frameWidth,frameHeight,naturalWidth,naturalHeight,img.dataset.cropX,img.dataset.cropY,img.dataset.cropZoom,img.dataset.fitMode);
+  const artworkBounds=type==="itinerary"&&img.dataset.fitMode==="fit"?detectRouteMapArtworkBounds(img):null;
+  const layout=calculateHeroCropLayout(frameWidth,frameHeight,naturalWidth,naturalHeight,img.dataset.cropX,img.dataset.cropY,img.dataset.cropZoom,img.dataset.fitMode,artworkBounds);
   img.style.objectFit='fill';
   img.style.objectPosition='50% 50%';
   img.style.transform='none';

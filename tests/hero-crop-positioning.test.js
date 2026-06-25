@@ -25,6 +25,7 @@ function cropContext() {
     html.slice(html.indexOf('const EDITABLE_IMAGE_CONFIG='), html.indexOf('function getEditableImageViewport')),
     extractFunction('getEditableImageConfig'),
     extractFunction('clampHeroCropValue'),
+    extractFunction('normaliseArtworkBounds'),
     extractFunction('calculateAdaptiveRouteMapHeight'),
     extractFunction('calculateHeroCropLayout')
   ].join('\n'), context);
@@ -274,6 +275,31 @@ test('fit image preserves full Malta-style route map visibility by default', () 
   assertClose(layout.top, 0);
   assertClose(layout.left, (1200 - layout.width) / 2);
   assertClose(layout.overflowY, 0);
+});
+
+test('fit image enlarges the visible route map artwork instead of preserving source whitespace', () => {
+  const { calculateHeroCropLayout } = cropContext();
+  const layout = calculateHeroCropLayout(1200, 620, 1200, 620, 50, 50, 100, 'fit', { x: 180, y: 180, width: 840, height: 260 });
+
+  assertClose(layout.height, 885.7142857142858);
+  assertClose(layout.width, 1714.2857142857142);
+  assertClose(layout.left, -257.14285714285717);
+  assertClose(layout.top, -132.8571428571429);
+  assertClose(840 * (layout.width / 1200), 1200, 'trimmed artwork bounds should reach the route map width');
+});
+
+test('fit image leaves fill frame calculations unchanged when artwork bounds are supplied', () => {
+  const { calculateHeroCropLayout } = cropContext();
+  const withBounds = calculateHeroCropLayout(1200, 620, 1200, 620, 50, 50, 100, 'fill', { x: 180, y: 180, width: 840, height: 260 });
+  const withoutBounds = calculateHeroCropLayout(1200, 620, 1200, 620, 50, 50, 100, 'fill');
+
+  assert.deepEqual(withBounds, withoutBounds);
+});
+
+test('route map fit image detects artwork bounds before applying contain layout', () => {
+  assert.match(extractFunction('applyEditableImageCropToImage'), /type==="itinerary"&&img\.dataset\.fitMode==="fit"\?detectRouteMapArtworkBounds\(img\):null/);
+  assert.match(extractFunction('calculateHeroCropLayout'), /normaliseArtworkBounds\(artworkBounds,nw,nh\)/);
+  assert.match(extractFunction('detectRouteMapArtworkBounds'), /r>245&&g>245&&b>245/);
 });
 
 test('fit image route map viewport adapts to uploaded artwork aspect ratio', () => {
