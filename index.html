@@ -2515,7 +2515,6 @@ function getRouteMapArtworkBoundsFromImage(img){
 }
 function normaliseRouteMapImageSource(src){
   return new Promise(resolve=>{
-    const cfg=getEditableImageConfig("itinerary");
     const viewport=getEditableImageViewport("itinerary");
     const canvas=document.createElement("canvas");
     canvas.width=viewport.width;
@@ -2526,16 +2525,14 @@ function normaliseRouteMapImageSource(src){
     img.onload=()=>{
       const naturalWidth=img.naturalWidth||img.width;
       const naturalHeight=img.naturalHeight||img.height;
-      const artworkBounds=normaliseArtworkBounds(getRouteMapArtworkBoundsFromImage(img),naturalWidth,naturalHeight)||{x:0,y:0,width:naturalWidth,height:naturalHeight};
-      ctx.fillStyle=cfg.background||"#eef2e8";
-      ctx.fillRect(0,0,viewport.width,viewport.height);
-      if(naturalWidth&&naturalHeight&&artworkBounds.width&&artworkBounds.height){
-        const scale=Math.min(viewport.width/artworkBounds.width,viewport.height/artworkBounds.height);
-        const width=artworkBounds.width*scale;
-        const height=artworkBounds.height*scale;
+      if(naturalWidth&&naturalHeight){
+        const scale=Math.max(viewport.width/naturalWidth,viewport.height/naturalHeight);
+        const width=naturalWidth*scale;
+        const height=naturalHeight*scale;
         const left=(viewport.width-width)/2;
         const top=(viewport.height-height)/2;
-        ctx.drawImage(img,artworkBounds.x,artworkBounds.y,artworkBounds.width,artworkBounds.height,left,top,width,height);
+        ctx.clearRect(0,0,viewport.width,viewport.height);
+        ctx.drawImage(img,left,top,width,height);
       }
       try{ resolve(canvas.toDataURL("image/png")); }
       catch(_err){ resolve(src); }
