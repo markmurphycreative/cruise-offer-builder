@@ -22,7 +22,10 @@ function cropContext() {
   const context = {};
   vm.createContext(context);
   vm.runInContext([
+    html.slice(html.indexOf('const EDITABLE_IMAGE_CONFIG='), html.indexOf('function getEditableImageViewport')),
+    extractFunction('getEditableImageConfig'),
     extractFunction('clampHeroCropValue'),
+    extractFunction('calculateAdaptiveRouteMapHeight'),
     extractFunction('calculateHeroCropLayout')
   ].join('\n'), context);
   return context;
@@ -271,4 +274,21 @@ test('fit image preserves full Malta-style route map visibility by default', () 
   assertClose(layout.top, 0);
   assertClose(layout.left, (1200 - layout.width) / 2);
   assertClose(layout.overflowY, 0);
+});
+
+test('fit image route map viewport adapts to uploaded artwork aspect ratio', () => {
+  const { calculateAdaptiveRouteMapHeight, calculateHeroCropLayout } = cropContext();
+  const tallPanelHeight = calculateAdaptiveRouteMapHeight(1200, 1200, 900);
+  const widePanelHeight = calculateAdaptiveRouteMapHeight(1200, 2400, 900);
+  const veryTallPanelHeight = calculateAdaptiveRouteMapHeight(1200, 900, 1600);
+
+  assert.equal(tallPanelHeight, 900, 'portrait and near-square maps should be allowed to fill more vertical space');
+  assert.equal(widePanelHeight, 450, 'wide maps should not be forced into a fixed-height viewport with empty vertical space');
+  assert.equal(veryTallPanelHeight, 900, 'extremely tall maps should stay within the route-map section maximum');
+
+  const layout = calculateHeroCropLayout(1200, tallPanelHeight, 1200, 900, 50, 50, 100, 'fit');
+  assertClose(layout.width, 1200);
+  assertClose(layout.height, 900);
+  assertClose(layout.left, 0);
+  assertClose(layout.top, 0);
 });

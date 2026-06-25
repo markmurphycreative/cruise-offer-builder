@@ -2628,6 +2628,14 @@ const EDITABLE_IMAGE_CONFIG={
 };
 function getEditableImageConfig(type){ return EDITABLE_IMAGE_CONFIG[type]||EDITABLE_IMAGE_CONFIG.hero; }
 
+function calculateAdaptiveRouteMapHeight(frameWidth,naturalWidth,naturalHeight){
+  const fw=Math.max(1,Number(frameWidth)||1200);
+  const nw=Math.max(0,Number(naturalWidth)||0);
+  const nh=Math.max(0,Number(naturalHeight)||0);
+  if(!nw||!nh) return getEditableImageConfig("itinerary").viewport.height;
+  const naturalHeightAtCardWidth=fw*(nh/nw);
+  return Math.max(360,Math.min(900,Math.round(naturalHeightAtCardWidth)));
+}
 function getEditableImageViewport(type){
   const cfg=getEditableImageConfig(type);
   const vp=cfg.viewport||{};
@@ -2852,10 +2860,16 @@ function applyEditableImageCropToImage(img,wrap,fallbackHeight,type){
   const frame=wrap.getBoundingClientRect ? wrap.getBoundingClientRect() : {width:0,height:0};
   const viewport=getEditableImageViewport(type||"hero");
   const frameWidth=wrap.offsetWidth||wrap.clientWidth||frame.width||viewport.width;
-  const frameHeight=wrap.offsetHeight||wrap.clientHeight||frame.height||fallbackHeight||viewport.height;
   const naturalWidth=img.naturalWidth||parseFloat(img.getAttribute('width'))||frameWidth;
-  const naturalHeight=img.naturalHeight||parseFloat(img.getAttribute('height'))||frameHeight;
+  const naturalHeight=img.naturalHeight||parseFloat(img.getAttribute('height'))||fallbackHeight||viewport.height;
   if(!naturalWidth||!naturalHeight) return;
+  if(type==="itinerary" && img.dataset.fitMode==="fit"){
+    wrap.style.height=calculateAdaptiveRouteMapHeight(frameWidth,naturalWidth,naturalHeight)+'px';
+  }else if(type==="itinerary"){
+    wrap.style.height=viewport.height+'px';
+  }
+  const adjustedFrame=wrap.getBoundingClientRect ? wrap.getBoundingClientRect() : {width:frameWidth,height:0};
+  const frameHeight=wrap.offsetHeight||wrap.clientHeight||adjustedFrame.height||fallbackHeight||viewport.height;
   const layout=calculateHeroCropLayout(frameWidth,frameHeight,naturalWidth,naturalHeight,img.dataset.cropX,img.dataset.cropY,img.dataset.cropZoom,img.dataset.fitMode);
   img.style.objectFit='fill';
   img.style.objectPosition='50% 50%';
