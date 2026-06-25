@@ -164,6 +164,8 @@ test('campaign save and load paths preserve hero image data', () => {
   assert.match(restorePayload, /const restored=JSON\.parse\(JSON\.stringify\(state\)\)/);
   assert.match(restorePayload, /applySessionPayload\(restored\)/);
   assert.match(loadEditor, /setThumb\('hero', o\._img \|\| ''\)/);
+  assert.match(loadEditor, /setThumb\('itinerary', o\._itineraryImg \|\| ''\)/);
+  assert.match(loadEditor, /querySelector\('#dz-itinerary input\[type=\"file\"\]'\)/);
 });
 
 
@@ -182,6 +184,7 @@ test('route map upload resolves against the offer active when the file was selec
   const readFileSource = extractFunction('readFile');
   assert.match(readFileSource, /const targetOfferIndex=cur;/);
   assert.match(readFileSource, /offers\[targetOfferIndex\]\._itineraryImg=src/);
+  assert.match(readFileSource, /offers\[targetOfferIndex\]\._itineraryFitMode="fit"/);
   assert.match(readFileSource, /if\(targetOfferIndex===cur\)\{ setThumb\("itinerary",src\); syncItineraryUi\(\); \}/);
   assert.doesNotMatch(readFileSource, /offers\[cur\]\._itineraryImg=src/);
 });
