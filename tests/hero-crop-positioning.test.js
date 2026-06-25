@@ -266,7 +266,9 @@ test('route maps default to the fixed imported frame instead of fitting source i
   assert.match(extractFunction('normalizeCropPositionForOffer'), /offer\._itineraryFitMode=offer\._itineraryFitMode==="fit"\?"fit":"fill"/);
   assert.match(extractFunction('normaliseRouteMapImageSource'), /canvas\.width=viewport\.width/);
   assert.match(extractFunction('normaliseRouteMapImageSource'), /canvas\.height=viewport\.height/);
-  assert.match(extractFunction('normaliseRouteMapImageSource'), /const scale=Math\.min\(viewport\.width\/naturalWidth,viewport\.height\/naturalHeight\)/);
+  assert.match(extractFunction('normaliseRouteMapImageSource'), /getRouteMapArtworkBoundsFromImage\(img\)/);
+  assert.match(extractFunction('normaliseRouteMapImageSource'), /const scale=Math\.min\(viewport\.width\/artworkBounds\.width,viewport\.height\/artworkBounds\.height\)/);
+  assert.match(extractFunction('normaliseRouteMapImageSource'), /ctx\.drawImage\(img,artworkBounds\.x,artworkBounds\.y,artworkBounds\.width,artworkBounds\.height,left,top,width,height\)/);
   assert.match(extractFunction('renderEditableImageHTML'), /const fitMode=d\[cfg\.modeKey\]==="fit"\?"fit":"fill"/);
 });
 
