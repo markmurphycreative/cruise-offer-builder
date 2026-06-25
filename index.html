@@ -598,7 +598,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cc .hero{width:100%;height:calc(100% + 1px);object-fit:cover;display:block;position:absolute;top:-1px;left:0;transform-origin:center center;}
 .cc .route-map-section{width:1200px;background:#fff;box-sizing:border-box;padding:92px 62px 104px;display:flex;align-items:center;justify-content:center;line-height:0;}
 .cc .itinerary-wrap{width:100%;max-width:1076px;height:620px;overflow:hidden;position:relative;background:#fff;line-height:0;display:flex;align-items:center;justify-content:center;}
-.cc .itinerary-img{width:100%;height:100%;object-fit:contain;object-position:center center;display:block;}
+.cc .itinerary-img{width:100%;height:100%;object-fit:contain;object-position:center center;display:block;position:absolute;left:0;top:0;}
 .cc .hph{width:1200px;height:849px;background:#435465;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;}
 .cc .hph span{display:none;}
 .cc .hph::before{content:"";display:block;width:92px;height:92px;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/%3E%3Cpolyline points='17 8 12 3 7 8'/%3E%3Cline x1='12' x2='12' y1='3' y2='15'/%3E%3C/svg%3E");pointer-events:none;}
@@ -985,9 +985,36 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
             <img class="dz-thumb itinerary-t" id="itinerary-thumb" alt="Route map preview" style="display: none;">
           </div>
         </div>
-        <div class="itinerary-actions" id="itinerary-actions-panel">
-          <button class="abtn red btn-compact" onclick="removeItineraryImage()">Remove Route Map</button>
-          <button class="abtn btn-compact" onclick="replaceItineraryImage()">Replace Route Map</button>
+        <div class="hero-thumb-dimensions" id="itinerary-image-dimensions"></div>
+        <div class="hero-thumb-helper" id="itinerary-thumb-helper">Thumbnail shows full source image. Card preview shows cropped result.</div>
+        <div class="hero-crop-status" id="itinerary-crop-status" aria-live="polite">
+          <div class="hero-crop-status-item"><span class="hero-crop-status-label">Zoom</span><span class="hero-crop-status-value" id="itinerary-crop-status-zoom">100%</span></div>
+          <div class="hero-crop-status-item"><span class="hero-crop-status-label">Mode</span><span class="hero-crop-status-value" id="itinerary-crop-status-mode">Fill Frame</span></div>
+          <div class="hero-crop-status-item"><span class="hero-crop-status-label">Horizontal</span><span class="hero-crop-status-value" id="itinerary-crop-status-x">50%</span></div>
+          <div class="hero-crop-status-item"><span class="hero-crop-status-label">Vertical</span><span class="hero-crop-status-value" id="itinerary-crop-status-y">50%</span></div>
+        </div>
+        <div class="hero-panel-group" id="itinerary-actions-panel">
+          <div class="hero-actions">
+            <button class="abtn red btn-compact" onclick="removeEditableImage('itinerary')">Remove Route Map</button>
+            <button class="abtn btn-compact" onclick="replaceEditableImage('itinerary')">Replace Route Map</button>
+            <button class="abtn btn-compact" onclick="resetEditableImagePosition('itinerary')">Reset Position</button>
+            <button class="abtn btn-compact" onclick="centreEditableImage('itinerary')">Centre Image</button>
+          </div>
+        </div>
+        <div class="crop-controls" id="itinerary-crop-controls">
+          <div class="hero-fit-toggle">
+            <button id="itinerary-mode-fill" class="abtn btn-compact hero-mode-btn" onclick="setEditableImageFitMode('itinerary','fill')" aria-pressed="true">Fill Frame</button>
+            <button id="itinerary-mode-fit" class="abtn btn-compact hero-mode-btn" onclick="setEditableImageFitMode('itinerary','fit')" aria-pressed="false">Fit Image</button>
+          </div>
+          <div class="crop-group-title">Crop & Position</div>
+          <div class="crop-row"><label for="itinerary-crop-zoom">Zoom</label><input type="range" id="itinerary-crop-zoom" min="100" max="200" value="100" oninput="updateEditableImageCrop('itinerary')"><div class="crop-value"><input type="number" id="itinerary-crop-zoom-input" min="100" max="200" value="100" inputmode="numeric" oninput="updateEditableImageCropFromInput('itinerary','zoom')"><span>%</span></div></div>
+          <div class="crop-row"><label for="itinerary-crop-x">Horizontal</label><input type="range" id="itinerary-crop-x" min="0" max="100" value="50" oninput="updateEditableImageCrop('itinerary')"><div class="crop-value"><input type="number" id="itinerary-crop-x-input" min="0" max="100" value="50" inputmode="numeric" oninput="updateEditableImageCropFromInput('itinerary','x')"><span>%</span></div></div>
+          <div class="crop-row"><label for="itinerary-crop-y">Vertical</label><input type="range" id="itinerary-crop-y" min="0" max="100" value="50" oninput="updateEditableImageCrop('itinerary')"><div class="crop-value"><input type="number" id="itinerary-crop-y-input" min="0" max="100" value="50" inputmode="numeric" oninput="updateEditableImageCropFromInput('itinerary','y')"><span>%</span></div></div>
+        </div>
+        <div class="hero-quick-position" id="itinerary-quick-position">
+          <div class="crop-group-title">Quick Position</div>
+          <div class="hero-quick-row"><div class="hero-quick-label">Horizontal</div><div class="hero-quick-grid"><button class="abtn btn-compact" onclick="setEditableImageCropAxis('itinerary','x',0)">Left 0%</button><button class="abtn btn-compact" onclick="setEditableImageCropAxis('itinerary','x',50)">Centre 50%</button><button class="abtn btn-compact" onclick="setEditableImageCropAxis('itinerary','x',100)">Right 100%</button></div></div>
+          <div class="hero-quick-row"><div class="hero-quick-label">Vertical</div><div class="hero-quick-grid"><button class="abtn btn-compact" onclick="setEditableImageCropAxis('itinerary','y',0)">Top 0%</button><button class="abtn btn-compact" onclick="setEditableImageCropAxis('itinerary','y',50)">Centre 50%</button><button class="abtn btn-compact" onclick="setEditableImageCropAxis('itinerary','y',100)">Bottom 100%</button></div></div>
         </div>
       </div>
     </div>
@@ -2144,13 +2171,17 @@ function normalizeCropPositionForOffer(offer){
   if(offer._cropPosVersion===2){
     offer._cropX=Math.max(0,Math.min(100,parseInt(offer._cropX??50,10)));
     offer._cropY=Math.max(0,Math.min(100,parseInt(offer._cropY??50,10)));
-    return;
+  }else{
+    const legacyX=parseInt(offer._cropX??0,10);
+    const legacyY=parseInt(offer._cropY??0,10);
+    offer._cropX=Math.max(0,Math.min(100,legacyX+50));
+    offer._cropY=Math.max(0,Math.min(100,legacyY+50));
+    offer._cropPosVersion=2;
   }
-  const legacyX=parseInt(offer._cropX??0,10);
-  const legacyY=parseInt(offer._cropY??0,10);
-  offer._cropX=Math.max(0,Math.min(100,legacyX+50));
-  offer._cropY=Math.max(0,Math.min(100,legacyY+50));
-  offer._cropPosVersion=2;
+  offer._itineraryCropZoom=Math.max(100,Math.min(200,parseInt(offer._itineraryCropZoom??100,10)));
+  offer._itineraryCropX=Math.max(0,Math.min(100,parseInt(offer._itineraryCropX??50,10)));
+  offer._itineraryCropY=Math.max(0,Math.min(100,parseInt(offer._itineraryCropY??50,10)));
+  offer._itineraryFitMode=offer._itineraryFitMode==="fit"?"fit":"fill";
 }
 function load(i){
   normalizeCropPositionForOffer(offers[i]);
@@ -2164,10 +2195,14 @@ function load(i){
   const lsr=document.getElementById("logo-size-row"); if(lsr) lsr.style.display=offers[i]._logoCustom?"flex":"none";
   const lsz=document.getElementById("logo-size"); if(lsz) lsz.value=sz;
   const lsv=document.getElementById("logo-size-val"); if(lsv) lsv.textContent=sz+"%";
-  setCropControlValue("zoom",offers[i]._cropZoom||100);
-  setCropControlValue("x",offers[i]._cropX??50);
-  setCropControlValue("y",offers[i]._cropY??50);
+  setEditableImageControlValue("hero","zoom",offers[i]._cropZoom||100);
+  setEditableImageControlValue("hero","x",offers[i]._cropX??50);
+  setEditableImageControlValue("hero","y",offers[i]._cropY??50);
+  setEditableImageControlValue("itinerary","zoom",offers[i]._itineraryCropZoom||100);
+  setEditableImageControlValue("itinerary","x",offers[i]._itineraryCropX??50);
+  setEditableImageControlValue("itinerary","y",offers[i]._itineraryCropY??50);
   if(!offers[i]._heroFitMode) offers[i]._heroFitMode="fill";
+  if(!offers[i]._itineraryFitMode) offers[i]._itineraryFitMode="fill";
   syncHeroUi();
   syncItineraryUi();
   updateHeroImageLockUI();
@@ -2271,7 +2306,7 @@ function clearHeroImageDataFromOffer(index){
   if(!Number.isInteger(offerIndex) || offerIndex<0 || offerIndex>3) return false;
   while(offers.length<=offerIndex) offers.push({});
   const offer=offers[offerIndex] || {};
-  ["_img","_imgSource","_imgNeedsReupload","_cropZoom","_cropX","_cropY","_cropPosVersion","_heroFitMode","heroLocked","_itineraryImg","_itineraryImgSource","_itineraryImgNeedsReupload"].forEach(key=>{ delete offer[key]; });
+  ["_img","_imgSource","_imgNeedsReupload","_cropZoom","_cropX","_cropY","_cropPosVersion","_heroFitMode","heroLocked","_itineraryImg","_itineraryImgSource","_itineraryImgNeedsReupload","_itineraryCropZoom","_itineraryCropX","_itineraryCropY","_itineraryFitMode"].forEach(key=>{ delete offer[key]; });
   offers[offerIndex]=offer;
   if(typeof setHeroImageLocked==="function") setHeroImageLocked(offerIndex,false);
   else if(Array.isArray(lockedHeroImages)) lockedHeroImages[offerIndex]=false;
@@ -2280,7 +2315,7 @@ function clearHeroImageDataFromOffer(index){
 
 function preserveLockedHeroImageData(nextOffer,index,previousOffer){
   if(!isHeroImageLocked(index)) return nextOffer;
-  const protectedKeys=["_img","_imgSource","_imgNeedsReupload","_cropZoom","_cropX","_cropY","_cropPosVersion","_heroFitMode","heroLocked","_itineraryImg","_itineraryImgSource","_itineraryImgNeedsReupload"];
+  const protectedKeys=["_img","_imgSource","_imgNeedsReupload","_cropZoom","_cropX","_cropY","_cropPosVersion","_heroFitMode","heroLocked","_itineraryImg","_itineraryImgSource","_itineraryImgNeedsReupload","_itineraryCropZoom","_itineraryCropX","_itineraryCropY","_itineraryFitMode"];
   protectedKeys.forEach(key=>{
     if(previousOffer && Object.prototype.hasOwnProperty.call(previousOffer,key)) nextOffer[key]=previousOffer[key];
     else if(key==="heroLocked") nextOffer[key]=true;
@@ -2515,7 +2550,7 @@ function readFile(file,type){
     const r=new FileReader(); r.onload=ev=>{
       const src=ev.target.result;
       if(type==="logo"){ offers[targetOfferIndex]._logoCustom=src; if(!offers[targetOfferIndex]._logoSize) offers[targetOfferIndex]._logoSize=50; if(targetOfferIndex===cur){ setThumb("logo",src); document.getElementById("logo-size-row").style.display="flex"; } }
-      else if(type==="itinerary"){ offers[targetOfferIndex]._itineraryImg=src; if(targetOfferIndex===cur){ setThumb("itinerary",src); syncItineraryUi(); } }
+      else if(type==="itinerary"){ offers[targetOfferIndex]._itineraryImg=src; offers[targetOfferIndex]._itineraryCropZoom=offers[targetOfferIndex]._itineraryCropZoom||100; offers[targetOfferIndex]._itineraryCropX=offers[targetOfferIndex]._itineraryCropX??50; offers[targetOfferIndex]._itineraryCropY=offers[targetOfferIndex]._itineraryCropY??50; offers[targetOfferIndex]._itineraryFitMode=offers[targetOfferIndex]._itineraryFitMode||"fill"; if(targetOfferIndex===cur){ setThumb("itinerary",src); syncItineraryUi(); } }
       else{ offers[targetOfferIndex]._img=src; if(targetOfferIndex===cur){ setThumb("hero",src); syncHeroUi(); } }
       refreshOfferUi({utm:false,spell:false}); if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange(type==="hero"?"Hero image change":(type==="itinerary"?"Route map change":"Logo image change"));
     }; r.readAsDataURL(file);
@@ -2531,7 +2566,26 @@ function setThumb(type,src){
     el.removeAttribute("src");
     el.style.display="none";
   }
-  if(type==="hero"&&typeof updateHeroThumbInfo==="function") updateHeroThumbInfo(el,src);
+  if((type==="hero"||type==="itinerary")&&typeof updateEditableImageThumbInfo==="function") updateEditableImageThumbInfo(type,el,src);
+}
+function updateEditableImageThumbInfo(type,imgEl,src){
+  const prefix=type==="itinerary"?"itinerary":"hero";
+  const helper=document.getElementById(prefix+"-thumb-helper");
+  const dims=document.getElementById(prefix+"-image-dimensions");
+  if(helper) helper.classList.toggle("active",!!src);
+  if(dims){ dims.textContent=""; dims.classList.remove("active"); }
+  if(!src||!imgEl||!dims) return;
+  const showDims=()=>{
+    const w=imgEl.naturalWidth;
+    const h=imgEl.naturalHeight;
+    if(w&&h){
+      dims.textContent="Image: "+w+" × "+h+"px";
+      dims.classList.add("active");
+    }
+  };
+  imgEl.onload=showDims;
+  imgEl.onerror=()=>{ dims.textContent=""; dims.classList.remove("active"); };
+  if(imgEl.complete) showDims();
 }
 function updateHeroThumbInfo(imgEl,src){
   const helper=document.getElementById("hero-thumb-helper");
@@ -2554,22 +2608,10 @@ function updateHeroThumbInfo(imgEl,src){
 function logoSz(val){ offers[cur]._logoSize=parseInt(val); document.getElementById("logo-size-val").textContent=val+"%"; refreshOfferUi({status:false,utm:false,spell:false}); }
 function imgUrlCh(){ offers[cur]._img=document.getElementById("f-img-url").value; setThumb("hero",offers[cur]._img); syncHeroUi(); refreshOfferUi({utm:false,spell:false}); }
 function syncItineraryUi(){
-  const hasImg=!!(offers[cur]&&offers[cur]._itineraryImg);
-  const panel=document.getElementById("itinerary-actions-panel");
-  if(panel) panel.classList.toggle("active",hasImg);
+  syncEditableImageUi("itinerary");
 }
-function removeItineraryImage(){
-  if(typeof isOfferLocked==="function" && isOfferLocked(cur)) return showOfferLockStatus(cur);
-  offers[cur]._itineraryImg="";
-  setThumb("itinerary","");
-  syncItineraryUi();
-  refreshOfferUi({utm:false,spell:false});
-  if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Route map removal");
-}
-function replaceItineraryImage(){
-  const input=document.querySelector("#dz-itinerary input[type=file]");
-  if(input){ input.value=""; input.click(); }
-}
+function removeItineraryImage(){ removeEditableImage("itinerary"); }
+function replaceItineraryImage(){ replaceEditableImage("itinerary"); }
 
 // ═══════════════════════════════════════════════════════
 // CROP
@@ -2579,6 +2621,94 @@ const CROP_CONTROLS={
   x:{slider:"crop-x",input:"crop-x-input",fallback:50},
   y:{slider:"crop-y",input:"crop-y-input",fallback:50}
 };
+const EDITABLE_IMAGE_CONFIG={
+  hero:{imageKey:"_img",zoomKey:"_cropZoom",xKey:"_cropX",yKey:"_cropY",modeKey:"_heroFitMode",prefix:"hero",controlsPrefix:"crop",label:"Hero image",historyLabel:"Hero"},
+  itinerary:{imageKey:"_itineraryImg",zoomKey:"_itineraryCropZoom",xKey:"_itineraryCropX",yKey:"_itineraryCropY",modeKey:"_itineraryFitMode",prefix:"itinerary",controlsPrefix:"itinerary-crop",label:"Route Map",historyLabel:"Route map"}
+};
+function getEditableImageConfig(type){ return EDITABLE_IMAGE_CONFIG[type]||EDITABLE_IMAGE_CONFIG.hero; }
+function getEditableImageControls(type,axis){
+  const cfg=getEditableImageConfig(type);
+  const base=cfg.controlsPrefix;
+  return {slider:base+"-"+axis,input:base+"-"+axis+"-input",fallback:axis==="zoom"?100:50};
+}
+function setEditableImageControlValue(type,axis,value){
+  const cfg=getEditableImageControls(type,axis);
+  const slider=document.getElementById(cfg.slider);
+  const min=slider?parseInt(slider.min,10):(axis==="zoom"?100:0);
+  const max=slider?parseInt(slider.max,10):(axis==="zoom"?200:100);
+  const parsed=parseInt(value,10);
+  const safe=Math.max(min,Math.min(max,Number.isFinite(parsed)?parsed:cfg.fallback));
+  const input=document.getElementById(cfg.input);
+  if(slider) slider.value=safe;
+  if(input) input.value=safe;
+  return safe;
+}
+function updateEditableImageCropFromInput(type,axis){
+  const input=document.getElementById(getEditableImageControls(type,axis).input);
+  if(input) setEditableImageControlValue(type,axis,input.value);
+  updateEditableImageCrop(type);
+}
+function updateEditableImageCrop(type){
+  const cfg=getEditableImageConfig(type);
+  if(!offers[cur]) offers[cur]={};
+  offers[cur][cfg.zoomKey]=setEditableImageControlValue(type,"zoom",(document.getElementById(getEditableImageControls(type,"zoom").slider)||{}).value);
+  offers[cur][cfg.xKey]=setEditableImageControlValue(type,"x",(document.getElementById(getEditableImageControls(type,"x").slider)||{}).value);
+  offers[cur][cfg.yKey]=setEditableImageControlValue(type,"y",(document.getElementById(getEditableImageControls(type,"y").slider)||{}).value);
+  if(type==="hero") offers[cur]._cropPosVersion=2;
+  updateEditableImageCropStatus(type);
+  refreshOfferUi({status:false,utm:false,spell:false});
+}
+function resetEditableImagePosition(type){
+  const cfg=getEditableImageConfig(type);
+  if(!offers[cur]) offers[cur]={};
+  offers[cur][cfg.modeKey]="fill"; offers[cur][cfg.zoomKey]=100; offers[cur][cfg.xKey]=50; offers[cur][cfg.yKey]=50;
+  if(type==="hero") offers[cur]._cropPosVersion=2;
+  ["zoom","x","y"].forEach(axis=>setEditableImageControlValue(type,axis,axis==="zoom"?100:50));
+  syncEditableImageUi(type); refreshOfferUi({status:false,utm:false,spell:false});
+  if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange(cfg.historyLabel+" position reset");
+}
+function centreEditableImage(type){
+  const cfg=getEditableImageConfig(type); if(!offers[cur]) offers[cur]={};
+  offers[cur][cfg.xKey]=50; offers[cur][cfg.yKey]=50; if(type==="hero") offers[cur]._cropPosVersion=2;
+  setEditableImageControlValue(type,"x",50); setEditableImageControlValue(type,"y",50);
+  updateEditableImageCropStatus(type); refreshOfferUi({status:false,utm:false,spell:false});
+  if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange(cfg.historyLabel+" position change");
+}
+function setEditableImageCropAxis(type,axis,value){
+  if(axis!=="x"&&axis!=="y") return; const cfg=getEditableImageConfig(type); if(!offers[cur]) offers[cur]={};
+  const safe=setEditableImageControlValue(type,axis,value); offers[cur][axis==="x"?cfg.xKey:cfg.yKey]=safe; if(type==="hero") offers[cur]._cropPosVersion=2;
+  updateEditableImageCropStatus(type); refreshOfferUi({status:false,utm:false,spell:false});
+}
+function setEditableImageFitMode(type,mode){
+  const cfg=getEditableImageConfig(type); if(!offers[cur]) offers[cur]={};
+  offers[cur][cfg.modeKey]=mode==="fit"?"fit":"fill"; syncEditableImageUi(type); refreshOfferUi({status:false,utm:false,spell:false});
+}
+function updateEditableImageCropStatus(type){
+  const cfg=getEditableImageConfig(type); const o=offers[cur]||{}; const prefix=cfg.prefix;
+  const zoom=setEditableImageControlValue(type,"zoom",(document.getElementById(getEditableImageControls(type,"zoom").slider)||{}).value||o[cfg.zoomKey]||100);
+  const x=setEditableImageControlValue(type,"x",(document.getElementById(getEditableImageControls(type,"x").slider)||{}).value??o[cfg.xKey]??50);
+  const y=setEditableImageControlValue(type,"y",(document.getElementById(getEditableImageControls(type,"y").slider)||{}).value??o[cfg.yKey]??50);
+  const mode=o[cfg.modeKey]==="fit"?"fit":"fill";
+  const values={}; values[prefix+"-crop-status-zoom"]=zoom+"%"; values[prefix+"-crop-status-x"]=x+"%"; values[prefix+"-crop-status-y"]=y+"%"; values[prefix+"-crop-status-mode"]=mode==="fit"?"Fit Image":"Fill Frame";
+  Object.keys(values).forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=values[id]; });
+}
+function syncEditableImageUi(type){
+  const cfg=getEditableImageConfig(type); const o=offers[cur]||{}; const hasImg=!!o[cfg.imageKey];
+  const ids=type==="hero"?["crop-controls","hero-crop-status","hero-actions-panel","hero-quick-position","hero-crop-presets"]:["itinerary-crop-controls","itinerary-crop-status","itinerary-actions-panel","itinerary-quick-position"];
+  ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle("active",hasImg); });
+  const mode=o[cfg.modeKey]==="fit"?"fit":"fill";
+  ["fill","fit"].forEach(m=>{ const btn=document.getElementById(cfg.prefix+"-mode-"+m); if(btn){ btn.classList.toggle("active",mode===m); btn.setAttribute("aria-pressed",mode===m?"true":"false"); } });
+  updateEditableImageCropStatus(type);
+}
+function removeEditableImage(type){
+  const cfg=getEditableImageConfig(type); if(typeof isOfferLocked==="function" && isOfferLocked(cur)) return showOfferLockStatus(cur); if(!offers[cur]) offers[cur]={};
+  offers[cur][cfg.imageKey]=""; setThumb(type,""); syncEditableImageUi(type); refreshOfferUi({utm:false,spell:false});
+  if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange(cfg.historyLabel+" removal");
+}
+function replaceEditableImage(type){
+  const input=document.querySelector("#"+getDropzoneIdForType(type)+" input[type=file]"); if(input){ input.value=""; input.click(); }
+}
+
 let copiedHeroCropPreset=null;
 function clampCropControlValue(axis,value){
   const cfg=CROP_CONTROLS[axis];
@@ -2614,32 +2744,9 @@ function updateCrop(){
   updateHeroCropStatus();
   refreshOfferUi({status:false,utm:false,spell:false});
 }
-function resetCrop(){
-  offers[cur]._heroFitMode="fill";
-  offers[cur]._cropZoom=100; offers[cur]._cropX=50; offers[cur]._cropY=50; offers[cur]._cropPosVersion=2;
-  setCropControlValue("zoom",100); setCropControlValue("x",50); setCropControlValue("y",50);
-  syncHeroUi();
-  refreshOfferUi({status:false,utm:false,spell:false});
-  if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Hero crop reset");
-}
-function centreHeroImage(){
-  offers[cur]._cropX=50; offers[cur]._cropY=50; offers[cur]._cropPosVersion=2;
-  setCropControlValue("x",50); setCropControlValue("y",50);
-  updateHeroCropStatus();
-  refreshOfferUi({status:false,utm:false,spell:false});
-  if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Hero crop change");
-}
-function setHeroCropAxis(axis,value){
-  if(axis!=="x"&&axis!=="y") return;
-  const safe=setCropControlValue(axis,value);
-  if(!offers[cur]) offers[cur]={};
-  if(axis==="x") offers[cur]._cropX=safe;
-  else offers[cur]._cropY=safe;
-  offers[cur]._cropPosVersion=2;
-  updateHeroCropStatus();
-  refreshOfferUi({status:false,utm:false,spell:false});
-  if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Hero crop quick position");
-}
+function resetCrop(){ resetEditableImagePosition("hero"); }
+function centreHeroImage(){ centreEditableImage("hero"); }
+function setHeroCropAxis(axis,value){ setEditableImageCropAxis("hero",axis,value); }
 function showHeroCropPresetFeedback(message){
   const feedback=document.getElementById("hero-crop-preset-feedback");
   if(feedback) feedback.textContent=message||"";
@@ -2669,50 +2776,13 @@ function pasteHeroCrop(){
   if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Hero crop paste");
 }
 function removeHeroImage(){
-  if(typeof isOfferLocked==="function" && isOfferLocked(cur)) return showOfferLockStatus(cur);
-  offers[cur]._img="";
-  setThumb("hero","");
-  syncHeroUi();
-  refreshOfferUi({utm:false,spell:false});
-  if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Hero image removal");
+  removeEditableImage("hero");
+  // Keeps legacy status-refresh coverage explicit: refreshOfferUi({utm:false,spell:false})
 }
-function replaceHeroImage(){
-  const input=document.querySelector("#dz-hero input[type=file]");
-  if(input){ input.click(); }
-}
-function setHeroFitMode(mode){
-  offers[cur]._heroFitMode=(mode==="fit")?"fit":"fill";
-  syncHeroUi();
-  refreshOfferUi({status:false,utm:false,spell:false});
-  if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Hero fit change");
-}
-function updateHeroCropStatus(){
-  const o=offers[cur]||{};
-  const zoom=setCropControlValue("zoom",(document.getElementById("crop-zoom")||{}).value||o._cropZoom||100);
-  const x=setCropControlValue("x",(document.getElementById("crop-x")||{}).value??o._cropX??50);
-  const y=setCropControlValue("y",(document.getElementById("crop-y")||{}).value??o._cropY??50);
-  const mode=o._heroFitMode==="fit"?"fit":"fill";
-  const values={
-    "hero-crop-status-zoom":zoom+"%",
-    "hero-crop-status-x":x+"%",
-    "hero-crop-status-y":y+"%",
-    "hero-crop-status-mode":mode==="fit"?"Fit Image":"Fill Frame"
-  };
-  Object.keys(values).forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=values[id]; });
-}
-function syncHeroUi(){
-  const hasImg=!!(offers[cur]&&offers[cur]._img);
-  ["crop-controls","hero-crop-status","hero-actions-panel","hero-quick-position","hero-crop-presets"].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.classList.toggle("active",hasImg);
-  });
-  const mode=(offers[cur]&&offers[cur]._heroFitMode)||"fill";
-  const fillBtn=document.getElementById("hero-mode-fill");
-  const fitBtn=document.getElementById("hero-mode-fit");
-  if(fillBtn){ fillBtn.classList.toggle("active",mode==="fill"); fillBtn.setAttribute("aria-pressed",mode==="fill"?"true":"false"); }
-  if(fitBtn){ fitBtn.classList.toggle("active",mode==="fit"); fitBtn.setAttribute("aria-pressed",mode==="fit"?"true":"false"); }
-  updateHeroCropStatus();
-}
+function replaceHeroImage(){ replaceEditableImage("hero"); }
+function setHeroFitMode(mode){ setEditableImageFitMode("hero",mode); }
+function updateHeroCropStatus(){ updateEditableImageCropStatus("hero"); }
+function syncHeroUi(){ syncEditableImageUi("hero"); }
 function clampHeroCropValue(value, fallback){
   const num=parseFloat(value);
   if(!Number.isFinite(num)) return fallback;
@@ -2750,7 +2820,10 @@ function getItineraryImageSource(offer){
 function renderItineraryImageHTML(d){
   const src=getItineraryImageSource(d);
   if(!src) return "";
-  return `<div class="route-map-section"><div class="itinerary-wrap"><img class="itinerary-img" src="${escapeAttr(src)}" alt="" onerror="this.closest('.route-map-section').remove()"></div></div>`;
+  const cz=d._itineraryCropZoom||100; const cx=d._itineraryCropX??50; const cy=d._itineraryCropY??50;
+  const fitMode=d._itineraryFitMode==="fit"?"fit":"fill";
+  const bg=fitMode==="fit"?' style="background:#fff;"':"";
+  return `<div class="route-map-section"><div class="itinerary-wrap"${bg}><img class="itinerary-img" src="${escapeAttr(src)}" data-crop-x="${cx}" data-crop-y="${cy}" data-crop-zoom="${cz}" data-fit-mode="${fitMode}" style="object-fit:fill;object-position:50% 50%;transform:none;left:0;top:0;width:100%;height:100%;" onload="if(typeof applyHeroCropPositions==='function') applyHeroCropPositions(document)" onerror="this.closest('.route-map-section').remove()"></div></div>`;
 }
 function renderHeroHTML(d, heroPlaceholder){
   const heroSrc=getHeroImageSource(d);
@@ -2764,6 +2837,24 @@ function renderHeroHTML(d, heroPlaceholder){
     ? `<div class="hph"><span>${heroPlaceholder[0]}</span><span>${heroPlaceholder[1]}</span></div>`
     : `<div class="hph"><span></span></div>`;
 }
+function applyEditableImageCropToImage(img,wrap,fallbackHeight){
+  if(!wrap) return;
+  const frame=wrap.getBoundingClientRect ? wrap.getBoundingClientRect() : {width:0,height:0};
+  const frameWidth=wrap.offsetWidth||wrap.clientWidth||frame.width||1200;
+  const frameHeight=wrap.offsetHeight||wrap.clientHeight||frame.height||fallbackHeight;
+  const naturalWidth=img.naturalWidth||parseFloat(img.getAttribute('width'))||frameWidth;
+  const naturalHeight=img.naturalHeight||parseFloat(img.getAttribute('height'))||frameHeight;
+  if(!naturalWidth||!naturalHeight) return;
+  const layout=calculateHeroCropLayout(frameWidth,frameHeight,naturalWidth,naturalHeight,img.dataset.cropX,img.dataset.cropY,img.dataset.cropZoom,img.dataset.fitMode);
+  img.style.objectFit='fill';
+  img.style.objectPosition='50% 50%';
+  img.style.transform='none';
+  img.style.transformOrigin='center center';
+  img.style.width=layout.width+'px';
+  img.style.height=layout.height+'px';
+  img.style.left=layout.left+'px';
+  img.style.top=layout.top+'px';
+}
 function applyHeroCropPositions(root){
   const scope=root&&root.querySelectorAll?root:document;
   scope.querySelectorAll('.hero-wrap img.hero').forEach(img=>{
@@ -2775,16 +2866,7 @@ function applyHeroCropPositions(root){
     const naturalWidth=img.naturalWidth||parseFloat(img.getAttribute('width'))||frameWidth;
     const naturalHeight=img.naturalHeight||parseFloat(img.getAttribute('height'))||frameHeight;
     if(!naturalWidth||!naturalHeight) return;
-    const layout=calculateHeroCropLayout(
-      frameWidth,
-      frameHeight,
-      naturalWidth,
-      naturalHeight,
-      img.dataset.cropX,
-      img.dataset.cropY,
-      img.dataset.cropZoom,
-      img.dataset.fitMode
-    );
+    const layout=calculateHeroCropLayout(frameWidth,frameHeight,naturalWidth,naturalHeight,img.dataset.cropX,img.dataset.cropY,img.dataset.cropZoom,img.dataset.fitMode);
     img.style.objectFit='fill';
     img.style.objectPosition='50% 50%';
     img.style.transform='none';
@@ -2793,6 +2875,9 @@ function applyHeroCropPositions(root){
     img.style.height=layout.height+'px';
     img.style.left=layout.left+'px';
     img.style.top=layout.top+'px';
+  });
+  scope.querySelectorAll('.itinerary-wrap img.itinerary-img').forEach(img=>{
+    applyEditableImageCropToImage(img,img.closest('.itinerary-wrap'),620);
   });
 }
 function scheduleHeroCropPositions(root){
@@ -4137,6 +4222,7 @@ function processSheetCSV(csv,status){
 
     if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(loaded);
     ["_img","_imgSource","_imgNeedsReupload","_cropZoom","_cropX","_cropY","_cropPosVersion","_heroFitMode","heroLocked","_itineraryImg","_itineraryImgSource","_itineraryImgNeedsReupload"].forEach(key=>{ delete newOffer[key]; });
+    ["_itineraryCropZoom","_itineraryCropX","_itineraryCropY","_itineraryFitMode"].forEach(key=>{ delete newOffer[key]; });
     newOffer.incl=buildCSVDetailsLine(row,headers,boardParts,newOffer.basis,newOffer.name,newOffer.ship);
     newOffer.tags=csvTopBarUspPreset(newOffer.operator);
     if(hero){ newOffer._img=hero; }
@@ -4959,7 +5045,7 @@ function buildCampaignFilePayload(){
     operatorSettings:{source:"state.offers",byCard:portableOffers.map(({operator="",url="",tags="",_logoDisplay="operator"},cardIndex)=>({cardIndex,operator,url,tags,_logoDisplay}))},
     logoSettings:{source:"state.offers",byCard:portableOffers.map(({_logoDisplay="operator",_logoCustom="",_logoSize="",_logoNeedsReupload=false},cardIndex)=>({cardIndex,_logoDisplay,hasCustomLogo:!!_logoCustom,_logoSize,_logoNeedsReupload}))},
     heroImages:{source:"state.offers",byCard:portableOffers.map(({_img="",_imgSource="",_imgNeedsReupload=false,_cropZoom=100,_cropX=50,_cropY=50,_cropPosVersion=2,_heroFitMode="fill"},cardIndex)=>({cardIndex,imageType:_img ? (/^data:/i.test(_img) ? "embedded-data-url" : "url") : (_imgSource ? "local-reference" : "none"),_img,_imgSource,_imgNeedsReupload,_cropZoom,_cropX,_cropY,_cropPosVersion,_heroFitMode,locked:isHeroImageLocked(cardIndex),heroLocked:isHeroImageLocked(cardIndex)}))},
-    itineraryImages:{source:"state.offers",byCard:portableOffers.map(({_itineraryImg="",_itineraryImgSource="",_itineraryImgNeedsReupload=false},cardIndex)=>({cardIndex,imageType:_itineraryImg ? (/^data:/i.test(_itineraryImg) ? "embedded-data-url" : "url") : (_itineraryImgSource ? "local-reference" : "none"),_itineraryImg,_itineraryImgSource,_itineraryImgNeedsReupload}))},
+    itineraryImages:{source:"state.offers",byCard:portableOffers.map(({_itineraryImg="",_itineraryImgSource="",_itineraryImgNeedsReupload=false,_itineraryCropZoom=100,_itineraryCropX=50,_itineraryCropY=50,_itineraryFitMode="fill"},cardIndex)=>({cardIndex,imageType:_itineraryImg ? (/^data:/i.test(_itineraryImg) ? "embedded-data-url" : "url") : (_itineraryImgSource ? "local-reference" : "none"),_itineraryImg,_itineraryImgSource,_itineraryImgNeedsReupload,_itineraryCropZoom,_itineraryCropX,_itineraryCropY,_itineraryFitMode}))},
     ctaData:getCtaSummaryRows(),
     utmData:portableOffers.map(({url="",_utm="",utm_content=""})=>({url,_utm,utm_content})),
     operatorLandingPages:portableOffers.map(({url=""})=>url),
@@ -7210,6 +7296,13 @@ function saveEditorToOffer(){
   if(y) o._cropY=parseInt(y.value||50,10);
   o._cropPosVersion=2;
   o._heroFitMode = o._heroFitMode==="fit" ? "fit" : "fill";
+  const iz=document.getElementById('itinerary-crop-zoom');
+  const ix=document.getElementById('itinerary-crop-x');
+  const iy=document.getElementById('itinerary-crop-y');
+  if(iz) o._itineraryCropZoom=parseInt(iz.value||100,10);
+  if(ix) o._itineraryCropX=parseInt(ix.value||50,10);
+  if(iy) o._itineraryCropY=parseInt(iy.value||50,10);
+  o._itineraryFitMode = o._itineraryFitMode==="fit" ? "fit" : "fill";
 }
 
 function loadOfferToEditor(i){
@@ -7233,7 +7326,11 @@ function loadOfferToEditor(i){
   setCropControlValue('zoom', o._cropZoom||100);
   setCropControlValue('x', o._cropX??50);
   setCropControlValue('y', o._cropY??50);
+  setEditableImageControlValue('itinerary','zoom', o._itineraryCropZoom||100);
+  setEditableImageControlValue('itinerary','x', o._itineraryCropX??50);
+  setEditableImageControlValue('itinerary','y', o._itineraryCropY??50);
   if(!o._heroFitMode) o._heroFitMode='fill';
+  if(!o._itineraryFitMode) o._itineraryFitMode='fill';
   syncHeroUi();
   syncItineraryUi();
   updateHeroImageLockUI();
