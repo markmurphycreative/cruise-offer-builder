@@ -101,7 +101,7 @@ test('fit image centres non-overflowing axes and pans overflowing axes', () => {
 
 
 test('route map crop engine uses the full edge-to-edge route map viewport instead of hero dimensions', () => {
-  assert.match(html, /itinerary:\{[^}]+viewport:\{width:1200,height:620\}/);
+  assert.match(html, /itinerary:\{[^}]+viewport:\{width:1200,height:700\}/);
   assert.match(html, /hero:\{[^}]+viewport:\{width:1200,height:849\}/);
   assert.match(extractFunction('applyHeroCropPositions'), /applyEditableImageCropToImage\(img,img\.closest\('\.route-map-section'\),null,'itinerary'\)/);
   assert.match(extractFunction('applyEditableImageCropToImage'), /const viewport=getEditableImageViewport\(type\|\|"hero"\)/);
@@ -162,7 +162,7 @@ test('hero upload thumbnail shows the full source image and helper metadata', ()
   assert.match(html, /\.dz-thumb\.hero-t\{object-fit:contain/);
   assert.doesNotMatch(html, /\.dz-thumb\.hero-t\{object-fit:cover/);
   assert.match(html, /Thumbnail shows full source image\. Card preview shows cropped result\./);
-  assert.match(html, /Route Maps are normalised to a fixed 1200 × 620px frame on import\./);
+  assert.match(html, /Route Maps are normalised to a fixed 1200 × 700px frame on import\./);
   assert.match(extractFunction('updateHeroThumbInfo'), /dims\.textContent="Image: "\+w\+" × "\+h\+"px"/);
 });
 
@@ -278,9 +278,9 @@ test('route maps default to a fixed cover-filled frame instead of fitting source
 
 test('fit image preserves full Malta-style route map visibility by default', () => {
   const { calculateHeroCropLayout } = cropContext();
-  const layout = calculateHeroCropLayout(1200, 620, 1200, 900, 50, 50, 100, 'fit');
+  const layout = calculateHeroCropLayout(1200, 700, 1200, 900, 50, 50, 100, 'fit');
 
-  assertClose(layout.height, 620);
+  assertClose(layout.height, 700);
   assert.ok(layout.width < 1200, 'narrow/tall maps should be pillarboxed rather than clipped');
   assertClose(layout.top, 0);
   assertClose(layout.left, (1200 - layout.width) / 2);
@@ -289,19 +289,19 @@ test('fit image preserves full Malta-style route map visibility by default', () 
 
 test('fit image enlarges the visible route map artwork instead of preserving source whitespace', () => {
   const { calculateHeroCropLayout } = cropContext();
-  const layout = calculateHeroCropLayout(1200, 620, 1200, 620, 50, 50, 100, 'fit', { x: 180, y: 180, width: 840, height: 260 });
+  const layout = calculateHeroCropLayout(1200, 700, 1200, 700, 50, 50, 100, 'fit', { x: 180, y: 180, width: 840, height: 260 });
 
-  assertClose(layout.height, 885.7142857142858);
+  assertClose(layout.height, 1000);
   assertClose(layout.width, 1714.2857142857142);
   assertClose(layout.left, -257.14285714285717);
-  assertClose(layout.top, -132.8571428571429);
+  assertClose(layout.top, -92.85714285714289);
   assertClose(840 * (layout.width / 1200), 1200, 'trimmed artwork bounds should reach the route map width');
 });
 
 test('fit image leaves fill frame calculations unchanged when artwork bounds are supplied', () => {
   const { calculateHeroCropLayout } = cropContext();
-  const withBounds = calculateHeroCropLayout(1200, 620, 1200, 620, 50, 50, 100, 'fill', { x: 180, y: 180, width: 840, height: 260 });
-  const withoutBounds = calculateHeroCropLayout(1200, 620, 1200, 620, 50, 50, 100, 'fill');
+  const withBounds = calculateHeroCropLayout(1200, 700, 1200, 700, 50, 50, 100, 'fill', { x: 180, y: 180, width: 840, height: 260 });
+  const withoutBounds = calculateHeroCropLayout(1200, 700, 1200, 700, 50, 50, 100, 'fill');
 
   assert.deepEqual(withBounds, withoutBounds);
 });
@@ -318,13 +318,13 @@ test('route map viewport stays fixed instead of adapting to uploaded artwork asp
   const widePanelHeight = calculateControlledRouteMapHeight();
   const veryTallPanelHeight = calculateControlledRouteMapHeight();
 
-  assert.equal(tallPanelHeight, 620, 'portrait and near-square maps must not grow the route map section');
-  assert.equal(widePanelHeight, 620, 'wide maps use the same controlled route map section height');
-  assert.equal(veryTallPanelHeight, 620, 'extremely tall maps must be clipped inside the controlled route map section');
+  assert.equal(tallPanelHeight, 700, 'portrait and near-square maps must not grow the route map section');
+  assert.equal(widePanelHeight, 700, 'wide maps use the same controlled route map section height');
+  assert.equal(veryTallPanelHeight, 700, 'extremely tall maps must be clipped inside the controlled route map section');
 
   const layout = calculateHeroCropLayout(1200, tallPanelHeight, 1200, 900, 50, 50, 100, 'fit');
-  assertClose(layout.width, 826.6666666666666);
-  assertClose(layout.height, 620);
-  assertClose(layout.left, 186.66666666666669);
+  assertClose(layout.width, 933.3333333333334);
+  assertClose(layout.height, 700);
+  assertClose(layout.left, 133.33333333333331);
   assertClose(layout.top, 0);
 });
