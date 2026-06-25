@@ -2550,8 +2550,8 @@ function readFile(file,type){
     const r=new FileReader(); r.onload=ev=>{
       const src=ev.target.result;
       if(type==="logo"){ offers[targetOfferIndex]._logoCustom=src; if(!offers[targetOfferIndex]._logoSize) offers[targetOfferIndex]._logoSize=50; if(targetOfferIndex===cur){ setThumb("logo",src); document.getElementById("logo-size-row").style.display="flex"; } }
-      else if(type==="itinerary"){ offers[targetOfferIndex]._itineraryImg=src; offers[targetOfferIndex]._itineraryCropZoom=offers[targetOfferIndex]._itineraryCropZoom||100; offers[targetOfferIndex]._itineraryCropX=offers[targetOfferIndex]._itineraryCropX??50; offers[targetOfferIndex]._itineraryCropY=offers[targetOfferIndex]._itineraryCropY??50; offers[targetOfferIndex]._itineraryFitMode=offers[targetOfferIndex]._itineraryFitMode||"fill"; if(targetOfferIndex===cur){ setThumb("itinerary",src); syncItineraryUi(); } }
-      else{ offers[targetOfferIndex]._img=src; if(targetOfferIndex===cur){ setThumb("hero",src); syncHeroUi(); } }
+      else if(type==="itinerary"){ offers[targetOfferIndex]._itineraryImg=src; offers[targetOfferIndex]._itineraryCropZoom=100; offers[targetOfferIndex]._itineraryCropX=50; offers[targetOfferIndex]._itineraryCropY=50; offers[targetOfferIndex]._itineraryFitMode="fill"; if(targetOfferIndex===cur){ setThumb("itinerary",src); syncItineraryUi(); } }
+      else{ offers[targetOfferIndex]._img=src; offers[targetOfferIndex]._cropZoom=100; offers[targetOfferIndex]._cropX=50; offers[targetOfferIndex]._cropY=50; offers[targetOfferIndex]._cropPosVersion=2; offers[targetOfferIndex]._heroFitMode="fill"; if(targetOfferIndex===cur){ setThumb("hero",src); syncHeroUi(); } }
       refreshOfferUi({utm:false,spell:false}); if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange(type==="hero"?"Hero image change":(type==="itinerary"?"Route map change":"Logo image change"));
     }; r.readAsDataURL(file);
   }
@@ -2622,10 +2622,16 @@ const CROP_CONTROLS={
   y:{slider:"crop-y",input:"crop-y-input",fallback:50}
 };
 const EDITABLE_IMAGE_CONFIG={
-  hero:{imageKey:"_img",zoomKey:"_cropZoom",xKey:"_cropX",yKey:"_cropY",modeKey:"_heroFitMode",prefix:"hero",controlsPrefix:"crop",label:"Hero image",historyLabel:"Hero"},
-  itinerary:{imageKey:"_itineraryImg",zoomKey:"_itineraryCropZoom",xKey:"_itineraryCropX",yKey:"_itineraryCropY",modeKey:"_itineraryFitMode",prefix:"itinerary",controlsPrefix:"itinerary-crop",label:"Route Map",historyLabel:"Route map"}
+  hero:{imageKey:"_img",zoomKey:"_cropZoom",xKey:"_cropX",yKey:"_cropY",modeKey:"_heroFitMode",prefix:"hero",controlsPrefix:"crop",label:"Hero image",historyLabel:"Hero",viewport:{width:1200,height:849},defaultFitMode:"fill"},
+  itinerary:{imageKey:"_itineraryImg",zoomKey:"_itineraryCropZoom",xKey:"_itineraryCropX",yKey:"_itineraryCropY",modeKey:"_itineraryFitMode",prefix:"itinerary",controlsPrefix:"itinerary-crop",label:"Route Map",historyLabel:"Route map",viewport:{width:1076,height:620},defaultFitMode:"fill"}
 };
 function getEditableImageConfig(type){ return EDITABLE_IMAGE_CONFIG[type]||EDITABLE_IMAGE_CONFIG.hero; }
+
+function getEditableImageViewport(type){
+  const cfg=getEditableImageConfig(type);
+  const vp=cfg.viewport||{};
+  return {width:Math.max(1,Number(vp.width)||1200),height:Math.max(1,Number(vp.height)||849)};
+}
 function getEditableImageControls(type,axis){
   const cfg=getEditableImageConfig(type);
   const base=cfg.controlsPrefix;
@@ -2661,7 +2667,7 @@ function updateEditableImageCrop(type){
 function resetEditableImagePosition(type){
   const cfg=getEditableImageConfig(type);
   if(!offers[cur]) offers[cur]={};
-  offers[cur][cfg.modeKey]="fill"; offers[cur][cfg.zoomKey]=100; offers[cur][cfg.xKey]=50; offers[cur][cfg.yKey]=50;
+  offers[cur][cfg.modeKey]=cfg.defaultFitMode||"fill"; offers[cur][cfg.zoomKey]=100; offers[cur][cfg.xKey]=50; offers[cur][cfg.yKey]=50;
   if(type==="hero") offers[cur]._cropPosVersion=2;
   ["zoom","x","y"].forEach(axis=>setEditableImageControlValue(type,axis,axis==="zoom"?100:50));
   syncEditableImageUi(type); refreshOfferUi({status:false,utm:false,spell:false});
@@ -2837,11 +2843,12 @@ function renderHeroHTML(d, heroPlaceholder){
     ? `<div class="hph"><span>${heroPlaceholder[0]}</span><span>${heroPlaceholder[1]}</span></div>`
     : `<div class="hph"><span></span></div>`;
 }
-function applyEditableImageCropToImage(img,wrap,fallbackHeight){
+function applyEditableImageCropToImage(img,wrap,fallbackHeight,type){
   if(!wrap) return;
   const frame=wrap.getBoundingClientRect ? wrap.getBoundingClientRect() : {width:0,height:0};
-  const frameWidth=wrap.offsetWidth||wrap.clientWidth||frame.width||1200;
-  const frameHeight=wrap.offsetHeight||wrap.clientHeight||frame.height||fallbackHeight;
+  const viewport=getEditableImageViewport(type||"hero");
+  const frameWidth=wrap.offsetWidth||wrap.clientWidth||frame.width||viewport.width;
+  const frameHeight=wrap.offsetHeight||wrap.clientHeight||frame.height||fallbackHeight||viewport.height;
   const naturalWidth=img.naturalWidth||parseFloat(img.getAttribute('width'))||frameWidth;
   const naturalHeight=img.naturalHeight||parseFloat(img.getAttribute('height'))||frameHeight;
   if(!naturalWidth||!naturalHeight) return;
@@ -2861,8 +2868,9 @@ function applyHeroCropPositions(root){
     const wrap=img.closest('.hero-wrap');
     if(!wrap) return;
     const frame=wrap.getBoundingClientRect ? wrap.getBoundingClientRect() : {width:0,height:0};
-    const frameWidth=wrap.offsetWidth||wrap.clientWidth||frame.width||1200;
-    const frameHeight=wrap.offsetHeight||wrap.clientHeight||frame.height||849;
+    const viewport=getEditableImageViewport("hero");
+    const frameWidth=wrap.offsetWidth||wrap.clientWidth||frame.width||viewport.width;
+    const frameHeight=wrap.offsetHeight||wrap.clientHeight||frame.height||viewport.height;
     const naturalWidth=img.naturalWidth||parseFloat(img.getAttribute('width'))||frameWidth;
     const naturalHeight=img.naturalHeight||parseFloat(img.getAttribute('height'))||frameHeight;
     if(!naturalWidth||!naturalHeight) return;
@@ -2877,7 +2885,7 @@ function applyHeroCropPositions(root){
     img.style.top=layout.top+'px';
   });
   scope.querySelectorAll('.itinerary-wrap img.itinerary-img').forEach(img=>{
-    applyEditableImageCropToImage(img,img.closest('.itinerary-wrap'),620);
+    applyEditableImageCropToImage(img,img.closest('.itinerary-wrap'),620,'itinerary');
   });
 }
 function scheduleHeroCropPositions(root){
