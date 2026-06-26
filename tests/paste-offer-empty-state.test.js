@@ -170,6 +170,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractConst('PARSED_PORT_STATUS_ANNOTATIONS'),
     extractFunction('normaliseParsedPortBracketText'),
     extractFunction('removeParsedPortCountrySuffix'),
+    extractFunction('buildCabinCardInclusionSegments'),
     extractFunction('cleanParsedPorts'),
     extractFunction('escapeRegExp'),
     extractFunction('findKnownOperatorShip'),
@@ -234,18 +235,18 @@ Transfers Included`, 'Newcastle Flights - Transfers Included - Inside Cabin'],
     [`Flying from Newcastle
 Inside Cabin
 Transfers Included
-1 Night Pre-Cruise Stay in Miami`, 'Newcastle Flights - Transfers Included\nInside Cabin - 1 Night Pre-Cruise Stay in Miami'],
+1 Night Pre-Cruise Stay in Miami`, 'Newcastle Flights - Transfers Included - Inside Cabin\n1 Night Pre-Cruise Stay in Miami'],
     [`Flying from Newcastle
 Inside Cabin
 Transfers Included
-2 Nights Pre-Cruise Stay in Vancouver`, 'Newcastle Flights - Transfers Included\nInside Cabin - 2 Nights Pre-Cruise Stay in Vancouver'],
+2 Nights Pre-Cruise Stay in Vancouver`, 'Newcastle Flights - Transfers Included - Inside Cabin\n2 Nights Pre-Cruise Stay in Vancouver'],
     [`Flying from Newcastle
 Inside Cabin
 No Transfers`, 'Newcastle Flights - Inside Cabin'],
     [`Flying from Newcastle
 Inside Cabin
 No Transfers
-1 Night Pre-Cruise Stay in Miami`, 'Newcastle Flights\nInside Cabin - 1 Night Pre-Cruise Stay in Miami'],
+1 Night Pre-Cruise Stay in Miami`, 'Newcastle Flights - Inside Cabin\n1 Night Pre-Cruise Stay in Miami'],
     [`Inside Cabin
 Transfers Included`, 'Transfers Included - Inside Cabin'],
     [`Inside Cabin`, 'Inside Cabin']
@@ -256,6 +257,41 @@ Transfers Included`, 'Transfers Included - Inside Cabin'],
     assert.equal(result.parsed.incl, expected);
   }
 });
+
+test('Paste Offer preserves Celebrity card inclusions and Norwegian port suffixes', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  const offers = [
+    { raw: `Flying from Newcastle
+Inside Cabin
+Transfers Included`, incl: 'Newcastle Flights - Transfers Included - Inside Cabin' },
+    { raw: `Flying from Newcastle
+Inside Cabin
+Transfers Included
+1 Night Pre-Cruise Stay in Miami`, incl: 'Newcastle Flights - Transfers Included - Inside Cabin\n1 Night Pre-Cruise Stay in Miami' },
+    { raw: `Norwegian Fjords
+Inside Cabin
+You'll Visit:
+Southampton
+Haugesund, Norway
+Molde, Norway
+Trondheim, Norway
+Olden, Norway
+Bergen, Norway
+Southampton`, incl: 'Inside Cabin', ports: 'Southampton • Haugesund, Norway • Molde, Norway • Trondheim, Norway • Olden, Norway • Bergen, Norway' },
+    { raw: `Flying from Newcastle
+Inside Cabin
+Transfers Included
+2 Nights Pre-Cruise Stay in Vancouver`, incl: 'Newcastle Flights - Transfers Included - Inside Cabin\n2 Nights Pre-Cruise Stay in Vancouver' }
+  ];
+
+  offers.forEach(offer => {
+    const result = harness.context.parseOfferText(offer.raw, { renderIntelligence: false });
+    assert.equal(result.parsed.incl, offer.incl);
+    assert.doesNotMatch(result.parsed.incl, /(?:^|\n)\s*-|-[ \t]*(?:\n|$)|Transfers IncludedInside Cabin/);
+    if (offer.ports) assert.equal(result.parsed.ports, offer.ports);
+  });
+});
+
 
 test('Paste Offer strips offer heading prefixes from parsed titles', () => {
   const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
@@ -412,7 +448,7 @@ You'll visit:
 Southampton • Vigo, Spain • Lisbon, Portugal • Cadiz, Spain • Paris, Le Havre, France • Southampton
 
 Full Board
-Balcony Cabin • Family • Premium Ship`, 'Manchester Included', 'Southampton • Vigo • Lisbon • Cadiz • Paris, Le Havre'],
+Balcony Cabin • Family • Premium Ship`, 'Manchester Included', 'Southampton • Vigo, Spain • Lisbon, Portugal • Cadiz, Spain • Paris, Le Havre, France'],
     [`MSC Cruises | MSC World Europa
 Western Mediterranean
 10 Nights • 3rd June 2027
@@ -425,7 +461,7 @@ You'll visit:
 Barcelona • Marseille, France • Genoa, Italy • Naples, Italy • Messina, Sicily • Valletta, Malta • Barcelona
 
 Full Board
-Family • Value • Entertainment`, 'Glasgow Included', 'Barcelona • Marseille • Genoa • Naples • Messina • Valletta'],
+Family • Value • Entertainment`, 'Glasgow Included', 'Barcelona • Marseille, France • Genoa, Italy • Naples, Italy • Messina, Sicily • Valletta, Malta'],
     [`Princess Cruises | Regal Princess
 Italian Riviera & Spain
 12 Nights • 4th September 2027
@@ -1230,7 +1266,7 @@ Balcony Cabin • Premium Ship • Fjords`, { renderIntelligence: false });
   assert.doesNotMatch(result.parsed.ports, /Premium Ship|Fjords|Balcony Cabin|Full Board/);
 });
 
-test('Paste Offer removes comma country qualifiers without creating standalone country ports', () => {
+test('Paste Offer preserves comma country qualifiers without creating standalone country ports', () => {
   const harness = createHarness([{}, {}, {}, {}]);
   const result = harness.context.parseOfferText(`Celebrity Cruises | Celebrity Apex
 Norwegian Fjords
@@ -1246,8 +1282,8 @@ Southampton • Stavanger, Norway • Olden, Norway • Geiranger, Norway • Be
 Full Board
 Balcony Cabin • Premium Ship • Fjords`, { renderIntelligence: false });
 
-  assert.equal(result.parsed.ports, 'Southampton • Stavanger • Olden • Geiranger • Bergen');
-  assert.doesNotMatch(result.parsed.ports, /Norway|Premium Ship|Fjords/);
+  assert.equal(result.parsed.ports, 'Southampton • Stavanger, Norway • Olden, Norway • Geiranger, Norway • Bergen, Norway');
+  assert.doesNotMatch(result.parsed.ports, /Premium Ship|Fjords/);
 });
 
 test('Paste Offer preserves comma aliases inside port labels while removing trailing country suffixes', () => {
@@ -1259,8 +1295,7 @@ Spain & France
 You'll visit:
 Southampton • Paris, Le Havre, France • Bilbao, Spain • La Coruna, Spain • Vigo, Spain • Cherbourg, France • Southampton`, { renderIntelligence: false });
 
-  assert.equal(result.parsed.ports, 'Southampton • Paris, Le Havre • Bilbao • La Coruna • Vigo • Cherbourg');
-  assert.doesNotMatch(result.parsed.ports, /France|Spain/);
+  assert.equal(result.parsed.ports, 'Southampton • Paris, Le Havre, France • Bilbao, Spain • La Coruna, Spain • Vigo, Spain • Cherbourg, France');
 });
 
 test('Paste Offer preserves route location brackets while removing status annotations', () => {
@@ -1283,12 +1318,12 @@ At Sea`, { renderIntelligence: false });
     'Paris, for Le Havre',
     'Berlin, for Warnemünde',
     'Kyoto/Osaka, for Kobe',
-    'Barcelona'
+    'Barcelona, Spain'
   ].join(' • '));
-  assert.doesNotMatch(result.parsed.ports, /At Sea|Overnight|Italy|France|Germany|Japan|Spain/);
+  assert.doesNotMatch(result.parsed.ports, /At Sea|Overnight/);
 });
 
-test('Paste Offer keeps airport-specific non-flight inclusions and removes Turkey port suffixes', () => {
+test('Paste Offer keeps airport-specific non-flight inclusions and standard port suffixes', () => {
   const harness = createHarness([{}, {}, {}, {}]);
   const luggageResult = harness.context.parseOfferText(`Virgin Voyages | Valiant Lady
 Mediterranean Icons
@@ -1321,7 +1356,7 @@ Full Board
 Family • Entertainment • Value`, { renderIntelligence: false });
 
   assert.equal(transfersResult.parsed.incl, 'Glasgow Transfers Included');
-  assert.equal(transfersResult.parsed.ports, 'Athens • Kusadasi • Istanbul • Mykonos');
+  assert.equal(transfersResult.parsed.ports, 'Athens • Kusadasi, Turkey • Istanbul, Turkey • Mykonos');
 });
 
 test('Paste Offer rejects marketing labels, cabin types, USPs and board basis as ports', () => {
