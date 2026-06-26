@@ -614,14 +614,14 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .preview-hero-drop-target{position:relative;}
 .preview-hero-drop-target.hero-drag-over{outline:5px solid var(--gold);outline-offset:8px;box-shadow:0 0 0 10px rgba(160,146,103,.18);}
 .preview-pane .hph.clickable-hero-placeholder::after{content:"ADD HERO IMAGE";display:inline-flex;align-items:center;justify-content:center;opacity:1;font-family:'Montserrat',sans-serif;font-size:38px;font-weight:500;color:#fff;background:transparent;border:0;border-radius:0;padding:0;line-height:1;text-align:center;box-shadow:none;pointer-events:none;}
-.cc .isec{width:1200px;height:auto;min-height:0;overflow:visible;background:#fff;padding:80px 62px 112px;text-align:center;}
-.cc .isec-content{position:relative;top:16px;}
+.cc .isec{width:1200px;height:auto;min-height:0;overflow:visible;background:#fff;padding:70px 62px 92px;text-align:center;}
+.cc .isec-content{position:relative;top:0;}
 .cc .cname,.cc .incl,.cc .sname,.cc .price-block,.cc .pmain,.cc .pbasis{max-width:100%;min-width:0;white-space:normal;word-wrap:break-word;overflow-wrap:break-word;}
 .cc .cname,.cc .incl,.cc .sname,.cc .pbasis{max-width:1000px;margin-left:auto;margin-right:auto;}
 .cc .price-block{max-width:1000px;}
 .cc .cname{font-size:74px;font-weight:300;color:var(--operator-text,var(--navy));line-height:1.0;margin-bottom:6px;}
-.cc .incl{font-size:40px;font-weight:300;color:#555;line-height:1.2;margin-bottom:4px;}
-.cc .cabin-phrase{white-space:nowrap;}
+.cc .incl{font-size:40px;font-weight:300;color:#555;line-height:1.36;margin-bottom:16px;}
+.cc .cabin-phrase,.cc .precruise-phrase{white-space:nowrap;}
 .cc .sname{font-size:40px;font-weight:300;color:var(--operator-accent,var(--gold));line-height:1.2;margin-bottom:28px;}
 .cc .price-block{display:inline-flex;flex-direction:column;align-items:center;}
 .cc .pfrom{font-size:30px;font-weight:300;color:#888;line-height:1;margin-bottom:0;}
@@ -7229,6 +7229,7 @@ function renderCardInclusion(value){
       const escaped=phrase.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
       rendered=rendered.replace(new RegExp(`\\b${escaped}\\b`,"gi"),match=>`<span class="cabin-phrase">${match.replace(/ /g,"&nbsp;")}</span>`);
     });
+    if(isCardPreCruiseComponent(rendered)) return `<span class="precruise-phrase">${rendered}</span>`;
     return rendered;
   };
   const components=buildCardInclusionComponents(value);

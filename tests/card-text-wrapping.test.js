@@ -327,9 +327,9 @@ test('itinerary line groups never start or end with bullet separators when desti
 test('white information panel narrows editorial copy, grows naturally, and centres the content group', () => {
   assert.match(
     html,
-    /\.cc \.isec\{width:1200px;height:auto;min-height:0;overflow:visible;background:#fff;padding:80px 62px 112px;text-align:center;\}/
+    /\.cc \.isec\{width:1200px;height:auto;min-height:0;overflow:visible;background:#fff;padding:70px 62px 92px;text-align:center;\}/
   );
-  assert.match(html, /\.cc \.isec-content\{position:relative;top:16px;\}/);
+  assert.match(html, /\.cc \.isec-content\{position:relative;top:0;\}/);
   assert.match(html, /<div class="isec"><div class="isec-content"><div class="cname">\$\{name\}<\/div>/);
   assert.match(
     html,
