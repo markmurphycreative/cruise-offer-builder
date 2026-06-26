@@ -5832,6 +5832,11 @@ const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship
 const OPERATOR_ALIASES={po:[/\bp\s*&\s*o\b/i,/\bp\s*and\s*o\b/i,/\bp&o\s+cruises\b/i],royal:[/\broyal\b/i,/\brci\b/i,/\broyal\s+caribbean\b/i],marella:[/\bmarella\b/i,/\bmarella\s+cruises\b/i],celebrity:[/\bcelebrity\b/i,/\bcelebrity\s+cruises\b/i],fred:[/\bfred\s+olsen\b/i,/\bfred\.?\s*olsen\b/i],cunard:[/\bcunard\b/i],msc:[/\bmsc\b/i],ncl:[/\bnorwegian\s+cruise\s+line\b/i,/\bncl\b/i],princess:[/\bprincess\b/i],ambassador:[/\bambassador\b/i],virgin:[/\bvirgin\b/i]};
 const AIRPORT_WORDS=["newcastle","manchester","edinburgh","leeds bradford","glasgow","birmingham","london","heathrow","gatwick","stansted","bristol","belfast"];
 const PASTE_OPERATOR_BOARD_DEFAULTS={po:["FB","Full Board"],celebrity:["FB","Full Board"],fred:["FB","Full Board"],amawaterways:["FB","Full Board"],ambassador:["FB","Full Board"],ncl:["FB","Full Board"],cunard:["FB","Full Board"],marella:["AI","All Inclusive"],princess:["AI","All Inclusive"],msc:["AI","All Inclusive"],virgin:["AI","All Inclusive"],riviera:["AI","All Inclusive"]};
+const CRUISE_PASSENGER_BASIS_DEFAULT_OPERATORS=new Set(["po","royal","marella","celebrity","fred","cunard","msc","ncl","princess","ambassador","virgin","amawaterways"]);
+const DEFAULT_CRUISE_PASSENGER_BASIS="Based On 2 Adults Sharing";
+function shouldDefaultCruisePassengerBasis(operatorKey){
+  return CRUISE_PASSENGER_BASIS_DEFAULT_OPERATORS.has(String(operatorKey||"").toLowerCase());
+}
 function detectPassengerBasis(text){
   const value=String(text||"").replace(/\u00a0/g," ");
   if(/\b(?:solo\s+travell?er|single\s+occupancy|sole\s+occupancy|single\s+travell?er)\b/i.test(value)) return "Based On Solo Occupancy";
@@ -6309,7 +6314,9 @@ function parseOfferText(raw,options){
   const pipe=lines.find(l=>l.includes('|')); if(pipe){const parts=pipe.split('|').map(s=>s.trim()); if(!parsed.operatorKey&&parts[0]){for(const[k,op]of Object.entries(OPERATOR_HEADERS)){if(op.name&&new RegExp('\\b'+op.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i').test(parts[0])){parsed.operatorKey=k;score+=18;break;}} if(!parsed.operatorKey){for(const[k,arr]of Object.entries(OPERATOR_ALIASES)){if(arr.some(r=>r.test(parts[0]))){parsed.operatorKey=k;score+=18;break;}}}} if(parts[1]){parsed.ship=parts[1];score+=8;} }
   const nm=txt.match(/\b(\d{1,2})\s*(?:nights?|nts?)\b/i); if(nm){parsed.nights=nm[1];score+=14;}
   const extractedPrice=extractOfferPrice(txt); if(extractedPrice){parsed.price=extractedPrice;score+=14;}
-  const passengerBasis=detectPassengerBasis(txt)||parseFamilyPassengerBasis(txt); if(passengerBasis){parsed.basis=passengerBasis; score+=6;}
+  const passengerBasis=detectPassengerBasis(txt)||parseFamilyPassengerBasis(txt);
+  if(passengerBasis){parsed.basis=passengerBasis; score+=6;}
+  else if(shouldDefaultCruisePassengerBasis(parsed.operatorKey)){parsed.basis=DEFAULT_CRUISE_PASSENGER_BASIS;}
   const detectedBoard=detectBoardBasis(txt); if(detectedBoard){parsed.board=detectedBoard[0];parsed.boardlbl=detectedBoard[1];score+=10;}
   const months='january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec';
   let dm=txt.match(new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${months})\\s+(\\d{2,4})\\b`,'i'))||txt.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);
