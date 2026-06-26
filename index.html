@@ -2795,11 +2795,20 @@ function updateEditableImageCropStatus(type){
   Object.keys(values).forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=values[id]; });
 }
 function syncEditableImageUi(type){
-  const cfg=getEditableImageConfig(type); const o=offers[cur]||{}; const hasImg=!!o[cfg.imageKey];
+  const cfg=getEditableImageConfig(type);
+  const o=offers[cur]||{};
+  const src=String((o&&o[cfg.imageKey])||"").trim();
+  const hasImg=!!src;
   const ids=type==="hero"?["crop-controls","hero-crop-status","hero-actions-panel","hero-quick-position","hero-crop-presets"]:["itinerary-crop-controls","itinerary-crop-status","itinerary-actions-panel","itinerary-quick-position"];
   ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle("active",hasImg); });
+  const locked=typeof isOfferLocked==="function"&&isOfferLocked(cur);
+  ids.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el||!el.querySelectorAll) return;
+    el.querySelectorAll("button,input,select,textarea").forEach(control=>{ control.disabled=!hasImg||locked; });
+  });
   const mode=o[cfg.modeKey]==="fit"?"fit":"fill";
-  ["fill","fit"].forEach(m=>{ const btn=document.getElementById(cfg.prefix+"-mode-"+m); if(btn){ btn.classList.toggle("active",mode===m); btn.setAttribute("aria-pressed",mode===m?"true":"false"); } });
+  ["fill","fit"].forEach(m=>{ const btn=document.getElementById(cfg.prefix+"-mode-"+m); if(btn){ btn.classList.toggle("active",mode===m); btn.setAttribute("aria-pressed",mode===m?"true":"false"); btn.disabled=!hasImg||locked; } });
   updateEditableImageCropStatus(type);
 }
 function removeEditableImage(type){

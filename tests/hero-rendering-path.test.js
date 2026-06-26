@@ -183,6 +183,19 @@ test('optional itinerary image renders between offer details and Youll Visit onl
   assert.ok(cardWithItinerary.indexOf('<div class="route-map-section"') < cardWithItinerary.indexOf('<div class="vsec">'));
 });
 
+test('route map editor controls enable from the active offer image on every switch', () => {
+  const syncUi = extractFunction('syncEditableImageUi');
+  assert.match(syncUi, /const src=String\(\(o&&o\[cfg\.imageKey\]\)\|\|""\)\.trim\(\)/);
+  assert.match(syncUi, /const hasImg=!!src/);
+  assert.match(syncUi, /querySelectorAll\("button,input,select,textarea"\)\.forEach\(control=>\{ control\.disabled=!hasImg\|\|locked; \}\)/);
+
+  const loadEditor = extractFunction('loadOfferToEditor');
+  assert.match(loadEditor, /setThumb\('itinerary', o\._itineraryImg \|\| ''\)/);
+  assert.match(loadEditor, /syncItineraryUi\(\)/);
+
+  assert.match(html, /function sv\(i\)\{[\s\S]*?cur=Number\(i\);[\s\S]*?loadOfferToEditor\(cur\);/);
+});
+
 test('route map upload resolves against the offer active when the file was selected', () => {
   const readFileSource = extractFunction('readFile');
   assert.match(readFileSource, /const targetOfferIndex=cur;/);
