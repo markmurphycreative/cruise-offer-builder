@@ -6030,21 +6030,34 @@ function normaliseParsedPortBracketText(label){
 }
 function removeParsedPortCountrySuffix(label){
   let value=normaliseParsedPortBracketText(label);
-  const requiredSuffixes=["Bahamas","Grand Cayman","Mexico","Florida","British Columbia","Alaska","Majorca"];
-  if(requiredSuffixes.some(suffix=>new RegExp(`,\\s*${escapeRegExp(suffix)}\\s*$`,"i").test(value))) return value;
-  let changed=true;
-  while(changed){
-    changed=false;
-    for(const country of PARSED_PORT_COUNTRY_SUFFIXES){
-      const pattern=new RegExp(`,\\s*${escapeRegExp(country)}\\s*$`,"i");
-      if(pattern.test(value)){
-        value=value.replace(pattern,"").trim();
-        changed=true;
-        break;
+  if(/,\s*for\s+/i.test(value)){
+    let changed=true;
+    while(changed){
+      changed=false;
+      for(const country of PARSED_PORT_COUNTRY_SUFFIXES){
+        const pattern=new RegExp(`,\\s*${escapeRegExp(country)}\\s*$`,"i");
+        if(pattern.test(value)){
+          value=value.replace(pattern,"").trim();
+          changed=true;
+          break;
+        }
       }
     }
   }
   return value;
+}
+function buildCabinCardInclusionSegments(options){
+  const firstLine=[];
+  const cleanSegment=value=>String(value||"").replace(/^[\s-]+|[\s-]+$/g,"").replace(/\s{2,}/g," ").trim();
+  const add=value=>{ const cleaned=cleanSegment(value); if(cleaned&&!firstLine.some(existing=>existing.toLowerCase()===cleaned.toLowerCase())) firstLine.push(cleaned); };
+  if(options&&options.airport) add(`${options.airport} Flights`);
+  if(options&&options.transfersIncluded) add("Transfers Included");
+  if(options&&options.cabin) add(options.cabin);
+  const lines=[];
+  if(firstLine.length) lines.push(firstLine.join(" - "));
+  const stay=cleanSegment(options&&options.preCruiseInclusion);
+  if(stay) lines.push(stay);
+  return lines.join("\n");
 }
 function cleanParsedPorts(lines,options){
   const ignored=/^(?:at sea|(?:\d+\s+)?days?\s+at\s+sea|(?:\d+\s+)?sea\s+days?|overnight port stay|overnight stay|overnight|luggage\s*(?:&|and)\s*transfers?\s+included|flights?\s+included)[, .!]*$/i;
@@ -6347,19 +6360,12 @@ function parseOfferText(raw,options){
     if(transferStatus||detectedPreCruiseStay||!sourceInclusion||isCabinTypeExclusion(sourceInclusion)){
       const preCruiseMatch=detectedPreCruiseStay.match(/^(\d+)\s+(Night|Nights)(?:\s+in\s+(.+))?$/i);
       const preCruiseInclusion=preCruiseMatch?`${preCruiseMatch[1]} ${preCruiseMatch[2]} Pre-Cruise Stay${preCruiseMatch[3]?` in ${preCruiseMatch[3].trim()}`:""}`:"";
-      if(preCruiseInclusion){
-        const travelInclusionParts=[];
-        if(parsedAirport) travelInclusionParts.push(`${parsedAirport} Flights`);
-        if(transferStatus==="Included") travelInclusionParts.push("Transfers Included");
-        const cabinStayParts=[detectedCabin,preCruiseInclusion].filter(Boolean);
-        parsed.incl=[travelInclusionParts.join(" - "),cabinStayParts.join(" - ")].filter(Boolean).join("\n");
-      }else{
-        const cabinInclusionParts=[];
-        if(parsedAirport) cabinInclusionParts.push(`${parsedAirport} Flights`);
-        if(transferStatus==="Included") cabinInclusionParts.push("Transfers Included");
-        cabinInclusionParts.push(detectedCabin);
-        parsed.incl=cabinInclusionParts.join(" - ");
-      }
+      parsed.incl=buildCabinCardInclusionSegments({
+        airport:parsedAirport,
+        transfersIncluded:transferStatus==="Included",
+        cabin:detectedCabin,
+        preCruiseInclusion
+      });
     }
     score+=6;
   }
