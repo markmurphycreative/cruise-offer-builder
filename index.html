@@ -5913,6 +5913,9 @@ const CABIN_TYPE_EXCLUSIONS=[
 const NON_PORT_EXTRACTION_EXCLUSION_PATTERNS=[
   /\b(?:based\s+on\s+2\s+adults(?:\s+sharing)?|2\s+adults(?:\s+sharing)?|solo\s+travell?er|single\s+occupancy|sole\s+occupancy)\b/i,
   /\b(?:flights?|drinks?|wi[-\s]?fi|gratuities|tips|transfers?|luggage|baggage|hotel\s+stay)\s+(?:from\s+[a-z\s]+\s+)?included\b/i,
+  /^\s*no\s+transfers?\s*$/i,
+  /^\s*(?:\d+\s+nights?)\s+pre[-\s]*cruise\s+stay\s+in\s+.+$/i,
+  /^\s*(?:inside\s+passage|scenic\s+cruising|cruising)\s*(?:\(\s*cruising\s*\))?\s*$/i,
   /\b(?:included|inclusions?|what(?:'|’)?s included)\b/i,
   /\b(?:full\s*board|half\s*board|all[\s-]*inclusive|self\s*catering|room\s+only|bed\s*(?:&|and)\s*breakfast)\b/i,
   /\b(?:premium\s+ship|smaller\s+ship|adults?\s+only|family(?:\s+friendly)?|med\s+fly[-\s]*cruise|fjords?|ocean\s+cruise|river\s+cruise|feature|features?)\b/i,
@@ -6003,10 +6006,10 @@ function isStandalonePortCandidate(line){
     !/[£$€]|\d|\b(?:nights?|nts?|included|flights?|transfers?|luggage|cabin|from)\b/i.test(value);
 }
 const PARSED_PORT_COUNTRY_SUFFIXES=[
-  "Norway","France","Spain","Portugal","Italy","Malta","Sicily","Turkey","Germany","Japan"
+  "Norway","France","Spain","Portugal","Italy","Malta","Sicily","Turkey","Germany","Japan","Florida","British Columbia","Alaska","England","Grand Cayman","Mexico","Bahamas"
 ];
 const PARSED_PORT_STATUS_ANNOTATIONS=[
-  "Overnight","Overnight Stay","Late Stay","Tender","At Anchor","Anchor","Docked","Disembark","Embark"
+  "Overnight","Overnight Stay","Late Stay","Tender","At Anchor","Anchor","Docked","Disembark","Embark","Cruising"
 ];
 function normaliseParsedPortBracketText(label){
   let value=String(label||"")
@@ -6036,7 +6039,7 @@ function removeParsedPortCountrySuffix(label){
   return value;
 }
 function cleanParsedPorts(lines,options){
-  const ignored=/^(?:at sea|(?:\d+\s+)?days?\s+at\s+sea|(?:\d+\s+)?sea\s+days?|overnight port stay|overnight stay|overnight|luggage\s*(?:&|and)\s*transfers?\s+included|flights?\s+included)[.!]?$/i;
+  const ignored=/^(?:at sea|(?:\d+\s+)?days?\s+at\s+sea|(?:\d+\s+)?sea\s+days?|overnight port stay|overnight stay|overnight|luggage\s*(?:&|and)\s*transfers?\s+included|flights?\s+included)[, .!]*$/i;
   return cleanDestinationOnlyLines(lines).flatMap(line=>line.split(/(?:[•·▪◦●]|\s+[-–—]\s+|[-–—]\s*$)/)).map(item=>{
     const cleaned=item.trim().replace(/^[-–—]\s*/,"");
     return typeof removeParsedPortCountrySuffix==="function"?removeParsedPortCountrySuffix(cleaned):cleaned;
@@ -6310,7 +6313,7 @@ function parseOfferText(raw,options){
   else { const mm=txt.match(new RegExp(`\\b(${months})\\s+(\\d{4})\\b`,'i')); if(mm){ const mn=new Date(`${mm[1]} 1, ${mm[2]}`); parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+mm[2]; score+=10; } }
   const itineraryLines=getItineraryLines(lines);
   const shipLineIndex=parsed.ship?lines.findIndex(line=>line===parsed.ship):-1;
-  const title=lines.find((l,index)=>!Object.values(OPERATOR_ALIASES).flat().some(r=>r.test(l))&&!(itineraryLines||[]).includes(l)&&!(typeof isRecognisedPortTitleLine==="function"&&isRecognisedPortTitleLine(l))&&(shipLineIndex<0||index<shipLineIndex)&&!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b|\b(?:full board|half board|all inclusive|self catering|inside|outside|balcony|suite|based on|sharing|solo traveller|solo traveler|single occupancy|sole occupancy|single traveller|single traveler)\b/i.test(l))&&l.length>8&&l!==parsed.ship); if(title){parsed.name=title.replace(/^[-•\s]+/,'');score+=8;}
+  const title=lines.find((l,index)=>!Object.values(OPERATOR_ALIASES).flat().some(r=>r.test(l))&&!(itineraryLines||[]).includes(l)&&!(typeof isRecognisedPortTitleLine==="function"&&isRecognisedPortTitleLine(l))&&(shipLineIndex<0||index<shipLineIndex)&&!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b|\b(?:full board|half board|all inclusive|self catering|inside|outside|balcony|suite|based on|sharing|solo traveller|solo traveler|single occupancy|sole occupancy|single traveller|single traveler)\b/i.test(l))&&l.length>8&&l!==parsed.ship); if(title){parsed.name=title.replace(/^[-•\s]+/,'').replace(/^offer\s+\d+\s*[-–—:]\s*/i,'').trim();score+=8;}
   const portExclusions=[parsed.name,parsed.ship,parsed.price,parsed.basis,parsed.boardlbl,parsed.incl].filter(Boolean);
   const destinationLines=cleanDestinationOnlyLines(lines); const standalonePortLines=getStandalonePortLines(destinationLines,{exclude:portExclusions}); const portLines=(itineraryLines&&cleanDestinationOnlyLines(itineraryLines))||(standalonePortLines.length?standalonePortLines:null)||destinationLines.filter(l=>/[•·,]|\s+-\s+/.test(l)&&/(?:[A-Za-z]{3,}\s*){2,}/.test(l)&&!/from|£|nights?|nts?|included|flights?/i.test(l)); const ports=removeDuplicateReturnEmbarkationPortsString(cleanParsedPorts(portLines,{exclude:portExclusions})); if(ports){parsed.ports=ports;score+=8;}
   if(typeof getPortIntelligence==="function"){
@@ -6323,6 +6326,15 @@ function parseOfferText(raw,options){
   const uspTags=inferUspTagsFromLines(lines); if(uspTags){parsed.tags=uspTags;score+=8;}
   const sourceInclusion=extractSourceInclusionLine(lines);
   if(sourceInclusion){parsed.incl=sourceInclusion;score+=6;}
+  const detectedCabin=detectCabinType(raw);
+  const parsedAirport=typeof detectFlightAirport==="function"?detectFlightAirport(raw):"";
+  if(detectedCabin){
+    const cabinInclusionParts=[];
+    if(parsedAirport) cabinInclusionParts.push(`${parsedAirport} Flights Included`);
+    cabinInclusionParts.push(detectedCabin);
+    parsed.incl=cabinInclusionParts.join(" - ");
+    score+=6;
+  }
   const knownShipMatch=findKnownOperatorShip(txt,parsed.operatorKey); if(knownShipMatch){ if(!parsed.ship){parsed.ship=knownShipMatch.ship;score+=8;} if(!parsed.operatorKey){parsed.operatorKey=knownShipMatch.operatorKey;score+=18;} }
   if(!parsed.ship){const shipLine=lines.find(l=>/\b(cruise|explorer|symphony|arvia|voyager|queen|discovery)\b/i.test(l)); if(shipLine){const m=shipLine.match(/\b([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+){0,3})\b/); if(m) parsed.ship=m[1];}}
   const confidence=score>=62?'high':score>=35?'partial':'low';
@@ -6856,6 +6868,8 @@ function getOfferIntelligenceDetectedFields(parsed,rawText){
   addValue("Departure Airport",airport);
   const cabinType=detectCabinType(rawText);
   addValue("Cabin Type",cabinType);
+  addValue("Transfers",detectTransferStatus(rawText));
+  addValue("Pre-Cruise Stay",detectPreCruiseStay(rawText));
   return {fields,airport};
 }
 function detectCabinType(text){
@@ -6865,6 +6879,19 @@ function detectCabinType(text){
   const pattern=new RegExp("\\b("+CABIN_TYPE_EXCLUSIONS.map(escapeRegExp).join("|")+")\\b","i");
   const match=String(text||"").match(pattern);
   return match?(CABIN_TYPE_EXCLUSIONS.find(item=>normaliseExtractionExclusionValue(item)===normaliseExtractionExclusionValue(match[1]))||match[1]):"";
+}
+function detectTransferStatus(text){
+  const line=String(text||"").split(/\n/).map(item=>item.trim()).find(item=>/^(?:transfers?\s+included|no\s+transfers?)$/i.test(item));
+  if(!line) return "";
+  return /^no\s+transfers?/i.test(line)?"No Transfers":"Included";
+}
+function detectPreCruiseStay(text){
+  const match=String(text||"").match(/(?:^|\n)\s*(\d+)\s+(nights?)\s+pre[-\s]*cruise\s+stay\s+in\s+([^\n\r]+?)\s*(?=$|\n)/i);
+  if(!match) return "";
+  const count=match[1];
+  const nightLabel=Number(count)===1?"Night":"Nights";
+  const place=match[3].replace(/\s+/g," ").trim();
+  return `${count} ${nightLabel} in ${place}`;
 }
 function getOfferIntelligenceSummary(parsed,rawText){
   const count=getOfferIntelligenceDetectedFields(parsed,rawText).fields.length;
