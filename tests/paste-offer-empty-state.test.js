@@ -17,7 +17,7 @@ Full Board
 Itinerary
 Fort Lauderdale, Florida - At Sea - At Sea -
 Cartagena, Colombia -
-Panama Canal (Cruising) - Colon, Panama - At Sea -
+Panama Canal - Colon, Panama - At Sea -
 Oranjestad, Aruba -
 Willemstad, Curacao - Kralendijk, Bonaire - At Sea -
 At Sea - Fort Lauderdale, Florida
@@ -710,7 +710,7 @@ test('Paste Offer keeps comma-qualified Panama Canal & Southern Caribbean ports 
   harness.parse(CELEBRITY_CRUISES_OFFER);
 
   assert.equal(harness.context.offers[0].ports, [
-    'Fort Lauderdale, Florida', 'Cartagena, Colombia', 'Panama Canal (Cruising)', 'Colon, Panama',
+    'Fort Lauderdale, Florida', 'Cartagena, Colombia', 'Panama Canal', 'Colon, Panama',
     'Oranjestad, Aruba', 'Willemstad, Curacao', 'Kralendijk, Bonaire', 'Fort Lauderdale, Florida'
   ].join(' • '));
 });
@@ -723,7 +723,7 @@ Overnight Port Stay - overnight stay - Overnight - AT SEA`);
   const ports = harness.context.offers[0].ports.split(' • ');
   assert.equal(ports.includes('Fort Lauderdale, Florida'), true);
   assert.equal(ports.includes('Cartagena, Colombia'), true);
-  assert.equal(ports.includes('Panama Canal (Cruising)'), true);
+  assert.equal(ports.includes('Panama Canal'), true);
   assert.equal(ports.includes('Colon, Panama'), true);
   assert.equal(ports.includes('Oranjestad, Aruba'), true);
   assert.equal(ports.includes('Willemstad, Curacao'), true);
