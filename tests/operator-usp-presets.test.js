@@ -5,14 +5,14 @@ import vm from 'node:vm';
 
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
-const AMAWATERWAYS_USP_PRESET = 'Cuisine · Cultural Experiences · Luxury · Wellness';
+const AMAWATERWAYS_USP_PRESET = 'Cuisine · Culture · Luxury · Wellness';
 
 const EXPECTED_CRUISE_PRESETS = {
   amawaterways: AMAWATERWAYS_USP_PRESET,
   ambassador: 'Adult Only Options · Entertainment · Sustainability · Value',
-  celebrity: 'Cuisine · Cultural Experiences · Entertainment · Overnight Port Stays',
+  celebrity: 'Cuisine · Culture · Entertainment · Overnight Port Stays',
   cunard: 'Cuisine · Entertainment · Luxury · Wellness',
-  fred: 'Cultural Experiences · Education · Entertainment · Unique Itineraries',
+  fred: 'Culture · Education · Entertainment · Unique Itineraries',
   marella: 'Accessible · Adult Only Options · All-inclusive · Entertainment',
   msc: 'All-inclusive · Entertainment · Family · Diverse Itineraries',
   ncl: "Entertainment · Family · Kids' Clubs · Value",
@@ -36,6 +36,7 @@ function createOperatorHarness() {
     'logo-override-area': { style: {} }
   };
   const source = [
+    extract(/function normalizeTopBarUspText\(value\)\{[\s\S]*?\n\}/, 'normalizeTopBarUspText'),
     extract(/const OPERATOR_USP_PRESETS = \{[\s\S]*?\n\};/, 'OPERATOR_USP_PRESETS'),
     extract(/function operatorChanged\(silent\)\{[\s\S]*?\n\}/, 'operatorChanged')
   ].join('\n').replace('const OPERATOR_USP_PRESETS', 'var OPERATOR_USP_PRESETS');

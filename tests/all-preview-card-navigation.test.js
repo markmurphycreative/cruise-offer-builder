@@ -72,7 +72,7 @@ test('clicking an All 4 preview card selects that offer and switches to Single w
 test('All 4 rendered cards expose click, keyboard, and accessible edit affordances', () => {
   assert.match(html, /\.all-preview-card\{[^}]*cursor:pointer;[^}]*transition:transform \.16s ease,box-shadow \.16s ease,outline-color \.16s ease;/);
   assert.match(html, /\.all-preview-card:hover,\.all-preview-card:focus-visible\{[^}]*transform:translateY\(-10px\);[^}]*outline:3px solid rgba\(160,146,103,\.55\);/);
-  assert.match(html, /offers\.forEach\(function\(d, index\)\{[\s\S]*?c\.className = 'all-preview-card';[\s\S]*?c\.setAttribute\('role', 'button'\);[\s\S]*?c\.setAttribute\('tabindex', '0'\);[\s\S]*?c\.setAttribute\('title', 'Edit Offer ' \+ \(index \+ 1\)\);[\s\S]*?c\.setAttribute\('aria-label', 'Edit Offer ' \+ \(index \+ 1\)\);[\s\S]*?c\.addEventListener\('click', function\(\)\{ editOfferFromAllPreview\(index\); \}\);[\s\S]*?c\.addEventListener\('keydown', function\(event\)\{ handleAllPreviewCardKeydown\(event, index\); \}\);/);
+  assert.match(html, /offers\.forEach\(function\(d, index\)\{[\s\S]*?c\.className = 'all-preview-card' \+ \(\(typeof isOfferLocked==='function' && isOfferLocked\(index\)\) \? ' offer-locked' : ''\);[\s\S]*?c\.setAttribute\('role', 'button'\);[\s\S]*?c\.setAttribute\('tabindex', '0'\);[\s\S]*?c\.setAttribute\('title',[\s\S]*?'Edit Offer ' \+ \(index \+ 1\)\);[\s\S]*?c\.setAttribute\('aria-label',[\s\S]*?'Edit Offer ' \+ \(index \+ 1\)\);[\s\S]*?c\.addEventListener\('click', function\(\)\{ editOfferFromAllPreview\(index\); \}\);[\s\S]*?c\.addEventListener\('keydown', function\(event\)\{ handleAllPreviewCardKeydown\(event, index\); \}\);/);
 });
 
 test('keyboard activation on an All 4 preview card follows the same navigation path', () => {

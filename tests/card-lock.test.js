@@ -69,11 +69,11 @@ test('offer selector tiles include native lock toggles and locked styling', () =
   assert.match(html, /\.otab\.status-red::after\{background:rgba\(192,57,43,\.72\);\}/);
   assert.match(html, /\.offer-lock-toggle\{[^}]*top:auto[^}]*right:auto[^}]*left:50%[^}]*bottom:\.9px[^}]*width:14px[^}]*height:14px[^}]*padding:0[^}]*background:transparent/);
   assert.match(html, /\.offer-lock-toggle\{[^}]*color:rgba\(78,89,101,\.82\)[^}]*opacity:\.74/);
-  assert.match(html, /\.offer-lock-toggle\.locked\{[^}]*color:var\(--gold\)[^}]*background:transparent/);
+  assert.match(html, /\.offer-lock-toggle\.locked\{[^}]*color:var\(--gold\)[^}]*background:#fff/);
   assert.match(html, /\.otab\.active \.offer-lock-toggle\.locked\{color:#fff;\}/);
   assert.doesNotMatch(html, /offer-tab-quality|Needs image/);
-  assert.match(html, /\.offer-lock-toggle svg\{[^}]*width:7\.1px[^}]*height:7\.1px[^}]*stroke-width:2\.35/);
-  assert.match(html, /\.offer-lock-toggle\.locked svg\{[^}]*width:7\.1px[^}]*height:7\.1px[^}]*stroke-width:2\.2[^}]*flex:0 0 7\.1px/);
+  assert.match(html, /\.offer-lock-toggle svg\{[^}]*width:8\.4px[^}]*height:8\.4px[^}]*stroke-width:2\.35/);
+  assert.match(html, /\.offer-lock-toggle\.locked svg\{[^}]*width:9px[^}]*height:9px[^}]*stroke-width:2\.6[^}]*flex:0 0 9px/);
   assert.doesNotMatch(html, /\.otab\.offer-locked \.offer-tab-number::after\{content:" · Locked"/);
   assert.match(html, /lock-icon-open/);
   assert.match(html, /lock-icon-locked/);

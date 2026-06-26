@@ -59,6 +59,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .otab:hover:not(.active) .offer-tab-operator{opacity:.88;color:var(--navy);}
 .otab:not(.active) .offer-tab-ship{display:none;}
 .otab.active{color:var(--navy);border-radius:0;box-shadow:inset 0 -2px 0 rgba(14,27,42,.18);}
+.otab.offer-locked{background:rgba(160,146,103,.14);box-shadow:inset 0 0 0 1px rgba(160,146,103,.38),inset 0 -2px 0 rgba(160,146,103,.72);}
+.otab.offer-locked.active{background:linear-gradient(180deg,rgba(160,146,103,.30),rgba(160,146,103,.18));box-shadow:inset 0 0 0 1px rgba(14,27,42,.24),inset 0 -3px 0 var(--gold);}
+.otab.offer-locked .offer-tab-label::after{content:"Locked";margin-top:1px;padding:1px 5px;border-radius:999px;background:rgba(160,146,103,.18);color:var(--gold-d);font-size:6.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;line-height:1;}
+.otab.offer-locked.active .offer-tab-label::after{background:rgba(14,27,42,.72);color:#fff;}
 .otab.active .offer-tab-number{color:var(--navy);font-weight:600;letter-spacing:.08em;opacity:.9;}
 .otab.active .offer-tab-operator{color:var(--navy);font-weight:600;letter-spacing:.01em;opacity:1;}
 .otab.active .offer-tab-ship{color:var(--navy);font-weight:500;opacity:.9;}
@@ -74,12 +78,12 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .offer-lock-toggle{position:absolute;top:auto;right:auto;left:50%;bottom:.9px;z-index:3;width:14px;height:14px;padding:0;border:none;border-radius:999px;background:transparent;color:rgba(78,89,101,.82);opacity:.74;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transform:translateX(-50%);transition:color .18s ease,opacity .18s ease,background .18s ease,box-shadow .18s ease;}
 .offer-lock-toggle:hover,.offer-lock-toggle:focus-visible{color:rgba(14,27,42,.78);opacity:.88;background:rgba(255,255,255,.22);outline:none;}
 .offer-lock-toggle:focus-visible{box-shadow:0 0 0 1px rgba(160,146,103,.32);}
-.offer-lock-toggle.locked{color:var(--gold);opacity:1;background:transparent;}
+.offer-lock-toggle.locked{color:var(--gold);opacity:1;background:#fff;border:1px solid rgba(160,146,103,.42);box-shadow:0 0 0 2px rgba(160,146,103,.13);}
 .offer-lock-toggle.locked:hover,.offer-lock-toggle.locked:focus-visible{color:var(--gold);opacity:1;background:rgba(160,146,103,.10);}
 .otab.active .offer-lock-toggle.locked{color:#fff;}
 .otab.active .offer-lock-toggle.locked:hover,.otab.active .offer-lock-toggle.locked:focus-visible{color:#fff;background:rgba(255,255,255,.16);}
-.offer-lock-toggle svg{width:7.1px;height:7.1px;display:block;stroke:currentColor;stroke-width:2.35;stroke-linecap:round;stroke-linejoin:round;fill:none;pointer-events:none;}
-.offer-lock-toggle.locked svg{width:7.1px;height:7.1px;stroke-width:2.2;flex:0 0 7.1px;transform:none;}
+.offer-lock-toggle svg{width:8.4px;height:8.4px;display:block;stroke:currentColor;stroke-width:2.35;stroke-linecap:round;stroke-linejoin:round;fill:none;pointer-events:none;}
+.offer-lock-toggle.locked svg{width:9px;height:9px;stroke-width:2.6;flex:0 0 9px;transform:none;}
 .offer-lock-toggle .lock-icon-locked{display:none;}
 .offer-lock-toggle.locked .lock-icon-open{display:none;}
 .offer-lock-toggle.locked .lock-icon-locked{display:block;}
@@ -492,7 +496,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .preview-scaler.empty-preview{display:flex;align-items:center;justify-content:center;}
 #card-output{opacity:1;}
 #card-output.empty-preview-output{display:flex;align-items:center;justify-content:center;width:100%;height:100%;}
-.all-preview-card{cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,outline-color .16s ease;outline:0 solid transparent;outline-offset:10px;}
+.all-preview-card{position:relative;cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,outline-color .16s ease;outline:0 solid transparent;outline-offset:10px;}
+.all-preview-card.offer-locked{outline:5px solid rgba(160,146,103,.78);box-shadow:0 14px 38px rgba(0,0,0,.28),0 0 0 10px rgba(160,146,103,.15);}
+.all-preview-card.offer-locked::before{content:"🔒 Locked";position:absolute;z-index:6;top:14px;right:14px;padding:8px 12px;border-radius:999px;background:rgba(14,27,42,.88);color:#fff;font-size:22px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;box-shadow:0 5px 14px rgba(0,0,0,.22);}
 .all-preview-card:hover,.all-preview-card:focus-visible{transform:translateY(-10px);box-shadow:0 18px 42px rgba(0,0,0,.28);outline:3px solid rgba(160,146,103,.55);}
 .preview-empty-state{width:min(475px,calc(100% - 30px));text-align:center;background:none;border:none;border-radius:0;box-shadow:none;font-family:'Montserrat',sans-serif;color:var(--navy);cursor:pointer;transform:translateY(-92px);transition:opacity .18s ease,transform .18s ease;}
 .preview-empty-state::before{content:'⇧';display:block;width:34px;height:34px;margin:0 auto 15px;border:1px dashed rgba(21,39,63,.42);border-radius:999px;color:rgba(21,39,63,.62);font-size:17px;font-weight:300;line-height:32px;transition:transform .18s ease,border-color .18s ease,color .18s ease;}
@@ -1326,12 +1332,16 @@ initDraggableModals();
 // ═══════════════════════════════════════════════════════
 // OPERATOR HEADERS — baked-in base64 assets
 // ═══════════════════════════════════════════════════════
+function normalizeTopBarUspText(value){
+  return String(value == null ? "" : value).replace(/\bCultural Experiences\b/g,"Culture").replace(/\s*·\s*/g," · ").replace(/\s{2,}/g," ").trim();
+}
+
 const OPERATOR_USP_PRESETS = {
-  amawaterways: "Cuisine · Cultural Experiences · Luxury · Wellness",
+  amawaterways: "Cuisine · Culture · Luxury · Wellness",
   ambassador: "Adult Only Options · Entertainment · Sustainability · Value",
-  celebrity: "Cuisine · Cultural Experiences · Entertainment · Overnight Port Stays",
+  celebrity: "Cuisine · Culture · Entertainment · Overnight Port Stays",
   cunard: "Cuisine · Entertainment · Luxury · Wellness",
-  fred: "Cultural Experiences · Education · Entertainment · Unique Itineraries",
+  fred: "Culture · Education · Entertainment · Unique Itineraries",
   marella: "Accessible · Adult Only Options · All-inclusive · Entertainment",
   msc: "All-inclusive · Entertainment · Family · Diverse Itineraries",
   ncl: "Entertainment · Family · Kids' Clubs · Value",
@@ -1347,7 +1357,7 @@ const OPERATOR_USP_PRESETS = {
 
 function getOperatorUspPreset(operatorKey){
   const key=String(operatorKey||"");
-  return (typeof OPERATOR_USP_PRESETS!=="undefined"&&Object.prototype.hasOwnProperty.call(OPERATOR_USP_PRESETS,key)) ? OPERATOR_USP_PRESETS[key] : "";
+  return normalizeTopBarUspText((typeof OPERATOR_USP_PRESETS!=="undefined"&&Object.prototype.hasOwnProperty.call(OPERATOR_USP_PRESETS,key)) ? OPERATOR_USP_PRESETS[key] : "");
 }
 function defaultTopBarUspForOperator(operatorKey){
   return getOperatorUspPreset(operatorKey)||"Cruise · Destinations · Entertainment";
@@ -1357,7 +1367,7 @@ function shouldRefreshTopBarUsp(offer){
 }
 function applyOperatorTopBarUspDefault(offer,operatorKey){
   if(!offer||!shouldRefreshTopBarUsp(offer)) return false;
-  const usp=defaultTopBarUspForOperator(operatorKey);
+  const usp=normalizeTopBarUspText(defaultTopBarUspForOperator(operatorKey));
   offer.tags=usp;
   const field=document.getElementById("f-tags");
   if(field) field.value=usp;
@@ -1366,6 +1376,7 @@ function applyOperatorTopBarUspDefault(offer,operatorKey){
 function syncTopBarUspManualState(offer){
   if(!offer) return;
   const preset=defaultTopBarUspForOperator(offer.operator||"");
+  offer.tags=normalizeTopBarUspText(offer.tags||"");
   offer._tagsManualOverride=String(offer.tags||"").trim()!==String(preset||"").trim();
 }
 
@@ -2107,6 +2118,22 @@ function renderOfferWithOptionalCtaHTML(offerData, settings){
 function getCtaFilename(i, ext){
   return filenameWithExt(i, ext || 'jpg').replace(/_card(\d+)\.(png|jpg|jpeg)$/i, '_cta$1.' + (ext || 'jpg'));
 }
+function getSharedCtaFilename(offerData, ext){
+  const op=String((offerData&&offerData.operator)||"campaign").toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"") || "campaign";
+  return `${op}_cta.${ext || 'jpg'}`;
+}
+function getSharedCtaExportInfo(exportItems, cta){
+  const items=Array.isArray(exportItems)?exportItems.filter(({o})=>o&&(o.name||o.ship||o.price||o._img)):[];
+  const settings=normaliseCtaSettings(cta||ctaSettings);
+  if(!settings.enabled || items.length<2) return null;
+  const link=getCtaLink(settings);
+  const firstOperator=String((items[0].o&&items[0].o.operator)||"").trim();
+  if(!firstOperator) return null;
+  const sameOperator=items.every(({o})=>String((o&&o.operator)||"").trim()===firstOperator);
+  const sameLink=items.every(()=>getCtaLink(settings)===link);
+  if(!sameOperator || !sameLink) return null;
+  return {offer:items[0].o,operator:firstOperator,link,filename:getSharedCtaFilename(items[0].o,'jpg'),count:items.length};
+}
 function getCtaSummaryRows(){
   const s=normaliseCtaSettings(ctaSettings);
   if(!s.enabled) return [];
@@ -2230,7 +2257,7 @@ function operatorChanged(silent){
     offers[cur].url = landingUrl;
   }
   if(op&&!silent&&!offers[cur]._tagsManualOverride){
-    const usp=(typeof OPERATOR_USP_PRESETS!=="undefined"&&OPERATOR_USP_PRESETS[key])||"Cruise · Destinations · Entertainment";
+    const usp=String((typeof OPERATOR_USP_PRESETS!=="undefined"&&OPERATOR_USP_PRESETS[key])||"Cruise · Destinations · Entertainment").replace(/\bCultural Experiences\b/g,"Culture").replace(/\s*·\s*/g," · ").trim();
     offers[cur].tags=usp;
     const tagsField=document.getElementById("f-tags");
     if(tagsField) tagsField.value=usp;
@@ -3975,9 +4002,9 @@ const LAST_SUCCESSFUL_CSV_KEY = "cobLastSuccessfulCsvV1";
 
 const CSV_TOP_BAR_USP_PRESET_FALLBACKS = {
   ambassador: "Adult Only Options · Entertainment · Sustainability · Value",
-  celebrity: "Cuisine · Cultural Experiences · Entertainment · Overnight Port Stays",
+  celebrity: "Cuisine · Culture · Entertainment · Overnight Port Stays",
   cunard: "Cuisine · Entertainment · Luxury · Wellness",
-  fred: "Cultural Experiences · Education · Entertainment · Unique Itineraries",
+  fred: "Culture · Education · Entertainment · Unique Itineraries",
   marella: "Accessible · Adult Only Options · All-inclusive · Entertainment",
   msc: "All-inclusive · Entertainment · Family · Diverse Itineraries",
   po: "Adult Only Options · Cuisine · Entertainment · Family",
@@ -4028,9 +4055,9 @@ function processSheetCSV(csv,status){
   function csvTopBarUspPreset(operatorKey){
     const fallbackPresets = (typeof CSV_TOP_BAR_USP_PRESET_FALLBACKS!=="undefined") ? CSV_TOP_BAR_USP_PRESET_FALLBACKS : {
       ambassador: "Adult Only Options · Entertainment · Sustainability · Value",
-      celebrity: "Cuisine · Cultural Experiences · Entertainment · Overnight Port Stays",
+      celebrity: "Cuisine · Culture · Entertainment · Overnight Port Stays",
       cunard: "Cuisine · Entertainment · Luxury · Wellness",
-      fred: "Cultural Experiences · Education · Entertainment · Unique Itineraries",
+      fred: "Culture · Education · Entertainment · Unique Itineraries",
       marella: "Accessible · Adult Only Options · All-inclusive · Entertainment",
       msc: "All-inclusive · Entertainment · Family · Diverse Itineraries",
       po: "Adult Only Options · Cuisine · Entertainment · Family",
@@ -7011,7 +7038,7 @@ function getOperatorSkinStyle(d){
 function getHeaderHTML(d){
   const key=d.operator||""; const op=OPERATOR_HEADERS[key];
   const skin=getOperatorSkin(d);
-  const tags=d.tags||OPERATOR_USP_PRESETS[key]||"Cruise · Destinations · Entertainment";
+  const tags=String(d.tags||OPERATOR_USP_PRESETS[key]||"Cruise · Destinations · Entertainment").replace(/\bCultural Experiences\b/g,"Culture").replace(/\s*·\s*/g," · ").trim();
   const logoDisplay=d._logoDisplay||"operator";
   const accent=skin?.accentStrip||op?.color||"#a09267";
   const background=skin?.background||"#0e1b2a";
@@ -7628,6 +7655,7 @@ function loadOfferToEditor(i){
   const o = stripTransientPasteOfferFields(offers[i] || {});
   if(o.operator||o.name||o.ship||o.price||o.incl||o.ports) applyOperatorTopBarUspDefault(o,o.operator||"");
   normalizeCropPositionForOffer(o);
+  if(o.tags) o.tags=normalizeTopBarUspText(o.tags);
   FLDS.forEach(f=>{
     const e=document.getElementById('f-'+f);
     if(e) e.value = o[f] || '';
@@ -7981,6 +8009,7 @@ function sv(i){
   try { updateAllStatus(); } catch(e){}
   try { updateExportFilenames(); } catch(e){}
   try { updateMoveOfferButtons(); } catch(e){}
+  try { runSpellQA(); } catch(e){}
   renderPreviewMode(true);
   queueAutosave();
 }
@@ -8107,6 +8136,8 @@ function setView(v){
   const nextViewMode = normalisePreviewMode(v);
   viewMode = nextViewMode;
   syncViewSelector();
+  try { loadOfferToEditor(cur); } catch(e) { try { load(cur); } catch(_e){} }
+  try { runSpellQA(); } catch(e){}
   renderPreviewMode(true);
   queueAutosave();
 }
@@ -8126,6 +8157,7 @@ function editOfferFromAllPreview(index){
   try { updateAllStatus(); } catch(e){}
   try { updateExportFilenames(); } catch(e){}
   try { updateMoveOfferButtons(); } catch(e){}
+  try { runSpellQA(); } catch(e){}
   renderPreviewMode(true);
   queueAutosave();
 }
@@ -8233,12 +8265,12 @@ function renderPreviewMode(skipSave){
 
     offers.forEach(function(d, index){
       const c = document.createElement('div');
-      c.className = 'all-preview-card';
+      c.className = 'all-preview-card' + ((typeof isOfferLocked==='function' && isOfferLocked(index)) ? ' offer-locked' : '');
       c.style.cssText = 'width:1200px;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.22);overflow:hidden;';
       c.setAttribute('role', 'button');
       c.setAttribute('tabindex', '0');
-      c.setAttribute('title', 'Edit Offer ' + (index + 1));
-      c.setAttribute('aria-label', 'Edit Offer ' + (index + 1));
+      c.setAttribute('title', (typeof isOfferLocked==='function' && isOfferLocked(index) ? 'Locked — ' : '') + 'Edit Offer ' + (index + 1));
+      c.setAttribute('aria-label', (typeof isOfferLocked==='function' && isOfferLocked(index) ? 'Locked offer. ' : '') + 'Edit Offer ' + (index + 1));
       c.addEventListener('click', function(){ editOfferFromAllPreview(index); });
       c.addEventListener('keydown', function(event){ handleAllPreviewCardKeydown(event, index); });
       c.innerHTML = bc(d || {});
@@ -8708,6 +8740,7 @@ async function exportAllJPG(){
   const zip=new JSZip(); const offerCardsFolder=zip.folder('offer-cards'); let done=0;
   const cta=getCtaSettingsFromUI();
   ctaSettings=cta;
+  const sharedCta=getSharedCtaExportInfo(toExport,cta);
   for(const {o,i} of toExport){
     const filename=filenameWithExt(i,'jpg');
     if(prog) prog.textContent=`Rendering card ${done+1} of ${toExport.length}: ${filename}`;
@@ -8715,7 +8748,7 @@ async function exportAllJPG(){
     try{
       const blob=await renderCardToImageBlob(o,'image/jpeg',0.92);
       offerCardsFolder.file(filename,blob);
-      if(cta.enabled){
+      if(cta.enabled && !sharedCta){
         const ctaFilename=getCtaFilename(i,'jpg');
         if(prog) prog.textContent=`Rendering CTA ${done+1} of ${toExport.length}: ${ctaFilename}`;
         const ctaBlob=await renderCtaToImageBlob(o,'image/jpeg',0.92);
@@ -8724,12 +8757,17 @@ async function exportAllJPG(){
       done++;
     }catch(err){ console.error('JPG ZIP export error card '+(i+1),err); }
   }
+  if(sharedCta){
+    if(prog) prog.textContent=`Rendering shared CTA: ${sharedCta.filename}`;
+    const ctaBlob=await renderCtaToImageBlob(sharedCta.offer,'image/jpeg',0.92);
+    offerCardsFolder.file(sharedCta.filename,ctaBlob);
+  }
   try{
     if(prog) prog.textContent='Compressing all cards...';
     if(lbl) lbl.textContent='Packaging...';
     const zipBlob=await zip.generateAsync({type:'blob'});
     downloadBlob(zipBlob,getCampaignZipFilenameExt('jpg'));
-    if(prog) prog.textContent=`✓ All cards exported — ${done} card(s)${getCtaSettingsFromUI().enabled ? ' + CTA asset(s)' : ''} included`;
+    if(prog) prog.textContent=`✓ All cards exported — ${done} card(s)${getCtaSettingsFromUI().enabled ? (sharedCta ? ' + shared CTA asset' : ' + CTA asset(s)') : ''} included`;
     markExportComplete('exp-all-jpg-complete');
     showExportToast('All cards exported successfully');
   }catch(err){
@@ -8759,6 +8797,8 @@ async function exportCampaignPack(){
     const combinedRows=[];
     const ctaRows=[];
     const utmLookupRows=[];
+    const packOfferItems=offers.map((o,i)=>({o:o||{},i})).filter(({o})=>o.name||o.ship||o.price);
+    const sharedCta=getSharedCtaExportInfo(packOfferItems,cta);
     for(let i=0;i<4;i++){
       const o=offers[i]||{};
       if(!(o.name||o.ship||o.price)) continue;
@@ -8769,7 +8809,7 @@ async function exportCampaignPack(){
       const cardUtm=(buildUtmForOffer(i).url||'').replace(/\n/g,' ');
       combinedRows.push({type:'offer',label:`Card ${i+1} UTM`,utm:cardUtm});
       utmLookupRows.push({filename:cardFilename,utm:cardUtm});
-      if(cta.enabled){
+      if(cta.enabled && !sharedCta){
         const ctaFilename=getCtaFilename(i,'jpg');
         if(prog) prog.textContent=`Rendering CTA ${i+1}/4...`;
         const ctaBlob=await renderCtaToImageBlob(o,'image/jpeg',0.92);
@@ -8777,6 +8817,13 @@ async function exportCampaignPack(){
         ctaRows.push({type:'cta',label:`CTA ${i+1} Link`,utm:getCtaLink(cta),filename:ctaFilename});
         utmLookupRows.push({filename:ctaFilename,utm:getCtaLink(cta)});
       }
+    }
+    if(sharedCta){
+      if(prog) prog.textContent=`Rendering shared CTA: ${sharedCta.filename}...`;
+      const ctaBlob=await renderCtaToImageBlob(sharedCta.offer,'image/jpeg',0.92);
+      cardsFolder.file(sharedCta.filename, ctaBlob);
+      ctaRows.push({type:'cta',label:'Shared CTA Link',utm:sharedCta.link,filename:sharedCta.filename});
+      utmLookupRows.push({filename:sharedCta.filename,utm:sharedCta.link});
     }
     const standardUtmRows = buildAllStandardUtmRows();
     ctaRows.forEach(row=>combinedRows.push(row));
