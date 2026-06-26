@@ -145,7 +145,7 @@ test('AmaWaterways uses the existing operator logo header system and brand palet
     },
     { background: '#07131f', accentStrip: '#A75543', infoBar: '#A75543', text: '#1a1a1a' }
   );
-  assert.match(header, /<div class="operator-png-usp" style="background:#A75543;">Cuisine · Cultural Experiences · Luxury · Wellness<\/div>/);
+  assert.match(header, /<div class="operator-png-usp" style="background:#A75543;">Cuisine · Culture · Luxury · Wellness<\/div>/);
   assert.match(header, /background:#07131f/);
   assert.doesNotMatch(header, /background:#002D72/);
   assert.match(header, /<img class="operator-png-logo" src="assets\/operator-logos\/amawaterways-logo\.png" alt="AmaWaterways logo">/);

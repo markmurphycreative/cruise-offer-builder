@@ -34,7 +34,7 @@ test('existing campaign data still restores USP text through the unchanged tags 
 });
 
 test('card rendering and export continue using offer.tags for the top-bar USP strip', () => {
-  assert.match(html, /const tags=d\.tags\|\|OPERATOR_USP_PRESETS\[key\]\|\|"Cruise · Destinations · Entertainment";/, 'card header should read the unchanged offer.tags key');
+  assert.match(html, /const tags=String\(d\.tags\|\|OPERATOR_USP_PRESETS\[key\]\|\|"Cruise · Destinations · Entertainment"\)/, 'card header should read the unchanged offer.tags key');
   assert.match(html, /<div class="operator-png-usp" style="background:\$\{accent\};">\$\{tags\}<\/div>/, 'top strip should render the tags value unchanged');
   for (const functionName of ['renderCardHTML', 'renderCardToImageBlob', 'exportCurrentJPG', 'exportAllJPG', 'exportCampaignPack']) {
     assert.match(html, new RegExp(`function ${functionName}\\(`), `${functionName} should remain defined`);

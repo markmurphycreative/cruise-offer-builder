@@ -42,7 +42,7 @@ test('view selector indicator updates instantly while retaining segmented-contro
   assert.doesNotMatch(html, /\.(?:view-btns|view-pill)\{[^}]*border-radius:999px;/);
   assert.match(html, /\.vbtn\.active\{color:var\(--navy\);\}/);
   assert.match(html, /function updateSegmentedPill\(pill, activeButton\)\{[\s\S]*?activeButton\.getBoundingClientRect\(\);[\s\S]*?container\.getBoundingClientRect\(\);[\s\S]*?pill\.style\.width = width \+ 'px';[\s\S]*?pill\.style\.transform = 'translate3d\(' \+ x \+ 'px,0,0\)';/);
-  assert.match(html, /syncViewSelector\(\);\s*renderPreviewMode\(true\);/);
+  assert.match(html, /syncViewSelector\(\);[\s\S]*?runSpellQA\(\);[\s\S]*?renderPreviewMode\(true\);/);
   assert.match(html, /window\.addEventListener\('resize', queueSegmentedPillSync\);/);
   assert.match(html, /new ResizeObserver\(queueSegmentedPillSync\)/);
   assert.match(html, /document\.fonts\.ready\.then\(queueSegmentedPillSync\)/);
