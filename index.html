@@ -986,36 +986,19 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
             <img class="dz-thumb itinerary-t" id="itinerary-thumb" alt="Route map preview" style="display: none;">
           </div>
         </div>
-        <div class="hero-thumb-dimensions" id="itinerary-image-dimensions"></div>
-        <div class="hero-thumb-helper" id="itinerary-thumb-helper">Route Maps are normalised to a fixed 1200 × 700px frame on import.</div>
-        <div class="hero-crop-status" id="itinerary-crop-status" aria-live="polite">
-          <div class="hero-crop-status-item"><span class="hero-crop-status-label">Zoom</span><span class="hero-crop-status-value" id="itinerary-crop-status-zoom">100%</span></div>
-          <div class="hero-crop-status-item"><span class="hero-crop-status-label">Mode</span><span class="hero-crop-status-value" id="itinerary-crop-status-mode">Fill Frame</span></div>
-          <div class="hero-crop-status-item"><span class="hero-crop-status-label">Horizontal</span><span class="hero-crop-status-value" id="itinerary-crop-status-x">50%</span></div>
-          <div class="hero-crop-status-item"><span class="hero-crop-status-label">Vertical</span><span class="hero-crop-status-value" id="itinerary-crop-status-y">50%</span></div>
-        </div>
         <div class="hero-panel-group" id="itinerary-actions-panel">
           <div class="hero-actions">
-            <button class="abtn red btn-compact" onclick="removeEditableImage('itinerary')">Remove Route Map</button>
             <button class="abtn btn-compact" onclick="replaceEditableImage('itinerary')">Replace Route Map</button>
-            <button class="abtn btn-compact" onclick="resetEditableImagePosition('itinerary')">Reset Position</button>
+            <button class="abtn red btn-compact" onclick="removeEditableImage('itinerary')">Remove Route Map</button>
+          </div>
+          <div class="hero-actions">
             <button class="abtn btn-compact" onclick="centreEditableImage('itinerary')">Centre Image</button>
           </div>
         </div>
         <div class="crop-controls" id="itinerary-crop-controls">
-          <div class="hero-fit-toggle">
-            <button id="itinerary-mode-fill" class="abtn btn-compact hero-mode-btn" onclick="setEditableImageFitMode('itinerary','fill')" aria-pressed="true">Fill Frame</button>
-            <button id="itinerary-mode-fit" class="abtn btn-compact hero-mode-btn" onclick="setEditableImageFitMode('itinerary','fit')" aria-pressed="false">Fit Image</button>
-          </div>
-          <div class="crop-group-title">Crop & Position</div>
           <div class="crop-row"><label for="itinerary-crop-zoom">Zoom</label><input type="range" id="itinerary-crop-zoom" min="100" max="200" value="100" oninput="updateEditableImageCrop('itinerary')"><div class="crop-value"><input type="number" id="itinerary-crop-zoom-input" min="100" max="200" value="100" inputmode="numeric" oninput="updateEditableImageCropFromInput('itinerary','zoom')"><span>%</span></div></div>
           <div class="crop-row"><label for="itinerary-crop-x">Horizontal</label><input type="range" id="itinerary-crop-x" min="0" max="100" value="50" oninput="updateEditableImageCrop('itinerary')"><div class="crop-value"><input type="number" id="itinerary-crop-x-input" min="0" max="100" value="50" inputmode="numeric" oninput="updateEditableImageCropFromInput('itinerary','x')"><span>%</span></div></div>
           <div class="crop-row"><label for="itinerary-crop-y">Vertical</label><input type="range" id="itinerary-crop-y" min="0" max="100" value="50" oninput="updateEditableImageCrop('itinerary')"><div class="crop-value"><input type="number" id="itinerary-crop-y-input" min="0" max="100" value="50" inputmode="numeric" oninput="updateEditableImageCropFromInput('itinerary','y')"><span>%</span></div></div>
-        </div>
-        <div class="hero-quick-position" id="itinerary-quick-position">
-          <div class="crop-group-title">Quick Position</div>
-          <div class="hero-quick-row"><div class="hero-quick-label">Horizontal</div><div class="hero-quick-grid"><button class="abtn btn-compact" onclick="setEditableImageCropAxis('itinerary','x',0)">Left 0%</button><button class="abtn btn-compact" onclick="setEditableImageCropAxis('itinerary','x',50)">Centre 50%</button><button class="abtn btn-compact" onclick="setEditableImageCropAxis('itinerary','x',100)">Right 100%</button></div></div>
-          <div class="hero-quick-row"><div class="hero-quick-label">Vertical</div><div class="hero-quick-grid"><button class="abtn btn-compact" onclick="setEditableImageCropAxis('itinerary','y',0)">Top 0%</button><button class="abtn btn-compact" onclick="setEditableImageCropAxis('itinerary','y',50)">Centre 50%</button><button class="abtn btn-compact" onclick="setEditableImageCropAxis('itinerary','y',100)">Bottom 100%</button></div></div>
         </div>
       </div>
     </div>
@@ -2771,8 +2754,8 @@ function resetEditableImagePosition(type){
 }
 function centreEditableImage(type){
   const cfg=getEditableImageConfig(type); if(!offers[cur]) offers[cur]={};
-  offers[cur][cfg.xKey]=50; offers[cur][cfg.yKey]=50; if(type==="hero") offers[cur]._cropPosVersion=2;
-  setEditableImageControlValue(type,"x",50); setEditableImageControlValue(type,"y",50);
+  offers[cur][cfg.xKey]=50; offers[cur][cfg.yKey]=50; if(type==="itinerary") offers[cur][cfg.zoomKey]=100; if(type==="hero") offers[cur]._cropPosVersion=2;
+  if(type==="itinerary") setEditableImageControlValue(type,"zoom",100); setEditableImageControlValue(type,"x",50); setEditableImageControlValue(type,"y",50);
   updateEditableImageCropStatus(type); refreshOfferUi({status:false,utm:false,spell:false});
   if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange(cfg.historyLabel+" position change");
 }
@@ -2799,7 +2782,7 @@ function syncEditableImageUi(type){
   const o=offers[cur]||{};
   const src=String((o&&o[cfg.imageKey])||"").trim();
   const hasImg=!!src;
-  const ids=type==="hero"?["crop-controls","hero-crop-status","hero-actions-panel","hero-quick-position","hero-crop-presets"]:["itinerary-crop-controls","itinerary-crop-status","itinerary-actions-panel","itinerary-quick-position"];
+  const ids=type==="hero"?["crop-controls","hero-crop-status","hero-actions-panel","hero-quick-position","hero-crop-presets"]:["itinerary-crop-controls","itinerary-actions-panel"];
   ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle("active",hasImg); });
   const locked=typeof isOfferLocked==="function"&&isOfferLocked(cur);
   ids.forEach(id=>{
