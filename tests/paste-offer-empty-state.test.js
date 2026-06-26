@@ -180,6 +180,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('buildCardInclusionComponents'),
     extractFunction('orderCardInclusionComponents'),
     extractFunction('validateCardInclusionLines'),
+    extractFunction('groupCardInclusionRenderLines'),
     extractFunction('renderCardInclusionLayout'),
     extractFunction('buildCardInclusionRenderLines'),
     extractFunction('buildCardInclusionFromComponents'),
@@ -244,24 +245,24 @@ test('Paste Offer formats cabin card inclusions with flights, transfers, and cab
   const examples = [
     [`Flying from Newcastle
 Inside Cabin
-Transfers Included`, 'Newcastle Flights • Transfers Included • Inside Cabin'],
+Transfers Included`, 'Newcastle Flights - Transfers Included - Inside Cabin'],
     [`Flying from Newcastle
 Inside Cabin
 Transfers Included
-1 Night Pre-Cruise Stay in Miami`, 'Newcastle Flights • Transfers Included • Inside Cabin\n1 Night Pre-Cruise Stay in Miami'],
+1 Night Pre-Cruise Stay in Miami`, 'Newcastle Flights - Transfers Included - Inside Cabin\n1 Night Pre-Cruise Stay in Miami'],
     [`Flying from Newcastle
 Inside Cabin
 Transfers Included
-2 Nights Pre-Cruise Stay in Vancouver`, 'Newcastle Flights • Transfers Included • Inside Cabin\n2 Nights Pre-Cruise Stay in Vancouver'],
+2 Nights Pre-Cruise Stay in Vancouver`, 'Newcastle Flights - Transfers Included - Inside Cabin\n2 Nights Pre-Cruise Stay in Vancouver'],
     [`Flying from Newcastle
 Inside Cabin
-No Transfers`, 'Newcastle Flights • Inside Cabin'],
+No Transfers`, 'Newcastle Flights - Inside Cabin'],
     [`Flying from Newcastle
 Inside Cabin
 No Transfers
-1 Night Pre-Cruise Stay in Miami`, 'Newcastle Flights • Inside Cabin\n1 Night Pre-Cruise Stay in Miami'],
+1 Night Pre-Cruise Stay in Miami`, 'Newcastle Flights - Inside Cabin\n1 Night Pre-Cruise Stay in Miami'],
     [`Inside Cabin
-Transfers Included`, 'Transfers Included • Inside Cabin'],
+Transfers Included`, 'Transfers Included - Inside Cabin'],
     [`Inside Cabin`, 'Inside Cabin']
   ];
 
@@ -276,11 +277,11 @@ test('Paste Offer preserves Celebrity card inclusions and Norwegian port suffixe
   const offers = [
     { raw: `Flying from Newcastle
 Inside Cabin
-Transfers Included`, incl: 'Newcastle Flights • Transfers Included • Inside Cabin' },
+Transfers Included`, incl: 'Newcastle Flights - Transfers Included - Inside Cabin' },
     { raw: `Flying from Newcastle
 Inside Cabin
 Transfers Included
-1 Night Pre-Cruise Stay in Miami`, incl: 'Newcastle Flights • Transfers Included • Inside Cabin\n1 Night Pre-Cruise Stay in Miami' },
+1 Night Pre-Cruise Stay in Miami`, incl: 'Newcastle Flights - Transfers Included - Inside Cabin\n1 Night Pre-Cruise Stay in Miami' },
     { raw: `Norwegian Fjords
 Inside Cabin
 You'll Visit:
@@ -294,7 +295,7 @@ Southampton`, incl: 'Inside Cabin', ports: 'Southampton • Haugesund, Norway �
     { raw: `Flying from Newcastle
 Inside Cabin
 Transfers Included
-2 Nights Pre-Cruise Stay in Vancouver`, incl: 'Newcastle Flights • Transfers Included • Inside Cabin\n2 Nights Pre-Cruise Stay in Vancouver' }
+2 Nights Pre-Cruise Stay in Vancouver`, incl: 'Newcastle Flights - Transfers Included - Inside Cabin\n2 Nights Pre-Cruise Stay in Vancouver' }
   ];
 
   offers.forEach(offer => {
