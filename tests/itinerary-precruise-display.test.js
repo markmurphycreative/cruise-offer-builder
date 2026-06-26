@@ -152,6 +152,9 @@ test('card inclusion rendering keeps known cabin phrases non-breaking', () => {
   const { renderCardHTML, renderCardInclusion } = createRenderContext();
   const rendered = renderCardInclusion('Newcastle Flights - Transfers Included - Inside Cabin');
   assert.equal(rendered, 'Newcastle Flights - Transfers Included - <span class="cabin-phrase">Inside&nbsp;Cabin</span>');
+  const renderedPreCruise = renderCardInclusion('Newcastle Flights - Transfers Included\nInside Cabin - 1 Night Pre-Cruise Stay in Miami');
+  assert.equal(renderedPreCruise, 'Newcastle Flights - Transfers Included<br><span class="cabin-phrase">Inside&nbsp;Cabin</span> - 1 Night Pre-Cruise Stay in Miami');
+  assert.doesNotMatch(renderedPreCruise, /Transfers Included -<br>|Transfers Included -$/);
 
   const card = renderCardHTML({
     name: 'Celebrity Equinox',

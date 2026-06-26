@@ -199,6 +199,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('extractSourceInclusionLine'),
     extractFunction('detectCabinType'),
     extractFunction('detectTransferStatus'),
+    extractFunction('detectPreCruiseStay'),
     extractFunction('parseOfferText'),
     extractFunction('getOfferIntelligenceAirport'),
     extractFunction('parseOffer'),
@@ -232,7 +233,19 @@ Inside Cabin
 Transfers Included`, 'Newcastle Flights - Transfers Included - Inside Cabin'],
     [`Flying from Newcastle
 Inside Cabin
+Transfers Included
+1 Night Pre-Cruise Stay in Miami`, 'Newcastle Flights - Transfers Included\nInside Cabin - 1 Night Pre-Cruise Stay in Miami'],
+    [`Flying from Newcastle
+Inside Cabin
+Transfers Included
+2 Nights Pre-Cruise Stay in Vancouver`, 'Newcastle Flights - Transfers Included\nInside Cabin - 2 Nights Pre-Cruise Stay in Vancouver'],
+    [`Flying from Newcastle
+Inside Cabin
 No Transfers`, 'Newcastle Flights - Inside Cabin'],
+    [`Flying from Newcastle
+Inside Cabin
+No Transfers
+1 Night Pre-Cruise Stay in Miami`, 'Newcastle Flights\nInside Cabin - 1 Night Pre-Cruise Stay in Miami'],
     [`Inside Cabin
 Transfers Included`, 'Transfers Included - Inside Cabin'],
     [`Inside Cabin`, 'Inside Cabin']
