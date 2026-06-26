@@ -160,7 +160,7 @@ test('card inclusion rendering keeps known cabin phrases non-breaking', () => {
   const rendered = renderCardInclusion('Newcastle Flights - Transfers Included - Inside Cabin');
   assert.equal(rendered, 'Newcastle Flights - Transfers Included - <span class="cabin-phrase">Inside&nbsp;Cabin</span>');
   const renderedPreCruise = renderCardInclusion('Newcastle Flights - Transfers Included\nInside Cabin - 1 Night Pre-Cruise Stay in Miami');
-  assert.equal(renderedPreCruise, 'Newcastle Flights - Transfers Included - <span class="cabin-phrase">Inside&nbsp;Cabin</span><br>1 Night Pre-Cruise Stay in Miami');
+  assert.equal(renderedPreCruise, 'Newcastle Flights - Transfers Included - <span class="cabin-phrase">Inside&nbsp;Cabin</span><br><span class="precruise-phrase">1 Night Pre-Cruise Stay in Miami</span>');
   assert.doesNotMatch(renderedPreCruise, /Transfers Included -<br>|Transfers Included -$|^-/);
 
   const card = renderCardHTML({
@@ -169,6 +169,8 @@ test('card inclusion rendering keeps known cabin phrases non-breaking', () => {
     ports: 'Barcelona • Rome'
   });
   assert.match(card, /<div class="incl">Newcastle Flights - Transfers Included - <span class="cabin-phrase">Inside&nbsp;Cabin<\/span><\/div>/);
+  assert.match(html, /\.cc \.incl\{font-size:40px;font-weight:300;color:#555;line-height:1\.36;margin-bottom:16px;\}/);
+  assert.match(html, /\.cc \.cabin-phrase,\.cc \.precruise-phrase\{white-space:nowrap;\}/);
   assert.doesNotMatch(card, /Inside Cabin<\/div>/);
 });
 
