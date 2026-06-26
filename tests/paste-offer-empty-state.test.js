@@ -192,7 +192,10 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('removeDuplicateReturnEmbarkationPortsString'),
     extractFunction('getPortIntelligence'),
     extractFunction('isRecognisedPortTitleLine'),
+    extractFunction('stripOfferHeadingPrefix'),
     extractFunction('extractSourceInclusionLine'),
+    extractFunction('detectCabinType'),
+    extractFunction('detectTransferStatus'),
     extractFunction('parseOfferText'),
     extractFunction('getOfferIntelligenceAirport'),
     extractFunction('parseOffer'),
@@ -215,6 +218,43 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     }
   };
 }
+
+
+
+test('Paste Offer formats cabin card inclusions with flights, transfers, and cabin in the expected order', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  const examples = [
+    [`Flying from Newcastle
+Inside Cabin
+Transfers Included`, 'Newcastle Flights - Transfers Included - Inside Cabin'],
+    [`Flying from Newcastle
+Inside Cabin
+No Transfers`, 'Newcastle Flights - Inside Cabin'],
+    [`Inside Cabin
+Transfers Included`, 'Transfers Included - Inside Cabin'],
+    [`Inside Cabin`, 'Inside Cabin']
+  ];
+
+  for (const [raw, expected] of examples) {
+    const result = harness.context.parseOfferText(raw, { renderIntelligence: false });
+    assert.equal(result.parsed.incl, expected);
+  }
+});
+
+test('Paste Offer strips offer heading prefixes from parsed titles', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  const examples = [
+    ['Offer 1 - Italian Riviera & France', 'Italian Riviera & France'],
+    ['Offer 2 - Grand Cayman, Mexico & Perfect Day', 'Grand Cayman, Mexico & Perfect Day'],
+    ['Offer 3: Norwegian Fjords', 'Norwegian Fjords'],
+    ['Offer 4 – Alaska Explorer', 'Alaska Explorer']
+  ];
+
+  for (const [heading, expected] of examples) {
+    const result = harness.context.parseOfferText(`${heading}\nCelebrity Ascent\n7 nights\n£1999`, { renderIntelligence: false });
+    assert.equal(result.parsed.name, expected);
+  }
+});
 
 test('Paste Offer creates and populates Offer 1 when no offers are loaded', () => {
   const harness = createHarness([], 2);

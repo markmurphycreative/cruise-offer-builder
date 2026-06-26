@@ -6287,6 +6287,9 @@ function parseOffer(){
   pendingParseResult=result; if(!showParsePreview()) applyParsedOffer();
 }
 
+function stripOfferHeadingPrefix(value){
+  return String(value||"").replace(/^\s*(?:(?:offer\s*)?\d{1,2})\s*(?:[-–—:]\s*)/i,"").trim();
+}
 function extractSourceInclusionLine(lines){
   const inclusionPattern=/\b(?:flights?|fly(?:ing)?\s+from|luggage|baggage|transfers?|hotel\s+(?:stay|included|night)|drinks?\s+(?:package|included)|wi[-\s]?fi|gratuities|tips\s+included|on\s*board\s+(?:spend|credit)|on-board\s+(?:spend|credit)|onboard\s+(?:spend|credit)|included|all[\s-]*inclusive|adult(?:s)?\s*only|inside\s+cabin|outside\s+cabin|balcony\s+cabin|suite\s+cabin|cabin\s+upgrade)\b/i;
   const negativePattern=/\b(?:not\s+included|excludes?|excluding|optional|available\s+at\s+(?:a\s+)?supplement|available\s+at\s+(?:an\s+)?extra\s+cost|extra\s+cost|payable\s+locally|available\s+to\s+buy)\b/i;
@@ -6313,7 +6316,7 @@ function parseOfferText(raw,options){
   else { const mm=txt.match(new RegExp(`\\b(${months})\\s+(\\d{4})\\b`,'i')); if(mm){ const mn=new Date(`${mm[1]} 1, ${mm[2]}`); parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+mm[2]; score+=10; } }
   const itineraryLines=getItineraryLines(lines);
   const shipLineIndex=parsed.ship?lines.findIndex(line=>line===parsed.ship):-1;
-  const title=lines.find((l,index)=>!Object.values(OPERATOR_ALIASES).flat().some(r=>r.test(l))&&!(itineraryLines||[]).includes(l)&&!(typeof isRecognisedPortTitleLine==="function"&&isRecognisedPortTitleLine(l))&&(shipLineIndex<0||index<shipLineIndex)&&!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b|\b(?:full board|half board|all inclusive|self catering|inside|outside|balcony|suite|based on|sharing|solo traveller|solo traveler|single occupancy|sole occupancy|single traveller|single traveler)\b/i.test(l))&&l.length>8&&l!==parsed.ship); if(title){parsed.name=title.replace(/^[-•\s]+/,'').replace(/^offer\s+\d+\s*[-–—:]\s*/i,'').trim();score+=8;}
+  const title=lines.find((l,index)=>!Object.values(OPERATOR_ALIASES).flat().some(r=>r.test(l))&&!(itineraryLines||[]).includes(l)&&!(typeof isRecognisedPortTitleLine==="function"&&isRecognisedPortTitleLine(l))&&(shipLineIndex<0||index<shipLineIndex)&&!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b|\b(?:full board|half board|all inclusive|self catering|inside|outside|balcony|suite|based on|sharing|solo traveller|solo traveler|single occupancy|sole occupancy|single traveller|single traveler)\b/i.test(l))&&l.length>8&&l!==parsed.ship); if(title){parsed.name=stripOfferHeadingPrefix(title.replace(/^[-•\s]+/,'')).trim();score+=8;}
   const portExclusions=[parsed.name,parsed.ship,parsed.price,parsed.basis,parsed.boardlbl,parsed.incl].filter(Boolean);
   const destinationLines=cleanDestinationOnlyLines(lines); const standalonePortLines=getStandalonePortLines(destinationLines,{exclude:portExclusions}); const portLines=(itineraryLines&&cleanDestinationOnlyLines(itineraryLines))||(standalonePortLines.length?standalonePortLines:null)||destinationLines.filter(l=>/[•·,]|\s+-\s+/.test(l)&&/(?:[A-Za-z]{3,}\s*){2,}/.test(l)&&!/from|£|nights?|nts?|included|flights?/i.test(l)); const ports=removeDuplicateReturnEmbarkationPortsString(cleanParsedPorts(portLines,{exclude:portExclusions})); if(ports){parsed.ports=ports;score+=8;}
   if(typeof getPortIntelligence==="function"){
@@ -6329,10 +6332,14 @@ function parseOfferText(raw,options){
   const detectedCabin=detectCabinType(raw);
   const parsedAirport=typeof detectFlightAirport==="function"?detectFlightAirport(raw):"";
   if(detectedCabin){
-    const cabinInclusionParts=[];
-    if(parsedAirport) cabinInclusionParts.push(`${parsedAirport} Flights Included`);
-    cabinInclusionParts.push(detectedCabin);
-    parsed.incl=cabinInclusionParts.join(" - ");
+    const transferStatus=detectTransferStatus(raw);
+    if(parsedAirport||transferStatus||!sourceInclusion||isCabinTypeExclusion(sourceInclusion)){
+      const cabinInclusionParts=[];
+      if(parsedAirport) cabinInclusionParts.push(`${parsedAirport} Flights`);
+      if(transferStatus==="Included") cabinInclusionParts.push("Transfers Included");
+      cabinInclusionParts.push(detectedCabin);
+      parsed.incl=cabinInclusionParts.join(" - ");
+    }
     score+=6;
   }
   const knownShipMatch=findKnownOperatorShip(txt,parsed.operatorKey); if(knownShipMatch){ if(!parsed.ship){parsed.ship=knownShipMatch.ship;score+=8;} if(!parsed.operatorKey){parsed.operatorKey=knownShipMatch.operatorKey;score+=18;} }
