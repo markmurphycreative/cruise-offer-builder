@@ -63,6 +63,10 @@ function createHarness() {
     extractFunction('normalisePortComparisonValue'),
     extractFunction('isExcludedParsedPort'),
     extractFunction('isStandalonePortCandidate'),
+    extractConst('PARSED_PORT_COUNTRY_SUFFIXES'),
+    extractConst('PARSED_PORT_STATUS_ANNOTATIONS'),
+    extractFunction('normaliseParsedPortBracketText'),
+    extractFunction('removeParsedPortCountrySuffix'),
     extractFunction('cleanParsedPorts'),
     extractFunction('getStandalonePortLines'),
     extractFunction('formatAirportName'),
@@ -91,6 +95,8 @@ function createHarness() {
     extractFunction('getOfferIntelligenceQualityDetails'),
     extractFunction('renderOfferQualitySection'),
     extractFunction('detectCabinType'),
+    extractFunction('detectTransferStatus'),
+    extractFunction('detectPreCruiseStay'),
     extractFunction('getOfferIntelligenceSummary'),
     extractFunction('normaliseCruiseTitleCandidate'),
     extractFunction('isRecognisedPortTitleLine'),
@@ -118,6 +124,65 @@ test('Ports Intelligence detects Spain and France with embarkation exclusions', 
   assert.match(panel.innerHTML, /France/);
   assert.match(panel.innerHTML, /Suggested Route: Spain &amp; France|Suggested Route: Spain & France/);
   assert.doesNotMatch(panel.innerHTML, /Apply/);
+});
+
+test('Celebrity paste offer fields detect cabin, transfers, pre-cruise stay, and clean ports', () => {
+  const { context } = createHarness();
+  const raw = `7 Nights Sailing on Celebrity Beyond - Full Board
+Sailing from Miami
+Flying from Newcastle
+Inside Cabin
+Transfers Included
+1 Night Pre-Cruise Stay in Miami
+£1,569.00 per person
+Miami, Florida
+Perfect Day Cococay, Bahamas
+At Sea,
+George Town, Grand Cayman
+Cozumel, Mexico
+At Sea
+Nassau, Bahamas
+Miami, Florida`;
+  const fields = vm.runInContext('getOfferIntelligenceDetectedFields(parsed, raw).fields', Object.assign(context, {
+    parsed: { ship: 'Celebrity Beyond', nights: '7', boardlbl: 'Full Board', price: '1569' },
+    raw
+  }));
+  assert.match(fields.join('\n'), /Cabin Type: Inside Cabin/);
+  assert.match(fields.join('\n'), /Transfers: Included/);
+  assert.match(fields.join('\n'), /Pre-Cruise Stay: 1 Night in Miami/);
+
+  const ports = vm.runInContext('cleanParsedPorts(lines, { exclude: [] })', Object.assign(context, {
+    lines: [
+      'Miami, Florida',
+      'Perfect Day Cococay, Bahamas',
+      'At Sea,',
+      'George Town, Grand Cayman',
+      'Cozumel, Mexico',
+      'At Sea',
+      'Nassau, Bahamas',
+      'Miami, Florida',
+      'Inside Cabin',
+      'Transfers Included',
+      '1 Night Pre-Cruise Stay in Miami'
+    ]
+  }));
+  assert.equal(ports, 'Miami • Perfect Day Cococay • George Town • Cozumel • Nassau • Miami');
+});
+
+test('Celebrity bracketed ports preserve location aliases and remove cruising segments', () => {
+  const { context } = createHarness();
+  const ports = vm.runInContext('cleanParsedPorts(lines, { exclude: [] })', Object.assign(context, {
+    lines: [
+      'Rome (Civitavecchia), Italy',
+      'Florence/Pisa(La Spezia), Italy (Overnight)',
+      'Nice (Villefranche), France',
+      'Provence (Marseille), France',
+      'Inside Passage (Cruising)',
+      'At Sea'
+    ]
+  }));
+  assert.equal(ports, 'Rome, for Civitavecchia • Florence/Pisa, for La Spezia • Nice, for Villefranche • Provence, for Marseille');
+  assert.doesNotMatch(ports, /Cruising|At Sea|Overnight|Inside Passage/);
 });
 
 test('Ports Intelligence covers Italy Malta Greek Islands Norwegian Fjords Adriatic duplicates unknowns and empty lists', () => {
