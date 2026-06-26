@@ -6345,13 +6345,21 @@ function parseOfferText(raw,options){
     const transferStatus=detectTransferStatus(raw);
     const detectedPreCruiseStay=typeof detectPreCruiseStay==="function"?detectPreCruiseStay(raw):"";
     if(transferStatus||detectedPreCruiseStay||!sourceInclusion||isCabinTypeExclusion(sourceInclusion)){
-      const cabinInclusionParts=[];
-      if(parsedAirport) cabinInclusionParts.push(`${parsedAirport} Flights`);
-      if(transferStatus==="Included") cabinInclusionParts.push("Transfers Included");
-      cabinInclusionParts.push(detectedCabin);
-      const preCruiseMatch=detectedPreCruiseStay.match(/^(\d+)\s+(Night|Nights)\b/i);
-      if(preCruiseMatch) cabinInclusionParts.push(`${preCruiseMatch[1]} ${preCruiseMatch[2]} Pre-Cruise Stay`);
-      parsed.incl=cabinInclusionParts.join(" - ");
+      const preCruiseMatch=detectedPreCruiseStay.match(/^(\d+)\s+(Night|Nights)(?:\s+in\s+(.+))?$/i);
+      const preCruiseInclusion=preCruiseMatch?`${preCruiseMatch[1]} ${preCruiseMatch[2]} Pre-Cruise Stay${preCruiseMatch[3]?` in ${preCruiseMatch[3].trim()}`:""}`:"";
+      if(preCruiseInclusion){
+        const travelInclusionParts=[];
+        if(parsedAirport) travelInclusionParts.push(`${parsedAirport} Flights`);
+        if(transferStatus==="Included") travelInclusionParts.push("Transfers Included");
+        const cabinStayParts=[detectedCabin,preCruiseInclusion].filter(Boolean);
+        parsed.incl=[travelInclusionParts.join(" - "),cabinStayParts.join(" - ")].filter(Boolean).join("\n");
+      }else{
+        const cabinInclusionParts=[];
+        if(parsedAirport) cabinInclusionParts.push(`${parsedAirport} Flights`);
+        if(transferStatus==="Included") cabinInclusionParts.push("Transfers Included");
+        cabinInclusionParts.push(detectedCabin);
+        parsed.incl=cabinInclusionParts.join(" - ");
+      }
     }
     score+=6;
   }
@@ -7150,7 +7158,7 @@ function chunkBullets(str,options){
     .join(" ");
 }
 function normaliseSubtitleSeparator(value){
-  return String(value||"").replace(/\s*•\s*/g," - ").replace(/\s{2,}/g," ").trim();
+  return String(value||"").replace(/[^\S\n]*•[^\S\n]*/g," - ").replace(/[^\S\n]{2,}/g," ").replace(/\n[ \t]+|[ \t]+\n/g,"\n").trim();
 }
 function renderCardInclusion(value){
   const cabinPhrases=[
@@ -7170,7 +7178,7 @@ function renderCardInclusion(value){
     const escaped=phrase.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
     rendered=rendered.replace(new RegExp(`\\b${escaped}\\b`,"gi"),match=>`<span class="cabin-phrase">${match.replace(/ /g,"&nbsp;")}</span>`);
   });
-  return rendered;
+  return rendered.replace(/\n/g,"<br>");
 }
 function renderCruiseTitle(value){
   return String(value||"").replace(/-/g,"‑");
