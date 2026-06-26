@@ -162,7 +162,6 @@ test('hero upload thumbnail shows the full source image and helper metadata', ()
   assert.match(html, /\.dz-thumb\.hero-t\{object-fit:contain/);
   assert.doesNotMatch(html, /\.dz-thumb\.hero-t\{object-fit:cover/);
   assert.match(html, /Thumbnail shows full source image\. Card preview shows cropped result\./);
-  assert.match(html, /Route Maps are normalised to a fixed 1200 × 700px frame on import\./);
   assert.match(extractFunction('updateHeroThumbInfo'), /dims\.textContent="Image: "\+w\+" × "\+h\+"px"/);
 });
 
@@ -274,6 +273,26 @@ test('route maps default to a fixed cover-filled frame instead of fitting source
   assert.match(normaliseRouteMapImageSource, /ctx\.drawImage\(img,left,top,width,height\)/);
   assert.doesNotMatch(normaliseRouteMapImageSource, /fillRect|getRouteMapArtworkBoundsFromImage|artworkBounds|Math\.min/);
   assert.match(extractFunction('renderEditableImageHTML'), /const fitMode=d\[cfg\.modeKey\]==="fit"\?"fit":"fill"/);
+});
+
+test('route map editor exposes only replacement, removal, centering and three adjustment sliders', () => {
+  const routeMapStart = html.indexOf('<h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"></path></svg>Route Map</h3>');
+  const ctaStart = html.indexOf('<!-- ── CTA ASSETS ── -->', routeMapStart);
+  const panel = html.slice(routeMapStart, ctaStart);
+
+  assert.match(panel, /onclick="replaceEditableImage\('itinerary'\)">Replace Route Map/);
+  assert.match(panel, /onclick="removeEditableImage\('itinerary'\)">Remove Route Map/);
+  assert.match(panel, /onclick="centreEditableImage\('itinerary'\)">Centre Image/);
+  assert.match(panel, /id="itinerary-crop-zoom"/);
+  assert.match(panel, /id="itinerary-crop-x"/);
+  assert.match(panel, /id="itinerary-crop-y"/);
+  assert.doesNotMatch(panel, /itinerary-crop-status|itinerary-image-dimensions|itinerary-thumb-helper|itinerary-mode-fill|itinerary-mode-fit|itinerary-quick-position|Reset Position|Fill Frame|Fit Image|Quick Position|Left 0%|Right 100%|Top 0%|Bottom 100%/);
+  assert.match(extractFunction('syncEditableImageUi'), /:\["itinerary-crop-controls","itinerary-actions-panel"\]/);
+});
+
+test('route map centre image resets zoom and position to defaults', () => {
+  assert.match(extractFunction('centreEditableImage'), /if\(type==="itinerary"\) offers\[cur\]\[cfg\.zoomKey\]=100/);
+  assert.match(extractFunction('centreEditableImage'), /if\(type==="itinerary"\) setEditableImageControlValue\(type,"zoom",100\)/);
 });
 
 test('fit image preserves full Malta-style route map visibility by default', () => {
