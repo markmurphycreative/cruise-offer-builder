@@ -254,6 +254,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-panel-group{display:none;margin-top:6px;}
 .hero-panel-group.active{display:block;}
 .hero-actions,.hero-fit-toggle,.hero-quick-grid,.hero-preset-actions{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.route-map-actions{grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;}
+.route-map-actions .abtn{display:flex;align-items:center;justify-content:center;min-width:0;}
 .hero-fit-toggle{margin-bottom:8px;}
 .hero-mode-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);box-shadow:0 0 0 2px rgba(160,146,103,.24);}
 .hero-mode-btn.active::before{content:"✓ ";color:var(--gold);}
@@ -987,12 +989,10 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
           </div>
         </div>
         <div class="hero-panel-group" id="itinerary-actions-panel">
-          <div class="hero-actions">
-            <button class="abtn btn-compact" onclick="replaceEditableImage('itinerary')">Replace Route Map</button>
-            <button class="abtn red btn-compact" onclick="removeEditableImage('itinerary')">Remove Route Map</button>
-          </div>
-          <div class="hero-actions">
-            <button class="abtn btn-compact" onclick="centreEditableImage('itinerary')">Centre Image</button>
+          <div class="hero-actions route-map-actions">
+            <button class="abtn btn-compact" onclick="replaceEditableImage('itinerary')">Replace</button>
+            <button class="abtn btn-compact" onclick="centreEditableImage('itinerary')">Centre</button>
+            <button class="abtn red btn-compact" onclick="removeEditableImage('itinerary')">Remove</button>
           </div>
         </div>
         <div class="crop-controls" id="itinerary-crop-controls">
