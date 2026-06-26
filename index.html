@@ -7164,27 +7164,80 @@ function chunkBullets(str,options){
     .join(" ");
 }
 function normaliseSubtitleSeparator(value){
-  return String(value||"").replace(/[^\S\n]*•[^\S\n]*/g," - ").replace(/[^\S\n]{2,}/g," ").replace(/\n[ \t]+|[ \t]+\n/g,"\n").trim();
+  return buildCardInclusionRenderLines(value).join("\n");
+}
+const CARD_INCLUSION_CABIN_PHRASES=[
+  "Ocean View Cabin",
+  "Inside Stateroom",
+  "Oceanview Stateroom",
+  "Balcony Stateroom",
+  "Infinite Veranda",
+  "Concierge Class",
+  "Outside Cabin",
+  "Balcony Cabin",
+  "Inside Cabin",
+  "Junior Suite",
+  "AquaClass",
+  "Suite"
+];
+function normaliseCardInclusionComponent(value){
+  return String(value||"")
+    .replace(/[\t ]+/g," ")
+    .replace(/^\s*(?:[-–—•·]+\s*)+|(?:\s*[-–—•·]+)+\s*$/g,"")
+    .trim();
+}
+function isCardPreCruiseComponent(value){
+  return /\b\d+\s+nights?\s+pre[-\s]?cruise\s+stay\b/i.test(String(value||""));
+}
+function splitCardInclusionLineComponents(line){
+  return String(line||"")
+    .split(/\s+(?:[-–—]|[•·])\s+/)
+    .map(normaliseCardInclusionComponent)
+    .filter(Boolean);
+}
+function buildCardInclusionComponents(value){
+  const ordered=[];
+  const add=component=>{
+    const cleaned=normaliseCardInclusionComponent(component);
+    if(cleaned&&!ordered.some(existing=>existing.toLowerCase()===cleaned.toLowerCase())) ordered.push(cleaned);
+  };
+  String(value||"")
+    .replace(/\r\n?/g,"\n")
+    .split("\n")
+    .forEach(line=>splitCardInclusionLineComponents(line).forEach(add));
+  return ordered;
+}
+function validateCardInclusionLines(lines){
+  return (lines||[]).every(line=>{
+    const value=String(line||"").trim();
+    return value&&!/^[-–—]/.test(value)&&!/[-–—]$/.test(value)&&!/(?:\s-\s){2,}/.test(value)&&!/\b(?:IncludedInside|Cabin\d|FlightsTransfers|FlightsIncludedInside|MiamiNewcastle)\b/i.test(value);
+  });
+}
+function buildCardInclusionRenderLines(value){
+  const components=buildCardInclusionComponents(value);
+  const primary=components.filter(component=>!isCardPreCruiseComponent(component));
+  const preCruise=components.filter(isCardPreCruiseComponent);
+  const lines=[];
+  if(primary.length) lines.push(primary.join(" - "));
+  preCruise.forEach(component=>lines.push(component));
+  return validateCardInclusionLines(lines)?lines:lines.map(normaliseCardInclusionComponent).filter(Boolean);
 }
 function renderCardInclusion(value){
-  const cabinPhrases=[
-    "Ocean View Cabin",
-    "Inside Stateroom",
-    "Oceanview Stateroom",
-    "Balcony Stateroom",
-    "Concierge Class",
-    "Outside Cabin",
-    "Balcony Cabin",
-    "Inside Cabin",
-    "AquaClass",
-    "Suite"
-  ];
-  let rendered=normaliseSubtitleSeparator(value);
-  cabinPhrases.forEach(phrase=>{
-    const escaped=phrase.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
-    rendered=rendered.replace(new RegExp(`\\b${escaped}\\b`,"gi"),match=>`<span class="cabin-phrase">${match.replace(/ /g,"&nbsp;")}</span>`);
-  });
-  return rendered.replace(/\n/g,"<br>");
+  const renderComponent=component=>{
+    let rendered=normaliseCardInclusionComponent(component);
+    CARD_INCLUSION_CABIN_PHRASES.forEach(phrase=>{
+      const escaped=phrase.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+      rendered=rendered.replace(new RegExp(`\\b${escaped}\\b`,"gi"),match=>`<span class="cabin-phrase">${match.replace(/ /g,"&nbsp;")}</span>`);
+    });
+    return rendered;
+  };
+  const components=buildCardInclusionComponents(value);
+  const primary=components.filter(component=>!isCardPreCruiseComponent(component));
+  const preCruise=components.filter(isCardPreCruiseComponent);
+  const lines=[];
+  if(primary.length) lines.push(primary.map(renderComponent).join(" - "));
+  preCruise.forEach(component=>lines.push(renderComponent(component)));
+  return lines.join("<br>");
 }
 function renderCruiseTitle(value){
   return String(value||"").replace(/-/g,"‑");
