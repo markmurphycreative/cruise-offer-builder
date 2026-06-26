@@ -5989,8 +5989,9 @@ function isExcludedParsedPort(item,options){
 }
 function isStandalonePortCandidate(line){
   const value=String(line||"").trim();
-  const likelyPort=/^[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’().-]*(?:\s+(?:\(?[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’().-]*|of|and|the)){0,4}$/;
-  const commaAliasPort=/^[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’().-]+,\s*for\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’().-]+$/;
+  const portWord="[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’()./-]*";
+  const likelyPort=new RegExp(`^${portWord}(?:\\s+(?:\\(?${portWord}|of|and|the)){0,4}$`);
+  const commaAliasPort=new RegExp(`^${portWord}(?:\\s+(?:${portWord}|of|and|the)){0,4},\\s*for\\s+${portWord}(?:\\s+(?:${portWord}|of|and|the)){0,4}$`);
   const reject=/^(?:at sea|sea day|overnight|inside|outside|balcony|suite|full board|half board|all inclusive|self catering|family(?: friendly)?|premium|adults? only|ocean cruise|river cruise|cruise|ship|operator|price|from|ports?|itinerary|you(?:'|’)?ll visit)$/i;
   const candidate=commaAliasPort.test(value)||(value.includes(",")?value.split(",").map(part=>part.trim()).filter(Boolean).every(part=>likelyPort.test(part)&&!reject.test(part)):likelyPort.test(value));
   return candidate&&
@@ -6002,10 +6003,24 @@ function isStandalonePortCandidate(line){
     !/[£$€]|\d|\b(?:nights?|nts?|included|flights?|transfers?|luggage|cabin|from)\b/i.test(value);
 }
 const PARSED_PORT_COUNTRY_SUFFIXES=[
-  "Norway","France","Spain","Portugal","Italy","Malta","Sicily","Turkey"
+  "Norway","France","Spain","Portugal","Italy","Malta","Sicily","Turkey","Germany","Japan"
 ];
+const PARSED_PORT_STATUS_ANNOTATIONS=[
+  "Overnight","Overnight Stay","Late Stay","Tender","At Anchor","Anchor","Docked","Disembark","Embark"
+];
+function normaliseParsedPortBracketText(label){
+  let value=String(label||"")
+    .replace(/([A-Za-zÀ-ÖØ-öø-ÿ/])\s*\(/g,"$1 (")
+    .replace(/\s+/g," ")
+    .trim();
+  for(const annotation of PARSED_PORT_STATUS_ANNOTATIONS){
+    value=value.replace(new RegExp(`\\s*\\(\\s*${escapeRegExp(annotation)}\\s*\\)\\s*$`,"i"),"").trim();
+  }
+  value=value.replace(/^(.+?)\s+\(([^()]+)\)(\s*,\s*.+)$/,(match,city,port,country)=>`${city}, for ${port}${country}`);
+  return value.replace(/\s+/g," ").trim();
+}
 function removeParsedPortCountrySuffix(label){
-  let value=String(label||"").replace(/\s+/g," ").trim();
+  let value=normaliseParsedPortBracketText(label);
   let changed=true;
   while(changed){
     changed=false;

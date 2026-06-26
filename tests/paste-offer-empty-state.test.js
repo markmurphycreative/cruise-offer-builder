@@ -167,6 +167,8 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('isExcludedParsedPort'),
     extractFunction('isStandalonePortCandidate'),
     extractConst('PARSED_PORT_COUNTRY_SUFFIXES'),
+    extractConst('PARSED_PORT_STATUS_ANNOTATIONS'),
+    extractFunction('normaliseParsedPortBracketText'),
     extractFunction('removeParsedPortCountrySuffix'),
     extractFunction('cleanParsedPorts'),
     extractFunction('escapeRegExp'),
@@ -1172,6 +1174,31 @@ Southampton • Paris, Le Havre, France • Bilbao, Spain • La Coruna, Spain �
 
   assert.equal(result.parsed.ports, 'Southampton • Paris, Le Havre • Bilbao • La Coruna • Vigo • Cherbourg');
   assert.doesNotMatch(result.parsed.ports, /France|Spain/);
+});
+
+test('Paste Offer preserves route location brackets while removing status annotations', () => {
+  const harness = createHarness([{}, {}, {}, {}]);
+  const result = harness.context.parseOfferText(`Mediterranean Highlights
+You'll visit:
+Florence/Pisa(La Spezia), Italy (Overnight)
+Florence/Pisa (La Spezia), Italy
+Rome (Civitavecchia), Italy
+Paris (Le Havre), France
+Berlin (Warnemünde), Germany
+Kyoto/Osaka (Kobe), Japan
+Barcelona, Spain
+At Sea`, { renderIntelligence: false });
+
+  assert.equal(result.parsed.ports, [
+    'Florence/Pisa, for La Spezia',
+    'Florence/Pisa, for La Spezia',
+    'Rome, for Civitavecchia',
+    'Paris, for Le Havre',
+    'Berlin, for Warnemünde',
+    'Kyoto/Osaka, for Kobe',
+    'Barcelona'
+  ].join(' • '));
+  assert.doesNotMatch(result.parsed.ports, /At Sea|Overnight|Italy|France|Germany|Japan|Spain/);
 });
 
 test('Paste Offer keeps airport-specific non-flight inclusions and removes Turkey port suffixes', () => {
