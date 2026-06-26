@@ -89,6 +89,7 @@ function createRenderContext() {
     extractFunction('getEmbarkationPort'),
     extractFunction('chunkBullets'),
     extractFunction('normaliseSubtitleSeparator'),
+    extractFunction('renderCardInclusion'),
     extractFunction('renderCruiseTitle'),
     extractFunction('escapeAttr'),
     extractFunction('getItineraryImageSource'),
@@ -140,11 +141,25 @@ test('card subtitle separators render hyphens while itinerary separators stay bu
   for (const [input, expected] of cases) {
     assert.equal(normaliseSubtitleSeparator(input), expected);
     const card = renderCardHTML({ name: 'Cruise Title', incl: input, ports: 'Barbados • Martinique' });
-    assert.match(card, new RegExp(`<div class="incl">${expected}</div>`));
+    assert.match(card.replace(/<span class="cabin-phrase">(.*?)<\/span>/g, '$1').replace(/&nbsp;/g, ' '), new RegExp(`<div class="incl">${expected}</div>`));
   }
 
   const card = renderCardHTML({ name: 'Cruise Title', incl: 'Luggage Included • Ocean View Cabin', ports: 'Barbados • Martinique' });
   assert.match(card, /<span class="port-unit">Barbados<\/span> <span class="port-separator">•<\/span> <span class="port-unit">Martinique<\/span>/);
+});
+
+test('card inclusion rendering keeps known cabin phrases non-breaking', () => {
+  const { renderCardHTML, renderCardInclusion } = createRenderContext();
+  const rendered = renderCardInclusion('Newcastle Flights - Transfers Included - Inside Cabin');
+  assert.equal(rendered, 'Newcastle Flights - Transfers Included - <span class="cabin-phrase">Inside&nbsp;Cabin</span>');
+
+  const card = renderCardHTML({
+    name: 'Celebrity Equinox',
+    incl: 'Newcastle Flights - Transfers Included - Inside Cabin',
+    ports: 'Barcelona • Rome'
+  });
+  assert.match(card, /<div class="incl">Newcastle Flights - Transfers Included - <span class="cabin-phrase">Inside&nbsp;Cabin<\/span><\/div>/);
+  assert.doesNotMatch(card, /Inside Cabin<\/div>/);
 });
 
 test('card title rendering converts hyphenated cruise title terms to non-breaking hyphens only in title output', () => {
