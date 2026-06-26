@@ -88,12 +88,17 @@ function createRenderContext() {
     extractFunction('cleanEmbarkationPortDisplay'),
     extractFunction('getEmbarkationPort'),
     extractFunction('chunkBullets'),
-    html.slice(html.indexOf('const CARD_INCLUSION_CABIN_PHRASES='), html.indexOf('function normaliseCardInclusionComponent')),
+    html.slice(html.indexOf('const CARD_INCLUSION_SEPARATOR='), html.indexOf('function normaliseCardInclusionComponent')),
+    extractFunction('escapeRegExp'),
     extractFunction('normaliseCardInclusionComponent'),
+    extractFunction('classifyCardInclusionComponent'),
     extractFunction('isCardPreCruiseComponent'),
+    extractFunction('makeCardInclusionComponent'),
     extractFunction('splitCardInclusionLineComponents'),
     extractFunction('buildCardInclusionComponents'),
+    extractFunction('orderCardInclusionComponents'),
     extractFunction('validateCardInclusionLines'),
+    extractFunction('renderCardInclusionLayout'),
     extractFunction('buildCardInclusionRenderLines'),
     extractFunction('normaliseSubtitleSeparator'),
     extractFunction('renderCardInclusion'),
@@ -135,14 +140,14 @@ test('destination normalisation improves readability without trailing bullet opp
   assert.doesNotMatch(rendered, /<span class="port-separator">•<\/span>\s*<\/span>/);
 });
 
-test('card subtitle separators render hyphens while itinerary separators stay bullets', () => {
+test('card subtitle separators render bullet separators while itinerary separators stay bullets', () => {
   const { renderCardHTML, normaliseSubtitleSeparator } = createRenderContext();
   const cases = [
-    ['Luggage Included • Ocean View Cabin', 'Luggage Included - Ocean View Cabin'],
-    ['Newcastle Flights Included • Inside Cabin', 'Newcastle Flights Included - Inside Cabin'],
-    ['Manchester Flights, Luggage Included • Balcony Cabin', 'Manchester Flights, Luggage Included - Balcony Cabin'],
-    ['No Fly • Ocean View Cabin', 'No Fly - Ocean View Cabin'],
-    ['Coach Included • Inside Cabin', 'Coach Included - Inside Cabin']
+    ['Luggage Included • Ocean View Cabin', 'Luggage Included • Ocean View Cabin'],
+    ['Newcastle Flights Included • Inside Cabin', 'Newcastle Flights Included • Inside Cabin'],
+    ['Manchester Flights, Luggage Included • Balcony Cabin', 'Manchester Flights, Luggage Included • Balcony Cabin'],
+    ['No Fly • Ocean View Cabin', 'No Fly • Ocean View Cabin'],
+    ['Coach Included • Inside Cabin', 'Coach Included • Inside Cabin']
   ];
 
   for (const [input, expected] of cases) {
@@ -157,18 +162,18 @@ test('card subtitle separators render hyphens while itinerary separators stay bu
 
 test('card inclusion rendering keeps known cabin phrases non-breaking', () => {
   const { renderCardHTML, renderCardInclusion } = createRenderContext();
-  const rendered = renderCardInclusion('Newcastle Flights - Transfers Included - Inside Cabin');
-  assert.equal(rendered, 'Newcastle Flights - Transfers Included - <span class="cabin-phrase">Inside&nbsp;Cabin</span>');
-  const renderedPreCruise = renderCardInclusion('Newcastle Flights - Transfers Included\nInside Cabin - 1 Night Pre-Cruise Stay in Miami');
-  assert.equal(renderedPreCruise, 'Newcastle Flights - Transfers Included - <span class="cabin-phrase">Inside&nbsp;Cabin</span><br><span class="precruise-phrase">1 Night Pre-Cruise Stay in Miami</span>');
+  const rendered = renderCardInclusion('Newcastle Flights • Transfers Included • Inside Cabin');
+  assert.equal(rendered, 'Newcastle Flights • Transfers Included • <span class="cabin-phrase">Inside&nbsp;Cabin</span>');
+  const renderedPreCruise = renderCardInclusion('Newcastle Flights • Transfers Included\nInside Cabin • 1 Night Pre-Cruise Stay in Miami');
+  assert.equal(renderedPreCruise, 'Newcastle Flights • Transfers Included • <span class="cabin-phrase">Inside&nbsp;Cabin</span><br><span class="precruise-phrase">1 Night Pre-Cruise Stay in Miami</span>');
   assert.doesNotMatch(renderedPreCruise, /Transfers Included -<br>|Transfers Included -$|^-/);
 
   const card = renderCardHTML({
     name: 'Celebrity Equinox',
-    incl: 'Newcastle Flights - Transfers Included - Inside Cabin',
+    incl: 'Newcastle Flights • Transfers Included • Inside Cabin',
     ports: 'Barcelona • Rome'
   });
-  assert.match(card, /<div class="incl">Newcastle Flights - Transfers Included - <span class="cabin-phrase">Inside&nbsp;Cabin<\/span><\/div>/);
+  assert.match(card, /<div class="incl">Newcastle Flights • Transfers Included • <span class="cabin-phrase">Inside&nbsp;Cabin<\/span><\/div>/);
   assert.match(html, /\.cc \.incl\{font-size:40px;font-weight:300;color:#555;line-height:1\.36;margin-bottom:16px;\}/);
   assert.match(html, /\.cc \.cabin-phrase,\.cc \.precruise-phrase\{white-space:nowrap;\}/);
   assert.doesNotMatch(card, /Inside Cabin<\/div>/);
@@ -185,7 +190,7 @@ test('card title rendering converts hyphenated cruise title terms to non-breakin
   assert.equal(renderCruiseTitle('Fly-Cruise Mini-Break Adults-Only Pre-Cruise Post-Cruise Back-to-Back'), 'Fly‑Cruise Mini‑Break Adults‑Only Pre‑Cruise Post‑Cruise Back‑to‑Back');
   assert.match(card, /<div class="cname">Eastern Caribbean Fly‑Cruise Back‑to‑Back<\/div>/);
   assert.doesNotMatch(card, /<div class="cname">[^<]*Fly-Cruise/);
-  assert.match(card, /<div class="incl">Pre-Cruise Stay - Adults-Only Venue<\/div>/);
+  assert.match(card, /<div class="incl">Pre-Cruise Stay • Adults-Only Venue<\/div>/);
   assert.match(card, /<span class="port-unit">Barbados<\/span>/);
 });
 
