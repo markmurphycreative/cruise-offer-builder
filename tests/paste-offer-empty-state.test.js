@@ -176,6 +176,9 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('getStandalonePortLines'),
     extractFunction('parseFamilyPassengerBasis'),
     'const PASTE_OPERATOR_BOARD_DEFAULTS={po:["FB","Full Board"],celebrity:["FB","Full Board"],fred:["FB","Full Board"],amawaterways:["FB","Full Board"],ambassador:["FB","Full Board"],ncl:["FB","Full Board"],cunard:["FB","Full Board"],marella:["AI","All Inclusive"],princess:["AI","All Inclusive"],msc:["AI","All Inclusive"],virgin:["AI","All Inclusive"],riviera:["AI","All Inclusive"]};',
+    extractConst('CRUISE_PASSENGER_BASIS_DEFAULT_OPERATORS'),
+    extractConst('DEFAULT_CRUISE_PASSENGER_BASIS'),
+    extractFunction('shouldDefaultCruisePassengerBasis'),
     extractFunction('detectPassengerBasis'),
     extractFunction('detectBoardBasis'),
     extractFunction('getOperatorBoardDefault'),
@@ -303,6 +306,37 @@ test('Trello hardening detects occupancy variants and default sharing basis', ()
     harness.parse(`P&O Cruises\nArvia\n7 nights\n${raw}`);
     assert.equal(harness.context.offers[0].basis, expected);
   }
+});
+
+test('Paste Offer defaults missing cruise passenger basis without overwriting detected basis', () => {
+  const missing = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  missing.parse(`Celebrity Cruises
+Panama Canal & Southern Caribbean
+7th March 2027
+14 nights Cruise
+Celebrity Ascent
+Flights included from Newcastle
+Inside Cabin
+Full Board
+£1259pp`);
+  assert.equal(missing.context.offers[0].basis, 'Based On 2 Adults Sharing');
+  assert.equal(missing.context.offers[0].price, '1259');
+
+  const detectedStandard = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  detectedStandard.parse(`Celebrity Cruises
+Celebrity Ascent
+7 nights
+£1259pp
+Based on 2 Adults Sharing`);
+  assert.equal(detectedStandard.context.offers[0].basis, 'Based On 2 Adults Sharing');
+
+  const detectedDifferent = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  detectedDifferent.parse(`Celebrity Cruises
+Celebrity Ascent
+7 nights
+£1259pp
+solo traveller`);
+  assert.equal(detectedDifferent.context.offers[0].basis, 'Based On Solo Occupancy');
 });
 
 test('Trello hardening detects board variants without applying operator defaults', () => {
