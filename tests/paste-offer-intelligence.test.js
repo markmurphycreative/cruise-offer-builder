@@ -166,7 +166,7 @@ Miami, Florida`;
       '1 Night Pre-Cruise Stay in Miami'
     ]
   }));
-  assert.equal(ports, 'Miami • Perfect Day Cococay • George Town • Cozumel • Nassau • Miami');
+  assert.equal(ports, 'Miami, Florida • Perfect Day Cococay, Bahamas • George Town, Grand Cayman • Cozumel, Mexico • Nassau, Bahamas • Miami, Florida');
 });
 
 test('Celebrity bracketed ports preserve location aliases and remove cruising segments', () => {

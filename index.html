@@ -6012,7 +6012,7 @@ function isStandalonePortCandidate(line){
     !/[£$€]|\d|\b(?:nights?|nts?|included|flights?|transfers?|luggage|cabin|from)\b/i.test(value);
 }
 const PARSED_PORT_COUNTRY_SUFFIXES=[
-  "Norway","France","Spain","Portugal","Italy","Malta","Sicily","Turkey","Germany","Japan","Florida","British Columbia","Alaska","England","Grand Cayman","Mexico","Bahamas"
+  "Norway","France","Spain","Portugal","Italy","Malta","Sicily","Turkey","Germany","Japan","England"
 ];
 const PARSED_PORT_STATUS_ANNOTATIONS=[
   "Overnight","Overnight Stay","Late Stay","Tender","At Anchor","Anchor","Docked","Disembark","Embark","Cruising"
@@ -6030,6 +6030,8 @@ function normaliseParsedPortBracketText(label){
 }
 function removeParsedPortCountrySuffix(label){
   let value=normaliseParsedPortBracketText(label);
+  const requiredSuffixes=["Bahamas","Grand Cayman","Mexico","Florida","British Columbia","Alaska","Majorca"];
+  if(requiredSuffixes.some(suffix=>new RegExp(`,\\s*${escapeRegExp(suffix)}\\s*$`,"i").test(value))) return value;
   let changed=true;
   while(changed){
     changed=false;
@@ -6341,11 +6343,14 @@ function parseOfferText(raw,options){
   const parsedAirport=typeof detectFlightAirport==="function"?detectFlightAirport(raw):"";
   if(detectedCabin){
     const transferStatus=detectTransferStatus(raw);
-    if(parsedAirport||transferStatus||!sourceInclusion||isCabinTypeExclusion(sourceInclusion)){
+    const detectedPreCruiseStay=typeof detectPreCruiseStay==="function"?detectPreCruiseStay(raw):"";
+    if(transferStatus||detectedPreCruiseStay||!sourceInclusion||isCabinTypeExclusion(sourceInclusion)){
       const cabinInclusionParts=[];
       if(parsedAirport) cabinInclusionParts.push(`${parsedAirport} Flights`);
       if(transferStatus==="Included") cabinInclusionParts.push("Transfers Included");
       cabinInclusionParts.push(detectedCabin);
+      const preCruiseMatch=detectedPreCruiseStay.match(/^(\d+)\s+(Night|Nights)\b/i);
+      if(preCruiseMatch) cabinInclusionParts.push(`${preCruiseMatch[1]} ${preCruiseMatch[2]} Pre-Cruise Stay`);
       parsed.incl=cabinInclusionParts.join(" - ");
     }
     score+=6;
@@ -6901,12 +6906,12 @@ function detectTransferStatus(text){
   return /^no\s+transfers?/i.test(line)?"No Transfers":"Included";
 }
 function detectPreCruiseStay(text){
-  const match=String(text||"").match(/(?:^|\n)\s*(\d+)\s+(nights?)\s+pre[-\s]*cruise\s+stay\s+in\s+([^\n\r]+?)\s*(?=$|\n)/i);
+  const match=String(text||"").match(/(?:^|\n)\s*(\d+)\s+(nights?)\s+pre[-\s]*cruise\s+stay(?:\s+in\s+([^\n\r]+?))?\s*(?=$|\n)/i);
   if(!match) return "";
   const count=match[1];
   const nightLabel=Number(count)===1?"Night":"Nights";
-  const place=match[3].replace(/\s+/g," ").trim();
-  return `${count} ${nightLabel} in ${place}`;
+  const place=String(match[3]||"").replace(/\s+/g," ").trim();
+  return `${count} ${nightLabel}${place ? ` in ${place}` : ""}`;
 }
 function getOfferIntelligenceSummary(parsed,rawText){
   const count=getOfferIntelligenceDetectedFields(parsed,rawText).fields.length;
