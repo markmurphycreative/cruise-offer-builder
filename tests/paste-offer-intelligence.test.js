@@ -61,6 +61,11 @@ function createHarness() {
     extractFunction('escapeRegExp'),
     extractFunction('getOfferIntelligenceShipOperator'),
     extractFunction('findKnownOperatorShip'),
+    extractFunction('isKnownOperatorLine'),
+    extractFunction('isKnownShipLine'),
+    extractFunction('hasFollowingCruiseStructure'),
+    extractFunction('isDirectCruiseTitleCandidate'),
+    extractFunction('detectDirectCruiseTitle'),
     extractConst('CABIN_TYPE_EXCLUSIONS'),
     extractConst('NON_PORT_EXTRACTION_EXCLUSION_PATTERNS'),
     extractFunction('normaliseExtractionExclusionValue'),
@@ -147,7 +152,8 @@ test('POA cabin suggestion renders segmented chips and applying one preserves us
   const htmlOut = vm.runInContext('renderPoaCabinTypeSuggestion(parsed, raw, "celebrity")', Object.assign(context, { parsed: {}, raw: 'Celebrity cruise offer' }));
   assert.match(htmlOut, /Cabin Type not detected/);
   assert.match(htmlOut, /poa-cabin-chip/);
-  assert.match(htmlOut, /Balcony \(Recommended\)/);
+  assert.match(htmlOut, /class="poa-cabin-chip recommended"/);
+  assert.doesNotMatch(htmlOut, /Balcony \(Recommended\)/);
   assert.doesNotMatch(htmlOut, /AquaClass/);
   assert.match(htmlOut, /Inside/);
   assert.match(htmlOut, /Ocean View/);

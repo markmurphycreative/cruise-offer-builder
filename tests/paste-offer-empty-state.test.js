@@ -128,9 +128,9 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     },
     isOfferLoaded: offer => !!(offer && (offer.name || offer.ship || offer.price || offer._img)),
     BOARD_MAP: { FB: ['FB', 'Full Board'], 'FULL BOARD': ['FB', 'Full Board'], AI: ['AI', 'All Inclusive'], 'ALL INCLUSIVE': ['AI', 'All Inclusive'], HB: ['HB', 'Half Board'], 'HALF BOARD': ['HB', 'Half Board'] },
-    OPERATOR_HEADERS: { cunard: { name: 'Cunard' }, ncl: { name: 'Norwegian Cruise Line' }, po: { name: 'P&O Cruises' } },
-    OPERATOR_SHIPS: { celebrity: ['Celebrity Apex', 'Celebrity Ascent'], amawaterways: ['AmaBella', 'AmaDouro', 'AmaMagna', 'Zambezi Queen'], cunard: ['Queen Anne'], ncl: ['Norwegian Prima', 'Pride of America'], po: ['Arvia'] },
-    OPERATOR_ALIASES: { celebrity: [/\bcelebrity\b/i, /\bcelebrity\s+cruises\b/i], cunard: [/\bcunard\b/i], ncl: [/\bnorwegian\s+cruise\s+line\b/i, /\bncl\b/i], po: [/\bp\s*&\s*o\b/i, /\bp&o\s+cruises\b/i] },
+    OPERATOR_HEADERS: { cunard: { name: 'Cunard' }, ncl: { name: 'Norwegian Cruise Line' }, po: { name: 'P&O Cruises' }, royal: { name: 'Royal Caribbean' } },
+    OPERATOR_SHIPS: { celebrity: ['Celebrity Apex', 'Celebrity Ascent'], amawaterways: ['AmaBella', 'AmaDouro', 'AmaMagna', 'Zambezi Queen'], cunard: ['Queen Anne'], ncl: ['Norwegian Prima', 'Pride of America'], po: ['Arvia'], royal: ['Oasis of the Seas'] },
+    OPERATOR_ALIASES: { celebrity: [/\bcelebrity\b/i, /\bcelebrity\s+cruises\b/i], cunard: [/\bcunard\b/i], ncl: [/\bnorwegian\s+cruise\s+line\b/i, /\bncl\b/i], po: [/\bp\s*&\s*o\b/i, /\bp&o\s+cruises\b/i], royal: [/\broyal\s+caribbean\b/i, /\broyal\s+caribbean\s+international\b/i] },
     AIRPORT_WORDS: ['newcastle', 'manchester', 'edinburgh', 'leeds bradford', 'glasgow', 'birmingham', 'london', 'heathrow', 'gatwick', 'stansted', 'belfast'],
     getLikelyTypos() { return []; },
     setSpellWarn() {},
@@ -188,6 +188,12 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('cleanParsedPorts'),
     extractFunction('escapeRegExp'),
     extractFunction('findKnownOperatorShip'),
+    extractFunction('normaliseCruiseTitleCandidate'),
+    extractFunction('isKnownOperatorLine'),
+    extractFunction('isKnownShipLine'),
+    extractFunction('hasFollowingCruiseStructure'),
+    extractFunction('isDirectCruiseTitleCandidate'),
+    extractFunction('detectDirectCruiseTitle'),
     extractFunction('getStandalonePortLines'),
     extractFunction('parseFamilyPassengerBasis'),
     'const PASTE_OPERATOR_BOARD_DEFAULTS={po:["FB","Full Board"],celebrity:["FB","Full Board"],fred:["FB","Full Board"],amawaterways:["FB","Full Board"],ambassador:["FB","Full Board"],ncl:["FB","Full Board"],cunard:["FB","Full Board"],marella:["AI","All Inclusive"],princess:["AI","All Inclusive"],msc:["AI","All Inclusive"],virgin:["AI","All Inclusive"],riviera:["AI","All Inclusive"]};',
@@ -320,6 +326,21 @@ test('Paste Offer strips offer heading prefixes from parsed titles', () => {
     const result = harness.context.parseOfferText(`${heading}\nCelebrity Ascent\n7 nights\n£1999`, { renderIntelligence: false });
     assert.equal(result.parsed.name, expected);
   }
+});
+
+
+test('Paste Offer detects Royal Caribbean title after known operator and ship lines', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  const result = harness.context.parseOfferText(`Royal Caribbean International
+Oasis of the Seas
+Western Mediterranean Explorer
+7 Nights
+25 September 2027
+From £1299pp`, { renderIntelligence: false });
+
+  assert.equal(result.parsed.operatorKey, 'royal');
+  assert.equal(result.parsed.ship, 'Oasis of the Seas');
+  assert.equal(result.parsed.name, 'Western Mediterranean Explorer');
 });
 
 test('Paste Offer creates and populates Offer 1 when no offers are loaded', () => {

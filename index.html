@@ -197,14 +197,14 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .offer-intel-item.detected .offer-intel-icon{color:var(--green);}
 .offer-intel-item.missing .offer-intel-icon{color:var(--amber);}
 .offer-intel-item.suggestion .offer-intel-icon{color:var(--builder-blue);}
-.poa-suggestion-card{border:1px solid var(--border);border-radius:var(--radius);padding:7px;background:#fafaf8;display:grid;gap:6px;}
+.poa-suggestion-card{border:1px solid var(--border);border-radius:var(--radius);padding:6px;background:#fafaf8;display:grid;gap:4px;}
 .poa-suggestion-card.applied{border-color:rgba(42,122,74,.45);background:#f7fbf8;}
 .poa-suggestion-card:hover{border-color:var(--gold);}
 .poa-suggestion-title{font-size:9px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:4px;}
 .poa-suggestion-title-status{color:var(--green);}
-.poa-suggestion-confidence{font-size:8px;font-weight:600;line-height:1.25;color:var(--green);}
-.poa-suggestion-compare{display:grid;gap:4px;font-size:9px;line-height:1.35;color:var(--text);}
-.poa-suggestion-compare-label{display:block;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:1px;}
+.poa-suggestion-confidence{font-size:8px;font-weight:600;line-height:1.2;color:var(--green);}
+.poa-suggestion-compare{display:grid;gap:2px;font-size:9px;line-height:1.25;color:var(--text);}
+.poa-suggestion-compare-label{display:inline;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-right:4px;}
 .poa-suggestion-empty{color:var(--muted);}
 .poa-suggestion-actions{display:flex;align-items:center;gap:5px;justify-content:flex-start;}
 .poa-suggestion-applied{font-size:9px;font-weight:700;color:var(--green);}
@@ -217,12 +217,12 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .poa-cabin-assist{border:1px solid rgba(191,138,43,.35);border-radius:var(--radius);background:#fffaf0;padding:7px;display:grid;gap:6px;}
 .poa-cabin-message{font-size:9px;line-height:1.35;color:var(--text);}
 .poa-cabin-message strong{color:var(--amber);}
-.poa-cabin-chips{display:flex;flex-wrap:wrap;gap:5px;}
-.poa-cabin-chip{border:1px solid var(--border);border-radius:999px;background:#fff;color:var(--navy);font-size:9px;line-height:1.2;padding:5px 8px;cursor:pointer;}
+.poa-cabin-chips{display:flex;flex-wrap:wrap;gap:5px;max-width:100%;}
+.poa-cabin-chip{border:1px solid var(--border);border-radius:var(--radius);background:#fff;color:var(--navy);font-size:9px;font-weight:600;line-height:1.2;min-height:25px;padding:5px 7px;cursor:pointer;max-width:100%;white-space:normal;text-align:center;}
 .poa-cabin-chip:hover{border-color:var(--gold);background:#faf6ea;}
-.poa-cabin-chip.recommended{border-color:rgba(42,122,74,.45);}
-.poa-cabin-chip.selected{background:var(--navy);border-color:var(--navy);color:#fff;}
-.poa-cabin-chip.recommended.selected{border-color:var(--navy);}
+.poa-cabin-chip.recommended{border-color:rgba(191,138,43,.55);background:#fffaf0;}
+.poa-cabin-chip.selected{background:#f3f7f4;border-color:rgba(42,122,74,.65);color:var(--navy);box-shadow:inset 0 0 0 1px rgba(42,122,74,.18);}
+.poa-cabin-chip.recommended.selected{border-color:rgba(191,138,43,.75);box-shadow:inset 0 0 0 1px rgba(191,138,43,.22);}
 .poa-icon-svg{width:12px;height:12px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;display:inline-block;}
 
 /* ── OPERATOR ── */
@@ -6180,6 +6180,39 @@ function findKnownOperatorShip(text,operatorKey){
   const operators=[...new Set(unique.map(match=>match.operatorKey))];
   return operators.length===1 ? unique.sort((a,b)=>b.ship.length-a.ship.length)[0] : null;
 }
+function isKnownOperatorLine(line){
+  const value=String(line||"").trim();
+  if(!value) return false;
+  return Object.values(OPERATOR_ALIASES||{}).flat().some(pattern=>pattern.test(value))||Object.values(OPERATOR_HEADERS||{}).some(op=>op.name&&new RegExp('^'+escapeRegExp(op.name)+'(?:\\s+international)?$','i').test(value));
+}
+function isKnownShipLine(line,operatorKey){
+  return !!findKnownOperatorShip(line,operatorKey);
+}
+function hasFollowingCruiseStructure(lines,index){
+  return (lines||[]).slice(index+1,index+5).some(line=>/\b\d{1,2}\s*(?:nights?|nts?)\b/i.test(line))||(lines||[]).slice(index+1,index+6).some(line=>/\b\d{1,2}(?:st|nd|rd|th)?\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|january|february|march|april|june|july|august|september|october|november|december)\s+\d{2,4}\b|\b\d{1,2}\/\d{1,2}\/\d{2,4}\b|[£$€]\s*\d/i.test(line));
+}
+function isDirectCruiseTitleCandidate(line,index,lines,parsed,itineraryLines){
+  const value=normaliseCruiseTitleCandidate(line);
+  if(!value||value.length<5||value.length>70) return false;
+  if(isKnownOperatorLine(value)||isKnownShipLine(value,(parsed||{}).operatorKey)) return false;
+  if((parsed||{}).ship&&value.toLowerCase()===String(parsed.ship).trim().toLowerCase()) return false;
+  if((itineraryLines||[]).includes(line)||(typeof isRecognisedPortTitleLine==="function"&&isRecognisedPortTitleLine(value))) return false;
+  if(isNonPortExtractionValue(value)) return false;
+  if(/[£$€]\s*\d|\bfrom\b|\b\d{1,2}\s*(?:nights?|nts?)\b|\b\d{1,2}(?:st|nd|rd|th)?\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|january|february|march|april|june|july|august|september|october|november|december)\s+\d{2,4}\b|\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/i.test(value)) return false;
+  if(/\b(?:full board|half board|all inclusive|self catering|inside|outside|balcony|suite|cabin|stateroom|sharing|solo traveller|solo traveler|single occupancy|sole occupancy|flights?|luggage|transfers?|included)\b/i.test(value)) return false;
+  if(/^(?:at sea|ocean cruise|mediterranean cruise|\d+\s*(?:night|nights|nt|nts)\s+cruise|scenic sailing|cruise holiday)$/i.test(value)) return false;
+  if(ITINERARY_SECTION_LABEL.test(value)||ITINERARY_FOOTER_LABEL.test(value)) return false;
+  const previous=lines.slice(0,index);
+  const hasPriorOperator=previous.some(isKnownOperatorLine)||(parsed||{}).operatorKey;
+  const hasPriorShip=previous.some(item=>isKnownShipLine(item,(parsed||{}).operatorKey));
+  const hasNearbyShip=hasPriorShip||lines.slice(index+1,index+3).some(item=>isKnownShipLine(item,(parsed||{}).operatorKey));
+  return !!(hasFollowingCruiseStructure(lines,index)&&(hasPriorOperator||hasNearbyShip));
+}
+function detectDirectCruiseTitle(lines,parsed,itineraryLines){
+  const source=lines||[];
+  const match=source.find((line,index)=>isDirectCruiseTitleCandidate(line,index,source,parsed||{},itineraryLines));
+  return match?normaliseCruiseTitleCandidate(match):"";
+}
 function getStandalonePortLines(lines,options){
   const portLines=(lines||[]).map(line=>String(line||"").trim()).filter(line=>
     isStandalonePortCandidate(line)&&!isExcludedParsedPort(line,options)
@@ -6435,8 +6468,12 @@ function parseOfferText(raw,options){
   if(dm){ if(dm[0].includes('/')){const y=dm[3].length===2?'20'+dm[3]:dm[3]; const date=new Date(`${y}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}`); parsed.day=String(date.getDate()); parsed.month=date.toLocaleString('en-GB',{month:'long'})+' '+date.getFullYear(); } else {const y=dm[3].length===2?'20'+dm[3]:dm[3]; const mn=new Date(`${dm[2]} 1, ${y}`); parsed.day=dm[1]; parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+y;} score+=16; }
   else { const mm=txt.match(new RegExp(`\\b(${months})\\s+(\\d{4})\\b`,'i')); if(mm){ const mn=new Date(`${mm[1]} 1, ${mm[2]}`); parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+mm[2]; score+=10; } }
   const itineraryLines=getItineraryLines(lines);
-  const shipLineIndex=parsed.ship?lines.findIndex(line=>line===parsed.ship):-1;
-  const title=lines.find((l,index)=>!Object.values(OPERATOR_ALIASES).flat().some(r=>r.test(l))&&!(itineraryLines||[]).includes(l)&&!(typeof isRecognisedPortTitleLine==="function"&&isRecognisedPortTitleLine(l))&&(shipLineIndex<0||index<shipLineIndex)&&!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b|\b(?:full board|half board|all inclusive|self catering|inside|outside|balcony|suite|based on|sharing|solo traveller|solo traveler|single occupancy|sole occupancy|single traveller|single traveler)\b/i.test(l))&&l.length>8&&l!==parsed.ship); if(title){parsed.name=stripOfferHeadingPrefix(title.replace(/^[-•\s]+/,'')).trim();score+=8;}
+  let title=detectDirectCruiseTitle(lines,parsed,itineraryLines);
+  if(!title){
+    const shipLineIndex=parsed.ship?lines.findIndex(line=>line===parsed.ship):-1;
+    title=lines.find((l,index)=>!Object.values(OPERATOR_ALIASES).flat().some(r=>r.test(l))&&!(itineraryLines||[]).includes(l)&&!(typeof isRecognisedPortTitleLine==="function"&&isRecognisedPortTitleLine(l))&&(shipLineIndex<0||index<shipLineIndex)&&!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b|\b(?:full board|half board|all inclusive|self catering|inside|outside|balcony|suite|based on|sharing|solo traveller|solo traveler|single occupancy|sole occupancy|single traveller|single traveler)\b/i.test(l))&&l.length>8&&l!==parsed.ship);
+  }
+  if(title){parsed.name=stripOfferHeadingPrefix(title.replace(/^[-•\s]+/,'')).trim();score+=8;}
   const portExclusions=[parsed.name,parsed.ship,parsed.price,parsed.basis,parsed.boardlbl,parsed.incl].filter(Boolean);
   const destinationLines=cleanDestinationOnlyLines(lines); const standalonePortLines=getStandalonePortLines(destinationLines,{exclude:portExclusions}); const portLines=(itineraryLines&&cleanDestinationOnlyLines(itineraryLines))||(standalonePortLines.length?standalonePortLines:null)||destinationLines.filter(l=>/[•·,]|\s+-\s+/.test(l)&&/(?:[A-Za-z]{3,}\s*){2,}/.test(l)&&!/from|£|nights?|nts?|included|flights?/i.test(l)); const ports=removeDuplicateReturnEmbarkationPortsString(cleanParsedPorts(portLines,{exclude:portExclusions})); if(ports){parsed.ports=ports;score+=8;}
   if(typeof getPortIntelligence==="function"){
@@ -6468,6 +6505,7 @@ function parseOfferText(raw,options){
   }
   const knownShipMatch=findKnownOperatorShip(txt,parsed.operatorKey); if(knownShipMatch){ if(!parsed.ship){parsed.ship=knownShipMatch.ship;score+=8;} if(!parsed.operatorKey){parsed.operatorKey=knownShipMatch.operatorKey;score+=18;} }
   if(!parsed.ship){const shipLine=lines.find(l=>/\b(cruise|explorer|symphony|arvia|voyager|queen|discovery)\b/i.test(l)); if(shipLine){const m=shipLine.match(/\b([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+){0,3})\b/); if(m) parsed.ship=m[1];}}
+  score=Math.min(score,100);
   const confidence=score>=62?'high':score>=35?'partial':'low';
   if(renderIntelligence&&typeof renderOfferIntelligencePanel==="function") renderOfferIntelligencePanel(parsed,raw);
   return {parsed,confidence,score,rawText:raw};
@@ -7032,7 +7070,7 @@ function getOfferIntelligenceDetectedFields(parsed,rawText){
     airport=offers[cur]._poaDepartureAirport;
   }
   addValue("Departure Airport",airport);
-  const cabinType=detectCabinType(rawText)||(p._poaCabinType||"");
+  const cabinType=(p._poaCabinType||"")||detectCabinType(rawText);
   addValue("Cabin Type",cabinType);
   addValue("Transfers",detectTransferStatus(rawText));
   addValue("Pre-Cruise Stay",detectPreCruiseStay(rawText));
@@ -7057,7 +7095,7 @@ function renderPoaCabinTypeSuggestion(parsed,rawText,effectiveOperator){
   const message=detected?`<strong>Cabin Type selected</strong><br>Change cabin type at any time:`:(recommended?`<strong>Cabin Type not detected</strong><br>Recommendation only — please select one:`:`<strong>Cabin Type not detected</strong><br>Couldn't determine cabin type.<br>Please select one:`);
   const chips=options.map(option=>{
     const selected=selectedBase.toLowerCase()===option.toLowerCase()||detected.toLowerCase()===`${option} cabin`.toLowerCase();
-    return `<button class="poa-cabin-chip${recommended===option?" recommended":""}${selected?" selected":""}" type="button" aria-pressed="${selected?"true":"false"}" onclick="applyPoaCabinType('${escapePoaSuggestionHtml(option)}')">${escapePoaSuggestionHtml(option)}${!selected&&recommended===option?" (Recommended)":""}</button>`;
+    return `<button class="poa-cabin-chip${recommended===option?" recommended":""}${selected?" selected":""}" type="button" aria-pressed="${selected?"true":"false"}" onclick="applyPoaCabinType('${escapePoaSuggestionHtml(option)}')">${escapePoaSuggestionHtml(option)}</button>`;
   }).join("");
   return `<div class="offer-intel-section"><div class="offer-intel-heading">Suggested Cabin</div><div class="poa-cabin-assist"><div class="poa-cabin-message">${message}</div><div class="poa-cabin-chips">${chips}</div></div></div>`;
 }
@@ -7116,6 +7154,7 @@ function renderOfferIntelligencePanel(parsed,rawText){
     const inclusions=detectOfferIntelligenceInclusions(p,rawText);
     const cruiseKnowledge=getOfferIntelligenceCruiseKnowledge(p,rawText);
     const missing=[];
+    if(!p.name) missing.push("Unable to detect Cruise Title");
     if(!p.ship) missing.push("Ship not detected");
     if(!(p.boardlbl||p.board)) missing.push("Board Basis not detected");
     if(!p.nights) missing.push("Nights not detected");
@@ -7125,6 +7164,7 @@ function renderOfferIntelligencePanel(parsed,rawText){
     if(shipOperator&&!p.operatorKey){ const name=(OPERATOR_HEADERS[shipOperator.operatorKey]||{}).name; if(name) suggestions.push(`Operator inferred from ship: ${name}`); }
     const actionSuggestions=getOfferIntelligenceActionSuggestions(p,rawText,inclusions,effectiveOperator);
     const poaSuggestions=typeof getPoaAssistedApplySuggestions==="function"?getPoaAssistedApplySuggestions(p,rawText,inclusions,effectiveOperator):[];
+    if(!p.name&&!poaSuggestions.some(s=>s&&s.fieldKey==="name")) missing.push("No high-confidence title suggestion available");
     const visibleSuggestionCount=typeof getPoaVisibleSuggestionCount==="function"?getPoaVisibleSuggestionCount(poaSuggestions):poaSuggestions.length;
     const quality=typeof getOfferIntelligenceQualityDetails==="function"?getOfferIntelligenceQualityDetails(p,rawText,effectiveOperator):{score:0};
     const summary=getOfferIntelligenceSummary(p,rawText);
