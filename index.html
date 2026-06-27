@@ -437,18 +437,20 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-lock-state{display:inline-flex;align-items:center;gap:4px;}
 .manage-campaigns-section .section-hdr{cursor:pointer;}
 .manage-campaigns-launch-icon{width:15px;height:15px;flex-shrink:0;color:var(--muted);stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;}
-.manage-campaigns-modal{background:#fff;border-radius:12px;width:min(94vw,760px);max-height:84vh;overflow:hidden;border:1px solid rgba(14,27,42,.16);box-shadow:0 18px 40px rgba(14,27,42,.28);display:flex;flex-direction:column;}
+.manage-campaigns-modal{background:#fff;border-radius:12px;width:min(94vw,920px);height:min(84vh,760px);max-height:84vh;overflow:hidden;border:1px solid rgba(14,27,42,.16);box-shadow:0 18px 40px rgba(14,27,42,.28);display:flex;flex-direction:column;}
 .manage-campaigns-head{background:var(--navy);color:#fff;padding:14px 18px;border-bottom:3px solid var(--gold);display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:grab;}
 .manage-campaigns-head h2{margin:0;color:#fff;font-size:14px;font-weight:400;letter-spacing:.04em;display:flex;align-items:center;gap:7px;}
 .manage-campaigns-head .section-icon{color:var(--gold);}
 .manage-campaigns-close{width:28px;height:28px;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:rgba(255,255,255,.08);color:#fff;font-size:20px;line-height:1;cursor:pointer;}
 .manage-campaigns-close:hover{background:rgba(255,255,255,.16);}
 .manage-campaigns-head.dragging{cursor:grabbing;}
-.manage-campaigns-body{padding:12px;background:#fafaf8;overflow:auto;}
+.manage-campaigns-body{padding:12px;background:#fafaf8;overflow:auto;flex:1;}
 .campaign-modal-category-head{padding:7px 8px;border-bottom:1px solid var(--border);background:#fff;}
 .campaign-modal-category-head h3{font-size:10px;font-weight:400;letter-spacing:.04em;color:var(--navy);margin:0;}
 .manage-campaigns-modal .campaign-library-category{overflow:visible;}
 .manage-campaigns-modal .campaign-history-list,.manage-campaigns-modal .campaign-library-utility{padding:8px;}
+.manage-campaigns-modal .abtn{padding:6px 9px;color:var(--navy);letter-spacing:.04em;text-transform:uppercase;cursor:pointer;}
+.manage-campaigns-modal .btn-compact{padding:5px 8px;font-size:9px;}
 .campaign-library-title{min-width:0;}
 .campaign-library-title-main{display:flex;align-items:center;gap:6px;}
 .campaign-library-title-main .section-icon{transform:translateX(-1px);}
@@ -461,20 +463,19 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .campaign-history-list{display:grid;gap:4px;}
 .offer-context-label{margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);font-size:9px;font-weight:400;text-transform:uppercase;letter-spacing:.045em;color:var(--muted);opacity:.72;line-height:1.2;}
 .campaign-library-dashboard{display:none;}
-.empty-state{border:1px dashed var(--border);border-radius:var(--radius);background:#fff;padding:6px;color:var(--muted);font-size:9px;line-height:1.35;}
-.empty-state strong{display:block;color:var(--navy);font-size:10px;margin-bottom:1px;}
+.empty-state{padding:8px;color:var(--muted);font-size:9px;line-height:1.35;}
+.empty-state strong{display:block;color:var(--navy);font-size:10px;margin-bottom:2px;}
 #sheets-status.empty-state{margin-top:5px;white-space:normal;}
 .campaign-history-item{border:1px solid var(--border);border-radius:var(--radius);padding:7px;background:#fff;display:grid;gap:5px;}
-.campaign-thumbnail{border:1px solid rgba(160,146,103,.28);border-radius:var(--radius);background:linear-gradient(135deg,#fff 0%,#f8f7f3 62%,rgba(160,146,103,.12) 100%);padding:7px;display:grid;gap:5px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.55);}
-.campaign-thumbnail[role="button"]{cursor:pointer;transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease;}
-.campaign-thumbnail[role="button"]:hover{border-color:rgba(160,146,103,.46);box-shadow:inset 0 0 0 1px rgba(255,255,255,.7),0 2px 8px rgba(21,39,63,.08);transform:translateY(-1px);}
+.campaign-thumbnail{border:1px solid rgba(216,210,199,.8);border-radius:6px;background:#fdfdfc;padding:7px;display:grid;gap:5px;}
+.campaign-thumbnail[role="button"]{cursor:pointer;}
 .campaign-thumbnail[role="button"]:focus-visible{outline:2px solid rgba(160,146,103,.62);outline-offset:2px;}
-.campaign-thumbnail-operators{display:flex;align-items:center;gap:3px;min-width:0;overflow:hidden;}
-.campaign-thumbnail-pill{display:inline-flex;align-items:center;justify-content:center;min-width:25px;max-width:46px;height:17px;padding:0 5px;border-radius:999px;background:rgba(160,146,103,.14);border:1px solid rgba(160,146,103,.34);color:var(--navy);font-size:8px;font-weight:700;line-height:1;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.campaign-thumbnail-name{font-size:10px;font-weight:700;color:var(--navy);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.campaign-thumbnail-meta{font-size:9px;font-weight:600;color:var(--muted);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.campaign-thumbnail-operators{display:flex;gap:4px;flex-wrap:wrap;}
+.campaign-thumbnail-pill{display:inline-flex;border:1px solid rgba(160,146,103,.36);border-radius:999px;padding:2px 5px;font-size:8px;font-weight:700;}
+.campaign-thumbnail-name{font-size:11px;color:var(--navy);}
+.campaign-thumbnail-meta{font-size:9px;color:var(--muted);}
 .campaign-history-title{font-size:10px;font-weight:700;color:var(--navy);line-height:1.25;}
-.campaign-history-meta{font-size:9px;color:var(--muted);margin-top:-3px;}
+.campaign-history-meta{font-size:9px;color:var(--muted);}
 .campaign-history-actions{display:grid;grid-template-columns:1.16fr 1fr 1fr;gap:4px;margin-top:0;}
 .campaign-history-actions .abtn:first-child{border-color:rgba(160,146,103,.48);box-shadow:0 1px 4px rgba(160,146,103,.16);font-weight:700;}
 .campaign-library-utility{display:grid;gap:4px;}
@@ -1168,7 +1169,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 <div class="modal-overlay" id="manage-campaigns-modal" onclick="if(event.target===this) closeManageCampaignsModal()">
   <div class="manage-campaigns-modal" role="dialog" aria-modal="true" aria-labelledby="manage-campaigns-title">
     <div class="manage-campaigns-head">
-      <h2 id="manage-campaigns-title"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M3 10h18"></path></svg>Manage Campaigns</h2>
+      <h2 id="manage-campaigns-title">Manage Campaigns</h2>
       <button class="manage-campaigns-close" type="button" aria-label="Close Manage Campaigns" onclick="closeManageCampaignsModal()">×</button>
     </div>
     <div class="manage-campaigns-body">
