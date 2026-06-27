@@ -179,7 +179,7 @@ test('Phase 2 UTM generation populates values with card order and preserves oper
 });
 
 function createAiHarness() {
-  const elements = { 'ai-prompt-type': element('subject-lines'), 'ai-prompt-tone': element('Direct'), 'ai-prompt-output': element(''), 'ai-prompt-copy-status': element(''), 'g-campaign': element('Phase 2 Campaign'), 'g-date': element('16 May 2026'), 'g-description': element('Cruise Worldwide Mixed'), 'g-owner': element('Mark'), 'g-airport': element('Newcastle') };
+  const elements = { 'ai-prompt-type': element('subject-lines'), 'ai-generate-scope': element('current-card'), 'ai-prompt-tone': element('Direct'), 'ai-prompt-output': element(''), 'ai-prompt-copy-status': element(''), 'g-campaign': element('Phase 2 Campaign'), 'g-date': element('16 May 2026'), 'g-description': element('Cruise Worldwide Mixed'), 'g-owner': element('Mark'), 'g-airport': element('Newcastle') };
   const context = {
     document: { getElementById: id => elements[id] || null, execCommand: () => true },
     window: { isSecureContext: false, open() {} },
@@ -203,6 +203,59 @@ test('Phase 2 AI Copy prompt generation succeeds and is non-empty for all requir
     assert.ok(elements['ai-prompt-output'].value.trim().length > 100, `${type} prompt should be populated`);
     assert.match(elements['ai-prompt-output'].value, /Return the copy only/);
   }
+});
+
+
+test('AI Copy Generate For defaults to Current Card and uses only the selected offer', () => {
+  const { context, elements } = createAiHarness();
+  context.offers = [
+    { name: 'Greek Islands', operator: 'Celebrity Cruises', price: '1299', ports: 'Athens • Santorini' },
+    { name: 'Fjords', operator: 'Cunard', price: '999', ports: 'Southampton • Bergen' }
+  ];
+  context.cur = 0;
+  elements['ai-prompt-type'].value = 'subject-lines';
+
+  context.generateAiCopyPrompt();
+
+  const prompt = elements['ai-prompt-output'].value;
+  assert.match(prompt, /Title: Greek Islands/);
+  assert.doesNotMatch(prompt, /Title: Fjords/);
+  assert.doesNotMatch(prompt, /Cunard:\n- Category:/);
+});
+
+test('AI Copy All Loaded Cards scope includes every loaded offer', () => {
+  const { context, elements } = createAiHarness();
+  context.offers = [
+    { name: 'Greek Islands', operator: 'Celebrity Cruises', price: '1299', ports: 'Athens • Santorini' },
+    {},
+    { name: 'Fjords', operator: 'Cunard', price: '999', ports: 'Southampton • Bergen' }
+  ];
+  elements['ai-generate-scope'].value = 'all-loaded-cards';
+  elements['ai-prompt-type'].value = 'short-description';
+
+  context.generateAiCopyPrompt();
+
+  const prompt = elements['ai-prompt-output'].value;
+  assert.match(prompt, /Offer 1:\nOperator: Celebrity Cruises/);
+  assert.match(prompt, /Offer 3:\nOperator: Cunard/);
+});
+
+test('AI Copy Campaign Summary scope uses all loaded offers as campaign-level context', () => {
+  const { context, elements } = createAiHarness();
+  context.offers = [
+    { name: 'Greek Islands', operator: 'Celebrity Cruises', price: '1299', ports: 'Athens • Santorini' },
+    { name: 'Fjords', operator: 'Cunard', price: '999', ports: 'Southampton • Bergen' }
+  ];
+  elements['ai-generate-scope'].value = 'campaign-summary';
+  elements['ai-prompt-type'].value = 'email-intro';
+
+  context.generateAiCopyPrompt();
+
+  const prompt = elements['ai-prompt-output'].value;
+  assert.match(prompt, /Create campaign-level marketing copy/);
+  assert.match(prompt, /Campaign Details:/);
+  assert.match(prompt, /Title: Greek Islands/);
+  assert.match(prompt, /Title: Fjords/);
 });
 
 test('AI Copy adds concise Operator Context for recognised offer-level operators', () => {
@@ -235,6 +288,7 @@ test('AI Copy campaign prompt includes context for all recognised loaded operato
     { name: 'Fjords', operator: 'Cunard', price: '999', ports: 'Southampton • Bergen' },
     { name: 'Unknown City Break', operator: 'Unknown Operator', price: '399', ports: 'Paris' }
   ];
+  elements['ai-generate-scope'].value = 'campaign-summary';
   elements['ai-prompt-type'].value = 'copy-pack-campaign';
 
   context.generateAiCopyPrompt();
