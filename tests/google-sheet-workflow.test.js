@@ -52,9 +52,9 @@ function createHarness({ savedSource = '', csv = 'operator,offer_name\nP&O,Carib
   return { context, storage, status, input, campaign, app, fetched, imported };
 }
 
-test('Google Sheet input and actions replace the CSV URL workflow', () => {
+test('Campaign Import prioritises campaign files and keeps Google Sheets secondary', () => {
   assert.match(html, /<label for="sheets-url">Google Sheet URL<\/label>/);
-  assert.match(html, /onclick="loadFromSheets\(\)"[^>]*>Load Sheet<\/button>/);
+  assert.match(html, /onclick="triggerCsvFilePicker\(\)"[^>]*>Load Campaign File<\/button>[\s\S]*?<label for="sheets-url">Google Sheet URL<\/label>[\s\S]*?onclick="loadFromSheets\(\)"[^>]*>Load Google Sheet<\/button>/);
   assert.doesNotMatch(html, /Refresh Offers/);
   assert.doesNotMatch(html, /onclick="refreshOffers\(\)"/);
   assert.doesNotMatch(html, /Paste CSV URL first/);

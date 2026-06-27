@@ -47,7 +47,7 @@ test('chevron controls retain shared sidebar button treatment and outlined icon 
   assert.match(html, /\.reorder-btn \.section-icon\{width:12px;height:12px;stroke-width:2;\}/);
   assert.match(html, /\.section-icon\{[^}]*stroke:currentColor;stroke-width:2;[^}]*fill:none;/);
   assert.match(html, /<button class="abtn reorder-btn" id="move-left-btn"/);
-  assert.match(html, /\.reorder-btn\.abtn:hover:not\(:disabled\)\{[^}]*color:var\(--navy\);/);
+  assert.match(html, /\.reorder-btn\.abtn:hover:not\(:disabled\)\{[^}]*color:var\(--green\);[^}]*cursor:pointer/);
 });
 
 test('reorder logic, drag and drop refresh, and autosave path remain wired through existing functions', () => {

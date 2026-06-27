@@ -75,7 +75,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .otab.status-green::after{background:rgba(42,122,74,.72);}
 .otab.status-amber::after{background:rgba(212,130,10,.72);}
 .otab.status-red::after{background:rgba(192,57,43,.72);}
-.offer-lock-toggle{position:absolute;top:auto;right:auto;left:50%;bottom:3px;z-index:3;width:10px;height:10px;padding:0;border:none;border-radius:0;background:transparent;color:rgba(78,89,101,.70);opacity:.70;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transform:translateX(-50%);transition:color .18s ease,opacity .18s ease,background .18s ease,box-shadow .18s ease;}
+.offer-lock-toggle{position:absolute;top:auto;right:auto;left:50%;bottom:8px;z-index:3;width:10px;height:10px;padding:0;border:none;border-radius:0;background:transparent;color:rgba(78,89,101,.70);opacity:.70;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transform:translateX(-50%);transition:color .18s ease,opacity .18s ease,background .18s ease,box-shadow .18s ease;}
 .offer-lock-toggle:hover,.offer-lock-toggle:focus-visible{color:rgba(14,27,42,.78);opacity:.88;background:transparent;outline:none;}
 .offer-lock-toggle:focus-visible{box-shadow:0 0 0 1px rgba(160,146,103,.32);}
 .offer-lock-toggle.locked{color:var(--green);opacity:.88;background:transparent;border:none;box-shadow:none;}
@@ -115,8 +115,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .reorder-actions{display:flex;align-items:center;gap:4px;}
 .reorder-actions.empty-hidden{display:none;}
 .reorder-btn{flex:0 0 20px;}
-.reorder-btn.abtn{flex:0 0 20px;width:20px;height:18px;min-height:0;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:3px;background:transparent;color:rgba(14,27,42,.68);box-shadow:none;letter-spacing:0;}
-.reorder-btn.abtn:hover:not(:disabled){background:rgba(160,146,103,.10);border-color:rgba(160,146,103,.18);color:var(--navy);}
+.reorder-btn.abtn{flex:0 0 20px;width:20px;height:18px;min-height:0;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:3px;background:transparent;color:rgba(14,27,42,.68);box-shadow:none;letter-spacing:0;transition:color .15s ease;}
+.reorder-btn.abtn:hover:not(:disabled){color:var(--green);cursor:pointer;}
 .reorder-btn.abtn:disabled{opacity:.32;cursor:default;}
 .reorder-btn .section-icon{width:12px;height:12px;stroke-width:2;}
 .hero-hint{font-size:9px;color:var(--muted);margin:5px 0 2px;}
@@ -359,7 +359,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .export-section .section-body{padding:8px 10px;}
 .export-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin-bottom:5px;}
 .export-health-count{margin-left:6px;font-size:8px;font-weight:700;text-transform:none;letter-spacing:.03em;color:var(--amber);white-space:nowrap;}
-.export-health-count.ready{color:var(--muted);}
+.export-health-count.ready{color:var(--green);}
 .export-group{margin-top:7px;}
 .export-toolbar-group{margin-top:7px;}
 .export-actions{display:grid;gap:5px;}
@@ -730,13 +730,13 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>Campaign Import</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body">
-          <div class="field">
+          <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values,.json,application/json" style="display:none">
+          <button class="abtn" onclick="triggerCsvFilePicker()" style="width:100%;background:var(--gold);color:#fff;border-color:var(--gold);">Load Campaign File</button>
+          <div class="field" style="margin-top:6px;">
             <label for="sheets-url">Google Sheet URL</label>
             <input id="sheets-url" type="url" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
           </div>
-          <button class="abtn navy" onclick="loadFromSheets()" style="width:100%;">Load Sheet</button>
-          <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values,.json,application/json" style="display:none">
-          <button class="abtn" onclick="triggerCsvFilePicker()" style="width:100%;margin-top:4px;">Load Campaign File</button>
+          <button class="abtn" onclick="loadFromSheets()" style="width:100%;background:#fff;color:var(--navy);border:1px solid var(--border);">Load Google Sheet</button>
           <div id="sheets-status" aria-live="polite"></div>
 
       </div>
@@ -749,14 +749,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M11 14h10"></path><path d="m17 10 4 4-4 4"></path><path d="M9 5V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"></path><path d="M17 5h1a2 2 0 0 1 2 2v3"></path><path d="M9 18H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1"></path><rect width="8" height="5" x="8" y="4" rx="1"></rect></svg>Paste Offer</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body parse-area hidden">
-        <textarea id="raw-paste" spellcheck="true" oninput="handlePasteOfferInput(event)" onkeydown="handlePasteOfferKeydown(event)" placeholder="Paste Trello / operator copy here...
-
-P&amp;O Cruises | Arvia
-Eastern Caribbean Islands Fly-Cruise
-14 Nights · 20th November 2026
-FB / Full Board · £1669pp
-Newcastle Flights, Luggage &amp; Transfers Included
-Barbados • Martinique • St Kitts • Tortola"></textarea>
+        <textarea id="raw-paste" spellcheck="true" oninput="handlePasteOfferInput(event)" onkeydown="handlePasteOfferKeydown(event)" placeholder="Paste an offer here..."></textarea>
         <button class="parse-btn" onclick="parseOffer()"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M12 18v-6"></path><path d="m9 15 3 3 3-3"></path></svg>Load Offer</button>
         <div class="parse-result" id="parse-result"></div>
         <div class="offer-intel-panel" id="offer-intel-panel" aria-live="polite"></div>
@@ -950,30 +943,13 @@ Barbados • Martinique • St Kitts • Tortola"></textarea>
             <button class="abtn red btn-compact" onclick="removeHeroImage()">Remove Image</button>
             <button class="abtn btn-compact" onclick="replaceHeroImage()">Replace Image</button>
             <button class="abtn btn-compact" onclick="resetCrop()">Reset Crop</button>
-            <button class="abtn btn-compact" onclick="centreHeroImage()">Centre Image</button>
           </div>
         </div>
         <div class="crop-controls" id="crop-controls">
-          <div class="hero-fit-toggle">
-            <button id="hero-mode-fill" class="abtn btn-compact hero-mode-btn" onclick="setHeroFitMode('fill')" aria-pressed="true">Fill Frame</button>
-            <button id="hero-mode-fit" class="abtn btn-compact hero-mode-btn" onclick="setHeroFitMode('fit')" aria-pressed="false">Fit Image</button>
-          </div>
           <div class="crop-group-title">Crop & Position</div>
           <div class="crop-row"><label for="crop-zoom">Zoom</label><input type="range" id="crop-zoom" min="100" max="200" value="100" oninput="updateCrop()"><div class="crop-value"><input type="number" id="crop-zoom-input" min="100" max="200" value="100" inputmode="numeric" oninput="updateCropFromInput('zoom')"><span>%</span></div></div>
           <div class="crop-row"><label for="crop-x">Horizontal</label><input type="range" id="crop-x" min="0" max="100" value="50" oninput="updateCrop()"><div class="crop-value"><input type="number" id="crop-x-input" min="0" max="100" value="50" inputmode="numeric" oninput="updateCropFromInput('x')"><span>%</span></div></div>
           <div class="crop-row"><label for="crop-y">Vertical</label><input type="range" id="crop-y" min="0" max="100" value="50" oninput="updateCrop()"><div class="crop-value"><input type="number" id="crop-y-input" min="0" max="100" value="50" inputmode="numeric" oninput="updateCropFromInput('y')"><span>%</span></div></div>
-        </div>
-        <div class="hero-quick-position" id="hero-quick-position">
-          <div class="crop-group-title">Quick Position</div>
-          <div class="hero-quick-row"><div class="hero-quick-label">Horizontal</div><div class="hero-quick-grid"><button class="abtn btn-compact" onclick="setHeroCropAxis('x',0)">Left 0%</button><button class="abtn btn-compact" onclick="setHeroCropAxis('x',50)">Centre 50%</button><button class="abtn btn-compact" onclick="setHeroCropAxis('x',100)">Right 100%</button></div></div>
-          <div class="hero-quick-row"><div class="hero-quick-label">Vertical</div><div class="hero-quick-grid"><button class="abtn btn-compact" onclick="setHeroCropAxis('y',0)">Top 0%</button><button class="abtn btn-compact" onclick="setHeroCropAxis('y',50)">Centre 50%</button><button class="abtn btn-compact" onclick="setHeroCropAxis('y',100)">Bottom 100%</button></div></div>
-        </div>
-        <div class="hero-crop-presets" id="hero-crop-presets">
-          <div class="hero-preset-actions">
-            <button class="abtn btn-compact" onclick="copyHeroCrop()">Copy Crop</button>
-            <button class="abtn btn-compact" onclick="pasteHeroCrop()">Paste Crop</button>
-          </div>
-          <div class="hero-preset-feedback" id="hero-crop-preset-feedback"></div>
         </div>
         <label class="hero-lock-toggle" id="hero-lock-label"><input id="hero-lock-toggle" type="checkbox" onchange="toggleHeroImageLock()"> <span class="hero-lock-state" id="hero-lock-state">Protect Hero Image</span></label>
         <div class="hero-source-block">
@@ -2812,7 +2788,7 @@ function syncEditableImageUi(type){
   const o=offers[cur]||{};
   const src=String((o&&o[cfg.imageKey])||"").trim();
   const hasImg=!!src;
-  const ids=type==="hero"?["crop-controls","hero-crop-status","hero-actions-panel","hero-quick-position","hero-crop-presets"]:["itinerary-crop-controls","itinerary-actions-panel"];
+  const ids=type==="hero"?["crop-controls","hero-crop-status","hero-actions-panel"]:["itinerary-crop-controls","itinerary-actions-panel"];
   ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle("active",hasImg); });
   const locked=typeof isOfferLocked==="function"&&isOfferLocked(cur);
   ids.forEach(id=>{
