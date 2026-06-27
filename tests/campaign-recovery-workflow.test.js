@@ -181,8 +181,7 @@ test('Manage Campaigns supports a detached live-synced browser window using shar
   assert.notEqual(modalStart, -1, 'Expected Manage Campaigns modal to exist');
   assert.notEqual(modalEnd, -1, 'Expected Manage Campaigns modal boundary to exist');
   const modal = html.slice(modalStart, modalEnd);
-  assert.match(modal, /<button class="summary-btn primary" type="button" onclick="refreshCampaignHistoryUI\(\)">Refresh<\/button>/);
-  assert.match(modal, /openDetachedManageCampaignsWindow\(\)">[\s\S]*Open in New Window/);
+  assert.match(modal, /<button class="summary-btn primary" type="button" onclick="openDetachedManageCampaignsWindow\(\)">[\s\S]*Open in New Window<\/button>\n\s*<button class="summary-btn" type="button" onclick="refreshCampaignHistoryUI\(\)">Refresh<\/button>/);
 
   const contentRenderer = extractFunction('getManageCampaignsContentHtml');
   const detachedHtml = extractFunction('getDetachedManageCampaignsWindowHtml');
@@ -196,6 +195,8 @@ test('Manage Campaigns supports a detached live-synced browser window using shar
   assert.match(contentRenderer, /Campaign Actions/);
   assert.match(contentRenderer, /getCampaignHistoryListHtml\(buckets\.pinned/);
   assert.match(detachedHtml, /<div class="detached-manage-actions"><button class="summary-btn primary" type="button" onclick="refreshManageCampaigns\(\)">Refresh<\/button><\/div>/);
+  assert.match(detachedHtml, /id="detached-confirm-action-modal"/);
+  assert.match(detachedHtml, /callOpener\('deleteCampaignHistoryEntry',id,true\)/);
   assert.match(detachedHtml, /\.summary-btn\{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;font-size:10px;font-weight:400;letter-spacing:\.04em;border-radius:var\(--radius\);border:1px solid rgba\(255,255,255,\.35\);background:#fff;color:var\(--navy\);text-transform:uppercase;cursor:pointer;\}\.summary-btn\.primary\{background:var\(--gold\);border-color:var\(--gold\);color:#fff;\}/);
   assert.match(detachedHtml, /function refreshManageCampaigns\(\)\{[\s\S]*content\.innerHTML=window\.opener\.getManageCampaignsContentHtml\(\);/);
   assert.match(openDetached, /detachedManageCampaignsWindow&&!detachedManageCampaignsWindow\.closed/);
@@ -211,7 +212,7 @@ test('Manage Campaigns supports a detached live-synced browser window using shar
   assert.match(refresh, /syncDetachedManageCampaignsWindow\(\);/);
   assert.match(detachedHtml, /function restoreCampaignHistoryEntry\(id\)\{ callOpener\('restoreCampaignHistoryEntry',id\); \}/);
   assert.match(detachedHtml, /function togglePinCampaignHistoryEntry\(id\)\{ callOpener\('togglePinCampaignHistoryEntry',id\); \}/);
-  assert.match(detachedHtml, /function deleteCampaignHistoryEntry\(id\)\{ callOpener\('deleteCampaignHistoryEntry',id\); \}/);
+  assert.match(detachedHtml, /function deleteCampaignHistoryEntry\(id\)\{ pendingDetachedDeleteId=id;/);
   assert.match(detachedHtml, /function clearSavedSession\(\)\{ callOpener\('clearSavedSession'\); \}/);
   assert.match(detachedHtml, /function triggerLoadCampaignBackup\(\)\{ callOpener\('triggerLoadCampaignBackup'\); \}/);
   assert.doesNotMatch(detachedHtml, /setInterval|localStorage/);
