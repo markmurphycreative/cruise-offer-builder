@@ -36,8 +36,17 @@ function createHarness() {
     }
   };
   const context = {
-    document: { getElementById(id) { return id === 'offer-intel-panel' ? panel : (id === 'f-name' ? { value: '' } : null); } },
+    document: { getElementById(id) {
+      if (id === 'offer-intel-panel') return panel;
+      if (id === 'f-name') return { value: '' };
+      if (id === 'f-incl') return this.inclInput || (this.inclInput = { value: '' });
+      return null;
+    } },
     console: { warn() {} },
+    window: {},
+    offers: [{}],
+    cur: 0,
+    up() {},
     AIRPORT_WORDS: ['newcastle', 'manchester'],
     ITINERARY_SECTION_LABEL: /^(?:itinerary|you(?:'|’)?ll visit)\b/i,
     ITINERARY_FOOTER_LABEL: /^(?:luggage\s*(?:&|and)\s*transfers?\s+included|flights?\s+included|inclusions?|what(?:'|’)?s included|price|from £|terms(?:\s*&\s*conditions)?|book now|call to book|cabin|accommodation)\b/i,
@@ -72,6 +81,8 @@ function createHarness() {
     extractFunction('formatAirportName'),
     extractFunction('detectFlightAirport'),
     extractFunction('getOfferIntelligenceCruiseTypes'),
+    extractFunction('getCruiseDepartureWording'),
+    extractFunction('hasPortOfTyneDepartureKnowledge'),
     extractFunction('getOfferIntelligenceCruiseKnowledge'),
     extractFunction('hasOfferIntelligenceNegativeContext'),
     extractFunction('detectOfferIntelligenceInclusions'),
@@ -94,6 +105,11 @@ function createHarness() {
     extractFunction('getOfferIntelligenceAirport'),
     extractFunction('getOfferIntelligenceQualityDetails'),
     extractFunction('renderOfferQualitySection'),
+    extractFunction('escapePoaSuggestionHtml'),
+    extractFunction('getPoaCabinOptions'),
+    extractFunction('getPoaCabinRecommendation'),
+    extractFunction('renderPoaCabinTypeSuggestion'),
+    extractFunction('applyPoaCabinType'),
     extractFunction('detectCabinType'),
     extractFunction('detectTransferStatus'),
     extractFunction('detectPreCruiseStay'),
@@ -110,6 +126,33 @@ function createHarness() {
   return { context, panel };
 }
 
+
+
+test('Cruise Knowledge standardises Newcastle embarkation wording without changing airport text', () => {
+  const { context, panel } = createHarness();
+  vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, {
+    parsed: { operatorKey: 'po', ship: 'Iona', ports: 'Newcastle, England • Stavanger • Newcastle, England' },
+    raw: 'Sailing from Newcastle\nFlying from Newcastle'
+  }));
+  assert.match(panel.innerHTML, /Cruise Knowledge/);
+  assert.match(panel.innerHTML, /Departure wording standardised to:\s*Port of Tyne/);
+  const embarkation = vm.runInContext('getCruiseDepartureWording("Newcastle, England")', context);
+  assert.equal(embarkation, 'Port of Tyne');
+  const airport = vm.runInContext('detectFlightAirport("Flying from Newcastle")', context);
+  assert.equal(airport, 'Newcastle');
+});
+
+test('POA cabin suggestion renders segmented chips and applying one preserves user choice', () => {
+  const { context } = createHarness();
+  const htmlOut = vm.runInContext('renderPoaCabinTypeSuggestion(parsed, raw, "celebrity")', Object.assign(context, { parsed: {}, raw: 'Celebrity cruise offer' }));
+  assert.match(htmlOut, /Cabin Type not detected/);
+  assert.match(htmlOut, /poa-cabin-chip/);
+  assert.match(htmlOut, /Balcony \(Recommended\)/);
+  assert.match(htmlOut, /AquaClass/);
+  vm.runInContext('window.currentPoaParsed = parsed; window.currentPoaRawText = raw; applyPoaCabinType("Ocean View")', Object.assign(context, { parsed: {}, raw: 'Celebrity cruise offer' }));
+  assert.equal(context.document.inclInput.value, 'Ocean View Cabin');
+  assert.equal(context.offers[0]._poaCabinType, 'Ocean View Cabin');
+});
 
 test('Ports Intelligence detects Spain and France with embarkation exclusions', () => {
   const { context, panel } = createHarness();
