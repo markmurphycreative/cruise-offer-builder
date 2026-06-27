@@ -438,8 +438,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .manage-campaigns-section .section-hdr{cursor:pointer;}
 .manage-campaigns-launch-icon{width:15px;height:15px;flex-shrink:0;color:var(--muted);stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;}
 .manage-campaigns-modal{background:#fff;border-radius:12px;width:min(94vw,760px);max-height:84vh;overflow:hidden;border:1px solid rgba(14,27,42,.16);box-shadow:0 18px 40px rgba(14,27,42,.28);display:flex;flex-direction:column;}
-.manage-campaigns-head{background:var(--navy);color:#fff;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:grab;}
-.manage-campaigns-head h2{margin:0;color:#fff;font-size:13px;font-weight:400;letter-spacing:.04em;display:flex;align-items:center;gap:7px;}
+.manage-campaigns-head{background:var(--navy);color:#fff;padding:14px 18px;border-bottom:3px solid var(--gold);display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:grab;}
+.manage-campaigns-head h2{margin:0;color:#fff;font-size:14px;font-weight:400;letter-spacing:.04em;display:flex;align-items:center;gap:7px;}
 .manage-campaigns-head .section-icon{color:var(--gold);}
 .manage-campaigns-close{width:28px;height:28px;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:rgba(255,255,255,.08);color:#fff;font-size:20px;line-height:1;cursor:pointer;}
 .manage-campaigns-close:hover{background:rgba(255,255,255,.16);}
@@ -464,8 +464,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .empty-state{border:1px dashed var(--border);border-radius:var(--radius);background:#fff;padding:6px;color:var(--muted);font-size:9px;line-height:1.35;}
 .empty-state strong{display:block;color:var(--navy);font-size:10px;margin-bottom:1px;}
 #sheets-status.empty-state{margin-top:5px;white-space:normal;}
-.campaign-history-item{border:1px solid var(--border);border-radius:var(--radius);padding:5px;background:#fff;display:grid;gap:5px;}
-.campaign-thumbnail{border:1px solid rgba(160,146,103,.28);border-radius:var(--radius);background:linear-gradient(135deg,#fff 0%,#f8f7f3 62%,rgba(160,146,103,.12) 100%);padding:5px;display:grid;gap:4px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.55);}
+.campaign-history-item{border:1px solid var(--border);border-radius:var(--radius);padding:7px;background:#fff;display:grid;gap:5px;}
+.campaign-thumbnail{border:1px solid rgba(160,146,103,.28);border-radius:var(--radius);background:linear-gradient(135deg,#fff 0%,#f8f7f3 62%,rgba(160,146,103,.12) 100%);padding:7px;display:grid;gap:5px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.55);}
 .campaign-thumbnail[role="button"]{cursor:pointer;transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease;}
 .campaign-thumbnail[role="button"]:hover{border-color:rgba(160,146,103,.46);box-shadow:inset 0 0 0 1px rgba(255,255,255,.7),0 2px 8px rgba(21,39,63,.08);transform:translateY(-1px);}
 .campaign-thumbnail[role="button"]:focus-visible{outline:2px solid rgba(160,146,103,.62);outline-offset:2px;}
@@ -475,7 +475,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .campaign-thumbnail-meta{font-size:9px;font-weight:600;color:var(--muted);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .campaign-history-title{font-size:10px;font-weight:700;color:var(--navy);line-height:1.25;}
 .campaign-history-meta{font-size:9px;color:var(--muted);margin-top:-3px;}
-.campaign-history-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin-top:0;}
+.campaign-history-actions{display:grid;grid-template-columns:1.16fr 1fr 1fr;gap:4px;margin-top:0;}
+.campaign-history-actions .abtn:first-child{border-color:rgba(160,146,103,.48);box-shadow:0 1px 4px rgba(160,146,103,.16);font-weight:700;}
 .campaign-library-utility{display:grid;gap:4px;}
 .ptool{display:flex;align-items:center;gap:4px;}
 .ptool span{font-size:9px;color:rgba(255,255,255,.6);white-space:nowrap;}
@@ -531,6 +532,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 
 /* ── MODALS ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1400;display:none;align-items:center;justify-content:center;}
+#confirm-action-modal{z-index:1600;background:rgba(14,27,42,.58);}
 .modal-overlay.active{display:flex;}
 .modal{background:#fff;border-radius:8px;padding:18px;max-width:580px;width:90%;max-height:80vh;overflow-y:auto;position:relative;}
 .modal h2{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;}
@@ -1195,8 +1197,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       </div>
     </div>
     <div class="summary-actions modal-footer-actions">
-      <button class="summary-btn primary" type="button" onclick="refreshCampaignHistoryUI()">Refresh</button>
-      <button class="summary-btn" type="button" onclick="openDetachedManageCampaignsWindow()"><svg class="action-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg>Open in New Window</button>
+      <button class="summary-btn primary" type="button" onclick="openDetachedManageCampaignsWindow()"><svg class="action-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg>Open in New Window</button>
+      <button class="summary-btn" type="button" onclick="refreshCampaignHistoryUI()">Refresh</button>
     </div>
   </div>
 </div>
@@ -5264,8 +5266,13 @@ function restoreCampaignHistoryEntry(id){
   if(typeof refreshCampaignHistoryUI==="function") refreshCampaignHistoryUI();
   return true;
 }
-function deleteCampaignHistoryEntry(id){
+function deleteCampaignHistoryEntry(id,confirmed=false){
   const list=readCampaignHistory();
+  if(confirmed){
+    writeCampaignHistory(list.filter(item=>item.id!==id));
+    refreshCampaignHistoryUI();
+    return;
+  }
   const entry=list.find(item=>item.id===id);
   const itemLabel=entry && entry.type === "backup" ? "backup" : "campaign";
   const confirmDelete=()=>{
@@ -5522,8 +5529,9 @@ function getDetachedManageCampaignsWindowHtml(initialContentHtml){
   const contentHtml=typeof initialContentHtml==="string"?initialContentHtml:"";
   return `<!doctype html><html><head><meta charset="utf-8"><title>Manage Campaigns — Cruise Offer Builder</title><style>
 :root{--navy:#0e1b2a;--gold:#c6a15b;--border:#d8d2c7;--muted:#667085;--red:#b42318;--radius:6px;font-family:Arial,Helvetica,sans-serif;color:#0e1b2a;background:#f7f6f3;}
-*{box-sizing:border-box;} body{margin:0;background:#f7f6f3;color:var(--navy);font-family:Arial,Helvetica,sans-serif;}.detached-manage-shell{min-height:100vh;display:flex;flex-direction:column;}.detached-manage-head{position:sticky;top:0;z-index:2;background:var(--navy);color:#fff;padding:14px 18px;border-bottom:3px solid var(--gold);display:flex;align-items:center;justify-content:space-between;gap:12px;}.detached-manage-head h1{font-size:14px;font-weight:400;letter-spacing:.04em;margin:0;}.detached-manage-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}.summary-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;font-size:10px;font-weight:400;letter-spacing:.04em;border-radius:var(--radius);border:1px solid rgba(255,255,255,.35);background:#fff;color:var(--navy);text-transform:uppercase;cursor:pointer;}.summary-btn.primary{background:var(--gold);border-color:var(--gold);color:#fff;}.detached-manage-body{padding:12px;background:#fafaf8;overflow:auto;flex:1;}.campaign-library-categories{display:grid;gap:5px;}.campaign-library-category{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:#fff;}.campaign-modal-category-head{padding:7px 8px;border-bottom:1px solid var(--border);background:#fff;}.campaign-modal-category-head h3{font-size:10px;font-weight:400;letter-spacing:.04em;color:var(--navy);margin:0;}.campaign-history-list,.campaign-library-utility{padding:8px;}.campaign-history-list{display:grid;gap:4px;}.campaign-history-item{border:1px solid var(--border);border-radius:var(--radius);padding:7px;background:#fff;display:grid;gap:5px;}.campaign-history-meta{font-size:9px;color:var(--muted);}.campaign-history-actions,.campaign-library-utility{display:flex;gap:5px;flex-wrap:wrap;}.abtn{padding:6px 9px;border-radius:var(--radius);border:1px solid var(--border);background:#fff;color:var(--navy);font-size:10px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;}.abtn.red{color:var(--red);border-color:rgba(180,35,24,.35);}.action-icon{width:13px;height:13px;display:inline-block;vertical-align:-2px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;}.pin-action.active{background:rgba(42,122,74,.10);border-color:rgba(42,122,74,.42);color:var(--green);font-weight:700;}.pin-action.active .action-icon{fill:currentColor;stroke:currentColor;}.btn-compact{padding:5px 8px;font-size:9px;}.campaign-thumbnail{border:1px solid rgba(216,210,199,.8);border-radius:6px;padding:7px;background:#fdfdfc;cursor:pointer;display:grid;gap:5px;}.campaign-thumbnail-operators{display:flex;gap:4px;flex-wrap:wrap;}.campaign-thumbnail-pill{display:inline-flex;border:1px solid rgba(160,146,103,.36);border-radius:999px;padding:2px 5px;font-size:8px;font-weight:700;}.campaign-thumbnail-name{font-size:11px;color:var(--navy);}.campaign-thumbnail-meta,.empty-state{font-size:9px;color:var(--muted);}.empty-state{padding:8px;}.empty-state strong{display:block;color:var(--navy);font-size:10px;margin-bottom:2px;}
-</style></head><body><div class="detached-manage-shell"><header class="detached-manage-head"><h1>Manage Campaigns</h1><div class="detached-manage-actions"><button class="summary-btn primary" type="button" onclick="refreshManageCampaigns()">Refresh</button></div></header><main class="detached-manage-body" id="detached-manage-campaigns-content">${contentHtml}</main></div><script>
+*{box-sizing:border-box;} body{margin:0;background:#f7f6f3;color:var(--navy);font-family:Arial,Helvetica,sans-serif;}.detached-manage-shell{min-height:100vh;display:flex;flex-direction:column;}.detached-manage-head{position:sticky;top:0;z-index:2;background:var(--navy);color:#fff;padding:14px 18px;border-bottom:3px solid var(--gold);display:flex;align-items:center;justify-content:space-between;gap:12px;}.detached-manage-head h1{font-size:14px;font-weight:400;letter-spacing:.04em;margin:0;}.detached-manage-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}.summary-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;font-size:10px;font-weight:400;letter-spacing:.04em;border-radius:var(--radius);border:1px solid rgba(255,255,255,.35);background:#fff;color:var(--navy);text-transform:uppercase;cursor:pointer;}.summary-btn.primary{background:var(--gold);border-color:var(--gold);color:#fff;}.detached-manage-body{padding:12px;background:#fafaf8;overflow:auto;flex:1;}.campaign-library-categories{display:grid;gap:5px;}.campaign-library-category{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:#fff;}.campaign-modal-category-head{padding:7px 8px;border-bottom:1px solid var(--border);background:#fff;}.campaign-modal-category-head h3{font-size:10px;font-weight:400;letter-spacing:.04em;color:var(--navy);margin:0;}.campaign-history-list,.campaign-library-utility{padding:8px;}.campaign-history-list{display:grid;gap:4px;}.campaign-history-item{border:1px solid var(--border);border-radius:var(--radius);padding:7px;background:#fff;display:grid;gap:5px;}.campaign-history-meta{font-size:9px;color:var(--muted);}.campaign-history-actions{display:grid;grid-template-columns:1.16fr 1fr 1fr;gap:4px;}.campaign-library-utility{display:grid;gap:4px;}.abtn{padding:6px 9px;border-radius:var(--radius);border:1px solid var(--border);background:#fff;color:var(--navy);font-size:10px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;}.abtn.red{color:var(--red);border-color:rgba(180,35,24,.35);}.action-icon{width:13px;height:13px;display:inline-block;vertical-align:-2px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;}.pin-action.active{background:rgba(42,122,74,.10);border-color:rgba(42,122,74,.42);color:var(--green);font-weight:700;}.pin-action.active .action-icon{fill:currentColor;stroke:currentColor;}.btn-compact{padding:5px 8px;font-size:9px;}.campaign-history-actions .abtn:first-child{border-color:rgba(160,146,103,.48);box-shadow:0 1px 4px rgba(160,146,103,.16);font-weight:700;}.campaign-thumbnail{border:1px solid rgba(216,210,199,.8);border-radius:6px;padding:7px;background:#fdfdfc;cursor:pointer;display:grid;gap:5px;}.campaign-thumbnail-operators{display:flex;gap:4px;flex-wrap:wrap;}.campaign-thumbnail-pill{display:inline-flex;border:1px solid rgba(160,146,103,.36);border-radius:999px;padding:2px 5px;font-size:8px;font-weight:700;}.campaign-thumbnail-name{font-size:11px;color:var(--navy);}.campaign-thumbnail-meta,.empty-state{font-size:9px;color:var(--muted);}.empty-state{padding:8px;}.empty-state strong{display:block;color:var(--navy);font-size:10px;margin-bottom:2px;}.confirm-overlay{position:fixed;inset:0;z-index:20;background:rgba(14,27,42,.58);display:none;align-items:center;justify-content:center;padding:18px;}.confirm-overlay.active{display:flex;}.session-restore-modal{width:min(100%,420px);padding:0;border-radius:10px;overflow:hidden;border:1px solid rgba(14,27,42,.16);box-shadow:0 18px 40px rgba(14,27,42,.28);}.session-restore-head{background:var(--navy);padding:14px 18px;border-bottom:3px solid var(--gold);}.session-restore-head h2{color:#fff;font-size:14px;letter-spacing:.04em;margin:0;}.session-restore-body{padding:16px 18px 18px;background:#fff;}.session-restore-body p{font-size:11px;line-height:1.5;color:var(--muted);margin:0 0 12px;}.session-restore-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;}.session-restore-btn{padding:8px 10px;font-size:10px;font-weight:400;letter-spacing:.04em;border-radius:var(--radius);border:1px solid var(--border);background:#fff;color:var(--navy);text-transform:uppercase;cursor:pointer;}.session-restore-btn.restore{background:var(--gold);border-color:var(--gold);color:#fff;}
+</style></head><body><div class="detached-manage-shell"><header class="detached-manage-head"><h1>Manage Campaigns</h1><div class="detached-manage-actions"><button class="summary-btn primary" type="button" onclick="refreshManageCampaigns()">Refresh</button></div></header><main class="detached-manage-body" id="detached-manage-campaigns-content">${contentHtml}</main></div><div class="confirm-overlay" id="detached-confirm-action-modal"><div class="session-restore-modal" role="dialog" aria-modal="true" aria-labelledby="detached-confirm-title"><div class="session-restore-head"><h2 id="detached-confirm-title">Delete this campaign?</h2></div><div class="session-restore-body"><p id="detached-confirm-copy">This cannot be undone.</p><div class="session-restore-actions"><button class="session-restore-btn" type="button" onclick="closeDetachedConfirmActionModal()">Cancel</button><button class="session-restore-btn restore" type="button" onclick="confirmDetachedDelete()">Delete</button></div></div></div></div><script>
+let pendingDetachedDeleteId=null;
 function refreshManageCampaigns(){
   const content=document.getElementById('detached-manage-campaigns-content');
   if(!content) return;
@@ -5539,7 +5547,9 @@ function callOpener(name){
 }
 function restoreCampaignHistoryEntry(id){ callOpener('restoreCampaignHistoryEntry',id); }
 function togglePinCampaignHistoryEntry(id){ callOpener('togglePinCampaignHistoryEntry',id); }
-function deleteCampaignHistoryEntry(id){ callOpener('deleteCampaignHistoryEntry',id); }
+function deleteCampaignHistoryEntry(id){ pendingDetachedDeleteId=id; const modal=document.getElementById('detached-confirm-action-modal'); if(modal) modal.classList.add('active'); }
+function closeDetachedConfirmActionModal(){ const modal=document.getElementById('detached-confirm-action-modal'); if(modal) modal.classList.remove('active'); pendingDetachedDeleteId=null; }
+function confirmDetachedDelete(){ const id=pendingDetachedDeleteId; closeDetachedConfirmActionModal(); if(id) callOpener('deleteCampaignHistoryEntry',id,true); }
 function clearSavedSession(){ callOpener('clearSavedSession'); }
 function triggerLoadCampaignBackup(){ callOpener('triggerLoadCampaignBackup'); }
 window.addEventListener('load', refreshManageCampaigns);
