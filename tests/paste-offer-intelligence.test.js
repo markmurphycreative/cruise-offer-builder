@@ -148,7 +148,9 @@ test('POA cabin suggestion renders segmented chips and applying one preserves us
   assert.match(htmlOut, /Cabin Type not detected/);
   assert.match(htmlOut, /poa-cabin-chip/);
   assert.match(htmlOut, /Balcony \(Recommended\)/);
-  assert.match(htmlOut, /AquaClass/);
+  assert.doesNotMatch(htmlOut, /AquaClass/);
+  assert.match(htmlOut, /Inside/);
+  assert.match(htmlOut, /Ocean View/);
   vm.runInContext('window.currentPoaParsed = parsed; window.currentPoaRawText = raw; applyPoaCabinType("Ocean View")', Object.assign(context, { parsed: {}, raw: 'Celebrity cruise offer' }));
   assert.equal(context.document.inclInput.value, 'Ocean View Cabin');
   assert.equal(context.offers[0]._poaCabinType, 'Ocean View Cabin');
@@ -605,8 +607,8 @@ test('POA Suggestions render only card and USP suggestions with confidence and c
   assert.match(htmlOutput, /Card Inclusion/);
   assert.match(htmlOutput, /USP Strip/);
   assert.match(htmlOutput, /High Confidence/);
-  assert.match(htmlOutput, /Current:<\/span>Flights Included/);
-  assert.match(htmlOutput, /Suggested:<\/span>Flights, Luggage &amp; Transfers Included/);
+  assert.match(htmlOutput, /Original:<\/span>Flights Included/);
+  assert.match(htmlOutput, /Applied:<\/span>Flights, Luggage &amp; Transfers Included/);
   assert.doesNotMatch(htmlOutput, /Theme Tags|💡/);
 });
 
@@ -647,6 +649,51 @@ test('POA Suggestions remove restores each suggestion previous value independent
   assert.equal(fields['f-tags'].value, 'Original USP');
 });
 
+
+
+
+test('POA Suggestions persist as applied history with change and revert controls', () => {
+  const fields = {
+    'f-incl': { value: 'Flights Included', focus() {} },
+    'f-tags': { value: '' },
+    'field-incl': { classList: { toggle() {} } },
+    'field-tags': { classList: { toggle() {} } }
+  };
+  const context = {
+    document: { getElementById(id) { return fields[id] || null; }, querySelectorAll() { return []; } },
+    offers: [{ incl: 'Flights Included', tags: '' }],
+    cur: 0,
+    poaAppliedSuggestions: {},
+    window: {},
+    up() {},
+    renderOfferIntelligencePanel() {}
+  };
+  vm.createContext(context);
+  vm.runInContext([
+    extractFunction('joinOfferIntelligenceSuggestionParts'),
+    extractFunction('getPoaCardInclusionSuggestion'),
+    extractFunction('getPoaUspStripSuggestion'),
+    extractFunction('getPoaSuggestionConfidenceLabel'),
+    extractFunction('getPoaAssistedApplySuggestions'),
+    extractFunction('escapePoaSuggestionHtml'),
+    extractFunction('formatPoaSuggestionValue'),
+    extractFunction('getPoaSuggestionCurrentValue'),
+    extractFunction('renderPoaAssistedApplySuggestions'),
+    extractFunction('clearPoaSuggestionHighlights'),
+    extractFunction('setPoaSuggestionHighlight'),
+    extractFunction('applyPoaSuggestion'),
+    extractFunction('changePoaSuggestion'),
+    extractFunction('removePoaSuggestion')
+  ].join('\n'), context);
+  const suggestions = vm.runInContext('getPoaAssistedApplySuggestions({}, "", ["Flights Included", "Luggage Included", "Transfers Included"], "po")', context);
+  vm.runInContext('window.currentPoaSuggestions = suggestions; applyPoaSuggestion("card-inclusion", true);', Object.assign(context, { suggestions }));
+  const htmlOutput = vm.runInContext('renderPoaAssistedApplySuggestions([])', context);
+  assert.match(htmlOutput, /Applied/);
+  assert.match(htmlOutput, /Original:<\/span>Flights Included/);
+  assert.match(htmlOutput, /Applied:<\/span>Flights, Luggage &amp; Transfers Included/);
+  assert.match(htmlOutput, /Change/);
+  assert.match(htmlOutput, /Revert/);
+});
 
 test('Cruise Title recovery suggests strong missing titles without accepting noisy lines', () => {
   const { context } = createHarness();
@@ -691,6 +738,14 @@ Cruise Title`;
   const suggestion = vm.runInContext('getCruiseTitleRecoverySuggestion(parsed, raw);', Object.assign(context, { parsed: { operatorKey: 'royal', ship: 'Liberty of the Seas', day: '25', month: 'September 2026', price: '1689' }, raw }));
 
   assert.equal(suggestion, null);
+});
+
+test('Cruise Title recovery rejects generic low-confidence titles', () => {
+  const { context } = createHarness();
+  for (const value of ['At Sea', 'Ocean Cruise', 'Mediterranean Cruise', '7 Night Cruise', 'Scenic Sailing']) {
+    const suggestion = vm.runInContext('getCruiseTitleRecoverySuggestion(parsed, raw);', Object.assign(context, { parsed: { operatorKey: 'po', ship: 'Arvia' }, raw: `P&O Cruises\nArvia\n${value}\n20 November 2026` }));
+    assert.equal(suggestion, null);
+  }
 });
 
 test('Cruise Title recovery still suggests standalone itinerary-style lines', () => {

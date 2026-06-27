@@ -6648,6 +6648,7 @@ function isCruiseTitleRecoveryExcludedLine(line,parsed,rawLines){
   if(/\b(?:full board|half board|all inclusive|self catering|room only|bed\s*&\s*breakfast|inside|outside|balcony|suite|cabin|stateroom)\b/i.test(value)) return true;
   if(/\b(?:flights?|luggage|baggage|transfers?|drinks? package|gratuities|tips|included|on\s*board spend|wi[-\s]?fi|shore excursions?)\b/i.test(value)) return true;
   if(/^sailing\s+from\b|\b(?:sails?|depart(?:ing|s)?)\s+from\b/i.test(value)) return true;
+  if(/^(?:at sea|ocean cruise|mediterranean cruise|\d+\s*(?:night|nights|nt|nts)\s+cruise|scenic sailing)$/i.test(value)) return true;
   if(ITINERARY_SECTION_LABEL.test(value)||ITINERARY_FOOTER_LABEL.test(value)) return true;
   if(/[•·▪◦●]|\s+-\s+|,/.test(value)){
     const ports=cleanParsedPorts([value],{exclude:[]});
@@ -6695,8 +6696,8 @@ function getCruiseTitleRecoveryPortsSuggestion(portsIntelligence,parsed,rawText)
     inferred="Mediterranean Sunsets";
     confidence="High";
   }
-  if(confidence==="Low") return null;
-  return {id:"cruise-title-recovery-ports",title:"Cruise Title",value:inferred,confidenceLabel:confidence==="High"?"High Confidence":"Medium Confidence",targetLabel:"Cruise Title",fieldKey:"name",fieldId:"f-name",reason:"Inferred from operator, ship and itinerary profile"};
+  if(confidence!=="High") return null;
+  return {id:"cruise-title-recovery-ports",title:"Cruise Title",value:inferred,confidenceLabel:"High Confidence",targetLabel:"Cruise Title",fieldKey:"name",fieldId:"f-name",reason:"Inferred from operator, ship and itinerary profile"};
 }
 function getCruiseTitleRecoverySuggestion(parsed,rawText){
   const p=parsed||{};
@@ -6711,9 +6712,9 @@ function getCruiseTitleRecoverySuggestion(parsed,rawText){
   if(!candidates.length) return portsSuggestion;
   const top=candidates[0];
   const tied=candidates.filter(candidate=>candidate.score>=top.score-1);
-  const confidenceLabel=tied.length===1&&top.score>=14?"High Confidence":top.score>=10?"Medium Confidence":"Low Confidence";
-  if(confidenceLabel==="Low Confidence") return null;
-  return {id:"cruise-title-recovery",title:"Cruise Title",value:top.value,confidenceLabel,targetLabel:"Cruise Title",fieldKey:"name",fieldId:"f-name"};
+  const confidenceLabel=tied.length===1&&top.score>=14?"High Confidence":"Low Confidence";
+  if(confidenceLabel!=="High Confidence") return null;
+  return {id:"cruise-title-recovery",title:"Cruise Title",value:top.value,confidenceLabel,targetLabel:"Cruise Title",fieldKey:"name",fieldId:"f-name",reason:"High-confidence source line from pasted offer"};
 }
 
 function getPoaAssistedApplySuggestions(parsed,rawText,inclusions,effectiveOperator){
@@ -6741,19 +6742,27 @@ function getPoaSuggestionCurrentValue(suggestion){
   return offers[cur]&&suggestion?offers[cur][suggestion.fieldKey]||"":"";
 }
 function renderPoaAssistedApplySuggestions(suggestions){
-  const visible=(suggestions||[]).filter(s=>s&&s.id&&s.fieldId&&document.getElementById(s.fieldId));
+  const live=(suggestions||[]).filter(s=>s&&s.id&&s.fieldId&&document.getElementById(s.fieldId));
+  const visible=[...live];
+  Object.keys(poaAppliedSuggestions||{}).forEach(id=>{
+    if(visible.some(s=>s.id===id)) return;
+    const stored=poaAppliedSuggestions[id]&&poaAppliedSuggestions[id].suggestion;
+    if(stored&&stored.fieldId&&document.getElementById(stored.fieldId)) visible.push(stored);
+  });
   if(!visible.length) return "";
   const unappliedCount=visible.filter(s=>!poaAppliedSuggestions[s.id]).length;
   const appliedCount=visible.length-unappliedCount;
-  const toolbar=(unappliedCount||appliedCount)?`<div class="poa-suggestion-toolbar">${unappliedCount?`<button class="abtn btn-compact" type="button" onclick="applyAllPoaSuggestions()">Apply Remaining (${unappliedCount})</button>`:`<span class="poa-suggestion-applied">✓ All available enhancements applied</span>`}${appliedCount?`<button class="abtn btn-compact" type="button" onclick="removeAllPoaSuggestions()">Remove All</button>`:""}</div>`:"";
+  const toolbar=`<div class="poa-suggestion-toolbar">${unappliedCount?`<button class="abtn btn-compact" type="button" onclick="applyAllPoaSuggestions()">Apply Remaining (${unappliedCount})</button>`:`<span class="poa-suggestion-applied">All available enhancements applied.</span>`}${appliedCount?`<button class="abtn btn-compact" type="button" onclick="removeAllPoaSuggestions()">Revert All</button>`:""}</div>`;
   const cards=visible.map(s=>{
     const applied=poaAppliedSuggestions[s.id];
     const current=getPoaSuggestionCurrentValue(s);
+    const original=applied?applied.previousValue:current;
+    const appliedValue=applied?applied.appliedValue:s.value;
     const actions=applied
-      ? `<span class="poa-suggestion-applied">✓ Applied</span><button class="abtn btn-compact" type="button" onclick="removePoaSuggestion('${s.id}')">Change</button>`
+      ? `<span class="poa-suggestion-applied">Applied</span><button class="abtn btn-compact" type="button" onclick="changePoaSuggestion('${s.id}')">Change</button><button class="abtn btn-compact" type="button" onclick="removePoaSuggestion('${s.id}')">Revert</button>`
       : `<button class="abtn btn-compact" type="button" onclick="applyPoaSuggestion('${s.id}')">Apply</button>`;
-    const source=applied?`<div><span class="poa-suggestion-compare-label">Source:</span>POA Suggestion</div>`:"";
-    return `<div class="poa-suggestion-card${applied?" applied":""}" onmouseenter="setPoaSuggestionHighlight('${s.fieldKey}',true)" onmouseleave="setPoaSuggestionHighlight('${s.fieldKey}',false)"><div class="poa-suggestion-title">${escapePoaSuggestionHtml(s.title)}${applied?` <span class="poa-suggestion-title-status">✓ Applied</span>`:""}</div><div class="poa-suggestion-confidence">${escapePoaSuggestionHtml(s.confidenceLabel||"Low Confidence")}</div><div class="poa-suggestion-compare"><div><span class="poa-suggestion-compare-label">Current:</span>${formatPoaSuggestionValue(current)}</div><div><span class="poa-suggestion-compare-label">Suggested:</span>${formatPoaSuggestionValue(s.value)}</div>${source}</div><div class="poa-suggestion-actions">${actions}</div></div>`;
+    const source=s.reason||"POA Suggestion";
+    return `<div class="poa-suggestion-card${applied?" applied":""}" onmouseenter="setPoaSuggestionHighlight('${s.fieldKey}',true)" onmouseleave="setPoaSuggestionHighlight('${s.fieldKey}',false)"><div class="poa-suggestion-title">${escapePoaSuggestionHtml(s.title)}${applied?` <span class="poa-suggestion-title-status">Applied</span>`:""}</div><div class="poa-suggestion-confidence">${escapePoaSuggestionHtml(s.confidenceLabel||"Low Confidence")}</div><div class="poa-suggestion-compare"><div><span class="poa-suggestion-compare-label">Original:</span>${formatPoaSuggestionValue(original)}</div><div><span class="poa-suggestion-compare-label">Applied:</span>${formatPoaSuggestionValue(appliedValue)}</div><div><span class="poa-suggestion-compare-label">Source:</span>${escapePoaSuggestionHtml(source)}</div></div><div class="poa-suggestion-actions">${actions}</div></div>`;
   }).join("");
   return `<div class="offer-intel-section"><div class="offer-intel-heading">Available Enhancements (${visible.length})</div>${toolbar}<div class="offer-intel-list">${cards}</div></div>`;
 }
@@ -6768,7 +6777,9 @@ function applyAllPoaSuggestions(){
   renderOfferIntelligencePanel(window.currentPoaParsed||{},window.currentPoaRawText||"");
 }
 function removeAllPoaSuggestions(){
-  getVisiblePoaSuggestions().filter(s=>poaAppliedSuggestions[s.id]).forEach(s=>removePoaSuggestion(s.id,true));
+  const visible=[...getVisiblePoaSuggestions()];
+  Object.keys(poaAppliedSuggestions||{}).forEach(id=>{ const stored=poaAppliedSuggestions[id]&&poaAppliedSuggestions[id].suggestion; if(stored&&!visible.some(s=>s.id===id)) visible.push(stored); });
+  visible.filter(s=>poaAppliedSuggestions[s.id]).forEach(s=>removePoaSuggestion(s.id,true));
   clearPoaSuggestionHighlights();
   up();
   renderOfferIntelligencePanel(window.currentPoaParsed||{},window.currentPoaRawText||"");
@@ -6784,14 +6795,21 @@ function applyPoaSuggestion(id,silent){
   if(!offers[cur]) offers[cur]={};
   offers[cur][suggestion.fieldKey]=suggestion.value;
   if(window.currentPoaParsed) window.currentPoaParsed[suggestion.fieldKey]=suggestion.value;
-  poaAppliedSuggestions[id]={previousValue};
+  poaAppliedSuggestions[id]={previousValue,appliedValue:suggestion.value,suggestion:Object.assign({},suggestion)};
   clearPoaSuggestionHighlights();
   if(!silent){ up();
   renderOfferIntelligencePanel(window.currentPoaParsed||{},window.currentPoaRawText||""); }
 }
+function changePoaSuggestion(id){
+  const suggestion=(window.currentPoaSuggestions||[]).find(item=>item.id===id)||((poaAppliedSuggestions[id]||{}).suggestion);
+  const input=suggestion&&document.getElementById(suggestion.fieldId);
+  delete poaAppliedSuggestions[id];
+  if(input) input.focus();
+  renderOfferIntelligencePanel(window.currentPoaParsed||{},window.currentPoaRawText||"");
+}
 function removePoaSuggestion(id,silent){
-  if(!poaAppliedSuggestions[id]||!window.currentPoaSuggestions) return;
-  const suggestion=window.currentPoaSuggestions.find(item=>item.id===id);
+  if(!poaAppliedSuggestions[id]) return;
+  const suggestion=(window.currentPoaSuggestions||[]).find(item=>item.id===id)||poaAppliedSuggestions[id].suggestion;
   if(!suggestion) return;
   const input=document.getElementById(suggestion.fieldId);
   if(!input) return;
@@ -6985,9 +7003,7 @@ function getOfferIntelligenceDetectedFields(parsed,rawText){
   return {fields,airport};
 }
 function getPoaCabinOptions(operatorKey){
-  const base=["Inside","Ocean View","Balcony"];
-  const extras={celebrity:["Concierge","AquaClass","Suite"],msc:["Yacht Club"],princess:["Mini Suite","Suite"]};
-  return [...base,...(extras[operatorKey]||[])].filter((value,index,self)=>self.indexOf(value)===index);
+  return ["Inside","Ocean View","Balcony"];
 }
 function getPoaCabinRecommendation(rawText,operatorKey){
   const text=String(rawText||"");
@@ -7002,10 +7018,10 @@ function renderPoaCabinTypeSuggestion(parsed,rawText,effectiveOperator){
   const selectedBase=detected.replace(/\s+(?:cabin|stateroom)$/i,"");
   const options=getPoaCabinOptions(effectiveOperator);
   const recommended=getPoaCabinRecommendation(rawText,effectiveOperator);
-  const message=detected?`<strong>Cabin Type selected</strong><br>Change cabin type at any time:`:(recommended?`<strong>⚠ Cabin Type not detected</strong><br>Recommendation only — please select one:`:`<strong>⚠ Cabin Type not detected</strong><br>Couldn't determine cabin type.<br>Please select one:`);
+  const message=detected?`<strong>Cabin Type selected</strong><br>Change cabin type at any time:`:(recommended?`<strong>Cabin Type not detected</strong><br>Recommendation only — please select one:`:`<strong>Cabin Type not detected</strong><br>Couldn't determine cabin type.<br>Please select one:`);
   const chips=options.map(option=>{
     const selected=selectedBase.toLowerCase()===option.toLowerCase()||detected.toLowerCase()===`${option} cabin`.toLowerCase();
-    return `<button class="poa-cabin-chip${recommended===option?" recommended":""}${selected?" selected":""}" type="button" aria-pressed="${selected?"true":"false"}" onclick="applyPoaCabinType('${escapePoaSuggestionHtml(option)}')">${selected?"✓":""} ${escapePoaSuggestionHtml(option)}${!selected&&recommended===option?" (Recommended)":""}</button>`;
+    return `<button class="poa-cabin-chip${recommended===option?" recommended":""}${selected?" selected":""}" type="button" aria-pressed="${selected?"true":"false"}" onclick="applyPoaCabinType('${escapePoaSuggestionHtml(option)}')">${escapePoaSuggestionHtml(option)}${!selected&&recommended===option?" (Recommended)":""}</button>`;
   }).join("");
   return `<div class="offer-intel-section"><div class="offer-intel-heading">Suggested Cabin</div><div class="poa-cabin-assist"><div class="poa-cabin-message">${message}</div><div class="poa-cabin-chips">${chips}</div></div></div>`;
 }
