@@ -165,21 +165,17 @@ test('hero upload thumbnail shows the full source image and helper metadata', ()
   assert.match(extractFunction('updateHeroThumbInfo'), /dims\.textContent="Image: "\+w\+" × "\+h\+"px"/);
 });
 
-test('hero image panel exposes larger source thumbnail, status, quick position and crop preset controls', () => {
+test('hero image panel exposes thumbnail, status and streamlined crop controls', () => {
   assert.match(html, /\.dz-thumb\.hero-t\{object-fit:contain[^}]+height:170px[^}]+width:100%/);
   assert.doesNotMatch(html, /\.dz-thumb\.hero-t\{object-fit:cover/);
   assert.match(html, /id="hero-crop-status"/);
   assert.match(html, /id="hero-crop-status-zoom">100%/);
   assert.match(html, /id="hero-crop-status-mode">Fill Frame/);
-  assert.match(html, /id="hero-mode-fill" class="abtn btn-compact hero-mode-btn"/);
-  assert.match(html, /onclick="setHeroCropAxis\('x',0\)">Left 0%/);
-  assert.match(html, /onclick="setHeroCropAxis\('x',50\)">Centre 50%/);
-  assert.match(html, /onclick="setHeroCropAxis\('x',100\)">Right 100%/);
-  assert.match(html, /onclick="setHeroCropAxis\('y',0\)">Top 0%/);
-  assert.match(html, /onclick="setHeroCropAxis\('y',50\)">Centre 50%/);
-  assert.match(html, /onclick="setHeroCropAxis\('y',100\)">Bottom 100%/);
-  assert.match(html, /onclick="copyHeroCrop\(\)">Copy Crop/);
-  assert.match(html, /onclick="pasteHeroCrop\(\)">Paste Crop/);
+  assert.doesNotMatch(html, /id="hero-mode-fill" class="abtn btn-compact hero-mode-btn"/);
+  assert.doesNotMatch(html, /Quick Position/);
+  assert.doesNotMatch(html, /onclick="setHeroCropAxis\('x',0\)">Left 0%/);
+  assert.doesNotMatch(html, /onclick="copyHeroCrop\(\)">Copy Crop/);
+  assert.doesNotMatch(html, /onclick="pasteHeroCrop\(\)">Paste Crop/);
 });
 
 function extractCropWorkflowScript() {

@@ -67,7 +67,7 @@ test('offer selector tiles include native lock toggles and locked styling', () =
   assert.match(html, /\.otab\.status-green::after\{background:rgba\(42,122,74,\.72\);\}/);
   assert.match(html, /\.otab\.status-amber::after\{background:rgba\(212,130,10,\.72\);\}/);
   assert.match(html, /\.otab\.status-red::after\{background:rgba\(192,57,43,\.72\);\}/);
-  assert.match(html, /\.offer-lock-toggle\{[^}]*top:auto[^}]*right:auto[^}]*left:50%[^}]*bottom:3px[^}]*width:10px[^}]*height:10px[^}]*padding:0[^}]*background:transparent/);
+  assert.match(html, /\.offer-lock-toggle\{[^}]*top:auto[^}]*right:auto[^}]*left:50%[^}]*bottom:8px[^}]*width:10px[^}]*height:10px[^}]*padding:0[^}]*background:transparent/);
   assert.match(html, /\.offer-lock-toggle\{[^}]*color:rgba\(78,89,101,\.70\)[^}]*opacity:\.70/);
   assert.match(html, /\.offer-lock-toggle\.locked\{[^}]*color:var\(--green\)[^}]*background:transparent[^}]*border:none[^}]*box-shadow:none/);
   assert.match(html, /\.otab\.active \.offer-lock-toggle\.locked\{color:var\(--green\);\}/);
