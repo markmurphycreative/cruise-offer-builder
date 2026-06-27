@@ -212,6 +212,14 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .offer-quick-action{margin-left:4px;}
 .field.poa-target-highlight input,.field.poa-target-highlight textarea{border-color:var(--gold);background:rgba(184,167,110,0.08);}
 .offer-intel-empty{font-size:9px;color:var(--muted);line-height:1.35;}
+.poa-cabin-assist{border:1px solid rgba(191,138,43,.35);border-radius:var(--radius);background:#fffaf0;padding:7px;display:grid;gap:6px;}
+.poa-cabin-message{font-size:9px;line-height:1.35;color:var(--text);}
+.poa-cabin-message strong{color:var(--amber);}
+.poa-cabin-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.poa-cabin-chip{border:1px solid var(--border);border-radius:999px;background:#fff;color:var(--navy);font-size:9px;line-height:1.2;padding:5px 8px;cursor:pointer;}
+.poa-cabin-chip:hover{border-color:var(--gold);background:#faf6ea;}
+.poa-cabin-chip.recommended{border-color:rgba(42,122,74,.45);}
+.poa-cabin-chip.selected{background:var(--navy);border-color:var(--navy);color:#fff;}
 
 /* ── OPERATOR ── */
 .op-select{width:100%;padding:5px 8px;font-size:12px;font-weight:600;border:1px solid var(--border);border-radius:var(--radius);background:#fff;color:var(--text);appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
@@ -1832,6 +1840,7 @@ function buildAiCopyOfferDetails(offer,options={}){
   addAiCopyDetail(rows,"Ship",offer.ship);
   addAiCopyDetail(rows,"Title",offer.name);
   addAiCopyDetail(rows,"Ports",offer.ports);
+  if(offer.ports && typeof getEmbarkationPort==="function") addAiCopyDetail(rows,"Cruise Departure",getEmbarkationPort(offer.ports));
   if(options.includeDepartureAirport) addAiCopyDetail(rows,"Departure Airport",document.getElementById("g-airport")?.value || "");
   addAiCopyDetail(rows,"Price",formatAiCopyPrice(offer.price));
   addAiCopyDetail(rows,"Board Basis",offer.boardlbl || offer.board);
@@ -6447,11 +6456,20 @@ function getOfferIntelligenceCruiseTypes(parsed,rawText,operatorKey){
   return types;
 }
 
+function getCruiseDepartureWording(value){
+  const clean=String(value||"").split(",").map(part=>part.trim()).filter(Boolean).join(", ");
+  return /^(?:newcastle|newcastle upon tyne|newcastle, england)$/i.test(clean)?"Port of Tyne":clean;
+}
+function hasPortOfTyneDepartureKnowledge(parsed,rawText){
+  const p=parsed||{};
+  const embarkation=(typeof getEmbarkationPort==="function"&&p.ports)?getEmbarkationPort(p.ports):"";
+  if(/^(?:newcastle|newcastle upon tyne|newcastle, england|port of tyne)$/i.test(String(embarkation||"").trim())) return true;
+  return /(?:^|\n)\s*Sailing\s+from\s+(?:Newcastle|Newcastle upon Tyne|Newcastle, England)\s*(?=$|\n)/i.test(String(rawText||""));
+}
 function getOfferIntelligenceCruiseKnowledge(parsed,rawText){
   const p=parsed||{};
   const shipOperator=getOfferIntelligenceShipOperator(p.ship);
   const operatorKey=p.operatorKey||(shipOperator&&shipOperator.operatorKey)||"";
-  if(!operatorKey) return [];
   const knowledge={
     po:{operator:"P&O Cruises",cruiseType:"Ocean Cruise",audience:"Family Friendly"},
     royal:{operator:"Royal Caribbean",cruiseType:"Ocean Cruise",audience:"Family Friendly"},
@@ -6466,14 +6484,14 @@ function getOfferIntelligenceCruiseKnowledge(parsed,rawText){
     ambassador:{operator:"Ambassador",cruiseType:"Ocean Cruise",audience:"Traditional"}
   };
   const record=knowledge[operatorKey];
-  if(!record) return [];
-  const intelligence=(OPERATOR_INTELLIGENCE&&OPERATOR_INTELLIGENCE[operatorKey])||{};
-  const operator=record.operator||intelligence.name||((OPERATOR_HEADERS[operatorKey]||{}).name)||operatorKey;
-  return [
-    `Operator: ${operator}`,
-    `Cruise Type: ${record.cruiseType}`,
-    `Audience: ${record.audience}`
-  ];
+  const rows=[];
+  if(record){
+    const intelligence=(OPERATOR_INTELLIGENCE&&OPERATOR_INTELLIGENCE[operatorKey])||{};
+    const operator=record.operator||intelligence.name||((OPERATOR_HEADERS[operatorKey]||{}).name)||operatorKey;
+    rows.push(`Operator: ${operator}`,`Cruise Type: ${record.cruiseType}`,`Audience: ${record.audience}`);
+  }
+  if(typeof hasPortOfTyneDepartureKnowledge==="function"&&hasPortOfTyneDepartureKnowledge(p,rawText)) rows.push("Departure wording standardised to: Port of Tyne");
+  return rows;
 }
 
 function hasOfferIntelligenceNegativeContext(text,matchIndex,matchText){
@@ -6948,11 +6966,50 @@ function getOfferIntelligenceDetectedFields(parsed,rawText){
     airport=offers[cur]._poaDepartureAirport;
   }
   addValue("Departure Airport",airport);
-  const cabinType=detectCabinType(rawText);
+  const cabinType=detectCabinType(rawText)||(p._poaCabinType||"");
   addValue("Cabin Type",cabinType);
   addValue("Transfers",detectTransferStatus(rawText));
   addValue("Pre-Cruise Stay",detectPreCruiseStay(rawText));
   return {fields,airport};
+}
+function getPoaCabinOptions(operatorKey){
+  const base=["Inside","Ocean View","Balcony"];
+  const extras={celebrity:["Concierge","AquaClass","Suite"],msc:["Yacht Club"],princess:["Mini Suite","Suite"]};
+  return [...base,...(extras[operatorKey]||[])].filter((value,index,self)=>self.indexOf(value)===index);
+}
+function getPoaCabinRecommendation(rawText,operatorKey){
+  const text=String(rawText||"");
+  if(/\b(?:balcony cabin|balcony stateroom|infinite veranda|veranda)\b/i.test(text)) return "Balcony";
+  if(/\b(?:ocean\s*view|outside cabin|oceanview stateroom)\b/i.test(text)) return "Ocean View";
+  if(/\b(?:inside cabin|inside stateroom|interior cabin)\b/i.test(text)) return "Inside";
+  if(["celebrity","msc","princess"].includes(operatorKey)) return "Balcony";
+  return "";
+}
+function renderPoaCabinTypeSuggestion(parsed,rawText,effectiveOperator){
+  const detected=detectCabinType(rawText)||String((parsed||{})._poaCabinType||"").trim();
+  if(detected) return "";
+  const options=getPoaCabinOptions(effectiveOperator);
+  const recommended=getPoaCabinRecommendation(rawText,effectiveOperator);
+  const message=recommended?`<strong>⚠ Cabin Type not detected</strong><br>Recommendation only — please select one:`:`<strong>⚠ Cabin Type not detected</strong><br>Couldn't determine cabin type.<br>Please select one:`;
+  const chips=options.map(option=>`<button class="poa-cabin-chip${recommended===option?" recommended":""}" type="button" onclick="applyPoaCabinType('${escapePoaSuggestionHtml(option)}')">○ ${escapePoaSuggestionHtml(option)}${recommended===option?" (Recommended)":""}</button>`).join("");
+  return `<div class="offer-intel-section"><div class="offer-intel-heading">Suggested Cabin</div><div class="poa-cabin-assist"><div class="poa-cabin-message">${message}</div><div class="poa-cabin-chips">${chips}</div></div></div>`;
+}
+function applyPoaCabinType(value){
+  const cabin=String(value||"").trim();
+  if(!cabin) return;
+  const display=/cabin|stateroom|suite|class|veranda|club|haven|yacht/i.test(cabin)?cabin:`${cabin} Cabin`;
+  const input=document.getElementById("f-incl");
+  if(input){
+    const current=String(input.value||"").trim();
+    const cabinPattern=/\b(?:inside|interior|outside|ocean\s*view|oceanview|balcony|suite|mini\s+suite|concierge(?:\s+class)?|aqua(?:class)?|yacht\s+club|haven|britannia\s+club|infinite\s+veranda)(?:\s+(?:cabin|stateroom|suite|class))?\b/i;
+    input.value=cabinPattern.test(current)?current.replace(cabinPattern,display):(current?`${current} - ${display}`:display);
+  }
+  if(!offers[cur]) offers[cur]={};
+  offers[cur].incl=input?input.value:display;
+  offers[cur]._poaCabinType=display;
+  if(window.currentPoaParsed) window.currentPoaParsed._poaCabinType=display;
+  up();
+  renderOfferIntelligencePanel(window.currentPoaParsed||{},window.currentPoaRawText||"");
 }
 function detectCabinType(text){
   const lines=String(text||"").split(/\n/).map(line=>line.trim()).filter(Boolean);
@@ -7021,6 +7078,7 @@ function renderOfferIntelligencePanel(parsed,rawText){
       (typeof renderPortsIntelligenceSection==="function"?renderPortsIntelligenceSection(p,item,section):"")+
       (typeof renderOfferQualitySection==="function"?renderOfferQualitySection(p,rawText,effectiveOperator,item):"")+
       (cruiseKnowledge.length?section("Cruise Knowledge",cruiseKnowledge.map(label=>item("detected","✓",label)).join("")):"")+
+      (typeof renderPoaCabinTypeSuggestion==="function"?renderPoaCabinTypeSuggestion(p,rawText,effectiveOperator):"")+
       (typeof renderPoaAssistedApplySuggestions==="function"?renderPoaAssistedApplySuggestions(poaSuggestions):"")+
       (inclusions.length?section("Inclusions Detected",inclusions.map(label=>item("detected","✓",label)).join("")):"")+
       (actionSuggestions.length?section("Offer Intelligence",actionSuggestions.map(label=>item("suggestion","💡",label)).join("")):"")+
@@ -7203,7 +7261,9 @@ function cleanEmbarkationPortDisplay(port){
 }
 function getEmbarkationPort(str){
   const firstPort=getRenderedItineraryPorts(str)[0]||"";
-  return cleanEmbarkationPortDisplay(firstPort);
+  const full=String(firstPort||"").split(",").map(part=>part.trim()).filter(Boolean).join(", ");
+  const clean=cleanEmbarkationPortDisplay(firstPort);
+  return typeof getCruiseDepartureWording==="function" ? getCruiseDepartureWording(full||clean) : clean;
 }
 function chunkBullets(str,options){
   const ports=getRenderedItineraryPorts(str);
