@@ -288,7 +288,9 @@ test('Offer Intelligence infers known ship operators without changing parsed dat
   assert.match(panel.innerHTML, /Departure Airport: Newcastle/);
   assert.match(panel.innerHTML, /Cabin Type: Inside Cabin/);
   assert.match(panel.innerHTML, /Offer Intelligence/);
-  assert.match(panel.innerHTML, /💡<\/span><span>Card Inclusion: Flights, Luggage &amp; Transfers Included|💡<\/span><span>Card Inclusion: Flights, Luggage & Transfers Included/);
+  assert.match(panel.innerHTML, /poa-icon-svg/);
+  assert.match(panel.innerHTML, /<span>Card Inclusion: Flights, Luggage (?:&amp;|&) Transfers Included<\/span>/);
+  assert.doesNotMatch(panel.innerHTML, /💡/);
   assert.match(panel.innerHTML, /Quality Score:<\/strong> 76/);
   assert.match(panel.innerHTML, /OFFER QUALITY/);
   assert.match(panel.innerHTML, /Missing:/);
