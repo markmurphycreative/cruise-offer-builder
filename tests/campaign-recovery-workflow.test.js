@@ -165,7 +165,7 @@ test('campaign history renders the Manage Campaigns modal with required labels a
   assert.match(html, /renderCampaignHistoryList\("recent-campaign-list", buckets\.recent, "No saved campaigns yet\."\)/);
   assert.doesNotMatch(html, /renderCampaignHistoryList\("saved-campaign-list", buckets\.saved, "No saved campaigns\."\)/);
   assert.match(html, /restoreCampaignHistoryEntry\('\$\{safeId\}'\)">Load<\/button>/);
-  assert.match(html, /togglePinCampaignHistoryEntry\('\$\{safeId\}'\)">Pin<\/button>/);
+  assert.match(html, /togglePinCampaignHistoryEntry\('\$\{safeId\}'\)[\s\S]*>\$\{pinIcon\}\$\{pinLabel\}<\/button>/);
   assert.match(html, /deleteCampaignHistoryEntry\('\$\{safeId\}'\)">Delete<\/button>/);
   assert.doesNotMatch(html, /restoreCampaignHistoryEntry\('\$\{safeId\}'\)">Open<\/button>/);
   assert.doesNotMatch(html, /<div class="act-row">[\s\S]*?Clear Saved Session[\s\S]*?<\/div>/);
@@ -182,7 +182,7 @@ test('Manage Campaigns supports a detached live-synced browser window using shar
   assert.notEqual(modalEnd, -1, 'Expected Manage Campaigns modal boundary to exist');
   const modal = html.slice(modalStart, modalEnd);
   assert.match(modal, /<button class="summary-btn primary" type="button" onclick="refreshCampaignHistoryUI\(\)">Refresh<\/button>/);
-  assert.match(modal, /openDetachedManageCampaignsWindow\(\)">Open in New Window/);
+  assert.match(modal, /openDetachedManageCampaignsWindow\(\)">[\s\S]*Open in New Window/);
 
   const contentRenderer = extractFunction('getManageCampaignsContentHtml');
   const detachedHtml = extractFunction('getDetachedManageCampaignsWindowHtml');
@@ -196,7 +196,7 @@ test('Manage Campaigns supports a detached live-synced browser window using shar
   assert.match(contentRenderer, /Campaign Actions/);
   assert.match(contentRenderer, /getCampaignHistoryListHtml\(buckets\.pinned/);
   assert.match(detachedHtml, /<div class="detached-manage-actions"><button class="summary-btn primary" type="button" onclick="refreshManageCampaigns\(\)">Refresh<\/button><\/div>/);
-  assert.match(detachedHtml, /\.summary-btn\{padding:8px 10px;font-size:10px;font-weight:400;letter-spacing:\.04em;border-radius:var\(--radius\);border:1px solid rgba\(255,255,255,\.35\);background:#fff;color:var\(--navy\);text-transform:uppercase;cursor:pointer;\}\.summary-btn\.primary\{background:var\(--gold\);border-color:var\(--gold\);color:#fff;\}/);
+  assert.match(detachedHtml, /\.summary-btn\{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;font-size:10px;font-weight:400;letter-spacing:\.04em;border-radius:var\(--radius\);border:1px solid rgba\(255,255,255,\.35\);background:#fff;color:var\(--navy\);text-transform:uppercase;cursor:pointer;\}\.summary-btn\.primary\{background:var\(--gold\);border-color:var\(--gold\);color:#fff;\}/);
   assert.match(detachedHtml, /function refreshManageCampaigns\(\)\{[\s\S]*content\.innerHTML=window\.opener\.getManageCampaignsContentHtml\(\);/);
   assert.match(openDetached, /detachedManageCampaignsWindow&&!detachedManageCampaignsWindow\.closed/);
   assert.match(openDetached, /detachedManageCampaignsWindow\.focus\(\);/);
@@ -370,7 +370,7 @@ test('campaign history list keeps existing actions while inserting reusable thum
   assert.match(writes[0], /class="campaign-thumbnail" role="button" tabindex="0" title="Load campaign" aria-label="Load campaign" onclick="restoreCampaignHistoryEntry\('abc'\)"/);
   assert.match(writes[0], /onkeydown="if\(event\.key==='Enter'\|\|event\.key===' '\)\{event\.preventDefault\(\);restoreCampaignHistoryEntry\('abc'\);\}"/);
   assert.match(writes[0], /restoreCampaignHistoryEntry\('abc'\)">Load<\/button>/);
-  assert.match(writes[0], /togglePinCampaignHistoryEntry\('abc'\)">Pin<\/button>/);
+  assert.match(writes[0], /togglePinCampaignHistoryEntry\('abc'\)[\s\S]*>Pin<\/button>/);
   assert.match(writes[0], /deleteCampaignHistoryEntry\('abc'\)">Delete<\/button>/);
 });
 
@@ -417,7 +417,7 @@ test('campaign history cards render the campaign title once while preserving met
   assert.match(markup, /1 Offer · Saved/);
   assert.match(markup, />RC<\/span>/);
   assert.match(markup, /<button class="abtn btn-compact" onclick="restoreCampaignHistoryEntry\('abc'\)">Load<\/button>/);
-  assert.match(markup, /<button class="abtn btn-compact" onclick="togglePinCampaignHistoryEntry\('abc'\)">Pin<\/button>/);
+  assert.match(markup, /<button class="abtn btn-compact pin-action"[^>]*onclick="togglePinCampaignHistoryEntry\('abc'\)">[\s\S]*Pin<\/button>/);
   assert.match(markup, /<button class="abtn red btn-compact" onclick="deleteCampaignHistoryEntry\('abc'\)">Delete<\/button>/);
 });
 
@@ -462,7 +462,7 @@ test('campaign library thumbnail uses the same restore handler as the Load butto
 
   assert.equal(thumbnailRestoreCalls.length, 1);
   assert.equal(loadButtonRestoreCalls.length, 1);
-  assert.match(markup, /<button class="abtn btn-compact" onclick="togglePinCampaignHistoryEntry\('abc'\)">Pin<\/button>/);
+  assert.match(markup, /<button class="abtn btn-compact pin-action"[^>]*onclick="togglePinCampaignHistoryEntry\('abc'\)">[\s\S]*Pin<\/button>/);
   assert.match(markup, /<button class="abtn red btn-compact" onclick="deleteCampaignHistoryEntry\('abc'\)">Delete<\/button>/);
   assert.doesNotMatch(markup, /togglePinCampaignHistoryEntry\('abc'\)[\s\S]*class="campaign-thumbnail"/);
   assert.doesNotMatch(markup, /deleteCampaignHistoryEntry\('abc'\)[\s\S]*class="campaign-thumbnail"/);

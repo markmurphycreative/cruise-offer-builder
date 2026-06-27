@@ -84,7 +84,7 @@ test('campaign summary supports a detached read-only browser window with manual 
   const modalStart = html.indexOf('<div class="modal-overlay" id="summary-modal"');
   const modalEnd = html.indexOf('</div>\n\n<script>', modalStart);
   const modal = html.slice(modalStart, modalEnd);
-  assert.match(modal, /openDetachedSummaryWindow\(\)">Open in New Window/);
+  assert.match(modal, /openDetachedSummaryWindow\(\)">[\s\S]*Open in New Window/);
 
   const detachedHtml = extractFunction('getDetachedSummaryWindowHtml');
   const openDetached = extractFunction('openDetachedSummaryWindow');
