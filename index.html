@@ -651,8 +651,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cc .cname,.cc .incl,.cc .sname,.cc .pbasis{max-width:1000px;margin-left:auto;margin-right:auto;}
 .cc .price-block{max-width:1000px;}
 .cc .cname{font-size:74px;font-weight:300;color:var(--operator-text,var(--navy));line-height:1.0;margin-bottom:6px;}
-.cc .incl{font-size:40px;font-weight:300;color:#555;line-height:1.36;margin:0 auto 16px;padding:0 24px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
-.cc .incl-line{display:block;width:100%;max-width:100%;line-height:1.36;margin:0 auto;text-align:center;}
+.cc .incl{font-size:40px;font-weight:300;color:#555;line-height:1.22;margin:0 auto 16px;padding:0 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:0;align-items:center;justify-content:center;text-align:center;}
+.cc .incl-line{display:block;width:100%;max-width:100%;line-height:1.22;margin:0 auto;text-align:center;}
 .cc .incl-component{display:inline;white-space:normal;}
 .cc .incl-segment{display:inline-block;white-space:nowrap;}
 .cc .cabin-phrase,.cc .precruise-phrase{white-space:nowrap;}
@@ -7428,7 +7428,7 @@ function cleanPortsDisplay(str){
     .filter(Boolean)
     .join(" • ");
 }
-const RETURN_EMBARKATION_PORTS=new Set(["southampton","newcastle","newcastle upon tyne","port of tyne","barcelona","athens","miami","fort lauderdale","tampa","port canaveral","vancouver","seattle","singapore","dubai"]);
+const RETURN_EMBARKATION_PORTS=new Set();
 function getDestinationComparisonValue(destination){
   const value=cleanEmbarkationPortDisplay(destination).trim().toLowerCase();
   if(value==="port of tyne"||value==="newcastle upon tyne"||value==="newcastle, england") return "newcastle";
@@ -7439,7 +7439,7 @@ function removeDuplicateReturnToOriginDestination(ports){
   if(renderedPorts.length>1){
     const first=getDestinationComparisonValue(renderedPorts[0]);
     const last=getDestinationComparisonValue(renderedPorts[renderedPorts.length-1]);
-    if(first&&RETURN_EMBARKATION_PORTS.has(first)&&first===last) renderedPorts.pop();
+    if(first&&first===last) renderedPorts.pop();
   }
   return renderedPorts;
 }
@@ -7716,7 +7716,7 @@ function renderCardInclusionLayout(value,options){
   };
   const lines=groupCardInclusionRenderLines(buildCardInclusionComponents(value),options).map(renderLine);
   if(!validateCardInclusionLines(lines.map(line=>String(line).replace(/<[^>]+>/g,"").replace(/&nbsp;/g," ")))) return "";
-  return lines.join(html?"<br>":"\n");
+  return lines.join(html?"":"\n");
 }
 function buildCardInclusionRenderLines(value){
   const rendered=renderCardInclusionLayout(value,{html:false});
