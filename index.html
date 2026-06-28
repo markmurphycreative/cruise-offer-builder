@@ -7127,7 +7127,7 @@ function getOfferIntelligenceActionSuggestions(parsed,rawText,inclusions,effecti
   return actions;
 }
 
-const EMBARKATION_PORTS=new Set(["southampton","newcastle","barcelona","athens","piraeus athens","miami","fort lauderdale","tampa","port canaveral","vancouver","seattle","singapore","dubai"]);
+const EMBARKATION_PORTS=new Set(["southampton","dover","newcastle","tyne","barcelona","athens","piraeus","piraeus athens","athens piraeus","las palmas","las palmas gran canaria","miami","fort lauderdale","tampa","port canaveral","vancouver","seattle","singapore","dubai"]);
 const PORT_COUNTRIES={
   "barcelona":"Spain","palma":"Spain","palma de mallorca":"Spain","ibiza":"Spain","valencia":"Spain","malaga":"Spain","cadiz":"Spain","cartagena spain":"Spain","bilbao":"Spain","la coruna":"Spain","vigo":"Spain","alicante":"Spain","tarragona":"Spain","santa cruz de tenerife":"Spain","tenerife":"Spain","lanzarote":"Spain","arrecife":"Spain","gran canaria":"Spain","las palmas":"Spain","fuerteventura":"Spain",
   "marseille":"France","nice":"France","cannes":"France","toulon":"France","ajaccio":"France","corsica":"France","le havre":"France","cherbourg":"France","bordeaux":"France","la rochelle":"France","villefranche":"France",
@@ -7506,26 +7506,36 @@ function packItineraryLines(ports,options){
   if(current.length) lines.push(current);
   return lines;
 }
-function getRenderedItineraryPorts(str){
-  const ports=cleanPortsDisplay(str)
+function getCleanItineraryPorts(str){
+  return cleanPortsDisplay(str)
     .split("•")
     .map(s=>s.trim())
     .filter(Boolean);
-  const renderedPorts=removeDuplicateReturnToOriginDestination(ports);
-  if(/^(?:newcastle|newcastle upon tyne|newcastle, england)$/i.test(String(renderedPorts[0]||"").trim())) renderedPorts[0]="Port of Tyne";
-  return renderedPorts;
+}
+function formatRenderedItineraryPort(port){
+  const value=String(port||"").trim();
+  return /^(?:newcastle|newcastle upon tyne|newcastle, england|port of tyne)$/i.test(value)?"Port of Tyne":value;
+}
+function isEmbarkationPortForVisitRemoval(port){
+  const normalised=typeof normalisePortIntelligenceName==="function"?normalisePortIntelligenceName(port):getDestinationComparisonValue(port);
+  return !!(normalised&&EMBARKATION_PORTS.has(normalised));
+}
+function getRenderedItineraryPorts(str){
+  const ports=removeDuplicateReturnToOriginDestination(getCleanItineraryPorts(str));
+  const renderedPorts=ports.length>1&&isEmbarkationPortForVisitRemoval(ports[0])?ports.slice(1):ports.slice();
+  return renderedPorts.map(formatRenderedItineraryPort).filter(Boolean);
 }
 function cleanEmbarkationPortDisplay(port){
   return String(port||"").split(",").map(part=>part.trim()).filter(Boolean)[0]||"";
 }
 function getEmbarkationPort(str){
-  const firstPort=getRenderedItineraryPorts(str)[0]||"";
+  const firstPort=getCleanItineraryPorts(str)[0]||"";
   const full=String(firstPort||"").split(",").map(part=>part.trim()).filter(Boolean).join(", ");
   const clean=cleanEmbarkationPortDisplay(firstPort);
-  return typeof getCruiseDepartureWording==="function" ? getCruiseDepartureWording(full||clean) : clean;
+  return typeof getCruiseDepartureWording==="function" ? getCruiseDepartureWording(full||clean) : (/^(?:newcastle|newcastle upon tyne|newcastle, england)$/i.test(clean)?"Port of Tyne":clean);
 }
 function getEmbarkationPortCardDisplay(str){
-  const firstPort=getRenderedItineraryPorts(str)[0]||"";
+  const firstPort=getCleanItineraryPorts(str)[0]||"";
   const text=String(firstPort||"").trim();
   const forMatch=text.match(/^([^,]+),\s*for\s+([^,]+)/i);
   if(forMatch&&forMatch[2]) return forMatch[2].trim();
@@ -7614,10 +7624,19 @@ function splitCardInclusionLineComponents(line){
   });
   return parts.map(value=>makeCardInclusionComponent(value)).filter(Boolean);
 }
+function normaliseFlightInclusionDisplay(component){
+  if(!component||component.type!=="flight") return component;
+  const text=normaliseCardInclusionComponent(component.text);
+  if(/^flights?\s+included$/i.test(text)) return null;
+  const airportIncluded=text.match(/^(.+?)\s+flights?\s+included$/i);
+  if(airportIncluded&&airportIncluded[1]) return {...component,text:`${normaliseCardInclusionComponent(airportIncluded[1])} Flights`};
+  return component;
+}
 function buildCardInclusionComponents(value){
-  if(Array.isArray(value)) return value.map(component=>makeCardInclusionComponent(component.text||component,component.type)).filter(Boolean);
+  if(Array.isArray(value)) return value.map(component=>normaliseFlightInclusionDisplay(makeCardInclusionComponent(component.text||component,component.type))).filter(Boolean);
   const ordered=[];
   const add=component=>{
+    component=normaliseFlightInclusionDisplay(component);
     if(component&&!ordered.some(existing=>existing.type===component.type&&existing.text.toLowerCase()===component.text.toLowerCase())) ordered.push(component);
   };
   String(value||"").replace(/\r\n?/g,"\n").split("\n").forEach(line=>splitCardInclusionLineComponents(line).forEach(add));

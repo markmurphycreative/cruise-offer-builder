@@ -177,6 +177,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('isCardPreCruiseComponent'),
     extractFunction('makeCardInclusionComponent'),
     extractFunction('splitCardInclusionLineComponents'),
+    extractFunction('normaliseFlightInclusionDisplay'),
     extractFunction('buildCardInclusionComponents'),
     extractFunction('orderCardInclusionComponents'),
     extractFunction('validateCardInclusionLines'),
