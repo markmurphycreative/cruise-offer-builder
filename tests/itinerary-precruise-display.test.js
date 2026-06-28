@@ -172,9 +172,9 @@ test('card subtitle separators render hyphen separators while itinerary separato
 test('card inclusion rendering keeps known cabin phrases non-breaking', () => {
   const { renderCardHTML, renderCardInclusion } = createRenderContext();
   const rendered = renderCardInclusion('Newcastle Flights • Transfers Included • Inside Cabin');
-  assert.equal(rendered, '<span class="incl-line"><span class="incl-component">Newcastle Flights</span>&nbsp;-&nbsp;<span class="incl-component">Transfers Included</span>&nbsp;-&nbsp;<span class="incl-component cabin-phrase">Inside&nbsp;Cabin</span></span>');
+  assert.equal(rendered, '<span class="incl-line"><span class="incl-component">Newcastle Flights</span><span class="incl-segment">&nbsp;-&nbsp;<span class="incl-component">Transfers Included</span></span><span class="incl-segment">&nbsp;-&nbsp;<span class="incl-component cabin-phrase">Inside&nbsp;Cabin</span></span></span>');
   const renderedPreCruise = renderCardInclusion('Newcastle Flights • Transfers Included\nInside Cabin • 1 Night Pre-Cruise Stay in Miami');
-  assert.equal(renderedPreCruise, '<span class="incl-line"><span class="incl-component">Newcastle Flights</span>&nbsp;-&nbsp;<span class="incl-component">Transfers Included</span>&nbsp;-&nbsp;<span class="incl-component cabin-phrase">Inside&nbsp;Cabin</span></span><br><span class="incl-line"><span class="incl-component precruise-phrase">1 Night Pre-Cruise Stay in Miami</span></span>');
+  assert.equal(renderedPreCruise, '<span class="incl-line"><span class="incl-component">Newcastle Flights</span><span class="incl-segment">&nbsp;-&nbsp;<span class="incl-component">Transfers Included</span></span><span class="incl-segment">&nbsp;-&nbsp;<span class="incl-component cabin-phrase">Inside&nbsp;Cabin</span></span></span><br><span class="incl-line"><span class="incl-component precruise-phrase">1 Night Pre-Cruise Stay in Miami</span></span>');
   assert.doesNotMatch(renderedPreCruise.replace(/&nbsp;/g, " "), /Transfers Included -<br>|Transfers Included -$|^-/);
 
   const card = renderCardHTML({
@@ -182,12 +182,15 @@ test('card inclusion rendering keeps known cabin phrases non-breaking', () => {
     incl: 'Newcastle Flights • Transfers Included • Inside Cabin',
     ports: 'Barcelona • Rome'
   });
-  assert.match(card, /<div class="incl"><span class="incl-line"><span class="incl-component">Newcastle Flights<\/span>&nbsp;-&nbsp;<span class="incl-component">Transfers Included<\/span>&nbsp;-&nbsp;<span class="incl-component cabin-phrase">Inside&nbsp;Cabin<\/span><\/span><\/div>/);
+  assert.match(card, /<div class="incl"><span class="incl-line"><span class="incl-component">Newcastle Flights<\/span><span class="incl-segment">&nbsp;-&nbsp;<span class="incl-component">Transfers Included<\/span><\/span><span class="incl-segment">&nbsp;-&nbsp;<span class="incl-component cabin-phrase">Inside&nbsp;Cabin<\/span><\/span><\/span><\/div>/);
   assert.match(html, /\.cc \.incl\{font-size:40px;font-weight:300;color:#555;line-height:1\.36;margin:0 auto 16px;padding:0 24px;box-sizing:border-box;display:flex;/);
   assert.match(html, /\.cc \.incl-line\{display:block;width:100%;max-width:100%;line-height:1\.36;margin:0 auto;text-align:center;\}/);
+  assert.match(html, /\.cc \.incl-segment\{display:inline-block;white-space:nowrap;\}/);
   assert.doesNotMatch(card, /Inside Cabin<\/div>/);
   assert.doesNotMatch(rendered, /card-inclusion-separator| · |•/);
-  assert.match(rendered, /&nbsp;-&nbsp;/);
+  assert.match(rendered, /<span class="incl-segment">&nbsp;-&nbsp;<span class="incl-component">Transfers Included<\/span><\/span>/);
+  assert.doesNotMatch(rendered, /<span class="incl-line"><span class="incl-segment">/);
+  assert.doesNotMatch(rendered, /&nbsp;-&nbsp;<\/span><\/span>$/);
 });
 
 test('card title rendering converts hyphenated cruise title terms to non-breaking hyphens only in title output', () => {

@@ -654,6 +654,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cc .incl{font-size:40px;font-weight:300;color:#555;line-height:1.36;margin:0 auto 16px;padding:0 24px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
 .cc .incl-line{display:block;width:100%;max-width:100%;line-height:1.36;margin:0 auto;text-align:center;}
 .cc .incl-component{display:inline;white-space:normal;}
+.cc .incl-segment{display:inline-block;white-space:nowrap;}
 .cc .cabin-phrase,.cc .precruise-phrase{white-space:nowrap;}
 .cc .sname{font-size:40px;font-weight:300;color:var(--operator-accent,var(--gold));line-height:1.2;margin-bottom:28px;}
 .cc .price-block{display:inline-flex;flex-direction:column;align-items:center;}
@@ -7641,7 +7642,10 @@ function renderCardInclusionLayout(value,options){
   const renderLine=line=>{
     const rendered=line.map(renderComponent);
     if(!html) return rendered.join(CARD_INCLUSION_SEPARATOR);
-    return `<span class="incl-line">${rendered.join("&nbsp;-&nbsp;")}</span>`;
+    if(!rendered.length) return `<span class="incl-line"></span>`;
+    const first=rendered[0];
+    const trailing=rendered.slice(1).map(component=>`<span class="incl-segment">&nbsp;-&nbsp;${component}</span>`).join("");
+    return `<span class="incl-line">${first}${trailing}</span>`;
   };
   const lines=groupCardInclusionRenderLines(buildCardInclusionComponents(value)).map(renderLine);
   if(!validateCardInclusionLines(lines.map(line=>String(line).replace(/<[^>]+>/g,"").replace(/&nbsp;/g," ")))) return "";
