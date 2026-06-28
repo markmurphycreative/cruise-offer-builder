@@ -348,6 +348,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .ai-action-icon{width:13px;height:13px;flex:0 0 13px;color:var(--navy);stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;fill:none;}
 .ai-action-icon.chatgpt-icon{stroke-width:1.55;}
 .ai-action-icon.chatgpt-icon path{fill:none;}
+.ai-campaign-context-preview{display:none;margin-top:4px;padding:5px 7px;border:1px solid var(--border);border-radius:var(--radius);background:var(--panel);color:var(--muted);font-size:9px;line-height:1.35;}
+.ai-campaign-context-preview.active{display:block;}
+.ai-campaign-context-preview strong{display:block;color:var(--navy);font-size:10px;font-weight:700;margin-bottom:2px;}
+.ai-campaign-context-preview span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 @media (max-width:320px){.ai-prompt-actions{grid-template-columns:1fr;}}
 .sheet-action-row{grid-template-columns:1fr;}
 .std-utm-actions{grid-template-columns:1fr;}
@@ -1056,11 +1060,12 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
         </div>
         <div class="field">
           <label for="ai-generate-scope">Generate For</label>
-          <select id="ai-generate-scope">
+          <select id="ai-generate-scope" onchange="updateAiCopyCampaignContextPreview()">
             <option value="current-card" selected>Current Card</option>
             <option value="all-loaded-cards">All Loaded Cards</option>
             <option value="campaign-summary">Campaign Summary</option>
           </select>
+          <div id="ai-campaign-context-preview" class="ai-campaign-context-preview" aria-live="polite"></div>
         </div>
         <div class="field">
           <label for="ai-prompt-tone">Tone</label>
@@ -1838,6 +1843,128 @@ function buildAiCopyCampaignOperatorContext(){
 function buildAiCopyOfferOperatorContext(offer){
   return buildOperatorContextSection([getOperatorIntelligence((offer||{}).operator)].filter(Boolean));
 }
+function uniqueAiCopyValues(values){
+  const seen=new Set();
+  const output=[];
+  (values || []).forEach(value=>{
+    const clean=String(value == null ? "" : value).replace(/\s+/g," ").trim();
+    if(!clean) return;
+    const key=clean.toLowerCase();
+    if(seen.has(key)) return;
+    seen.add(key);
+    output.push(clean);
+  });
+  return output;
+}
+function splitAiCopyList(value){
+  return String(value || "").split(/\s*(?:•|,|;|\||\/|\n|\r|\+| and )\s*/i).map(item=>item.trim()).filter(Boolean);
+}
+function getAiCopyOfferOperatorDisplay(offer){
+  return getAiCopyOperatorName((offer||{}).operator);
+}
+function getAiCopyOfferRegion(offer){
+  offer=offer || {};
+  const direct=offer.destination || offer.destinationData || offer.region || offer.area || "";
+  if(String(direct || "").trim()) return String(direct).trim();
+  const text=[offer.name,offer.ports].join(" ").toLowerCase();
+  const map=[[/mediterranean|santorini|athens|greek|greece|italy|rome|barcelona|spain|malta|adriatic|croatia|turkey/,"Mediterranean"],[/caribbean|barbados|jamaica|bahamas|antigua|st lucia|aruba|grenada/,"Caribbean"],[/fjord|norway|norwegian|bergen|flam|alesund/,"Norwegian Fjords"],[/canary|tenerife|lanzarote|gran canaria|madeira/,"Canaries"],[/alaska|juneau|skagway|ketchikan/,"Alaska"],[/asia|japan|singapore|vietnam|thailand|hong kong|china/,"Asia"],[/dubai|arabia|emirates|qatar|oman/,"Arabian Gulf"],[/southampton|british isles|ireland|scotland/,"British Isles"]];
+  const match=map.find(([pattern])=>pattern.test(text));
+  return match ? match[1] : "";
+}
+function getAiCopyCruiseType(offer){
+  const intelligence=getOperatorIntelligence((offer||{}).operator);
+  const text=[intelligence&&intelligence.category,(offer||{}).name,(offer||{}).tags,(offer||{}).incl].join(" ").toLowerCase();
+  if(/river/.test(text)) return "River Cruise";
+  if(/tour|escorted/.test(text)) return "Escorted Tour";
+  return "Ocean Cruise";
+}
+function getAiCopyAudienceType(offer){
+  const intelligence=getOperatorIntelligence((offer||{}).operator);
+  const text=[intelligence&&intelligence.category,intelligence&&intelligence.guidance,(offer||{}).name,(offer||{}).tags,(offer||{}).incl].join(" ").toLowerCase();
+  const values=[];
+  if(/adult/.test(text)) values.push("Adults Only");
+  if(/family/.test(text)) values.push("Family Friendly");
+  if(/premium/.test(text)) values.push("Premium");
+  if(/luxury/.test(text)) values.push("Luxury");
+  if(/mainstream|package|value|accessible|large-ship/.test(text)) values.push("Mainstream");
+  if(/heritage|classic|traditional/.test(text)) values.push("Classic Cruise");
+  return values;
+}
+function parseAiCopyNumber(value){
+  const match=String(value || "").replace(/,/g,"").match(/\d+(?:\.\d+)?/);
+  return match ? Number(match[0]) : null;
+}
+function formatAiCopyCurrencyRange(numbers){
+  if(!numbers.length) return "";
+  const min=Math.min(...numbers), max=Math.max(...numbers);
+  const format=n=>`£${Math.round(n).toLocaleString("en-GB")}pp`;
+  return min===max ? format(min) : `${format(min)} – ${format(max)}`;
+}
+function formatAiCopyNightsRange(numbers){
+  if(!numbers.length) return "";
+  const min=Math.min(...numbers), max=Math.max(...numbers);
+  const avg=Math.round(numbers.reduce((sum,n)=>sum+n,0)/numbers.length);
+  return min===max ? `${min} nights` : `${min}–${max} nights${numbers.length>1 ? ` (average ${avg})` : ""}`;
+}
+function buildAiCopyCampaignMixSummary(intelligence){
+  const parts=[];
+  if((intelligence.regions||[]).length) parts.push(`${intelligence.regions.join(" and ")} itineraries`);
+  if((intelligence.audiences||[]).length) parts.push(intelligence.audiences.map(v=>v.toLowerCase()).join(", "));
+  if((intelligence.cruiseTypes||[]).length) parts.push(intelligence.cruiseTypes.map(v=>v.toLowerCase()).join(", "));
+  if((intelligence.operators||[]).length) parts.push(`from ${intelligence.operators.join(", ")}`);
+  return parts.length ? `A varied cruise campaign featuring ${parts.join(" with ")}.` : "";
+}
+function buildAiCopyCampaignIntelligence(offerItems){
+  const items=(offerItems || []).filter(item=>item && isAiCopyLoadedOffer(item.offer));
+  const offersOnly=items.map(item=>item.offer || {});
+  const prices=offersOnly.map(offer=>parseAiCopyNumber(offer.price)).filter(n=>Number.isFinite(n));
+  const nights=offersOnly.map(offer=>parseAiCopyNumber(offer.nights)).filter(n=>Number.isFinite(n));
+  const airport=document.getElementById("g-airport")?.value || "";
+  const intelligence={
+    loadedOfferCount:items.length,
+    operators:uniqueAiCopyValues(offersOnly.map(getAiCopyOfferOperatorDisplay)),
+    ships:uniqueAiCopyValues(offersOnly.map(offer=>offer.ship)),
+    regions:uniqueAiCopyValues(offersOnly.map(getAiCopyOfferRegion)),
+    cruiseTypes:uniqueAiCopyValues(offersOnly.map(getAiCopyCruiseType)),
+    audiences:uniqueAiCopyValues(offersOnly.flatMap(getAiCopyAudienceType)),
+    priceRange:formatAiCopyCurrencyRange(prices),
+    nightsRange:formatAiCopyNightsRange(nights),
+    departureAirports:uniqueAiCopyValues([airport]),
+    commonUsps:uniqueAiCopyValues(offersOnly.flatMap(offer=>splitAiCopyList(offer.tags || offer.incl))),
+    campaignMix:""
+  };
+  intelligence.campaignMix=buildAiCopyCampaignMixSummary(intelligence);
+  return intelligence;
+}
+function buildAiCopyCampaignIntelligenceSection(offerItems){
+  const data=buildAiCopyCampaignIntelligence(offerItems);
+  const sections=[["Loaded offers",data.loadedOfferCount || ""]];
+  [["Operators",data.operators],["Ships",data.ships],["Regions",data.regions],["Cruise Types",data.cruiseTypes],["Audiences",data.audiences]].forEach(([label,values])=>{ if(values.length) sections.push([label,values.join("\n")]); });
+  [["Price Range",data.priceRange],["Nights",data.nightsRange],["Departure Airports",data.departureAirports.join("\n")],["Common USPs",data.commonUsps.join("\n")],["Campaign Mix",data.campaignMix]].forEach(([label,value])=>{ if(String(value||"").trim()) sections.push([label,value]); });
+  if(!data.loadedOfferCount) return "";
+  return ["Campaign Intelligence",...sections.flatMap(([label,value])=>["",`${label}:`,String(value)])].join("\n");
+}
+function updateAiCopyCampaignContextPreview(){
+  const preview=document.getElementById("ai-campaign-context-preview");
+  if(!preview) return;
+  const scope=getAiCopyGenerationScope();
+  if(scope.key==="current-card"){
+    preview.classList.remove("active");
+    preview.innerHTML="";
+    return;
+  }
+  try { save(); } catch(e) {}
+  const items=getAiCopyLoadedOfferItems();
+  const data=buildAiCopyCampaignIntelligence(items);
+  if(!data.loadedOfferCount){
+    preview.classList.remove("active");
+    preview.innerHTML="";
+    return;
+  }
+  const lines=[data.operators.slice(0,4).join(" • "),data.regions.slice(0,4).join(" • ")].filter(Boolean);
+  preview.innerHTML=`<strong>${data.loadedOfferCount} offer${data.loadedOfferCount===1?"":"s"} loaded</strong>${lines.map(line=>`<span>${line}</span>`).join("")}`;
+  preview.classList.add("active");
+}
 function getAiCopySelectedOffer(){
   try { save(); } catch(e) {}
   return offers[cur] || {};
@@ -1891,9 +2018,11 @@ function buildAiCopyCampaignDetails(){
 function buildAiCopyLoadedOfferPromptDetails(offerItems,options={}){
   const items=(offerItems||[]).length ? offerItems : [getAiCopySelectedOfferItem()];
   const offerBlocks=items.map((item,position)=>buildAiCopyOfferDetails(item.offer,{offerNumber:items.length>1 ? item.index+1 || position+1 : 0,includeDepartureAirport:items.length===1}).join("\n")).filter(Boolean);
+  const campaignIntelligence=items.length>1 ? buildAiCopyCampaignIntelligenceSection(items) : "";
   return [
     items.length>1 ? "Use every loaded offer included below." : "Use the offer included below.",
-    "",
+    campaignIntelligence ? `
+${campaignIntelligence}` : "",
     items.length>1 ? "Offer Details:" : "Offer Details:",
     offerBlocks.length ? offerBlocks.join("\n\n") : "No offer details have been loaded yet."
   ].join("\n");
@@ -1904,6 +2033,8 @@ function buildAiCopyCampaignPromptDetails(offerItems){
   const offerBlocks=loadedOffers.map(item=>buildAiCopyOfferDetails(item.offer,{offerNumber:item.index+1}).join("\n")).filter(Boolean);
   return [
     "This is a campaign summary. Create campaign-level marketing copy that represents the full campaign, not just one card.",
+    "",
+    buildAiCopyCampaignIntelligenceSection(loadedOffers),
     "",
     "Campaign Details:",
     campaignRows.length ? campaignRows.join("\n") : "No campaign details have been loaded yet.",
@@ -5039,11 +5170,13 @@ function initCampaignHistoryListeners(){
   document.addEventListener("input", event=>{
     const el=event.target;
     if(!isCampaignHistoryMeaningfulTarget(el)) return;
+    if(typeof updateAiCopyCampaignContextPreview === "function") updateAiCopyCampaignContextPreview();
     scheduleCampaignHistoryEntry("Campaign field edit", isCampaignHistoryTextInput(el) ? CAMPAIGN_HISTORY_TEXT_DEBOUNCE_MS : 280);
   });
   document.addEventListener("change", event=>{
     const el=event.target;
     if(!isCampaignHistoryMeaningfulTarget(el)) return;
+    if(typeof updateAiCopyCampaignContextPreview === "function") updateAiCopyCampaignContextPreview();
     if(el.type === "file") return;
     scheduleCampaignHistoryEntry("Campaign option change", isCampaignHistoryTextInput(el) ? CAMPAIGN_HISTORY_TEXT_DEBOUNCE_MS : 0);
   });

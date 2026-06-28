@@ -236,6 +236,11 @@ test('AI Copy All Loaded Cards scope includes every loaded offer', () => {
   context.generateAiCopyPrompt();
 
   const prompt = elements['ai-prompt-output'].value;
+  assert.match(prompt, /Campaign Intelligence/);
+  assert.match(prompt, new RegExp('Loaded offers:\n2'));
+  assert.match(prompt, new RegExp('Operators:\nCelebrity Cruises\nCunard'));
+  assert.match(prompt, new RegExp('Regions:\nMediterranean\nNorwegian Fjords'));
+  assert.match(prompt, new RegExp('Price Range:\n£999pp – £1,299pp'));
   assert.match(prompt, /Offer 1:\nOperator: Celebrity Cruises/);
   assert.match(prompt, /Offer 3:\nOperator: Cunard/);
 });
@@ -253,7 +258,10 @@ test('AI Copy Campaign Summary scope uses all loaded offers as campaign-level co
 
   const prompt = elements['ai-prompt-output'].value;
   assert.match(prompt, /Create campaign-level marketing copy/);
-  assert.match(prompt, /Campaign Details:/);
+  assert.match(prompt, new RegExp('Campaign Intelligence[\\s\\S]*Loaded offers:\\n2[\\s\\S]*Campaign Details:'));
+  assert.match(prompt, new RegExp('Operators:\\nCelebrity Cruises\\nCunard'));
+  assert.match(prompt, new RegExp('Cruise Types:\\nOcean Cruise'));
+  assert.match(prompt, new RegExp('Campaign Mix:\\nA varied cruise campaign'));
   assert.match(prompt, /Title: Greek Islands/);
   assert.match(prompt, /Title: Fjords/);
 });
