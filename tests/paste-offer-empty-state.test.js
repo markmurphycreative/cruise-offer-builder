@@ -281,6 +281,75 @@ Transfers Included`, 'Transfers Included - Inside Cabin'],
   }
 });
 
+test('permanent PMU: Paste Offer keeps inclusion labels and cabin types out of parsed ports', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  const raw = `Celebrity Cruises
+Mediterranean Fly Cruise
+Celebrity Ascent
+Flights included from Newcastle
+Premium Drinks Package
+Tips Included
+Transfers Included
+Flights Included
+WiFi Included
+Inside Cabin
+Ocean View Cabin
+Balcony Cabin
+7 nights
+Full Board
+£1299pp
+You'll Visit
+Barcelona
+Marseille
+Valencia`;
+
+  const result = harness.context.parseOfferText(raw, { renderIntelligence: false });
+
+  assert.equal(result.parsed.incl, 'Newcastle Flights - Transfers Included - Inside Cabin');
+  assert.equal(result.parsed.ports, 'Barcelona • Marseille • Valencia');
+  assert.doesNotMatch(result.parsed.ports, /Newcastle|Premium Drinks Package|Tips Included|Transfers Included|Flights Included|WiFi Included|Inside Cabin|Ocean View Cabin|Balcony Cabin/);
+});
+
+test('permanent PMU: Newcastle Flights displays when airport exists and generic Flights Included is the no-airport fallback', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  const withAirport = harness.context.parseOfferText(`Flying from Newcastle
+Inside Cabin
+No Transfers`, { renderIntelligence: false });
+  const withoutAirport = harness.context.parseOfferText(`Flights Included
+Inside Cabin`, { renderIntelligence: false });
+
+  assert.equal(withAirport.parsed.incl, 'Newcastle Flights - Inside Cabin');
+  assert.equal(withoutAirport.parsed.incl, 'Flights Included');
+  assert.doesNotMatch(withAirport.parsed.incl, /^Flights Included\b/);
+});
+
+test('permanent PMU: Paste Offer raw text persists through the Load Offer parse path', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  const raw = `Celebrity Cruises
+Celebrity Ascent
+Flying from Newcastle
+Inside Cabin
+7 nights
+Full Board
+£1299pp
+Itinerary
+Barcelona
+Marseille`;
+
+  harness.parse(raw);
+
+  assert.equal(harness.rawPaste.value, raw);
+  assert.equal(harness.context.offers[0].ship, 'Celebrity Ascent');
+});
+
+test('permanent PMU: exports, POA helpers, and Paste Offer entry points remain wired', () => {
+  assert.match(html, /function updateExportFilenames\(\)\{\}/);
+  assert.match(html, /function getOfferIntelligenceAirport\(parsed,rawText\)/);
+  assert.match(html, /function getPoaAssistedApplySuggestions\(parsed,rawText,inclusions,effectiveOperator\)/);
+  assert.match(html, /<button class="parse-btn" onclick="parseOffer\(\)">/);
+  assert.match(html, /<textarea id="raw-paste"/);
+});
+
 test('Paste Offer preserves Celebrity card inclusions and Norwegian port suffixes', () => {
   const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
   const offers = [

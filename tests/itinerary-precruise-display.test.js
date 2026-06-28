@@ -200,6 +200,77 @@ test('locked cruise builder sailing line, inclusion typography, and itinerary se
   }
 });
 
+test('permanent PMU: locked sailing and visit lines never use inclusion-only values as ports', () => {
+  const { renderCardHTML } = createRenderContext();
+  const lockedCases = [
+    {
+      label: 'airport excluded from sailing and visit copy while embarkation remains',
+      data: { name: 'Mediterranean Fly Cruise', ship: 'Celebrity Ascent', incl: 'Newcastle Flights Included - Inside Cabin', ports: 'Barcelona • Marseille • Valencia' },
+      sailing: 'Sailing on Celebrity Ascent from Barcelona',
+      visit: ['Barcelona', 'Marseille', 'Valencia'],
+      forbidden: ['Newcastle']
+    },
+    {
+      label: 'Port of Tyne display exception',
+      data: { name: 'No Fly Mini Cruise', ship: 'Queen Anne', incl: 'Ocean View Cabin', ports: 'Newcastle • Amsterdam • Newcastle' },
+      sailing: 'Sailing on Queen Anne from Port of Tyne',
+      visit: ['Port of Tyne', 'Amsterdam'],
+      forbidden: ['Newcastle']
+    },
+    {
+      label: 'premium inclusions are not itinerary ports',
+      data: { name: 'Greek Island Glow', ship: 'Resilient Lady', incl: 'Premium Drinks Package - Tips Included - Transfers Included - Flights Included - WiFi Included - Balcony Cabin', ports: 'Athens • Mykonos • Santorini' },
+      sailing: 'Sailing on Resilient Lady from Athens',
+      visit: ['Athens', 'Mykonos', 'Santorini'],
+      forbidden: ['Premium Drinks Package', 'Tips Included', 'Transfers Included', 'Flights Included', 'WiFi Included', 'Balcony Cabin']
+    }
+  ];
+
+  for (const scenario of lockedCases) {
+    const card = renderCardHTML(scenario.data);
+    const text = card.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ');
+    const sailingText = textBetween(text, scenario.sailing, "You'll Visit");
+    const visitText = textBetween(text, "You'll Visit", 'T&Cs Apply');
+
+    assert.ok(text.includes(scenario.sailing), scenario.label);
+    for (const expected of scenario.visit) assert.ok(visitText.includes(expected), `${scenario.label}: ${expected}`);
+    for (const forbidden of scenario.forbidden) {
+      assert.equal(sailingText.includes(forbidden), false, `${scenario.label}: sailing contains ${forbidden}`);
+      assert.equal(visitText.includes(forbidden), false, `${scenario.label}: visit contains ${forbidden}`);
+    }
+  }
+});
+
+test('permanent PMU: hyphen separators have no leading, trailing, or wrapping orphans', () => {
+  const { normaliseSubtitleSeparator, renderCardInclusionLayout } = createRenderContext();
+  const cabinDisplays = [
+    ['Inside Cabin', 'Inside Cabin'],
+    ['Ocean View Cabin', 'Ocean View Cabin'],
+    ['Balcony Cabin', 'Balcony Cabin']
+  ];
+
+  for (const [input, expected] of cabinDisplays) {
+    assert.equal(normaliseSubtitleSeparator(input), expected);
+  }
+
+  const renderedLines = renderCardInclusionLayout('Newcastle Flights Included • Transfers Included • Balcony Cabin', {
+    html: false,
+    safeWidth: 520,
+    measureText: text => ({
+      'Newcastle Flights Included': 260,
+      'Newcastle Flights Included - Transfers Included': 510,
+      'Newcastle Flights Included - Transfers Included - Balcony Cabin': 760,
+      'Balcony Cabin': 180
+    }[text] ?? 180)
+  }).split('\n');
+
+  assert.deepEqual(renderedLines, ['Newcastle Flights Included - Transfers Included', 'Balcony Cabin']);
+  for (const line of renderedLines) {
+    assert.doesNotMatch(line, /^\s*-/);
+    assert.doesNotMatch(line, /-\s*$/);
+  }
+});
+
 test('card subtitle separators render hyphen separators while itinerary separators stay bullets', () => {
   const { renderCardHTML, normaliseSubtitleSeparator } = createRenderContext();
   const cases = [
