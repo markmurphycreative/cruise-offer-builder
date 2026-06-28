@@ -7497,7 +7497,9 @@ function getRenderedItineraryPorts(str){
     .split("•")
     .map(s=>s.trim())
     .filter(Boolean);
-  return removeDuplicateReturnToOriginDestination(ports);
+  const renderedPorts=removeDuplicateReturnToOriginDestination(ports);
+  if(/^(?:newcastle|newcastle upon tyne|newcastle, england)$/i.test(String(renderedPorts[0]||"").trim())) renderedPorts[0]="Port of Tyne";
+  return renderedPorts;
 }
 function cleanEmbarkationPortDisplay(port){
   return String(port||"").split(",").map(part=>part.trim()).filter(Boolean)[0]||"";
@@ -7513,7 +7515,8 @@ function getEmbarkationPortCardDisplay(str){
   const text=String(firstPort||"").trim();
   const forMatch=text.match(/^([^,]+),\s*for\s+([^,]+)/i);
   if(forMatch&&forMatch[2]) return forMatch[2].trim();
-  return cleanEmbarkationPortDisplay(text);
+  const display=cleanEmbarkationPortDisplay(text);
+  return typeof getCruiseDepartureWording==="function" ? getCruiseDepartureWording(display) : (/^(?:newcastle|newcastle upon tyne|newcastle, england)$/i.test(display)?"Port of Tyne":display);
 }
 function chunkBullets(str,options){
   const ports=getRenderedItineraryPorts(str);

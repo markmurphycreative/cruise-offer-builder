@@ -152,6 +152,54 @@ test('destination normalisation improves readability without trailing bullet opp
   assert.doesNotMatch(rendered, /<span class="port-separator">•<\/span>\s*<\/span>/);
 });
 
+
+test('locked cruise builder sailing line, inclusion typography, and itinerary separation', () => {
+  const { renderCardHTML } = createRenderContext();
+  const cases = [
+    {
+      label: 'Celebrity fly cruise',
+      data: { name: 'Mediterranean', ship: 'Celebrity Equinox', incl: 'Newcastle Flights • Inside Cabin', ports: 'Barcelona • Rome • Naples' },
+      sailing: 'Sailing on Celebrity Equinox from Barcelona',
+      inclusion: 'Newcastle Flights',
+      visit: 'Barcelona',
+      absent: ['Newcastle']
+    },
+    {
+      label: 'Virgin Voyages',
+      data: { name: 'Greek Island Glow', ship: 'Resilient Lady', incl: 'Premium Drinks Package • Tips Included • WiFi Included • Balcony Cabin', ports: 'Athens • Mykonos • Santorini' },
+      sailing: 'Sailing on Resilient Lady from Athens',
+      inclusion: 'Premium Drinks Package',
+      visit: 'Athens',
+      absent: ['Premium Drinks Package']
+    },
+    {
+      label: 'Cunard Newcastle sailing',
+      data: { name: 'No-Fly Mini Cruise', ship: 'Queen Anne', incl: 'Newcastle Flights • Ocean View Cabin', ports: 'Newcastle • Amsterdam • Newcastle' },
+      sailing: 'Sailing on Queen Anne from Port of Tyne',
+      inclusion: 'Newcastle Flights',
+      visit: 'Port of Tyne',
+      absent: ['Newcastle']
+    }
+  ];
+
+  for (const scenario of cases) {
+    const card = renderCardHTML(scenario.data);
+    const text = card.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ');
+    const sailingText = textBetween(text, scenario.sailing, "You'll Visit");
+    const visitText = textBetween(text, "You'll Visit", 'T&Cs Apply');
+
+    assert.ok(text.includes(scenario.sailing), scenario.label);
+    assert.ok(text.includes(scenario.inclusion), scenario.label);
+    assert.ok(visitText.includes(scenario.visit), scenario.label);
+    for (const forbidden of scenario.absent) {
+      assert.equal(visitText.includes(forbidden), false, scenario.label);
+    }
+    assert.doesNotMatch(sailingText, /Premium Drinks Package|Tips Included|WiFi|Flights|Transfers|Cabin/, scenario.label);
+    const inclusionHtml = textBetween(card, '<div class="incl">', '</div><div class="sname">');
+    assert.doesNotMatch(inclusionHtml, /<span class="incl-line"><span class="incl-segment">|^\s*-|-\s*$|•|·/, scenario.label);
+  }
+});
+
 test('card subtitle separators render hyphen separators while itinerary separators stay bullets', () => {
   const { renderCardHTML, normaliseSubtitleSeparator } = createRenderContext();
   const cases = [
