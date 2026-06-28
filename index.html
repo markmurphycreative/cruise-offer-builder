@@ -6356,13 +6356,24 @@ function getStandalonePortLines(lines,options){
   return portLines.length>=3 ? portLines : [];
 }
 const TRANSIENT_PASTE_OFFER_KEYS=["rawPaste","pasteText","parsedRaw"];
+const PERSISTED_PASTE_OFFER_KEY="_rawPastedOfferText";
 function stripTransientPasteOfferFields(offer){
   if(!offer) return offer;
   TRANSIENT_PASTE_OFFER_KEYS.forEach(key=>{ delete offer[key]; });
   return offer;
 }
-function resetPasteOfferState(){
-  const raw=document.getElementById("raw-paste"); if(raw) raw.value="";
+function saveRawPasteForOffer(index){
+  const raw=document.getElementById("raw-paste");
+  if(!raw||!offers||!offers[index]) return;
+  offers[index][PERSISTED_PASTE_OFFER_KEY]=raw.value||"";
+}
+function restoreRawPasteForOffer(index){
+  const raw=document.getElementById("raw-paste");
+  if(raw) raw.value=(offers&&offers[index]&&offers[index][PERSISTED_PASTE_OFFER_KEY])||"";
+}
+function resetPasteOfferState(options){
+  const preserveRaw=!!(options&&options.preserveRaw);
+  const raw=document.getElementById("raw-paste"); if(raw&&!preserveRaw) raw.value="";
   const status=document.getElementById("parse-result"); if(status){status.textContent="";status.className="parse-result";}
   if(typeof clearOfferIntelligencePanel==="function") clearOfferIntelligencePanel();
   cancelParsedOffer();
@@ -6396,6 +6407,7 @@ function resetActiveOfferFromEmptyPaste(){
 let pasteOfferClearedByInput=false;
 function handlePasteOfferInput(event){
   const raw=(document.getElementById("raw-paste")||{}).value||"";
+  if(offers&&offers[cur]) offers[cur]._rawPastedOfferText=raw;
   const hasText=!!raw.trim();
   const isUndoRestore=!!(event && /historyUndo|historyRedo/i.test(event.inputType||""));
   if(!hasText){
@@ -7345,7 +7357,7 @@ function prepareOfferSlotForParsedOffer(parsed){
   if(!offers[cur]) offers[cur]={};
   return true;
 }
-function applyParsedOffer(){if(!pendingParseResult) return; if(typeof isOfferLocked==="function" && isOfferLocked(cur)){ setParseStatus(getLockedOfferMessage(cur),"low"); cancelParsedOffer(); return; } const {parsed,confidence,rawText}=pendingParseResult; if(!prepareOfferSlotForParsedOffer(parsed)){ setParseStatus('No offer fields detected','low'); cancelParsedOffer(); return; } if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(cur); const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offers[cur].operator)){ continue; } const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; offers[cur]._tagsManualOverride=false; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
+function applyParsedOffer(){if(!pendingParseResult) return; if(typeof isOfferLocked==="function" && isOfferLocked(cur)){ setParseStatus(getLockedOfferMessage(cur),"low"); cancelParsedOffer(); return; } const {parsed,confidence,rawText}=pendingParseResult; if(!prepareOfferSlotForParsedOffer(parsed)){ setParseStatus('No offer fields detected','low'); cancelParsedOffer(); return; } const pasteSourceText=rawText||((document.getElementById("raw-paste")||{}).value||""); if(pasteSourceText) offers[cur]._rawPastedOfferText=pasteSourceText; if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(cur); const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offers[cur].operator)){ continue; } const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; offers[cur]._tagsManualOverride=false; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
   touched.forEach(el=>{el.classList.remove('parse-field-flash'); void el.offsetWidth; el.classList.add('parse-field-flash'); setTimeout(()=>el.classList.remove('parse-field-flash'),1700);});
   const applied=touched.length; const summary=typeof getOfferIntelligenceSummary==="function"?getOfferIntelligenceSummary(parsed,rawText):{count:applied,label:(confidence==='high'?'High Confidence':confidence==='partial'?'Partial Match':'Needs Review'),level:confidence};
   setParseStatus(`✓ Detected ${summary.count} fields — ${summary.label}`,summary.level); cancelParsedOffer(); rv(); updateAllStatus(); genUtm(); checkPortsWarn(); updateExportFilenames(); runSpellQA(); if(applied){ if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Offer loaded"); queueAutosave(); }}
@@ -7416,9 +7428,11 @@ function cleanPortsDisplay(str){
     .filter(Boolean)
     .join(" • ");
 }
-const RETURN_EMBARKATION_PORTS=new Set(["southampton","newcastle","barcelona","athens","miami","fort lauderdale","tampa","port canaveral","vancouver","seattle","singapore","dubai"]);
+const RETURN_EMBARKATION_PORTS=new Set(["southampton","newcastle","newcastle upon tyne","port of tyne","barcelona","athens","miami","fort lauderdale","tampa","port canaveral","vancouver","seattle","singapore","dubai"]);
 function getDestinationComparisonValue(destination){
-  return cleanEmbarkationPortDisplay(destination).trim().toLowerCase();
+  const value=cleanEmbarkationPortDisplay(destination).trim().toLowerCase();
+  if(value==="port of tyne"||value==="newcastle upon tyne"||value==="newcastle, england") return "newcastle";
+  return value;
 }
 function removeDuplicateReturnToOriginDestination(ports){
   const renderedPorts=Array.isArray(ports)?ports.slice():[];
@@ -8025,6 +8039,7 @@ function saveEditorToOffer(){
   if(typeof isOfferLocked==="function" && isOfferLocked(cur)) return;
   try { autoBoardLabel(); } catch(e){}
   const o = stripTransientPasteOfferFields(offers[cur] || (offers[cur] = {}));
+  saveRawPasteForOffer(cur);
   FLDS.forEach(f=>{
     const e=document.getElementById('f-'+f);
     if(e) o[f]=e.value;
@@ -8053,6 +8068,7 @@ function saveEditorToOffer(){
 
 function loadOfferToEditor(i){
   const o = stripTransientPasteOfferFields(offers[i] || {});
+  restoreRawPasteForOffer(i);
   if(o.operator||o.name||o.ship||o.price||o.incl||o.ports) applyOperatorTopBarUspDefault(o,o.operator||"");
   normalizeCropPositionForOffer(o);
   if(o.tags) o.tags=normalizeTopBarUspText(o.tags);
@@ -8180,6 +8196,8 @@ processSheetCSV = function(csv,status){
 // ═══════════════════════════════════════════════════════
 function visibleFieldsToData(){
   const base = stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}));
+  const rawPaste=document.getElementById("raw-paste");
+  if(rawPaste) base[PERSISTED_PASTE_OFFER_KEY]=rawPaste.value||"";
   FLDS.forEach(function(f){
     const e = document.getElementById('f-' + f);
     if(e) base[f] = e.value || '';
@@ -8400,7 +8418,7 @@ function sv(i){
   const switched = next !== cur;
   try { commitVisibleFields(); } catch(e) { console.warn('Could not save current offer before tab switch', e); }
   cur = next;
-  if(switched) resetPasteOfferState();
+  if(switched) resetPasteOfferState({preserveRaw:true});
   syncOfferSelector();
   try { loadOfferToEditor(cur); } catch(e) { try { load(cur); } catch(_e){} }
   try { updateLockUI(); } catch(e){}
