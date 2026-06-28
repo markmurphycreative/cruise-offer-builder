@@ -7522,8 +7522,7 @@ function isEmbarkationPortForVisitRemoval(port){
 }
 function getRenderedItineraryPorts(str){
   const ports=removeDuplicateReturnToOriginDestination(getCleanItineraryPorts(str));
-  const renderedPorts=ports.length>1&&isEmbarkationPortForVisitRemoval(ports[0])?ports.slice(1):ports.slice();
-  return renderedPorts.map(formatRenderedItineraryPort).filter(Boolean);
+  return ports.map(formatRenderedItineraryPort).filter(Boolean);
 }
 function cleanEmbarkationPortDisplay(port){
   return String(port||"").split(",").map(part=>part.trim()).filter(Boolean)[0]||"";
