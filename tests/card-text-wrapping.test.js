@@ -149,8 +149,8 @@ test('recognised embarkation return port is removed only from the final rendered
   const rendered = context.chunkBullets('Southampton • Le Havre • Southampton • Bilbao • La Coruna • Vigo • Cherbourg • Southampton');
   const text = renderedLines(rendered).map(textFromRenderedLine).join(' • ');
 
-  assert.equal(text, 'Le Havre • Southampton • Bilbao • La Coruna • Vigo • Cherbourg');
-  assert.equal((text.match(/Southampton/g) || []).length, 1);
+  assert.equal(text, 'Southampton • Le Havre • Southampton • Bilbao • La Coruna • Vigo • Cherbourg');
+  assert.equal((text.match(/Southampton/g) || []).length, 2);
 });
 
 
@@ -160,25 +160,26 @@ test("Las Palmas round-trip You\'ll Visit removes final duplicate embarkation po
   const rendered = context.chunkBullets('Las Palmas, Gran Canaria • Arrecife • Agadir • Funchal • Santa Cruz • Las Palmas, Gran Canaria');
   const text = renderedLines(rendered).map(textFromRenderedLine).join(' • ');
 
-  assert.equal(text, 'Arrecife • Agadir • Funchal • Santa Cruz');
-  assert.doesNotMatch(text, /Las Palmas/);
+  assert.equal(text, 'Las Palmas, Gran Canaria • Arrecife • Agadir • Funchal • Santa Cruz');
+  assert.equal((text.match(/Las Palmas/g) || []).length, 1);
 });
 
 
-test("permanent PMU: You'll Visit removes the embarkation port for UK and fly-cruise starts", () => {
+test("permanent PMU: You'll Visit keeps the start port and removes only a final duplicate return", () => {
   const context = createItineraryContext();
   const examples = [
-    ['Port of Tyne • Amsterdam • Bergen', /Port of Tyne|Newcastle/],
-    ['Southampton • Lisbon • Vigo', /Southampton/],
-    ['Dover • Rotterdam • Hamburg', /Dover/],
-    ['Barcelona • Marseille • Rome', /Barcelona/],
-    ['Athens (Piraeus) • Mykonos • Santorini', /Athens|Piraeus/],
-    ['Las Palmas • Arrecife • Funchal', /Las Palmas/]
+    ['Port of Tyne • Amsterdam • Bergen • Port of Tyne', 'Port of Tyne • Amsterdam • Bergen', /Port of Tyne/g],
+    ['Southampton • Lisbon • Vigo • Southampton', 'Southampton • Lisbon • Vigo', /Southampton/g],
+    ['Dover • Rotterdam • Hamburg • Dover', 'Dover • Rotterdam • Hamburg', /Dover/g],
+    ['Barcelona • Marseille • Rome • Barcelona', 'Barcelona • Marseille • Rome', /Barcelona/g],
+    ['Athens (Piraeus) • Mykonos • Santorini • Athens (Piraeus)', 'Athens, Piraeus • Mykonos • Santorini', /Athens/g],
+    ['Las Palmas • Arrecife • Funchal • Las Palmas', 'Las Palmas • Arrecife • Funchal', /Las Palmas/g]
   ];
 
-  for (const [ports, forbidden] of examples) {
+  for (const [ports, expected, startPattern] of examples) {
     const text = renderedLines(context.chunkBullets(ports)).map(textFromRenderedLine).join(' • ');
-    assert.doesNotMatch(text, forbidden, `${ports} rendered embarkation in You'll Visit as ${text}`);
+    assert.equal(text, expected, `${ports} rendered as ${text}`);
+    assert.equal((text.match(startPattern) || []).length, 1, `${ports} should render start once as ${text}`);
   }
 });
 
@@ -188,7 +189,7 @@ test('different start and end destinations remain rendered', () => {
   const rendered = context.chunkBullets('Southampton • Paris (Le Havre), France • Bilbao, Spain • Barcelona, Spain');
   const text = renderedLines(rendered).map(textFromRenderedLine).join(' • ');
 
-  assert.equal(text, 'Paris, Le Havre, France • Bilbao, Spain • Barcelona, Spain');
+  assert.equal(text, 'Southampton • Paris, Le Havre, France • Bilbao, Spain • Barcelona, Spain');
   assert.match(rendered, /<span class="port-unit">Barcelona,&nbsp;Spain<\/span>/);
 });
 
@@ -379,8 +380,9 @@ test("Newcastle round-trip You'll Visit displays Port of Tyne once without final
   const rendered = context.chunkBullets('Newcastle • Amsterdam • Bergen • Olden • Newcastle');
   const text = renderedLines(rendered).map(textFromRenderedLine).join(' • ');
 
-  assert.equal(text, 'Amsterdam • Bergen • Olden');
-  assert.doesNotMatch(text, /Port of Tyne|Newcastle/);
+  assert.equal(text, 'Port of Tyne • Amsterdam • Bergen • Olden');
+  assert.equal((text.match(/Port of Tyne/g) || []).length, 1);
+  assert.doesNotMatch(text, /Newcastle/);
 });
 
 test('subtitle renders flights, transfers, and cabin as one compact grouped inclusion block', () => {

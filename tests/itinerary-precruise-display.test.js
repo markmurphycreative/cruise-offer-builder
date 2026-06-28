@@ -168,7 +168,7 @@ test('locked cruise builder sailing line, inclusion typography, and itinerary se
       sailing: 'Sailing on Celebrity Equinox from Barcelona',
       inclusion: 'Newcastle Flights',
       visit: 'Rome',
-      absent: ['Newcastle', 'Barcelona']
+      absent: ['Newcastle']
     },
     {
       label: 'Virgin Voyages',
@@ -176,7 +176,7 @@ test('locked cruise builder sailing line, inclusion typography, and itinerary se
       sailing: 'Sailing on Resilient Lady from Athens',
       inclusion: 'Premium Drinks Package',
       visit: 'Mykonos',
-      absent: ['Premium Drinks Package', 'Athens']
+      absent: ['Premium Drinks Package']
     },
     {
       label: 'Cunard Newcastle sailing',
@@ -184,7 +184,7 @@ test('locked cruise builder sailing line, inclusion typography, and itinerary se
       sailing: 'Sailing on Queen Anne from Port of Tyne',
       inclusion: 'Newcastle Flights',
       visit: 'Amsterdam',
-      absent: ['Newcastle', 'Port of Tyne']
+      absent: ['Newcastle']
     }
   ];
 
@@ -214,21 +214,21 @@ test('permanent PMU: locked sailing and visit lines never use inclusion-only val
       data: { name: 'Mediterranean Fly Cruise', ship: 'Celebrity Ascent', incl: 'Newcastle Flights - Inside Cabin', ports: 'Barcelona • Marseille • Valencia' },
       sailing: 'Sailing on Celebrity Ascent from Barcelona',
       visit: ['Marseille', 'Valencia'],
-      forbidden: ['Newcastle', 'Barcelona']
+      forbidden: ['Newcastle']
     },
     {
       label: 'Port of Tyne display exception',
       data: { name: 'No Fly Mini Cruise', ship: 'Queen Anne', incl: 'Ocean View Cabin', ports: 'Newcastle • Amsterdam • Newcastle' },
       sailing: 'Sailing on Queen Anne from Port of Tyne',
       visit: ['Amsterdam'],
-      forbidden: ['Newcastle', 'Port of Tyne']
+      forbidden: ['Newcastle']
     },
     {
       label: 'premium inclusions are not itinerary ports',
       data: { name: 'Greek Island Glow', ship: 'Resilient Lady', incl: 'Premium Drinks Package - Tips Included - Transfers Included - Flights Included - WiFi Included - Balcony Cabin', ports: 'Athens • Mykonos • Santorini' },
       sailing: 'Sailing on Resilient Lady from Athens',
       visit: ['Mykonos', 'Santorini'],
-      forbidden: ['Athens', 'Premium Drinks Package', 'Tips Included', 'Transfers Included', 'Flights Included', 'WiFi Included', 'Balcony Cabin']
+      forbidden: ['Premium Drinks Package', 'Tips Included', 'Transfers Included', 'Flights Included', 'WiFi Included', 'Balcony Cabin']
     }
   ];
 
@@ -439,7 +439,7 @@ test('cards without pre-cruise stay keep the existing itinerary section HTML whi
   const card = renderCardHTML({ ship: 'Liberty of the Seas', ports: 'Southampton • Lisbon • Southampton', basis: 'Based On 2 Adults Sharing' });
 
   assert.match(card, /<div class="sname">Sailing on Liberty of the Seas from Southampton<\/div>/);
-  assert.match(card, /<div class="vsec"><div class="visit-inner"><div class="vtit">You'll Visit<\/div><div class="vpts"><span class="port-line"><span class="port-unit">Lisbon<\/span><\/span><\/div><\/div><\/div>/);
+  assert.match(card, /<div class="vsec"><div class="visit-inner"><div class="vtit">You'll Visit<\/div><div class="vpts"><span class="port-line"><span class="port-unit">Southampton<\/span> <span class="port-separator">•<\/span> <span class="port-unit">Lisbon<\/span><\/span><\/div><\/div><\/div>/);
   assert.doesNotMatch(card, /precruise-note|Pre-Cruise|Bed & Breakfast/);
 });
 
@@ -449,7 +449,7 @@ test('card You\'ll Visit output excludes cruise title when using cleaned parsed 
   const card = renderCardHTML({ name: 'Norwegian Fjords', ship: 'Queen Anne', ports: 'Southampton • Stavanger • Olden • Geiranger • Bergen • Southampton' });
   const destinations = textBetween(card, '<div class="vpts">', '</div></div></div><div class="tcbar">');
 
-  assert.doesNotMatch(destinations, /Southampton/);
+  assert.equal((destinations.match(/Southampton/g) || []).length, 1);
   assert.match(destinations, /Stavanger/);
   assert.doesNotMatch(destinations, /Norwegian\s*Fjords/);
 });
