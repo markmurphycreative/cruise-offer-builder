@@ -128,14 +128,14 @@ test('long destinations wrap according to rendered width without overflowing', (
   for (const line of lines) assert.ok(measureText(line) <= 530, `${line} overflowed safe width`);
 });
 
-test('duplicate return-to-origin destination is retained when it is not a recognised embarkation port', () => {
+test('final duplicate return-to-origin destination is removed for any matching embarkation port', () => {
   const context = createItineraryContext();
 
   const rendered = context.chunkBullets(' Corfu • Souda (for Chania), Crete • Rhodes • Patmos • Heraklion, Crete • Katakolon, Olympia • corfu ');
   const text = renderedLines(rendered).map(textFromRenderedLine).join(' • ');
 
-  assert.equal(text, 'Corfu • Souda, Chania, Crete • Rhodes • Patmos • Heraklion, Crete • Katakolon, Olympia • corfu');
-  assert.equal((text.match(/Corfu/gi) || []).length, 2);
+  assert.equal(text, 'Corfu • Souda, Chania, Crete • Rhodes • Patmos • Heraklion, Crete • Katakolon, Olympia');
+  assert.equal((text.match(/Corfu/gi) || []).length, 1);
 });
 
 test('recognised embarkation return port is removed only from the final rendered itinerary position', () => {
@@ -148,6 +148,17 @@ test('recognised embarkation return port is removed only from the final rendered
   assert.equal((text.match(/Southampton/g) || []).length, 2);
 });
 
+
+test("Las Palmas round-trip You\'ll Visit removes final duplicate embarkation port", () => {
+  const context = createItineraryContext();
+
+  const rendered = context.chunkBullets('Las Palmas, Gran Canaria • Arrecife • Agadir • Funchal • Santa Cruz • Las Palmas, Gran Canaria');
+  const text = renderedLines(rendered).map(textFromRenderedLine).join(' • ');
+
+  assert.equal(text, 'Las Palmas, Gran Canaria • Arrecife • Agadir • Funchal • Santa Cruz');
+  assert.equal((text.match(/Las Palmas/g) || []).length, 1);
+});
+
 test('different start and end destinations remain rendered', () => {
   const context = createItineraryContext();
 
@@ -158,7 +169,7 @@ test('different start and end destinations remain rendered', () => {
   assert.match(rendered, /<span class="port-unit">Barcelona,&nbsp;Spain<\/span>/);
 });
 
-test('itinerary packing remains width based with non-embarkation return-to-origin ports retained', () => {
+test('itinerary packing removes final duplicate return-to-origin ports while staying width based', () => {
   const context = createItineraryContext();
   const measureText = itineraryMeasureStub({
     Corfu: 80,
@@ -178,8 +189,9 @@ test('itinerary packing remains width based with non-embarkation return-to-origi
   assert.deepEqual(lines, [
     'Corfu • Souda, Chania, Crete • Rhodes',
     'Patmos • Heraklion, Crete',
-    'Katakolon, Olympia • Corfu'
+    'Katakolon, Olympia'
   ]);
+  assert.equal(lines.join(' • ').match(/Corfu/g).length, 1);
   for (const line of lines) assert.ok(measureText(line) <= 520, `${line} overflowed safe width`);
 });
 
@@ -380,7 +392,7 @@ test('subtitle renders flights, transfers, and cabin as one compact grouped incl
   assert.doesNotMatch(rendered, /<br>/);
   assert.match(rendered, /<span class="incl-line">/);
   assert.match(rendered, /<span class="incl-component cabin-phrase">Inside&nbsp;Cabin<\/span>/);
-  assert.match(html, /\.cc \.incl\{[^}]*line-height:1\.36;[^}]*margin:0 auto 16px;[^}]*display:flex;flex-direction:column;/);
+  assert.match(html, /\.cc \.incl\{[^}]*line-height:1\.22;[^}]*margin:0 auto 16px;[^}]*display:flex;flex-direction:column;gap:0;/);
 });
 
 function extractFunction(name) {
