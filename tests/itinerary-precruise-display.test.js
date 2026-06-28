@@ -78,6 +78,7 @@ function createRenderContext() {
     extractFunction('normaliseDestinationName'),
     extractFunction('cleanPortsDisplay'),
     extractConstant('RETURN_EMBARKATION_PORTS'),
+    extractConstant('UK_HOMEPORTS_EXCLUDED_FROM_VISIT'),
     extractConstant('EMBARKATION_PORTS'),
     extractFunction('normalisePortIntelligenceName'),
     extractFunction('getDestinationComparisonValue'),
@@ -89,6 +90,7 @@ function createRenderContext() {
     extractFunction('getCleanItineraryPorts'),
     extractFunction('formatRenderedItineraryPort'),
     extractFunction('isEmbarkationPortForVisitRemoval'),
+    extractFunction('isUkHomeportExcludedFromVisit'),
     extractFunction('getRenderedItineraryPorts'),
     extractFunction('cleanEmbarkationPortDisplay'),
     extractFunction('getEmbarkationPort'),
@@ -439,7 +441,7 @@ test('cards without pre-cruise stay keep the existing itinerary section HTML whi
   const card = renderCardHTML({ ship: 'Liberty of the Seas', ports: 'Southampton • Lisbon • Southampton', basis: 'Based On 2 Adults Sharing' });
 
   assert.match(card, /<div class="sname">Sailing on Liberty of the Seas from Southampton<\/div>/);
-  assert.match(card, /<div class="vsec"><div class="visit-inner"><div class="vtit">You'll Visit<\/div><div class="vpts"><span class="port-line"><span class="port-unit">Southampton<\/span> <span class="port-separator">•<\/span> <span class="port-unit">Lisbon<\/span><\/span><\/div><\/div><\/div>/);
+  assert.match(card, /<div class="vsec"><div class="visit-inner"><div class="vtit">You'll Visit<\/div><div class="vpts"><span class="port-line"><span class="port-unit">Lisbon<\/span><\/span><\/div><\/div><\/div>/);
   assert.doesNotMatch(card, /precruise-note|Pre-Cruise|Bed & Breakfast/);
 });
 
@@ -449,9 +451,76 @@ test('card You\'ll Visit output excludes cruise title when using cleaned parsed 
   const card = renderCardHTML({ name: 'Norwegian Fjords', ship: 'Queen Anne', ports: 'Southampton • Stavanger • Olden • Geiranger • Bergen • Southampton' });
   const destinations = textBetween(card, '<div class="vpts">', '</div></div></div><div class="tcbar">');
 
-  assert.equal((destinations.match(/Southampton/g) || []).length, 1);
+  assert.equal((destinations.match(/Southampton/g) || []).length, 0);
   assert.match(destinations, /Stavanger/);
   assert.doesNotMatch(destinations, /Norwegian\s*Fjords/);
+});
+
+
+test('strict PMU: rendered You\'ll Visit excludes only UK homeports while preserving non-UK starts and sailing lines', () => {
+  const { renderCardHTML, getRenderedItineraryPorts } = createRenderContext();
+  const cases = [
+    {
+      label: 'Port of Tyne sailing display',
+      data: { ship: 'Queen Anne', ports: 'Port of Tyne • Amsterdam, Netherlands • Bergen, Norway • Olden, Norway • Port of Tyne' },
+      sailing: 'Sailing on Queen Anne from Port of Tyne',
+      expected: ['Amsterdam, Netherlands', 'Bergen, Norway', 'Olden, Norway'],
+      forbidden: ['Port of Tyne', 'Newcastle', 'Southampton', 'Dover']
+    },
+    {
+      label: 'Newcastle upon Tyne alias',
+      data: { ship: 'Queen Anne', ports: 'Newcastle upon Tyne • Amsterdam, Netherlands • Newcastle upon Tyne' },
+      sailing: 'Sailing on Queen Anne from Port of Tyne',
+      expected: ['Amsterdam, Netherlands'],
+      forbidden: ['Newcastle upon Tyne', 'Newcastle', 'Port of Tyne']
+    },
+    {
+      label: 'Southampton no-fly',
+      data: { ship: 'Liberty of the Seas', ports: 'Southampton • Lisbon • Vigo • Southampton' },
+      sailing: 'Sailing on Liberty of the Seas from Southampton',
+      expected: ['Lisbon', 'Vigo'],
+      forbidden: ['Southampton']
+    },
+    {
+      label: 'Dover no-fly',
+      data: { ship: 'Spirit of Adventure', ports: 'Dover • Amsterdam • Dover' },
+      sailing: 'Sailing on Spirit of Adventure from Dover',
+      expected: ['Amsterdam'],
+      forbidden: ['Dover']
+    },
+    {
+      label: 'Las Palmas remains at the front',
+      data: { ship: 'Azura', ports: 'Las Palmas • Madeira • Tenerife • Las Palmas' },
+      sailing: 'Sailing on Azura from Las Palmas',
+      expected: ['Las Palmas', 'Madeira', 'Tenerife'],
+      forbidden: []
+    },
+    {
+      label: 'Barcelona remains at the front',
+      data: { ship: 'Celebrity Ascent', ports: 'Barcelona • Marseille • Valencia • Barcelona' },
+      sailing: 'Sailing on Celebrity Ascent from Barcelona',
+      expected: ['Barcelona', 'Marseille', 'Valencia'],
+      forbidden: []
+    },
+    {
+      label: 'Athens and Piraeus remain at the front',
+      data: { ship: 'Resilient Lady', ports: 'Piraeus (Athens) • Mykonos • Santorini • Piraeus (Athens)' },
+      sailing: 'Sailing on Resilient Lady from Piraeus',
+      expected: ['Piraeus, Athens', 'Mykonos', 'Santorini'],
+      forbidden: []
+    }
+  ];
+
+  for (const scenario of cases) {
+    assert.equal(JSON.stringify(getRenderedItineraryPorts(scenario.data.ports)), JSON.stringify(scenario.expected), scenario.label);
+    const card = renderCardHTML(scenario.data);
+    const text = card.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+    const visitText = textBetween(text, "You'll Visit", 'T&Cs Apply');
+
+    assert.ok(text.includes(scenario.sailing), scenario.label);
+    for (const expected of scenario.expected) assert.ok(visitText.includes(expected), `${scenario.label}: missing ${expected}`);
+    for (const forbidden of scenario.forbidden) assert.equal(visitText.includes(forbidden), false, `${scenario.label}: visit contains ${forbidden}`);
+  }
 });
 
 test('preview and export use the same card rendering path with no pre-cruise panels or special layouts', () => {

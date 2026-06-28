@@ -18,6 +18,7 @@ function createItineraryContext() {
     extractFunction('normaliseDestinationName'),
     extractFunction('cleanPortsDisplay'),
     extractConstant('RETURN_EMBARKATION_PORTS'),
+    extractConstant('UK_HOMEPORTS_EXCLUDED_FROM_VISIT'),
     extractConstant('EMBARKATION_PORTS'),
     extractFunction('normalisePortIntelligenceName'),
     extractFunction('getDestinationComparisonValue'),
@@ -29,6 +30,7 @@ function createItineraryContext() {
     extractFunction('getCleanItineraryPorts'),
     extractFunction('formatRenderedItineraryPort'),
     extractFunction('isEmbarkationPortForVisitRemoval'),
+    extractFunction('isUkHomeportExcludedFromVisit'),
     extractFunction('getRenderedItineraryPorts'),
     extractFunction('cleanEmbarkationPortDisplay'),
     extractFunction('getEmbarkationPort'),
@@ -126,9 +128,8 @@ test('long destinations wrap according to rendered width without overflowing', (
   const lines = renderedLines(rendered).map(textFromRenderedLine);
 
   assert.deepEqual(lines, [
-    'Southampton, England • Paris, Le Havre, France',
-    'Bilbao, Spain • La Coruna, Spain',
-    'Cherbourg, France'
+    'Paris, Le Havre, France • Bilbao, Spain',
+    'La Coruna, Spain • Cherbourg, France'
   ]);
   for (const line of lines) assert.ok(measureText(line) <= 530, `${line} overflowed safe width`);
 });
@@ -149,8 +150,8 @@ test('recognised embarkation return port is removed only from the final rendered
   const rendered = context.chunkBullets('Southampton • Le Havre • Southampton • Bilbao • La Coruna • Vigo • Cherbourg • Southampton');
   const text = renderedLines(rendered).map(textFromRenderedLine).join(' • ');
 
-  assert.equal(text, 'Southampton • Le Havre • Southampton • Bilbao • La Coruna • Vigo • Cherbourg');
-  assert.equal((text.match(/Southampton/g) || []).length, 2);
+  assert.equal(text, 'Le Havre • Bilbao • La Coruna • Vigo • Cherbourg');
+  assert.equal((text.match(/Southampton/g) || []).length, 0);
 });
 
 
@@ -165,21 +166,21 @@ test("Las Palmas round-trip You\'ll Visit removes final duplicate embarkation po
 });
 
 
-test("permanent PMU: You'll Visit keeps the start port and removes only a final duplicate return", () => {
+test("permanent PMU: You'll Visit removes UK homeports but keeps non-UK start ports and removes final duplicate return", () => {
   const context = createItineraryContext();
   const examples = [
-    ['Port of Tyne • Amsterdam • Bergen • Port of Tyne', 'Port of Tyne • Amsterdam • Bergen', /Port of Tyne/g],
-    ['Southampton • Lisbon • Vigo • Southampton', 'Southampton • Lisbon • Vigo', /Southampton/g],
-    ['Dover • Rotterdam • Hamburg • Dover', 'Dover • Rotterdam • Hamburg', /Dover/g],
-    ['Barcelona • Marseille • Rome • Barcelona', 'Barcelona • Marseille • Rome', /Barcelona/g],
-    ['Athens (Piraeus) • Mykonos • Santorini • Athens (Piraeus)', 'Athens, Piraeus • Mykonos • Santorini', /Athens/g],
-    ['Las Palmas • Arrecife • Funchal • Las Palmas', 'Las Palmas • Arrecife • Funchal', /Las Palmas/g]
+    ['Port of Tyne • Amsterdam • Bergen • Port of Tyne', 'Amsterdam • Bergen', /Port of Tyne/g, 0],
+    ['Southampton • Lisbon • Vigo • Southampton', 'Lisbon • Vigo', /Southampton/g, 0],
+    ['Dover • Rotterdam • Hamburg • Dover', 'Rotterdam • Hamburg', /Dover/g, 0],
+    ['Barcelona • Marseille • Rome • Barcelona', 'Barcelona • Marseille • Rome', /Barcelona/g, 1],
+    ['Athens (Piraeus) • Mykonos • Santorini • Athens (Piraeus)', 'Athens, Piraeus • Mykonos • Santorini', /Athens/g, 1],
+    ['Las Palmas • Arrecife • Funchal • Las Palmas', 'Las Palmas • Arrecife • Funchal', /Las Palmas/g, 1]
   ];
 
-  for (const [ports, expected, startPattern] of examples) {
+  for (const [ports, expected, startPattern, expectedCount] of examples) {
     const text = renderedLines(context.chunkBullets(ports)).map(textFromRenderedLine).join(' • ');
     assert.equal(text, expected, `${ports} rendered as ${text}`);
-    assert.equal((text.match(startPattern) || []).length, 1, `${ports} should render start once as ${text}`);
+    assert.equal((text.match(startPattern) || []).length, expectedCount, `${ports} should render start count ${expectedCount} as ${text}`);
   }
 });
 
@@ -189,7 +190,7 @@ test('different start and end destinations remain rendered', () => {
   const rendered = context.chunkBullets('Southampton • Paris (Le Havre), France • Bilbao, Spain • Barcelona, Spain');
   const text = renderedLines(rendered).map(textFromRenderedLine).join(' • ');
 
-  assert.equal(text, 'Southampton • Paris, Le Havre, France • Bilbao, Spain • Barcelona, Spain');
+  assert.equal(text, 'Paris, Le Havre, France • Bilbao, Spain • Barcelona, Spain');
   assert.match(rendered, /<span class="port-unit">Barcelona,&nbsp;Spain<\/span>/);
 });
 
@@ -375,14 +376,13 @@ test('white information panel narrows editorial copy, grows naturally, and centr
   assert.doesNotMatch(html, /\.cc \.isec\{[^}]*(?:max-)?height:\d+px/);
 });
 
-test("Newcastle round-trip You'll Visit displays Port of Tyne once without final duplicate", () => {
+test("Newcastle round-trip You'll Visit excludes the UK homeport without mutating other destinations", () => {
   const context = createItineraryContext();
   const rendered = context.chunkBullets('Newcastle • Amsterdam • Bergen • Olden • Newcastle');
   const text = renderedLines(rendered).map(textFromRenderedLine).join(' • ');
 
-  assert.equal(text, 'Port of Tyne • Amsterdam • Bergen • Olden');
-  assert.equal((text.match(/Port of Tyne/g) || []).length, 1);
-  assert.doesNotMatch(text, /Newcastle/);
+  assert.equal(text, 'Amsterdam • Bergen • Olden');
+  assert.doesNotMatch(text, /Port of Tyne|Newcastle/);
 });
 
 test('subtitle renders flights, transfers, and cabin as one compact grouped inclusion block', () => {

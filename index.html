@@ -7429,6 +7429,7 @@ function cleanPortsDisplay(str){
     .join(" • ");
 }
 const RETURN_EMBARKATION_PORTS=new Set();
+const UK_HOMEPORTS_EXCLUDED_FROM_VISIT=new Set(["newcastle","newcastle upon tyne","newcastle england","port of tyne","tyne","southampton","dover"]);
 function getDestinationComparisonValue(destination){
   const value=cleanEmbarkationPortDisplay(destination).trim().toLowerCase();
   if(value==="port of tyne"||value==="newcastle upon tyne"||value==="newcastle, england") return "newcastle";
@@ -7520,9 +7521,14 @@ function isEmbarkationPortForVisitRemoval(port){
   const normalised=typeof normalisePortIntelligenceName==="function"?normalisePortIntelligenceName(port):getDestinationComparisonValue(port);
   return !!(normalised&&EMBARKATION_PORTS.has(normalised));
 }
+function isUkHomeportExcludedFromVisit(port){
+  const normalised=typeof normalisePortIntelligenceName==="function"?normalisePortIntelligenceName(port):getDestinationComparisonValue(port);
+  const comparison=getDestinationComparisonValue(port);
+  return !!((normalised&&UK_HOMEPORTS_EXCLUDED_FROM_VISIT.has(normalised))||(comparison&&UK_HOMEPORTS_EXCLUDED_FROM_VISIT.has(comparison)));
+}
 function getRenderedItineraryPorts(str){
   const ports=removeDuplicateReturnToOriginDestination(getCleanItineraryPorts(str));
-  return ports.map(formatRenderedItineraryPort).filter(Boolean);
+  return ports.filter(port=>!isUkHomeportExcludedFromVisit(port)).map(formatRenderedItineraryPort).filter(Boolean);
 }
 function cleanEmbarkationPortDisplay(port){
   return String(port||"").split(",").map(part=>part.trim()).filter(Boolean)[0]||"";
