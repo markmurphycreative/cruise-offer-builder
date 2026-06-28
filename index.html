@@ -651,8 +651,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cc .cname,.cc .incl,.cc .sname,.cc .pbasis{max-width:1000px;margin-left:auto;margin-right:auto;}
 .cc .price-block{max-width:1000px;}
 .cc .cname{font-size:74px;font-weight:300;color:var(--operator-text,var(--navy));line-height:1.0;margin-bottom:6px;}
-.cc .incl{font-size:40px;font-weight:300;color:#555;line-height:1.36;margin-bottom:16px;}
-.cc .cabin-phrase,.cc .precruise-phrase,.cc .incl-line,.cc .incl-component,.cc .card-inclusion-separator{white-space:nowrap;}
+.cc .incl{font-size:40px;font-weight:300;color:#555;line-height:1.36;margin:0 auto 16px;padding:0 24px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+.cc .incl-line{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;width:100%;max-width:100%;gap:0;line-height:1.36;margin:0 auto;text-align:center;}
+.cc .incl-component{display:inline-flex;align-items:center;white-space:nowrap;}
+.cc .card-inclusion-separator{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;margin:0 .42em;color:#777;}
+.cc .cabin-phrase,.cc .precruise-phrase{white-space:nowrap;}
 .cc .sname{font-size:40px;font-weight:300;color:var(--operator-accent,var(--gold));line-height:1.2;margin-bottom:28px;}
 .cc .price-block{display:inline-flex;flex-direction:column;align-items:center;}
 .cc .pfrom{font-size:30px;font-weight:300;color:#888;line-height:1;margin-bottom:0;}
@@ -7505,6 +7508,13 @@ function getEmbarkationPort(str){
   const clean=cleanEmbarkationPortDisplay(firstPort);
   return typeof getCruiseDepartureWording==="function" ? getCruiseDepartureWording(full||clean) : clean;
 }
+function getEmbarkationPortCardDisplay(str){
+  const firstPort=getRenderedItineraryPorts(str)[0]||"";
+  const text=String(firstPort||"").trim();
+  const forMatch=text.match(/^([^,]+),\s*for\s+([^,]+)/i);
+  if(forMatch&&forMatch[2]) return forMatch[2].trim();
+  return cleanEmbarkationPortDisplay(text);
+}
 function chunkBullets(str,options){
   const ports=getRenderedItineraryPorts(str);
   return packItineraryLines(ports,options)
@@ -7532,7 +7542,7 @@ const CARD_INCLUSION_CABIN_PHRASES=[
 function normaliseCardInclusionComponent(value){
   return String(value||"")
     .replace(/[\t ]+/g," ")
-    .replace(/^\s*(?:[-–—•·]+\s*)+|(?:\s*[-–—•·]+)+\s*$/g,"")
+    .replace(/^\s*(?:[-–—•·,]+\s*)+|(?:\s*[-–—•·,]+)+\s*$/g,"")
     .trim();
 }
 function classifyCardInclusionComponent(value){
@@ -7540,6 +7550,8 @@ function classifyCardInclusionComponent(value){
   if(!text) return "";
   if(/\b\d+\s+nights?\s+pre[-\s]?cruise\s+stay\b/i.test(text)) return "precruise";
   if(CARD_INCLUSION_CABIN_PHRASES.some(phrase=>new RegExp(`^${escapeRegExp(phrase)}$`,"i").test(text))) return "cabin";
+  if(/\bluggage\b/i.test(text)&&/\btransfers?\b/i.test(text)) return "luggage-transfer";
+  if(/\bluggage\b/i.test(text)) return "luggage";
   if(/\btransfers?\s+included\b/i.test(text)) return "transfer";
   if(/\bflights?\b/i.test(text)) return "flight";
   return "other";
@@ -7564,8 +7576,10 @@ function splitCardInclusionLineComponents(line){
       const match=remaining.match(new RegExp(escapeRegExp(phrase),"i"));
       if(match) tokens.push({index:match.index,text:match[0]});
     });
+    const luggageMatch=remaining.match(/luggage\s+included|luggage\s*(?:&|and)\s*transfers?\s+included/i);
+    if(luggageMatch) tokens.push({index:luggageMatch.index,text:luggageMatch[0]});
     const transferMatch=remaining.match(/transfers?\s+included/i);
-    if(transferMatch) tokens.push({index:transferMatch.index,text:"Transfers Included"});
+    if(transferMatch&&!(luggageMatch&&transferMatch.index>=luggageMatch.index&&transferMatch.index<luggageMatch.index+luggageMatch[0].length)) tokens.push({index:transferMatch.index,text:"Transfers Included"});
     if(tokens.length){
       tokens.sort((a,b)=>a.index-b.index);
       let cursor=0;
@@ -7591,8 +7605,15 @@ function buildCardInclusionComponents(value){
   return ordered;
 }
 function orderCardInclusionComponents(components){
-  const rank={other:0,flight:1,transfer:2,cabin:3,precruise:5};
-  return (components||[]).slice().sort((a,b)=>(rank[a.type]??4)-(rank[b.type]??4));
+  const expanded=[];
+  (components||[]).forEach(component=>{
+    if(component&&component.type==="luggage-transfer"){
+      expanded.push({type:"luggage",text:"Luggage Included"});
+      expanded.push({type:"transfer",text:"Transfers Included"});
+    }else expanded.push(component);
+  });
+  const rank={other:0,flight:1,luggage:2,transfer:3,cabin:4,precruise:5};
+  return expanded.filter(Boolean).filter((component,index,all)=>all.findIndex(existing=>existing.type===component.type&&String(existing.text||"").toLowerCase()===String(component.text||"").toLowerCase())===index).sort((a,b)=>(rank[a.type]??4)-(rank[b.type]??4));
 }
 function validateCardInclusionLines(lines){
   return (lines||[]).every(line=>{
@@ -7621,7 +7642,7 @@ function renderCardInclusionLayout(value,options){
   const renderLine=line=>{
     const rendered=line.map(renderComponent);
     if(!html) return rendered.join(CARD_INCLUSION_SEPARATOR);
-    return `<span class="incl-line">${rendered.join('<span class="card-inclusion-separator"> - </span>')}</span>`;
+    return `<span class="incl-line">${rendered.join('<span class="card-inclusion-separator"> · </span>')}</span>`;
   };
   const lines=groupCardInclusionRenderLines(buildCardInclusionComponents(value)).map(renderLine);
   if(!validateCardInclusionLines(lines.map(line=>String(line).replace(/<[^>]+>/g,"").replace(/&nbsp;/g," ")))) return "";
@@ -7649,7 +7670,7 @@ function renderCardHTML(d){
   const month=d.month||""; const nights=d.nights||"";
   const ports=(d.ports||"").trim();
   const portsHTML=ports?chunkBullets(ports):"";
-  const embarkationPort=ports?getEmbarkationPort(ports):"";
+  const embarkationPort=ports?getEmbarkationPortCardDisplay(ports):"";
   const preCruiseStay=d.preCruiseStay||null;
   const preCruiseHTML=preCruiseStay&&preCruiseStay.text ? `<div class="vpts precruise-note"><div>${preCruiseStay.text}</div></div>` : "";
   const terms=document.getElementById("g-terms").value||"T&Cs Apply";
