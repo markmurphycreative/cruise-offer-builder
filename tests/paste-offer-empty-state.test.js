@@ -1085,16 +1085,16 @@ test('Load Offer button reaches parseOffer and parseOffer applies directly when 
 });
 
 
-test('offer tab switches clear Paste Offer textarea and parse status without storing raw paste on offers', () => {
-  const sv = extractFunction('sv');
+test('offer tab switches preserve Paste Offer textarea per card while clearing parse status', () => {
+  const sv = extractLastFunction('sv');
   const reset = extractFunction('resetPasteOfferState');
 
-  assert.match(sv, /const next=Number\(i\); const switched=next!==cur;/);
-  assert.match(sv, /if\(switched\) resetPasteOfferState\(\);/);
-  assert.match(reset, /raw\.value=""/);
+  assert.match(sv, /const next = Number\(i\) \|\| 0;\n  const switched = next !== cur;/);
+  assert.match(sv, /if\(switched\) resetPasteOfferState\(\{preserveRaw:true\}\);/);
+  assert.match(reset, /if\(raw&&!preserveRaw\) raw\.value=""/);
   assert.match(reset, /status\.textContent=""/);
   assert.match(reset, /cancelParsedOffer\(\)/);
-  assert.doesNotMatch(reset, /offers\[/);
+  assert.match(html, /const PERSISTED_PASTE_OFFER_KEY="_rawPastedOfferText";/);
 });
 
 test('switching selected offers clears only transient Paste Offer state and preserves loaded Offer Details', () => {
@@ -1114,19 +1114,25 @@ test('switching selected offers clears only transient Paste Offer state and pres
       },
       querySelectorAll(selector) { return selector === '.otab' ? tabs : []; }
     },
-    updateLockUI() {},
+    commitVisibleFields() { context.offers[context.getCur ? context.getCur() : 0]._rawPastedOfferText = rawPaste.value; context.offers[context.getCur ? context.getCur() : 0].name = fields['f-name'].value; },
+    syncOfferSelector() {},
+    renderPreviewMode() {}, queueAutosave() {}, genUtm() {}, genStandardUtms() {}, updateAllStatus() {}, updateExportFilenames() {}, updateMoveOfferButtons() {}, updateLockUI() {},
     rv() {},
     setTimeout(callback) { callback(); },
-    load(index) { fields['f-name'].value = context.offers[index].name || ''; }
+    loadOfferToEditor(index) { fields['f-name'].value = context.offers[index].name || ''; rawPaste.value = context.offers[index]._rawPastedOfferText || ''; },
+    load(index) { fields['f-name'].value = context.offers[index].name || ''; rawPaste.value = context.offers[index]._rawPastedOfferText || ''; } 
   };
   context.offers = [{ name: 'Loaded Offer 1' }, { name: 'Loaded Offer 2' }, {}, {}];
   vm.createContext(context);
   vm.runInContext([
-    'const FLDS=["name"]; let offers=globalThis.offers; let cur=0; let pendingParseResult={parsed:{name:"Loaded Offer 1"}};',
+    'const FLDS=["name"]; const PERSISTED_PASTE_OFFER_KEY="_rawPastedOfferText"; let offers=globalThis.offers; let cur=0; let pendingParseResult={parsed:{name:"Loaded Offer 1"}};',
     extractFunction('save'),
     extractFunction('cancelParsedOffer'),
+    extractFunction('saveRawPasteForOffer'),
+    extractFunction('restoreRawPasteForOffer'),
     extractFunction('resetPasteOfferState'),
-    extractFunction('sv')
+    extractLastFunction('sv'),
+    'globalThis.getCur=()=>cur;'
   ].join('\n'), context);
 
   vm.runInContext('sv(0);', context);
@@ -1141,7 +1147,7 @@ test('switching selected offers clears only transient Paste Offer state and pres
   assert.equal(context.offers[0].name, 'Loaded Offer 1');
 
   vm.runInContext('sv(0);', context);
-  assert.equal(rawPaste.value, '');
+  assert.equal(rawPaste.value, 'Offer 1 pasted text');
   assert.equal(fields['f-name'].value, 'Loaded Offer 1');
 });
 
@@ -1166,11 +1172,13 @@ test('effective tab switch handler saves the old card and clears transient Paste
       const index = context.getCur();
       calls.push(`save:${index}`);
       context.offers[index].name = fields['f-name'].value;
+      context.offers[index]._rawPastedOfferText = rawPaste.value;
     },
     syncOfferSelector() {},
     loadOfferToEditor(index) {
       calls.push(`load:${index}`);
       fields['f-name'].value = context.offers[index].name || '';
+      rawPaste.value = context.offers[index]._rawPastedOfferText || '';
     },
     updateLockUI() {},
     genUtm() {},
@@ -1183,7 +1191,7 @@ test('effective tab switch handler saves the old card and clears transient Paste
   };
   vm.createContext(context);
   vm.runInContext([
-    'let cur=0; let pendingParseResult={parsed:{name:"Loaded Offer 1"}};',
+    'let cur=0; const PERSISTED_PASTE_OFFER_KEY="_rawPastedOfferText"; let pendingParseResult={parsed:{name:"Loaded Offer 1"}};',
     extractFunction('cancelParsedOffer'),
     extractFunction('resetPasteOfferState'),
     extractLastFunction('sv'),
@@ -1203,7 +1211,7 @@ test('effective tab switch handler saves the old card and clears transient Paste
 
   vm.runInContext('sv(0);', context);
   assert.equal(fields['f-name'].value, 'Loaded Offer 1');
-  assert.equal(rawPaste.value, '');
+  assert.equal(rawPaste.value, 'Offer 1 pasted text');
 
   vm.runInContext('sv(1);', context);
   fields['f-name'].value = 'Loaded Offer 2';
@@ -1217,8 +1225,39 @@ test('effective tab switch handler saves the old card and clears transient Paste
   assert.equal(Object.hasOwn(context.offers[0], 'rawPaste'), false);
   assert.equal(Object.hasOwn(context.offers[1], 'rawPaste'), false);
   assert.equal(Object.hasOwn(context.offers[2], 'rawPaste'), false);
+  assert.equal(context.offers[0]._rawPastedOfferText, 'Offer 1 pasted text');
+  assert.equal(context.offers[1]._rawPastedOfferText, 'Offer 2 pasted text');
 });
 
+
+
+test('switching four pasted offers restores each raw Paste Offer textarea byte-for-byte', () => {
+  const rawPaste = { value: '' };
+  const fields = { 'f-name': { value: '' } };
+  const context = {
+    console,
+    offers: [
+      { name: 'One', _rawPastedOfferText: 'Offer 1 raw\nNewcastle' },
+      { name: 'Two', _rawPastedOfferText: 'Offer 2 raw\r\nAmsterdam' },
+      { name: 'Three', _rawPastedOfferText: 'Offer 3 raw  £999' },
+      { name: 'Four', _rawPastedOfferText: 'Offer 4 raw\nInside Cabin' }
+    ],
+    document: { getElementById(id) { if(id === 'raw-paste') return rawPaste; return fields[id] || null; } },
+    commitVisibleFields() { context.offers[context.getCur()]._rawPastedOfferText = rawPaste.value; },
+    syncOfferSelector() {}, loadOfferToEditor(index) { rawPaste.value = context.offers[index]._rawPastedOfferText || ''; fields['f-name'].value = context.offers[index].name || ''; },
+    updateLockUI() {}, genUtm() {}, genStandardUtms() {}, updateAllStatus() {}, updateExportFilenames() {}, updateMoveOfferButtons() {}, renderPreviewMode() {}, queueAutosave() {}
+  };
+  vm.createContext(context);
+  vm.runInContext([
+    'let cur=0; const PERSISTED_PASTE_OFFER_KEY="_rawPastedOfferText"; let pendingParseResult=null;',
+    extractFunction('cancelParsedOffer'), extractFunction('resetPasteOfferState'), extractLastFunction('sv'), 'globalThis.getCur=()=>cur;'
+  ].join('\n'), context);
+
+  for (const index of [0, 1, 2, 3, 0, 2, 1, 3]) {
+    vm.runInContext(`sv(${index});`, context);
+    assert.equal(rawPaste.value, context.offers[index]._rawPastedOfferText);
+  }
+});
 
 test('offer storage sanitizer removes transient Paste Offer aliases without losing loaded card data', () => {
   const context = {

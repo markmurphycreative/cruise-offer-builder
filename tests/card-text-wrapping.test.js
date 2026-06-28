@@ -339,6 +339,50 @@ test('white information panel narrows editorial copy, grows naturally, and centr
   assert.doesNotMatch(html, /\.cc \.isec\{[^}]*(?:max-)?height:\d+px/);
 });
 
+test("Newcastle round-trip You'll Visit displays Port of Tyne once without final duplicate", () => {
+  const context = createItineraryContext();
+  const rendered = context.chunkBullets('Newcastle • Amsterdam • Bergen • Olden • Newcastle');
+  const text = renderedLines(rendered).map(textFromRenderedLine).join(' • ');
+
+  assert.equal(text, 'Port of Tyne • Amsterdam • Bergen • Olden');
+  assert.notEqual(text, 'Port of Tyne • Amsterdam • Bergen • Olden • Port of Tyne');
+  assert.equal((text.match(/Port of Tyne/g) || []).length, 1);
+});
+
+test('subtitle renders flights, transfers, and cabin as one compact grouped inclusion block', () => {
+  const context = {};
+  vm.createContext(context);
+  vm.runInContext([
+    extractConstant('CARD_INCLUSION_SEPARATOR'),
+    extractConstant('CARD_INCLUSION_SAFE_WIDTH'),
+    extractConstant('CARD_INCLUSION_FONT'),
+    'const CARD_INCLUSION_CABIN_PHRASES=["Ocean View Cabin","Inside Stateroom","Oceanview Stateroom","Balcony Stateroom","Infinite Veranda","Concierge Class","Outside Cabin","Balcony Cabin","Inside Cabin","Junior Suite","AquaClass","Suite"];',
+    'function escapeRegExp(value){return String(value).replace(/[.*+?^${}()|[\]\\]/g, \"\\$&\");}',
+    extractFunction('normaliseCardInclusionComponent'),
+    extractFunction('classifyCardInclusionComponent'),
+    extractFunction('makeCardInclusionComponent'),
+    extractFunction('splitCardInclusionLineComponents'),
+    extractFunction('buildCardInclusionComponents'),
+    extractFunction('orderCardInclusionComponents'),
+    extractFunction('validateCardInclusionLines'),
+    extractFunction('estimateCardInclusionTextWidth'),
+    extractFunction('getCardInclusionMeasureText'),
+    extractFunction('packCardInclusionComponents'),
+    extractFunction('groupCardInclusionRenderLines'),
+    extractFunction('renderCardInclusionLayout'),
+    extractFunction('renderCardInclusion')
+  ].join('\n'), context);
+
+  const rendered = context.renderCardInclusion('Newcastle Flights\nTransfers Included\nInside Cabin');
+  const text = rendered.replace(/<[^>]+>/g, '').replaceAll('&nbsp;', ' ');
+
+  assert.equal(text, 'Newcastle Flights - Transfers Included - Inside Cabin');
+  assert.doesNotMatch(rendered, /<br>/);
+  assert.match(rendered, /<span class="incl-line">/);
+  assert.match(rendered, /<span class="incl-component cabin-phrase">Inside&nbsp;Cabin<\/span>/);
+  assert.match(html, /\.cc \.incl\{[^}]*line-height:1\.36;[^}]*margin:0 auto 16px;[^}]*display:flex;flex-direction:column;/);
+});
+
 function extractFunction(name) {
   const start = html.indexOf(`function ${name}(`);
   assert.notEqual(start, -1, `Could not find ${name}`);
