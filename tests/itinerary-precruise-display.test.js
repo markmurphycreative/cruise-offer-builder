@@ -99,6 +99,9 @@ function createRenderContext() {
     extractFunction('buildCardInclusionComponents'),
     extractFunction('orderCardInclusionComponents'),
     extractFunction('validateCardInclusionLines'),
+    extractFunction('estimateCardInclusionTextWidth'),
+    extractFunction('getCardInclusionMeasureText'),
+    extractFunction('packCardInclusionComponents'),
     extractFunction('groupCardInclusionRenderLines'),
     extractFunction('renderCardInclusionLayout'),
     extractFunction('buildCardInclusionRenderLines'),
@@ -191,6 +194,24 @@ test('card inclusion rendering keeps known cabin phrases non-breaking', () => {
   assert.match(rendered, /<span class="incl-segment">&nbsp;-&nbsp;<span class="incl-component">Transfers Included<\/span><\/span>/);
   assert.doesNotMatch(rendered, /<span class="incl-line"><span class="incl-segment">/);
   assert.doesNotMatch(rendered, /&nbsp;-&nbsp;<\/span><\/span>$/);
+});
+
+
+test('card inclusion renderer drops hyphen separators at measured line breaks', () => {
+  const { renderCardInclusionLayout } = createRenderContext();
+  const rendered = renderCardInclusionLayout('Newcastle Flights • Transfers Included • Balcony Cabin', {
+    html: true,
+    safeWidth: 500,
+    measureText: text => ({
+      'Newcastle Flights': 220,
+      'Newcastle Flights - Transfers Included': 470,
+      'Newcastle Flights - Transfers Included - Balcony Cabin': 700,
+      'Balcony Cabin': 180
+    }[text] ?? 180)
+  });
+
+  assert.equal(rendered, '<span class="incl-line"><span class="incl-component">Newcastle Flights</span><span class="incl-segment">&nbsp;-&nbsp;<span class="incl-component">Transfers Included</span></span></span><br><span class="incl-line"><span class="incl-component cabin-phrase">Balcony&nbsp;Cabin</span></span>');
+  assert.doesNotMatch(rendered.replace(/&nbsp;/g, ' '), /-<br>|<br><span class="incl-line">\s*-/);
 });
 
 test('card title rendering converts hyphenated cruise title terms to non-breaking hyphens only in title output', () => {

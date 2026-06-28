@@ -7525,6 +7525,8 @@ function normaliseSubtitleSeparator(value){
   return buildCardInclusionRenderLines(value).join("\n");
 }
 const CARD_INCLUSION_SEPARATOR=" - ";
+const CARD_INCLUSION_SAFE_WIDTH=952;
+const CARD_INCLUSION_FONT='300 40px Montserrat, sans-serif';
 const CARD_INCLUSION_CABIN_PHRASES=[
   "Ocean View Cabin",
   "Inside Stateroom",
@@ -7621,12 +7623,60 @@ function validateCardInclusionLines(lines){
     return value&&value===value.trim()&&!/^[•·-]|[•·-]$/.test(value)&&!/[•·-]\s*(?:<br>|\n)|(?:<br>|\n)\s*[•·-]/.test(value)&&!/(?:IncludedInside|Cabin\d|FlightsTransfers|Inside Cabin\d|Included\s*-\s*$)/i.test(value);
   });
 }
-function groupCardInclusionRenderLines(components){
+function estimateCardInclusionTextWidth(text){
+  return Array.from(String(text||"")).reduce((width,char)=>{
+    if(char===" ") return width+10;
+    if(char==="-") return width+14;
+    if(/[,.]/.test(char)) return width+8;
+    if(/[ilI]/.test(char)) return width+8;
+    if(/[mwMW]/.test(char)) return width+28;
+    if(/[A-Z]/.test(char)) return width+23;
+    return width+17;
+  },0);
+}
+function getCardInclusionMeasureText(options){
+  if(options&&typeof options.measureText==="function") return options.measureText;
+  if(typeof document!=="undefined"&&document.createElement){
+    const canvas=document.createElement("canvas");
+    const context=canvas&&canvas.getContext&&canvas.getContext("2d");
+    if(context){
+      context.font=CARD_INCLUSION_FONT;
+      return text=>context.measureText(String(text||"")).width;
+    }
+  }
+  if(typeof OffscreenCanvas!=="undefined"){
+    const context=new OffscreenCanvas(1,1).getContext("2d");
+    if(context){
+      context.font=CARD_INCLUSION_FONT;
+      return text=>context.measureText(String(text||"")).width;
+    }
+  }
+  return estimateCardInclusionTextWidth;
+}
+function packCardInclusionComponents(components,options){
+  const safeWidth=(options&&Number(options.safeWidth))||CARD_INCLUSION_SAFE_WIDTH;
+  const measureText=getCardInclusionMeasureText(options);
+  const lines=[];
+  let current=[];
+  (components||[]).forEach(component=>{
+    const text=normaliseCardInclusionComponent(component&&component.text);
+    if(!text) return;
+    const candidate=current.length ? `${current.map(item=>normaliseCardInclusionComponent(item.text)).join(CARD_INCLUSION_SEPARATOR)}${CARD_INCLUSION_SEPARATOR}${text}` : text;
+    if(current.length&&measureText(candidate)>safeWidth){
+      lines.push(current);
+      current=[component];
+    }else{
+      current.push(component);
+    }
+  });
+  if(current.length) lines.push(current);
+  return lines;
+}
+function groupCardInclusionRenderLines(components,options){
   const ordered=orderCardInclusionComponents(components);
   const primary=ordered.filter(component=>component.type!=="precruise");
   const preCruise=ordered.filter(component=>component.type==="precruise");
-  const lines=[];
-  if(primary.length) lines.push(primary);
+  const lines=packCardInclusionComponents(primary,options);
   preCruise.forEach(component=>lines.push([component]));
   return lines;
 }
@@ -7647,7 +7697,7 @@ function renderCardInclusionLayout(value,options){
     const trailing=rendered.slice(1).map(component=>`<span class="incl-segment">&nbsp;-&nbsp;${component}</span>`).join("");
     return `<span class="incl-line">${first}${trailing}</span>`;
   };
-  const lines=groupCardInclusionRenderLines(buildCardInclusionComponents(value)).map(renderLine);
+  const lines=groupCardInclusionRenderLines(buildCardInclusionComponents(value),options).map(renderLine);
   if(!validateCardInclusionLines(lines.map(line=>String(line).replace(/<[^>]+>/g,"").replace(/&nbsp;/g," ")))) return "";
   return lines.join(html?"<br>":"\n");
 }
