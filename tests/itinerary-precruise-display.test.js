@@ -78,12 +78,17 @@ function createRenderContext() {
     extractFunction('normaliseDestinationName'),
     extractFunction('cleanPortsDisplay'),
     extractConstant('RETURN_EMBARKATION_PORTS'),
+    extractConstant('EMBARKATION_PORTS'),
+    extractFunction('normalisePortIntelligenceName'),
     extractFunction('getDestinationComparisonValue'),
     extractFunction('removeDuplicateReturnToOriginDestination'),
     extractFunction('estimateItineraryTextWidth'),
     extractFunction('getItineraryMeasureText'),
     extractFunction('renderItineraryLine'),
     extractFunction('packItineraryLines'),
+    extractFunction('getCleanItineraryPorts'),
+    extractFunction('formatRenderedItineraryPort'),
+    extractFunction('isEmbarkationPortForVisitRemoval'),
     extractFunction('getRenderedItineraryPorts'),
     extractFunction('cleanEmbarkationPortDisplay'),
     extractFunction('getEmbarkationPort'),
@@ -96,6 +101,7 @@ function createRenderContext() {
     extractFunction('isCardPreCruiseComponent'),
     extractFunction('makeCardInclusionComponent'),
     extractFunction('splitCardInclusionLineComponents'),
+    extractFunction('normaliseFlightInclusionDisplay'),
     extractFunction('buildCardInclusionComponents'),
     extractFunction('orderCardInclusionComponents'),
     extractFunction('validateCardInclusionLines'),
@@ -161,24 +167,24 @@ test('locked cruise builder sailing line, inclusion typography, and itinerary se
       data: { name: 'Mediterranean', ship: 'Celebrity Equinox', incl: 'Newcastle Flights • Inside Cabin', ports: 'Barcelona • Rome • Naples' },
       sailing: 'Sailing on Celebrity Equinox from Barcelona',
       inclusion: 'Newcastle Flights',
-      visit: 'Barcelona',
-      absent: ['Newcastle']
+      visit: 'Rome',
+      absent: ['Newcastle', 'Barcelona']
     },
     {
       label: 'Virgin Voyages',
       data: { name: 'Greek Island Glow', ship: 'Resilient Lady', incl: 'Premium Drinks Package • Tips Included • WiFi Included • Balcony Cabin', ports: 'Athens • Mykonos • Santorini' },
       sailing: 'Sailing on Resilient Lady from Athens',
       inclusion: 'Premium Drinks Package',
-      visit: 'Athens',
-      absent: ['Premium Drinks Package']
+      visit: 'Mykonos',
+      absent: ['Premium Drinks Package', 'Athens']
     },
     {
       label: 'Cunard Newcastle sailing',
       data: { name: 'No-Fly Mini Cruise', ship: 'Queen Anne', incl: 'Newcastle Flights • Ocean View Cabin', ports: 'Newcastle • Amsterdam • Newcastle' },
       sailing: 'Sailing on Queen Anne from Port of Tyne',
       inclusion: 'Newcastle Flights',
-      visit: 'Port of Tyne',
-      absent: ['Newcastle']
+      visit: 'Amsterdam',
+      absent: ['Newcastle', 'Port of Tyne']
     }
   ];
 
@@ -205,24 +211,24 @@ test('permanent PMU: locked sailing and visit lines never use inclusion-only val
   const lockedCases = [
     {
       label: 'airport excluded from sailing and visit copy while embarkation remains',
-      data: { name: 'Mediterranean Fly Cruise', ship: 'Celebrity Ascent', incl: 'Newcastle Flights Included - Inside Cabin', ports: 'Barcelona • Marseille • Valencia' },
+      data: { name: 'Mediterranean Fly Cruise', ship: 'Celebrity Ascent', incl: 'Newcastle Flights - Inside Cabin', ports: 'Barcelona • Marseille • Valencia' },
       sailing: 'Sailing on Celebrity Ascent from Barcelona',
-      visit: ['Barcelona', 'Marseille', 'Valencia'],
-      forbidden: ['Newcastle']
+      visit: ['Marseille', 'Valencia'],
+      forbidden: ['Newcastle', 'Barcelona']
     },
     {
       label: 'Port of Tyne display exception',
       data: { name: 'No Fly Mini Cruise', ship: 'Queen Anne', incl: 'Ocean View Cabin', ports: 'Newcastle • Amsterdam • Newcastle' },
       sailing: 'Sailing on Queen Anne from Port of Tyne',
-      visit: ['Port of Tyne', 'Amsterdam'],
-      forbidden: ['Newcastle']
+      visit: ['Amsterdam'],
+      forbidden: ['Newcastle', 'Port of Tyne']
     },
     {
       label: 'premium inclusions are not itinerary ports',
       data: { name: 'Greek Island Glow', ship: 'Resilient Lady', incl: 'Premium Drinks Package - Tips Included - Transfers Included - Flights Included - WiFi Included - Balcony Cabin', ports: 'Athens • Mykonos • Santorini' },
       sailing: 'Sailing on Resilient Lady from Athens',
-      visit: ['Athens', 'Mykonos', 'Santorini'],
-      forbidden: ['Premium Drinks Package', 'Tips Included', 'Transfers Included', 'Flights Included', 'WiFi Included', 'Balcony Cabin']
+      visit: ['Mykonos', 'Santorini'],
+      forbidden: ['Athens', 'Premium Drinks Package', 'Tips Included', 'Transfers Included', 'Flights Included', 'WiFi Included', 'Balcony Cabin']
     }
   ];
 
@@ -258,13 +264,13 @@ test('permanent PMU: hyphen separators have no leading, trailing, or wrapping or
     safeWidth: 520,
     measureText: text => ({
       'Newcastle Flights Included': 260,
-      'Newcastle Flights Included - Transfers Included': 510,
-      'Newcastle Flights Included - Transfers Included - Balcony Cabin': 760,
+      'Newcastle Flights - Transfers Included': 510,
+      'Newcastle Flights - Transfers Included - Balcony Cabin': 760,
       'Balcony Cabin': 180
     }[text] ?? 180)
   }).split('\n');
 
-  assert.deepEqual(renderedLines, ['Newcastle Flights Included - Transfers Included', 'Balcony Cabin']);
+  assert.deepEqual(renderedLines, ['Newcastle Flights - Transfers Included', 'Balcony Cabin']);
   for (const line of renderedLines) {
     assert.doesNotMatch(line, /^\s*-/);
     assert.doesNotMatch(line, /-\s*$/);
@@ -275,7 +281,7 @@ test('card subtitle separators render hyphen separators while itinerary separato
   const { renderCardHTML, normaliseSubtitleSeparator } = createRenderContext();
   const cases = [
     ['Luggage Included • Ocean View Cabin', 'Luggage Included - Ocean View Cabin'],
-    ['Newcastle Flights Included • Inside Cabin', 'Newcastle Flights Included - Inside Cabin'],
+    ['Newcastle Flights Included • Inside Cabin', 'Newcastle Flights - Inside Cabin'],
     ['Manchester Flights, Luggage Included • Balcony Cabin', 'Manchester Flights - Luggage Included - Balcony Cabin'],
     ['No Fly • Ocean View Cabin', 'No Fly - Ocean View Cabin'],
     ['Coach Included • Inside Cabin', 'Coach Included - Inside Cabin']
@@ -289,6 +295,19 @@ test('card subtitle separators render hyphen separators while itinerary separato
 
   const card = renderCardHTML({ name: 'Cruise Title', incl: 'Luggage Included • Ocean View Cabin', ports: 'Barbados • Martinique' });
   assert.match(card, /<span class="port-unit">Barbados<\/span> <span class="port-separator">•<\/span> <span class="port-unit">Martinique<\/span>/);
+});
+
+test('permanent PMU: card renderer never displays generic Flights Included and keeps airport-specific flight wording', () => {
+  const { renderCardHTML, renderCardInclusion } = createRenderContext();
+
+  const airportSpecific = renderCardInclusion('Edinburgh Flights Included • Transfers Included • Inside Cabin');
+  assert.match(airportSpecific, /Edinburgh Flights/);
+  assert.doesNotMatch(airportSpecific, /Flights Included/);
+
+  const noAirport = renderCardHTML({ name: 'No Fly Cruise', incl: 'Flights Included • Inside Cabin', ports: 'Southampton • Lisbon • Vigo' });
+  const text = noAirport.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+  assert.doesNotMatch(text, /Flights Included|\bFlights\b/);
+  assert.match(text, /Inside Cabin/);
 });
 
 test('card inclusion rendering keeps known cabin phrases non-breaking', () => {
@@ -420,7 +439,7 @@ test('cards without pre-cruise stay keep the existing itinerary section HTML whi
   const card = renderCardHTML({ ship: 'Liberty of the Seas', ports: 'Southampton • Lisbon • Southampton', basis: 'Based On 2 Adults Sharing' });
 
   assert.match(card, /<div class="sname">Sailing on Liberty of the Seas from Southampton<\/div>/);
-  assert.match(card, /<div class="vsec"><div class="visit-inner"><div class="vtit">You'll Visit<\/div><div class="vpts"><span class="port-line"><span class="port-unit">Southampton<\/span> <span class="port-separator">•<\/span> <span class="port-unit">Lisbon<\/span><\/span><\/div><\/div><\/div>/);
+  assert.match(card, /<div class="vsec"><div class="visit-inner"><div class="vtit">You'll Visit<\/div><div class="vpts"><span class="port-line"><span class="port-unit">Lisbon<\/span><\/span><\/div><\/div><\/div>/);
   assert.doesNotMatch(card, /precruise-note|Pre-Cruise|Bed & Breakfast/);
 });
 
@@ -430,7 +449,7 @@ test('card You\'ll Visit output excludes cruise title when using cleaned parsed 
   const card = renderCardHTML({ name: 'Norwegian Fjords', ship: 'Queen Anne', ports: 'Southampton • Stavanger • Olden • Geiranger • Bergen • Southampton' });
   const destinations = textBetween(card, '<div class="vpts">', '</div></div></div><div class="tcbar">');
 
-  assert.match(destinations, /Southampton/);
+  assert.doesNotMatch(destinations, /Southampton/);
   assert.match(destinations, /Stavanger/);
   assert.doesNotMatch(destinations, /Norwegian\s*Fjords/);
 });
