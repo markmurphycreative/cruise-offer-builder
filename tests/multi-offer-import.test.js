@@ -108,6 +108,119 @@ Greek Island Glow`);
   assert.equal(JSON.stringify(blocks.map(block => block.split('\n')[0])), JSON.stringify(['P&O Cruises', 'Celebrity Cruises', 'Marella Cruises', 'Virgin Voyages']));
 });
 
+test('splitMultiOfferImport prioritises numeric Offer markers and strips marker lines', () => {
+  const context = createHarness();
+  const blocks = context.splitMultiOfferImport(`Offer 1
+Celebrity Cruises
+Celebrity Apex
+Italy Cruise
+
+Offer 2
+Royal Caribbean
+Icon of the Seas
+Caribbean Escape
+
+Offer 3
+Marella Cruises
+Explorer
+Canary Islands
+
+Offer 4
+P&O Cruises
+Arvia
+Spain & France`);
+
+  assert.equal(JSON.stringify(blocks), JSON.stringify([
+    'Celebrity Cruises\nCelebrity Apex\nItaly Cruise',
+    'Royal Caribbean\nIcon of the Seas\nCaribbean Escape',
+    'Marella Cruises\nExplorer\nCanary Islands',
+    'P&O Cruises\nArvia\nSpain & France'
+  ]));
+  assert.ok(blocks.every(block => !/^offer\s/i.test(block)));
+});
+
+test('splitMultiOfferImport accepts uppercase OFFER markers', () => {
+  const context = createHarness();
+  const blocks = context.splitMultiOfferImport(`OFFER 1
+Celebrity Cruises
+Apex
+
+OFFER 2
+Marella Cruises
+Explorer
+
+OFFER 3
+Virgin Voyages
+Scarlet Lady
+
+OFFER 4
+P&O Cruises
+Arvia`);
+
+  assert.equal(blocks.length, 4);
+  assert.equal(blocks[0], 'Celebrity Cruises\nApex');
+  assert.equal(blocks[3], 'P&O Cruises\nArvia');
+});
+
+test('splitMultiOfferImport accepts Offer One wording', () => {
+  const context = createHarness();
+  const blocks = context.splitMultiOfferImport(`Offer One
+Celebrity Cruises
+Apex
+
+Offer Two
+Marella Cruises
+Explorer
+
+Offer Three
+Virgin Voyages
+Scarlet Lady
+
+Offer Four
+P&O Cruises
+Arvia`);
+
+  assert.equal(JSON.stringify(blocks.map(block => block.split('\n')[0])), JSON.stringify(['Celebrity Cruises', 'Marella Cruises', 'Virgin Voyages', 'P&O Cruises']));
+});
+
+test('splitMultiOfferImport removes decorative separator-only lines from marked imports', () => {
+  const context = createHarness();
+  const blocks = context.splitMultiOfferImport(`Offer 1
+## =====================
+Celebrity Cruises
+#####################
+Celebrity Apex
+
+Offer 2
+=====================
+Marella Cruises
+Explorer`);
+
+  assert.equal(JSON.stringify(blocks), JSON.stringify(['Celebrity Cruises\nCelebrity Apex', 'Marella Cruises\nExplorer']));
+});
+
+test('single-offer parse flow remains separate from Multi Offer Import splitting', () => {
+  assert.doesNotMatch(extractFunction('parseOffer'), /splitMultiOfferImport/);
+  assert.match(extractFunction('parseOffer'), /parseOfferText\(raw,\{renderIntelligence:true\}\)/);
+});
+
+test('Multi Offer Import passes the same blocks as individual single-offer parses', () => {
+  const context = createHarness();
+  const offers = [
+    'Celebrity Cruises\nCelebrity Apex\nItaly Cruise',
+    'Royal Caribbean\nIcon of the Seas\nCaribbean Escape',
+    'Marella Cruises\nExplorer\nCanary Islands',
+    'P&O Cruises\nArvia\nSpain & France'
+  ];
+  const multiPaste = offers.map((offer, index) => `Offer ${index + 1}\n${offer}`).join('\n\n');
+  const parseOfferText = block => ({ parsed: { raw: block }, score: 100, confidence: 'high' });
+
+  assert.equal(
+    JSON.stringify(context.splitMultiOfferImport(multiPaste).map(block => parseOfferText(block).parsed)),
+    JSON.stringify(offers.map(block => parseOfferText(block).parsed))
+  );
+});
+
 test('Multi Offer Import UI and parser reuse hooks are present', () => {
   assert.match(html, /MULTI OFFER IMPORT/);
   assert.match(html, /<textarea id="multi-offer-paste"[^>]* oninput="handleMultiOfferInput\(event\)"[^>]* onkeydown="handleMultiOfferKeydown\(event\)"/);
