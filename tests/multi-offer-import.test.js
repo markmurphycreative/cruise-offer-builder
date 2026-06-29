@@ -45,6 +45,7 @@ function createHarness() {
     extractFunction('findKnownOperatorShip'),
     extractFunction('isDividerLine'),
     extractFunction('isOfferLabelLine'),
+    extractFunction('hasExplicitOfferMarkers'),
     extractFunction('isLikelyOfferStartLine'),
     extractFunction('splitMultiOfferImport')
   ].join('\n'), context);
@@ -137,6 +138,68 @@ Spain & France`);
     'P&O Cruises\nArvia\nSpain & France'
   ]));
   assert.ok(blocks.every(block => !/^offer\s/i.test(block)));
+});
+
+
+
+test('splitMultiOfferImport uses marker splitting only for marked four-offer pastes', () => {
+  const context = createHarness();
+  const blocks = context.splitMultiOfferImport(`Offer 1
+Celebrity Cruises
+Celebrity Apex
+Italy Cruise
+
+Offer 2
+Royal Caribbean International
+Icon of the Seas
+Caribbean Escape
+
+Offer 3
+Marella Cruises
+Explorer
+Canary Islands
+
+Offer 4
+Cunard
+Queen Anne
+Norwegian Fjords`);
+
+  assert.equal(blocks.length, 4);
+  assert.equal(JSON.stringify(blocks.map(block => block.split('\n')[0])), JSON.stringify([
+    'Celebrity Cruises',
+    'Royal Caribbean International',
+    'Marella Cruises',
+    'Cunard'
+  ]));
+});
+
+test('splitMultiOfferImport skips operator fallback when explicit markers exist inside paste', () => {
+  const context = createHarness();
+  const blocks = context.splitMultiOfferImport(`Offer 1
+Celebrity Cruises
+Celebrity Apex
+Italy Cruise
+
+Royal Caribbean International
+Icon of the Seas
+This operator line belongs to marked Offer 1
+
+Offer 2
+Marella Cruises
+Explorer
+Canary Islands`);
+
+  assert.equal(blocks.length, 2);
+  assert.equal(blocks[0], [
+    'Celebrity Cruises',
+    'Celebrity Apex',
+    'Italy Cruise',
+    '',
+    'Royal Caribbean International',
+    'Icon of the Seas',
+    'This operator line belongs to marked Offer 1'
+  ].join('\n'));
+  assert.equal(blocks[1], 'Marella Cruises\nExplorer\nCanary Islands');
 });
 
 test('splitMultiOfferImport accepts uppercase OFFER markers', () => {
@@ -380,6 +443,79 @@ test('Multi Offer Import clamps displayed confidence scores to 100', () => {
   assert.equal(context.clampParseConfidenceScore(110), 100);
   assert.equal(context.clampParseConfidenceScore(105), 100);
   assert.equal(context.clampParseConfidenceScore(98), 98);
+});
+
+
+
+test('Multi Offer Import loads exactly four marked blocks without additional ignored status', () => {
+  const result = { innerHTML: '', className: '' };
+  const field = { value: `Offer 1
+Celebrity Cruises
+Celebrity Apex
+Italy Cruise
+
+Offer 2
+Royal Caribbean International
+Icon of the Seas
+Caribbean Escape
+
+Offer 3
+Marella Cruises
+Explorer
+Canary Islands
+
+Offer 4
+Cunard
+Queen Anne
+Norwegian Fjords` };
+  const parsedBlocks = [];
+  const context = {
+    offers: [{}, {}, {}, {}],
+    cur: 0,
+    activeMultiOfferImportIndexes: [],
+    PARSE_FIELD_MAP: { operatorKey: 'f-operator', name: 'f-name' },
+    OPERATOR_HEADERS: createHarness().OPERATOR_HEADERS,
+    OPERATOR_ALIASES: createHarness().OPERATOR_ALIASES,
+    OPERATOR_SHIPS: createHarness().OPERATOR_SHIPS,
+    document: {
+      getElementById(id) {
+        if (id === 'multi-offer-result') return result;
+        if (id === 'multi-offer-paste') return field;
+        return null;
+      },
+      querySelectorAll() { return []; }
+    },
+    isOfferLoaded() { return false; },
+    defaultTopBarUspForOperator() { return ''; },
+    applyOperatorTopBarUspDefault() {},
+    stripTransientPasteOfferFields() {},
+    loadOfferToEditor() {}, rv() {}, updateAllStatus() {}, genUtm() {}, checkPortsWarn() {}, updateExportFilenames() {}, runSpellQA() {}, queueAutosave() {},
+    parseOfferText(block) {
+      parsedBlocks.push(block);
+      return { parsed: { operatorKey: block.split('\n')[0].toLowerCase().replace(/\W+/g, '') }, confidence: 'high', score: 100 };
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext([
+    extractFunction('escapeRegExp'),
+    extractFunction('findKnownOperatorShip'),
+    extractFunction('isDividerLine'),
+    extractFunction('isOfferLabelLine'),
+    extractFunction('hasExplicitOfferMarkers'),
+    extractFunction('isLikelyOfferStartLine'),
+    extractFunction('splitMultiOfferImport'),
+    extractFunction('setMultiOfferStatus'),
+    extractFunction('getParsedOfferMissingCount'),
+    extractFunction('clampParseConfidenceScore'),
+    extractFunction('applyParsedOfferToSlot'),
+    extractFunction('performMultiOfferImport')
+  ].join('\n'), context);
+
+  context.performMultiOfferImport(false);
+
+  assert.equal(parsedBlocks.length, 4);
+  assert.equal(context.offers.length, 4);
+  assert.doesNotMatch(result.innerHTML, /additional offers ignored/i);
 });
 
 test('Multi Offer Import status rows use the clamped confidence score for display', () => {
