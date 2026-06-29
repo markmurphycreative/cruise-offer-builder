@@ -44,12 +44,67 @@ function createHarness() {
     extractFunction('escapeRegExp'),
     extractFunction('findKnownOperatorShip'),
     extractFunction('isDividerLine'),
+    extractFunction('getOfferLabelIndex'),
     extractFunction('isOfferLabelLine'),
     extractFunction('hasExplicitOfferMarkers'),
     extractFunction('isLikelyOfferStartLine'),
+    extractFunction('getMultiOfferImportBlocks'),
     extractFunction('splitMultiOfferImport')
   ].join('\n'), context);
   return context;
+}
+
+
+function createImportContext(field, result, parsedBlocks) {
+  const harness = createHarness();
+  return {
+    Number,
+    offers: [{}, {}, {}, {}],
+    cur: 0,
+    activeMultiOfferImportIndexes: [],
+    PARSE_FIELD_MAP: { operatorKey: 'f-operator', name: 'f-name' },
+    OPERATOR_HEADERS: harness.OPERATOR_HEADERS,
+    OPERATOR_ALIASES: harness.OPERATOR_ALIASES,
+    OPERATOR_SHIPS: harness.OPERATOR_SHIPS,
+    document: {
+      getElementById(id) {
+        if (id === 'multi-offer-result') return result;
+        if (id === 'multi-offer-paste') return field;
+        return null;
+      },
+      querySelectorAll() { return []; }
+    },
+    isOfferLoaded(offer) { return !!(offer && (offer.name || offer.operator)); },
+    defaultTopBarUspForOperator() { return ''; },
+    applyOperatorTopBarUspDefault() {},
+    stripTransientPasteOfferFields() {},
+    clearHeroImageDataFromOffer() {},
+    loadOfferToEditor() {}, rv() {}, updateAllStatus() {}, genUtm() {}, checkPortsWarn() {}, updateExportFilenames() {}, runSpellQA() {}, queueAutosave() {},
+    parseOfferText(block) {
+      parsedBlocks.push(block);
+      return { parsed: { operatorKey: block.split('\n')[0].toLowerCase().replace(/\W+/g, '') }, confidence: 'high', score: 100 };
+    }
+  };
+}
+
+function runImportFunctions(context) {
+  vm.createContext(context);
+  vm.runInContext([
+    extractFunction('escapeRegExp'),
+    extractFunction('findKnownOperatorShip'),
+    extractFunction('isDividerLine'),
+    extractFunction('getOfferLabelIndex'),
+    extractFunction('isOfferLabelLine'),
+    extractFunction('hasExplicitOfferMarkers'),
+    extractFunction('isLikelyOfferStartLine'),
+    extractFunction('getMultiOfferImportBlocks'),
+    extractFunction('splitMultiOfferImport'),
+    extractFunction('setMultiOfferStatus'),
+    extractFunction('getParsedOfferMissingCount'),
+    extractFunction('clampParseConfidenceScore'),
+    extractFunction('applyParsedOfferToSlot'),
+    extractFunction('performMultiOfferImport')
+  ].join('\n'), context);
 }
 
 test('splitMultiOfferImport splits Trello-style divider imports into four offers', () => {
@@ -288,7 +343,7 @@ test('Multi Offer Import UI and parser reuse hooks are present', () => {
   assert.match(html, /MULTI OFFER IMPORT/);
   assert.match(html, /<textarea id="multi-offer-paste"[^>]* oninput="handleMultiOfferInput\(event\)"[^>]* onkeydown="handleMultiOfferKeydown\(event\)"/);
   assert.match(html, /Load All Offers/);
-  assert.match(extractFunction('performMultiOfferImport'), /parseOfferText\(block,\{renderIntelligence:false\}\)/);
+  assert.match(extractFunction('performMultiOfferImport'), /parseOfferText\(item\.block,\{renderIntelligence:false\}\)/);
   assert.match(extractFunction('performMultiOfferImport'), /Replace existing offers\?/);
 });
 
@@ -500,9 +555,11 @@ Norwegian Fjords` };
     extractFunction('escapeRegExp'),
     extractFunction('findKnownOperatorShip'),
     extractFunction('isDividerLine'),
+    extractFunction('getOfferLabelIndex'),
     extractFunction('isOfferLabelLine'),
     extractFunction('hasExplicitOfferMarkers'),
     extractFunction('isLikelyOfferStartLine'),
+    extractFunction('getMultiOfferImportBlocks'),
     extractFunction('splitMultiOfferImport'),
     extractFunction('setMultiOfferStatus'),
     extractFunction('getParsedOfferMissingCount'),
@@ -526,4 +583,103 @@ test('Multi Offer Import status rows use the clamped confidence score for displa
 
 test('Multi Offer Import clears stale hero data on imported slots', () => {
   assert.match(extractFunction('applyParsedOfferToSlot'), /clearHeroImageDataFromOffer\(index\)/);
+});
+
+test('marked Offer 3 only imports into Card 3 and strips marker before parsing', () => {
+  const result = { innerHTML: '', className: '' };
+  const field = { value: `Offer 3
+Marella Cruises
+Explorer` };
+  const parsedBlocks = [];
+  const context = createImportContext(field, result, parsedBlocks);
+  context.offers = [{ name: 'Existing 1' }, { name: 'Existing 2' }, { name: 'Existing 3' }, { name: 'Existing 4' }];
+  runImportFunctions(context);
+  context.performMultiOfferImport(false);
+  assert.deepEqual(parsedBlocks, ['Marella Cruises\nExplorer']);
+  assert.equal(context.offers[0].name, 'Existing 1');
+  assert.equal(context.offers[1].name, 'Existing 2');
+  assert.equal(context.offers[2].operator, 'marellacruises');
+  assert.equal(context.offers[3].name, 'Existing 4');
+  assert.equal(JSON.stringify(context.activeMultiOfferImportIndexes), JSON.stringify([2]));
+  assert.equal(context.cur, 2);
+});
+
+test('marked Offer 4 only imports into Card 4', () => {
+  const result = { innerHTML: '', className: '' };
+  const field = { value: `OFFER 4
+Cunard
+Queen Anne` };
+  const parsedBlocks = [];
+  const context = createImportContext(field, result, parsedBlocks);
+  context.offers = [{ name: 'Existing 1' }, { name: 'Existing 2' }, { name: 'Existing 3' }, { name: 'Existing 4' }];
+  runImportFunctions(context);
+  context.performMultiOfferImport(false);
+  assert.deepEqual(parsedBlocks, ['Cunard\nQueen Anne']);
+  assert.equal(context.offers[0].name, 'Existing 1');
+  assert.equal(context.offers[1].name, 'Existing 2');
+  assert.equal(context.offers[2].name, 'Existing 3');
+  assert.equal(context.offers[3].operator, 'cunard');
+  assert.equal(JSON.stringify(context.activeMultiOfferImportIndexes), JSON.stringify([3]));
+});
+
+test('marked Offer 2 plus Offer 4 imports into Cards 2 and 4 only', () => {
+  const result = { innerHTML: '', className: '' };
+  const field = { value: `Offer 2
+Royal Caribbean
+Icon of the Seas
+
+Offer Four
+Cunard
+Queen Anne` };
+  const parsedBlocks = [];
+  const context = createImportContext(field, result, parsedBlocks);
+  context.offers = [{ name: 'Existing 1' }, { name: 'Existing 2' }, { name: 'Existing 3' }, { name: 'Existing 4' }];
+  runImportFunctions(context);
+  context.performMultiOfferImport(false);
+  assert.deepEqual(parsedBlocks, ['Royal Caribbean\nIcon of the Seas', 'Cunard\nQueen Anne']);
+  assert.equal(context.offers[0].name, 'Existing 1');
+  assert.equal(context.offers[1].operator, 'royalcaribbean');
+  assert.equal(context.offers[2].name, 'Existing 3');
+  assert.equal(context.offers[3].operator, 'cunard');
+  assert.equal(JSON.stringify(context.activeMultiOfferImportIndexes), JSON.stringify([1, 3]));
+});
+
+test('getMultiOfferImportBlocks preserves full marked Offer 1-4 targets', () => {
+  const context = createHarness();
+  const blocks = context.getMultiOfferImportBlocks(`Offer One
+Celebrity Cruises
+Apex
+
+Offer 2
+Royal Caribbean
+Icon
+
+OFFER 3
+Marella Cruises
+Explorer
+
+Offer Four
+Cunard
+Queen Anne`);
+  assert.equal(JSON.stringify(blocks.map(item => item.targetIndex)), JSON.stringify([0, 1, 2, 3]));
+  assert.equal(JSON.stringify(blocks.map(item => item.block.split('\n')[0])), JSON.stringify(['Celebrity Cruises', 'Royal Caribbean', 'Marella Cruises', 'Cunard']));
+});
+
+test('unmarked Multi Offer Import fallback still loads sequentially', () => {
+  const result = { innerHTML: '', className: '' };
+  const field = { value: `Marella Cruises
+Explorer
+Canaries
+
+
+Cunard
+Queen Anne
+Fjords` };
+  const parsedBlocks = [];
+  const context = createImportContext(field, result, parsedBlocks);
+  runImportFunctions(context);
+  context.performMultiOfferImport(false);
+  assert.equal(context.offers[0].operator, 'marellacruises');
+  assert.equal(context.offers[1].operator, 'cunard');
+  assert.equal(JSON.stringify(context.activeMultiOfferImportIndexes), JSON.stringify([0, 1]));
 });

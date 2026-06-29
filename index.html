@@ -6428,7 +6428,15 @@ function handlePasteOfferKeydown(event){
 }
 
 function isDividerLine(line){ return /^\s*(?:(?:[#=\-–—_*\.])(?:\s*[#=\-–—_*\.]){2,})\s*$/.test(String(line||"")); }
-function isOfferLabelLine(line){ return /^\s*offer\s*(?:[1-4]|one|two|three|four)\s*:?\s*$/i.test(String(line||"")); }
+function getOfferLabelIndex(line){
+  const match=String(line||"").trim().match(/^offer\s*(1|2|3|4|one|two|three|four)\s*:?$/i);
+  if(!match) return null;
+  const value=match[1].toLowerCase();
+  const words={one:1,two:2,three:3,four:4};
+  const number=words[value]||Number(value);
+  return Number.isInteger(number)&&number>=1&&number<=4 ? number-1 : null;
+}
+function isOfferLabelLine(line){ return getOfferLabelIndex(line)!==null; }
 function hasExplicitOfferMarkers(lines){ return (lines||[]).some(line=>isOfferLabelLine(line)); }
 function isLikelyOfferStartLine(line){
   const value=String(line||"").trim();
@@ -6443,23 +6451,27 @@ function isLikelyOfferStartLine(line){
   }
   return false;
 }
-function splitMultiOfferImport(raw){
+function getMultiOfferImportBlocks(raw){
   const text=String(raw||"").replace(/\r\n?/g,"\n").trim();
   if(!text) return [];
   const cleanBlock=block=>String(block||"").split("\n").filter(line=>!isDividerLine(line)&&!isOfferLabelLine(line)).join("\n").trim();
+  const makeImportBlock=(block,targetIndex=null)=>({block,targetIndex:Number.isInteger(targetIndex)&&targetIndex>=0&&targetIndex<4?targetIndex:null});
   const lines=text.split("\n");
   if(hasExplicitOfferMarkers(lines)){
     const blocks=[];
     let current=[];
+    let currentTargetIndex=null;
     let seenOfferMarker=false;
     lines.forEach(line=>{
       const trimmed=line.trim();
-      if(isOfferLabelLine(trimmed)){
+      const markerIndex=getOfferLabelIndex(trimmed);
+      if(markerIndex!==null){
         if(seenOfferMarker){
           const block=cleanBlock(current.join("\n"));
-          if(block) blocks.push(block);
+          if(block) blocks.push(makeImportBlock(block,currentTargetIndex));
         }
         seenOfferMarker=true;
+        currentTargetIndex=markerIndex;
         current=[];
         return;
       }
@@ -6467,7 +6479,7 @@ function splitMultiOfferImport(raw){
       if(!isDividerLine(trimmed)) current.push(line);
     });
     const finalBlock=cleanBlock(current.join("\n"));
-    if(finalBlock) blocks.push(finalBlock);
+    if(finalBlock) blocks.push(makeImportBlock(finalBlock,currentTargetIndex));
     return blocks;
   }
   let blocks=text.split(/\n\s*(?:[#=\-–—_*\.](?:\s*[#=\-–—_*\.]){2,})\s*\n/g).map(cleanBlock).filter(Boolean);
@@ -6484,7 +6496,10 @@ function splitMultiOfferImport(raw){
     const finalBlock=cleanBlock(current.join("\n"));
     if(finalBlock) blocks.push(finalBlock);
   }
-  return blocks.map(cleanBlock).filter(Boolean);
+  return blocks.map(cleanBlock).filter(Boolean).map((block,index)=>makeImportBlock(block,index));
+}
+function splitMultiOfferImport(raw){
+  return getMultiOfferImportBlocks(raw).map(item=>item.block);
 }
 function setMultiOfferStatus(html,level){ const el=document.getElementById("multi-offer-result"); if(!el) return; el.innerHTML=html||""; el.className='parse-result '+(level||''); }
 function openOfferDetailsSection(){
@@ -6569,20 +6584,23 @@ function loadAllOffers(){ return performMultiOfferImport(false); }
 function cancelMultiOfferReplace(){ setMultiOfferStatus("Import cancelled","low"); }
 function performMultiOfferImport(replaceConfirmed){
   const raw=(document.getElementById("multi-offer-paste")||{}).value||"";
-  const blocks=splitMultiOfferImport(raw);
-  if(!blocks.length){ setMultiOfferStatus("No offers detected","low"); return; }
+  const importBlocks=getMultiOfferImportBlocks(raw);
+  const hasMarkedTargets=importBlocks.some(item=>Number.isInteger(item.targetIndex));
+  const blocks=importBlocks.map(item=>item.block);
+  if(!importBlocks.length){ setMultiOfferStatus("No offers detected","low"); return; }
   const existing=(offers||[]).slice(0,4).some(isOfferLoaded);
-  if(existing&&!replaceConfirmed){
+  if(existing&&!replaceConfirmed&&!hasMarkedTargets){
     setMultiOfferStatus(`Replace existing offers?<br><button class="abtn btn-compact" type="button" onclick="cancelMultiOfferReplace()">Cancel</button> <button class="abtn btn-compact" type="button" onclick="performMultiOfferImport(true)">Replace All</button>`,"partial");
     return;
   }
   while(offers.length<4) offers.push({});
-  if(existing){ for(let i=0;i<4;i+=1) offers[i]={}; }
-  const selected=blocks.slice(0,4);
-  const results=selected.map(block=>parseOfferText(block,{renderIntelligence:false})).filter(Boolean);
-  activeMultiOfferImportIndexes=results.map((result,index)=>index);
-  results.forEach((result,index)=>applyParsedOfferToSlot(result,index));
-  cur=0;
+  if(existing&&!hasMarkedTargets){ for(let i=0;i<4;i+=1) offers[i]={}; }
+  const selected=importBlocks.slice(0,4);
+  const parsedResults=selected.map((item,index)=>({result:parseOfferText(item.block,{renderIntelligence:false}),targetIndex:Number.isInteger(item.targetIndex)?item.targetIndex:index})).filter(item=>item.result);
+  const results=parsedResults.map(item=>item.result);
+  activeMultiOfferImportIndexes=parsedResults.map(item=>item.targetIndex);
+  parsedResults.forEach(item=>applyParsedOfferToSlot(item.result,item.targetIndex));
+  cur=activeMultiOfferImportIndexes.length?activeMultiOfferImportIndexes[0]:0;
   try{ loadOfferToEditor(cur); }catch(e){ try{ load(cur); }catch(_e){} }
   try{ document.querySelectorAll(".otab").forEach((t,idx)=>t.classList.toggle("active",idx===cur)); }catch(e){}
   try{ rv(); }catch(e){}
@@ -6593,7 +6611,9 @@ function performMultiOfferImport(replaceConfirmed){
   try{ runSpellQA(); }catch(e){}
   try{ queueAutosave(); }catch(e){}
   if(results.length&&typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Multi offer import");
-  const rows=results.map((result,index)=>{
+  const rows=parsedResults.map(item=>{
+    const result=item.result;
+    const index=item.targetIndex;
     const missing=getParsedOfferMissingCount(result.parsed);
     const ok=missing===0||result.confidence==='high';
     const label=ok?`✓ Offer ${index+1} Loaded`:`⚠ Offer ${index+1} Needs Review`;
