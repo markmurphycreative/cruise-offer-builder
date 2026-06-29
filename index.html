@@ -6427,8 +6427,8 @@ function handlePasteOfferKeydown(event){
   parseOffer();
 }
 
-function isDividerLine(line){ return /^\s*(?:[-–—_*]{3,}|={3,}|\.{3,})\s*$/.test(String(line||"")); }
-function isOfferLabelLine(line){ return /^\s*offer\s*\d{1,2}\s*:?\s*$/i.test(String(line||"")); }
+function isDividerLine(line){ return /^\s*(?:(?:[#=\-–—_*\.])(?:\s*[#=\-–—_*\.]){2,})\s*$/.test(String(line||"")); }
+function isOfferLabelLine(line){ return /^\s*offer\s*(?:[1-4]|one|two|three|four)\s*:?\s*$/i.test(String(line||"")); }
 function isLikelyOfferStartLine(line){
   const value=String(line||"").trim();
   if(!value) return false;
@@ -6445,21 +6445,45 @@ function isLikelyOfferStartLine(line){
 function splitMultiOfferImport(raw){
   const text=String(raw||"").replace(/\r\n?/g,"\n").trim();
   if(!text) return [];
-  let blocks=text.split(/\n\s*(?:[-–—_*]{3,}|={3,}|\.{3,})\s*\n/g).map(block=>block.trim()).filter(Boolean);
+  const cleanBlock=block=>String(block||"").split("\n").filter(line=>!isDividerLine(line)&&!isOfferLabelLine(line)).join("\n").trim();
+  const lines=text.split("\n");
+  if(lines.some(line=>isOfferLabelLine(line))){
+    const blocks=[];
+    let current=[];
+    let seenOfferMarker=false;
+    lines.forEach(line=>{
+      const trimmed=line.trim();
+      if(isOfferLabelLine(trimmed)){
+        if(seenOfferMarker){
+          const block=cleanBlock(current.join("\n"));
+          if(block) blocks.push(block);
+        }
+        seenOfferMarker=true;
+        current=[];
+        return;
+      }
+      if(!seenOfferMarker) return;
+      if(!isDividerLine(trimmed)) current.push(line);
+    });
+    const finalBlock=cleanBlock(current.join("\n"));
+    if(finalBlock) blocks.push(finalBlock);
+    return blocks;
+  }
+  let blocks=text.split(/\n\s*(?:[#=\-–—_*\.](?:\s*[#=\-–—_*\.]){2,})\s*\n/g).map(cleanBlock).filter(Boolean);
   if(blocks.length===1){
-    const lines=text.split("\n");
     blocks=[]; let current=[]; let blankRun=0;
     lines.forEach(line=>{
       const trimmed=line.trim();
       if(!trimmed){ blankRun+=1; current.push(line); return; }
-      const shouldSplit=current.join("\n").trim() && (blankRun>=2 || isOfferLabelLine(trimmed) || (isLikelyOfferStartLine(trimmed)&&current.filter(item=>item.trim()).length>=2));
-      if(shouldSplit){ blocks.push(current.join("\n").trim()); current=[]; }
+      const shouldSplit=current.join("\n").trim() && (blankRun>=2 || (isLikelyOfferStartLine(trimmed)&&current.filter(item=>item.trim()).length>=2));
+      if(shouldSplit){ blocks.push(cleanBlock(current.join("\n"))); current=[]; }
       blankRun=0;
-      if(!isOfferLabelLine(trimmed)) current.push(line);
+      current.push(line);
     });
-    if(current.join("\n").trim()) blocks.push(current.join("\n").trim());
+    const finalBlock=cleanBlock(current.join("\n"));
+    if(finalBlock) blocks.push(finalBlock);
   }
-  return blocks.map(block=>block.split("\n").filter(line=>!isDividerLine(line)&&!isOfferLabelLine(line)).join("\n").trim()).filter(Boolean);
+  return blocks.map(cleanBlock).filter(Boolean);
 }
 function setMultiOfferStatus(html,level){ const el=document.getElementById("multi-offer-result"); if(!el) return; el.innerHTML=html||""; el.className='parse-result '+(level||''); }
 function openOfferDetailsSection(){
