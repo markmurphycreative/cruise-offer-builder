@@ -6429,6 +6429,7 @@ function handlePasteOfferKeydown(event){
 
 function isDividerLine(line){ return /^\s*(?:(?:[#=\-–—_*\.])(?:\s*[#=\-–—_*\.]){2,})\s*$/.test(String(line||"")); }
 function isOfferLabelLine(line){ return /^\s*offer\s*(?:[1-4]|one|two|three|four)\s*:?\s*$/i.test(String(line||"")); }
+function hasExplicitOfferMarkers(lines){ return (lines||[]).some(line=>isOfferLabelLine(line)); }
 function isLikelyOfferStartLine(line){
   const value=String(line||"").trim();
   if(!value) return false;
@@ -6447,7 +6448,7 @@ function splitMultiOfferImport(raw){
   if(!text) return [];
   const cleanBlock=block=>String(block||"").split("\n").filter(line=>!isDividerLine(line)&&!isOfferLabelLine(line)).join("\n").trim();
   const lines=text.split("\n");
-  if(lines.some(line=>isOfferLabelLine(line))){
+  if(hasExplicitOfferMarkers(lines)){
     const blocks=[];
     let current=[];
     let seenOfferMarker=false;
