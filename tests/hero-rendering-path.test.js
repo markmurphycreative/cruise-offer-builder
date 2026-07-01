@@ -124,6 +124,22 @@ test('workspace hero placeholders and images are enhanced in preview only and re
   assert.doesNotMatch(extractFunction('renderHeroHTML'), /clickable-hero-placeholder|clickable-hero-image|onclick|input\.click/);
 });
 
+
+test('single and email preview render paths directly bind actual rendered hero elements', () => {
+  const directBinder = extractFunction('bindRenderedHeroPickerTargets');
+  assert.match(directBinder, /root\.querySelectorAll\("\.cc"\)/);
+  assert.match(directBinder, /children\.find\(el=>el\.classList&&el\.classList\.contains\("hero-wrap"\)\)/);
+  assert.match(directBinder, /heroWrap&&heroWrap\.querySelector\("img\.hero\[data-editable-image-type='hero'\],img\.hero"\)/);
+  assert.match(directBinder, /bindHeroPickerTarget\(heroImg, offerIndex, \{replace:true\}\)/);
+  assert.match(directBinder, /children\.find\(el=>el\.classList&&el\.classList\.contains\("hph"\)\)/);
+  assert.match(directBinder, /bindHeroPickerTarget\(placeholder, offerIndex, \{replace:false\}\)/);
+
+  assert.match(extractFunction('bindSinglePreviewHeroPickerTargets'), /bindRenderedHeroPickerTargets\(root, offerIndex\)/);
+  assert.match(extractFunction('bindEmailPreviewHeroPickerTargets'), /bindRenderedHeroPickerTargets\(root, offerIndex\)/);
+  assert.match(extractFunction('renderVisibleCard'), /bindSinglePreviewHeroPickerTargets\(out, cur\)/);
+  assert.match(extractFunction('renderPreviewMode'), /bindEmailPreviewHeroPickerTargets\(cardWrap, i\)/);
+});
+
 test('preview and export use renderCardHTML as the same hero source path', () => {
   const renderOfferWithCta = extractFunction('renderOfferWithOptionalCtaHTML');
   const previewRenderer = extractFunction('renderVisibleCard');
