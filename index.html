@@ -640,8 +640,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cc .hph::before{content:"";display:block;width:92px;height:92px;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/%3E%3Cpolyline points='17 8 12 3 7 8'/%3E%3Cline x1='12' x2='12' y1='3' y2='15'/%3E%3C/svg%3E");pointer-events:none;}
 .all-preview-card .hph{gap:14px;}
 .all-preview-card .hph::before{width:72px;height:72px;}
-.preview-pane .hph.clickable-hero-placeholder{cursor:pointer;position:relative;transition:filter .15s ease;}
-.preview-pane .hph.clickable-hero-placeholder:hover{filter:brightness(1.05);}
+.preview-pane .hph.clickable-hero-placeholder,.preview-pane .hero.clickable-hero-image{cursor:pointer;position:relative;transition:filter .15s ease;}
+.preview-pane .hph.clickable-hero-placeholder:hover,.preview-pane .hero.clickable-hero-image:hover{filter:brightness(1.05);}
+.preview-pane .hph.clickable-hero-placeholder:focus-visible,.preview-pane .hero.clickable-hero-image:focus-visible{outline:4px solid rgba(212,175,55,.85);outline-offset:-8px;}
 .preview-hero-drop-target{position:relative;}
 .preview-hero-drop-target.hero-drag-over{outline:5px solid var(--gold);outline-offset:8px;box-shadow:0 0 0 10px rgba(160,146,103,.18);}
 .preview-pane .hph.clickable-hero-placeholder::after{content:"ADD HERO IMAGE";display:inline-flex;align-items:center;justify-content:center;opacity:1;font-family:'Montserrat',sans-serif;font-size:38px;font-weight:500;color:#fff;background:transparent;border:0;border-radius:0;padding:0;line-height:1;text-align:center;box-shadow:none;pointer-events:none;}
@@ -2610,7 +2611,8 @@ function dzOver(e,id){e.preventDefault();document.getElementById(id).classList.a
 function dzOut(id){document.getElementById(id).classList.remove("over");}
 function getDropzoneIdForType(type){ return type==="logo"?"dz-logo":(type==="itinerary"?"dz-itinerary":"dz-hero"); }
 function dzDrop(e,type){e.preventDefault();dzOut(getDropzoneIdForType(type));const f=e.dataTransfer.files[0];if(f)readFile(f,type);}
-function fileChosen(e,type){const f=e.target.files[0];if(f)readFile(f,type);}
+let pendingHeroPickerOfferIndex=null;
+function fileChosen(e,type){const f=e.target.files[0];if(f)readFile(f,type); else if(type==="hero") pendingHeroPickerOfferIndex=null;}
 function isAcceptedHeroImageType(type){
   return /^(image\/jpeg|image\/png|image\/webp|image\/gif)$/i.test(type||"");
 }
@@ -2788,10 +2790,19 @@ function enhanceHeroDropTarget(root,offerIndex){
 function openHeroImagePickerForOffer(index){
   const offerIndex = Number(index);
   if(!Number.isInteger(offerIndex) || offerIndex < 0 || offerIndex >= offers.length) return;
+  pendingHeroPickerOfferIndex=offerIndex;
   if(offerIndex !== cur){
-    if(typeof sv === "function") sv(offerIndex);
-    else if(typeof load === "function") load(offerIndex);
-    else cur = offerIndex;
+    try { commitVisibleFields(); } catch(e) { try { save(); } catch(_e){} }
+    cur=offerIndex;
+    try { syncOfferSelector(); } catch(e){}
+    try { loadOfferToEditor(cur); } catch(e) { try { load(cur); } catch(_e){} }
+    try { updateLockUI(); } catch(e){}
+    try { genUtm(); } catch(e){}
+    try { genStandardUtms(); } catch(e){}
+    try { updateAllStatus(); } catch(e){}
+    try { updateExportFilenames(); } catch(e){}
+    try { updateMoveOfferButtons(); } catch(e){}
+    try { runSpellQA(); } catch(e){}
   }
   const input = document.querySelector('#dz-hero input[type="file"]');
   if(!input) return;
@@ -2820,8 +2831,36 @@ function enhanceClickableHeroPlaceholders(root, offerIndex){
     });
   });
 }
+function enhanceClickableHeroImages(root, offerIndex){
+  if(viewMode!=="all") return;
+  const scope = root && root.querySelectorAll ? root : document;
+  scope.querySelectorAll(".hero-wrap img.hero").forEach(hero=>{
+    const resolvedIndex = Number.isInteger(offerIndex) ? offerIndex : cur;
+    if(hero.dataset.heroPickerBound === "1") return;
+    hero.dataset.heroPickerBound = "1";
+    hero.classList.add("clickable-hero-image");
+    hero.setAttribute("role", "button");
+    hero.setAttribute("tabindex", "0");
+    hero.setAttribute("title", "Click to replace image");
+    hero.setAttribute("aria-label", "Replace hero image for Offer " + (resolvedIndex + 1));
+    const openPicker = event=>{
+      event.preventDefault();
+      event.stopPropagation();
+      openHeroImagePickerForOffer(resolvedIndex);
+    };
+    hero.addEventListener("click", openPicker);
+    hero.addEventListener("keydown", event=>{
+      if(event.key === "Enter" || event.key === " ") openPicker(event);
+    });
+  });
+}
+function enhanceClickableHeroImagesAndPlaceholders(root, offerIndex){
+  enhanceClickableHeroPlaceholders(root, offerIndex);
+  enhanceClickableHeroImages(root, offerIndex);
+}
 function readFile(file,type){
-  const targetOfferIndex=cur;
+  let targetOfferIndex=cur;
+  if(type==="hero"&&typeof pendingHeroPickerOfferIndex!=="undefined"&&Number.isInteger(pendingHeroPickerOfferIndex)) targetOfferIndex=pendingHeroPickerOfferIndex;
   if(type==="hero" && typeof isOfferLocked==="function" && isOfferLocked(targetOfferIndex)) return showOfferLockStatus(targetOfferIndex);
   const isSvg=file.type==="image/svg+xml"||file.name.endsWith(".svg");
   if(type==="logo"&&isSvg){
@@ -2839,7 +2878,7 @@ function readFile(file,type){
         normaliseRouteMapImageSource(src).then(normalisedSrc=>applyRouteMapImageSourceToOffer(normalisedSrc,targetOfferIndex));
         return;
       }
-      else{ offers[targetOfferIndex]._img=src; offers[targetOfferIndex]._cropZoom=100; offers[targetOfferIndex]._cropX=50; offers[targetOfferIndex]._cropY=50; offers[targetOfferIndex]._cropPosVersion=2; offers[targetOfferIndex]._heroFitMode="fill"; if(targetOfferIndex===cur){ setThumb("hero",src); syncHeroUi(); } }
+      else{ offers[targetOfferIndex]._img=src; offers[targetOfferIndex]._cropZoom=100; offers[targetOfferIndex]._cropX=50; offers[targetOfferIndex]._cropY=50; offers[targetOfferIndex]._cropPosVersion=2; offers[targetOfferIndex]._heroFitMode="fill"; if(typeof pendingHeroPickerOfferIndex!=="undefined") pendingHeroPickerOfferIndex=null; if(targetOfferIndex===cur){ setThumb("hero",src); syncHeroUi(); } }
       refreshOfferUi({utm:false,spell:false,autosave:false}); if(typeof queueAutosave==="function") queueAutosave({immediate:type==="hero"}); if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange(type==="hero"?"Hero image change":(type==="itinerary"?"Route map change":"Logo image change"));
     }; r.readAsDataURL(file);
   }
@@ -8015,7 +8054,7 @@ function renderSingleOffer(data){
   updatePreviewTitle();
   out.innerHTML=renderCardHTML(data||{});
   adjustVisitSectionHeights(out);
-  enhanceClickableHeroPlaceholders(out, cur);
+  enhanceClickableHeroImagesAndPlaceholders(out, cur);
   enhanceHeroDropTarget(out, cur);
   scheduleHeroCropPositions(out);
   scaler.style.width="1200px";
@@ -8040,7 +8079,7 @@ function rv(skipSave){
     bar.innerHTML=`<div class="email-dot" style="background:#ff5f57"></div><div class="email-dot" style="background:#ffbd2e"></div><div class="email-dot" style="background:#28ca41"></div><span style="font-size:10px;color:#aaa;margin-left:8px;">Klaviyo — ${document.getElementById("g-campaign").value||"Campaign"}</span>`;
     chrome.appendChild(bar);
     const stack=document.createElement("div"); stack.className="email-cards-stack";
-    offers.forEach((d,index)=>{ if(!d.name&&!d._img) return; const cw=document.createElement("div"); cw.className="email-card-wrap"; cw.innerHTML=renderCardHTML(d); adjustVisitSectionHeights(cw); enhanceClickableHeroPlaceholders(cw, index); enhanceHeroDropTarget(cw, index); stack.appendChild(cw); });
+    offers.forEach((d,index)=>{ if(!d.name&&!d._img) return; const cw=document.createElement("div"); cw.className="email-card-wrap"; cw.innerHTML=renderCardHTML(d); adjustVisitSectionHeights(cw); enhanceClickableHeroImagesAndPlaceholders(cw, index); enhanceHeroDropTarget(cw, index); stack.appendChild(cw); });
     const footer=document.createElement("div"); footer.className="email-footer"; footer.innerHTML="Dawson &amp; Sanderson · T&amp;Cs Apply<br><span style='font-size:10px;'>Unsubscribe</span>";
     chrome.appendChild(stack); chrome.appendChild(footer); wrap.appendChild(chrome);
     out.innerHTML=""; out.appendChild(wrap);
@@ -8049,7 +8088,7 @@ function rv(skipSave){
   } else if(viewMode==="all"){
     updatePreviewTitle();
     const grid=document.createElement("div"); grid.style.cssText="display:grid;grid-template-columns:1200px 1200px;width:2400px;background:#333;gap:2px;";
-    offers.forEach((d,index)=>{const c=document.createElement("div");c.innerHTML=renderCardHTML(d);adjustVisitSectionHeights(c);enhanceClickableHeroPlaceholders(c, index);enhanceHeroDropTarget(c, index);grid.appendChild(c);});
+    offers.forEach((d,index)=>{const c=document.createElement("div");c.innerHTML=renderCardHTML(d);adjustVisitSectionHeights(c);enhanceClickableHeroImagesAndPlaceholders(c, index);enhanceHeroDropTarget(c, index);grid.appendChild(c);});
     out.innerHTML=""; out.appendChild(grid);
     scaler.style.width="2400px"; scaler.style.transform=`scale(${scale})`; scaler.style.transformOrigin="top center";
     scaler.style.height=Math.ceil(out.offsetHeight*scale)+"px";
@@ -8335,7 +8374,7 @@ function renderOfferIndex(i){
     updatePreviewTitle();
     out.innerHTML=renderCardHTML(d);
     adjustVisitSectionHeights(out);
-    enhanceClickableHeroPlaceholders(out, i);
+    enhanceClickableHeroImagesAndPlaceholders(out, i);
     enhanceHeroDropTarget(out, i);
     scheduleHeroCropPositions(out);
     scaler.style.width='1200px';
@@ -8458,7 +8497,7 @@ function renderVisibleCard(){
   updatePreviewTitle();
   out.innerHTML = renderOfferWithOptionalCtaHTML(visibleFieldsToData(), getCtaSettingsFromUI());
   adjustVisitSectionHeights(out);
-  enhanceClickableHeroPlaceholders(out, cur);
+  enhanceClickableHeroImagesAndPlaceholders(out, cur);
   enhanceHeroDropTarget(out, cur);
   scheduleHeroCropPositions(out);
   scaler.style.width = '1200px';
@@ -8882,7 +8921,7 @@ function renderPreviewMode(skipSave){
       cardWrap.style.cssText = 'width:1200px;background:#fff;overflow:hidden;';
       cardWrap.innerHTML = renderOfferWithOptionalCtaHTML(d, getCtaSettingsFromUI());
       adjustVisitSectionHeights(cardWrap);
-      enhanceClickableHeroPlaceholders(cardWrap, i);
+      enhanceClickableHeroImagesAndPlaceholders(cardWrap, i);
       enhanceHeroDropTarget(cardWrap, i);
       stackWrap.appendChild(cardWrap);
       scheduleHeroCropPositions(cardWrap);
@@ -8917,7 +8956,7 @@ function renderPreviewMode(skipSave){
       c.innerHTML = bc(d || {});
       if(getCtaSettingsFromUI().enabled) c.innerHTML = renderOfferWithOptionalCtaHTML(d || {}, getCtaSettingsFromUI());
       adjustVisitSectionHeights(c);
-      enhanceClickableHeroPlaceholders(c, index);
+      enhanceClickableHeroImagesAndPlaceholders(c, index);
       enhanceHeroDropTarget(c, index);
       grid.appendChild(c);
       scheduleHeroCropPositions(c);

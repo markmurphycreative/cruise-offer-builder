@@ -106,15 +106,20 @@ test('placeholder panel is removed when a hero image source exists', () => {
 });
 
 
-test('workspace hero placeholders are enhanced in preview only and reuse the existing hero input', () => {
-  assert.match(html, /\.preview-pane \.hph\.clickable-hero-placeholder\{cursor:pointer;/);
+test('workspace hero placeholders and images are enhanced in preview only and reuse the existing hero input', () => {
+  assert.match(html, /\.preview-pane \.hph\.clickable-hero-placeholder,\.preview-pane \.hero\.clickable-hero-image\{cursor:pointer;/);
   assert.match(html, /\.preview-pane \.hph\.clickable-hero-placeholder::after\{content:"ADD HERO IMAGE"/);
   assert.match(extractFunction('openHeroImagePickerForOffer'), /document\.querySelector\('#dz-hero input\[type="file"\]'\)/);
+  assert.match(extractFunction('openHeroImagePickerForOffer'), /pendingHeroPickerOfferIndex=offerIndex/);
   assert.match(extractFunction('openHeroImagePickerForOffer'), /input\.click\(\)/);
   assert.match(extractFunction('enhanceClickableHeroPlaceholders'), /openHeroImagePickerForOffer\(resolvedIndex\)/);
-  assert.match(extractFunction('renderPreviewMode'), /enhanceClickableHeroPlaceholders\(cardWrap, i\)/);
-  assert.match(extractFunction('renderPreviewMode'), /enhanceClickableHeroPlaceholders\(c, index\)/);
-  assert.doesNotMatch(extractFunction('renderHeroHTML'), /clickable-hero-placeholder|onclick|input\.click/);
+  assert.match(extractFunction('enhanceClickableHeroImages'), /if\(viewMode!=="all"\) return;/);
+  assert.match(extractFunction('enhanceClickableHeroImages'), /openHeroImagePickerForOffer\(resolvedIndex\)/);
+  assert.match(extractFunction('enhanceClickableHeroImagesAndPlaceholders'), /enhanceClickableHeroPlaceholders\(root, offerIndex\)/);
+  assert.match(extractFunction('enhanceClickableHeroImagesAndPlaceholders'), /enhanceClickableHeroImages\(root, offerIndex\)/);
+  assert.match(extractFunction('renderPreviewMode'), /enhanceClickableHeroImagesAndPlaceholders\(cardWrap, i\)/);
+  assert.match(extractFunction('renderPreviewMode'), /enhanceClickableHeroImagesAndPlaceholders\(c, index\)/);
+  assert.doesNotMatch(extractFunction('renderHeroHTML'), /clickable-hero-placeholder|clickable-hero-image|onclick|input\.click/);
 });
 
 test('preview and export use renderCardHTML as the same hero source path', () => {
@@ -198,7 +203,8 @@ test('route map editor controls enable from the active offer image on every swit
 
 test('route map upload resolves against the offer active when the file was selected', () => {
   const readFileSource = extractFunction('readFile');
-  assert.match(readFileSource, /const targetOfferIndex=cur;/);
+  assert.match(readFileSource, /let targetOfferIndex=cur;/);
+  assert.match(readFileSource, /if\(type==="hero"&&typeof pendingHeroPickerOfferIndex!=="undefined"&&Number\.isInteger\(pendingHeroPickerOfferIndex\)\) targetOfferIndex=pendingHeroPickerOfferIndex;/);
   assert.match(readFileSource, /normaliseRouteMapImageSource\(src\)\.then\(normalisedSrc=>applyRouteMapImageSourceToOffer\(normalisedSrc,targetOfferIndex\)\)/);
   const applyRouteMapSource = extractFunction('applyRouteMapImageSourceToOffer');
   assert.match(applyRouteMapSource, /offers\[offerIndex\]\._itineraryImg=src/);
