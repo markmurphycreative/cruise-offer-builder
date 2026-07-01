@@ -188,3 +188,18 @@ test('Copy QA marks imported USP text checked without manual f-tags typing', () 
 
   assert.match(elements['copy-qa-checklist'].innerHTML, /<strong>USP text<\/strong><span class="state">Accessible · All Inclusive · Entertainment · Family<\/span>/);
 });
+
+test('Copy QA excludes technical URLs from spelling warnings while keeping customer copy checks', () => {
+  assert.match(html, /\{id:"f-url",warnId:"spell-warn-name",label:"Landing page",notRelevant:true,spellcheck:false\}/, 'landing page should be present in QA status but excluded from spellchecking');
+  const source = [
+    extract(/const PROTECTED_WORDS=[\s\S]*?;\nlet copyQaRunCount=0;/, 'copy QA globals'),
+    extract(/function getLikelyTypos\(text\)\{[\s\S]*?\n\}/, 'getLikelyTypos')
+  ].join('\n').replace('const PROTECTED_WORDS', 'var PROTECTED_WORDS').replace('let copyQaRunCount=0;', 'var copyQaRunCount=0;');
+  const context = {};
+  vm.createContext(context);
+  vm.runInContext(source, context);
+
+  assert.deepEqual(JSON.parse(JSON.stringify(context.getLikelyTypos('https://www.dawsonandsanderson.co.uk/cruises?utm_source=email&utm_medium=newsletter'))), []);
+  assert.deepEqual(JSON.parse(JSON.stringify(context.getLikelyTypos('hero-image-caribean.jpg'))), []);
+  assert.deepEqual(JSON.parse(JSON.stringify(context.getLikelyTypos('Caribean cruise with tranfers incldued'))), ['caribean', 'tranfers', 'incldued']);
+});
