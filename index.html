@@ -151,6 +151,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .copy-qa-item{display:grid;grid-template-columns:minmax(82px,auto) 1fr;gap:4px 7px;font-size:9px;color:var(--muted);line-height:1.3;align-items:start;}
 .copy-qa-item strong{font-weight:600;color:var(--text);display:flex;align-items:center;gap:3px;white-space:nowrap;}
 .copy-qa-item .state{font-variant-numeric:tabular-nums;overflow-wrap:anywhere;color:var(--text);}
+.copy-qa-validations{grid-column:2;display:grid;gap:1px;margin-top:1px;color:var(--muted);}
+.copy-qa-validation{font-size:8px;line-height:1.3;}
+.copy-qa-validation.ok{color:var(--green);}
+.copy-qa-validation.warn{color:var(--amber);font-weight:600;}
 .copy-qa-item.checked strong::before{content:"✓";color:var(--green);font-weight:700;}
 .copy-qa-item.review strong::before,.copy-qa-item.empty strong::before{content:"⚠";color:var(--amber);font-weight:700;}
 .copy-qa-item.review .state,.copy-qa-item.empty .state{color:var(--amber);font-weight:600;}
@@ -3498,8 +3502,9 @@ const SPELLCHECK_FIELDS=[
   {id:"f-ports",warnId:"spell-warn-ports",label:"Ports"},
   {id:"f-tags",warnId:"spell-warn-tags",label:"USP text"},
   {id:"f-price",warnId:"spell-warn-name",label:"Price",formatter:"price"},
-  {id:"f-saildate",warnId:"spell-warn-name",label:"Date",notRelevant:true},
+  {id:"f-day",warnId:"spell-warn-name",label:"Date",notRelevant:true},
   {id:"f-nights",warnId:"spell-warn-name",label:"Nights"},
+  {id:"f-url",warnId:"spell-warn-name",label:"Landing page",notRelevant:true},
   {id:"raw-paste",warnId:"spell-warn-raw",label:"Parsed offer text",checkedOnly:true,notRelevant:true}
 ];
 const PROTECTED_WORDS=new Set(["p&o","p and o","marella","arvia","msc","caribbean","martinique","st","maarten","tenerife","klaviyo","cunard","antigua","grenada","tortola","barbados","lucia","kitts"]);
@@ -3545,7 +3550,81 @@ function buildQaChecklist(rows){
   const host=document.getElementById("copy-qa-checklist");
   if(!host) return;
   const escapeQaHtml=value=>String(value||"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
-  host.innerHTML=rows.map(row=>`<div class="copy-qa-item ${row.stateClass}"><strong>${escapeQaHtml(row.label)}</strong><span class="state">${escapeQaHtml(row.state)}</span></div>`).join('');
+  host.innerHTML=rows.map(row=>{
+    const validations=(row.validations||[]).map(item=>{
+      const type=item&&item.type==="warn"?"warn":"ok";
+      const icon=type==="warn"?"⚠":"✓";
+      const text=typeof item==="string"?item:(item&&item.text)||"";
+      return text?`<div class="copy-qa-validation ${type}">${icon} ${escapeQaHtml(text)}</div>`:"";
+    }).join('');
+    return `<div class="copy-qa-item ${row.stateClass}"><strong>${escapeQaHtml(row.label)}</strong><span class="state">${escapeQaHtml(row.state)}</span>${validations?`<div class="copy-qa-validations">${validations}</div>`:""}</div>`;
+  }).join('');
+}
+function getQaOperatorKey(){
+  const value=String((document.getElementById("f-operator")||{}).value||"").trim();
+  return (typeof detectOperatorKey==="function"?detectOperatorKey(value):"")||value;
+}
+function getQaShipDatabaseMatch(shipName){
+  const value=String(shipName||"").trim().toLowerCase();
+  if(!value) return null;
+  for(const [operatorKey,ships] of Object.entries(OPERATOR_SHIPS||{})){
+    const match=(ships||[]).find(ship=>String(ship||"").trim().toLowerCase()===value);
+    if(match) return {operatorKey,ship:match,operatorName:((OPERATOR_CONFIG||{})[operatorKey]||{}).displayName||((OPERATOR_HEADERS||{})[operatorKey]||{}).name||operatorKey};
+  }
+  return null;
+}
+function splitQaUspText(value){ return normalizeTopBarUspText(value).split(/\s*[•·]\s*/).map(item=>item.trim()).filter(Boolean); }
+function normaliseQaToken(value){ return String(value||"").toLowerCase().replace(/[-’']/g," ").replace(/\s+/g," ").trim(); }
+function getQaValidations(fieldId,rawValue,displayValue,issues){
+  const validations=[];
+  const value=String(rawValue||"").trim();
+  if(!value) return validations;
+  const operatorKey=getQaOperatorKey();
+  if(fieldId==="f-ship"){
+    const match=getQaShipDatabaseMatch(value);
+    if(match) validations.push({text:`${match.operatorName} database match`});
+  }
+  if(fieldId==="f-tags"){
+    const usps=splitQaUspText(value);
+    if(usps.length) validations.push({text:`${usps.length} USP${usps.length===1?"":"s"} detected`});
+    const preset=getOperatorUspPreset(operatorKey);
+    if(preset){
+      const presetSet=new Set(splitQaUspText(preset).map(normaliseQaToken));
+      const custom=usps.filter(usp=>!presetSet.has(normaliseQaToken(usp)));
+      const opName=((OPERATOR_CONFIG||{})[operatorKey]||{}).displayName||((OPERATOR_HEADERS||{})[operatorKey]||{}).name||operatorKey;
+      if(usps.length&&custom.length===0) validations.push({text:`Matches ${opName} defaults`});
+      else if(custom.length===1) validations.push({type:"warn",text:`“${custom[0]}” isn't a default ${opName} USP`});
+      else if(custom.length>1) validations.push({type:"warn",text:`${custom.length} custom USPs detected`});
+    }
+  }
+  if(fieldId==="f-boardlbl"||fieldId==="f-board"){
+    const text=String(value||displayValue||"").toUpperCase();
+    if((typeof BOARD_MAP!=="undefined"&&BOARD_MAP[text])||/FULL BOARD|ALL INCLUSIVE|HALF BOARD|SELF CATERING/i.test(value)){
+      validations.push({text:/ALL\s*INCLUSIVE|\bAI\b/i.test(value)?"All Inclusive recognised":"Recognised"});
+    }
+  }
+  if(fieldId==="f-price"&&/^£?\s*\d[\d,]*(?:\.\d{2})?\s*(?:pp|per person)?$/i.test(value)) validations.push({text:"Valid price format"});
+  if(fieldId==="f-nights"&&/^\d+$/.test(value)) validations.push({text:`${value} nights confirmed`});
+  if(fieldId==="f-saildate"||fieldId==="f-day"){
+    const day=String((document.getElementById("f-day")||{}).value||"").trim();
+    const month=String((document.getElementById("f-month")||{}).value||"").trim();
+    if(day&&month&&/^\d{1,2}$/.test(day)&&/[A-Za-z]+\s+\d{4}/.test(month)) validations.push({text:"Departure date valid"});
+  }
+  if(fieldId==="f-url"){
+    const landing=operatorKey&&typeof getOperatorLandingUrl==="function"?getOperatorLandingUrl(operatorKey):"";
+    if(landing&&value===landing) validations.push({text:"Operator match confirmed"});
+  }
+  if(fieldId==="f-ports"){
+    const ports=value.split("•").map(p=>p.trim()).filter(Boolean);
+    if(ports.length) validations.push({text:`${ports.length} port${ports.length===1?"":"s"} detected`});
+    if(ports.length>1&&normalisePortIntelligenceName(ports[0])===normalisePortIntelligenceName(ports[ports.length-1])) validations.push({text:"Return port detected"});
+    if(typeof getPortIntelligence==="function"&&getPortIntelligence(value).countryList.length) validations.push({text:"Route sequence valid"});
+    if(/overnight/i.test(value)) validations.push({text:"Overnight ports preserved"});
+    const seen=new Set();
+    const dup=ports.some(port=>{ const key=normalisePortIntelligenceName(port); if(!key) return false; if(seen.has(key)) return true; seen.add(key); return false; });
+    if(dup) validations.push({type:"warn",text:"Possible duplicate port detected"});
+  }
+  return validations;
 }
 function getCurrentOfferUspText(){
   const visible=document.getElementById("f-tags");
@@ -3571,7 +3650,7 @@ function runSpellQA(){
   SPELLCHECK_FIELDS.forEach(f=>{
     const el=document.getElementById(f.id);
     if(!el) return;
-    const rawValue=f.id==="f-tags"?(typeof getCurrentOfferUspText==="function"?getCurrentOfferUspText():String(el.value||"").trim()):String(el.value||"").trim();
+    const rawValue=f.id==="f-tags"?(typeof getCurrentOfferUspText==="function"?getCurrentOfferUspText():String(el.value||"").trim()):(f.id==="f-day"?[String(el.value||"").trim(),String((document.getElementById("f-month")||{}).value||"").trim()].filter(Boolean).join(" "):String(el.value||"").trim());
     let value=String(rawValue||"").trim();
     if(value&&f.formatter==="price"){
       const numeric=value.replace(/[^\d]/g,"");
@@ -3585,7 +3664,7 @@ function runSpellQA(){
     if(issues.length){ (byWarn[f.warnId]||(byWarn[f.warnId]=[])).push(...issues); }
     const state=isEmpty?(f.notRelevant?"Not detected":"Missing"):(f.checkedOnly?"Checked":value);
     const stateClass=isEmpty?"empty":(issues.length?"review":"checked");
-    rows.push({label:f.label,state,stateClass});
+    rows.push({label:f.label,state,stateClass,validations:(typeof getQaValidations==="function"?getQaValidations(f.id,rawValue,value,issues):[])});
   });
   buildQaChecklist(rows);
   ["spell-warn-name","spell-warn-ports","spell-warn-tags","spell-warn-raw"].forEach(id=>setSpellWarn(id,(byWarn[id]||[]).length?`Spelling QA: ${(byWarn[id]||[]).join(" · ")}`:""));
