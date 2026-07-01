@@ -140,7 +140,7 @@ test('Cruise Knowledge standardises Newcastle embarkation wording without changi
     raw: 'Sailing from Newcastle\nFlying from Newcastle'
   }));
   assert.match(panel.innerHTML, /Cruise Knowledge/);
-  assert.match(panel.innerHTML, /Departure wording standardised to:\s*Port of Tyne/);
+  assert.match(panel.innerHTML, /Departure wording standardised to "Port of Tyne"/);
   const embarkation = vm.runInContext('getCruiseDepartureWording("Newcastle, England")', context);
   assert.equal(embarkation, 'Port of Tyne');
   const airport = vm.runInContext('detectFlightAirport("Flying from Newcastle")', context);
@@ -357,9 +357,9 @@ test('Offer Intelligence infers Queen Anne as Cunard premium knowledge only', ()
 
   assert.match(panel.innerHTML, /Operator inferred from ship: Cunard/);
   assert.match(panel.innerHTML, /Cruise Knowledge/);
-  assert.match(panel.innerHTML, /Operator: Cunard/);
-  assert.match(panel.innerHTML, /Cruise Type: Ocean Cruise/);
-  assert.match(panel.innerHTML, /Audience: Premium/);
+  assert.match(panel.innerHTML, /Operator recognised: Cunard/);
+  assert.match(panel.innerHTML, /Cruise type: Ocean Cruise/);
+  assert.match(panel.innerHTML, /Audience profile: Premium/);
   assert.doesNotMatch(panel.innerHTML, /Norwegian Cruise Line/);
   assert.doesNotMatch(panel.innerHTML, /Family Friendly/);
 });
@@ -432,9 +432,9 @@ test('Offer Intelligence shows compact cruise knowledge for known ship matches w
 
   assert.equal(parsed.operatorKey, undefined);
   assert.match(panel.innerHTML, /Cruise Knowledge/);
-  assert.match(panel.innerHTML, /Operator: Virgin Voyages/);
-  assert.match(panel.innerHTML, /Cruise Type: Ocean Cruise/);
-  assert.match(panel.innerHTML, /Audience: Adults Only/);
+  assert.match(panel.innerHTML, /Operator recognised: Virgin Voyages/);
+  assert.match(panel.innerHTML, /Cruise type: Ocean Cruise/);
+  assert.match(panel.innerHTML, /Audience profile: Adults Only/);
 });
 
 test('Offer Intelligence hides cruise knowledge when no confident operator or ship exists', () => {
@@ -442,8 +442,8 @@ test('Offer Intelligence hides cruise knowledge when no confident operator or sh
   vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, { parsed: { ship: 'Mystery Ship', price: '999' }, raw: 'Mystery Ship £999pp' }));
 
   assert.doesNotMatch(panel.innerHTML, /Cruise Knowledge/);
-  assert.doesNotMatch(panel.innerHTML, /Cruise Type:/);
-  assert.doesNotMatch(panel.innerHTML, /Audience:/);
+  assert.doesNotMatch(panel.innerHTML, /Cruise type:/);
+  assert.doesNotMatch(panel.innerHTML, /Audience profile:/);
 });
 
 

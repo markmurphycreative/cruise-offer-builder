@@ -3498,18 +3498,29 @@ const SPELLCHECK_FIELDS=[
   {id:"f-name",warnId:"spell-warn-name",label:"Cruise name"},
   {id:"f-ship",warnId:"spell-warn-name",label:"Ship name"},
   {id:"f-incl",warnId:"spell-warn-name",label:"Inclusions"},
-  {id:"f-boardlbl",warnId:"spell-warn-name",label:"Board basis",notRelevant:true},
+  {id:"f-boardlbl",warnId:"spell-warn-name",label:"Board basis"},
   {id:"f-ports",warnId:"spell-warn-ports",label:"Ports"},
   {id:"f-tags",warnId:"spell-warn-tags",label:"USP text"},
   {id:"f-price",warnId:"spell-warn-name",label:"Price",formatter:"price"},
   {id:"f-day",warnId:"spell-warn-name",label:"Date",notRelevant:true},
   {id:"f-nights",warnId:"spell-warn-name",label:"Nights"},
-  {id:"f-url",warnId:"spell-warn-name",label:"Landing page",notRelevant:true},
+  {id:"f-url",warnId:"spell-warn-name",label:"Landing page",notRelevant:true,spellcheck:false},
   {id:"raw-paste",warnId:"spell-warn-raw",label:"Parsed offer text",checkedOnly:true,notRelevant:true}
 ];
 const PROTECTED_WORDS=new Set(["p&o","p and o","marella","arvia","msc","caribbean","martinique","st","maarten","tenerife","klaviyo","cunard","antigua","grenada","tortola","barbados","lucia","kitts"]);
 let copyQaRunCount=0;
 function getLikelyTypos(text){
+  const isTechnicalValue=(value)=>{
+    value=String(value||"");
+    if(!value.trim()) return false;
+    if(/https?:\/\//i.test(value)||/\bwww\./i.test(value)) return true;
+    if(/\.(?:co\.uk|com|org|net)\b/i.test(value)) return true;
+    if(/\butm_/i.test(value)||/[?&][a-z0-9_.~-]+=/i.test(value)) return true;
+    if(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(value)) return true;
+    if(/\b[\w .'-]+\.(?:jpg|jpeg|png|gif|webp|svg|pdf|csv|zip|html?|xlsx?|docx?|txt)\b/i.test(value)) return true;
+    return false;
+  };
+  if(isTechnicalValue(text)) return [];
   const words=String(text||"").toLowerCase().match(/[a-z][a-z'&.-]{2,}/g)||[];
   const issues=[];
   for(const w of words){
@@ -3656,7 +3667,7 @@ function runSpellQA(){
       const numeric=value.replace(/[^\d]/g,"");
       value=numeric?`£${Number(numeric).toLocaleString("en-GB")}pp`:value;
     }
-    const bad=rawValue?getLikelyTypos(rawValue):[];
+    const bad=rawValue&&f.spellcheck!==false?getLikelyTypos(rawValue):[];
     const shipIssue=f.id==="f-ship"?getOperatorShipQaIssue((document.getElementById("f-operator")||{}).value,value):"";
     const issues=[...(bad.length?[`${f.label}: ${bad.join(', ')}`]:[]),...(shipIssue?[shipIssue]:[])];
     const isEmpty=!rawValue;
@@ -7033,12 +7044,21 @@ function getOfferIntelligenceCruiseKnowledge(parsed,rawText){
   };
   const record=knowledge[operatorKey];
   const rows=[];
+  const operatorName=(record&&record.operator)||(((OPERATOR_INTELLIGENCE||{})[operatorKey]||{}).name)||(((OPERATOR_HEADERS||{})[operatorKey]||{}).name)||operatorKey;
   if(record){
-    const intelligence=(OPERATOR_INTELLIGENCE&&OPERATOR_INTELLIGENCE[operatorKey])||{};
-    const operator=record.operator||intelligence.name||((OPERATOR_HEADERS[operatorKey]||{}).name)||operatorKey;
-    rows.push(`Operator: ${operator}`,`Cruise Type: ${record.cruiseType}`,`Audience: ${record.audience}`);
+    rows.push({text:`Operator recognised: ${operatorName}`});
+    const ship=String(p.ship||"").trim();
+    if(ship){
+      const ships=((OPERATOR_SHIPS||{})[operatorKey]||[]);
+      const match=ships.find(item=>String(item||"").toLowerCase()===ship.toLowerCase());
+      rows.push(match?{text:`Ship database match: ${match}`}:{type:"warn",text:`Ship not found in ${operatorName} database`});
+    }
+    rows.push({text:`Cruise type: ${record.cruiseType}`},{text:`Audience profile: ${record.audience}`});
+    const preset=typeof getOperatorUspPreset==="function"?getOperatorUspPreset(operatorKey):"";
+    const tags=String(p.tags||"").trim();
+    if(tags&&preset&&normaliseQaToken(tags)!==normaliseQaToken(preset)) rows.push({type:"warn",text:`USP differs from ${operatorName} defaults`});
   }
-  if(typeof hasPortOfTyneDepartureKnowledge==="function"&&hasPortOfTyneDepartureKnowledge(p,rawText)) rows.push("Departure wording standardised to: Port of Tyne");
+  if(typeof hasPortOfTyneDepartureKnowledge==="function"&&hasPortOfTyneDepartureKnowledge(p,rawText)) rows.push({text:'Departure wording standardised to "Port of Tyne"'});
   return rows;
 }
 
@@ -7660,7 +7680,7 @@ function renderOfferIntelligencePanel(parsed,rawText){
       section("Detected",detected.map(label=>item("detected","✓",label)).join(""),"No core fields detected yet.")+
       (typeof renderPortsIntelligenceSection==="function"?renderPortsIntelligenceSection(p,item,section):"")+
       (typeof renderOfferQualitySection==="function"?renderOfferQualitySection(p,rawText,effectiveOperator,item):"")+
-      (cruiseKnowledge.length?section("Cruise Knowledge",cruiseKnowledge.map(label=>item("detected","✓",label)).join("")):"")+
+      (cruiseKnowledge.length?section("Cruise Knowledge",cruiseKnowledge.map(entry=>{ const row=typeof entry==="string"?{text:entry}:entry; return item(row.type==="warn"?"missing":"detected",row.type==="warn"?"⚠":"✓",row.text); }).join("")):"")+
       (typeof renderPoaCabinTypeSuggestion==="function"?renderPoaCabinTypeSuggestion(p,rawText,effectiveOperator):"")+
       (typeof renderPoaAssistedApplySuggestions==="function"?renderPoaAssistedApplySuggestions(poaSuggestions):"")+
       (inclusions.length?section("Inclusions Detected",inclusions.map(label=>item("detected","✓",label)).join("")):"")+
