@@ -2273,7 +2273,7 @@ function ctaSettingsChanged(){
   syncCtaLinkOutput();
   try { renderPreviewMode(true); } catch(e){}
   try { updateAllStatus(); } catch(e){}
-  queueAutosave();
+  if(typeof queueAutosave==="function") queueAutosave({immediate:true});
   if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow();
 }
 function getOperatorAccentColor(offerData){
@@ -2475,7 +2475,7 @@ function setHeroImageLocked(index,locked){
 function toggleHeroImageLock(){
   setHeroImageLocked(cur,!!(document.getElementById("hero-lock-toggle")||{}).checked);
   updateHeroImageLockUI();
-  queueAutosave();
+  if(typeof queueAutosave==="function") queueAutosave({immediate:true});
   if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow();
 }
 function updateHeroTabLockIndicators(){
@@ -2540,7 +2540,7 @@ function setOfferLocked(index,locked){
   lockedOffers=normaliseOfferLockArray(lockedOffers);
   lockedOffers[Number(index)]=!!locked;
   updateLockUI();
-  queueAutosave();
+  if(typeof queueAutosave==="function") queueAutosave({immediate:true});
   if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow();
 }
 function toggleLock(){ setOfferLocked(cur,!isOfferLocked(cur)); }
@@ -2643,7 +2643,8 @@ function applyHeroImageSourceToOffer(src,index){
   offers[offerIndex]=offers[offerIndex]||{};
   offers[offerIndex]._img=src;
   if(offerIndex===cur){ setThumb("hero",src); syncHeroUi(); }
-  refreshOfferUi({utm:false,spell:false});
+  refreshOfferUi({utm:false,spell:false,autosave:false});
+  if(typeof queueAutosave==="function") queueAutosave({immediate:true});
   if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Hero image change");
   return true;
 }
@@ -2839,7 +2840,7 @@ function readFile(file,type){
         return;
       }
       else{ offers[targetOfferIndex]._img=src; offers[targetOfferIndex]._cropZoom=100; offers[targetOfferIndex]._cropX=50; offers[targetOfferIndex]._cropY=50; offers[targetOfferIndex]._cropPosVersion=2; offers[targetOfferIndex]._heroFitMode="fill"; if(targetOfferIndex===cur){ setThumb("hero",src); syncHeroUi(); } }
-      refreshOfferUi({utm:false,spell:false}); if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange(type==="hero"?"Hero image change":(type==="itinerary"?"Route map change":"Logo image change"));
+      refreshOfferUi({utm:false,spell:false,autosave:false}); if(typeof queueAutosave==="function") queueAutosave({immediate:type==="hero"}); if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange(type==="hero"?"Hero image change":(type==="itinerary"?"Route map change":"Logo image change"));
     }; r.readAsDataURL(file);
   }
 }
@@ -2893,7 +2894,7 @@ function updateHeroThumbInfo(imgEl,src){
   if(imgEl.complete) showDims();
 }
 function logoSz(val){ offers[cur]._logoSize=parseInt(val); document.getElementById("logo-size-val").textContent=val+"%"; refreshOfferUi({status:false,utm:false,spell:false}); }
-function imgUrlCh(){ offers[cur]._img=document.getElementById("f-img-url").value; setThumb("hero",offers[cur]._img); syncHeroUi(); refreshOfferUi({utm:false,spell:false}); }
+function imgUrlCh(){ offers[cur]._img=document.getElementById("f-img-url").value; setThumb("hero",offers[cur]._img); syncHeroUi(); refreshOfferUi({utm:false,spell:false,autosave:false}); if(typeof queueAutosave==="function") queueAutosave({immediate:true}); }
 function syncItineraryUi(){
   syncEditableImageUi("itinerary");
 }
@@ -2960,24 +2961,24 @@ function resetEditableImagePosition(type){
   offers[cur][cfg.modeKey]=cfg.defaultFitMode||"fill"; offers[cur][cfg.zoomKey]=100; offers[cur][cfg.xKey]=50; offers[cur][cfg.yKey]=50;
   if(type==="hero") offers[cur]._cropPosVersion=2;
   ["zoom","x","y"].forEach(axis=>setEditableImageControlValue(type,axis,axis==="zoom"?100:50));
-  syncEditableImageUi(type); refreshOfferUi({status:false,utm:false,spell:false});
+  syncEditableImageUi(type); refreshOfferUi({status:false,utm:false,spell:false,autosave:false}); if(typeof queueAutosave==="function") queueAutosave({immediate:type==="hero"});
   if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange(cfg.historyLabel+" position reset");
 }
 function centreEditableImage(type){
   const cfg=getEditableImageConfig(type); if(!offers[cur]) offers[cur]={};
   offers[cur][cfg.xKey]=50; offers[cur][cfg.yKey]=50; if(type==="itinerary") offers[cur][cfg.zoomKey]=100; if(type==="hero") offers[cur]._cropPosVersion=2;
   if(type==="itinerary") setEditableImageControlValue(type,"zoom",100); setEditableImageControlValue(type,"x",50); setEditableImageControlValue(type,"y",50);
-  updateEditableImageCropStatus(type); refreshOfferUi({status:false,utm:false,spell:false});
+  updateEditableImageCropStatus(type); refreshOfferUi({status:false,utm:false,spell:false,autosave:false}); if(typeof queueAutosave==="function") queueAutosave({immediate:type==="hero"});
   if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange(cfg.historyLabel+" position change");
 }
 function setEditableImageCropAxis(type,axis,value){
   if(axis!=="x"&&axis!=="y") return; const cfg=getEditableImageConfig(type); if(!offers[cur]) offers[cur]={};
   const safe=setEditableImageControlValue(type,axis,value); offers[cur][axis==="x"?cfg.xKey:cfg.yKey]=safe; if(type==="hero") offers[cur]._cropPosVersion=2;
-  updateEditableImageCropStatus(type); refreshOfferUi({status:false,utm:false,spell:false});
+  updateEditableImageCropStatus(type); refreshOfferUi({status:false,utm:false,spell:false,autosave:false}); if(typeof queueAutosave==="function") queueAutosave({immediate:type==="hero"});
 }
 function setEditableImageFitMode(type,mode){
   const cfg=getEditableImageConfig(type); if(!offers[cur]) offers[cur]={};
-  offers[cur][cfg.modeKey]=mode==="fit"?"fit":"fill"; syncEditableImageUi(type); refreshOfferUi({status:false,utm:false,spell:false});
+  offers[cur][cfg.modeKey]=mode==="fit"?"fit":"fill"; syncEditableImageUi(type); refreshOfferUi({status:false,utm:false,spell:false,autosave:false}); if(typeof queueAutosave==="function") queueAutosave({immediate:type==="hero"});
 }
 function updateEditableImageCropStatus(type){
   const cfg=getEditableImageConfig(type); const o=offers[cur]||{}; const prefix=cfg.prefix;
@@ -3007,7 +3008,7 @@ function syncEditableImageUi(type){
 }
 function removeEditableImage(type){
   const cfg=getEditableImageConfig(type); if(typeof isOfferLocked==="function" && isOfferLocked(cur)) return showOfferLockStatus(cur); if(!offers[cur]) offers[cur]={};
-  offers[cur][cfg.imageKey]=""; setThumb(type,""); syncEditableImageUi(type); refreshOfferUi({utm:false,spell:false});
+  offers[cur][cfg.imageKey]=""; setThumb(type,""); syncEditableImageUi(type); refreshOfferUi({utm:false,spell:false,autosave:false}); if(typeof queueAutosave==="function") queueAutosave({immediate:type==="hero"});
   if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange(cfg.historyLabel+" removal");
 }
 function replaceEditableImage(type){
@@ -4801,6 +4802,8 @@ let autosaveTimer = null;
 let autosaveHydrating = false;
 let autosaveAwaitingRestoreDecision = false;
 let autosaveLastSavedAt = null;
+let autosaveHasUnsavedChanges = false;
+let autosaveInterval = null;
 let allowLargeEmbeddedImagesDuringRestore = false;
 
 function formatAutosaveTime(ts){
@@ -4857,6 +4860,7 @@ function syncAutosaveStatus(){
 }
 function markUnsavedChanges(){
   if(autosaveHydrating || autosaveAwaitingRestoreDecision) return;
+  autosaveHasUnsavedChanges = true;
   setAutosaveStatus("Unsaved changes");
 }
 
@@ -4873,25 +4877,53 @@ function buildAutosavePayload(){
   getSectionCollapseState().forEach((collapsed,key)=>{ sectionState[key]=!!collapsed; });
   return {version:'1.0',savedAt:new Date().toISOString(),cur,viewMode,ctaSettings:(typeof ctaSettings !== 'undefined' ? ctaSettings : {enabled:false,text:'Click To Call Us For More Info',phone:'01912229701'}),lockedOffers,lockedHeroImages:(typeof lockedHeroImages!=="undefined" && Array.isArray(lockedHeroImages) ? lockedHeroImages.slice(0,4) : [false,false,false,false]),sectionState,openSectionKey:getOpenSectionKey(),campaign:{name:document.getElementById('g-campaign').value||'',date:document.getElementById('g-date').value||'',airport:document.getElementById('g-airport').value||'',terms:document.getElementById('g-terms').value||'',...(typeof getCampaignNamingSnapshot==="function" ? getCampaignNamingSnapshot() : {})},offers:clonedOffers};
 }
+function describeStorageSaveError(error){
+  const name=String((error&&error.name)||"");
+  const message=String((error&&error.message)||"");
+  if(/quota|storage|exceeded/i.test(name+" "+message)) return "Browser storage is full. Session was not saved — export/download your campaign or remove old browser data before closing.";
+  return "Autosave failed. Session was not saved — please use Save Campaign before closing.";
+}
+function notifySessionStorageFailure(error){
+  const message=describeStorageSaveError(error);
+  setAutosaveStatus("Autosave failed", true);
+  showSessionFeedback(message,true);
+  try{ showHeroDropStatus(message,true); }catch(_e){}
+  try{ console.warn("[autosave]", message, error); }catch(_e){}
+}
 function saveSessionNow(){
-  if(autosaveHydrating || autosaveAwaitingRestoreDecision) return;
+  if(autosaveHydrating || autosaveAwaitingRestoreDecision) return false;
+  if(typeof clearTimeout === "function") clearTimeout(autosaveTimer);
   setAutosaveStatus("Autosaving…");
   try{
     const payload = buildAutosavePayload();
     localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(payload));
     autosaveLastSavedAt = payload.savedAt || new Date().toISOString();
+    autosaveHasUnsavedChanges = false;
     updateSavedSessionStatus(payload);
     syncAutosaveStatus();
+    return true;
   }catch(e){
-    setAutosaveStatus("Autosave failed", true);
+    autosaveHasUnsavedChanges = true;
+    notifySessionStorageFailure(e);
+    return false;
   }
 }
 function queueAutosave(){
+  const opts=arguments[0]||{};
   if(autosaveHydrating || autosaveAwaitingRestoreDecision) return;
+  const immediate = opts === true || !!(opts&&opts.immediate);
   clearTimeout(autosaveTimer);
   markUnsavedChanges();
-  // Debounced autosave avoids thrashing during slider drags / typing.
+  if(immediate){ saveSessionNow(); return; }
+  // Debounced autosave avoids thrashing during slider drags / typing; the 30s interval is the safety net.
   autosaveTimer = setTimeout(saveSessionNow, 420);
+}
+function ensureAutosaveInterval(){
+  if(autosaveInterval) return;
+  autosaveInterval = setInterval(()=>{ if(autosaveHasUnsavedChanges) saveSessionNow(); }, 30000);
+}
+function flushAutosaveBeforeUnload(){
+  if(autosaveHasUnsavedChanges) saveSessionNow();
 }
 function readSavedSession(){
   try{ const raw=localStorage.getItem(AUTOSAVE_KEY); return raw?JSON.parse(raw):null; }catch(e){ return null; }
@@ -4914,11 +4946,14 @@ function applySessionPayload(data){
     if(!allowLargeEmbeddedImagesDuringRestore && o._img && typeof o._img === "string" && o._img.startsWith("data:") && o._img.length > 6_000_000){
       delete o._img;
       o._imgNeedsReupload = true;
+      try{ showSessionFeedback("Hero image exceeds browser restore limit and needs re-uploading",true); }catch(_e){}
     }
     if(!allowLargeEmbeddedImagesDuringRestore && o._itineraryImg && typeof o._itineraryImg === "string" && o._itineraryImg.startsWith("data:") && o._itineraryImg.length > 6_000_000){
       delete o._itineraryImg;
       o._itineraryImgNeedsReupload = true;
+      try{ showSessionFeedback("Route map exceeds browser restore limit and needs re-uploading",true); }catch(_e){}
     }
+    if(typeof normalizeCropPositionForOffer === "function") normalizeCropPositionForOffer(o);
     return o;
   }); while(offers.length<4) offers.push({});
   lockedOffers = Array.isArray(data.lockedOffers) ? data.lockedOffers.slice(0,4) : [false,false,false,false];
@@ -6638,7 +6673,7 @@ function performMultiOfferImport(replaceConfirmed){
   try{ checkPortsWarn(); }catch(e){}
   try{ updateExportFilenames(); }catch(e){}
   try{ runSpellQA(); }catch(e){}
-  try{ queueAutosave(); }catch(e){}
+  try{ if(typeof queueAutosave==="function") queueAutosave({immediate:true}); }catch(e){}
   if(results.length&&typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Multi offer import");
   const rows=parsedResults.map(item=>{
     const result=item.result;
@@ -7441,7 +7476,7 @@ function prepareOfferSlotForParsedOffer(parsed){
 function applyParsedOffer(){if(!pendingParseResult) return; if(typeof isOfferLocked==="function" && isOfferLocked(cur)){ setParseStatus(getLockedOfferMessage(cur),"low"); cancelParsedOffer(); return; } const {parsed,confidence,rawText}=pendingParseResult; if(!prepareOfferSlotForParsedOffer(parsed)){ setParseStatus('No offer fields detected','low'); cancelParsedOffer(); return; } const pasteSourceText=rawText||((document.getElementById("raw-paste")||{}).value||""); if(pasteSourceText) offers[cur]._rawPastedOfferText=pasteSourceText; if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(cur); const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offers[cur].operator)){ continue; } const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; offers[cur]._tagsManualOverride=false; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
   touched.forEach(el=>{el.classList.remove('parse-field-flash'); void el.offsetWidth; el.classList.add('parse-field-flash'); setTimeout(()=>el.classList.remove('parse-field-flash'),1700);});
   const applied=touched.length; const summary=typeof getOfferIntelligenceSummary==="function"?getOfferIntelligenceSummary(parsed,rawText):{count:applied,label:(confidence==='high'?'High Confidence':confidence==='partial'?'Partial Match':'Needs Review'),level:confidence};
-  setParseStatus(`✓ Detected ${summary.count} fields — ${summary.label}`,summary.level); cancelParsedOffer(); rv(); updateAllStatus(); genUtm(); checkPortsWarn(); updateExportFilenames(); runSpellQA(); if(applied){ if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Offer loaded"); queueAutosave(); }}
+  setParseStatus(`✓ Detected ${summary.count} fields — ${summary.label}`,summary.level); cancelParsedOffer(); rv(); updateAllStatus(); genUtm(); checkPortsWarn(); updateExportFilenames(); runSpellQA(); if(applied){ if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Offer loaded"); if(typeof queueAutosave==="function") queueAutosave({immediate:true}); }}
 
 // ═══════════════════════════════════════════════════════
 // CARD BUILDER
@@ -8257,7 +8292,7 @@ function up(){
   runSpellQA();
   updateExportFilenames();
   updateMoveOfferButtons();
-  queueAutosave();
+  if(typeof queueAutosave==="function") queueAutosave({immediate:true});
   if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow();
 }
 
@@ -8415,7 +8450,7 @@ function refreshAfterOfferReorder(){
   try { renderPreviewMode(true); } catch(e){ try { renderVisibleCard(); } catch(_e){} }
   try { updateMoveOfferButtons(); } catch(e){}
   if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Card reorder");
-  queueAutosave();
+  if(typeof queueAutosave==="function") queueAutosave({immediate:true});
   if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow();
 }
 
@@ -8577,6 +8612,7 @@ processSheetCSV = function(csv,status){
   try { runSpellQA(); } catch(e){}
 
   try { renderPreviewMode(true); } catch(e){ try { renderVisibleCard(); } catch(_e){} }
+  try { if(typeof queueAutosave==="function") queueAutosave({immediate:true}); } catch(e){}
 };
 
 
@@ -9561,6 +9597,8 @@ function initBuilderApp(){
       if(!savedSessionAvailable) openCsvImportWhenNoOffersLoaded();
     }
     window.addEventListener("resize",rv);
+    ensureAutosaveInterval();
+    window.addEventListener("beforeunload",flushAutosaveBeforeUnload);
     rv();
     updateAllStatus();
     initOfferTabDragDrop();
