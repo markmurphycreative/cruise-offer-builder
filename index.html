@@ -6438,18 +6438,41 @@ function getOfferLabelIndex(line){
 }
 function isOfferLabelLine(line){ return getOfferLabelIndex(line)!==null; }
 function hasExplicitOfferMarkers(lines){ return (lines||[]).some(line=>isOfferLabelLine(line)); }
+function isKnownOperatorHeadingLine(line){
+  const value=String(line||"").trim().replace(/\s+/g," ");
+  if(!value) return false;
+  const canonical=[
+    "Celebrity Cruises","Celebrity","Fred Olsen","Fred. Olsen","Fred Olsen Cruise Lines",
+    "Ambassador Cruise Line","Ambassador","Marella Cruises","Marella",
+    "Royal Caribbean International","Royal Caribbean","Cunard","P&O Cruises","P&O",
+    "Norwegian Cruise Line","NCL","Virgin Voyages"
+  ];
+  if(canonical.some(name=>name.toLowerCase()===value.toLowerCase())) return true;
+  if(typeof OPERATOR_HEADERS!=="undefined"&&OPERATOR_HEADERS){
+    for(const op of Object.values(OPERATOR_HEADERS)){
+      if(op&&op.name&&op.name.toLowerCase()===value.toLowerCase()) return true;
+    }
+  }
+  return false;
+}
+function hasAccumulatedOfferEvidence(block){
+  const text=String(block||"");
+  const compact=text.replace(/\s+/g," ").trim();
+  if(!compact) return false;
+  let evidence=0;
+  if(/\b\d{1,2}(?:st|nd|rd|th)?\s+(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+\d{2,4}\b|\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/i.test(compact)) evidence+=1;
+  if(/\b\d{1,2}\s*(?:nights?|nts?)\b/i.test(compact)) evidence+=1;
+  if(/£\s*\d|\bfrom\s+£/i.test(compact)) evidence+=1;
+  if(/\b(?:full board|half board|all inclusive|self catering)\b/i.test(compact)) evidence+=1;
+  if(/\b(?:itinerary|you(?:'|’)ll visit|sailing from)\b/i.test(compact)) evidence+=1;
+  if(typeof findKnownOperatorShip==="function"&&findKnownOperatorShip(compact)) evidence+=1;
+  return evidence>=1;
+}
 function isLikelyOfferStartLine(line){
   const value=String(line||"").trim();
   if(!value) return false;
   if(isOfferLabelLine(value)) return true;
-  if(typeof findKnownOperatorShip==="function"&&findKnownOperatorShip(value)) return true;
-  if(typeof OPERATOR_HEADERS!=="undefined"&&OPERATOR_HEADERS){
-    for(const op of Object.values(OPERATOR_HEADERS)){ if(op&&op.name&&new RegExp('^\\s*'+escapeRegExp(op.name)+'\\s*$','i').test(value)) return true; }
-  }
-  if(typeof OPERATOR_ALIASES!=="undefined"&&OPERATOR_ALIASES){
-    for(const aliases of Object.values(OPERATOR_ALIASES)){ if((aliases||[]).some(pattern=>pattern.test(value))) return true; }
-  }
-  return false;
+  return isKnownOperatorHeadingLine(value);
 }
 function getMultiOfferImportBlocks(raw){
   const text=String(raw||"").replace(/\r\n?/g,"\n").trim();
@@ -6488,7 +6511,8 @@ function getMultiOfferImportBlocks(raw){
     lines.forEach(line=>{
       const trimmed=line.trim();
       if(!trimmed){ blankRun+=1; current.push(line); return; }
-      const shouldSplit=current.join("\n").trim() && (blankRun>=2 || (isLikelyOfferStartLine(trimmed)&&current.filter(item=>item.trim()).length>=2));
+      const currentBlock=current.join("\n").trim();
+      const shouldSplit=currentBlock && (blankRun>=2 || (isLikelyOfferStartLine(trimmed)&&hasAccumulatedOfferEvidence(currentBlock)));
       if(shouldSplit){ blocks.push(cleanBlock(current.join("\n"))); current=[]; }
       blankRun=0;
       current.push(line);

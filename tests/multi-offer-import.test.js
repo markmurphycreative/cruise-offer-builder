@@ -47,6 +47,8 @@ function createHarness() {
     extractFunction('getOfferLabelIndex'),
     extractFunction('isOfferLabelLine'),
     extractFunction('hasExplicitOfferMarkers'),
+    extractFunction('isKnownOperatorHeadingLine'),
+    extractFunction('hasAccumulatedOfferEvidence'),
     extractFunction('isLikelyOfferStartLine'),
     extractFunction('getMultiOfferImportBlocks'),
     extractFunction('splitMultiOfferImport')
@@ -96,6 +98,8 @@ function runImportFunctions(context) {
     extractFunction('getOfferLabelIndex'),
     extractFunction('isOfferLabelLine'),
     extractFunction('hasExplicitOfferMarkers'),
+    extractFunction('isKnownOperatorHeadingLine'),
+    extractFunction('hasAccumulatedOfferEvidence'),
     extractFunction('isLikelyOfferStartLine'),
     extractFunction('getMultiOfferImportBlocks'),
     extractFunction('splitMultiOfferImport'),
@@ -558,6 +562,8 @@ Norwegian Fjords` };
     extractFunction('getOfferLabelIndex'),
     extractFunction('isOfferLabelLine'),
     extractFunction('hasExplicitOfferMarkers'),
+    extractFunction('isKnownOperatorHeadingLine'),
+    extractFunction('hasAccumulatedOfferEvidence'),
     extractFunction('isLikelyOfferStartLine'),
     extractFunction('getMultiOfferImportBlocks'),
     extractFunction('splitMultiOfferImport'),
@@ -682,4 +688,137 @@ Fjords` };
   assert.equal(context.offers[0].operator, 'marellacruises');
   assert.equal(context.offers[1].operator, 'cunard');
   assert.equal(JSON.stringify(context.activeMultiOfferImportIndexes), JSON.stringify([0, 1]));
+});
+
+test('splitMultiOfferImport splits four complete stacked offers without explicit markers', () => {
+  const context = createHarness();
+  const blocks = context.splitMultiOfferImport(`Celebrity Cruises
+Canaries & Portugal Cruise
+7th October 2026
+11 night cruise
+Celebrity Apex
+Sailing from Southampton
+Inside Cabin
+Full Board
+£999 per person based on 2 sharing
+Itinerary
+Southampton - Porto (Leixoes) Portugal - Lisbon, Portugal - Gran Canaria, Canary Islands - Tenerife, Canary Islands - Madeira (Funchal), Portugal - Vigo, Spain - Southampton
+
+Fred Olsen
+Flavours of France & Northern Spain
+17th October 2027
+9 night cruise
+Bolette
+Sailing from Port Of Tyne
+Inside Cabin
+Full Board
+£899 per person based on 2 sharing
+Itinerary
+Newcastle - Honfleur, France - Gijon, Asturias, Spain - Santander, Cantabria Spain - Cruise by Royal Palace of La Magdal - Pauillas - Newcastle
+
+Marella Cruises
+Aegean Shores
+5th May 2027
+7 night cruise
+Explorer
+Sailing from Corfu
+Inside Cabin
+All Inclusive
+£799 per person based on 2 sharing
+Itinerary
+Corfu - Rhodes - Santorini - Corfu
+
+Virgin Voyages
+Greek Island Glow
+12th June 2027
+7 night cruise
+Scarlet Lady
+Sailing from Athens
+Sea Terrace
+Full Board
+£1199 per person based on 2 sharing
+Itinerary
+Athens - Mykonos - Rhodes - Athens`);
+
+  assert.equal(blocks.length, 4);
+  assert.equal(JSON.stringify(blocks.map(block => block.split('\n')[0])), JSON.stringify(['Celebrity Cruises', 'Fred Olsen', 'Marella Cruises', 'Virgin Voyages']));
+});
+
+test('single complete unmarked offer remains one block only', () => {
+  const context = createHarness();
+  const blocks = context.splitMultiOfferImport(`Celebrity Cruises
+Canaries & Portugal Cruise
+7th October 2026
+11 night cruise
+Celebrity Apex
+Sailing from Southampton
+Inside Cabin
+Full Board
+£999 per person based on 2 sharing
+Itinerary
+Southampton - Porto (Leixoes) Portugal - Lisbon, Portugal - Gran Canaria - Southampton`);
+
+  assert.equal(blocks.length, 1);
+  assert.equal(blocks[0].split('\n')[0], 'Celebrity Cruises');
+});
+
+test('operator names inside normal offer content do not incorrectly split a block', () => {
+  const context = createHarness();
+  const blocks = context.splitMultiOfferImport(`Celebrity Cruises
+Celebrity Apex
+Canaries & Portugal Cruise
+Meet other Celebrity guests onboard before the itinerary is confirmed
+Royal Caribbean International appears in comparison copy, not as a new offer
+
+Marella Cruises
+Aegean Shores
+5th May 2027
+7 night cruise
+Explorer
+All Inclusive
+£799 per person
+Itinerary
+Corfu - Rhodes - Corfu`);
+
+  assert.equal(blocks.length, 2);
+  assert.match(blocks[0], /Royal Caribbean International appears in comparison copy/);
+  assert.equal(blocks[1].split('\n')[0], 'Marella Cruises');
+});
+
+test('Fred Olsen Port Of Tyne stacked example does not keep homeports in parsed You’ll Visit ports', () => {
+  const context = createHarness();
+  const [block] = context.splitMultiOfferImport(`Fred Olsen
+Flavours of France & Northern Spain
+17th October 2027
+9 night cruise
+Bolette
+Sailing from Port Of Tyne
+Inside Cabin
+Full Board
+£899 per person based on 2 sharing
+Itinerary
+Newcastle - Honfleur, France - Gijon, Asturias, Spain - Santander, Cantabria Spain - Cruise by Royal Palace of La Magdal - Pauillas - Newcastle`);
+
+  assert.equal(block.split('\n')[0], 'Fred Olsen');
+  assert.doesNotMatch(block, /^Port Of Tyne$/m);
+  assert.match(block, /Honfleur, France/);
+});
+
+test('Marella luggage after itinerary is preserved in same block and not treated as a split port', () => {
+  const context = createHarness();
+  const blocks = context.splitMultiOfferImport(`Marella Cruises
+Greek Islands
+1st August 2027
+7 night cruise
+Explorer
+Sailing from Corfu
+Inside Cabin
+All Inclusive
+£999 per person based on 2 sharing
+Itinerary
+Corfu - Rhodes - Santorini - Corfu
+Luggage & transfers included`);
+
+  assert.equal(blocks.length, 1);
+  assert.match(blocks[0], /Luggage & transfers included$/);
 });
