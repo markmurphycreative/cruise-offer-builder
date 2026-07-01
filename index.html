@@ -2838,9 +2838,30 @@ function enhanceClickableHeroImages(root, offerIndex){
   const scope = root && root.querySelectorAll ? root : document;
   scope.querySelectorAll(".hero-wrap img.hero").forEach(hero=>bindHeroPickerTarget(hero, offerIndex, {replace:true}));
 }
+function bindRenderedHeroPickerTargets(root, offerIndex){
+  if(!root) return;
+  const cards=[];
+  if(root.classList&&root.classList.contains("cc")) cards.push(root);
+  if(root.querySelectorAll) root.querySelectorAll(".cc").forEach(card=>cards.push(card));
+  cards.forEach(card=>{
+    const children=Array.from(card.children||[]);
+    const heroWrap=children.find(el=>el.classList&&el.classList.contains("hero-wrap"));
+    const heroImg=heroWrap&&heroWrap.querySelector("img.hero[data-editable-image-type='hero'],img.hero");
+    if(heroImg) bindHeroPickerTarget(heroImg, offerIndex, {replace:true});
+    const placeholder=children.find(el=>el.classList&&el.classList.contains("hph"));
+    if(placeholder) bindHeroPickerTarget(placeholder, offerIndex, {replace:false});
+  });
+}
 function enhanceClickableHeroImagesAndPlaceholders(root, offerIndex){
+  bindRenderedHeroPickerTargets(root, offerIndex);
   enhanceClickableHeroPlaceholders(root, offerIndex);
   enhanceClickableHeroImages(root, offerIndex);
+}
+function bindSinglePreviewHeroPickerTargets(root, offerIndex){
+  bindRenderedHeroPickerTargets(root, offerIndex);
+}
+function bindEmailPreviewHeroPickerTargets(root, offerIndex){
+  bindRenderedHeroPickerTargets(root, offerIndex);
 }
 function readFile(file,type){
   let targetOfferIndex=cur;
@@ -8038,6 +8059,7 @@ function renderSingleOffer(data){
   updatePreviewTitle();
   out.innerHTML=renderCardHTML(data||{});
   adjustVisitSectionHeights(out);
+  bindSinglePreviewHeroPickerTargets(out, cur);
   enhanceClickableHeroImagesAndPlaceholders(out, cur);
   enhanceHeroDropTarget(out, cur);
   scheduleHeroCropPositions(out);
@@ -8481,6 +8503,7 @@ function renderVisibleCard(){
   updatePreviewTitle();
   out.innerHTML = renderOfferWithOptionalCtaHTML(visibleFieldsToData(), getCtaSettingsFromUI());
   adjustVisitSectionHeights(out);
+  bindSinglePreviewHeroPickerTargets(out, cur);
   enhanceClickableHeroImagesAndPlaceholders(out, cur);
   enhanceHeroDropTarget(out, cur);
   scheduleHeroCropPositions(out);
@@ -8905,6 +8928,7 @@ function renderPreviewMode(skipSave){
       cardWrap.style.cssText = 'width:1200px;background:#fff;overflow:hidden;';
       cardWrap.innerHTML = renderOfferWithOptionalCtaHTML(d, getCtaSettingsFromUI());
       adjustVisitSectionHeights(cardWrap);
+      bindEmailPreviewHeroPickerTargets(cardWrap, i);
       enhanceClickableHeroImagesAndPlaceholders(cardWrap, i);
       enhanceHeroDropTarget(cardWrap, i);
       stackWrap.appendChild(cardWrap);
