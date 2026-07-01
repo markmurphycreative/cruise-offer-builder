@@ -4864,6 +4864,94 @@ function markUnsavedChanges(){
   setAutosaveStatus("Unsaved changes");
 }
 
+const HERO_ASSET_DB_NAME = "cobHeroAssetsV1";
+const HERO_ASSET_DB_VERSION = 1;
+const HERO_ASSET_STORE = "heroAssets";
+let heroAssetDbPromise = null;
+function openHeroAssetDb(){
+  if(!("indexedDB" in window)) return Promise.reject(new Error("IndexedDB is unavailable"));
+  if(heroAssetDbPromise) return heroAssetDbPromise;
+  heroAssetDbPromise = new Promise((resolve,reject)=>{
+    const req=indexedDB.open(HERO_ASSET_DB_NAME,HERO_ASSET_DB_VERSION);
+    req.onupgradeneeded=()=>{ const db=req.result; if(!db.objectStoreNames.contains(HERO_ASSET_STORE)) db.createObjectStore(HERO_ASSET_STORE,{keyPath:"id"}); };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error||new Error("IndexedDB open failed"));
+    req.onblocked=()=>reject(new Error("IndexedDB upgrade blocked"));
+  }).catch(err=>{ heroAssetDbPromise=null; throw err; });
+  return heroAssetDbPromise;
+}
+function heroAssetRequest(method,value){
+  return openHeroAssetDb().then(db=>new Promise((resolve,reject)=>{
+    const tx=db.transaction(HERO_ASSET_STORE,method==="get"?"readonly":"readwrite");
+    const store=tx.objectStore(HERO_ASSET_STORE);
+    const req=method==="put"?store.put(value):method==="delete"?store.delete(value):store.get(value);
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error||new Error("IndexedDB request failed"));
+    tx.onerror=()=>reject(tx.error||new Error("IndexedDB transaction failed"));
+  }));
+}
+function stableHeroAssetId(sessionId,index,type){ return [AUTOSAVE_KEY,sessionId||"default",type||"hero",index].join(":"); }
+function isLargeEmbeddedImageValue(value){ return typeof value==="string" && /^data:image\//i.test(value); }
+async function saveHeroAssetsToIndexedDb(payload){
+  const sessionId=payload.sessionId || "latest";
+  const offersForAssets=payload.offers||[];
+  for(let index=0;index<offersForAssets.length;index+=1){
+    const offer=offersForAssets[index];
+    if(!offer) continue;
+    for(const cfg of [{key:"_img",refKey:"_imgAssetId",sourceKey:"_imgSource",type:"hero"},{key:"_itineraryImg",refKey:"_itineraryImgAssetId",sourceKey:"_itineraryImgSource",type:"itinerary"}]){
+      const src=offer[cfg.key];
+      if(isLargeEmbeddedImageValue(src)){
+        const id=stableHeroAssetId(sessionId,index,cfg.type);
+        await heroAssetRequest("put",{id,sessionId,offerIndex:index,type:cfg.type,src,source:offer[cfg.sourceKey]||"",updatedAt:payload.savedAt});
+        offer[cfg.refKey]=id;
+        offer[cfg.sourceKey]=offer[cfg.sourceKey]||"indexeddb";
+        delete offer[cfg.key];
+        delete offer[cfg.key+"NeedsReupload"];
+      }else if(src){
+        delete offer[cfg.refKey];
+      }else if(offer[cfg.refKey]){
+        try{ await heroAssetRequest("delete",offer[cfg.refKey]); }catch(_e){}
+        delete offer[cfg.refKey];
+      }
+    }
+  }
+  return payload;
+}
+async function hydrateHeroAssetsFromIndexedDb(payload){
+  if(!(payload&&Array.isArray(payload.offers))) return payload;
+  for(let index=0;index<payload.offers.length;index+=1){
+    const offer=payload.offers[index];
+    if(!offer) continue;
+    for(const cfg of [{key:"_img",refKey:"_imgAssetId",needsKey:"_imgNeedsReupload",label:"Hero image"},{key:"_itineraryImg",refKey:"_itineraryImgAssetId",needsKey:"_itineraryImgNeedsReupload",label:"Route map"}]){
+      if(offer[cfg.key]) continue;
+      if(!offer[cfg.refKey]) continue;
+      try{
+        const asset=await heroAssetRequest("get",offer[cfg.refKey]);
+        if(asset&&asset.src){ offer[cfg.key]=asset.src; offer[cfg.needsKey]=false; }
+        else{ offer[cfg.needsKey]=true; showSessionFeedback(cfg.label+" could not be found in browser image storage and needs re-uploading",true); }
+      }catch(err){
+        offer[cfg.needsKey]=true;
+        if(typeof notifySessionStorageFailure==="function") notifySessionStorageFailure(err);
+      }
+    }
+  }
+  return payload;
+}
+async function migrateLegacyEmbeddedHeroAssets(payload){
+  if(!(payload&&Array.isArray(payload.offers))) return payload;
+  let migrated=false;
+  payload.sessionId=payload.sessionId||"latest";
+  for(let index=0;index<payload.offers.length;index+=1){
+    const offer=payload.offers[index];
+    if(!offer) continue;
+    if(isLargeEmbeddedImageValue(offer._img)||isLargeEmbeddedImageValue(offer._itineraryImg)) migrated=true;
+  }
+  if(migrated){
+    try{ await saveHeroAssetsToIndexedDb(payload); localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(payload)); }
+    catch(err){ showSessionFeedback("Legacy hero images could not be moved to IndexedDB. They remain in the saved session until re-saved.",true); try{ console.warn("[autosave] migration failed",err); }catch(_e){} }
+  }
+  return payload;
+}
 function buildAutosavePayload(){
   save();
   if(typeof syncHeroLockMetadata==="function") syncHeroLockMetadata();
@@ -4875,7 +4963,7 @@ function buildAutosavePayload(){
   });
   const sectionState = {};
   getSectionCollapseState().forEach((collapsed,key)=>{ sectionState[key]=!!collapsed; });
-  return {version:'1.0',savedAt:new Date().toISOString(),cur,viewMode,ctaSettings:(typeof ctaSettings !== 'undefined' ? ctaSettings : {enabled:false,text:'Click To Call Us For More Info',phone:'01912229701'}),lockedOffers,lockedHeroImages:(typeof lockedHeroImages!=="undefined" && Array.isArray(lockedHeroImages) ? lockedHeroImages.slice(0,4) : [false,false,false,false]),sectionState,openSectionKey:getOpenSectionKey(),campaign:{name:document.getElementById('g-campaign').value||'',date:document.getElementById('g-date').value||'',airport:document.getElementById('g-airport').value||'',terms:document.getElementById('g-terms').value||'',...(typeof getCampaignNamingSnapshot==="function" ? getCampaignNamingSnapshot() : {})},offers:clonedOffers};
+  return {version:'1.0',savedAt:new Date().toISOString(),cur,viewMode,sessionId:'latest',ctaSettings:(typeof ctaSettings !== 'undefined' ? ctaSettings : {enabled:false,text:'Click To Call Us For More Info',phone:'01912229701'}),lockedOffers,lockedHeroImages:(typeof lockedHeroImages!=="undefined" && Array.isArray(lockedHeroImages) ? lockedHeroImages.slice(0,4) : [false,false,false,false]),sectionState,openSectionKey:getOpenSectionKey(),campaign:{name:document.getElementById('g-campaign').value||'',date:document.getElementById('g-date').value||'',airport:document.getElementById('g-airport').value||'',terms:document.getElementById('g-terms').value||'',...(typeof getCampaignNamingSnapshot==="function" ? getCampaignNamingSnapshot() : {})},offers:clonedOffers};
 }
 function describeStorageSaveError(error){
   const name=String((error&&error.name)||"");
@@ -4894,17 +4982,23 @@ function saveSessionNow(){
   if(autosaveHydrating || autosaveAwaitingRestoreDecision) return false;
   if(typeof clearTimeout === "function") clearTimeout(autosaveTimer);
   setAutosaveStatus("Autosaving…");
-  try{
-    const payload = buildAutosavePayload();
+  const finishSave=payload=>{
     localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(payload));
     autosaveLastSavedAt = payload.savedAt || new Date().toISOString();
     autosaveHasUnsavedChanges = false;
     updateSavedSessionStatus(payload);
     syncAutosaveStatus();
     return true;
+  };
+  try{
+    const payload = buildAutosavePayload();
+    const isEmbedded=typeof isLargeEmbeddedImageValue==="function" ? isLargeEmbeddedImageValue : (value=>typeof value==="string" && /^data:image\//i.test(value));
+    const hasEmbedded=(payload.offers||[]).some(o=>o&&(isEmbedded(o._img)||isEmbedded(o._itineraryImg)));
+    if(!hasEmbedded || typeof saveHeroAssetsToIndexedDb!=="function") return finishSave(payload);
+    return saveHeroAssetsToIndexedDb(payload).then(finishSave).catch(e=>{ autosaveHasUnsavedChanges=true; if(typeof notifySessionStorageFailure==="function") notifySessionStorageFailure(e); return false; });
   }catch(e){
     autosaveHasUnsavedChanges = true;
-    notifySessionStorageFailure(e);
+    if(typeof notifySessionStorageFailure==="function") notifySessionStorageFailure(e);
     return false;
   }
 }
@@ -4931,12 +5025,10 @@ function readSavedSession(){
 function restoreSavedSessionOnStartup(){
   const saved=readSavedSession();
   if(!(saved && Array.isArray(saved.offers))) return false;
-  applySessionPayload(saved);
-  autosaveLastSavedAt=saved.savedAt || autosaveLastSavedAt;
-  syncAutosaveStatus();
-  const partial=sessionHasMissingHeroImages(saved);
-  showSessionFeedback(partial ? "Session restored, but hero images need re-uploading" : "Previous session restored", partial);
-  return true;
+  const hasRefs=saved.offers.some(o=>o&&(o._imgAssetId||o._itineraryImgAssetId));
+  const restorePayload=payload=>{ applySessionPayload(payload); if(typeof migrateLegacyEmbeddedHeroAssets==="function") migrateLegacyEmbeddedHeroAssets(payload); autosaveLastSavedAt=payload.savedAt || autosaveLastSavedAt; syncAutosaveStatus(); const partial=sessionHasMissingHeroImages(payload); showSessionFeedback(partial ? "Session restored, but hero images need re-uploading" : "Previous session restored", partial); return true; };
+  if(hasRefs) return hydrateHeroAssetsFromIndexedDb(saved).then(restorePayload);
+  return restorePayload(saved);
 }
 function applySessionPayload(data){
   if(!data || !Array.isArray(data.offers)) return;
@@ -5266,12 +5358,9 @@ function chooseRestoreSession(){
   pendingRestoreSession = null;
   closeSessionRestoreModal();
   if(payload){
-    applySessionPayload(payload);
-    autosaveLastSavedAt = payload.savedAt || autosaveLastSavedAt;
-    setAutosaveStatus(`Autosaved ${formatAutosaveTime(autosaveLastSavedAt)}`);
-    const partial=sessionHasMissingHeroImages(payload);
-    showSessionFeedback(partial ? "Session restored, but hero images need re-uploading" : "Previous session restored", partial);
-    if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Session restore");
+    const applyRestored=restored=>{ applySessionPayload(restored); autosaveLastSavedAt = restored.savedAt || autosaveLastSavedAt; setAutosaveStatus(`Autosaved ${formatAutosaveTime(autosaveLastSavedAt)}`); const partial=sessionHasMissingHeroImages(restored); showSessionFeedback(partial ? "Session restored, but hero images need re-uploading" : "Previous session restored", partial); if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Session restore"); return true; };
+    if((payload.offers||[]).some(o=>o&&(o._imgAssetId||o._itineraryImgAssetId))) return hydrateHeroAssetsFromIndexedDb(payload).then(applyRestored);
+    return applyRestored(payload);
   }
 }
 function chooseStartFreshSession(){
@@ -9537,10 +9626,10 @@ function initStartScreenActions(){
   }
   if(continueBtn){
     continueBtn.removeAttribute("onclick");
-    continueBtn.addEventListener("click",(e)=>{
+    continueBtn.addEventListener("click",async (e)=>{
       if(e) e.preventDefault();
       markBuilderOpenState(true,"restored");
-      chooseRestoreSession();
+      await Promise.resolve(chooseRestoreSession());
       dismissSplashAndShowBuilder("restored");
     });
   }
@@ -9579,7 +9668,7 @@ function initStandaloneApp(){
   hydrateSplashRecentSession();
 }
 
-function initBuilderApp(){
+async function initBuilderApp(){
   // Preset hydration is independent of the rest of builder startup so saved presets remain available after refresh.
   refreshPresetList();
   try{
