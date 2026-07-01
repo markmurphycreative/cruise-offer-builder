@@ -1470,6 +1470,53 @@ At Sea`, { renderIntelligence: false });
   assert.doesNotMatch(result.parsed.ports, /At Sea|Overnight/);
 });
 
+test('Paste Offer preserves Marella real-world luggage, cabin, airport flights, and Tenerife itinerary ending', () => {
+  const harness = createHarness([{}, {}, {}, {}]);
+  const result = harness.context.parseOfferText(`Marella Cruises
+Canarian Flavours
+5th May 2027
+7 night cruise
+Explorer
+Direct flights from/to Newcastle
+Sailing from Malaga
+Inside Cabin
+All Inclusive
+£819 per person based on 2 sharing
+Itinerary
+Malaga, Spain - Gibraltar - Casablanca, Morocco - Las Palmas, Gran Canaria - Santa Cruz de Tenerife, Tenerife
+Luggage & Transfers included`, { renderIntelligence: false });
+
+  assert.equal(result.parsed.incl, 'Newcastle Flights - Luggage & Transfers Included\nInside Cabin');
+  assert.equal(result.parsed.ports, [
+    'Malaga, Spain',
+    'Gibraltar',
+    'Casablanca, Morocco',
+    'Las Palmas, Gran Canaria',
+    'Santa Cruz de Tenerife, Tenerife'
+  ].join(' • '));
+});
+
+test('Paste Offer normalises Celebrity Porto Leixoes bracket country without regressing known port alias rules', () => {
+  const harness = createHarness([{}, {}, {}, {}]);
+  const result = harness.context.parseOfferText(`Celebrity Cruises
+Canaries & Portugal Cruise
+7th October 2026
+11 night cruise
+Celebrity Apex
+Sailing from Southampton
+Inside Cabin
+Full Board
+£999 per person based on 2 sharing
+Itinerary
+Southampton - Porto (Leixoes) Portugal - Lisbon, Portugal - Madeira (Funchal), Portugal - Florence/Pisa(La Spezia), Italy - Rome (Civitavecchia), Italy - Nice (Villefranche), France - Southampton`, { renderIntelligence: false });
+
+  assert.match(result.parsed.ports, /Porto, Leixoes, Portugal/);
+  assert.match(result.parsed.ports, /Madeira, for Funchal/);
+  assert.match(result.parsed.ports, /Florence\/Pisa, for La Spezia/);
+  assert.match(result.parsed.ports, /Rome, for Civitavecchia/);
+  assert.match(result.parsed.ports, /Nice, for Villefranche/);
+});
+
 test('Paste Offer keeps airport-specific non-flight inclusions and standard port suffixes', () => {
   const harness = createHarness([{}, {}, {}, {}]);
   const luggageResult = harness.context.parseOfferText(`Virgin Voyages | Valiant Lady
