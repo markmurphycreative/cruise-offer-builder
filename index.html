@@ -2809,50 +2809,34 @@ function openHeroImagePickerForOffer(index){
   input.value = "";
   input.click();
 }
-function enhanceClickableHeroPlaceholders(root, offerIndex){
-  const scope = root && root.querySelectorAll ? root : document;
-  scope.querySelectorAll(".hph").forEach(placeholder=>{
-    const resolvedIndex = Number.isInteger(offerIndex) ? offerIndex : cur;
-    if(placeholder.dataset.heroPickerBound === "1") return;
-    placeholder.dataset.heroPickerBound = "1";
-    placeholder.classList.add("clickable-hero-placeholder");
-    placeholder.setAttribute("role", "button");
-    placeholder.setAttribute("tabindex", "0");
-    placeholder.setAttribute("title", "Click to add image");
-    placeholder.setAttribute("aria-label", "Add hero image for Offer " + (resolvedIndex + 1));
-    const openPicker = event=>{
-      event.preventDefault();
-      event.stopPropagation();
-      openHeroImagePickerForOffer(resolvedIndex);
-    };
-    placeholder.addEventListener("click", openPicker);
-    placeholder.addEventListener("keydown", event=>{
-      if(event.key === "Enter" || event.key === " ") openPicker(event);
-    });
+function bindHeroPickerTarget(target, offerIndex, options){
+  if(!target) return;
+  const resolvedIndex = Number.isInteger(offerIndex) ? offerIndex : cur;
+  if(target.dataset.heroPickerBound === "1") return;
+  target.dataset.heroPickerBound = "1";
+  const isReplacement = !!(options && options.replace);
+  target.classList.add(isReplacement ? "clickable-hero-image" : "clickable-hero-placeholder");
+  target.setAttribute("role", "button");
+  target.setAttribute("tabindex", "0");
+  target.setAttribute("title", isReplacement ? "Click to replace image" : "Click to add image");
+  target.setAttribute("aria-label", (isReplacement ? "Replace" : "Add") + " hero image for Offer " + (resolvedIndex + 1));
+  const openPicker = event=>{
+    event.preventDefault();
+    event.stopPropagation();
+    openHeroImagePickerForOffer(resolvedIndex);
+  };
+  target.addEventListener("click", openPicker);
+  target.addEventListener("keydown", event=>{
+    if(event.key === "Enter" || event.key === " ") openPicker(event);
   });
 }
-function enhanceClickableHeroImages(root, offerIndex){
-  if(viewMode!=="all") return;
+function enhanceClickableHeroPlaceholders(root, offerIndex){
   const scope = root && root.querySelectorAll ? root : document;
-  scope.querySelectorAll(".hero-wrap img.hero").forEach(hero=>{
-    const resolvedIndex = Number.isInteger(offerIndex) ? offerIndex : cur;
-    if(hero.dataset.heroPickerBound === "1") return;
-    hero.dataset.heroPickerBound = "1";
-    hero.classList.add("clickable-hero-image");
-    hero.setAttribute("role", "button");
-    hero.setAttribute("tabindex", "0");
-    hero.setAttribute("title", "Click to replace image");
-    hero.setAttribute("aria-label", "Replace hero image for Offer " + (resolvedIndex + 1));
-    const openPicker = event=>{
-      event.preventDefault();
-      event.stopPropagation();
-      openHeroImagePickerForOffer(resolvedIndex);
-    };
-    hero.addEventListener("click", openPicker);
-    hero.addEventListener("keydown", event=>{
-      if(event.key === "Enter" || event.key === " ") openPicker(event);
-    });
-  });
+  scope.querySelectorAll(".hph").forEach(placeholder=>bindHeroPickerTarget(placeholder, offerIndex, {replace:false}));
+}
+function enhanceClickableHeroImages(root, offerIndex){
+  const scope = root && root.querySelectorAll ? root : document;
+  scope.querySelectorAll(".hero-wrap img.hero").forEach(hero=>bindHeroPickerTarget(hero, offerIndex, {replace:true}));
 }
 function enhanceClickableHeroImagesAndPlaceholders(root, offerIndex){
   enhanceClickableHeroPlaceholders(root, offerIndex);

@@ -112,13 +112,15 @@ test('workspace hero placeholders and images are enhanced in preview only and re
   assert.match(extractFunction('openHeroImagePickerForOffer'), /document\.querySelector\('#dz-hero input\[type="file"\]'\)/);
   assert.match(extractFunction('openHeroImagePickerForOffer'), /pendingHeroPickerOfferIndex=offerIndex/);
   assert.match(extractFunction('openHeroImagePickerForOffer'), /input\.click\(\)/);
-  assert.match(extractFunction('enhanceClickableHeroPlaceholders'), /openHeroImagePickerForOffer\(resolvedIndex\)/);
-  assert.match(extractFunction('enhanceClickableHeroImages'), /if\(viewMode!=="all"\) return;/);
-  assert.match(extractFunction('enhanceClickableHeroImages'), /openHeroImagePickerForOffer\(resolvedIndex\)/);
+  assert.match(extractFunction('bindHeroPickerTarget'), /openHeroImagePickerForOffer\(resolvedIndex\)/);
+  assert.doesNotMatch(extractFunction('enhanceClickableHeroImages'), /viewMode/);
+  assert.match(extractFunction('enhanceClickableHeroPlaceholders'), /bindHeroPickerTarget\(placeholder, offerIndex, \{replace:false\}\)/);
+  assert.match(extractFunction('enhanceClickableHeroImages'), /bindHeroPickerTarget\(hero, offerIndex, \{replace:true\}\)/);
   assert.match(extractFunction('enhanceClickableHeroImagesAndPlaceholders'), /enhanceClickableHeroPlaceholders\(root, offerIndex\)/);
   assert.match(extractFunction('enhanceClickableHeroImagesAndPlaceholders'), /enhanceClickableHeroImages\(root, offerIndex\)/);
   assert.match(extractFunction('renderPreviewMode'), /enhanceClickableHeroImagesAndPlaceholders\(cardWrap, i\)/);
   assert.match(extractFunction('renderPreviewMode'), /enhanceClickableHeroImagesAndPlaceholders\(c, index\)/);
+  assert.match(extractFunction('renderVisibleCard'), /enhanceClickableHeroImagesAndPlaceholders\(out, cur\)/);
   assert.doesNotMatch(extractFunction('renderHeroHTML'), /clickable-hero-placeholder|clickable-hero-image|onclick|input\.click/);
 });
 
