@@ -3435,7 +3435,7 @@ async function exportAll(){
   const warn=document.getElementById("export-warn");
   warn.classList.remove("active");
 
-  const toExport=offers.map((o,i)=>({o,i})).filter(({o})=>o.name||o._img);
+  const toExport=offers.map((o,i)=>({o,i})).filter(({o})=>isOfferLoaded(o));
   if(!toExport.length){ prog.textContent="No offers to export — fill in at least one offer first"; showExportToast("No offer loaded","error"); return; }
   if(!(await ensureJSZipLoaded())){
     prog.textContent="⚠ All cards export unavailable — export library did not load. Check your internet connection and try again.";
@@ -3948,8 +3948,33 @@ function updateAllStatus(){
   if(typeof updatePreviewTitle==="function") updatePreviewTitle();
 }
 function isOfferLoaded(o){
-  return !!(o&&(o.name||o.ship||o.price||o._img));
+  if(!o) return false;
+  const meaningfulFields=[
+    o.name,
+    o.ship,
+    o.price,
+    o.day,
+    o.month,
+    o.date,
+    o.ports,
+    o.itinerary,
+    o.nights,
+    o.incl,
+    o.basis,
+    o.board,
+    o.boardlbl,
+    o._img,
+    o._itineraryImg
+  ];
+  return meaningfulFields.some(value=>String(value||'').trim());
 }
+function getLoadedPreviewOffers(){
+  return (offers||[]).slice(0,4).map(function(offer,index){
+    const data=(index===cur)?currentFormData():(offer||{});
+    return {data:data||{},index:index};
+  }).filter(function(item){ return isOfferLoaded(item.data); });
+}
+
 function getPreviewOfferStatusLabel(i){
   const readiness=getOfferReadiness(offers[i]||{});
   if(!readiness.loaded) return "";
@@ -9017,11 +9042,10 @@ function renderPreviewMode(skipSave){
     stackWrap.className = 'email-preview-wrap';
     stackWrap.style.cssText = 'width:1200px;background:transparent;display:flex;flex-direction:column;gap:56px;align-items:center;padding:32px 0;';
 
-    // Always render all four cards in Email preview.
-    // Before, blank offers were filtered out, which made Email view look empty on a fresh file.
-    // For the active offer, render from the visible fields so edits appear immediately.
-    for(let i = 0; i < 4; i++){
-      const d = (i === cur) ? currentFormData() : (offers[i] || {});
+    // Render only loaded offers in Email preview while keeping empty slots available in the editor.
+    getLoadedPreviewOffers().forEach(function(item){
+      const d = item.data;
+      const i = item.index;
       const cardWrap = document.createElement('div');
       cardWrap.className = 'email-card-wrap';
       cardWrap.style.cssText = 'width:1200px;background:#fff;overflow:hidden;';
@@ -9032,7 +9056,7 @@ function renderPreviewMode(skipSave){
       enhanceHeroDropTarget(cardWrap, i);
       stackWrap.appendChild(cardWrap);
       scheduleHeroCropPositions(cardWrap);
-    }
+    });
 
     out.innerHTML = '';
     out.appendChild(stackWrap);
@@ -9045,15 +9069,19 @@ function renderPreviewMode(skipSave){
 
     const gap = 64;
     const pad = 64;
-    const gridW = (1200 * 2) + gap + (pad * 2);
+    const loadedPreviewOffers = getLoadedPreviewOffers();
+    const columnCount = loadedPreviewOffers.length === 1 ? 1 : 2;
+    const gridW = (1200 * columnCount) + (gap * (columnCount - 1)) + (pad * 2);
 
     const grid = document.createElement('div');
-    grid.style.cssText = 'display:grid;grid-template-columns:1200px 1200px;gap:' + gap + 'px;width:' + gridW + 'px;background:transparent;padding:' + pad + 'px;align-items:start;justify-content:center;';
+    grid.style.cssText = 'display:grid;grid-template-columns:' + Array(columnCount).fill('1200px').join(' ') + ';gap:' + gap + 'px;width:' + gridW + 'px;background:transparent;padding:' + pad + 'px;align-items:start;justify-content:center;';
 
-    offers.forEach(function(d, index){
+    loadedPreviewOffers.forEach(function(item, loadedIndex){
+      const d = item.data;
+      const index = item.index;
       const c = document.createElement('div');
       c.className = 'all-preview-card' + ((typeof isOfferLocked==='function' && isOfferLocked(index)) ? ' offer-locked' : '');
-      c.style.cssText = 'width:1200px;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.22);overflow:hidden;';
+      c.style.cssText = 'width:1200px;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.22);overflow:hidden;' + (loadedPreviewOffers.length === 3 && loadedIndex === 2 ? 'grid-column:1 / -1;justify-self:center;' : '');
       c.setAttribute('role', 'button');
       c.setAttribute('tabindex', '0');
       c.setAttribute('title', (typeof isOfferLocked==='function' && isOfferLocked(index) ? 'Locked — ' : '') + 'Edit Offer ' + (index + 1));
@@ -9519,7 +9547,7 @@ async function exportAllJPG(){
   const prog=document.getElementById('export-progress');
   const warn=document.getElementById('export-warn');
   if(warn) warn.classList.remove('active');
-  const toExport=offers.map((o,i)=>({o,i})).filter(({o})=>o.name||o._img);
+  const toExport=offers.map((o,i)=>({o,i})).filter(({o})=>isOfferLoaded(o));
   if(!toExport.length){ if(prog) prog.textContent='No offers to export — fill in at least one offer first'; showExportToast('No offer loaded','error'); return; }
   if(!(await ensureJSZipLoaded())){ if(prog) prog.textContent='⚠ All cards export unavailable — export library did not load. Check your internet connection and try again.'; showExportToast('Export failed','error'); return; }
   if(toExport.some(({o})=>hasExternalImg(o)) && warn) warn.classList.add('active');
@@ -9584,11 +9612,11 @@ async function exportCampaignPack(){
     const combinedRows=[];
     const ctaRows=[];
     const utmLookupRows=[];
-    const packOfferItems=offers.map((o,i)=>({o:o||{},i})).filter(({o})=>o.name||o.ship||o.price);
+    const packOfferItems=offers.map((o,i)=>({o:o||{},i})).filter(({o})=>isOfferLoaded(o));
     const sharedCta=getSharedCtaExportInfo(packOfferItems,cta);
     for(let i=0;i<4;i++){
       const o=offers[i]||{};
-      if(!(o.name||o.ship||o.price)) continue;
+      if(!isOfferLoaded(o)) continue;
       if(prog) prog.textContent=`Rendering card ${i+1}/4...`;
       const blob=await renderCardToImageBlob(o,'image/png',1.0);
       const cardFilename=filenameWithExt(i,'png');
