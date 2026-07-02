@@ -108,6 +108,11 @@ function createHarness() {
     extractFunction('formatOfferIntelligencePorts'),
     extractFunction('getOfferIntelligenceDetectedFields'),
     extractFunction('getOfferIntelligenceAirport'),
+    extractFunction('levenshteinDistance'),
+    extractFunction('getDestinationSpellingTargets'),
+    extractFunction('normaliseDestinationSpellingToken'),
+    extractFunction('getDestinationSpellingCandidates'),
+    extractFunction('getDestinationSpellingIssues'),
     extractFunction('getOfferIntelligenceQualityDetails'),
     extractFunction('renderOfferQualitySection'),
     extractFunction('escapePoaSuggestionHtml'),
@@ -280,6 +285,31 @@ test('Cruise Title recovery uses high-confidence Ports Intelligence for port-onl
     assert.equal(suggestion.confidenceLabel, 'High Confidence');
     assert.equal(suggestion.id, 'cruise-title-recovery-ports');
   }
+});
+
+test('Offer Intelligence flags raw destination spelling even when cruise knowledge recognises the intended country', () => {
+  const { context, panel } = createHarness();
+  const parsed = { operatorKey: 'msc', name: 'Mediterranean Discovery', ship: 'MSC Virtuosa', day: '12', month: 'June 2027', nights: '7', boardlbl: 'Full Board', price: '999', ports: 'Barcelona, Spain' };
+  const raw = 'Mediterranean Discovery\nBarcelona, Span\nInside Cabin\nFlying from Newcastle';
+
+  vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, { parsed, raw }));
+
+  assert.match(panel.innerHTML, /Barcelona/);
+  assert.match(panel.innerHTML, /Span is not recognised\. Did you mean Spain\?/);
+  assert.match(panel.innerHTML, /Quality Score:<\/strong> 94/);
+  assert.match(panel.innerHTML, /Spain/);
+});
+
+test('Offer Intelligence destination spelling catches close port misspellings from original pasted text', () => {
+  const { context, panel } = createHarness();
+  const parsed = { operatorKey: 'msc', name: 'Mediterranean Discovery', ship: 'MSC Virtuosa', day: '12', month: 'June 2027', nights: '7', boardlbl: 'Full Board', price: '999', ports: 'Barcelona • Messina' };
+  const raw = 'Barcelonia • Messinna\nInside Cabin\nFlying from Newcastle';
+
+  vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, { parsed, raw }));
+
+  assert.match(panel.innerHTML, /Barcelonia is not recognised\. Did you mean Barcelona\?/);
+  assert.match(panel.innerHTML, /Messinna is not recognised\. Did you mean Messina\?/);
+  assert.match(panel.innerHTML, /Quality Score:<\/strong> 88/);
 });
 
 test('Offer Intelligence infers known ship operators without changing parsed data', () => {

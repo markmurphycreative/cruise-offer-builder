@@ -7440,9 +7440,55 @@ function getOfferIntelligenceAirport(parsed,rawText){
   }
   return (typeof offers!=="undefined"&&offers&&offers[cur]&&offers[cur]._poaDepartureAirport)||"";
 }
+
+function getDestinationSpellingTargets(){
+  const targets=new Set();
+  Object.keys(PORT_COUNTRIES||{}).forEach(name=>targets.add(name));
+  Object.values(PORT_COUNTRIES||{}).forEach(name=>targets.add(String(name||"").toLowerCase()));
+  ["la spezia","villefranche","civitavecchia","messina","spain","italy","norway","france"].forEach(name=>targets.add(name));
+  return [...targets].map(name=>String(name||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").replace(/\s+/g," ").trim()).filter(Boolean);
+}
+function normaliseDestinationSpellingToken(value){
+  return String(value||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\([^)]*\)/g," ").replace(/\b(?:for|port of|port|cruise terminal)\b/g," ").replace(/[^a-z0-9]+/g," ").replace(/\s+/g," ").trim();
+}
+function getDestinationSpellingCandidates(parsed,rawText){
+  const values=[];
+  const add=value=>{ value=String(value||"").replace(/\s+/g," ").trim(); if(value) values.push(value); };
+  const parsedPorts=String((parsed||{}).ports||"");
+  parsedPorts.split(/[•|,;\n\r]+/).forEach(add);
+  if(!parsedPorts.trim()) return [...new Set(values)];
+  String(rawText||"").split(/[•|,;\n\r]+/).forEach(part=>{
+    part=String(part||"").replace(/^(?:day\s*\d+|itinerary|you(?:'|’)ll visit|ports?|visits?|sailing from|from|to)\s*[:\-]?\s*/i,"").trim();
+    if(/https?:\/\/|\bwww\.|@|\butm_/i.test(part)) return;
+    add(part);
+  });
+  return [...new Set(values)];
+}
+function getDestinationSpellingIssues(parsed,rawText){
+  const targets=getDestinationSpellingTargets();
+  const exact=new Set(targets);
+  const issues=[];
+  getDestinationSpellingCandidates(parsed,rawText).forEach(original=>{
+    const token=normaliseDestinationSpellingToken(original);
+    if(!token||token.length<4||exact.has(token)) return;
+    const compactToken=token.replace(/\s+/g,"");
+    let best=null;
+    targets.forEach(target=>{
+      const targetCompact=target.replace(/\s+/g,"");
+      const distance=Math.min(levenshteinDistance(token,target),levenshteinDistance(compactToken,targetCompact));
+      if(distance<=2&&(!best||distance<best.distance||target.length<best.target.length)) best={target,distance};
+    });
+    if(best&&!issues.some(issue=>issue.token.toLowerCase()===String(original).toLowerCase())){
+      issues.push({token:String(original).trim(),suggestion:best.target.replace(/\b\w/g,char=>char.toUpperCase()),distance:best.distance});
+    }
+  });
+  return issues.slice(0,6);
+}
+
 function getOfferIntelligenceQualityDetails(parsed,rawText,effectiveOperator){
   const p=parsed||{};
   const has=value=>!!String(value==null?"":value).trim();
+  const spellingIssues=getDestinationSpellingIssues(p,rawText);
   const checks=[
     {label:"Operator",points:12,core:true,ok:!!effectiveOperator},
     {label:"Cruise Title",points:12,core:true,ok:has(p.name)},
@@ -7455,7 +7501,9 @@ function getOfferIntelligenceQualityDetails(parsed,rawText,effectiveOperator){
     {label:"Departure Airport",points:2,core:false,ok:has(getOfferIntelligenceAirport(p,rawText))},
     {label:"Cabin Type",points:2,core:false,ok:/\b(inside|outside|balcony|suite)(?:\s+(?:cabin|stateroom))?\b|\b(?:cabin|stateroom)\b/i.test(String(rawText||""))}
   ];
-  return {score:checks.reduce((sum,item)=>sum+(item.ok?item.points:0),0),checks};
+  const baseScore=checks.reduce((sum,item)=>sum+(item.ok?item.points:0),0);
+  const score=Math.max(0,baseScore-(spellingIssues.length*6));
+  return {score,checks,spellingIssues};
 }
 function getOfferIntelligenceQualityScore(parsed,rawText,effectiveOperator){
   if(typeof getOfferIntelligenceQualityDetails==="function") return getOfferIntelligenceQualityDetails(parsed,rawText,effectiveOperator).score;
@@ -7465,7 +7513,8 @@ function getOfferIntelligenceQualityScore(parsed,rawText,effectiveOperator){
 function renderOfferQualitySection(parsed,rawText,effectiveOperator,item){
   const quality=getOfferIntelligenceQualityDetails(parsed,rawText,effectiveOperator);
   const missing=quality.checks.filter(c=>!c.ok).map(c=>item("missing","⚠",c.label)).join("");
-  return `<div class="offer-intel-section"><div class="offer-intel-heading">OFFER QUALITY</div><div class="offer-intel-list">${missing?`<div class="offer-quality-missing"><div class="offer-intel-heading">Missing:</div>${missing}</div>`:`<div class="offer-intel-empty">No missing core fields</div>`}</div></div>`;
+  const spelling=(quality.spellingIssues||[]).map(issue=>item("missing","⚠",`${issue.token} is not recognised. Did you mean ${issue.suggestion}?`)).join("");
+  return `<div class="offer-intel-section"><div class="offer-intel-heading">OFFER QUALITY</div><div class="offer-intel-list">${spelling?`<div class="offer-quality-missing"><div class="offer-intel-heading">Spelling:</div>${spelling}</div>`:""}${missing?`<div class="offer-quality-missing"><div class="offer-intel-heading">Missing:</div>${missing}</div>`:`<div class="offer-intel-empty">No missing core fields</div>`}</div></div>`;
 }
 function getPoaQualityAnalytics(){
   const loaded=(offers||[]).filter(o=>isOfferLoaded(o));
