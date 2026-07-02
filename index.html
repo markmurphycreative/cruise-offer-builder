@@ -663,12 +663,12 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .cc .cname,.cc .incl,.cc .sname,.cc .pbasis{max-width:1000px;margin-left:auto;margin-right:auto;}
 .cc .price-block{max-width:1000px;}
 .cc .cname{font-size:74px;font-weight:300;color:var(--operator-text,var(--navy));line-height:1.0;margin-bottom:6px;}
-.cc .incl{font-size:40px;font-weight:300;color:#555;line-height:1.22;margin:0 auto 16px;padding:0 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:0;align-items:center;justify-content:center;text-align:center;}
+.cc .incl{font-size:40px;font-weight:300;color:#555;line-height:1.22;margin:0 auto 20px;padding:0 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:0;align-items:center;justify-content:center;text-align:center;}
 .cc .incl-line{display:block;width:100%;max-width:100%;line-height:1.22;margin:0 auto;text-align:center;}
 .cc .incl-component{display:inline;white-space:normal;}
 .cc .incl-segment{display:inline-block;white-space:nowrap;}
 .cc .cabin-phrase,.cc .precruise-phrase{white-space:nowrap;}
-.cc .sname{font-size:40px;font-weight:300;color:var(--operator-accent,var(--gold));line-height:1.2;margin-bottom:28px;}
+.cc .sname{font-size:40px;font-weight:300;color:var(--operator-accent,var(--gold));line-height:1.2;margin-bottom:16px;}
 .cc .price-block{display:inline-flex;flex-direction:column;align-items:center;}
 .cc .pfrom{font-size:30px;font-weight:300;color:#888;line-height:1;margin-bottom:0;}
 .cc .pmain{font-size:90px;font-weight:300;color:var(--operator-text,var(--navy));line-height:1.0;}
@@ -8339,7 +8339,7 @@ function buildCardInclusionComponents(value){
   return ordered;
 }
 function orderCardInclusionComponents(components){
-  const rank={other:0,flight:1,luggage:2,"luggage-transfer":2.5,transfer:3,cabin:4,precruise:5};
+  const rank={"luggage-transfer":0,luggage:1,transfer:2,flight:3,cabin:4,other:5,precruise:6};
   return (components||[]).filter(Boolean).filter((component,index,all)=>all.findIndex(existing=>existing.type===component.type&&String(existing.text||"").toLowerCase()===String(component.text||"").toLowerCase())===index).sort((a,b)=>(rank[a.type]??4)-(rank[b.type]??4));
 }
 function validateCardInclusionLines(lines){
@@ -8399,9 +8399,15 @@ function packCardInclusionComponents(components,options){
 }
 function groupCardInclusionRenderLines(components,options){
   const ordered=orderCardInclusionComponents(components);
-  const primary=ordered.filter(component=>component.type!=="precruise");
   const preCruise=ordered.filter(component=>component.type==="precruise");
-  const lines=packCardInclusionComponents(primary,options);
+  const groups=[
+    ordered.filter(component=>["luggage-transfer","luggage","transfer"].includes(component.type)),
+    ordered.filter(component=>component.type==="flight"),
+    ordered.filter(component=>component.type==="cabin"),
+    ordered.filter(component=>component.type!=="precruise"&&! ["luggage-transfer","luggage","transfer","flight","cabin"].includes(component.type))
+  ];
+  const lines=[];
+  groups.forEach(group=>packCardInclusionComponents(group,options).forEach(line=>lines.push(line)));
   preCruise.forEach(component=>lines.push([component]));
   return lines;
 }
@@ -8467,7 +8473,7 @@ function renderCardHTML(d){
   const priceHTML=price?`<div class="pfrom">From</div><div class="pmain">£${price}<span class="ppp">pp</span></div>`:`<div class="pfrom"></div><div class="pmain"></div>`;
   const dateHTML=(day||month)?`${day}`:"";
   const nightLabel=nights?"Nights":"";
-  return `<div class="cc"${getOperatorSkinStyle(d)}>${getHeaderHTML(d)}${heroHTML}<div class="isec"><div class="isec-content"><div class="cname">${name}</div><div class="incl">${incl}</div><div class="sname">${shipLine}</div><div class="price-block">${priceHTML}<div class="pbasis">${basis}</div></div></div></div><div class="ibar"><div class="icell gold"><div class="ival">${board}</div><div class="ilbl">${boardlbl}</div></div><div class="icell blk"><div class="ival">${dateHTML}</div><div class="ilbl">${month}</div></div><div class="icell gold"><div class="ival">${nights}</div><div class="ilbl">${nightLabel}</div></div></div>${itineraryImageHTML}<div class="vsec"><div class="visit-inner">${preCruiseHTML}<div class="vtit">You'll Visit</div><div class="vpts">${portsHTML}</div></div></div><div class="tcbar">${terms}</div></div>`;
+  return `<div class="cc"${getOperatorSkinStyle(d)}>${getHeaderHTML(d)}${heroHTML}<div class="isec"><div class="isec-content"><div class="cname">${name}</div><div class="sname">${shipLine}</div><div class="incl">${incl}</div><div class="price-block">${priceHTML}<div class="pbasis">${basis}</div></div></div></div><div class="ibar"><div class="icell gold"><div class="ival">${board}</div><div class="ilbl">${boardlbl}</div></div><div class="icell blk"><div class="ival">${dateHTML}</div><div class="ilbl">${month}</div></div><div class="icell gold"><div class="ival">${nights}</div><div class="ilbl">${nightLabel}</div></div></div>${itineraryImageHTML}<div class="vsec"><div class="visit-inner">${preCruiseHTML}<div class="vtit">You'll Visit</div><div class="vpts">${portsHTML}</div></div></div><div class="tcbar">${terms}</div></div>`;
 }
 function bc(d){ return renderCardHTML(d); }
 

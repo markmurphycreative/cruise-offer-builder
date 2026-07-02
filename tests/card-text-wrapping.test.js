@@ -413,11 +413,11 @@ test('subtitle renders flights, transfers, and cabin as one compact grouped incl
   const rendered = context.renderCardInclusion('Newcastle Flights\nTransfers Included\nInside Cabin');
   const text = rendered.replace(/<[^>]+>/g, '').replaceAll('&nbsp;', ' ');
 
-  assert.equal(text, 'Newcastle Flights - Transfers Included - Inside Cabin');
+  assert.equal(text, 'Transfers IncludedNewcastle FlightsInside Cabin');
   assert.doesNotMatch(rendered, /<br>/);
   assert.match(rendered, /<span class="incl-line">/);
   assert.match(rendered, /<span class="incl-component cabin-phrase">Inside&nbsp;Cabin<\/span>/);
-  assert.match(html, /\.cc \.incl\{[^}]*line-height:1\.22;[^}]*margin:0 auto 16px;[^}]*display:flex;flex-direction:column;gap:0;/);
+  assert.match(html, /\.cc \.incl\{[^}]*line-height:1\.22;[^}]*margin:0 auto 20px;[^}]*display:flex;flex-direction:column;gap:0;/);
 });
 
 function extractFunction(name) {

@@ -255,24 +255,24 @@ test('Paste Offer formats cabin card inclusions with flights, transfers, and cab
   const examples = [
     [`Flying from Newcastle
 Inside Cabin
-Transfers Included`, 'Newcastle Flights - Transfers Included - Inside Cabin'],
+Transfers Included`, 'Transfers Included\nNewcastle Flights\nInside Cabin'],
     [`Flying from Newcastle
 Inside Cabin
 Transfers Included
-1 Night Pre-Cruise Stay in Miami`, 'Newcastle Flights - Transfers Included - Inside Cabin\n1 Night Pre-Cruise Stay in Miami'],
+1 Night Pre-Cruise Stay in Miami`, 'Transfers Included\nNewcastle Flights\nInside Cabin\n1 Night Pre-Cruise Stay in Miami'],
     [`Flying from Newcastle
 Inside Cabin
 Transfers Included
-2 Nights Pre-Cruise Stay in Vancouver`, 'Newcastle Flights - Transfers Included - Inside Cabin\n2 Nights Pre-Cruise Stay in Vancouver'],
+2 Nights Pre-Cruise Stay in Vancouver`, 'Transfers Included\nNewcastle Flights\nInside Cabin\n2 Nights Pre-Cruise Stay in Vancouver'],
     [`Flying from Newcastle
 Inside Cabin
-No Transfers`, 'Newcastle Flights - Inside Cabin'],
+No Transfers`, 'Newcastle Flights\nInside Cabin'],
     [`Flying from Newcastle
 Inside Cabin
 No Transfers
-1 Night Pre-Cruise Stay in Miami`, 'Newcastle Flights - Inside Cabin\n1 Night Pre-Cruise Stay in Miami'],
+1 Night Pre-Cruise Stay in Miami`, 'Newcastle Flights\nInside Cabin\n1 Night Pre-Cruise Stay in Miami'],
     [`Inside Cabin
-Transfers Included`, 'Transfers Included - Inside Cabin'],
+Transfers Included`, 'Transfers Included\nInside Cabin'],
     [`Inside Cabin`, 'Inside Cabin']
   ];
 
@@ -306,7 +306,7 @@ Valencia`;
 
   const result = harness.context.parseOfferText(raw, { renderIntelligence: false });
 
-  assert.equal(result.parsed.incl, 'Newcastle Flights - Transfers Included - Inside Cabin');
+  assert.equal(result.parsed.incl, 'Transfers Included\nNewcastle Flights\nInside Cabin');
   assert.equal(result.parsed.ports, 'Barcelona • Marseille • Valencia');
   assert.doesNotMatch(result.parsed.ports, /Newcastle|Premium Drinks Package|Tips Included|Transfers Included|Flights Included|WiFi Included|Inside Cabin|Ocean View Cabin|Balcony Cabin/);
 });
@@ -319,7 +319,7 @@ No Transfers`, { renderIntelligence: false });
   const withoutAirport = harness.context.parseOfferText(`Flights Included
 Inside Cabin`, { renderIntelligence: false });
 
-  assert.equal(withAirport.parsed.incl, 'Newcastle Flights - Inside Cabin');
+  assert.equal(withAirport.parsed.incl, 'Newcastle Flights\nInside Cabin');
   assert.equal(withoutAirport.parsed.incl, 'Flights Included');
   assert.doesNotMatch(withAirport.parsed.incl, /^Flights Included\b/);
 });
@@ -356,11 +356,11 @@ test('Paste Offer preserves Celebrity card inclusions and Norwegian port suffixe
   const offers = [
     { raw: `Flying from Newcastle
 Inside Cabin
-Transfers Included`, incl: 'Newcastle Flights - Transfers Included - Inside Cabin' },
+Transfers Included`, incl: 'Transfers Included\nNewcastle Flights\nInside Cabin' },
     { raw: `Flying from Newcastle
 Inside Cabin
 Transfers Included
-1 Night Pre-Cruise Stay in Miami`, incl: 'Newcastle Flights - Transfers Included - Inside Cabin\n1 Night Pre-Cruise Stay in Miami' },
+1 Night Pre-Cruise Stay in Miami`, incl: 'Transfers Included\nNewcastle Flights\nInside Cabin\n1 Night Pre-Cruise Stay in Miami' },
     { raw: `Norwegian Fjords
 Inside Cabin
 You'll Visit:
@@ -374,7 +374,7 @@ Southampton`, incl: 'Inside Cabin', ports: 'Southampton • Haugesund, Norway �
     { raw: `Flying from Newcastle
 Inside Cabin
 Transfers Included
-2 Nights Pre-Cruise Stay in Vancouver`, incl: 'Newcastle Flights - Transfers Included - Inside Cabin\n2 Nights Pre-Cruise Stay in Vancouver' }
+2 Nights Pre-Cruise Stay in Vancouver`, incl: 'Transfers Included\nNewcastle Flights\nInside Cabin\n2 Nights Pre-Cruise Stay in Vancouver' }
   ];
 
   offers.forEach(offer => {
@@ -1486,7 +1486,7 @@ Itinerary
 Malaga, Spain - Gibraltar - Casablanca, Morocco - Las Palmas, Gran Canaria - Santa Cruz de Tenerife, Tenerife
 Luggage & Transfers included`, { renderIntelligence: false });
 
-  assert.equal(result.parsed.incl, 'Newcastle Flights - Luggage & Transfers Included\nInside Cabin');
+  assert.equal(result.parsed.incl, 'Luggage & Transfers Included\nNewcastle Flights\nInside Cabin');
   assert.equal(result.parsed.ports, [
     'Malaga, Spain',
     'Gibraltar',
