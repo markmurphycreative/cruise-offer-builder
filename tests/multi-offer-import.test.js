@@ -583,6 +583,49 @@ Norwegian Fjords` };
   assert.doesNotMatch(result.innerHTML, /additional offers ignored/i);
 });
 
+
+test('Multi Offer Import applies parsed sailing from per slot without cross-slot wiping', () => {
+  const result = { innerHTML: '', className: '' };
+  const field = { value: `Offer 1
+Celebrity Cruises
+Sailing from Barcelona
+
+Offer 2
+Celebrity Cruises
+Sailing from Southampton
+
+Offer 3
+Celebrity Cruises
+Sailing from Civitavecchia
+
+Offer 4
+Celebrity Cruises
+Sailing from Barcelona` };
+  const parsedBlocks = [];
+  const context = createImportContext(field, result, parsedBlocks);
+  context.PARSE_FIELD_MAP = { operatorKey: 'f-operator', departurePort: 'f-departurePort', sailingFrom: 'f-sailingFrom' };
+  context.parseOfferText = (block) => {
+    parsedBlocks.push(block);
+    const departurePort = (block.match(/Sailing from ([^\n]+)/) || [])[1];
+    return { parsed: { operatorKey: 'celebrity', departurePort, sailingFrom: departurePort === 'Civitavecchia' ? 'Rome' : departurePort }, confidence: 'high', score: 100 };
+  };
+  context.getCruiseGatewayDepartureDisplay = port => port === 'Civitavecchia' ? 'Rome' : port;
+  context.getAutoSailingFromForOffer = offer => context.getCruiseGatewayDepartureDisplay(offer.departurePort || '');
+  context.applyAutoSailingFromToOffer = offer => {
+    if (offer._sailingFromManual) return offer.sailingFrom || '';
+    offer.sailingFrom = context.getAutoSailingFromForOffer(offer);
+    offer._sailingFromManual = false;
+    return offer.sailingFrom;
+  };
+  runImportFunctions(context);
+
+  context.performMultiOfferImport(false);
+
+  assert.deepEqual(context.offers.map(offer => offer.departurePort), ['Barcelona', 'Southampton', 'Civitavecchia', 'Barcelona']);
+  assert.deepEqual(context.offers.map(offer => offer.sailingFrom), ['Barcelona', 'Southampton', 'Rome', 'Barcelona']);
+  assert.deepEqual(context.offers.map(offer => offer._sailingFromManual), [false, false, false, false]);
+});
+
 test('Multi Offer Import status rows use the clamped confidence score for display', () => {
   const performMultiOfferImport = extractFunction('performMultiOfferImport');
   assert.match(performMultiOfferImport, /Confidence \$\{clampParseConfidenceScore\(quality\.score\)\}/);
