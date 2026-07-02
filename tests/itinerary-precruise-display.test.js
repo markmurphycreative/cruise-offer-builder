@@ -95,6 +95,11 @@ function createRenderContext() {
     extractFunction('cleanEmbarkationPortDisplay'),
     extractFunction('getEmbarkationPort'),
     extractFunction('getEmbarkationPortCardDisplay'),
+    extractConstant('CRUISE_GATEWAY_DEPARTURE_DISPLAY_MAP'),
+    extractFunction('normaliseCruiseGatewayKey'),
+    extractFunction('getCruiseGatewayDepartureDisplay'),
+    extractFunction('getAutoSailingFromForPorts'),
+    extractFunction('getSailingFromDisplay'),
     extractFunction('chunkBullets'),
     html.slice(html.indexOf('const CARD_INCLUSION_SEPARATOR='), html.indexOf('function normaliseCardInclusionComponent')),
     extractFunction('escapeRegExp'),
@@ -161,6 +166,22 @@ test('destination normalisation improves readability without trailing bullet opp
   assert.doesNotMatch(rendered, /<span class="port-separator">•<\/span>\s*<\/span>/);
 });
 
+
+
+test('cruise gateway departure intelligence maps sailing text only', () => {
+  const { getSailingFromDisplay, getEmbarkationPortCardDisplay, renderCardHTML } = createRenderContext();
+
+  assert.equal(getSailingFromDisplay({ ports: 'Rome, for Civitavecchia • Naples' }), 'Rome');
+  assert.equal(getSailingFromDisplay({ ports: 'Ravenna • Split' }), 'Venice');
+  assert.equal(getSailingFromDisplay({ ports: 'Southampton • Lisbon' }), 'Southampton');
+  assert.equal(getSailingFromDisplay({ ports: 'Barcelona • Marseille' }), 'Barcelona');
+  assert.equal(getSailingFromDisplay({ ports: 'Rome, for Civitavecchia • Naples', sailingFrom: 'Ancient Rome', _sailingFromManual: true }), 'Ancient Rome');
+  assert.equal(getEmbarkationPortCardDisplay('Rome, for Civitavecchia • Naples'), 'Civitavecchia');
+
+  const card = renderCardHTML({ name: 'Mediterranean', ship: 'Celebrity Ascent', ports: 'Rome, for Civitavecchia • Naples' });
+  assert.match(card, /<div class="sname">Sailing on Celebrity Ascent from Rome<\/div>/);
+  assert.match(card, /Rome,&nbsp;for&nbsp;Civitavecchia/);
+});
 
 test('locked cruise builder sailing line, inclusion typography, and itinerary separation', () => {
   const { renderCardHTML } = createRenderContext();

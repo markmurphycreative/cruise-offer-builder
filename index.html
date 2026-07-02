@@ -818,6 +818,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
         <div class="fg2">
           <div class="field"><label>Cruise Name</label><input id="f-name" spellcheck="true" placeholder="Eastern Caribbean..." oninput="up()"></div>
           <div class="field"><label>Ship Name</label><input id="f-ship" spellcheck="true" placeholder="Arvia" oninput="up()"></div>
+          <div class="field"><label>Sailing From</label><input id="f-sailingFrom" spellcheck="true" placeholder="Rome" oninput="handleSailingFromInput()"></div>
         </div>
         <div class="spell-warn" id="spell-warn-name"></div>
         <div class="field" id="field-tags"><label>Top Bar USP Text</label><input id="f-tags" spellcheck="true" placeholder="Adult Only Options · Cuisine · Entertainment · Family" oninput="up()"></div>
@@ -832,7 +833,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
           <div class="field"><label>Date</label><input id="f-saildate" placeholder="20 November 2026" oninput="splitSailDate();up()"><input type="hidden" id="f-day" value=""><input type="hidden" id="f-month" value=""></div>
           <div class="field"><label>Nights</label><input id="f-nights" placeholder="14" oninput="up()"></div>
         </div>
-        <div class="field"><label>Ports — separate with •</label><textarea id="f-ports" spellcheck="true" placeholder="Barbados • Martinique • St Kitts • Tortola • St Maarten • Antigua • St Lucia • Grenada" oninput="up();checkPortsWarn()"></textarea></div>
+        <div class="field"><label>Ports — separate with •</label><textarea id="f-ports" spellcheck="true" placeholder="Barbados • Martinique • St Kitts • Tortola • St Maarten • Antigua • St Lucia • Grenada" oninput="handlePortsInput()"></textarea></div>
         <div class="warn-box" id="ports-warn"></div>
         <div class="spell-warn" id="spell-warn-ports"></div>
       </div>
@@ -2129,7 +2130,7 @@ let cur = 0, viewMode = "all", zoomPct = 32;
 let lockedOffers = [false,false,false,false];
 let lockedHeroImages = [false,false,false,false];
 let safeZoneOn = false, exportRunning = false;
-const FLDS = ["tags","theme_tags","name","ship","incl","price","basis","board","boardlbl","day","month","nights","ports","url","utm_content"];
+const FLDS = ["tags","theme_tags","name","ship","sailingFrom","incl","price","basis","board","boardlbl","day","month","nights","ports","url","utm_content"];
 const CTA_DEFAULTS = {enabled:false,text:"Click To Call Us For More Info",phone:"01912229701"};
 let ctaSettings = {...CTA_DEFAULTS};
 let poaAppliedSuggestions = {};
@@ -2371,6 +2372,7 @@ function sv(i){
 function save(){
   if(typeof isOfferLocked==="function" && isOfferLocked(cur)) return;
   FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e) offers[cur][f]=e.value; });
+  const sf=document.getElementById("f-sailingFrom"); if(sf && offers[cur]._sailingFromManual===undefined) offers[cur]._sailingFromManual=String(sf.value||"").trim()!==getAutoSailingFromForPorts(offers[cur].ports||"");
   const op=document.getElementById("f-operator"); if(op) offers[cur].operator=op.value;
   const logoDisplay=document.getElementById("f-logo-display"); if(logoDisplay) offers[cur]._logoDisplay=logoDisplay.value||"operator";
 }
@@ -2395,6 +2397,7 @@ function load(i){
   normalizeCropPositionForOffer(offers[i]);
   FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e) e.value=offers[i][f]||""; });
   const op=document.getElementById("f-operator"); if(op) op.value=offers[i].operator||"";
+  if(!offers[i]._sailingFromManual && !offers[i].sailingFrom) syncSailingFromFieldFromPorts(true);
   const logoDisplay=document.getElementById("f-logo-display"); if(logoDisplay) logoDisplay.value=offers[i]._logoDisplay||"operator";
   setThumb("logo",offers[i]._logoCustom||"");
   setThumb("hero",offers[i]._img||"");
@@ -6995,6 +6998,7 @@ function applyParsedOfferToSlot(result,index,sourceText){
     else if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offers[index].operator)){ continue; }
     else offers[index][k]=String(parsed[k]);
   }
+  if(!offers[index]._sailingFromManual && typeof getAutoSailingFromForPorts==="function") offers[index].sailingFrom=getAutoSailingFromForPorts(offers[index].ports||"");
   offers[index]._tagsManualOverride=false;
   applyOperatorTopBarUspDefault(offers[index],offers[index].operator||parsed.operatorKey||"");
   stripTransientPasteOfferFields(offers[index]);
@@ -8114,6 +8118,49 @@ function getEmbarkationPortCardDisplay(str){
   const display=cleanEmbarkationPortDisplay(text);
   return typeof getCruiseDepartureWording==="function" ? getCruiseDepartureWording(display) : (/^(?:newcastle|newcastle upon tyne|newcastle, england)$/i.test(display)?"Port of Tyne":display);
 }
+
+const CRUISE_GATEWAY_DEPARTURE_DISPLAY_MAP={civitavecchia:"Rome",ravenna:"Venice",warnemünde:"Berlin",warnemunde:"Berlin","south queensferry":"Edinburgh","le havre":"Paris",whittier:"Anchorage"};
+function normaliseCruiseGatewayKey(value){
+  return String(value||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ");
+}
+function getCruiseGatewayDepartureDisplay(port){
+  const raw=String(port||"").trim();
+  if(!raw) return "";
+  const clean=cleanEmbarkationPortDisplay(raw);
+  const key=normaliseCruiseGatewayKey(clean);
+  return CRUISE_GATEWAY_DEPARTURE_DISPLAY_MAP[key] || clean;
+}
+function getAutoSailingFromForPorts(ports){
+  const departure=getEmbarkationPortCardDisplay(ports||"");
+  return getCruiseGatewayDepartureDisplay(departure);
+}
+function getSailingFromDisplay(data){
+  const d=data||{};
+  if(d._sailingFromManual) return String(d.sailingFrom||"").trim();
+  const manual=String(d.sailingFrom||"").trim();
+  return manual || getAutoSailingFromForPorts(d.ports||"");
+}
+function syncSailingFromFieldFromPorts(force){
+  const input=document.getElementById("f-sailingFrom");
+  const ports=document.getElementById("f-ports");
+  if(!input||!ports) return;
+  const offer=offers[cur]||(offers[cur]={});
+  if(!force && offer._sailingFromManual) return;
+  input.value=getAutoSailingFromForPorts(ports.value||"");
+  offer.sailingFrom=input.value;
+  offer._sailingFromManual=false;
+}
+function handleSailingFromInput(){
+  const offer=offers[cur]||(offers[cur]={});
+  offer._sailingFromManual=true;
+  up();
+}
+function handlePortsInput(){
+  syncSailingFromFieldFromPorts(false);
+  up();
+  checkPortsWarn();
+}
+
 function chunkBullets(str,options){
   const ports=getRenderedItineraryPorts(str);
   return packItineraryLines(ports,options)
@@ -8332,7 +8379,7 @@ function renderCardHTML(d){
   const month=d.month||""; const nights=d.nights||"";
   const ports=(d.ports||"").trim();
   const portsHTML=ports?chunkBullets(ports):"";
-  const embarkationPort=ports?getEmbarkationPortCardDisplay(ports):"";
+  const embarkationPort=ports?getSailingFromDisplay(d):"";
   const preCruiseStay=d.preCruiseStay||null;
   const preCruiseHTML=preCruiseStay&&preCruiseStay.text ? `<div class="vpts precruise-note"><div>${preCruiseStay.text}</div></div>` : "";
   const terms=document.getElementById("g-terms").value||"T&Cs Apply";
@@ -8637,6 +8684,7 @@ function saveEditorToOffer(){
     const e=document.getElementById('f-'+f);
     if(e) o[f]=e.value;
   });
+  const sf=document.getElementById('f-sailingFrom'); if(sf && o._sailingFromManual===undefined) o._sailingFromManual=String(sf.value||"").trim()!==getAutoSailingFromForPorts(o.ports||"");
   const op=document.getElementById('f-operator');
   if(op) o.operator=op.value;
   syncTopBarUspManualState(o);
@@ -8795,6 +8843,7 @@ function visibleFieldsToData(){
     const e = document.getElementById('f-' + f);
     if(e) base[f] = e.value || '';
   });
+  const sf=document.getElementById('f-sailingFrom'); if(sf) base._sailingFromManual=!!((offers[cur]||{})._sailingFromManual);
   const op = document.getElementById('f-operator');
   if(op) base.operator = op.value || '';
   const logoDisplay = document.getElementById('f-logo-display');
