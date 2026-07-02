@@ -6891,6 +6891,25 @@ function clampParseConfidenceScore(score){
   if(!Number.isFinite(numeric)) return 0;
   return Math.max(0,Math.min(100,Math.round(numeric)));
 }
+function getMultiOfferImportQualityResult(result,rawText){
+  const parsed=(result&&result.parsed)||{};
+  const missing=getParsedOfferMissingCount(parsed);
+  const parserScore=clampParseConfidenceScore(result&&result.score);
+  let qualityScore=parserScore;
+  let qaWarnings=0;
+  if(typeof getOfferIntelligenceQualityDetails==="function"){
+    const shipOperator=typeof getOfferIntelligenceShipOperator==="function"?getOfferIntelligenceShipOperator(parsed.ship):null;
+    const effectiveOperator=parsed.operatorKey||(shipOperator&&shipOperator.operatorKey)||"";
+    const quality=getOfferIntelligenceQualityDetails(parsed,rawText,effectiveOperator)||{};
+    qualityScore=clampParseConfidenceScore(quality.score);
+    qaWarnings=(quality.spellingIssues||[]).length;
+  }else if(typeof getDestinationSpellingIssues==="function"){
+    qaWarnings=(getDestinationSpellingIssues(parsed,rawText)||[]).length;
+    qualityScore=Math.max(0,parserScore-(qaWarnings*6));
+  }
+  const confidence=qaWarnings?Math.min(parserScore,qualityScore):parserScore;
+  return {missing,qaWarnings,score:confidence};
+}
 function applyParsedOfferToSlot(result,index){
   if(!result||!result.parsed) return false;
   while(offers.length<4) offers.push({});
@@ -6943,14 +6962,17 @@ function performMultiOfferImport(replaceConfirmed){
   const rows=parsedResults.map(item=>{
     const result=item.result;
     const index=item.targetIndex;
-    const missing=getParsedOfferMissingCount(result.parsed);
+    const quality=getMultiOfferImportQualityResult(result,item.block);
+    const missing=quality.missing;
+    const qaWarnings=quality.qaWarnings;
     const ok=missing===0||result.confidence==='high';
     const label=ok?`✓ Offer ${index+1} Loaded`:`⚠ Offer ${index+1} Needs Review`;
-    const cls=ok?'high':'partial';
-    return `<div class="multi-offer-status-row" role="button" tabindex="0" title="Jump to Offer" onclick="jumpToMultiOfferStatus(${index})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();jumpToMultiOfferStatus(${index});}"><span class="multi-offer-status-label">${label}</span> <span class="parse-result ${cls}">Confidence ${clampParseConfidenceScore(result.score)} · ${missing} missing fields</span></div>`;
+    const cls=ok&&!qaWarnings?'high':'partial';
+    const warningText=qaWarnings?` · ${qaWarnings} QA warning${qaWarnings===1?"":"s"}`:"";
+    return `<div class="multi-offer-status-row" role="button" tabindex="0" title="Jump to Offer" onclick="jumpToMultiOfferStatus(${index})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();jumpToMultiOfferStatus(${index});}"><span class="multi-offer-status-label">${label}</span> <span class="parse-result ${cls}">Confidence ${clampParseConfidenceScore(quality.score)} · ${missing} missing fields${warningText}</span></div>`;
   });
   if(blocks.length>4) rows.push(`<div>4 offers loaded. ${blocks.length-4} additional offers ignored.</div>`);
-  setMultiOfferStatus(rows.join(""),results.some(r=>r.confidence!=='high')?'partial':'high');
+  setMultiOfferStatus(rows.join(""),parsedResults.some(item=>item.result.confidence!=='high'||getMultiOfferImportQualityResult(item.result,item.block).qaWarnings)?'partial':'high');
 }
 
 function parseOffer(){
