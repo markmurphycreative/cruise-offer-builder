@@ -5347,7 +5347,7 @@ function buildCampaignHistorySnapshot(){
     offers:clonePlain(offers || [{},{},{},{}]).slice(0,4)
   });
 }
-function campaignHistoryHash(snapshot){ return JSON.stringify(snapshot || {}); }
+function campaignHistoryHash(snapshot){ const data=clonePlain(snapshot || {}); delete data.viewMode; return JSON.stringify(data); }
 function trimCampaignHistoryStack(stack){ while(stack.length > CAMPAIGN_HISTORY_LIMIT) stack.shift(); }
 function resetCampaignHistoryBaseline(){
   clearTimeout(campaignHistoryState.timer);
@@ -5421,6 +5421,10 @@ function restoreCampaignHistorySnapshot(snapshot){
     if(typeof refreshAfterRestore === "function") refreshAfterRestore();
     else { try{ updateAllStatus(); }catch(e){} try{ renderPreviewMode(true); }catch(e){} }
   }finally{
+    try{
+      campaignHistoryState.current=buildCampaignHistorySnapshot();
+      campaignHistoryState.currentHash=campaignHistoryHash(campaignHistoryState.current);
+    }catch(e){}
     autosaveHydrating=false;
     campaignHistoryState.isRestoring=false;
   }
@@ -5429,6 +5433,9 @@ function restoreCampaignHistorySnapshot(snapshot){
 function undoCampaignChange(){
   if(!campaignHistoryState.current) resetCampaignHistoryBaseline();
   commitCampaignHistoryEntry("Pending campaign edit");
+  while(campaignHistoryState.undoStack.length && campaignHistoryHash(campaignHistoryState.undoStack[campaignHistoryState.undoStack.length-1]) === campaignHistoryState.currentHash){
+    campaignHistoryState.undoStack.pop();
+  }
   const previous=campaignHistoryState.undoStack.pop();
   if(!previous) return false;
   campaignHistoryState.redoStack.push(campaignHistoryState.current);
@@ -5440,6 +5447,9 @@ function undoCampaignChange(){
 }
 function redoCampaignChange(){
   clearTimeout(campaignHistoryState.timer);
+  while(campaignHistoryState.redoStack.length && campaignHistoryHash(campaignHistoryState.redoStack[campaignHistoryState.redoStack.length-1]) === campaignHistoryState.currentHash){
+    campaignHistoryState.redoStack.pop();
+  }
   const next=campaignHistoryState.redoStack.pop();
   if(!next) return false;
   if(campaignHistoryState.current) campaignHistoryState.undoStack.push(campaignHistoryState.current);
