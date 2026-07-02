@@ -312,6 +312,38 @@ test('Offer Intelligence destination spelling catches close port misspellings fr
   assert.match(panel.innerHTML, /Quality Score:<\/strong> 88/);
 });
 
+
+test('Offer Intelligence flags compact raw destination typos while keeping intended port recognition', () => {
+  const { context, panel } = createHarness();
+  const parsed = { operatorKey: 'msc', name: 'Italian Escape', ship: 'MSC Virtuosa', day: '12', month: 'June 2027', nights: '7', boardlbl: 'Full Board', price: '999', ports: 'Florence/Pisa, for La Spezia' };
+  const raw = 'Florence/Pisa, Laspezia, Italy\nInside Cabin\nFlying from Newcastle';
+
+  vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, { parsed, raw }));
+
+  assert.match(panel.innerHTML, /La Spezia/);
+  assert.match(panel.innerHTML, /Laspezia is not recognised\. Did you mean La Spezia\?/);
+  assert.match(panel.innerHTML, /Quality Score:<\/strong> 94/);
+});
+
+test('Destination spelling QA catches required pasted destination typo regressions', () => {
+  const { context } = createHarness();
+  const issues = vm.runInContext('getDestinationSpellingIssues({}, raw)', Object.assign(context, {
+    raw: 'Laspezia • Villefrance • Civitavechia • Span • Barcelonia • Messinna • Itlay • Norawy'
+  }));
+  const messages = JSON.parse(JSON.stringify(issues.map(issue => `${issue.token}->${issue.suggestion}`)));
+
+  assert.deepEqual(messages, [
+    'Laspezia->La Spezia',
+    'Villefrance->Villefranche',
+    'Civitavechia->Civitavecchia',
+    'Span->Spain',
+    'Barcelonia->Barcelona',
+    'Messinna->Messina',
+    'Itlay->Italy',
+    'Norawy->Norway'
+  ]);
+});
+
 test('Offer Intelligence infers known ship operators without changing parsed data', () => {
   const { context, panel } = createHarness();
   const parsed = { ship: 'Arvia', name: 'Caribbean Escape', nights: '14', boardlbl: 'Full Board', price: '1669' };

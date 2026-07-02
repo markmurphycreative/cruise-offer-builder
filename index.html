@@ -3668,8 +3668,10 @@ function runSpellQA(){
       value=numeric?`£${Number(numeric).toLocaleString("en-GB")}pp`:value;
     }
     const bad=rawValue&&f.spellcheck!==false?getLikelyTypos(rawValue):[];
+    const destinationIssues=(rawValue&&typeof getDestinationSpellingIssues==="function"&&(f.id==="f-ports"||f.id==="raw-paste"))?getDestinationSpellingIssues(f.id==="f-ports"?{ports:rawValue}:{},rawValue):[];
+    const destinationWarnings=destinationIssues.map(issue=>`${f.label}: ${issue.token} is not recognised. Did you mean ${issue.suggestion}?`);
     const shipIssue=f.id==="f-ship"?getOperatorShipQaIssue((document.getElementById("f-operator")||{}).value,value):"";
-    const issues=[...(bad.length?[`${f.label}: ${bad.join(', ')}`]:[]),...(shipIssue?[shipIssue]:[])];
+    const issues=[...(bad.length?[`${f.label}: ${bad.join(', ')}`]:[]),...destinationWarnings,...(shipIssue?[shipIssue]:[])];
     const isEmpty=!rawValue;
     el.classList.toggle('spell-flag',issues.length>0);
     if(issues.length){ (byWarn[f.warnId]||(byWarn[f.warnId]=[])).push(...issues); }
@@ -7442,11 +7444,16 @@ function getOfferIntelligenceAirport(parsed,rawText){
 }
 
 function getDestinationSpellingTargets(){
-  const targets=new Set();
-  Object.keys(PORT_COUNTRIES||{}).forEach(name=>targets.add(name));
-  Object.values(PORT_COUNTRIES||{}).forEach(name=>targets.add(String(name||"").toLowerCase()));
-  ["la spezia","villefranche","civitavecchia","messina","spain","italy","norway","france"].forEach(name=>targets.add(name));
-  return [...targets].map(name=>String(name||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").replace(/\s+/g," ").trim()).filter(Boolean);
+  const targets=new Map();
+  const add=name=>{
+    const display=String(name||"").trim();
+    const key=display.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").replace(/\s+/g," ").trim();
+    if(key&&!targets.has(key)) targets.set(key,display.replace(/\b\w/g,char=>char.toUpperCase()));
+  };
+  Object.keys(PORT_COUNTRIES||{}).forEach(add);
+  Object.values(PORT_COUNTRIES||{}).forEach(add);
+  ["La Spezia","Villefranche","Civitavecchia","Messina","Spain","Italy","Norway","France","Barcelona"].forEach(add);
+  return [...targets.entries()].map(([target,display])=>({target,display,compact:target.replace(/\s+/g,"")}));
 }
 function normaliseDestinationSpellingToken(value){
   return String(value||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\([^)]*\)/g," ").replace(/\b(?:for|port of|port|cruise terminal)\b/g," ").replace(/[^a-z0-9]+/g," ").replace(/\s+/g," ").trim();
@@ -7456,8 +7463,7 @@ function getDestinationSpellingCandidates(parsed,rawText){
   const add=value=>{ value=String(value||"").replace(/\s+/g," ").trim(); if(value) values.push(value); };
   const parsedPorts=String((parsed||{}).ports||"");
   parsedPorts.split(/[•|,;\n\r]+/).forEach(add);
-  if(!parsedPorts.trim()) return [...new Set(values)];
-  String(rawText||"").split(/[•|,;\n\r]+/).forEach(part=>{
+  if(/[•|,;]/.test(String(rawText||""))) String(rawText||"").split(parsedPorts.trim()?/[•|,;\n\r]+/:/[•|,;]+/).forEach(part=>{
     part=String(part||"").replace(/^(?:day\s*\d+|itinerary|you(?:'|’)ll visit|ports?|visits?|sailing from|from|to)\s*[:\-]?\s*/i,"").trim();
     if(/https?:\/\/|\bwww\.|@|\butm_/i.test(part)) return;
     add(part);
@@ -7466,23 +7472,25 @@ function getDestinationSpellingCandidates(parsed,rawText){
 }
 function getDestinationSpellingIssues(parsed,rawText){
   const targets=getDestinationSpellingTargets();
-  const exact=new Set(targets);
+  const exact=new Set(targets.map(item=>item.target));
   const issues=[];
   getDestinationSpellingCandidates(parsed,rawText).forEach(original=>{
     const token=normaliseDestinationSpellingToken(original);
     if(!token||token.length<4||exact.has(token)) return;
     const compactToken=token.replace(/\s+/g,"");
     let best=null;
-    targets.forEach(target=>{
-      const targetCompact=target.replace(/\s+/g,"");
-      const distance=Math.min(levenshteinDistance(token,target),levenshteinDistance(compactToken,targetCompact));
-      if(distance<=2&&(!best||distance<best.distance||target.length<best.target.length)) best={target,distance};
+    targets.forEach(entry=>{
+      const compactDistance=levenshteinDistance(compactToken,entry.compact);
+      const spacedDistance=levenshteinDistance(token,entry.target);
+      const distance=Math.min(spacedDistance,compactDistance);
+      const compactOnly=compactDistance===0&&spacedDistance>0;
+      if((distance<=2||compactOnly)&&(!best||distance<best.distance||entry.target.length<best.target.length)) best={target:entry.target,display:entry.display,distance,compactOnly};
     });
     if(best&&!issues.some(issue=>issue.token.toLowerCase()===String(original).toLowerCase())){
-      issues.push({token:String(original).trim(),suggestion:best.target.replace(/\b\w/g,char=>char.toUpperCase()),distance:best.distance});
+      issues.push({token:String(original).trim(),suggestion:best.display,distance:best.distance,compactOnly:!!best.compactOnly});
     }
   });
-  return issues.slice(0,6);
+  return issues.slice(0,8);
 }
 
 function getOfferIntelligenceQualityDetails(parsed,rawText,effectiveOperator){
