@@ -8050,6 +8050,16 @@ function normaliseDestinationName(port){
   parts.forEach(part=>{ if(!unique.some(existing=>existing.toLowerCase()===part.toLowerCase())) unique.push(part); });
   return unique.join(", ").replace(/\s{2,}/g, " ").trim();
 }
+function simplifyDestinationCountrySuffix(port){
+  const value=String(port||"").trim();
+  if(!value || /,\s*for\s+/i.test(value)) return value;
+  const parts=value.split(",").map(part=>part.trim()).filter(Boolean);
+  if(parts.length<2) return value;
+  const last=parts[parts.length-1];
+  const countryNames=new Set(Object.values((typeof PORT_COUNTRIES!=="undefined"&&PORT_COUNTRIES)||{}).map(country=>String(country).toLowerCase()));
+  if(countryNames.has(last.toLowerCase())) return parts.slice(0,-1).join(", ");
+  return value;
+}
 function cleanPortsDisplay(str){
   return (str||"")
     .split("•")
@@ -8061,6 +8071,7 @@ function cleanPortsDisplay(str){
     .filter(p=>! /^(?:\d+\s+)?days?\s+at\s+sea$/i.test(p))
     .filter(p=>! /^(?:\d+\s+)?sea\s+days?$/i.test(p))
     .map(p=>typeof normaliseDestinationName==="function" ? normaliseDestinationName(p) : p)
+    .map(p=>typeof simplifyDestinationCountrySuffix==="function" ? simplifyDestinationCountrySuffix(p) : p)
     .filter(Boolean)
     .join(" • ");
 }
@@ -8184,7 +8195,7 @@ function getEmbarkationPortCardDisplay(str){
   return typeof getCruiseDepartureWording==="function" ? getCruiseDepartureWording(display) : (/^(?:newcastle|newcastle upon tyne|newcastle, england)$/i.test(display)?"Port of Tyne":display);
 }
 
-const CRUISE_GATEWAY_DEPARTURE_DISPLAY_MAP={civitavecchia:"Rome",ravenna:"Venice",warnemünde:"Berlin",warnemunde:"Berlin","south queensferry":"Edinburgh","le havre":"Paris",whittier:"Anchorage"};
+const CRUISE_GATEWAY_DEPARTURE_DISPLAY_MAP={civitavecchia:"Rome",ravenna:"Venice",warnemünde:"Berlin",warnemunde:"Berlin",villefranche:"Nice","la spezia":"Florence/Pisa",tilbury:"London","south queensferry":"Edinburgh","le havre":"Paris",whittier:"Anchorage"};
 function normaliseCruiseGatewayKey(value){
   return String(value||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ");
 }
@@ -10403,6 +10414,7 @@ function handleKeyboardShortcut(event){
     event.preventDefault();
     return;
   }
+  if(isShortcutBlockedTarget(event.target)) return;
   const shortcutsModal=document.getElementById('shortcuts-modal');
   if(shortcutsModal && shortcutsModal.classList.contains('active')){
     if(event.key === 'Escape' || isQuestionMarkShortcut(event)){
@@ -10424,7 +10436,7 @@ function handleKeyboardShortcut(event){
     if(event.key === 'Escape'){
       closeModal('summary-modal');
       event.preventDefault();
-    }else if(isCampaignSummaryShortcut(event) && !isShortcutBlockedTarget(event.target)){
+    }else if(isCampaignSummaryShortcut(event)){
       closeModal('summary-modal');
       event.preventDefault();
     }
@@ -10439,8 +10451,6 @@ function handleKeyboardShortcut(event){
   }
   const key=event.key.toLowerCase();
   const sectionShortcuts={h:'hero-image',o:'offer-details',p:'paste-raw-offer',c:'cta-assets',u:'utm-link',l:'campaign-library',g:'ai-copy',i:'ai-copy',x:'export-cards'};
-  if(shouldCollapseFocusedShortcutSection(sectionShortcuts[key],event.target)){ openShortcutSection(sectionShortcuts[key]); event.preventDefault(); return; }
-  if(isShortcutBlockedTarget(event.target)) return;
 
   if(commandKey){
     if(!event.altKey && event.key.toLowerCase() === 's'){

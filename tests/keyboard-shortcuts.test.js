@@ -98,7 +98,8 @@ test('card, view, undo, redo, export, UTM, CTA, help, and Escape shortcuts reuse
   fire(document,'ArrowRight'); assert.deepEqual(calls.pop(),['move-right']);
   fire(document,'/',{shiftKey:true}); assert.equal(modal.classList.active,true); assert.deepEqual(calls.pop(),['focus-close']);
   assert.equal(fire(document,'Tab'),false); assert.deepEqual(calls,[]);
-  assert.equal(fire(document,'Escape',{target:{closest:()=>true}}),true); assert.equal(modal.classList.active,false);
+  assert.equal(fire(document,'Escape',{target:{closest:()=>true}}),false); assert.equal(modal.classList.active,true);
+  assert.equal(fire(document,'Escape'),true); assert.equal(modal.classList.active,false);
 });
 
 
@@ -160,21 +161,21 @@ test('section shortcuts toggle each sidebar section, scroll opened sections, and
   }
 });
 
-test('focused section shortcuts collapse their own open section without typing into fields', () => {
+test('focused section shortcuts type normally inside open section fields', () => {
   const {calls,document}=setup();
   assert.equal(fire(document,'o'),true);
   assert.deepEqual(calls.splice(-3),[['toggle','open'],['scroll','offer-details'],['focus','f-name']]);
   const offerInput=formTarget('offer-details');
-  assert.equal(typeKey(document,offerInput,'o'),true);
-  assert.deepEqual(calls.splice(-1),[['toggle','closed']]);
-  assert.equal(offerInput.value,'');
+  assert.equal(typeKey(document,offerInput,'o'),false);
+  assert.deepEqual(calls,[]);
+  assert.equal(offerInput.value,'o');
 
   assert.equal(fire(document,'p'),true);
   assert.deepEqual(calls.splice(-3),[['toggle','open'],['scroll','paste-raw-offer'],['focus','raw-paste']]);
   const pasteTextarea=formTarget('paste-raw-offer');
-  assert.equal(typeKey(document,pasteTextarea,'p'),true);
-  assert.deepEqual(calls.splice(-1),[['toggle','closed']]);
-  assert.equal(pasteTextarea.value,'');
+  assert.equal(typeKey(document,pasteTextarea,'p'),false);
+  assert.deepEqual(calls,[]);
+  assert.equal(pasteTextarea.value,'p');
 });
 
 test('normal typing and unrelated section shortcuts remain blocked inside form fields', () => {
@@ -200,16 +201,16 @@ test('normal typing and unrelated section shortcuts remain blocked inside form f
   assert.deepEqual(calls,[]);
 });
 
-test('all section shortcuts collapse their own open section when focus is inside that section', () => {
+test('all section shortcuts type normally when focus is inside editable fields', () => {
   const cases=[['h','hero-image'],['c','cta-assets'],['u','utm-link'],['g','ai-copy'],['i','ai-copy'],['x','export-cards']];
   for(const [key,section] of cases){
     const {calls,document}=setup();
     assert.equal(fire(document,key),true);
     calls.length=0;
     const target=formTarget(section);
-    assert.equal(typeKey(document,target,key),true);
-    assert.deepEqual(calls,[['toggle','closed']]);
-    assert.equal(target.value,'');
+    assert.equal(typeKey(document,target,key),false);
+    assert.deepEqual(calls,[]);
+    assert.equal(target.value,key);
   }
 });
 
@@ -243,12 +244,12 @@ test('typing targets and unrelated browser or editing commands retain native beh
   assert.equal(fire(document,'ArrowLeft',{target:typingTarget}),false);
   assert.equal(fire(document,'ArrowRight',{target:typingTarget}),false);
   assert.equal(fire(document,'C',{shiftKey:true,target:typingTarget}),false);
-  assert.equal(fire(document,'z',{ctrlKey:true,target:typingTarget}),true);
-  assert.equal(fire(document,'z',{ctrlKey:true,shiftKey:true,target:typingTarget}),true);
+  assert.equal(fire(document,'z',{ctrlKey:true,target:typingTarget}),false);
+  assert.equal(fire(document,'z',{ctrlKey:true,shiftKey:true,target:typingTarget}),false);
   assert.equal(fire(document,'c',{metaKey:true}),false);
   assert.equal(fire(document,'v',{ctrlKey:true}),false);
   assert.equal(fire(document,'r',{ctrlKey:true}),false);
-  assert.deepEqual(calls,[['undo'],['redo']]);
+  assert.deepEqual(calls,[]);
 });
 
 
@@ -282,7 +283,9 @@ test('shortcuts help toggles with question mark, closes with Escape, and restore
   assert.equal(modal.classList.active,true);
   assert.deepEqual(calls.pop(),['focus-close']);
   assert.equal(document.activeElement === previousFocus,false);
-  assert.equal(fire(document,'?',{shiftKey:true,target:{closest:()=>true}}),true);
+  assert.equal(fire(document,'?',{shiftKey:true,target:{closest:()=>true}}),false);
+  assert.equal(modal.classList.active,true);
+  assert.equal(fire(document,'?',{shiftKey:true}),true);
   assert.equal(modal.classList.active,false);
   assert.equal(calls.pop()[0],'focus-previous');
 
