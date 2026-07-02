@@ -5338,6 +5338,7 @@ function buildCampaignHistorySnapshot(){
   return encodeCampaignHistoryImages({
     version:"1.0",
     cur:Number.isInteger(Number(cur)) ? Number(cur) : 0,
+    viewMode:typeof viewMode === "string" ? viewMode : "all",
     campaign,
     ctaSettings:typeof normaliseCtaSettings === "function" ? normaliseCtaSettings(ctaSettings) : clonePlain(ctaSettings || {}),
     lockedOffers:Array.isArray(lockedOffers) ? lockedOffers.slice(0,4) : [false,false,false,false],
@@ -5409,6 +5410,10 @@ function restoreCampaignHistorySnapshot(snapshot){
     if(sheetsInput) sheetsInput.value=data.googleSheetSource || "";
     if(data.googleSheetSource && typeof storeGoogleSheetSource === "function") storeGoogleSheetSource(data.googleSheetSource);
     cur=Number.isInteger(data.cur) ? Math.min(3,Math.max(0,data.cur)) : 0;
+    if(typeof data.viewMode === "string"){
+      viewMode=["single","all","email"].includes(data.viewMode) ? data.viewMode : "all";
+      if(typeof syncViewSelector === "function") syncViewSelector();
+    }
     if(typeof syncOfferSelector === "function") syncOfferSelector();
     if(typeof loadOfferToEditor === "function") loadOfferToEditor(cur); else if(typeof load === "function") load(cur);
     if(typeof syncPasteOfferStateAfterHistoryRestore === "function") syncPasteOfferStateAfterHistoryRestore();
@@ -5471,7 +5476,7 @@ function initCampaignHistoryListeners(){
   });
 }
 function recordCampaignHistoryAfterAsyncChange(label="Campaign change"){
-  scheduleCampaignHistoryEntry(label,0);
+  commitCampaignHistoryEntry(label);
 }
 let pendingRestoreSession = null;
 

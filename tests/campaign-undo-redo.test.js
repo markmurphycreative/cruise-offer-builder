@@ -20,12 +20,15 @@ test('campaign history is capped to 20 undo and redo states', () => {
 test('campaign history snapshots restore campaign state instead of reversing individual UI actions', () => {
   const block = extract(/\/\/ CAMPAIGN UNDO \/ REDO HISTORY[\s\S]*?function recordCampaignHistoryAfterAsyncChange/, 'campaign undo/redo history block');
   assert.match(block, /offers:clonePlain\(offers \|\| \[\{\},\{\},\{\},\{\}\]\)\.slice\(0,4\)/);
+  assert.match(block, /viewMode:typeof viewMode === \"string\" \? viewMode : \"all\"/);
   assert.match(block, /campaign,\n\s*ctaSettings:/);
   assert.match(block, /lockedOffers:Array\.isArray\(lockedOffers\)/);
   assert.match(block, /lockedHeroImages:Array\.isArray\(lockedHeroImages\)/);
   assert.match(block, /restoreCampaignHistorySnapshot\(snapshot\)/);
   assert.match(block, /offers=Array\.isArray\(data\.offers\)/);
   assert.match(block, /applyCtaSettings\(data\.ctaSettings \|\| CTA_DEFAULTS\)/);
+  assert.match(block, /viewMode=\[\"single\",\"all\",\"email\"\]\.includes\(data\.viewMode\) \? data\.viewMode : \"all\"/);
+  assert.match(block, /syncViewSelector\(\)/);
   assert.match(block, /loadOfferToEditor\(cur\)/);
   assert.match(block, /refreshAfterRestore\(\)/);
 });
@@ -63,4 +66,13 @@ test('text input history entries are debounced and keyboard undo/redo is wired',
   assert.match(html, /const CAMPAIGN_HISTORY_TEXT_DEBOUNCE_MS = 650;/);
   assert.match(html, /scheduleCampaignHistoryEntry\("Campaign field edit", isCampaignHistoryTextInput\(el\) \? CAMPAIGN_HISTORY_TEXT_DEBOUNCE_MS : 280\)/);
   assert.match(html, /event\.key\.toLowerCase\(\) === 'z'[\s\S]*?if\(event\.shiftKey\) redoCampaignChange\(\);[\s\S]*?else undoCampaignChange\(\);/);
+});
+
+
+test('async user actions commit immediately so sequential Load Offer actions stay separate', () => {
+  const block = extract(/function recordCampaignHistoryAfterAsyncChange\(label="Campaign change"\)\{[\s\S]*?\n\}/, 'async history recorder');
+  assert.match(block, /commitCampaignHistoryEntry\(label\);/);
+  assert.doesNotMatch(block, /scheduleCampaignHistoryEntry\(label,0\)/);
+  assert.match(html, /if\(applied\)\{ if\(typeof recordCampaignHistoryAfterAsyncChange==="function"\) recordCampaignHistoryAfterAsyncChange\("Offer loaded"\)/);
+  assert.match(html, /if\(results\.length&&typeof recordCampaignHistoryAfterAsyncChange==="function"\) recordCampaignHistoryAfterAsyncChange\("Multi offer import"\)/);
 });
