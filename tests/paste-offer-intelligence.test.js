@@ -872,3 +872,34 @@ Eastern Caribbean Islands Fly-Cruise
     assert.equal(suggestion.value, example.expected);
   }
 });
+
+test('Destination spelling one-click fixes replace only typo text and preserve formatting', () => {
+  const { context } = createHarness();
+  vm.runInContext([
+    extractFunction('replaceDestinationIssueInText')
+  ].join('\n'), context);
+  const raw = 'Barcelona, Span\nNaples, Italy\nFlorence/Pisa, Laspezia\nNice, Villefranchee';
+  const issues = vm.runInContext('getDestinationSpellingIssues(parsed, raw)', Object.assign(context, {
+    parsed: { ports: 'Barcelona • Spain • La Spezia • Villefranche' },
+    raw
+  }));
+  assert.deepEqual(JSON.parse(JSON.stringify(issues.map(issue => `${issue.token}->${issue.suggestion}`))), [
+    'Span->Spain',
+    'Laspezia->La Spezia',
+    'Villefranchee->Villefranche'
+  ]);
+  let fixed = raw;
+  for (const issue of issues) {
+    fixed = vm.runInContext('replaceDestinationIssueInText(fixed, issue)', Object.assign(context, { fixed, issue }));
+  }
+  assert.equal(fixed, 'Barcelona, Spain\nNaples, Italy\nFlorence/Pisa, La Spezia\nNice, Villefranche');
+});
+
+test('Destination spelling fixes remain hidden for ambiguous verified place names', () => {
+  const { context } = createHarness();
+  const issues = vm.runInContext('getDestinationSpellingIssues(parsed, raw)', Object.assign(context, {
+    parsed: { ports: 'New York • Victoria BC • Dover UK' },
+    raw: 'York\nVictoria\nDover'
+  }));
+  assert.deepEqual(JSON.parse(JSON.stringify(issues)), []);
+});
