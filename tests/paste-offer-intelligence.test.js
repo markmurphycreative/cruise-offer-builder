@@ -124,6 +124,7 @@ function createHarness() {
     extractFunction('detectTransferStatus'),
     extractFunction('detectPreCruiseStay'),
     extractFunction('getOfferIntelligenceSummary'),
+    extractFunction('stripTrailingGenericCruiseTitleWord'),
     extractFunction('normaliseCruiseTitleCandidate'),
     extractFunction('isRecognisedPortTitleLine'),
     extractFunction('isCruiseTitleRecoveryExcludedLine'),
@@ -327,7 +328,8 @@ test('Offer Intelligence flags compact raw destination typos while keeping inten
 
 test('Destination spelling QA catches required pasted destination typo regressions', () => {
   const { context } = createHarness();
-  const issues = vm.runInContext('getDestinationSpellingIssues({}, raw)', Object.assign(context, {
+  const issues = vm.runInContext('getDestinationSpellingIssues(parsed, raw)', Object.assign(context, {
+    parsed: { ports: 'La Spezia • Villefranche • Civitavecchia • Spain • Barcelona • Messina • Italy • Norway' },
     raw: 'Laspezia • Villefrance • Civitavechia • Span • Barcelonia • Messinna • Itlay • Norawy'
   }));
   const messages = JSON.parse(JSON.stringify(issues.map(issue => `${issue.token}->${issue.suggestion}`)));
@@ -342,6 +344,21 @@ test('Destination spelling QA catches required pasted destination typo regressio
     'Itlay->Italy',
     'Norawy->Norway'
   ]);
+
+  const commaIssues = vm.runInContext('getDestinationSpellingIssues(parsed, raw)', Object.assign(context, {
+    parsed: { ports: 'Barcelona • La Spezia • Italy' },
+    raw: 'Barcelona, Span\nFlorence/Pisa, Laspezia, Italy'
+  }));
+  assert.deepEqual(JSON.parse(JSON.stringify(commaIssues.map(issue => `${issue.token}->${issue.suggestion}`))), [
+    'Span->Spain',
+    'Laspezia->La Spezia'
+  ]);
+
+  const scoreWithRawTypos = vm.runInContext('getOfferIntelligenceQualityScore(parsed, raw, "celebrity")', Object.assign(context, {
+    parsed: { name: 'Mediterranean', ship: 'Celebrity Apex', day: '12', month: 'June 2027', nights: '7', price: '999', boardlbl: 'Full Board', ports: 'Barcelona • La Spezia • Italy' },
+    raw: 'Barcelona, Span\nFlorence/Pisa, Laspezia, Italy\nInside Cabin'
+  }));
+  assert.equal(scoreWithRawTypos, 86);
 });
 
 test('Offer Intelligence infers known ship operators without changing parsed data', () => {
@@ -652,6 +669,7 @@ test('POA Suggestions render only card and USP suggestions with confidence and c
     extractFunction('clearPoaSuggestionHighlights'),
     extractFunction('setPoaSuggestionHighlight'),
     extractFunction('getPoaSuggestionConfidenceLabel'),
+    extractFunction('stripTrailingGenericCruiseTitleWord'),
     extractFunction('normaliseCruiseTitleCandidate'),
     extractFunction('isRecognisedPortTitleLine'),
     extractFunction('isCruiseTitleRecoveryExcludedLine'),
