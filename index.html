@@ -159,6 +159,13 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .copy-qa-item.review strong::before,.copy-qa-item.empty strong::before{content:"⚠";color:var(--amber);font-weight:700;}
 .copy-qa-item.review .state,.copy-qa-item.empty .state{color:var(--amber);font-weight:600;}
 .copy-qa-note{font-size:9px;color:var(--muted);margin-top:4px;line-height:1.35;}
+.copy-qa-fixes{display:none;margin-top:6px;border-top:1px solid var(--border);padding-top:6px;}
+.copy-qa-fixes.active{display:grid;gap:5px;}
+.copy-qa-fixes-title{font-size:9px;font-weight:700;color:var(--amber);letter-spacing:.03em;}
+.copy-qa-fix-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center;font-size:9px;color:var(--text);}
+.copy-qa-fix-text{overflow-wrap:anywhere;}
+.copy-qa-fix-btn{padding:3px 7px;border-radius:4px;border:1px solid rgba(160,146,103,.45);background:#fff;color:var(--navy);font-size:8px;cursor:pointer;}
+.copy-qa-apply-all{justify-self:start;margin-top:2px;padding:4px 8px;border-radius:4px;border:1px solid var(--gold);background:var(--gold);color:#fff;font-size:8px;cursor:pointer;}
 .hero-restore-note{display:none;margin-top:5px;font-size:9px;color:#8a5000;background:#fff8f0;border:1px solid #f0c080;border-radius:var(--radius);padding:4px 6px;}
 .hero-restore-note.active{display:block;}
 
@@ -868,6 +875,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
           <div class="copy-qa-title">Copy QA</div>
           <div class="copy-qa-status" id="copy-qa-status">— QA not run yet</div>
           <div class="copy-qa-checklist" id="copy-qa-checklist"></div>
+          <div class="copy-qa-fixes" id="copy-qa-spelling-fixes" aria-live="polite"></div>
           <div class="copy-qa-note" id="copy-qa-note">Passive checks only — no auto-correction. Export is never blocked.</div>
         </div>
       <div class="export-group export-toolbar-group">
@@ -3557,19 +3565,78 @@ function getOperatorShipQaIssue(operatorKey,shipName){
     :`Ship name not found in ${{amawaterways:"AmaWaterways",ambassador:"Ambassador Cruise Line",celebrity:"Celebrity Cruises",cunard:"Cunard",fred:"Fred. Olsen Cruise Lines",marella:"Marella Cruises",msc:"MSC Cruises",ncl:"Norwegian Cruise Line",po:"P&O Cruises",princess:"Princess Cruises",royal:"Royal Caribbean",virgin:"Virgin Voyages"}[operatorKey]} ship list.`;
 }
 function setSpellWarn(warnId,msg){const el=document.getElementById(warnId); if(!el) return; el.textContent=msg||""; el.classList.toggle("active",!!msg);}
+function escapeQaHtml(value){return String(value||"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));}
 function buildQaChecklist(rows){
   const host=document.getElementById("copy-qa-checklist");
   if(!host) return;
-  const escapeQaHtml=value=>String(value||"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+  const htmlEscape=typeof escapeQaHtml==="function"?escapeQaHtml:(value=>String(value||"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char])));
   host.innerHTML=rows.map(row=>{
     const validations=(row.validations||[]).map(item=>{
       const type=item&&item.type==="warn"?"warn":"ok";
       const icon=type==="warn"?"⚠":"✓";
       const text=typeof item==="string"?item:(item&&item.text)||"";
-      return text?`<div class="copy-qa-validation ${type}">${icon} ${escapeQaHtml(text)}</div>`:"";
+      return text?`<div class="copy-qa-validation ${type}">${icon} ${htmlEscape(text)}</div>`:"";
     }).join('');
-    return `<div class="copy-qa-item ${row.stateClass}"><strong>${escapeQaHtml(row.label)}</strong><span class="state">${escapeQaHtml(row.state)}</span>${validations?`<div class="copy-qa-validations">${validations}</div>`:""}</div>`;
+    return `<div class="copy-qa-item ${row.stateClass}"><strong>${htmlEscape(row.label)}</strong><span class="state">${htmlEscape(row.state)}</span>${validations?`<div class="copy-qa-validations">${validations}</div>`:""}</div>`;
   }).join('');
+}
+function getCurrentOfferRawPasteText(){
+  const raw=document.getElementById("raw-paste");
+  if(raw&&String(raw.value||"").trim()) return raw.value||"";
+  return ((offers&&offers[cur])||{})[PERSISTED_PASTE_OFFER_KEY]||"";
+}
+function getCurrentParsedOfferForQa(){
+  const o=(offers&&offers[cur])||{};
+  return {operatorKey:o.operator,name:o.name,ship:o.ship,day:o.day,month:o.month,nights:o.nights,price:o.price,board:o.board,boardlbl:o.boardlbl,ports:o.ports,incl:o.incl,tags:o.tags};
+}
+function getCurrentDestinationSpellingIssues(){
+  return typeof getDestinationSpellingIssues==="function"?getDestinationSpellingIssues(getCurrentParsedOfferForQa(),getCurrentOfferRawPasteText()):[];
+}
+function replaceDestinationIssueInText(text,issue){
+  const token=String((issue&&issue.token)||"");
+  const suggestion=String((issue&&issue.suggestion)||"");
+  if(!token||!suggestion) return String(text||"");
+  const escaped=token.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  return String(text||"").replace(new RegExp(`(^|[^A-Za-z0-9])(${escaped})(?=$|[^A-Za-z0-9])`,"gi"),(match,prefix)=>`${prefix}${suggestion}`);
+}
+function applyDestinationSpellingFix(index){
+  const issues=getCurrentDestinationSpellingIssues();
+  const issue=issues[Number(index)];
+  if(!issue) return false;
+  return applyDestinationSpellingFixes([issue],"Spelling fix");
+}
+function applyAllDestinationSpellingFixes(){
+  const issues=getCurrentDestinationSpellingIssues();
+  if(!issues.length) return false;
+  return applyDestinationSpellingFixes(issues,"Apply all spelling fixes");
+}
+function applyDestinationSpellingFixes(issues,label){
+  if(typeof isOfferLocked==="function" && isOfferLocked(cur)){ if(typeof setParseStatus==="function") setParseStatus(getLockedOfferMessage(cur),"low"); return false; }
+  const raw=document.getElementById("raw-paste");
+  let next=getCurrentOfferRawPasteText();
+  (issues||[]).forEach(issue=>{ next=replaceDestinationIssueInText(next,issue); });
+  if(raw) raw.value=next;
+  if(!offers[cur]) offers[cur]={};
+  offers[cur][PERSISTED_PASTE_OFFER_KEY]=next;
+  const result=typeof parseOfferText==="function"?parseOfferText(next,{renderIntelligence:true}):null;
+  if(!result) return false;
+  pendingParseResult=result;
+  applyParsedOffer();
+  renderDestinationSpellingFixes();
+  return true;
+}
+function renderDestinationSpellingFixes(){
+  const host=document.getElementById("copy-qa-spelling-fixes");
+  if(!host) return;
+  const issues=getCurrentDestinationSpellingIssues();
+  if(!issues.length){
+    host.innerHTML="";
+    host.classList.remove("active");
+    return;
+  }
+  const rows=issues.map((issue,index)=>`<div class="copy-qa-fix-row"><span class="copy-qa-fix-text"><strong>${escapeQaHtml(issue.token)}</strong> &rarr; ${escapeQaHtml(issue.suggestion)}</span><button class="copy-qa-fix-btn" type="button" onclick="applyDestinationSpellingFix(${index})">Fix</button></div>`).join("");
+  host.innerHTML=`<div class="copy-qa-fixes-title">⚠ ${issues.length} spelling issue${issues.length===1?"":"s"} found</div>${rows}${issues.length>1?`<button class="copy-qa-apply-all" type="button" onclick="applyAllDestinationSpellingFixes()">Apply All</button>`:""}`;
+  host.classList.add("active");
 }
 function getQaOperatorKey(){
   const value=String((document.getElementById("f-operator")||{}).value||"").trim();
@@ -3669,7 +3736,7 @@ function runSpellQA(){
     }
     const bad=rawValue&&f.spellcheck!==false?getLikelyTypos(rawValue):[];
     const destinationIssues=(rawValue&&typeof getDestinationSpellingIssues==="function"&&(f.id==="f-ports"||f.id==="raw-paste"))?getDestinationSpellingIssues(f.id==="f-ports"?{ports:rawValue}:{},rawValue):[];
-    const destinationWarnings=destinationIssues.map(issue=>`${f.label}: ${issue.token} is not recognised. Did you mean ${issue.suggestion}?`);
+    const destinationWarnings=destinationIssues.map(issue=>`${f.label}: Recognised destination: ${issue.recognisedDestination||issue.suggestion}. Customer copy contains: ${issue.token}. Suggestion: ${issue.suggestion}.`);
     const shipIssue=f.id==="f-ship"?getOperatorShipQaIssue((document.getElementById("f-operator")||{}).value,value):"";
     const issues=[...(bad.length?[`${f.label}: ${bad.join(', ')}`]:[]),...destinationWarnings,...(shipIssue?[shipIssue]:[])];
     const isEmpty=!rawValue;
@@ -3680,6 +3747,7 @@ function runSpellQA(){
     rows.push({label:f.label,state,stateClass,validations:(typeof getQaValidations==="function"?getQaValidations(f.id,rawValue,value,issues):[])});
   });
   buildQaChecklist(rows);
+  if(typeof renderDestinationSpellingFixes==="function") renderDestinationSpellingFixes();
   ["spell-warn-name","spell-warn-ports","spell-warn-tags","spell-warn-raw"].forEach(id=>setSpellWarn(id,(byWarn[id]||[]).length?`Spelling QA: ${(byWarn[id]||[]).join(" · ")}`:""));
   const qaIssues=Object.values(byWarn).flat();
   const qaStatus=document.getElementById("copy-qa-status");
@@ -6914,7 +6982,7 @@ function getMultiOfferImportQualityResult(result,rawText){
   const confidence=qaWarnings?Math.min(parserScore,qualityScore):parserScore;
   return {missing,qaWarnings,score:confidence};
 }
-function applyParsedOfferToSlot(result,index){
+function applyParsedOfferToSlot(result,index,sourceText){
   if(!result||!result.parsed) return false;
   while(offers.length<4) offers.push({});
   const parsed=result.parsed;
@@ -6930,6 +6998,7 @@ function applyParsedOfferToSlot(result,index){
   offers[index]._tagsManualOverride=false;
   applyOperatorTopBarUspDefault(offers[index],offers[index].operator||parsed.operatorKey||"");
   stripTransientPasteOfferFields(offers[index]);
+  offers[index][(typeof PERSISTED_PASTE_OFFER_KEY!=="undefined"?PERSISTED_PASTE_OFFER_KEY:"_rawPastedOfferText")]=String(sourceText||(result&&result.rawText)||"");
   return Object.keys(parsed).some(key=>parsed[key]!==undefined&&parsed[key]!=="");
 }
 function loadAllOffers(){ return performMultiOfferImport(false); }
@@ -6948,10 +7017,10 @@ function performMultiOfferImport(replaceConfirmed){
   while(offers.length<4) offers.push({});
   if(existing&&!hasMarkedTargets){ for(let i=0;i<4;i+=1) offers[i]={}; }
   const selected=importBlocks.slice(0,4);
-  const parsedResults=selected.map((item,index)=>({result:parseOfferText(item.block,{renderIntelligence:false}),targetIndex:Number.isInteger(item.targetIndex)?item.targetIndex:index})).filter(item=>item.result);
+  const parsedResults=selected.map((item,index)=>({result:parseOfferText(item.block,{renderIntelligence:false}),targetIndex:Number.isInteger(item.targetIndex)?item.targetIndex:index,block:item.block})).filter(item=>item.result);
   const results=parsedResults.map(item=>item.result);
   activeMultiOfferImportIndexes=parsedResults.map(item=>item.targetIndex);
-  parsedResults.forEach(item=>applyParsedOfferToSlot(item.result,item.targetIndex));
+  parsedResults.forEach(item=>applyParsedOfferToSlot(item.result,item.targetIndex,item.block));
   cur=activeMultiOfferImportIndexes.length?activeMultiOfferImportIndexes[0]:0;
   try{ loadOfferToEditor(cur); }catch(e){ try{ load(cur); }catch(_e){} }
   try{ document.querySelectorAll(".otab").forEach((t,idx)=>t.classList.toggle("active",idx===cur)); }catch(e){}
@@ -7518,21 +7587,29 @@ function getDestinationSpellingCandidates(parsed,rawText){
 function getDestinationSpellingIssues(parsed,rawText){
   const targets=getDestinationSpellingTargets();
   const exact=new Set(targets.map(item=>item.target));
+  const ambiguous=new Set(["york","victoria","dover"]);
   const issues=[];
   getDestinationSpellingCandidates(parsed,rawText).forEach(original=>{
     const token=normaliseDestinationSpellingToken(original);
-    if(!token||token.length<4||exact.has(token)) return;
+    if(!token||token.length<4||exact.has(token)||ambiguous.has(token)) return;
     const compactToken=token.replace(/\s+/g,"");
     let best=null;
+    let tied=false;
     targets.forEach(entry=>{
       const compactDistance=levenshteinDistance(compactToken,entry.compact);
       const spacedDistance=levenshteinDistance(token,entry.target);
       const distance=Math.min(spacedDistance,compactDistance);
       const compactOnly=compactDistance===0&&spacedDistance>0;
-      if((distance<=2||compactOnly)&&(!best||distance<best.distance||entry.target.length<best.target.length)) best={target:entry.target,display:entry.display,distance,compactOnly};
+      if(!(distance<=2||compactOnly)) return;
+      if(!best||distance<best.distance||(distance===best.distance&&entry.target.length<best.target.length)){
+        best={target:entry.target,display:entry.display,distance,compactOnly};
+        tied=false;
+      }else if(best&&distance===best.distance&&entry.target!==best.target){
+        tied=true;
+      }
     });
-    if(best&&!issues.some(issue=>issue.token.toLowerCase()===String(original).toLowerCase())){
-      issues.push({token:String(original).trim(),suggestion:best.display,distance:best.distance,compactOnly:!!best.compactOnly});
+    if(best&&!tied&&!issues.some(issue=>issue.token.toLowerCase()===String(original).toLowerCase())){
+      issues.push({token:String(original).trim(),suggestion:best.display,recognisedDestination:best.display,distance:best.distance,compactOnly:!!best.compactOnly});
     }
   });
   return issues.slice(0,8);
