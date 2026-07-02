@@ -589,6 +589,11 @@ test('Multi Offer Import status rows use the clamped confidence score for displa
   assert.doesNotMatch(performMultiOfferImport, /Confidence \$\{result\.score\}/);
 });
 
+test('Multi Offer Import logs exact raw text checked for destination typo QA', () => {
+  const fn = extractFunction('getMultiOfferImportQualityResult');
+  assert.match(fn, /console\.debug\("\[multi-offer-import spell qa\]",\{checkedText:String\(rawText\|\|""\),parsedPorts:String\(parsed\.ports\|\|""\),issues:spellingIssues\}\)/);
+});
+
 test('Multi Offer Import loaded status includes raw destination typo QA warnings and lowers displayed confidence', () => {
   const result = { innerHTML: '', className: '' };
   const field = { value: `Celebrity Cruises
