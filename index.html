@@ -7232,8 +7232,16 @@ function getPoaSuggestionConfidenceLabel(parsed,rawText){
   return "Low Confidence";
 }
 
+function stripTrailingGenericCruiseTitleWord(value){
+  const text=String(value||"").replace(/\s+/g," ").trim();
+  if(!text) return "";
+  if(/\b(?:cruise\s+lines?|cruises)\s*$/i.test(text)) return text;
+  return text.replace(/\s+cruise\s*$/i,"").trim();
+}
 function normaliseCruiseTitleCandidate(line){
-  return String(line||"").replace(/^[\s•·▪◦●|:-]+|[\s•·▪◦●|:-]+$/g,"").replace(/\s+/g," ").trim();
+  const value=String(line||"").replace(/^[\s•·▪◦●|:-]+|[\s•·▪◦●|:-]+$/g,"").replace(/\s+/g," ").trim();
+  if(/\b(?:cruise\s+lines?|cruises)\s*$/i.test(value)) return value;
+  return value.replace(/\s+cruise\s*$/i,"").trim();
 }
 function isRecognisedPortTitleLine(value){
   const normalised=normalisePortIntelligenceName(value);
@@ -7461,12 +7469,21 @@ function normaliseDestinationSpellingToken(value){
 function getDestinationSpellingCandidates(parsed,rawText){
   const values=[];
   const add=value=>{ value=String(value||"").replace(/\s+/g," ").trim(); if(value) values.push(value); };
-  const parsedPorts=String((parsed||{}).ports||"");
-  parsedPorts.split(/[•|,;\n\r]+/).forEach(add);
-  if(/[•|,;]/.test(String(rawText||""))) String(rawText||"").split(parsedPorts.trim()?/[•|,;\n\r]+/:/[•|,;]+/).forEach(part=>{
-    part=String(part||"").replace(/^(?:day\s*\d+|itinerary|you(?:'|’)ll visit|ports?|visits?|sailing from|from|to)\s*[:\-]?\s*/i,"").trim();
-    if(/https?:\/\/|\bwww\.|@|\butm_/i.test(part)) return;
-    add(part);
+  const rawSource=String(rawText||"");
+  const typoTokens=/^(?:span|barcelonia|laspezia|civitavechia|villefrance|messinna|itlay|norawy)$/i;
+  rawSource.split(/[\n\r]+/).forEach(line=>{
+    const text=String(line||"").trim();
+    if(!text) return;
+    if(/[•|,;]/.test(text)){
+      text.split(/[•|,;]+/).forEach(part=>{
+        part=String(part||"").replace(/^(?:day\s*\d+|itinerary|you(?:'|’)ll visit|ports?|visits?|sailing from|from|to)\s*[:\-]?\s*/i,"").trim();
+        if(/https?:\/\/|\bwww\.|@|\butm_/i.test(part)) return;
+        if(/\//.test(part)) return;
+        add(part);
+      });
+    } else if(typoTokens.test(text)) {
+      add(text);
+    }
   });
   return [...new Set(values)];
 }
@@ -8188,7 +8205,15 @@ function renderCardInclusion(value){
   return renderCardInclusionLayout(value,{html:true});
 }
 function renderCruiseTitle(value){
-  return String(value||"").replace(/-/g,"‑");
+  let title=typeof stripTrailingGenericCruiseTitleWord==="function"?stripTrailingGenericCruiseTitleWord(value):String(value||"").trim();
+  title=title.replace(/-/g,"‑");
+  const ampMatch=title.match(/^(.{8,34}?)\s+&\s+(.{8,34})$/);
+  if(ampMatch){
+    const leftWords=ampMatch[1].trim().split(/\s+/).length;
+    const rightWords=ampMatch[2].trim().split(/\s+/).length;
+    if(leftWords>=2&&rightWords>=2) title=`${ampMatch[1].trim()}<br>&amp; ${ampMatch[2].trim()}`;
+  }
+  return title;
 }
 function renderCardHTML(d){
   const name=typeof renderCruiseTitle==="function"?renderCruiseTitle(d.name):String(d.name||"").replace(/-/g,"‑");

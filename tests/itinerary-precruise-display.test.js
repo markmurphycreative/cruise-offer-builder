@@ -114,6 +114,7 @@ function createRenderContext() {
     extractFunction('renderCardInclusionLayout'),
     extractFunction('buildCardInclusionRenderLines'),
     extractFunction('normaliseSubtitleSeparator'),
+    extractFunction('stripTrailingGenericCruiseTitleWord'),
     extractFunction('renderCardInclusion'),
     extractFunction('renderCruiseTitle'),
     extractFunction('escapeAttr'),
@@ -363,6 +364,9 @@ test('card title rendering converts hyphenated cruise title terms to non-breakin
   });
 
   assert.equal(renderCruiseTitle('Fly-Cruise Mini-Break Adults-Only Pre-Cruise Post-Cruise Back-to-Back'), 'Fly‑Cruise Mini‑Break Adults‑Only Pre‑Cruise Post‑Cruise Back‑to‑Back');
+  assert.equal(renderCruiseTitle('Italy, Greece & Croatia Cruise'), 'Italy, Greece & Croatia');
+  assert.equal(renderCruiseTitle('Madeira, Canaries & Morocco Cruise'), 'Madeira, Canaries & Morocco');
+  assert.equal(renderCruiseTitle('Norwegian Fjords & Arctic Circle'), 'Norwegian Fjords<br>&amp; Arctic Circle');
   assert.match(card, /<div class="cname">Eastern Caribbean Fly‑Cruise Back‑to‑Back<\/div>/);
   assert.doesNotMatch(card, /<div class="cname">[^<]*Fly-Cruise/);
   assert.match(card.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' '), /Eastern Caribbean Fly‑Cruise Back‑to‑BackPre-Cruise Stay - Adults-Only Venue/);
