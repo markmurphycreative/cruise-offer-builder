@@ -236,7 +236,7 @@ test('locked cruise builder sailing line, inclusion typography, and itinerary se
   for (const scenario of cases) {
     const card = renderCardHTML(scenario.data);
     const text = card.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ');
-    const sailingText = textBetween(text, scenario.sailing, "You'll Visit");
+    const detailsText = textBetween(text, scenario.sailing, "You'll Visit");
     const visitText = textBetween(text, "You'll Visit", 'T&Cs Apply');
 
     assert.ok(text.includes(scenario.sailing), scenario.label);
@@ -245,8 +245,8 @@ test('locked cruise builder sailing line, inclusion typography, and itinerary se
     for (const forbidden of scenario.absent) {
       assert.equal(visitText.includes(forbidden), false, scenario.label);
     }
-    assert.doesNotMatch(sailingText, /Premium Drinks Package|Tips Included|WiFi|Flights|Transfers|Cabin/, scenario.label);
-    const inclusionHtml = textBetween(card, '<div class="incl">', '</div><div class="sname">');
+    assert.match(detailsText, new RegExp(scenario.inclusion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), scenario.label);
+    const inclusionHtml = textBetween(card, '<div class="incl">', '</div><div class="price-block">');
     assert.doesNotMatch(inclusionHtml, /<span class="incl-line"><span class="incl-segment">|^\s*-|-\s*$|•|·/, scenario.label);
   }
 });
@@ -280,13 +280,13 @@ test('permanent PMU: locked sailing and visit lines never use inclusion-only val
   for (const scenario of lockedCases) {
     const card = renderCardHTML(scenario.data);
     const text = card.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ');
-    const sailingText = textBetween(text, scenario.sailing, "You'll Visit");
+    const detailsText = textBetween(text, scenario.sailing, "You'll Visit");
     const visitText = textBetween(text, "You'll Visit", 'T&Cs Apply');
 
     assert.ok(text.includes(scenario.sailing), scenario.label);
     for (const expected of scenario.visit) assert.ok(visitText.includes(expected), `${scenario.label}: ${expected}`);
     for (const forbidden of scenario.forbidden) {
-      assert.equal(sailingText.includes(forbidden), false, `${scenario.label}: sailing contains ${forbidden}`);
+      assert.equal(textBetween(text, scenario.sailing, detailsText).includes(forbidden), false, `${scenario.label}: sailing contains ${forbidden}`);
       assert.equal(visitText.includes(forbidden), false, `${scenario.label}: visit contains ${forbidden}`);
     }
   }
@@ -315,7 +315,7 @@ test('permanent PMU: hyphen separators have no leading, trailing, or wrapping or
     }[text] ?? 180)
   }).split('\n');
 
-  assert.deepEqual(renderedLines, ['Newcastle Flights - Transfers Included', 'Balcony Cabin']);
+  assert.deepEqual(renderedLines, ['Transfers Included', 'Newcastle Flights', 'Balcony Cabin']);
   for (const line of renderedLines) {
     assert.doesNotMatch(line, /^\s*-/);
     assert.doesNotMatch(line, /-\s*$/);
@@ -325,17 +325,17 @@ test('permanent PMU: hyphen separators have no leading, trailing, or wrapping or
 test('card subtitle separators render hyphen separators while itinerary separators stay bullets', () => {
   const { renderCardHTML, normaliseSubtitleSeparator } = createRenderContext();
   const cases = [
-    ['Luggage Included • Ocean View Cabin', 'Luggage Included - Ocean View Cabin'],
-    ['Newcastle Flights Included • Inside Cabin', 'Newcastle Flights - Inside Cabin'],
-    ['Manchester Flights, Luggage Included • Balcony Cabin', 'Manchester Flights - Luggage Included - Balcony Cabin'],
-    ['No Fly • Ocean View Cabin', 'No Fly - Ocean View Cabin'],
-    ['Coach Included • Inside Cabin', 'Coach Included - Inside Cabin']
+    ['Luggage Included • Ocean View Cabin', 'Luggage Included\nOcean View Cabin'],
+    ['Newcastle Flights Included • Inside Cabin', 'Newcastle Flights\nInside Cabin'],
+    ['Manchester Flights, Luggage Included • Balcony Cabin', 'Luggage Included\nManchester Flights\nBalcony Cabin'],
+    ['No Fly • Ocean View Cabin', 'Ocean View Cabin\nNo Fly'],
+    ['Coach Included • Inside Cabin', 'Inside Cabin\nCoach Included']
   ];
 
   for (const [input, expected] of cases) {
     assert.equal(normaliseSubtitleSeparator(input), expected);
     const card = renderCardHTML({ name: 'Cruise Title', incl: input, ports: 'Barbados • Martinique' });
-    assert.match(card.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' '), new RegExp(`Cruise Title${expected}`));
+    assert.match(card.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' '), new RegExp(`Cruise Title${expected.replace(/\n/g, "")}`));
   }
 
   const card = renderCardHTML({ name: 'Cruise Title', incl: 'Luggage Included • Ocean View Cabin', ports: 'Barbados • Martinique' });
@@ -358,9 +358,9 @@ test('permanent PMU: card renderer never displays generic Flights Included and k
 test('card inclusion rendering keeps known cabin phrases non-breaking', () => {
   const { renderCardHTML, renderCardInclusion } = createRenderContext();
   const rendered = renderCardInclusion('Newcastle Flights • Transfers Included • Inside Cabin');
-  assert.equal(rendered, '<span class="incl-line"><span class="incl-component">Newcastle Flights</span><span class="incl-segment">&nbsp;-&nbsp;<span class="incl-component">Transfers Included</span></span><span class="incl-segment">&nbsp;-&nbsp;<span class="incl-component cabin-phrase">Inside&nbsp;Cabin</span></span></span>');
+  assert.equal(rendered, '<span class="incl-line"><span class="incl-component">Transfers Included</span></span><span class="incl-line"><span class="incl-component">Newcastle Flights</span></span><span class="incl-line"><span class="incl-component cabin-phrase">Inside&nbsp;Cabin</span></span>');
   const renderedPreCruise = renderCardInclusion('Newcastle Flights • Transfers Included\nInside Cabin • 1 Night Pre-Cruise Stay in Miami');
-  assert.equal(renderedPreCruise, '<span class="incl-line"><span class="incl-component">Newcastle Flights</span><span class="incl-segment">&nbsp;-&nbsp;<span class="incl-component">Transfers Included</span></span><span class="incl-segment">&nbsp;-&nbsp;<span class="incl-component cabin-phrase">Inside&nbsp;Cabin</span></span></span><span class="incl-line"><span class="incl-component precruise-phrase">1 Night Pre-Cruise Stay in Miami</span></span>');
+  assert.equal(renderedPreCruise, '<span class="incl-line"><span class="incl-component">Transfers Included</span></span><span class="incl-line"><span class="incl-component">Newcastle Flights</span></span><span class="incl-line"><span class="incl-component cabin-phrase">Inside&nbsp;Cabin</span></span><span class="incl-line"><span class="incl-component precruise-phrase">1 Night Pre-Cruise Stay in Miami</span></span>');
   assert.doesNotMatch(renderedPreCruise.replace(/&nbsp;/g, " "), /Transfers Included -<br>|Transfers Included -$|^-/);
 
   const card = renderCardHTML({
@@ -368,13 +368,13 @@ test('card inclusion rendering keeps known cabin phrases non-breaking', () => {
     incl: 'Newcastle Flights • Transfers Included • Inside Cabin',
     ports: 'Barcelona • Rome'
   });
-  assert.match(card, /<div class="incl"><span class="incl-line"><span class="incl-component">Newcastle Flights<\/span><span class="incl-segment">&nbsp;-&nbsp;<span class="incl-component">Transfers Included<\/span><\/span><span class="incl-segment">&nbsp;-&nbsp;<span class="incl-component cabin-phrase">Inside&nbsp;Cabin<\/span><\/span><\/span><\/div>/);
-  assert.match(html, /\.cc \.incl\{font-size:40px;font-weight:300;color:#555;line-height:1\.22;margin:0 auto 16px;padding:0 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:0;/);
+  assert.match(card, /<div class="incl"><span class="incl-line"><span class="incl-component">Transfers Included<\/span><\/span><span class="incl-line"><span class="incl-component">Newcastle Flights<\/span><\/span><span class="incl-line"><span class="incl-component cabin-phrase">Inside&nbsp;Cabin<\/span><\/span><\/div>/);
+  assert.match(html, /\.cc \.incl\{font-size:40px;font-weight:300;color:#555;line-height:1\.22;margin:0 auto 20px;padding:0 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:0;/);
   assert.match(html, /\.cc \.incl-line\{display:block;width:100%;max-width:100%;line-height:1\.22;margin:0 auto;text-align:center;\}/);
   assert.match(html, /\.cc \.incl-segment\{display:inline-block;white-space:nowrap;\}/);
   assert.doesNotMatch(card, /Inside Cabin<\/div>/);
   assert.doesNotMatch(rendered, /card-inclusion-separator| · |•/);
-  assert.match(rendered, /<span class="incl-segment">&nbsp;-&nbsp;<span class="incl-component">Transfers Included<\/span><\/span>/);
+  assert.match(rendered, /<span class="incl-component">Transfers Included<\/span>/);
   assert.doesNotMatch(rendered, /<span class="incl-line"><span class="incl-segment">/);
   assert.doesNotMatch(rendered, /&nbsp;-&nbsp;<\/span><\/span>$/);
 });
@@ -393,7 +393,7 @@ test('card inclusion renderer drops hyphen separators at measured line breaks', 
     }[text] ?? 180)
   });
 
-  assert.equal(rendered, '<span class="incl-line"><span class="incl-component">Newcastle Flights</span><span class="incl-segment">&nbsp;-&nbsp;<span class="incl-component">Transfers Included</span></span></span><span class="incl-line"><span class="incl-component cabin-phrase">Balcony&nbsp;Cabin</span></span>');
+  assert.equal(rendered, '<span class="incl-line"><span class="incl-component">Transfers Included</span></span><span class="incl-line"><span class="incl-component">Newcastle Flights</span></span><span class="incl-line"><span class="incl-component cabin-phrase">Balcony&nbsp;Cabin</span></span>');
   assert.doesNotMatch(rendered.replace(/&nbsp;/g, ' '), /-<br>|<br><span class="incl-line">\s*-/);
 });
 
@@ -469,9 +469,9 @@ test('pre-cruise note renders above You\'ll Visit while passenger basis remains 
   assert.doesNotMatch(preCruiseNote, /Piraeus \(Athens\)|Piraeus, Athens|Bed & Breakfast|Full Board|Half Board|Mykonos|Souda/i);
   assert.match(html, /\.cc \.precruise-note\{margin-bottom:30px;white-space:nowrap;\}/);
 
-  const titleArea = textBetween(card, '<div class="cname">', '</div><div class="incl">');
-  const detailsLine = textBetween(card, '<div class="incl">', '</div><div class="sname">');
-  const sailingLine = textBetween(card, '<div class="sname">', '</div><div class="price-block">');
+  const titleArea = textBetween(card, '<div class="cname">', '</div><div class="sname">');
+  const sailingLine = textBetween(card, '<div class="sname">', '</div><div class="incl">');
+  const detailsLine = textBetween(card, '<div class="incl">', '</div><div class="price-block">');
   const destinations = textBetween(card, '<div class="vtit">You\'ll Visit</div><div class="vpts">', '</div></div></div><div class="tcbar">');
 
   assert.doesNotMatch(titleArea, /Sailing on|Based On|Pre-Cruise|Celebrity Infinity|Newcastle Flights/i);
