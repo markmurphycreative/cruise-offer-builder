@@ -4792,6 +4792,7 @@ function processSheetCSV(csv,status){
     ["_itineraryCropZoom","_itineraryCropX","_itineraryCropY","_itineraryFitMode"].forEach(key=>{ delete newOffer[key]; });
     newOffer.incl=buildCSVDetailsLine(row,headers,boardParts,newOffer.basis,newOffer.name,newOffer.ship);
     newOffer.tags=csvTopBarUspPreset(newOffer.operator);
+    if(!newOffer._sailingFromManual && typeof applyAutoSailingFromToOffer==="function") applyAutoSailingFromToOffer(newOffer);
     if(hero){ newOffer._img=hero; }
     if(itineraryImage){ newOffer._itineraryImg=itineraryImage; }
     const hdr=val(row,headers,["operator_header","header"]);
@@ -6998,7 +6999,8 @@ function applyParsedOfferToSlot(result,index,sourceText){
     else if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offers[index].operator)){ continue; }
     else offers[index][k]=String(parsed[k]);
   }
-  if(!offers[index]._sailingFromManual && typeof getAutoSailingFromForPorts==="function") offers[index].sailingFrom=getAutoSailingFromForPorts(offers[index].ports||"");
+  if(parsed.departurePort) offers[index].departurePort=String(parsed.departurePort);
+  if(!offers[index]._sailingFromManual && typeof applyAutoSailingFromToOffer==="function") applyAutoSailingFromToOffer(offers[index]);
   offers[index]._tagsManualOverride=false;
   applyOperatorTopBarUspDefault(offers[index],offers[index].operator||parsed.operatorKey||"");
   stripTransientPasteOfferFields(offers[index]);
@@ -7068,11 +7070,58 @@ function extractSourceInclusionLine(lines){
   const sourceLine=(lines||[]).find(line=>inclusionPattern.test(line)&&!negativePattern.test(line));
   return sourceLine?String(sourceLine).trim():"";
 }
+function cleanParsedDeparturePort(value){
+  let text=String(value||"").trim();
+  if(!text) return "";
+  text=text.replace(/\s+/g," ").replace(/\s*[|•;].*$/," ").replace(/\s+-\s+.*$/," ").replace(/\s+to\s+.*$/i," ").trim();
+  text=text.replace(/\b(?:cruise|itinerary|sailing|depart(?:ing|ure)?|embark(?:ing|ation)?)\b.*$/i," ").trim();
+  text=text.replace(/[, ]+(?:uk|england|spain|italy|france|greece|usa|united states|canada|norway|denmark|germany)$/i,"").trim();
+  return typeof normaliseDestinationName==="function" ? normaliseDestinationName(text) : text;
+}
+function extractParsedSailingDeparturePort(lines,raw){
+  const sourceLines=Array.isArray(lines)?lines:String(raw||"").split(/\n/).map(line=>line.trim()).filter(Boolean);
+  const patterns=[
+    /\bsailing\s+from\s+([^\n|•;]+)/i,
+    /\bdepart(?:ing|s)?\s+from\s+([^\n|•;]+)/i,
+    /\bdeparture\s+(?:port|from)\s*[:\-]?\s*([^\n|•;]+)/i,
+    /\bembark(?:ing|ation)?\s+(?:port|from)\s*[:\-]?\s*([^\n|•;]+)/i
+  ];
+  for(const line of sourceLines){
+    const text=String(line||"").trim();
+    if(!text) continue;
+    for(const pattern of patterns){
+      const match=text.match(pattern);
+      if(match&&match[1]){
+        const port=cleanParsedDeparturePort(match[1]);
+        if(port) return port;
+      }
+    }
+  }
+  const text=String(raw||"");
+  for(const pattern of patterns){
+    const match=text.match(pattern);
+    if(match&&match[1]){
+      const port=cleanParsedDeparturePort(match[1]);
+      if(port) return port;
+    }
+  }
+  return "";
+}
+function applyAutoSailingFromToOffer(offer){
+  if(!offer) return "";
+  if(offer._sailingFromManual) return String(offer.sailingFrom||"").trim();
+  const auto=typeof getAutoSailingFromForOffer==="function" ? getAutoSailingFromForOffer(offer) : "";
+  offer.sailingFrom=auto;
+  offer._sailingFromManual=false;
+  return auto;
+}
 function parseOfferText(raw,options){
   raw=String(raw||"");
   if(!raw.trim()) return null;
   const renderIntelligence=!!(options&&options.renderIntelligence);
   const lines=raw.split(/\n/).map(l=>l.trim()).filter(Boolean); const txt=lines.join(" \n "); const parsed={}; let score=0;
+  const parsedDeparturePort=(typeof extractParsedSailingDeparturePort==="function") ? extractParsedSailingDeparturePort(lines,raw) : ((txt.match(/\bsailing\s+from\s+([^\n|•;]+)/i)||[])[1]||"").replace(/\s+to\s+.*$/i,"").trim();
+  if(parsedDeparturePort){ parsed.departurePort=parsedDeparturePort; parsed.sailingFrom=(typeof getCruiseGatewayDepartureDisplay==="function"?getCruiseGatewayDepartureDisplay(parsedDeparturePort):parsedDeparturePort); score+=8; }
   const earlyShipMatch=findKnownOperatorShip(txt);
   if(earlyShipMatch){ parsed.operatorKey=earlyShipMatch.operatorKey; parsed.ship=earlyShipMatch.ship; score+=26; }
   if(!parsed.operatorKey){ for(const[k,op]of Object.entries(OPERATOR_HEADERS)){ if(op.name&&new RegExp('\\b'+op.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i').test(txt)){ parsed.operatorKey=k; score+=20; break; } } }
@@ -7929,6 +7978,12 @@ function prepareOfferSlotForParsedOffer(parsed){
   return true;
 }
 function applyParsedOffer(){if(!pendingParseResult) return; if(typeof isOfferLocked==="function" && isOfferLocked(cur)){ setParseStatus(getLockedOfferMessage(cur),"low"); cancelParsedOffer(); return; } const {parsed,confidence,rawText}=pendingParseResult; if(!prepareOfferSlotForParsedOffer(parsed)){ setParseStatus('No offer fields detected','low'); cancelParsedOffer(); return; } const pasteSourceText=rawText||((document.getElementById("raw-paste")||{}).value||""); if(pasteSourceText) offers[cur]._rawPastedOfferText=pasteSourceText; if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(cur); const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offers[cur].operator)){ continue; } const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; offers[cur]._tagsManualOverride=false; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
+  if(parsed.departurePort) offers[cur].departurePort=String(parsed.departurePort);
+  if(!offers[cur]._sailingFromManual && typeof applyAutoSailingFromToOffer==="function"){
+    applyAutoSailingFromToOffer(offers[cur]);
+    const sf=document.getElementById('f-sailingFrom');
+    if(sf) sf.value=offers[cur].sailingFrom||'';
+  }
   touched.forEach(el=>{el.classList.remove('parse-field-flash'); void el.offsetWidth; el.classList.add('parse-field-flash'); setTimeout(()=>el.classList.remove('parse-field-flash'),1700);});
   const applied=touched.length; const summary=typeof getOfferIntelligenceSummary==="function"?getOfferIntelligenceSummary(parsed,rawText):{count:applied,label:(confidence==='high'?'High Confidence':confidence==='partial'?'Partial Match':'Needs Review'),level:confidence};
   setParseStatus(`✓ Detected ${summary.count} fields — ${summary.label}`,summary.level); cancelParsedOffer(); rv(); updateAllStatus(); genUtm(); checkPortsWarn(); updateExportFilenames(); runSpellQA(); if(applied){ if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Offer loaded"); if(typeof queueAutosave==="function") queueAutosave({immediate:true}); }}
@@ -8134,25 +8189,37 @@ function getAutoSailingFromForPorts(ports){
   const departure=getEmbarkationPortCardDisplay(ports||"");
   return getCruiseGatewayDepartureDisplay(departure);
 }
+function getAutoSailingFromForOffer(data){
+  const d=data||{};
+  const parsedDeparture=String(d.departurePort||d._departurePort||"").trim();
+  if(parsedDeparture) return getCruiseGatewayDepartureDisplay(parsedDeparture);
+  return getAutoSailingFromForPorts(d.ports||"");
+}
 function getSailingFromDisplay(data){
   const d=data||{};
   if(d._sailingFromManual) return String(d.sailingFrom||"").trim();
-  const manual=String(d.sailingFrom||"").trim();
-  return manual || getAutoSailingFromForPorts(d.ports||"");
+  const current=String(d.sailingFrom||"").trim();
+  if(current) return current;
+  const parsedDeparture=String(d.departurePort||d._departurePort||"").trim();
+  if(parsedDeparture) return getCruiseGatewayDepartureDisplay(parsedDeparture);
+  return getAutoSailingFromForPorts(d.ports||"");
 }
 function syncSailingFromFieldFromPorts(force){
   const input=document.getElementById("f-sailingFrom");
-  const ports=document.getElementById("f-ports");
-  if(!input||!ports) return;
+  if(!input) return;
   const offer=offers[cur]||(offers[cur]={});
   if(!force && offer._sailingFromManual) return;
-  input.value=getAutoSailingFromForPorts(ports.value||"");
-  offer.sailingFrom=input.value;
-  offer._sailingFromManual=false;
+  input.value=applyAutoSailingFromToOffer(offer);
 }
 function handleSailingFromInput(){
   const offer=offers[cur]||(offers[cur]={});
-  offer._sailingFromManual=true;
+  const input=document.getElementById("f-sailingFrom");
+  if(input && !String(input.value||"").trim()){
+    offer._sailingFromManual=false;
+    syncSailingFromFieldFromPorts(true);
+  }else{
+    offer._sailingFromManual=true;
+  }
   up();
 }
 function handlePortsInput(){
@@ -8717,6 +8784,11 @@ function loadOfferToEditor(i){
     const e=document.getElementById('f-'+f);
     if(e) e.value = o[f] || '';
   });
+  if(!o._sailingFromManual && typeof applyAutoSailingFromToOffer==="function"){
+    applyAutoSailingFromToOffer(o);
+    const sf=document.getElementById('f-sailingFrom');
+    if(sf) sf.value=o.sailingFrom||'';
+  }
   const op=document.getElementById('f-operator');
   if(op) op.value = o.operator || '';
   const logoDisplay=document.getElementById('f-logo-display');
