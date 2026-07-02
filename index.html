@@ -2372,7 +2372,7 @@ function sv(i){
 function save(){
   if(typeof isOfferLocked==="function" && isOfferLocked(cur)) return;
   FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e) offers[cur][f]=e.value; });
-  const sf=document.getElementById("f-sailingFrom"); if(sf && offers[cur]._sailingFromManual===undefined) offers[cur]._sailingFromManual=String(sf.value||"").trim()!==getAutoSailingFromForPorts(offers[cur].ports||"");
+  const sf=document.getElementById("f-sailingFrom"); if(sf && offers[cur]._sailingFromManual===undefined) offers[cur]._sailingFromManual=String(sf.value||"").trim()!==(typeof getAutoSailingFromForOffer==="function"?getAutoSailingFromForOffer(offers[cur]):getAutoSailingFromForPorts(offers[cur].ports||""));
   const op=document.getElementById("f-operator"); if(op) offers[cur].operator=op.value;
   const logoDisplay=document.getElementById("f-logo-display"); if(logoDisplay) offers[cur]._logoDisplay=logoDisplay.value||"operator";
 }
@@ -3766,13 +3766,23 @@ function runSpellQA(){
       :`Passive checks only — review: ${qaIssues.join(' · ')}.`;
   }
 }
+function getRenderedDestinationFitWarning(ports,options){
+  const rendered=(typeof getRenderedItineraryPorts==="function"?getRenderedItineraryPorts(ports):String(ports||"").split("•").map(s=>s.trim()).filter(Boolean));
+  const count=rendered.length;
+  if(!count) return "";
+  const lines=(typeof packItineraryLines==="function"?packItineraryLines(rendered,options):[rendered]);
+  const renderedText=rendered.join(" • ");
+  const longestLine=(lines||[]).reduce((max,line)=>Math.max(max,String((Array.isArray(line)?line.join(" • "):line)||"").length),0);
+  if(count>=10) return `⚠ ${count} destinations shown — check card fit`;
+  if((lines||[]).length>VISIT_SECTION_NORMAL_LINES || longestLine>120 || renderedText.length>180) return "⚠ Long destination list — check card fit";
+  return "";
+}
 function checkPortsWarn(){
   const ports=(document.getElementById("f-ports")||{}).value||"";
   const panel=document.getElementById("ports-warn"); const warns=[];
   if(ports&&!ports.includes("•")&&ports.includes(",")) warns.push("⚠ Ports appear comma-separated — please use • instead");
-  const displayPorts=(typeof cleanPortsDisplay==="function"?cleanPortsDisplay(ports):ports);
-  const count=displayPorts?displayPorts.split("•").map(s=>s.trim()).filter(Boolean).length:0;
-  if(count>9) warns.push("⚠ "+count+" ports shown — may be too long for card");
+  const destinationWarning=(typeof getRenderedDestinationFitWarning==="function"?getRenderedDestinationFitWarning(ports):"");
+  if(destinationWarning) warns.push(destinationWarning);
   if(warns.length){ panel.textContent=warns.join(" · "); panel.classList.add("active"); }
   else{ panel.textContent=""; panel.classList.remove("active"); }
 }
@@ -8751,7 +8761,7 @@ function saveEditorToOffer(){
     const e=document.getElementById('f-'+f);
     if(e) o[f]=e.value;
   });
-  const sf=document.getElementById('f-sailingFrom'); if(sf && o._sailingFromManual===undefined) o._sailingFromManual=String(sf.value||"").trim()!==getAutoSailingFromForPorts(o.ports||"");
+  const sf=document.getElementById('f-sailingFrom'); if(sf && o._sailingFromManual===undefined) o._sailingFromManual=String(sf.value||"").trim()!==(typeof getAutoSailingFromForOffer==="function"?getAutoSailingFromForOffer(o):getAutoSailingFromForPorts(o.ports||""));
   const op=document.getElementById('f-operator');
   if(op) o.operator=op.value;
   syncTopBarUspManualState(o);

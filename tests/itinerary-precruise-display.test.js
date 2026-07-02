@@ -75,6 +75,7 @@ function createRenderContext() {
     extractConstant('ITINERARY_SAFE_WIDTH'),
     extractConstant('ITINERARY_FONT'),
     extractConstant('ITINERARY_SEPARATOR'),
+    extractConstant('VISIT_SECTION_NORMAL_LINES'),
     extractFunction('normaliseDestinationName'),
     extractFunction('cleanPortsDisplay'),
     extractConstant('RETURN_EMBARKATION_PORTS'),
@@ -92,6 +93,7 @@ function createRenderContext() {
     extractFunction('isEmbarkationPortForVisitRemoval'),
     extractFunction('isUkHomeportExcludedFromVisit'),
     extractFunction('getRenderedItineraryPorts'),
+    extractFunction('getRenderedDestinationFitWarning'),
     extractFunction('cleanEmbarkationPortDisplay'),
     extractFunction('getEmbarkationPort'),
     extractFunction('getEmbarkationPortCardDisplay'),
@@ -167,6 +169,25 @@ test('destination normalisation improves readability without trailing bullet opp
 });
 
 
+
+
+test('rendered destination fit warning counts customer-facing destinations only', () => {
+  const { getRenderedDestinationFitWarning, getRenderedItineraryPorts } = createRenderContext();
+
+  const ports = 'Barcelona • Rome, for Civitavecchia • Sicily, for Messina • Madeira, for Funchal • Florence/Pisa, La Spezia, Italy • At Sea • Barcelona';
+  assert.equal(JSON.stringify(getRenderedItineraryPorts(ports)), JSON.stringify([
+    'Barcelona',
+    'Rome, for Civitavecchia',
+    'Sicily, for Messina',
+    'Madeira, for Funchal',
+    'Florence/Pisa, La Spezia, Italy'
+  ]));
+  assert.equal(getRenderedDestinationFitWarning(ports), '');
+
+  const tenRendered = 'Barcelona • Rome, for Civitavecchia • Sicily, for Messina • Madeira, for Funchal • Florence/Pisa, La Spezia, Italy • Naples • Palma • Valencia • Lisbon • Vigo';
+  assert.equal(getRenderedDestinationFitWarning(tenRendered), '⚠ 10 destinations shown — check card fit');
+  assert.doesNotMatch(getRenderedDestinationFitWarning(tenRendered), /ports shown/);
+});
 
 test('cruise gateway departure intelligence maps sailing text only', () => {
   const { getSailingFromDisplay, getEmbarkationPortCardDisplay, renderCardHTML } = createRenderContext();
