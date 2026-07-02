@@ -106,6 +106,7 @@ function runImportFunctions(context) {
     extractFunction('setMultiOfferStatus'),
     extractFunction('getParsedOfferMissingCount'),
     extractFunction('clampParseConfidenceScore'),
+    extractFunction('getMultiOfferImportQualityResult'),
     extractFunction('applyParsedOfferToSlot'),
     extractFunction('performMultiOfferImport')
   ].join('\n'), context);
@@ -570,6 +571,7 @@ Norwegian Fjords` };
     extractFunction('setMultiOfferStatus'),
     extractFunction('getParsedOfferMissingCount'),
     extractFunction('clampParseConfidenceScore'),
+    extractFunction('getMultiOfferImportQualityResult'),
     extractFunction('applyParsedOfferToSlot'),
     extractFunction('performMultiOfferImport')
   ].join('\n'), context);
@@ -583,8 +585,49 @@ Norwegian Fjords` };
 
 test('Multi Offer Import status rows use the clamped confidence score for display', () => {
   const performMultiOfferImport = extractFunction('performMultiOfferImport');
-  assert.match(performMultiOfferImport, /Confidence \$\{clampParseConfidenceScore\(result\.score\)\}/);
+  assert.match(performMultiOfferImport, /Confidence \$\{clampParseConfidenceScore\(quality\.score\)\}/);
   assert.doesNotMatch(performMultiOfferImport, /Confidence \$\{result\.score\}/);
+});
+
+test('Multi Offer Import loaded status includes raw destination typo QA warnings and lowers displayed confidence', () => {
+  const result = { innerHTML: '', className: '' };
+  const field = { value: `Celebrity Cruises
+Celebrity Apex
+Mediterranean Discovery
+7 nights
+Full Board
+£999
+Barcelona, Span
+Florence/Pisa, Laspezia, Italy` };
+  const parsedBlocks = [];
+  const context = createImportContext(field, result, parsedBlocks);
+  context.parseOfferText = (block) => {
+    parsedBlocks.push(block);
+    return {
+      parsed: {
+        operatorKey: 'celebrity',
+        name: 'Mediterranean Discovery',
+        ship: 'Celebrity Apex',
+        day: '12',
+        month: 'June 2027',
+        nights: '7',
+        price: '999',
+        boardlbl: 'Full Board',
+        ports: 'Barcelona • La Spezia • Italy'
+      },
+      confidence: 'high',
+      score: 100
+    };
+  };
+  context.getOfferIntelligenceQualityDetails = () => ({ score: 88, spellingIssues: [{ token: 'Span', suggestion: 'Spain' }, { token: 'Laspezia', suggestion: 'La Spezia' }] });
+  runImportFunctions(context);
+
+  context.performMultiOfferImport(false);
+
+  assert.match(result.innerHTML, /Offer 1 Loaded/);
+  assert.match(result.innerHTML, /Confidence 88 · 0 missing fields · 2 QA warnings/);
+  assert.doesNotMatch(result.innerHTML, /Confidence 100 · 0 missing fields(?:<|$)/);
+  assert.match(result.className, /partial/);
 });
 
 test('Multi Offer Import clears stale hero data on imported slots', () => {
