@@ -354,6 +354,15 @@ test('Destination spelling QA catches required pasted destination typo regressio
     'Laspezia->La Spezia'
   ]);
 
+  const renderedIssues = vm.runInContext('getDestinationSpellingIssues(parsed, raw)', Object.assign(context, {
+    parsed: { ports: 'Barcelona • Span • Florence/Pisa Laspezia Italy' },
+    raw: 'You’ll Visit: Barcelona • Span • Florence/Pisa Laspezia Italy'
+  }));
+  assert.deepEqual(JSON.parse(JSON.stringify(renderedIssues.map(issue => `${issue.token}->${issue.suggestion}`))), [
+    'Span->Spain',
+    'Laspezia->La Spezia'
+  ]);
+
   const scoreWithRawTypos = vm.runInContext('getOfferIntelligenceQualityScore(parsed, raw, "celebrity")', Object.assign(context, {
     parsed: { name: 'Mediterranean', ship: 'Celebrity Apex', day: '12', month: 'June 2027', nights: '7', price: '999', boardlbl: 'Full Board', ports: 'Barcelona • La Spezia • Italy' },
     raw: 'Barcelona, Span\nFlorence/Pisa, Laspezia, Italy\nInside Cabin'
