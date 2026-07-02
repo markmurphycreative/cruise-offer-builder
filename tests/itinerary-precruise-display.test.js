@@ -77,6 +77,8 @@ function createRenderContext() {
     extractConstant('ITINERARY_SEPARATOR'),
     extractConstant('VISIT_SECTION_NORMAL_LINES'),
     extractFunction('normaliseDestinationName'),
+    html.slice(html.indexOf('const PORT_COUNTRIES='), html.indexOf('const PORT_REGIONS=')),
+    extractFunction('simplifyDestinationCountrySuffix'),
     extractFunction('cleanPortsDisplay'),
     extractConstant('RETURN_EMBARKATION_PORTS'),
     extractConstant('UK_HOMEPORTS_EXCLUDED_FROM_VISIT'),
@@ -148,7 +150,7 @@ test('destination normalisation improves readability without trailing bullet opp
   const { chunkBullets, cleanPortsDisplay, getEmbarkationPort } = createRenderContext();
 
   assert.equal(cleanPortsDisplay('Piraeus (Athens)'), 'Piraeus, Athens');
-  assert.equal(cleanPortsDisplay('Paris (Le Havre), France'), 'Paris, Le Havre, France');
+  assert.equal(cleanPortsDisplay('Paris (Le Havre), France'), 'Paris, Le Havre');
   assert.equal(cleanPortsDisplay('Souda (for Chania), Crete'), 'Souda, Chania, Crete');
   assert.equal(cleanPortsDisplay('Mykonos (overnight)'), 'Mykonos');
   assert.equal(getEmbarkationPort('Piraeus (Athens) • Mykonos • Piraeus (Athens)'), 'Piraeus');
@@ -171,6 +173,18 @@ test('destination normalisation improves readability without trailing bullet opp
 
 
 
+test('destination rendering removes redundant country suffixes while preserving port clarifications', () => {
+  const { getRenderedItineraryPorts, chunkBullets } = createRenderContext();
+
+  assert.equal(JSON.stringify(getRenderedItineraryPorts('Southampton • Stavanger, Norway • Alesund, Norway • Olden, Norway • Geiranger, Norway • Southampton')), JSON.stringify(['Stavanger', 'Alesund', 'Olden', 'Geiranger']));
+  assert.equal(JSON.stringify(getRenderedItineraryPorts('Barcelona • Dubrovnik, Croatia • Split, Croatia • Corfu, Greece • Naples, Italy')), JSON.stringify(['Barcelona', 'Dubrovnik', 'Split', 'Corfu', 'Naples']));
+  assert.equal(JSON.stringify(getRenderedItineraryPorts('Miami • Nassau, Bahamas • San Juan, Puerto Rico • Philipsburg, Sint Maarten')), JSON.stringify(['Miami', 'Nassau', 'San Juan', 'Philipsburg']));
+  assert.equal(JSON.stringify(getRenderedItineraryPorts('Copenhagen • Stockholm, Sweden • Helsinki, Finland • Tallinn, Estonia')), JSON.stringify(['Copenhagen', 'Stockholm', 'Helsinki', 'Tallinn']));
+  assert.equal(JSON.stringify(getRenderedItineraryPorts('Singapore • Bangkok, Thailand • Ho Chi Minh City, Vietnam')), JSON.stringify(['Singapore', 'Bangkok, Thailand', 'Ho Chi Minh City, Vietnam']));
+  assert.equal(JSON.stringify(getRenderedItineraryPorts('Rome, for Civitavecchia • Nice, for Villefranche • Florence/Pisa, La Spezia, Italy')), JSON.stringify(['Rome, for Civitavecchia', 'Nice, for Villefranche', 'Florence/Pisa, La Spezia']));
+  assert.match(chunkBullets('Dubrovnik, Croatia • Split, Croatia • Corfu, Greece • Naples, Italy'), /Dubrovnik<\/span> <span class="port-separator">•<\/span> <span class="port-unit">Split/);
+});
+
 test('rendered destination fit warning counts customer-facing destinations only', () => {
   const { getRenderedDestinationFitWarning, getRenderedItineraryPorts } = createRenderContext();
 
@@ -180,7 +194,7 @@ test('rendered destination fit warning counts customer-facing destinations only'
     'Rome, for Civitavecchia',
     'Sicily, for Messina',
     'Madeira, for Funchal',
-    'Florence/Pisa, La Spezia, Italy'
+    'Florence/Pisa, La Spezia'
   ]));
   assert.equal(getRenderedDestinationFitWarning(ports), '');
 
@@ -189,11 +203,28 @@ test('rendered destination fit warning counts customer-facing destinations only'
   assert.doesNotMatch(getRenderedDestinationFitWarning(tenRendered), /ports shown/);
 });
 
+test('sailing from regression routes auto-fill for protected Celebrity examples', () => {
+  const { getSailingFromDisplay, renderCardHTML } = createRenderContext();
+  const cases=[
+    {ship:'Celebrity Ascent', ports:'Rome, for Civitavecchia • Naples', sailingFrom:'Rome'},
+    {ship:'Celebrity Apex', ports:'Southampton • Vigo • Southampton', sailingFrom:'Southampton'},
+    {ship:'Celebrity Xcel', ports:'Barcelona • Marseille • Barcelona', sailingFrom:'Barcelona'}
+  ];
+  for(const scenario of cases){
+    assert.equal(getSailingFromDisplay({ ship: scenario.ship, ports: scenario.ports }), scenario.sailingFrom);
+    assert.match(renderCardHTML({ name:'Cruise', ship: scenario.ship, ports: scenario.ports }), new RegExp(`Sailing on ${scenario.ship} from ${scenario.sailingFrom}`));
+  }
+});
+
 test('cruise gateway departure intelligence maps sailing text only', () => {
   const { getSailingFromDisplay, getEmbarkationPortCardDisplay, renderCardHTML } = createRenderContext();
 
   assert.equal(getSailingFromDisplay({ ports: 'Rome, for Civitavecchia • Naples' }), 'Rome');
   assert.equal(getSailingFromDisplay({ ports: 'Ravenna • Split' }), 'Venice');
+  assert.equal(getSailingFromDisplay({ ports: 'Villefranche • Marseille' }), 'Nice');
+  assert.equal(getSailingFromDisplay({ ports: 'La Spezia • Naples' }), 'Florence/Pisa');
+  assert.equal(getSailingFromDisplay({ ports: 'Warnemünde • Copenhagen' }), 'Berlin');
+  assert.equal(getSailingFromDisplay({ ports: 'Tilbury • Amsterdam' }), 'London');
   assert.equal(getSailingFromDisplay({ ports: 'Southampton • Lisbon' }), 'Southampton');
   assert.equal(getSailingFromDisplay({ ports: 'Barcelona • Marseille' }), 'Barcelona');
   assert.equal(getSailingFromDisplay({ ports: 'Rome, for Civitavecchia • Naples', sailingFrom: 'Ancient Rome', _sailingFromManual: true }), 'Ancient Rome');
@@ -510,14 +541,14 @@ test('strict PMU: rendered You\'ll Visit excludes only UK homeports while preser
       label: 'Port of Tyne sailing display',
       data: { ship: 'Queen Anne', ports: 'Port of Tyne • Amsterdam, Netherlands • Bergen, Norway • Olden, Norway • Port of Tyne' },
       sailing: 'Sailing on Queen Anne from Port of Tyne',
-      expected: ['Amsterdam, Netherlands', 'Bergen, Norway', 'Olden, Norway'],
+      expected: ['Amsterdam', 'Bergen', 'Olden'],
       forbidden: ['Port of Tyne', 'Newcastle', 'Southampton', 'Dover']
     },
     {
       label: 'Newcastle upon Tyne alias',
       data: { ship: 'Queen Anne', ports: 'Newcastle upon Tyne • Amsterdam, Netherlands • Newcastle upon Tyne' },
       sailing: 'Sailing on Queen Anne from Port of Tyne',
-      expected: ['Amsterdam, Netherlands'],
+      expected: ['Amsterdam'],
       forbidden: ['Newcastle upon Tyne', 'Newcastle', 'Port of Tyne']
     },
     {
