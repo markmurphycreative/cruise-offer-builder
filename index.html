@@ -1197,10 +1197,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <span class="autosave-status" id="autosave-status" aria-live="polite" hidden>Autosave paused</span>
     <div class="ptool">
       <span>Zoom</span>
-      <input type="range" min="10" max="70" value="32" oninput="setZoom(this.value)" id="zoom-slider">
+      <input type="range" min="10" max="150" value="32" oninput="setZoom(this.value)" id="zoom-slider">
       <span class="pval" id="zoom-val" aria-live="polite" hidden>32%</span>
       <span class="zoom-input-wrap">
-        <input class="zoom-input" id="zoom-input" type="text" inputmode="numeric" pattern="[0-9%]*" data-min="10" data-max="70" value="32" aria-label="Preview zoom percentage" onkeydown="handleZoomInputKeydown(event)" onblur="commitZoomInput()"><span class="zoom-input-suffix" aria-hidden="true">%</span>
+        <input class="zoom-input" id="zoom-input" type="text" inputmode="numeric" pattern="[0-9%]*" data-min="10" data-max="150" value="32" aria-label="Preview zoom percentage" onkeydown="handleZoomInputKeydown(event)" onblur="commitZoomInput()"><span class="zoom-input-suffix" aria-hidden="true">%</span>
       </span>
       <button class="zoom-reset" id="zoom-reset" type="button" onclick="resetPreviewZoom()" aria-label="Reset preview zoom">Reset</button>
     </div>
@@ -9567,7 +9567,9 @@ function renderPreviewMode(skipSave){
     const gridW = (1200 * columnCount) + (gap * (columnCount - 1)) + (pad * 2);
 
     const grid = document.createElement('div');
-    grid.style.cssText = 'display:grid;grid-template-columns:' + Array(columnCount).fill('1200px').join(' ') + ';gap:' + gap + 'px;width:' + gridW + 'px;background:transparent;padding:' + pad + 'px;align-items:start;justify-content:center;';
+    const allScale = baseScale * SINGLE_PREVIEW_SCALE;
+    grid.className = 'all-preview-grid';
+    grid.style.cssText = 'display:grid;grid-template-columns:' + Array(columnCount).fill('1200px').join(' ') + ';gap:' + gap + 'px;width:' + gridW + 'px;background:transparent;padding:' + pad + 'px;align-items:start;justify-content:center;transform:scale(' + allScale + ');transform-origin:top center;will-change:transform;';
 
     loadedPreviewOffers.forEach(function(item, loadedIndex){
       const d = item.data;
@@ -9594,7 +9596,8 @@ function renderPreviewMode(skipSave){
     out.appendChild(grid);
 
     const fullH = grid.offsetHeight || out.offsetHeight || 4600;
-    setScalerBox(gridW, fullH, baseScale * SINGLE_PREVIEW_SCALE);
+    setScalerBox(gridW, fullH, 1);
+    scaler.style.height = Math.ceil(fullH * allScale) + 'px';
     return;
   }
 
