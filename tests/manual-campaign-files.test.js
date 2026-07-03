@@ -84,7 +84,7 @@ test('campaign parser accepts builder files and rejects malformed, foreign and i
   assert.equal(context.parseCampaignFileText(JSON.stringify({ projectType: 'cruise-offer-builder-project', offers: [{}, {}, {}, {}] })).isLegacyProject, true);
 });
 
-test('restoring a four-card campaign preserves order, active offer and safe view mode, refreshes through session hydration and writes autosave', () => {
+test('restoring a four-card campaign preserves order and view mode but defaults active offer to Offer 1', () => {
   const elements = { 'sheets-url': { value: '' } };
   const stored = new Map();
   const calls = [];
@@ -114,7 +114,7 @@ test('restoring a four-card campaign preserves order, active offer and safe view
   });
   const restored = calls.find(call => Array.isArray(call) && call[0] === 'apply')[1];
   assert.deepEqual(Array.from(restored.offers, offer => offer.name), ['First', 'Second', 'Third', 'Fourth']);
-  assert.equal(restored.cur, 2);
+  assert.equal(restored.cur, 0);
   assert.equal(restored.viewMode, 'email');
   assert.equal(stored.get('sheet'), 'https://docs.google.com/spreadsheets/d/example/edit');
   assert.ok(calls.includes('autosave'));
@@ -158,12 +158,14 @@ test('saved campaign schema explicitly covers app metadata, ordered card state, 
 });
 
 
-test('campaign load reuses the existing restore refresh path for UTMs, preview, QA, filenames and autosave', () => {
+test('campaign load defaults to Offer 1 while preserving restored campaign data and refresh path', () => {
   const restoreSource = extractFunction('refreshAfterRestore');
   for (const expected of ['genUtm();', 'genAllUtms(true);', 'genStandardUtms();', 'updateAllStatus();', 'updateExportFilenames();', 'renderPreviewMode(true);', 'runSpellQA();']) {
     assert.match(restoreSource, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
-  assert.match(extractFunction('restoreCampaignFilePayload'), /allowLargeEmbeddedImagesDuringRestore=true;[\s\S]*?applySessionPayload\(restored\);[\s\S]*?allowLargeEmbeddedImagesDuringRestore=false;[\s\S]*?saveSessionNow\(\);[\s\S]*?resetShortcutFocusAfterImport\(\);/);
+  const restorePayloadSource = extractFunction('restoreCampaignFilePayload');
+  assert.match(restorePayloadSource, /restored\.cur=0;/);
+  assert.match(restorePayloadSource, /allowLargeEmbeddedImagesDuringRestore=true;[\s\S]*?applySessionPayload\(restored\);[\s\S]*?allowLargeEmbeddedImagesDuringRestore=false;[\s\S]*?saveSessionNow\(\);[\s\S]*?resetShortcutFocusAfterImport\(\);/);
 });
 
 

@@ -513,11 +513,15 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .ptool span{font-size:9px;color:rgba(255,255,255,.6);white-space:nowrap;}
 .ptool input[type=range]{accent-color:var(--gold);width:70px;height:3px;}
 .ptool .pval{font-size:9px;color:rgba(255,255,255,.8);min-width:28px;}
+.zoom-input{width:38px;box-sizing:border-box;border:1px solid rgba(255,255,255,.26);border-radius:4px;background:rgba(255,255,255,.08);color:#fff;font-size:9px;font-weight:700;line-height:1;padding:3px 4px;text-align:right;appearance:textfield;}
+.zoom-input::-webkit-outer-spin-button,.zoom-input::-webkit-inner-spin-button{margin:0;appearance:none;}
+.zoom-input:focus{outline:2px solid rgba(160,146,103,.62);outline-offset:1px;border-color:rgba(212,175,55,.72);background:rgba(255,255,255,.14);}
+.zoom-input-suffix{font-size:9px;color:rgba(255,255,255,.7);margin-left:-3px;}
 .zoom-reset{display:none;border:1px solid rgba(212,175,55,.68);border-radius:999px;background:rgba(212,175,55,.18);color:#fff;font-size:9px;font-weight:700;line-height:1;padding:4px 7px;cursor:pointer;}
 .zoom-reset.visible{display:inline-flex;}
 .zoom-reset:hover{background:var(--gold);border-color:#f0d675;color:var(--navy);}
 .view-btns{position:relative;display:flex;flex:0 0 auto;align-items:stretch;border:1px solid rgba(255,255,255,.26);border-radius:6px;overflow:hidden;isolation:isolate;}
-.view-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:4px;background:#d4af37;border:1px solid #f2d56f;box-shadow:0 1px 5px rgba(0,0,0,.28),inset 0 0 0 1px rgba(255,255,255,.24);transform:translateX(0);box-sizing:border-box;pointer-events:none;}
+.view-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:4px;background:linear-gradient(180deg,#d4af37 0%,#b99a32 100%);border:1px solid rgba(240,214,117,.62);box-shadow:0 1px 6px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(83,63,12,.18);transform:translateX(0);box-sizing:border-box;pointer-events:none;}
 .vbtn{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:max-content;box-sizing:border-box;padding:3px 8px;font-size:9px;font-weight:400;line-height:1.2;border:none;background:transparent;color:rgba(255,255,255,.5);letter-spacing:.04em;white-space:nowrap;transition:color .18s ease,font-weight .18s ease;}
 .vbtn:hover:not(.active){color:rgba(255,255,255,.88);}
 .vbtn.active{color:#0e1b2a;font-weight:800;text-shadow:0 1px 0 rgba(255,255,255,.22);}
@@ -1190,6 +1194,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       <span>Zoom</span>
       <input type="range" min="10" max="70" value="32" oninput="setZoom(this.value)" id="zoom-slider">
       <span class="pval" id="zoom-val">32%</span>
+      <input class="zoom-input" id="zoom-input" type="number" min="10" max="70" step="1" value="32" inputmode="numeric" aria-label="Preview zoom percentage" onkeydown="handleZoomInputKeydown(event)" onblur="commitZoomInput()"><span class="zoom-input-suffix" aria-hidden="true">%</span>
       <button class="zoom-reset" id="zoom-reset" type="button" onclick="resetPreviewZoom()" aria-label="Reset preview zoom">Reset</button>
     </div>
     <div class="view-btns">
@@ -6221,7 +6226,7 @@ function restoreCampaignFilePayload(filePayload){
     parsed.heroImages.byCard.forEach(item=>{ if(item && Number.isInteger(item.cardIndex)) restored.lockedHeroImages[item.cardIndex]=!!(item.heroLocked||item.locked); });
   }
   restored.ctaSettings=restored.ctaSettings || parsed.ctaSettings || (typeof CTA_DEFAULTS !== "undefined" ? CTA_DEFAULTS : {enabled:false,text:"Click To Call Us For More Info",phone:"01912229701"});
-  restored.cur=Number.isInteger(restored.activeOfferIndex) ? restored.activeOfferIndex : restored.cur;
+  restored.cur=0;
   allowLargeEmbeddedImagesDuringRestore=true;
   try{ applySessionPayload(restored); }
   finally{ allowLargeEmbeddedImagesDuringRestore=false; }
@@ -8502,16 +8507,42 @@ function setView(v){
   ["single","email","all"].forEach(x=>document.getElementById("vb-"+x).classList.toggle("active",x===v));
   rv();
 }
+function getPreviewZoomBounds(){
+  const slider=document.getElementById("zoom-slider");
+  const min=slider ? parseInt(slider.min,10) : 10;
+  const max=slider ? parseInt(slider.max,10) : 70;
+  return {min:Number.isFinite(min)?min:10,max:Number.isFinite(max)?max:70};
+}
+function normalisePreviewZoomValue(val){
+  const bounds=getPreviewZoomBounds();
+  const parsed=parseInt(val,10);
+  const whole=Number.isFinite(parsed) ? parsed : 32;
+  return Math.min(bounds.max, Math.max(bounds.min, whole));
+}
 function updatePreviewZoomControls(){
-  const value=Number.isFinite(Number(zoomPct))?parseInt(zoomPct,10):32;
+  const value=normalisePreviewZoomValue(zoomPct);
+  zoomPct=value;
   const slider=document.getElementById("zoom-slider");
   const label=document.getElementById("zoom-val");
+  const input=document.getElementById("zoom-input");
   const reset=document.getElementById("zoom-reset");
   if(slider) slider.value=String(value);
   if(label) label.textContent=value+"%";
+  if(input) input.value=String(value);
   if(reset) reset.classList.toggle("visible", value!==32);
 }
-function setZoom(val){ zoomPct=parseInt(val,10); updatePreviewZoomControls(); rv(); }
+function setZoom(val){ zoomPct=normalisePreviewZoomValue(val); updatePreviewZoomControls(); rv(); }
+function commitZoomInput(){
+  const input=document.getElementById("zoom-input");
+  setZoom(input ? input.value : zoomPct);
+}
+function handleZoomInputKeydown(event){
+  if(event.key === "Enter"){
+    event.preventDefault();
+    commitZoomInput();
+    if(event.target && typeof event.target.blur === "function") event.target.blur();
+  }
+}
 function resetPreviewZoom(){ setZoom(32); }
 function currentFormData(){
   const d={...(offers[cur]||{})};
