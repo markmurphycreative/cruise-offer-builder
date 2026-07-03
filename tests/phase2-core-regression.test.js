@@ -175,7 +175,7 @@ test('Phase 2 UTM generation populates values with card order and preserves oper
   assert.equal(context.offers[1].url, 'https://www.dawsonandsanderson.co.uk/cruises');
   assert.equal(context.offers[2].url, 'https://www.dawsonandsanderson.co.uk/cunard');
   assert.equal(context.offers[3].url, 'https://www.dawsonandsanderson.co.uk/cruises');
-  assert.match(elements['utm-generated-list'].innerHTML, /CARD 1/);
+  assert.match(elements['utm-generated-list'].innerHTML, /<strong>Card 1<\/strong>/);
 });
 
 function createAiHarness() {

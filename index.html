@@ -512,11 +512,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .campaign-library-utility{display:grid;gap:4px;}
 .ptool{display:flex;align-items:center;gap:8px;line-height:1.25;}
 .ptool span{font-size:9px;font-weight:300;line-height:1.25;color:rgba(255,255,255,.62);white-space:nowrap;}
-.ptool input[type=range]{accent-color:var(--gold);width:70px;height:2px;cursor:default;appearance:none;background:transparent;display:block;}
-.ptool input[type=range]::-webkit-slider-runnable-track{height:1.5px;border-radius:999px;background:rgba(255,255,255,.24);}
-.ptool input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:3px;height:3px;margin-top:-.75px;border-radius:50%;border:0;background:var(--gold);box-shadow:none;}
-.ptool input[type=range]::-moz-range-track{height:1.5px;border-radius:999px;background:rgba(255,255,255,.24);}
-.ptool input[type=range]::-moz-range-thumb{width:3px;height:3px;border-radius:50%;border:0;background:var(--gold);box-shadow:none;}
+.ptool input[type=range]{accent-color:var(--gold);width:78px;height:18px;cursor:default;appearance:none;background:transparent;display:block;}
+.ptool input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:999px;background:linear-gradient(90deg,rgba(160,146,103,.92),rgba(255,255,255,.24));box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);}
+.ptool input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;margin-top:-4.5px;border-radius:999px;border:1px solid rgba(255,255,255,.72);background:linear-gradient(180deg,#fff 0%,#d8cfb2 100%);box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 2px rgba(160,146,103,.18);}
+.ptool input[type=range]::-moz-range-track{height:3px;border-radius:999px;background:linear-gradient(90deg,rgba(160,146,103,.92),rgba(255,255,255,.24));box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);}
+.ptool input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:999px;border:1px solid rgba(255,255,255,.72);background:linear-gradient(180deg,#fff 0%,#d8cfb2 100%);box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 2px rgba(160,146,103,.18);}
 .ptool .pval{font-size:9px;line-height:1.25;color:#fff;font-weight:300;min-width:26px;text-align:center;cursor:default;background:transparent;border:0;box-shadow:none;padding:0;}
 .toolbar-divider{display:inline-block;width:1px;height:13px;background:rgba(255,255,255,.18);}
 .zoom-input-wrap{display:none;align-items:center;box-sizing:border-box;width:34px;background:transparent;border:0;border-radius:0;box-shadow:none;overflow:visible;}
@@ -537,10 +537,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .vbtn.active::after{opacity:1;transform:scaleX(1);}
 .tbtn{padding:3px 7px;font-size:9px;font-weight:400;border:1px solid rgba(255,255,255,.2);border-radius:3px;background:transparent;color:rgba(255,255,255,.6);margin-left:3px;}
 .tbtn.on{background:rgba(255,255,255,.15);color:#fff;}
-.shortcuts-trigger{position:relative;display:inline-flex;align-items:center;padding:4px 0 5px;font-size:9px;font-weight:300;line-height:1.25;border:0;border-radius:0;background:transparent;color:#fff;box-shadow:none;letter-spacing:.04em;}
-.shortcuts-trigger:hover{color:var(--gold);}
-.shortcuts-trigger.active::after{content:"";position:absolute;left:35%;right:35%;bottom:0;height:1px;background:var(--gold);}
-.shortcuts-trigger:hover{color:var(--gold);background:transparent;}
+.shortcuts-trigger{position:relative;display:inline-flex;align-items:center;justify-content:center;padding:4px 0 5px;font-size:9px;font-weight:300;line-height:1.25;border:0;border-radius:0;background:transparent;color:#fff;box-shadow:none;letter-spacing:.04em;}
+.toolbar-action{position:relative;display:inline-flex;align-items:center;justify-content:center;padding:4px 0 5px;font-size:9px;font-weight:300;line-height:1.25;border:0;border-radius:0;background:transparent;color:#fff;box-shadow:none;letter-spacing:.04em;}
+.shortcuts-trigger:hover,.toolbar-action:hover{color:var(--gold);}
+.shortcuts-trigger.active::after,.toolbar-action.active::after{content:"";position:absolute;left:35%;right:35%;bottom:0;height:1px;background:var(--gold);}
+.shortcuts-trigger:hover,.toolbar-action:hover{color:var(--gold);background:transparent;}
 .preview-wrap{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px;display:flex;justify-content:center;align-items:center;background:#dedad2;transition:background-color .18s ease,box-shadow .18s ease;overscroll-behavior-y:contain;overscroll-behavior-x:none;touch-action:pan-y;}
 .preview-wrap.empty-upload-zone{cursor:pointer;}
 .preview-wrap.empty-upload-zone:hover,.preview-wrap.empty-upload-zone.drag-over{background:#d4d0c7;box-shadow:inset 0 0 0 2px rgba(160,146,103,.48),inset 0 0 0 5px rgba(255,255,255,.28);}
@@ -1038,7 +1039,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
         </div>
         <div class="hero-panel-group" id="itinerary-actions-panel">
           <div class="hero-actions route-map-actions">
-            <button class="abtn btn-compact" onclick="replaceEditableImage('itinerary')">Replace</button>
+            <button class="abtn btn-compact" onclick="replaceEditableImage('itinerary')">Amend / Replace Route Map</button>
             <button class="abtn btn-compact" onclick="centreEditableImage('itinerary')">Centre</button>
             <button class="abtn red btn-compact" onclick="removeEditableImage('itinerary')">Remove</button>
           </div>
@@ -1062,17 +1063,6 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       </div>
     </div>
 
-    <div class="section" data-section-key="standard-utms">
-      <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>Standard UTMs</h3><span class="section-toggle">▾</span>
-      </div>
-      <div class="section-body hidden">
-        <div class="std-utm-list" id="std-utm-list"></div>
-        <div class="utm-btn-row std-utm-actions">
-          <button class="abtn btn-compact" onclick="copyAllUtms()">Copy All UTMs</button>
-        </div>
-      </div>
-    </div>
 
 
     <!-- ── AI COPY ── -->
@@ -1220,6 +1210,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       <button class="vbtn" id="vb-email" onclick="setView(&#39;email&#39;)">Email</button>
       <button class="vbtn active" id="vb-all" onclick="setView(&#39;all&#39;)">All 4</button>
     </div>
+    <button class="toolbar-action" type="button" onclick="newCampaign()">New Campaign</button>
     <button class="shortcuts-trigger" type="button" onclick="openShortcutsModal()" aria-haspopup="dialog">Shortcuts</button>
   </div>
   <div class="preview-wrap">
@@ -9867,18 +9858,20 @@ function renderGeneratedUtmCards(results){
     }
     return;
   }
-  list.innerHTML = valid.map(item => {
+  const campaignRows = buildCampaignUtmRows(results);
+  const standardRows = typeof buildAllStandardUtmRows === "function" ? buildAllStandardUtmRows() : [];
+  list.innerHTML = `<div class="utm-btn-row std-utm-actions"><button class="abtn btn-compact" type="button" onclick="copyAllUtms()">Copy All UTMs</button></div>` + valid.map(item => {
     const parts = getUtmContextParts(item.index);
     const isCurrent = item.index === cur;
     const accent = parts.accent;
     const tint = operatorAccentTint(accent, 0.04);
     const contextTint = operatorAccentTint(accent, 0.025);
     return `<div class="utm-offer-card${isCurrent ? ' utm-current-card' : ''}" role="listitem" style="--utm-operator-accent:${escapeUtmHtml(accent)};--utm-operator-tint:${escapeUtmHtml(tint)};">
-      <div class="utm-context-id" aria-label="${isCurrent ? 'Active' : 'Generated'} UTM context" style="--utm-accent:${escapeUtmHtml(accent)};--utm-accent-tint:${escapeUtmHtml(contextTint)};"><strong>${escapeUtmHtml(parts.meta)}</strong><span>${escapeUtmHtml(parts.title)}</span></div>
+      <div class="utm-context-id" aria-label="${isCurrent ? 'Active' : 'Generated'} UTM context" style="--utm-accent:${escapeUtmHtml(accent)};--utm-accent-tint:${escapeUtmHtml(contextTint)};"><strong>Card ${item.index+1}</strong><span>${escapeUtmHtml(parts.title)}</span></div>
       <div class="utm-visible-output"${isCurrent ? ' id="utm-visible-output" role="status"' : ''}>${escapeUtmHtml(item.result.url)}</div>
       <button class="abtn" type="button" onclick="copyUtm(${item.index}, this)" style="font-size:9px;padding:3px 6px;justify-self:end;">Copy</button>
     </div>`;
-  }).join('');
+  }).join('') + renderSupplementaryUtmRows('Campaign UTMs', campaignRows) + renderSupplementaryUtmRows('Standard UTMs', standardRows);
   const activeOutput = document.getElementById('utm-visible-output');
   if(activeOutput) setUtmVisibleOutput(activeOutput, (valid.find(item => item.index === cur) || valid[0]).result.url);
 }
@@ -9915,18 +9908,45 @@ function copyUtm(index, btn){
 }
 function copyAllUtms(){
   genAllUtms(true);
-  const lines = [0,1,2,3].map(i => {
+  const cardLines = [0,1,2,3].map(i => {
     const result = (offers[i] && offers[i]._utm) ? {url:offers[i]._utm} : buildUtmForOffer(i);
     return `Card ${i+1}:\n${result.url || result.message}`;
-  }).join("\n\n");
+  });
+  const campaignLines = buildCampaignUtmRows(buildAllGeneratedUtmResults()).map(item => `${item.label}:\n${item.utm || "(needs operator, landing page, and send date)"}`);
+  const standardLines = (typeof buildAllStandardUtmRows === "function" ? buildAllStandardUtmRows() : []).map(item => `${item.label}:\n${item.utm || "(needs operator and send date)"}`);
+  const lines = cardLines.concat(campaignLines, standardLines).join("\n\n");
   const visible = document.getElementById("utm-visible-output");
   setUtmVisibleOutput(visible, lines);
   navigator.clipboard.writeText(lines).then(()=>alert("All UTMs copied"));
 }
 
+function buildCampaignUtmRows(results){
+  const heroBase = (document.getElementById("f-url") || {}).value || (offers[cur] || {}).url || "";
+  const heroUtm = (heroBase && typeof buildStandardUtm === "function") ? buildStandardUtm(heroBase, "hero_image") : "";
+  return [
+    {label:"Hero Image", utm:heroUtm && heroUtm.indexOf("http") === 0 ? heroUtm : ""}
+  ];
+}
+function renderSupplementaryUtmRows(title, rows){
+  const visibleRows = (rows || []).filter(Boolean);
+  if(!visibleRows.length) return "";
+  return `<div class="generated-utm-title"><strong>${escapeUtmHtml(title)}</strong></div>` + visibleRows.map((item,idx)=>{
+    const full = item.utm || "(needs operator and send date)";
+    const disabled = full.indexOf("http") === 0 ? "" : " disabled";
+    const copyIdx = title === "Standard UTMs" ? `copyStandardUtm(${idx}, this)` : `copySupplementaryUtm('${escapeUtmHtml(item.label)}', this)`;
+    return `<div class="std-utm-item" role="listitem"><div class="std-utm-head"><strong>${escapeUtmHtml(item.label)}</strong><button class="abtn" type="button" onclick="${copyIdx}" style="font-size:9px;padding:3px 6px;flex:0 0 auto;"${disabled}>Copy</button></div><div class="std-utm-url">${escapeUtmHtml(full)}</div></div>`;
+  }).join("");
+}
+function copySupplementaryUtm(label, btn){
+  const rows = buildCampaignUtmRows(buildAllGeneratedUtmResults());
+  const item = rows.find(row => row.label === label);
+  if(!(item && item.utm)) return alert("This UTM needs operator, landing page, and send date.");
+  navigator.clipboard.writeText(item.utm).then(()=>{ if(btn){ const t=btn.textContent; btn.textContent="✓ Copied"; setTimeout(()=>btn.textContent=t,1600); } });
+}
+
 const STANDARD_UTM_LINKS = [
-  {label:"Homepage / footer logo", url:"https://www.dawsonandsanderson.co.uk/", content:"homepage_logo"},
-  {label:"Award Winning Service", url:"https://www.dawsonandsanderson.co.uk/service-awards", content:"aws"},
+  {label:"Footer Logo", url:"https://www.dawsonandsanderson.co.uk/", content:"footer_logo"},
+  {label:"AWS", url:"https://www.dawsonandsanderson.co.uk/service-awards", content:"aws"},
   {label:"Instagram", url:"https://www.instagram.com/dawsonandsanderson/", content:"instagram"},
   {label:"Facebook", url:"https://www.facebook.com/DawsonandSandersonLtd/", content:"facebook"},
   {label:"TikTok", url:"https://www.tiktok.com/@dawsonandsanderson", content:"tiktok"},
@@ -9955,13 +9975,13 @@ function buildAllStandardUtmRows(){
   });
 }
 
-function copyStandardUtm(idx){
+function copyStandardUtm(idx, btn){
   const link = STANDARD_UTM_LINKS[idx];
   if(!link) return;
   const full = buildStandardUtm(link.url, link.content);
   if(full.indexOf("http") !== 0) return alert("Standard UTMs need operator and send date.");
   navigator.clipboard.writeText(full).then(()=>{
-    const b = document.getElementById(`std-copy-${idx}`);
+    const b = btn || document.getElementById(`std-copy-${idx}`);
     if(b){ const t=b.textContent; b.textContent="✓ Copied"; setTimeout(()=>b.textContent=t,1600); }
   });
 }

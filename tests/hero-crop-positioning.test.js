@@ -276,10 +276,10 @@ test('route map editor exposes only replacement, removal, centering and three ad
   const ctaStart = html.indexOf('<!-- ── CTA ASSETS ── -->', routeMapStart);
   const panel = html.slice(routeMapStart, ctaStart);
 
-  assert.match(panel, /<div class="hero-actions route-map-actions">[\s\S]*onclick="replaceEditableImage\('itinerary'\)">Replace<\/button>[\s\S]*onclick="centreEditableImage\('itinerary'\)">Centre<\/button>[\s\S]*onclick="removeEditableImage\('itinerary'\)">Remove<\/button>[\s\S]*<\/div>/);
+  assert.match(panel, /<div class="hero-actions route-map-actions">[\s\S]*onclick="replaceEditableImage\('itinerary'\)">Amend \/ Replace Route Map<\/button>[\s\S]*onclick="centreEditableImage\('itinerary'\)">Centre<\/button>[\s\S]*onclick="removeEditableImage\('itinerary'\)">Remove<\/button>[\s\S]*<\/div>/);
   assert.match(html, /\.route-map-actions\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\);align-items:stretch;\}/);
   assert.match(html, /\.route-map-actions \.abtn\{display:flex;align-items:center;justify-content:center;min-width:0;\}/);
-  assert.doesNotMatch(panel, /Replace Route Map|Remove Route Map|Centre Image/);
+  assert.doesNotMatch(panel, /Remove Route Map|Centre Image/);
   assert.match(panel, /id="itinerary-crop-zoom"/);
   assert.match(panel, /id="itinerary-crop-x"/);
   assert.match(panel, /id="itinerary-crop-y"/);
