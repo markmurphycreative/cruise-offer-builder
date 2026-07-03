@@ -20,10 +20,13 @@ function extractFunction(name) {
   throw new Error(`Could not extract ${name}`);
 }
 
-test('preview mode active pill uses restrained CB navy and gold styling without yellow fill', () => {
-  assert.match(html, /\.view-pill\{[^}]*background:var\(--navy\);[^}]*border:1px solid rgba\(212,175,55,\.72\);[^}]*box-shadow:inset 0 -2px 0 rgba\(212,175,55,\.38\)/);
-  assert.match(html, /\.vbtn\.active\{color:#fff;font-weight:600;text-shadow:none;\}/);
-  assert.match(html, /\.vbtn\{[^}]*color:rgba\(255,255,255,\.62\);/);
+test('preview mode buttons use restrained navy styling with gold underline active state', () => {
+  assert.match(html, /\.view-btns\{[^}]*border:0;[^}]*background:var\(--navy\);/);
+  assert.match(html, /\.view-pill\{display:none;\}/);
+  assert.match(html, /\.vbtn\{[^}]*font-weight:500;[^}]*background:transparent;[^}]*color:#fff;[^}]*cursor:default;/);
+  assert.match(html, /\.vbtn::after\{[^}]*height:2px;[^}]*background:var\(--gold\);[^}]*opacity:0;/);
+  assert.match(html, /\.vbtn:hover:not\(\.active\)\{color:var\(--gold\);\}/);
+  assert.match(html, /\.vbtn\.active::after\{opacity:1;transform:scaleX\(1\);\}/);
   assert.doesNotMatch(html, /neon|#ff0|background:linear-gradient\(180deg,#d4af37|color:#0e1b2a;font-weight:800/);
 });
 

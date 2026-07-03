@@ -143,8 +143,8 @@ test('Manage Campaigns ships as a modal trigger with campaign lists moved out of
 
 
 test('Manage Campaigns modal supports header-only dragging without persisting position', () => {
-  assert.match(html, /\.manage-campaigns-head\{[^}]*cursor:grab;/);
-  assert.match(html, /\.manage-campaigns-head\.dragging\{cursor:grabbing;\}/);
+  assert.match(html, /\.manage-campaigns-head\{[^}]*cursor:default;/);
+  assert.match(html, /\.manage-campaigns-head\.dragging\{cursor:default;\}/);
   assert.match(html, /initDraggableModal\('manage-campaigns-modal','\.manage-campaigns-modal','\.manage-campaigns-head'\)/);
   assert.match(extractFunction('openManageCampaignsModal'), /resetDraggableModalPosition\("manage-campaigns-modal"\)/);
   assert.doesNotMatch(html, /localStorage\.setItem\([^)]*manage-campaigns-modal|manage-campaigns-modal[^\n]*localStorage/);
