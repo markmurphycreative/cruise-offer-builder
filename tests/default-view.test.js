@@ -37,10 +37,10 @@ test('preview mode switches render immediately without fade, slide, or deferred 
 test('view selector indicator updates instantly while retaining segmented-control styling', () => {
   assert.match(html, /<span class="view-pill" id="view-pill" aria-hidden="true"><\/span>/);
   assert.match(html, /\.view-btns\{[^}]*border-radius:6px;[^}]*\}/);
-  assert.match(html, /\.view-pill\{[^}]*border-radius:4px;[^}]*background:var\(--gold\);[^}]*transform:translateX\(0\);[^}]*pointer-events:none;\}/);
+  assert.match(html, /\.view-pill\{[^}]*border-radius:4px;[^}]*background:#d4af37;[^}]*transform:translateX\(0\);[^}]*pointer-events:none;\}/);
   assert.doesNotMatch(html, /\.view-pill\{[^}]*transition:/);
   assert.doesNotMatch(html, /\.(?:view-btns|view-pill)\{[^}]*border-radius:999px;/);
-  assert.match(html, /\.vbtn\.active\{color:var\(--navy\);\}/);
+  assert.match(html, /\.vbtn\.active\{color:#0e1b2a;font-weight:800;/);
   assert.match(html, /function updateSegmentedPill\(pill, activeButton\)\{[\s\S]*?activeButton\.getBoundingClientRect\(\);[\s\S]*?container\.getBoundingClientRect\(\);[\s\S]*?pill\.style\.width = width \+ 'px';[\s\S]*?pill\.style\.transform = 'translate3d\(' \+ x \+ 'px,0,0\)';/);
   assert.match(html, /syncViewSelector\(\);[\s\S]*?runSpellQA\(\);[\s\S]*?renderPreviewMode\(true\);/);
   assert.match(html, /window\.addEventListener\('resize', queueSegmentedPillSync\);/);
