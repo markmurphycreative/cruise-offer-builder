@@ -345,7 +345,7 @@ test('Multi Offer Import passes the same blocks as individual single-offer parse
 });
 
 test('Multi Offer Import UI and parser reuse hooks are present', () => {
-  assert.match(html, /MULTI OFFER IMPORT/);
+  assert.match(html, /Multi Offer Import/);
   assert.match(html, /<textarea id="multi-offer-paste"[^>]* oninput="handleMultiOfferInput\(event\)"[^>]* onkeydown="handleMultiOfferKeydown\(event\)"/);
   assert.match(html, /Load All Offers/);
   assert.match(extractFunction('performMultiOfferImport'), /parseOfferText\(item\.block,\{renderIntelligence:false\}\)/);

@@ -61,20 +61,20 @@ test('All 4 and Email preview headers expose compact loaded-offer progress', () 
   const { context, title } = createHarness({ offers });
 
   context.updatePreviewTitle();
-  assert.equal(title.textContent, 'ALL 4 CARDS • 2/4 LOADED');
+  assert.equal(title.textContent, 'All 4 Cards • 2/4 Loaded');
 
   context.viewMode = 'email';
   context.updatePreviewTitle();
-  assert.equal(title.textContent, 'EMAIL PREVIEW • 2/4 LOADED');
+  assert.equal(title.textContent, 'Email Preview • 2/4 Loaded');
 
   context.offers.splice(2, 2, createCleanOffer('Three'), createCleanOffer('Four'));
   context.updatePreviewTitle();
-  assert.equal(title.textContent, 'EMAIL PREVIEW • 4/4 LOADED');
+  assert.equal(title.textContent, 'Email Preview • 4/4 Loaded');
 
   context.viewMode = 'all';
   context.offers.splice(0, 4, {}, {}, {}, {});
   context.updatePreviewTitle();
-  assert.equal(title.textContent, 'ALL 4 CARDS');
+  assert.equal(title.textContent, 'All 4 Cards');
 });
 
 test('Single preview header reuses readiness state for the selected offer status', () => {

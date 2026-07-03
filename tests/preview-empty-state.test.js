@@ -33,7 +33,7 @@ function createHarness(offers) {
   const elements = {
     'preview-scaler': { classList: createClassList(), style: {} },
     'card-output': { classList: createClassList(), innerHTML: '' },
-    'preview-title': { textContent: 'ALL 4 CARDS' },
+    'preview-title': { textContent: 'All 4 Cards' },
     'sheets-file': { clickCount: 0, click() { this.clickCount += 1; } },
     'preview-wrap': {
       classList: createClassList(),
@@ -44,7 +44,7 @@ function createHarness(offers) {
   };
   const context = {
     offers,
-    updatePreviewTitle: () => { elements['preview-title'].textContent = 'ALL 4 CARDS'; },
+    updatePreviewTitle: () => { elements['preview-title'].textContent = 'All 4 Cards'; },
     setSheetsStatus: (message, className) => { elements.status = { message, className }; },
     dismissSplashAndShowBuilder: () => { elements.dismissedSplash = true; },
     loadFromCSVFile: event => { elements.loadedFile = event.target.files[0]; if (event._onSuccess) event._onSuccess(); },
@@ -88,7 +88,7 @@ test('fresh previews use the whole blank workspace as a subtle upload zone befor
 
   const { context, elements } = createHarness([{}, {}, {}, {}]);
   assert.equal(context.renderEmptyPreviewIfNeeded(), true);
-  assert.equal(elements['preview-title'].textContent, 'ALL 4 CARDS');
+  assert.equal(elements['preview-title'].textContent, 'All 4 Cards');
   assert.equal(elements['preview-scaler'].classList.contains('empty-preview'), true);
   assert.equal(elements['card-output'].classList.contains('empty-preview-output'), true);
   assert.equal(elements['preview-wrap'].classList.contains('empty-upload-zone'), true);
@@ -104,7 +104,7 @@ test('loaded and session-restored offers bypass the empty upload zone and keep n
   elements['preview-wrap'].classList.add('drag-over');
 
   assert.equal(context.renderEmptyPreviewIfNeeded(), false);
-  assert.equal(elements['preview-title'].textContent, 'ALL 4 CARDS');
+  assert.equal(elements['preview-title'].textContent, 'All 4 Cards');
   assert.equal(elements['preview-scaler'].classList.contains('empty-preview'), false);
   assert.equal(elements['card-output'].classList.contains('empty-preview-output'), false);
   assert.equal(elements['preview-wrap'].classList.contains('empty-upload-zone'), false);
