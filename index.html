@@ -166,6 +166,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .copy-qa-fix-text{overflow-wrap:anywhere;}
 .copy-qa-fix-btn{padding:3px 7px;border-radius:4px;border:1px solid rgba(160,146,103,.45);background:#fff;color:var(--navy);font-size:8px;cursor:pointer;}
 .copy-qa-apply-all{justify-self:start;margin-top:2px;padding:4px 8px;border-radius:4px;border:1px solid var(--gold);background:var(--gold);color:#fff;font-size:8px;cursor:pointer;}
+.copy-qa-passed{font-size:9px;color:var(--green);font-weight:600;line-height:1.35;}
 .hero-restore-note{display:none;margin-top:5px;font-size:9px;color:#8a5000;background:#fff8f0;border:1px solid #f0c080;border-radius:var(--radius);padding:4px 6px;}
 .hero-restore-note.active{display:block;}
 
@@ -452,7 +453,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .section.csv-core-section .section-hdr.collapsed .section-toggle{color:var(--muted);}
 
 /* ── PREVIEW ── */
-.preview-toolbar{background:var(--navy);padding:5px 14px;display:flex;align-items:center;gap:9px;flex-shrink:0;flex-wrap:wrap;}
+.preview-toolbar{background:var(--navy);padding:8px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;}
 .preview-title{color:#fff;font-size:10px;font-weight:400;text-transform:uppercase;letter-spacing:.08em;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .autosave-status{font-size:9px;color:rgba(255,255,255,.72);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:2px 7px;line-height:1.2;white-space:nowrap;}
 .autosave-status.warn{color:#ffe2b0;border-color:rgba(255,203,129,.45);background:rgba(255,166,0,.12);}
@@ -509,13 +510,13 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .campaign-history-actions{display:grid;grid-template-columns:1.16fr 1fr 1fr;gap:4px;margin-top:0;}
 .campaign-history-actions .abtn:first-child{border-color:rgba(160,146,103,.48);box-shadow:0 1px 4px rgba(160,146,103,.16);font-weight:700;}
 .campaign-library-utility{display:grid;gap:4px;}
-.ptool{display:flex;align-items:center;gap:6px;line-height:1.25;}
+.ptool{display:flex;align-items:center;gap:7px;line-height:1.25;}
 .ptool span{font-size:9px;font-weight:400;line-height:1.25;color:rgba(255,255,255,.62);white-space:nowrap;}
 .ptool input[type=range]{accent-color:var(--gold);width:70px;height:2px;cursor:default;appearance:none;background:transparent;}
 .ptool input[type=range]::-webkit-slider-runnable-track{height:1.5px;border-radius:999px;background:rgba(255,255,255,.24);}
-.ptool input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:5px;height:5px;margin-top:-1.75px;border-radius:50%;border:0;background:var(--gold);box-shadow:0 0 0 1px rgba(160,146,103,.18);}
+.ptool input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:4px;height:4px;margin-top:-1.25px;border-radius:50%;border:0;background:var(--gold);box-shadow:none;}
 .ptool input[type=range]::-moz-range-track{height:1.5px;border-radius:999px;background:rgba(255,255,255,.24);}
-.ptool input[type=range]::-moz-range-thumb{width:5px;height:5px;border-radius:50%;border:0;background:var(--gold);box-shadow:0 0 0 1px rgba(160,146,103,.18);}
+.ptool input[type=range]::-moz-range-thumb{width:4px;height:4px;border-radius:50%;border:0;background:var(--gold);box-shadow:none;}
 .ptool .pval{font-size:9px;line-height:1.25;color:#fff;font-weight:400;min-width:28px;text-align:center;cursor:default;}
 .toolbar-divider{display:inline-block;width:1px;height:13px;background:rgba(255,255,255,.18);}
 .zoom-input-wrap{display:none;align-items:center;box-sizing:border-box;width:34px;background:transparent;border:0;border-radius:0;box-shadow:none;overflow:visible;}
@@ -526,7 +527,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .zoom-input-suffix{flex:0 0 auto;font-size:9px;font-weight:400;color:#fff;line-height:1.25;padding:0;}
 .zoom-reset{display:inline-flex;align-items:center;border:0;border-radius:0;background:transparent;color:var(--gold);font-size:9px;font-weight:400;line-height:1.25;padding:4px 0;cursor:default;transition:color .18s ease,opacity .18s ease;}
 .zoom-reset.visible{display:inline-flex;}
-.zoom-reset:hover{background:transparent;border-color:transparent;color:#fff;}
+.zoom-reset:hover{background:transparent;border-color:transparent;color:var(--gold);}
 .view-btns{position:relative;display:flex;flex:0 0 auto;align-items:stretch;gap:8px;border:0;border-radius:0;overflow:visible;isolation:isolate;background:var(--navy);}
 .view-pill{display:none;}
 .vbtn{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:max-content;box-sizing:border-box;padding:4px 0 5px;font-size:9px;font-weight:400;line-height:1.25;border:none;background:transparent;color:#fff;letter-spacing:.04em;white-space:nowrap;cursor:default;transition:color .18s ease,opacity .18s ease;}
@@ -536,8 +537,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .vbtn.active::after{opacity:1;transform:scaleX(1);}
 .tbtn{padding:3px 7px;font-size:9px;font-weight:400;border:1px solid rgba(255,255,255,.2);border-radius:3px;background:transparent;color:rgba(255,255,255,.6);margin-left:3px;}
 .tbtn.on{background:rgba(255,255,255,.15);color:#fff;}
-.shortcuts-trigger{display:inline-flex;align-items:center;padding:4px 0;font-size:9px;font-weight:400;line-height:1.25;border:0;border-radius:0;background:transparent;color:var(--gold);}
-.shortcuts-trigger:hover{color:#fff;background:transparent;}
+.shortcuts-trigger{display:inline-flex;align-items:center;padding:4px 0;font-size:9px;font-weight:400;line-height:1.25;border:0;border-radius:0;background:transparent;color:var(--gold);box-shadow:none;}
+.shortcuts-trigger:hover{color:var(--gold);background:transparent;}
 .preview-wrap{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px;display:flex;justify-content:center;align-items:center;background:#dedad2;transition:background-color .18s ease,box-shadow .18s ease;overscroll-behavior:contain;}
 .preview-wrap.empty-upload-zone{cursor:pointer;}
 .preview-wrap.empty-upload-zone:hover,.preview-wrap.empty-upload-zone.drag-over{background:#d4d0c7;box-shadow:inset 0 0 0 2px rgba(160,146,103,.48),inset 0 0 0 5px rgba(255,255,255,.28);}
@@ -895,7 +896,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
           <div class="copy-qa-status" id="copy-qa-status">— QA not run yet</div>
           <div class="copy-qa-checklist" id="copy-qa-checklist"></div>
           <div class="copy-qa-fixes" id="copy-qa-spelling-fixes" aria-live="polite"></div>
-          <div class="copy-qa-note" id="copy-qa-note">Passive checks only — no auto-correction. Export is never blocked.</div>
+          <div class="copy-qa-note" id="copy-qa-note">Suggestions are optional — export is never blocked.</div>
         </div>
       <div class="export-group export-toolbar-group">
         <div class="export-actions export-toolbar" role="group" aria-label="Exports">
@@ -1189,6 +1190,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       <button class="abtn gold" type="button" onclick="saveCampaignFile()">Save Campaign</button>
       <button class="abtn navy" type="button" onclick="triggerLoadCampaignFile()">Load Campaign</button>
       <input id="campaign-file-input" type="file" accept=".json,application/json" style="display:none" onchange="loadCampaignFile(event)">
+      <button class="abtn" type="button" onclick="newCampaign()">New Campaign</button>
     </div>
     <div class="session-feedback" id="session-feedback" aria-live="polite"></div>
   </div>
@@ -2642,6 +2644,42 @@ function resetAll(){
     onConfirm:()=>{ offers=[{},{},{},{}]; lockedOffers=[false,false,false,false]; lockedHeroImages=[false,false,false,false]; load(cur); refreshOfferUi({utm:false,spell:false,autosave:false}); if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("All offers reset"); }
   });
 }
+function resetBuilderToFreshSession(){
+  offers=[{},{},{},{}];
+  cur=0;
+  viewMode="all";
+  zoomPct=32;
+  lockedOffers=[false,false,false,false];
+  lockedHeroImages=[false,false,false,false];
+  ctaSettings={...CTA_DEFAULTS};
+  poaAppliedSuggestions={};
+  ["g-campaign","g-date","g-description","g-owner","g-airport"].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
+  const terms=document.getElementById("g-terms"); if(terms) terms.value="";
+  const auto=document.getElementById("g-auto-campaign"); if(auto) auto.checked=true;
+  ["raw-paste","multi-offer-paste","sheets-url","f-utm-content"].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
+  ["parse-result","multi-offer-result","sheets-status","utm-out","utm-visible-output","utm-generated-list","utm-panel-title","utm-current-card","copy-qa-checklist"].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=""; });
+  const utmEmpty=document.getElementById("utm-visible-output");
+  if(utmEmpty) utmEmpty.innerHTML='<strong>No UTMs generated yet.</strong>Add offer details and a landing page to generate tracking links.';
+  const utmTitle=document.getElementById("utm-panel-title"); if(utmTitle) utmTitle.textContent="Generated UTMs";
+  if(typeof applyCtaSettings==="function") applyCtaSettings(CTA_DEFAULTS);
+  resetPasteOfferState();
+  load(cur);
+  syncViewSelector();
+  updatePreviewZoomControls();
+  refreshOfferUi({autosave:false});
+  openCsvImportWhenNoOffersLoaded();
+  if(typeof confirmClearSavedSession==="function") confirmClearSavedSession();
+  showSessionFeedback("New campaign ready",false);
+}
+function newCampaign(){
+  openConfirmActionModal({
+    title:"New Campaign?",
+    message:"Clear all current campaign data and start fresh? Saved campaign files will not be affected.",
+    confirmLabel:"New Campaign",
+    destructive:true,
+    onConfirm:()=>resetBuilderToFreshSession()
+  });
+}
 
 // ═══════════════════════════════════════════════════════
 // DROP ZONES
@@ -3626,6 +3664,72 @@ function replaceDestinationIssueInText(text,issue){
   const escaped=token.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
   return String(text||"").replace(new RegExp(`(^|[^A-Za-z0-9])(${escaped})(?=$|[^A-Za-z0-9])`,"gi"),(match,prefix)=>`${prefix}${suggestion}`);
 }
+const QA_TEXT_CORRECTIONS=[
+  {pattern:/\bFlightsLuggageTransfers\b/g,replacement:"Flights • Luggage • Transfers"},
+  {pattern:/\bFlightsLuggage\b/g,replacement:"Flights • Luggage"},
+  {pattern:/\bteh\b/gi,replacement:"the"},
+  {pattern:/\badn\b/gi,replacement:"and"},
+  {pattern:/\bincldued\b/gi,replacement:"included"},
+  {pattern:/\btranfers\b/gi,replacement:"transfers"},
+  {pattern:/\bcaribean\b/gi,replacement:"Caribbean"},
+  {pattern:/\bmartinque\b/gi,replacement:"Martinique"},
+  {pattern:/\bmaartin\b/gi,replacement:"Maarten"}
+];
+function getQaActionableSuggestions(){
+  const suggestions=[];
+  const seen=new Set();
+  const addSuggestion=s=>{
+    if(!s||!s.fieldId||!s.original||!s.replacement) return;
+    const key=[s.fieldId,s.original,s.replacement].join("→").toLowerCase();
+    if(seen.has(key)) return;
+    seen.add(key);
+    suggestions.push(s);
+  };
+  SPELLCHECK_FIELDS.forEach(f=>{
+    if(f.spellcheck===false) return;
+    const el=document.getElementById(f.id);
+    if(!el) return;
+    const value=String(el.value||"");
+    if(!value) return;
+    QA_TEXT_CORRECTIONS.forEach(rule=>{
+      const regex=new RegExp(rule.pattern.source, rule.pattern.flags);
+      let match;
+      while((match=regex.exec(value))){
+        addSuggestion({fieldId:f.id,original:match[0],replacement:rule.replacement,label:f.label,type:"text"});
+        if(!regex.global) break;
+      }
+    });
+    if((f.id==="f-ports"||f.id==="raw-paste")&&typeof getDestinationSpellingIssues==="function"){
+      const issues=getDestinationSpellingIssues(f.id==="f-ports"?{ports:value}:{},value)||[];
+      issues.forEach(issue=>addSuggestion({fieldId:f.id,original:issue.token,replacement:issue.suggestion,label:f.label,type:"destination"}));
+    }
+  });
+  return suggestions.slice(0,12);
+}
+function applyQaSuggestion(index){
+  const suggestion=getQaActionableSuggestions()[Number(index)];
+  if(!suggestion) return false;
+  const el=document.getElementById(suggestion.fieldId);
+  if(!el) return false;
+  const token=String(suggestion.original||"");
+  const replacement=String(suggestion.replacement||"");
+  const escaped=token.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  el.value=String(el.value||"").replace(new RegExp(`(^|[^A-Za-z0-9])(${escaped})(?=$|[^A-Za-z0-9])`,"i"),(match,prefix)=>`${prefix}${replacement}`);
+  if(suggestion.fieldId==="raw-paste"&&offers[cur]) offers[cur][PERSISTED_PASTE_OFFER_KEY]=el.value;
+  if(suggestion.fieldId==="f-ports" && typeof handlePortsInput==="function") handlePortsInput();
+  else up();
+  runSpellQA();
+  return true;
+}
+function applyAllQaSuggestions(){
+  let guard=0;
+  while(getQaActionableSuggestions().length && guard<20){
+    applyQaSuggestion(0);
+    guard++;
+  }
+  runSpellQA();
+  return true;
+}
 function applyDestinationSpellingFix(index){
   const issues=getCurrentDestinationSpellingIssues();
   const issue=issues[Number(index)];
@@ -3655,14 +3759,14 @@ function applyDestinationSpellingFixes(issues,label){
 function renderDestinationSpellingFixes(){
   const host=document.getElementById("copy-qa-spelling-fixes");
   if(!host) return;
-  const issues=getCurrentDestinationSpellingIssues();
-  if(!issues.length){
-    host.innerHTML="";
-    host.classList.remove("active");
+  const suggestions=getQaActionableSuggestions();
+  if(!suggestions.length){
+    host.innerHTML=`<div class="copy-qa-passed">✔ Offer QA passed</div>`;
+    host.classList.add("active");
     return;
   }
-  const rows=issues.map((issue,index)=>`<div class="copy-qa-fix-row"><span class="copy-qa-fix-text"><strong>${escapeQaHtml(issue.token)}</strong> &rarr; ${escapeQaHtml(issue.suggestion)}</span><button class="copy-qa-fix-btn" type="button" onclick="applyDestinationSpellingFix(${index})">Fix</button></div>`).join("");
-  host.innerHTML=`<div class="copy-qa-fixes-title">⚠ ${issues.length} spelling issue${issues.length===1?"":"s"} found</div>${rows}${issues.length>1?`<button class="copy-qa-apply-all" type="button" onclick="applyAllDestinationSpellingFixes()">Apply All</button>`:""}`;
+  const rows=suggestions.map((s,index)=>`<div class="copy-qa-fix-row"><span class="copy-qa-fix-text"><strong>${escapeQaHtml(s.original)}</strong> &rarr; ${escapeQaHtml(s.replacement)}</span><button class="copy-qa-fix-btn" type="button" onclick="applyQaSuggestion(${index})">Apply</button></div>`).join("");
+  host.innerHTML=`<div class="copy-qa-fixes-title">Actionable QA suggestions</div>${rows}${suggestions.length>1?`<button class="copy-qa-apply-all" type="button" onclick="applyAllQaSuggestions()">Apply All</button>`:""}`;
   host.classList.add("active");
 }
 function getQaOperatorKey(){
@@ -7642,7 +7746,7 @@ function getDestinationSpellingTargets(){
   };
   Object.keys(PORT_COUNTRIES||{}).forEach(add);
   Object.values(PORT_COUNTRIES||{}).forEach(add);
-  ["La Spezia","Villefranche","Civitavecchia","Messina","Spain","Italy","Norway","France","Barcelona"].forEach(add);
+  ["La Spezia","Villefranche","Civitavecchia","Messina","Spain","Italy","Norway","France","Barcelona","Naples"].forEach(add);
   return [...targets.entries()].map(([target,display])=>({target,display,compact:target.replace(/\s+/g,"")}));
 }
 function normaliseDestinationSpellingToken(value){
@@ -7652,7 +7756,7 @@ function getDestinationSpellingCandidates(parsed,rawText){
   const values=[];
   const add=value=>{ value=String(value||"").replace(/\s+/g," ").trim(); if(value) values.push(value); };
   const addTypoTokenMatches=text=>{
-    String(text||"").replace(/\b(?:span|barcelonia|laspezia|civitavechia|villefrance|messinna|itlay|norawy)\b/gi,match=>{ add(match); return match; });
+    String(text||"").replace(/\b(?:span|barcelon|barcelonia|napls|laspezia|civitavechia|villefrance|messinna|itlay|norawy)\b/gi,match=>{ add(match); return match; });
   };
   const rawSource=String(rawText||"");
   rawSource.split(/[\n\r]+/).forEach(line=>{
