@@ -66,22 +66,24 @@ test('the default sidebar keeps CSV Import as the only expanded section', () => 
   assert.deepEqual(sections.filter(([, , collapsed]) => !collapsed).map(([, key]) => key), ['csv-import']);
 });
 
-test('CSV Import alone receives the primary navy header treatment with white content and a gold chevron', () => {
-  assert.match(html, /\.section\.csv-core-section \.section-hdr\{background:var\(--navy\);\}/);
-  assert.match(html, /\.section\.csv-core-section \.section-hdr h3\{color:#fff;\}/);
-  assert.match(html, /\.section\.csv-core-section \.section-toggle\{color:var\(--gold\);\}/);
-  assert.doesNotMatch(html, /\.section:not\(\.csv-core-section\) \.section-hdr\{background:var\(--navy\);\}/);
+test('CSV Import uses the same quiet row treatment as the other accordion sections', () => {
+  assert.match(html, /\.section-hdr\{background:transparent;/);
+  assert.match(html, /\.section-hdr h3\{[^}]*color:var\(--navy\);/);
+  assert.match(html, /\.section-hdr:not\(\.collapsed\) \.section-toggle\{color:var\(--navy\);\}/);
+  assert.doesNotMatch(html, /\.section\.csv-core-section \.section-hdr\{background:var\(--navy\);\}/);
+  assert.doesNotMatch(html, /\.section\.csv-core-section \.section-hdr h3\{color:#fff;\}/);
 });
 
-test('the expanded sidebar header receives the primary navy accent without layout or background changes', () => {
+test('the expanded sidebar header receives a subtle gold accent and light tint', () => {
   const rule = extract(/\.section-hdr:not\(\.collapsed\)\{[^}]+\}/, 'expanded sidebar header highlight');
-  assert.match(rule, /box-shadow:inset 4px 0 0 var\(--navy\)/);
-  assert.doesNotMatch(rule, /(?:background|padding|margin|border(?:-width)?|height):/);
+  assert.match(rule, /box-shadow:inset 2px 0 0 var\(--gold\)/);
+  assert.match(rule, /background:#fbfaf7/);
+  assert.doesNotMatch(rule, /(?:padding|margin|border(?:-width)?|height):/);
 });
 
-test('the expanded sidebar header makes the icon more prominent and tints the icon and chevron gold', () => {
-  assert.match(html, /\.section-hdr:not\(\.collapsed\) \.section-icon\{color:var\(--gold\);stroke-width:2\.25;\}/);
-  assert.match(html, /\.section-hdr:not\(\.collapsed\) \.section-toggle\{color:var\(--gold\);\}/);
+test('the expanded sidebar header keeps icon and chevron restrained in navy', () => {
+  assert.match(html, /\.section-hdr:not\(\.collapsed\) \.section-icon\{color:var\(--navy\);stroke-width:2\.05;\}/);
+  assert.match(html, /\.section-hdr:not\(\.collapsed\) \.section-toggle\{color:var\(--navy\);\}/);
 });
 
 test('an empty builder opens CSV Import and collapses every other section without overriding loaded-offer state', () => {
@@ -200,8 +202,8 @@ function extractFunction(name) {
 }
 
 test('sidebar polish adds subtle spacing, compact active-offer context and professional empty states', () => {
-  assert.match(html, /\.section\{margin-bottom:6px;border:1px solid var\(--border\);/);
-  assert.match(html, /\.section-body\{padding:7px 9px;\}/);
+  assert.match(html, /\.section\{margin-bottom:6px;border:0;border-bottom:1px solid rgba\(216,213,206,\.82\);/);
+  assert.match(html, /\.section-body\{padding:8px 10px 11px 17px;background:transparent;border-top:1px solid rgba\(216,213,206,\.48\);\}/);
   assert.match(html, /id="active-offer-label" aria-live="polite">Editing Offer 1 of 4/);
   assert.match(html, /function updateActiveOfferLabel\(\)\{[\s\S]*?label\.textContent=`Editing Offer \$\{cur\+1\} of 4`;/);
   assert.match(html, /<div id="sheets-status" aria-live="polite"><\/div>/);

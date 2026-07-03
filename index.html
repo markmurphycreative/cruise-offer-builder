@@ -94,20 +94,28 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .sb-body::-webkit-scrollbar-thumb{background:var(--border);}
 
 /* ── SECTIONS ── */
-.section{margin-bottom:6px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.section{margin-bottom:6px;border:0;border-bottom:1px solid rgba(216,213,206,.82);border-radius:0;overflow:visible;background:transparent;}
+.section:hover{background:#fbfaf7;}
 .campaign-presets-hidden{display:none;}
-.section-hdr{background:var(--panel);padding:5px 9px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
-.section-hdr:not(.collapsed){box-shadow:inset 4px 0 0 var(--navy);}
-.section-hdr h3{font-size:10px;font-weight:400;text-transform:none;letter-spacing:.03em;color:var(--navy);display:flex;align-items:center;gap:6px;}
+.section-hdr{background:transparent;padding:7px 8px 7px 10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;transition:background .15s ease,box-shadow .15s ease;}
+.section-hdr:hover{background:#faf9f6;}
+.section-hdr:not(.collapsed){background:#fbfaf7;box-shadow:inset 2px 0 0 var(--gold);}
+.section-hdr h3{font-size:10px;font-weight:500;text-transform:none;letter-spacing:.025em;color:var(--navy);display:flex;align-items:center;gap:7px;}
 .section-actions{margin-left:auto;display:flex;align-items:center;gap:8px;}
-.section-icon{width:18px;height:18px;flex-shrink:0;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;transition:color .18s ease,opacity .18s ease;}
+.section-icon{width:16px;height:16px;flex-shrink:0;stroke:currentColor;stroke-width:1.95;stroke-linecap:round;stroke-linejoin:round;fill:none;transition:color .18s ease,opacity .18s ease;}
 .section-hdr.complete .section-icon{color:var(--green);}
-.section-hdr:not(.collapsed) .section-icon{color:var(--gold);stroke-width:2.25;}
-.section-hdr.complete:not(.collapsed) .section-icon{color:var(--gold);stroke-width:2.25;}
-.section-toggle{font-size:10px;color:var(--muted);transition:transform .2s;display:inline-block;}
-.section-hdr:not(.collapsed) .section-toggle{color:var(--gold);}
+.section-hdr:not(.collapsed) .section-icon{color:var(--navy);stroke-width:2.05;}
+.section-hdr.complete:not(.collapsed) .section-icon{color:var(--green);stroke-width:2.05;}
+.section-toggle{font-size:10px;color:var(--muted);transition:transform .2s,color .15s ease;display:inline-block;}
+.section-hdr:not(.collapsed) .section-toggle{color:var(--navy);}
 .section-hdr.collapsed .section-toggle{color:var(--muted);transform:rotate(-90deg);}
-.section-body{padding:7px 9px;}
+.section-body{padding:8px 10px 11px 17px;background:transparent;border-top:1px solid rgba(216,213,206,.48);}
+.csv-import-layout{display:grid;gap:8px;}
+.csv-import-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.csv-import-actions .abtn{flex:0 0 auto;}
+.csv-file-btn{background:#fff;color:var(--navy);border-color:rgba(14,27,42,.16);}
+.csv-load-btn{background:var(--gold);color:#fff;border-color:var(--gold);}
+.csv-sheet-btn{background:#fff;color:var(--navy);border-color:var(--border);}
 .section-body.hidden{display:none;}
 .reorder-group{margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;padding:5px 8px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0;}
 .reorder-title{font-size:10px;font-weight:400;text-transform:none;letter-spacing:.03em;color:var(--navy);display:flex;align-items:center;gap:6px;white-space:nowrap;}
@@ -447,10 +455,6 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .session-feedback{font-size:9px;color:var(--green);text-align:center;margin-top:3px;min-height:12px;opacity:0;transition:opacity .2s ease;}
 .session-feedback.warn{color:#8a5000;}
 .session-feedback.active{opacity:1;}
-.section.csv-core-section .section-hdr{background:var(--navy);}
-.section.csv-core-section .section-hdr h3{color:#fff;}
-.section.csv-core-section .section-toggle{color:var(--gold);}
-.section.csv-core-section .section-hdr.collapsed .section-toggle{color:var(--muted);}
 
 /* ── PREVIEW ── */
 .preview-toolbar{background:var(--navy);padding:8px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;}
@@ -791,14 +795,20 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       <div class="section-hdr" onclick="toggleSec(this)">
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>Campaign Import</h3><span class="section-toggle">▾</span>
       </div>
-      <div class="section-body">
+      <div class="section-body csv-import-layout">
           <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values,.json,application/json" style="display:none">
-          <button class="abtn" onclick="triggerCsvFilePicker()" style="width:100%;background:var(--gold);color:#fff;border-color:var(--gold);">Load Campaign File</button>
-          <div class="field" style="margin-top:6px;">
+          <div class="field">
             <label for="sheets-url">Google Sheet URL</label>
             <input id="sheets-url" type="url" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
           </div>
-          <button class="abtn" onclick="loadFromSheets()" style="width:100%;background:#fff;color:var(--navy);border:1px solid var(--border);">Load Google Sheet</button>
+          <button class="abtn csv-sheet-btn" onclick="loadFromSheets()">Load Google Sheet</button>
+          <div class="field">
+            <label for="sheets-file">Campaign File</label>
+            <div class="csv-import-actions">
+              <button class="abtn csv-file-btn" onclick="triggerCsvFilePicker()">Choose Campaign File</button>
+              <button class="abtn csv-load-btn" onclick="triggerCsvFilePicker()">Load Campaign</button>
+            </div>
+          </div>
           <div id="sheets-status" aria-live="polite"></div>
 
       </div>
