@@ -5,15 +5,15 @@ import test from 'node:test';
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
 test('preview toolbar has restrained active mode styling and always-visible zoom reset control', () => {
-  assert.match(html, /<span class="pval" id="zoom-val" aria-live="polite" hidden>32%<\/span>\s*<span class="zoom-input-wrap">\s*<input class="zoom-input" id="zoom-input" type="text" inputmode="numeric" pattern="\[0-9%\]\*" data-min="10" data-max="150" value="32"[\s\S]*?<span class="zoom-input-suffix" aria-hidden="true">%<\/span>[\s\S]*?<button class="zoom-reset" id="zoom-reset" type="button" onclick="resetPreviewZoom\(\)"/);
+  assert.match(html, /<span class="toolbar-divider" aria-hidden="true"><\/span>\s*<span class="pval" id="zoom-val" aria-live="polite" onclick="beginZoomInputEdit\(\)">32%<\/span>\s*<span class="zoom-input-wrap" id="zoom-input-wrap">\s*<input class="zoom-input" id="zoom-input" type="text" inputmode="numeric" pattern="\[0-9%\]\*" data-min="10" data-max="150" value="32"[\s\S]*?<span class="zoom-input-suffix" aria-hidden="true">%<\/span>[\s\S]*?<button class="zoom-reset" id="zoom-reset" type="button" onclick="resetPreviewZoom\(\)"/);
   assert.match(html, /\.view-btns\{[^}]*border:0;[^}]*background:var\(--navy\);/);
-  assert.match(html, /\.vbtn\.active\{color:#fff;font-weight:500;text-shadow:none;\}/);
+  assert.match(html, /\.vbtn\.active\{color:#fff;font-weight:600;text-shadow:none;\}/);
   assert.match(html, /\.vbtn\.active::after\{opacity:1;transform:scaleX\(1\);\}/);
-  assert.match(html, /\.zoom-input-wrap\{display:inline-flex;[^}]*border:1px solid rgba\(255,255,255,\.18\);[^}]*border-radius:5px;[^}]*background:rgba\(255,255,255,\.06\);/);
-  assert.match(html, /\.zoom-input-wrap:focus-within\{[^}]*border-color:rgba\(212,175,55,\.72\);[^}]*box-shadow:none;/);
+  assert.match(html, /\.zoom-input-wrap\{display:none;[^}]*background:transparent;[^}]*border:0;[^}]*border-radius:0;/);
+  assert.match(html, /\.zoom-input-wrap\.editing\{display:inline-flex;\}/);
   assert.match(html, /\.zoom-reset\{display:inline-flex;[^}]*background:transparent;[^}]*font-weight:500;/);
   assert.match(html, /\.zoom-reset\.visible\{display:inline-flex;\}/);
-  assert.match(html, /function updatePreviewZoomControls\(\)\{[\s\S]*?if\(input\) input\.value=String\(value\);[\s\S]*?if\(reset\) reset\.classList\.add\("visible"\);[\s\S]*?\}/);
+  assert.match(html, /function updatePreviewZoomControls\(\)\{[\s\S]*?if\(input && document\.activeElement !== input\) input\.value=String\(value\);[\s\S]*?if\(reset\) reset\.classList\.add\("visible"\);[\s\S]*?\}/);
   assert.match(html, /function resetPreviewZoom\(\)\{[\s\S]*?setZoom\(32\);[\s\S]*?wrap\.scrollTo\(\{left:0,top:0,behavior:'auto'\}\);[\s\S]*?\}/);
 });
 
