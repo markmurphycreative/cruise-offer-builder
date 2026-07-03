@@ -54,7 +54,7 @@ function createHarness({ savedSource = '', csv = 'operator,offer_name\nP&O,Carib
 
 test('Campaign Import prioritises campaign files and keeps Google Sheets secondary', () => {
   assert.match(html, /<label for="sheets-url">Google Sheet URL<\/label>/);
-  assert.match(html, /onclick="triggerCsvFilePicker\(\)"[^>]*>Load Campaign File<\/button>[\s\S]*?<label for="sheets-url">Google Sheet URL<\/label>[\s\S]*?onclick="loadFromSheets\(\)"[^>]*>Load Google Sheet<\/button>/);
+  assert.match(html, /<label for="sheets-url">Google Sheet URL<\/label>[\s\S]*?onclick="loadFromSheets\(\)"[^>]*>Load Google Sheet<\/button>[\s\S]*?<label for="sheets-file">Campaign File<\/label>[\s\S]*?onclick="triggerCsvFilePicker\(\)"[^>]*>Choose Campaign File<\/button>[\s\S]*?onclick="triggerCsvFilePicker\(\)"[^>]*>Load Campaign<\/button>/);
   assert.doesNotMatch(html, /Refresh Offers/);
   assert.doesNotMatch(html, /onclick="refreshOffers\(\)"/);
   assert.doesNotMatch(html, /Paste CSV URL first/);

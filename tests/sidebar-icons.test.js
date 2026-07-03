@@ -17,7 +17,7 @@ test('every sidebar section heading uses one inline monochrome SVG icon', () => 
     assert.match(heading, /^<svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24">[\s\S]*<\/svg>[^<]+(?:<span class="section-complete"[^>]*>✓<\/span>)?(?:<span class="export-health-count ready" id="export-health-count">Ready<\/span>)?$/);
     assert.doesNotMatch(heading, /\p{Extended_Pictographic}/u);
   });
-  assert.match(html, /\.section-icon\{width:18px;height:18px;flex-shrink:0;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;transition:color \.18s ease,opacity \.18s ease;\}/);
+  assert.match(html, /\.section-icon\{width:16px;height:16px;flex-shrink:0;stroke:currentColor;stroke-width:1\.95;stroke-linecap:round;stroke-linejoin:round;fill:none;transition:color \.18s ease,opacity \.18s ease;\}/);
 });
 
 test('sidebar section names follow the primary workflow and use the requested display labels', () => {
