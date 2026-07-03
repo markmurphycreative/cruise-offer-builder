@@ -9404,6 +9404,16 @@ function setScalerBox(width, renderedHeight, scale){
   scaler.style.height = Math.ceil(renderedHeight * scale) + 'px';
 }
 
+function setAllPreviewCanvasBox(canvasWidth, canvasHeight, scale){
+  const scaler = document.getElementById('preview-scaler');
+  if(!scaler) return;
+  scaler.style.width = Math.ceil(canvasWidth * scale) + 'px';
+  scaler.style.marginInline = 'auto';
+  scaler.style.transform = 'none';
+  scaler.style.transformOrigin = 'top center';
+  scaler.style.height = Math.ceil(canvasHeight * scale) + 'px';
+}
+
 const previewPanState = {
   spaceDown:false,
   dragging:false,
@@ -9569,7 +9579,7 @@ function renderPreviewMode(skipSave){
     const grid = document.createElement('div');
     const allScale = baseScale * SINGLE_PREVIEW_SCALE;
     grid.className = 'all-preview-grid';
-    grid.style.cssText = 'display:grid;grid-template-columns:' + Array(columnCount).fill('1200px').join(' ') + ';gap:' + gap + 'px;width:' + gridW + 'px;background:transparent;padding:' + pad + 'px;align-items:start;justify-content:center;transform:scale(' + allScale + ');transform-origin:top center;will-change:transform;';
+    grid.style.cssText = 'display:grid;grid-template-columns:' + Array(columnCount).fill('1200px').join(' ') + ';gap:' + gap + 'px;width:' + gridW + 'px;background:transparent;padding:' + pad + 'px;align-items:start;justify-content:center;transform:scale(' + allScale + ');transform-origin:top left;will-change:transform;';
 
     loadedPreviewOffers.forEach(function(item, loadedIndex){
       const d = item.data;
@@ -9596,8 +9606,7 @@ function renderPreviewMode(skipSave){
     out.appendChild(grid);
 
     const fullH = grid.offsetHeight || out.offsetHeight || 4600;
-    setScalerBox(gridW, fullH, 1);
-    scaler.style.height = Math.ceil(fullH * allScale) + 'px';
+    setAllPreviewCanvasBox(gridW, fullH, allScale);
     return;
   }
 
