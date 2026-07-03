@@ -25,7 +25,7 @@ test('Reorder Cards is a persistent compact quick control instead of an accordio
   assert.match(reorderGroup, /<div class="reorder-actions"/);
   assert.doesNotMatch(reorderGroup, /section-hdr|section-body|section-toggle|toggleSec|data-section-key="reorder-cards"/);
   assert.match(html, /<div class="offer-context-label empty-hidden" id="active-offer-label"[\s\S]*?<!-- ── REORDER CARDS ── -->[\s\S]*?<div class="sb-body">/);
-  assert.match(html, /\.reorder-title\{[^}]*font-size:10px;[^}]*text-transform:uppercase;[^}]*color:var\(--navy\);/);
+  assert.match(html, /\.reorder-title\{[^}]*font-size:10px;[^}]*text-transform:none;[^}]*color:var\(--navy\);/);
 });
 
 test('Reorder Cards presents compact accessible chevron controls without changing handlers', () => {

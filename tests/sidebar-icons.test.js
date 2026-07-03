@@ -24,7 +24,7 @@ test('sidebar section names follow the primary workflow and use the requested di
   assert.deepEqual(headingLabels, [
     'Campaign Import',
     'Paste Offer',
-    'MULTI OFFER IMPORT',
+    'Multi Offer Import',
     'Offer Details',
     'UTM Link',
     'Export Cards',

@@ -9,9 +9,7 @@ const restrainedActionButtonSelectors = [
   '.export-btn',
   '.abtn',
   '.sb-actions .abtn',
-  '.vbtn',
   '.tbtn',
-  '.shortcuts-trigger',
   '.modal-btn',
   '.session-restore-btn',
   '.summary-btn',
@@ -28,6 +26,9 @@ function cssRuleFor(selector) {
 test('primary builder action buttons use restrained typography', () => {
   restrainedActionButtonSelectors.forEach(selector => {
     assert.match(cssRuleFor(selector), /font-weight:400;/, `${selector} should use font-weight:400`);
+  });
+  ['.vbtn', '.shortcuts-trigger'].forEach(selector => {
+    assert.match(cssRuleFor(selector), /font-weight:300;/, `${selector} should use lighter toolbar typography`);
   });
 });
 
