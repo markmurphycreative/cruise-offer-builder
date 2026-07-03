@@ -523,18 +523,15 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .zoom-reset.visible{display:inline-flex;}
 .zoom-reset:hover{background:var(--gold);border-color:#f0d675;color:var(--navy);}
 .view-btns{position:relative;display:flex;flex:0 0 auto;align-items:stretch;border:1px solid rgba(255,255,255,.26);border-radius:6px;overflow:hidden;isolation:isolate;}
-.view-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:4px;background:linear-gradient(180deg,#d4af37 0%,#b99a32 100%);border:1px solid rgba(240,214,117,.62);box-shadow:0 1px 6px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(83,63,12,.18);transform:translateX(0);box-sizing:border-box;pointer-events:none;}
-.vbtn{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:max-content;box-sizing:border-box;padding:3px 8px;font-size:9px;font-weight:400;line-height:1.2;border:none;background:transparent;color:rgba(255,255,255,.5);letter-spacing:.04em;white-space:nowrap;transition:color .18s ease,font-weight .18s ease;}
+.view-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:4px;background:var(--navy);border:1px solid rgba(212,175,55,.72);box-shadow:inset 0 -2px 0 rgba(212,175,55,.38),inset 0 1px 0 rgba(255,255,255,.06);transform:translateX(0);box-sizing:border-box;pointer-events:none;}
+.vbtn{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:max-content;box-sizing:border-box;padding:3px 8px;font-size:9px;font-weight:400;line-height:1.2;border:none;background:transparent;color:rgba(255,255,255,.62);letter-spacing:.04em;white-space:nowrap;transition:color .18s ease,font-weight .18s ease;}
 .vbtn:hover:not(.active){color:rgba(255,255,255,.88);}
-.vbtn.active{color:#0e1b2a;font-weight:800;text-shadow:0 1px 0 rgba(255,255,255,.22);}
+.vbtn.active{color:#fff;font-weight:600;text-shadow:none;}
 .tbtn{padding:3px 7px;font-size:9px;font-weight:400;border:1px solid rgba(255,255,255,.2);border-radius:3px;background:transparent;color:rgba(255,255,255,.6);margin-left:3px;}
 .tbtn.on{background:rgba(255,255,255,.15);color:#fff;}
 .shortcuts-trigger{padding:3px 7px;font-size:9px;font-weight:400;border:1px solid rgba(255,255,255,.2);border-radius:3px;background:transparent;color:rgba(255,255,255,.72);}
 .shortcuts-trigger:hover{color:#fff;border-color:rgba(255,255,255,.42);}
 .preview-wrap{flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:stretch;background:#dedad2;transition:background-color .18s ease,box-shadow .18s ease;overscroll-behavior:contain;}
-.preview-wrap.pan-ready{cursor:grab;user-select:none;}
-.preview-wrap.panning{cursor:grabbing;scroll-behavior:auto;}
-.preview-wrap.pan-ready *,.preview-wrap.panning *{cursor:inherit!important;user-select:none;}
 .preview-wrap.empty-upload-zone{cursor:pointer;}
 .preview-wrap.empty-upload-zone:hover,.preview-wrap.empty-upload-zone.drag-over{background:#d4d0c7;box-shadow:inset 0 0 0 2px rgba(160,146,103,.48),inset 0 0 0 5px rgba(255,255,255,.28);}
 .preview-scaler{margin-block:auto;transform-origin:top center;will-change:transform;}
@@ -9414,94 +9411,6 @@ function setAllPreviewCanvasBox(canvasWidth, canvasHeight, scale){
   scaler.style.height = Math.ceil(canvasHeight * scale) + 'px';
 }
 
-const previewPanState = {
-  spaceDown:false,
-  dragging:false,
-  moved:false,
-  startX:0,
-  startY:0,
-  startScrollLeft:0,
-  startScrollTop:0
-};
-
-function getPreviewWrap(){
-  return document.querySelector('.preview-wrap');
-}
-
-function canStartPreviewPan(event){
-  if(event && (event.metaKey || event.ctrlKey || event.altKey)) return false;
-  const active = document.activeElement;
-  return !isShortcutBlockedTarget(active) && !isShortcutBlockedTarget(event && event.target);
-}
-
-function setPreviewPanReady(ready){
-  const wrap = getPreviewWrap();
-  if(!wrap) return;
-  previewPanState.spaceDown = !!ready;
-  wrap.classList.toggle('pan-ready', !!ready);
-  if(!ready) endPreviewPanDrag();
-}
-
-function endPreviewPanDrag(){
-  const wrap = getPreviewWrap();
-  previewPanState.dragging = false;
-  if(wrap) wrap.classList.remove('panning');
-}
-
-function initPreviewPanNavigation(){
-  const wrap = getPreviewWrap();
-  if(!wrap || wrap.dataset.panNavigationBound === 'true') return;
-  wrap.dataset.panNavigationBound = 'true';
-
-  document.addEventListener('keydown', function(event){
-    if(event.code !== 'Space' && event.key !== ' ') return;
-    if(!canStartPreviewPan(event)) return;
-    event.preventDefault();
-    setPreviewPanReady(true);
-  }, true);
-
-  document.addEventListener('keyup', function(event){
-    if(event.code !== 'Space' && event.key !== ' ') return;
-    event.preventDefault();
-    setPreviewPanReady(false);
-  }, true);
-
-  wrap.addEventListener('mousedown', function(event){
-    if(!previewPanState.spaceDown || event.button !== 0 || !canStartPreviewPan(event)) return;
-    event.preventDefault();
-    previewPanState.dragging = true;
-    previewPanState.moved = false;
-    previewPanState.startX = event.clientX;
-    previewPanState.startY = event.clientY;
-    previewPanState.startScrollLeft = wrap.scrollLeft;
-    previewPanState.startScrollTop = wrap.scrollTop;
-    wrap.classList.add('panning');
-  });
-
-  window.addEventListener('mousemove', function(event){
-    if(!previewPanState.dragging) return;
-    event.preventDefault();
-    const dx = event.clientX - previewPanState.startX;
-    const dy = event.clientY - previewPanState.startY;
-    if(Math.abs(dx) > 2 || Math.abs(dy) > 2) previewPanState.moved = true;
-    wrap.scrollLeft = previewPanState.startScrollLeft - dx;
-    wrap.scrollTop = previewPanState.startScrollTop - dy;
-  }, {passive:false});
-
-  window.addEventListener('mouseup', function(){
-    endPreviewPanDrag();
-  });
-
-  wrap.addEventListener('click', function(event){
-    if(!previewPanState.moved) return;
-    event.preventDefault();
-    event.stopPropagation();
-    previewPanState.moved = false;
-  }, true);
-
-  window.addEventListener('blur', function(){ setPreviewPanReady(false); });
-}
-
 function renderEmptyPreviewIfNeeded(){
   const scaler = document.getElementById('preview-scaler');
   const out = document.getElementById('card-output');
@@ -10365,7 +10274,6 @@ async function initBuilderApp(){
     window.addEventListener("resize",rv);
     ensureAutosaveInterval();
     window.addEventListener("beforeunload",flushAutosaveBeforeUnload);
-    initPreviewPanNavigation();
     rv();
     updateAllStatus();
     initOfferTabDragDrop();
@@ -10566,7 +10474,6 @@ function isCloseWindowShortcut(event){
 }
 function handleKeyboardShortcut(event){
   if(event.defaultPrevented) return;
-  if(typeof previewPanState !== 'undefined' && previewPanState.spaceDown) return;
   if(isCloseWindowShortcut(event) && closeActiveBuilderModal()){
     event.preventDefault();
     return;
