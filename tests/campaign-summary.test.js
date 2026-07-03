@@ -130,8 +130,8 @@ test('detached campaign summary can live-sync through the shared renderer withou
 });
 
 test('campaign summary modal supports header-only dragging without persisting position', () => {
-  assert.match(html, /\.summary-head\{[^}]*cursor:grab;/);
-  assert.match(html, /\.summary-head\.dragging\{cursor:grabbing;\}/);
+  assert.match(html, /\.summary-head\{[^}]*cursor:default;/);
+  assert.match(html, /\.summary-head\.dragging\{cursor:default;\}/);
   assert.match(html, /initDraggableModal\('summary-modal','\.summary-modal','\.summary-head'\)/);
   assert.match(extractFunction('openSummary'), /resetDraggableModalPosition\("summary-modal"\)/);
   assert.doesNotMatch(html, /localStorage\.setItem\([^)]*summary-modal|summary-modal[^\n]*localStorage/);

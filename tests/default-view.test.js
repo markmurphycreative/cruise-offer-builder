@@ -34,21 +34,18 @@ test('preview mode switches render immediately without fade, slide, or deferred 
   assert.doesNotMatch(html, /renderPreviewMode\(true\);\s*if\(didChange\)/);
 });
 
-test('view selector indicator updates instantly while retaining segmented-control styling', () => {
+test('view selector uses restrained toolbar buttons with an active underline', () => {
   assert.match(html, /<span class="view-pill" id="view-pill" aria-hidden="true"><\/span>/);
-  assert.match(html, /\.view-btns\{[^}]*border-radius:6px;[^}]*\}/);
-  assert.match(html, /\.view-pill\{[^}]*border-radius:4px;[^}]*background:var\(--navy\);[^}]*border:1px solid rgba\(212,175,55,\.72\);[^}]*transform:translateX\(0\);[^}]*pointer-events:none;\}/);
-  assert.doesNotMatch(html, /\.view-pill\{[^}]*transition:/);
-  assert.doesNotMatch(html, /\.(?:view-btns|view-pill)\{[^}]*border-radius:999px;/);
-  assert.match(html, /\.vbtn\.active\{color:#fff;font-weight:600;text-shadow:none;\}/);
-  assert.match(html, /function updateSegmentedPill\(pill, activeButton\)\{[\s\S]*?activeButton\.getBoundingClientRect\(\);[\s\S]*?container\.getBoundingClientRect\(\);[\s\S]*?pill\.style\.width = width \+ 'px';[\s\S]*?pill\.style\.transform = 'translate3d\(' \+ x \+ 'px,0,0\)';/);
+  assert.match(html, /\.view-btns\{[^}]*gap:12px;[^}]*border:0;[^}]*background:var\(--navy\);[^}]*\}/);
+  assert.match(html, /\.view-pill\{display:none;\}/);
+  assert.match(html, /\.vbtn\{[^}]*font-weight:500;[^}]*background:transparent;[^}]*color:#fff;[^}]*cursor:default;/);
+  assert.match(html, /\.vbtn::after\{[^}]*height:2px;[^}]*background:var\(--gold\);[^}]*opacity:0;/);
+  assert.match(html, /\.vbtn:hover:not\(\.active\)\{color:var\(--gold\);\}/);
+  assert.match(html, /\.vbtn\.active\{color:#fff;font-weight:500;text-shadow:none;\}/);
+  assert.match(html, /\.vbtn\.active::after\{opacity:1;transform:scaleX\(1\);\}/);
   assert.match(html, /syncViewSelector\(\);[\s\S]*?runSpellQA\(\);[\s\S]*?renderPreviewMode\(true\);/);
-  assert.match(html, /window\.addEventListener\('resize', queueSegmentedPillSync\);/);
-  assert.match(html, /new ResizeObserver\(queueSegmentedPillSync\)/);
-  assert.match(html, /document\.fonts\.ready\.then\(queueSegmentedPillSync\)/);
   assert.doesNotMatch(html, /\.vbtn\.active\{[^}]*background:/);
 });
-
 
 
 test('Offer 1–4 selector reuses the sliding segmented-control pill while retaining status accents and offer switching hooks', () => {
@@ -90,8 +87,8 @@ test('Single, Email and All 4 previews share the same zoom scaling controls', ()
   assert.match(html, /const EMAIL_PREVIEW_SCALE = 0\.75;/);
   assert.match(html, /const scale = \(zoomPct \/ 100\) \* SINGLE_PREVIEW_SCALE;/);
   assert.match(html, /setScalerBox\(1200, out\.offsetHeight \|\| stackWrap\.offsetHeight, baseScale \* EMAIL_PREVIEW_SCALE\);/);
-  assert.match(html, /const allScale = baseScale \* SINGLE_PREVIEW_SCALE;/);
-  assert.match(html, /transform:scale\(' \+ allScale \+ '\);transform-origin:top left;/);
+  assert.match(html, /const ALL_PREVIEW_SCALE = 0\.68;/);
+  assert.match(html, /const allScale = baseScale \* ALL_PREVIEW_SCALE;/);
   assert.match(html, /setAllPreviewCanvasBox\(gridW, fullH, allScale\);/);
   assert.doesNotMatch(html, /const fitScale = Math\.min\(pane\.w \/ gridW, pane\.h \/ fullH, 0\.32\);/);
 });
@@ -101,7 +98,7 @@ test('preview canvas uses a slightly darker warm neutral background across modes
 });
 
 test('preview layout retains the stable shared canvas treatment without Single-only overrides', () => {
-  assert.match(html, /\.preview-wrap\{[^}]*justify-content:center;[^}]*align-items:stretch;[^}]*background:#dedad2;[^}]*\}/);
+  assert.match(html, /\.preview-wrap\{[^}]*justify-content:center;[^}]*align-items:center;[^}]*background:#dedad2;[^}]*\}/);
   assert.match(html, /\.preview-scaler\{margin-block:auto;transform-origin:top center;will-change:transform;\}/);
   assert.doesNotMatch(html, /single-preview/);
   assert.doesNotMatch(html, /setSinglePreviewCanvasHeight/);
@@ -118,9 +115,9 @@ test('shared preview scaler retains stable dimensions for Email and All 4 layout
 
 
 test('All 4 preview treats the card grid as one zoomed canvas with scaled workspace dimensions', () => {
-  assert.match(html, /function setAllPreviewCanvasBox\(canvasWidth, canvasHeight, scale\)\{[\s\S]*?scaler\.style\.width = Math\.ceil\(canvasWidth \* scale\) \+ 'px';[\s\S]*?scaler\.style\.transform = 'none';[\s\S]*?scaler\.style\.height = Math\.ceil\(canvasHeight \* scale\) \+ 'px';/);
-  assert.match(html, /const allScale = baseScale \* SINGLE_PREVIEW_SCALE;/);
-  assert.match(html, /grid\.style\.cssText = 'display:grid;[\s\S]*?transform:scale\(' \+ allScale \+ '\);transform-origin:top left;/);
+  assert.match(html, /function setAllPreviewCanvasBox\(canvasWidth, canvasHeight, scale\)\{[\s\S]*?scaler\.style\.width = canvasWidth \+ 'px';[\s\S]*?scaler\.style\.transform = 'scale\(' \+ scale \+ '\)';[\s\S]*?scaler\.style\.height = Math\.ceil\(canvasHeight \* scale\) \+ 'px';/);
+  assert.match(html, /const allScale = baseScale \* ALL_PREVIEW_SCALE;/);
+  assert.match(html, /grid\.style\.cssText = 'display:grid;[\s\S]*?justify-content:center;';/);
   assert.match(html, /setAllPreviewCanvasBox\(gridW, fullH, allScale\);/);
   assert.doesNotMatch(html, /all-preview-card[^\n]+transform:scale/);
 });
