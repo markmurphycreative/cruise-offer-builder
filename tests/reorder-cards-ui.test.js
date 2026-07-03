@@ -12,10 +12,10 @@ function extract(pattern, label) {
 
 test('Offer selector, Reorder Cards and scrolling section stack share the sidebar content edges', () => {
   assert.match(html, /\.sidebar\{--sidebar-content-inset:9px;--sidebar-scrollbar-width:3px;--sidebar-content-right-inset:calc\(var\(--sidebar-content-inset\) \+ var\(--sidebar-scrollbar-width\)\);/);
-  assert.match(html, /\.offer-tabs\{[^}]*margin:5px var\(--sidebar-content-right-inset\) 0 var\(--sidebar-content-inset\);[^}]*border:1px solid var\(--border\);/);
+  assert.match(html, /\.offer-tabs\{[^}]*margin:17px var\(--sidebar-content-right-inset\) 0 var\(--sidebar-content-inset\);[^}]*border:1px solid var\(--border\);/);
   assert.match(html, /\.section\{[^}]*margin-bottom:6px;[^}]*border:1px solid var\(--border\);[^}]*border-radius:var\(--radius\);/);
   assert.match(html, /\.reorder-group\{[^}]*margin:5px var\(--sidebar-content-right-inset\) 0 var\(--sidebar-content-inset\);[^}]*border:1px solid var\(--border\);[^}]*background:#fafaf8;/);
-  assert.match(html, /\.sb-body\{[^}]*scrollbar-gutter:stable;[^}]*padding:5px var\(--sidebar-content-inset\) 3px;/);
+  assert.match(html, /\.sb-body\{[^}]*scrollbar-gutter:stable;[^}]*padding:15px var\(--sidebar-content-inset\) 3px;/);
   assert.match(html, /\.sb-body::-webkit-scrollbar\{width:var\(--sidebar-scrollbar-width\);/);
 });
 
