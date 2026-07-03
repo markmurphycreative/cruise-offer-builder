@@ -38,10 +38,10 @@ test('view selector uses restrained toolbar buttons with an active underline', (
   assert.match(html, /<span class="view-pill" id="view-pill" aria-hidden="true"><\/span>/);
   assert.match(html, /\.view-btns\{[^}]*gap:8px;[^}]*border:0;[^}]*background:var\(--navy\);[^}]*\}/);
   assert.match(html, /\.view-pill\{display:none;\}/);
-  assert.match(html, /\.vbtn\{[^}]*font-weight:500;[^}]*background:transparent;[^}]*color:#fff;[^}]*cursor:default;/);
+  assert.match(html, /\.vbtn\{[^}]*font-weight:400;[^}]*line-height:1\.25;[^}]*background:transparent;[^}]*color:#fff;[^}]*cursor:default;/);
   assert.match(html, /\.vbtn::after\{[^}]*height:1px;[^}]*background:rgba\(212,175,55,\.58\);[^}]*opacity:0;/);
   assert.match(html, /\.vbtn:hover:not\(\.active\)\{color:var\(--gold\);\}/);
-  assert.match(html, /\.vbtn\.active\{color:#fff;font-weight:600;text-shadow:none;\}/);
+  assert.match(html, /\.vbtn\.active\{color:#fff;font-weight:500;text-shadow:none;\}/);
   assert.match(html, /\.vbtn\.active::after\{opacity:1;transform:scaleX\(1\);\}/);
   assert.match(html, /syncViewSelector\(\);[\s\S]*?runSpellQA\(\);[\s\S]*?renderPreviewMode\(true\);/);
   assert.doesNotMatch(html, /\.vbtn\.active\{[^}]*background:/);

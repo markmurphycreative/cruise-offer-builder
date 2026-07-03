@@ -284,7 +284,7 @@ test("preview and export paths use matching You'll Visit section-height adjustme
 test('preview wrappers centre cards with auto horizontal margins instead of fixed offsets', () => {
   assert.match(
     html,
-    /\.preview-wrap\{flex:1;overflow:auto;padding:10px;display:flex;justify-content:center;align-items:center;background:#dedad2;/
+    /\.preview-wrap\{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px;display:flex;justify-content:center;align-items:center;background:#dedad2;/
   );
   assert.match(html, /\.preview-scaler\{margin-block:auto;transform-origin:top center;will-change:transform;\}/);
   assert.match(html, /\.preview-scaler\{margin-inline:auto;\}/);

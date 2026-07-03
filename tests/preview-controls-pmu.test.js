@@ -23,7 +23,7 @@ function extractFunction(name) {
 test('preview mode buttons use restrained navy styling with gold underline active state', () => {
   assert.match(html, /\.view-btns\{[^}]*border:0;[^}]*background:var\(--navy\);/);
   assert.match(html, /\.view-pill\{display:none;\}/);
-  assert.match(html, /\.vbtn\{[^}]*font-weight:500;[^}]*background:transparent;[^}]*color:#fff;[^}]*cursor:default;/);
+  assert.match(html, /\.vbtn\{[^}]*font-weight:400;[^}]*line-height:1\.25;[^}]*background:transparent;[^}]*color:#fff;[^}]*cursor:default;/);
   assert.match(html, /\.vbtn::after\{[^}]*height:1px;[^}]*background:rgba\(212,175,55,\.58\);[^}]*opacity:0;/);
   assert.match(html, /\.vbtn:hover:not\(\.active\)\{color:var\(--gold\);\}/);
   assert.match(html, /\.vbtn\.active::after\{opacity:1;transform:scaleX\(1\);\}/);
