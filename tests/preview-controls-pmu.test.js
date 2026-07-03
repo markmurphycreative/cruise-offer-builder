@@ -20,10 +20,11 @@ function extractFunction(name) {
   throw new Error(`Could not extract ${name}`);
 }
 
-test('preview mode active pill uses refined CB gold rather than bright yellow', () => {
-  assert.match(html, /\.view-pill\{[^}]*linear-gradient\(180deg,#d4af37 0%,#b99a32 100%\)/);
-  assert.match(html, /\.vbtn\.active\{color:#0e1b2a;/);
-  assert.doesNotMatch(html, /neon|#ff0|yellow/);
+test('preview mode active pill uses restrained CB navy and gold styling without yellow fill', () => {
+  assert.match(html, /\.view-pill\{[^}]*background:var\(--navy\);[^}]*border:1px solid rgba\(212,175,55,\.72\);[^}]*box-shadow:inset 0 -2px 0 rgba\(212,175,55,\.38\)/);
+  assert.match(html, /\.vbtn\.active\{color:#fff;font-weight:600;text-shadow:none;\}/);
+  assert.match(html, /\.vbtn\{[^}]*color:rgba\(255,255,255,\.62\);/);
+  assert.doesNotMatch(html, /neon|#ff0|background:linear-gradient\(180deg,#d4af37|color:#0e1b2a;font-weight:800/);
 });
 
 test('preview zoom has typed whole-number input synced with slider and reset', () => {
@@ -37,14 +38,8 @@ test('preview zoom has typed whole-number input synced with slider and reset', (
   assert.match(extractFunction('resetPreviewZoom'), /setZoom\(32\)/);
 });
 
-test('preview pan mode uses Spacebar guarded by editable focus protection', () => {
-  assert.match(html, /\.preview-wrap\.pan-ready\{cursor:grab;user-select:none;\}/);
-  assert.match(html, /\.preview-wrap\.panning\{cursor:grabbing;scroll-behavior:auto;\}/);
-  assert.match(html, /const previewPanState = \{[\s\S]*?spaceDown:false,[\s\S]*?dragging:false,/);
-  assert.match(extractFunction('canStartPreviewPan'), /return !isShortcutBlockedTarget\(active\) && !isShortcutBlockedTarget\(event && event\.target\);/);
-  assert.match(extractFunction('initPreviewPanNavigation'), /event\.code !== 'Space' && event\.key !== ' '/);
-  assert.match(extractFunction('initPreviewPanNavigation'), /event\.preventDefault\(\);\n    setPreviewPanReady\(true\);/);
-  assert.match(extractFunction('initPreviewPanNavigation'), /wrap\.scrollLeft = previewPanState\.startScrollLeft - dx;/);
-  assert.match(extractFunction('initPreviewPanNavigation'), /wrap\.scrollTop = previewPanState\.startScrollTop - dy;/);
-  assert.match(extractFunction('handleKeyboardShortcut'), /typeof previewPanState !== 'undefined' && previewPanState\.spaceDown/);
+test('preview pan mode is removed so Spacebar/browser behaviour is restored', () => {
+  assert.doesNotMatch(html, /previewPanState|initPreviewPanNavigation|canStartPreviewPan|setPreviewPanReady|endPreviewPanDrag/);
+  assert.doesNotMatch(html, /preview-wrap\.pan-ready|preview-wrap\.panning|preview-wrap\.pan-ready \*|preview-wrap\.panning \*/);
+  assert.doesNotMatch(extractFunction('handleKeyboardShortcut'), /previewPanState|spaceDown/);
 });
