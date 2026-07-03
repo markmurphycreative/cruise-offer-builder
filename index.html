@@ -513,10 +513,12 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .ptool span{font-size:9px;color:rgba(255,255,255,.6);white-space:nowrap;}
 .ptool input[type=range]{accent-color:var(--gold);width:70px;height:3px;}
 .ptool .pval{font-size:9px;color:rgba(255,255,255,.8);min-width:28px;}
-.zoom-input{width:38px;box-sizing:border-box;border:1px solid rgba(255,255,255,.26);border-radius:4px;background:rgba(255,255,255,.08);color:#fff;font-size:9px;font-weight:700;line-height:1;padding:3px 4px;text-align:right;appearance:textfield;}
+.zoom-input-wrap{display:inline-flex;align-items:center;box-sizing:border-box;width:44px;border:1px solid rgba(255,255,255,.28);border-radius:6px;background:rgba(255,255,255,.09);box-shadow:inset 0 1px 0 rgba(255,255,255,.08);overflow:hidden;transition:border-color .16s ease,background-color .16s ease,box-shadow .16s ease;}
+.zoom-input-wrap:focus-within{border-color:rgba(212,175,55,.78);background:rgba(255,255,255,.14);box-shadow:0 0 0 2px rgba(160,146,103,.36),inset 0 1px 0 rgba(255,255,255,.1);}
+.zoom-input{width:28px;min-width:0;box-sizing:border-box;border:0;background:transparent;color:#fff;font-size:9px;font-weight:800;line-height:1;padding:4px 1px 4px 5px;text-align:right;appearance:textfield;}
 .zoom-input::-webkit-outer-spin-button,.zoom-input::-webkit-inner-spin-button{margin:0;appearance:none;}
-.zoom-input:focus{outline:2px solid rgba(160,146,103,.62);outline-offset:1px;border-color:rgba(212,175,55,.72);background:rgba(255,255,255,.14);}
-.zoom-input-suffix{font-size:9px;color:rgba(255,255,255,.7);margin-left:-3px;}
+.zoom-input:focus{outline:none;}
+.zoom-input-suffix{flex:0 0 auto;font-size:9px;font-weight:800;color:rgba(255,255,255,.74);line-height:1;padding:4px 5px 4px 0;}
 .zoom-reset{display:none;border:1px solid rgba(212,175,55,.68);border-radius:999px;background:rgba(212,175,55,.18);color:#fff;font-size:9px;font-weight:700;line-height:1;padding:4px 7px;cursor:pointer;}
 .zoom-reset.visible{display:inline-flex;}
 .zoom-reset:hover{background:var(--gold);border-color:#f0d675;color:var(--navy);}
@@ -1193,8 +1195,10 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <div class="ptool">
       <span>Zoom</span>
       <input type="range" min="10" max="70" value="32" oninput="setZoom(this.value)" id="zoom-slider">
-      <span class="pval" id="zoom-val">32%</span>
-      <input class="zoom-input" id="zoom-input" type="number" min="10" max="70" step="1" value="32" inputmode="numeric" aria-label="Preview zoom percentage" onkeydown="handleZoomInputKeydown(event)" onblur="commitZoomInput()"><span class="zoom-input-suffix" aria-hidden="true">%</span>
+      <span class="pval" id="zoom-val" aria-live="polite" hidden>32%</span>
+      <span class="zoom-input-wrap">
+        <input class="zoom-input" id="zoom-input" type="text" inputmode="numeric" pattern="[0-9%]*" data-min="10" data-max="70" value="32" aria-label="Preview zoom percentage" onkeydown="handleZoomInputKeydown(event)" onblur="commitZoomInput()"><span class="zoom-input-suffix" aria-hidden="true">%</span>
+      </span>
       <button class="zoom-reset" id="zoom-reset" type="button" onclick="resetPreviewZoom()" aria-label="Reset preview zoom">Reset</button>
     </div>
     <div class="view-btns">

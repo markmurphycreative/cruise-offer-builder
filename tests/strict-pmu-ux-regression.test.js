@@ -5,9 +5,11 @@ import test from 'node:test';
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
 test('preview toolbar has high-contrast active mode styling and zoom reset control', () => {
-  assert.match(html, /<span class="pval" id="zoom-val">32%<\/span>\s*<input class="zoom-input" id="zoom-input" type="number" min="10" max="70" step="1" value="32"[\s\S]*?<button class="zoom-reset" id="zoom-reset" type="button" onclick="resetPreviewZoom\(\)"/);
+  assert.match(html, /<span class="pval" id="zoom-val" aria-live="polite" hidden>32%<\/span>\s*<span class="zoom-input-wrap">\s*<input class="zoom-input" id="zoom-input" type="text" inputmode="numeric" pattern="\[0-9%\]\*" data-min="10" data-max="70" value="32"[\s\S]*?<span class="zoom-input-suffix" aria-hidden="true">%<\/span>[\s\S]*?<button class="zoom-reset" id="zoom-reset" type="button" onclick="resetPreviewZoom\(\)"/);
   assert.match(html, /\.view-pill\{[^}]*background:linear-gradient\(180deg,#d4af37 0%,#b99a32 100%\);[^}]*border:1px solid rgba\(240,214,117,\.62\);[^}]*box-shadow:[^}]*inset/);
   assert.match(html, /\.vbtn\.active\{color:#0e1b2a;font-weight:800;/);
+  assert.match(html, /\.zoom-input-wrap\{display:inline-flex;[^}]*border:1px solid rgba\(255,255,255,\.28\);[^}]*border-radius:6px;[^}]*background:rgba\(255,255,255,\.09\);/);
+  assert.match(html, /\.zoom-input-wrap:focus-within\{[^}]*border-color:rgba\(212,175,55,\.78\);[^}]*box-shadow:0 0 0 2px rgba\(160,146,103,\.36\)/);
   assert.match(html, /\.zoom-reset\{display:none;[^}]*font-weight:700;/);
   assert.match(html, /\.zoom-reset\.visible\{display:inline-flex;\}/);
   assert.match(html, /function updatePreviewZoomControls\(\)\{[\s\S]*?if\(input\) input\.value=String\(value\);[\s\S]*?if\(reset\) reset\.classList\.toggle\("visible", value!==32\);[\s\S]*?\}/);
