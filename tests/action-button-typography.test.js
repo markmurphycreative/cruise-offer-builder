@@ -27,11 +27,7 @@ function cssRuleFor(selector) {
 
 test('primary builder action buttons use restrained typography', () => {
   restrainedActionButtonSelectors.forEach(selector => {
-    if (selector === '.vbtn') {
-      assert.match(cssRuleFor(selector), /font-weight:500;/, `${selector} should use premium preview font-weight:500`);
-    } else {
-      assert.match(cssRuleFor(selector), /font-weight:400;/, `${selector} should use font-weight:400`);
-    }
+    assert.match(cssRuleFor(selector), /font-weight:400;/, `${selector} should use font-weight:400`);
   });
 });
 
