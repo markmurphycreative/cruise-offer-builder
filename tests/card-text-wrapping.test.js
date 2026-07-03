@@ -286,7 +286,7 @@ test('preview wrappers centre cards with auto horizontal margins instead of fixe
     html,
     /\.preview-wrap\{flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:stretch;background:#dedad2;/
   );
-  assert.match(html, /\.preview-scaler\{margin-block:auto;transform-origin:top center;\}/);
+  assert.match(html, /\.preview-scaler\{margin-block:auto;transform-origin:top center;will-change:transform;\}/);
   assert.match(html, /\.preview-scaler\{margin-inline:auto;\}/);
   assert.match(html, /scaler\.style\.marginInline = 'auto';/);
 });
@@ -301,7 +301,7 @@ test("single preview recentres after normal and long You'll Visit height adjustm
 test("email and all-card previews adjust You'll Visit height before measuring centred scaler", () => {
   const renderPreviewMode = extractFunction('renderPreviewMode');
   assert.match(renderPreviewMode, /cardWrap\.innerHTML = renderOfferWithOptionalCtaHTML\(d, getCtaSettingsFromUI\(\)\);\n      adjustVisitSectionHeights\(cardWrap\);[\s\S]*?setScalerBox\(1200, out\.offsetHeight \|\| stackWrap\.offsetHeight, baseScale \* EMAIL_PREVIEW_SCALE\);/);
-  assert.match(renderPreviewMode, /if\(getCtaSettingsFromUI\(\)\.enabled\) c\.innerHTML = renderOfferWithOptionalCtaHTML\(d \|\| \{\}, getCtaSettingsFromUI\(\)\);\n      adjustVisitSectionHeights\(c\);[\s\S]*?setScalerBox\(gridW, fullH, Math\.max\(0\.08, fitScale\)\);/);
+  assert.match(renderPreviewMode, /if\(getCtaSettingsFromUI\(\)\.enabled\) c\.innerHTML = renderOfferWithOptionalCtaHTML\(d \|\| \{\}, getCtaSettingsFromUI\(\)\);\n      adjustVisitSectionHeights\(c\);[\s\S]*?setScalerBox\(gridW, fullH, baseScale \* SINGLE_PREVIEW_SCALE\);/);
 });
 
 test('export and preview centring use fixed 1200 card width without changing export dimensions', () => {

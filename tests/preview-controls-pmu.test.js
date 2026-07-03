@@ -36,3 +36,15 @@ test('preview zoom has typed whole-number input synced with slider and reset', (
   assert.match(extractFunction('handleZoomInputKeydown'), /event\.key === "Enter"[\s\S]*commitZoomInput\(\)/);
   assert.match(extractFunction('resetPreviewZoom'), /setZoom\(32\)/);
 });
+
+test('preview pan mode uses Spacebar guarded by editable focus protection', () => {
+  assert.match(html, /\.preview-wrap\.pan-ready\{cursor:grab;user-select:none;\}/);
+  assert.match(html, /\.preview-wrap\.panning\{cursor:grabbing;scroll-behavior:auto;\}/);
+  assert.match(html, /const previewPanState = \{[\s\S]*?spaceDown:false,[\s\S]*?dragging:false,/);
+  assert.match(extractFunction('canStartPreviewPan'), /return !isShortcutBlockedTarget\(active\) && !isShortcutBlockedTarget\(event && event\.target\);/);
+  assert.match(extractFunction('initPreviewPanNavigation'), /event\.code !== 'Space' && event\.key !== ' '/);
+  assert.match(extractFunction('initPreviewPanNavigation'), /event\.preventDefault\(\);\n    setPreviewPanReady\(true\);/);
+  assert.match(extractFunction('initPreviewPanNavigation'), /wrap\.scrollLeft = previewPanState\.startScrollLeft - dx;/);
+  assert.match(extractFunction('initPreviewPanNavigation'), /wrap\.scrollTop = previewPanState\.startScrollTop - dy;/);
+  assert.match(extractFunction('handleKeyboardShortcut'), /typeof previewPanState !== 'undefined' && previewPanState\.spaceDown/);
+});

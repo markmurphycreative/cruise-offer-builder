@@ -85,13 +85,13 @@ test('Offer 1–4 selector reuses the sliding segmented-control pill while retai
   assert.match(html, /function handleEmptyOfferStateKeydown\(event\)\{[\s\S]*?event\.key!=="Enter"&&event\.key!==" "[\s\S]*?event\.preventDefault\(\);[\s\S]*?openCampaignImportFromEmptyState\(\);/);
 });
 
-test('Single and Email previews display at 75% of their prior on-screen scale while All 4 retains its fit scale', () => {
+test('Single, Email and All 4 previews share the same zoom scaling controls', () => {
   assert.match(html, /const SINGLE_PREVIEW_SCALE = 0\.75;/);
   assert.match(html, /const EMAIL_PREVIEW_SCALE = 0\.75;/);
   assert.match(html, /const scale = \(zoomPct \/ 100\) \* SINGLE_PREVIEW_SCALE;/);
   assert.match(html, /setScalerBox\(1200, out\.offsetHeight \|\| stackWrap\.offsetHeight, baseScale \* EMAIL_PREVIEW_SCALE\);/);
-  assert.match(html, /const fitScale = Math\.min\(pane\.w \/ gridW, pane\.h \/ fullH, 0\.32\);/);
-  assert.match(html, /setScalerBox\(gridW, fullH, Math\.max\(0\.08, fitScale\)\);/);
+  assert.match(html, /setScalerBox\(gridW, fullH, baseScale \* SINGLE_PREVIEW_SCALE\);/);
+  assert.doesNotMatch(html, /const fitScale = Math\.min\(pane\.w \/ gridW, pane\.h \/ fullH, 0\.32\);/);
 });
 
 test('preview canvas uses a slightly darker warm neutral background across modes', () => {
@@ -100,7 +100,7 @@ test('preview canvas uses a slightly darker warm neutral background across modes
 
 test('preview layout retains the stable shared canvas treatment without Single-only overrides', () => {
   assert.match(html, /\.preview-wrap\{[^}]*justify-content:center;[^}]*align-items:stretch;[^}]*background:#dedad2;[^}]*\}/);
-  assert.match(html, /\.preview-scaler\{margin-block:auto;transform-origin:top center;\}/);
+  assert.match(html, /\.preview-scaler\{margin-block:auto;transform-origin:top center;will-change:transform;\}/);
   assert.doesNotMatch(html, /single-preview/);
   assert.doesNotMatch(html, /setSinglePreviewCanvasHeight/);
   assert.doesNotMatch(html, /setPreviewWrapMode/);
@@ -110,7 +110,7 @@ test('preview layout retains the stable shared canvas treatment without Single-o
 test('shared preview scaler retains stable dimensions for Email and All 4 layouts', () => {
   assert.match(html, /function setScalerBox\(width, renderedHeight, scale\)\{[\s\S]*?scaler\.style\.width = width \+ 'px';[\s\S]*?scaler\.style\.transform = 'scale\(' \+ scale \+ '\)';[\s\S]*?scaler\.style\.transformOrigin = 'top center';[\s\S]*?scaler\.style\.height = Math\.ceil\(renderedHeight \* scale\) \+ 'px';/);
   assert.match(html, /setScalerBox\(1200, out\.offsetHeight \|\| stackWrap\.offsetHeight, baseScale \* EMAIL_PREVIEW_SCALE\);/);
-  assert.match(html, /const pane = getPreviewPaneSize\(\);[\s\S]*?const fullH = grid\.offsetHeight \|\| out\.offsetHeight \|\| 4600;[\s\S]*?setScalerBox\(gridW, fullH, Math\.max\(0\.08, fitScale\)\);/);
+  assert.match(html, /const fullH = grid\.offsetHeight \|\| out\.offsetHeight \|\| 4600;[\s\S]*?setScalerBox\(gridW, fullH, baseScale \* SINGLE_PREVIEW_SCALE\);/);
 });
 
 test('preview-only scaling leaves export dimensions unchanged', () => {
