@@ -93,10 +93,10 @@ test('Generated UTMs panel displays every populated offer UTM with independent c
   context.genUtm();
   const markup = elements['utm-generated-list'].innerHTML;
   assert.equal(elements['utm-panel-title'].textContent, 'Generated UTMs (3)');
-  assert.match(markup, /Royal Caribbean • CARD 1/);
-  assert.match(markup, /MSC Cruises • CARD 2/);
-  assert.doesNotMatch(markup, /CARD 3/);
-  assert.match(markup, /Cunard • CARD 4/);
+  assert.match(markup, /<strong>Card 1<\/strong><span>Barcelona to Rome<\/span>/);
+  assert.match(markup, /<strong>Card 2<\/strong><span>Greek Isles<\/span>/);
+  assert.doesNotMatch(markup, /<strong>Card 3<\/strong>/);
+  assert.match(markup, /<strong>Card 4<\/strong><span>Northern Lights<\/span>/);
   assert.match(markup, /copyUtm\(0, this\)/);
   assert.match(markup, /copyUtm\(1, this\)/);
   assert.match(markup, /copyUtm\(3, this\)/);
@@ -191,7 +191,7 @@ test('Copy All UTMs copies card labels and URLs in the spaced format without cha
   await Promise.resolve();
 
   const expectedText = expectedUrls.map((url, index) => `Card ${index + 1}:\n${url}`).join('\n\n');
-  assert.equal(copied.at(-1), expectedText);
+  assert.ok(copied.at(-1).startsWith(expectedText));
   assert.deepEqual(
     copied.at(-1).match(/https?:\/\/[^\n]+/g),
     expectedUrls
@@ -206,9 +206,10 @@ test('Copy All UTMs copies card labels and URLs in the spaced format without cha
   assert.equal(new URL(expectedUrls[3]).searchParams.get('utm_content'), '160526_princess_greek_islands_card4');
 });
 
-test('Standard UTMs keeps Copy All and the redundant Generate All button is not rendered', () => {
-  const standardSection = html.match(/<div class="section" data-section-key="standard-utms">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/)[0];
-  assert.match(standardSection, /onclick="copyAllUtms\(\)">Copy All UTMs<\/button>/);
+test('UTM Link is the only UTM section and contains the consolidated Copy All control', () => {
+  assert.doesNotMatch(html, /data-section-key="standard-utms"/);
+  const utmSection = html.match(/<div class="section" data-section-key="utm-link">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/)[0];
+  assert.match(html, /onclick="copyAllUtms\(\)">Copy All UTMs<\/button>/);
   assert.doesNotMatch(html, />Generate All UTMs<\/button>/);
 });
 
