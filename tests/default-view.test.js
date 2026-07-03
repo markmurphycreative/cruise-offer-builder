@@ -37,7 +37,7 @@ test('preview mode switches render immediately without fade, slide, or deferred 
 test('view selector indicator updates instantly while retaining segmented-control styling', () => {
   assert.match(html, /<span class="view-pill" id="view-pill" aria-hidden="true"><\/span>/);
   assert.match(html, /\.view-btns\{[^}]*border-radius:6px;[^}]*\}/);
-  assert.match(html, /\.view-pill\{[^}]*border-radius:4px;[^}]*background:#d4af37;[^}]*transform:translateX\(0\);[^}]*pointer-events:none;\}/);
+  assert.match(html, /\.view-pill\{[^}]*border-radius:4px;[^}]*background:linear-gradient\(180deg,#d4af37 0%,#b99a32 100%\);[^}]*transform:translateX\(0\);[^}]*pointer-events:none;\}/);
   assert.doesNotMatch(html, /\.view-pill\{[^}]*transition:/);
   assert.doesNotMatch(html, /\.(?:view-btns|view-pill)\{[^}]*border-radius:999px;/);
   assert.match(html, /\.vbtn\.active\{color:#0e1b2a;font-weight:800;/);

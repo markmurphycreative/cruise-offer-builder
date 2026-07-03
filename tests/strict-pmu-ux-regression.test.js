@@ -5,12 +5,12 @@ import test from 'node:test';
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
 test('preview toolbar has high-contrast active mode styling and zoom reset control', () => {
-  assert.match(html, /<span class="pval" id="zoom-val">32%<\/span>\s*<button class="zoom-reset" id="zoom-reset" type="button" onclick="resetPreviewZoom\(\)"/);
-  assert.match(html, /\.view-pill\{[^}]*background:#d4af37;[^}]*border:1px solid #f2d56f;[^}]*box-shadow:[^}]*inset/);
+  assert.match(html, /<span class="pval" id="zoom-val">32%<\/span>\s*<input class="zoom-input" id="zoom-input" type="number" min="10" max="70" step="1" value="32"[\s\S]*?<button class="zoom-reset" id="zoom-reset" type="button" onclick="resetPreviewZoom\(\)"/);
+  assert.match(html, /\.view-pill\{[^}]*background:linear-gradient\(180deg,#d4af37 0%,#b99a32 100%\);[^}]*border:1px solid rgba\(240,214,117,\.62\);[^}]*box-shadow:[^}]*inset/);
   assert.match(html, /\.vbtn\.active\{color:#0e1b2a;font-weight:800;/);
   assert.match(html, /\.zoom-reset\{display:none;[^}]*font-weight:700;/);
   assert.match(html, /\.zoom-reset\.visible\{display:inline-flex;\}/);
-  assert.match(html, /function updatePreviewZoomControls\(\)\{[\s\S]*?if\(reset\) reset\.classList\.toggle\("visible", value!==32\);[\s\S]*?\}/);
+  assert.match(html, /function updatePreviewZoomControls\(\)\{[\s\S]*?if\(input\) input\.value=String\(value\);[\s\S]*?if\(reset\) reset\.classList\.toggle\("visible", value!==32\);[\s\S]*?\}/);
   assert.match(html, /function resetPreviewZoom\(\)\{ setZoom\(32\); \}/);
 });
 
