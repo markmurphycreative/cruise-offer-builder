@@ -27,7 +27,8 @@ test('preview mode active pill uses refined CB gold rather than bright yellow', 
 });
 
 test('preview zoom has typed whole-number input synced with slider and reset', () => {
-  assert.match(html, /<input class="zoom-input" id="zoom-input" type="number" min="10" max="70" step="1" value="32"/);
+  assert.match(html, /<span class="zoom-input-wrap">\s*<input class="zoom-input" id="zoom-input" type="text" inputmode="numeric" pattern="\[0-9%\]\*" data-min="10" data-max="70" value="32"/);
+  assert.match(html, /<span class="zoom-input-suffix" aria-hidden="true">%<\/span>/);
   assert.match(html, /onkeydown="handleZoomInputKeydown\(event\)" onblur="commitZoomInput\(\)"/);
   assert.match(extractFunction('normalisePreviewZoomValue'), /parseInt\(val,10\)/);
   assert.match(extractFunction('normalisePreviewZoomValue'), /Math\.min\(bounds\.max, Math\.max\(bounds\.min, whole\)\)/);
