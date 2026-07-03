@@ -91,8 +91,8 @@ test('Single, Email and All 4 previews share the same zoom scaling controls', ()
   assert.match(html, /const scale = \(zoomPct \/ 100\) \* SINGLE_PREVIEW_SCALE;/);
   assert.match(html, /setScalerBox\(1200, out\.offsetHeight \|\| stackWrap\.offsetHeight, baseScale \* EMAIL_PREVIEW_SCALE\);/);
   assert.match(html, /const allScale = baseScale \* SINGLE_PREVIEW_SCALE;/);
-  assert.match(html, /transform:scale\(' \+ allScale \+ '\);transform-origin:top center;/);
-  assert.match(html, /setScalerBox\(gridW, fullH, 1\);[\s\S]*?scaler\.style\.height = Math\.ceil\(fullH \* allScale\) \+ 'px';/);
+  assert.match(html, /transform:scale\(' \+ allScale \+ '\);transform-origin:top left;/);
+  assert.match(html, /setAllPreviewCanvasBox\(gridW, fullH, allScale\);/);
   assert.doesNotMatch(html, /const fitScale = Math\.min\(pane\.w \/ gridW, pane\.h \/ fullH, 0\.32\);/);
 });
 
@@ -112,7 +112,17 @@ test('preview layout retains the stable shared canvas treatment without Single-o
 test('shared preview scaler retains stable dimensions for Email and All 4 layouts', () => {
   assert.match(html, /function setScalerBox\(width, renderedHeight, scale\)\{[\s\S]*?scaler\.style\.width = width \+ 'px';[\s\S]*?scaler\.style\.transform = 'scale\(' \+ scale \+ '\)';[\s\S]*?scaler\.style\.transformOrigin = 'top center';[\s\S]*?scaler\.style\.height = Math\.ceil\(renderedHeight \* scale\) \+ 'px';/);
   assert.match(html, /setScalerBox\(1200, out\.offsetHeight \|\| stackWrap\.offsetHeight, baseScale \* EMAIL_PREVIEW_SCALE\);/);
-  assert.match(html, /const fullH = grid\.offsetHeight \|\| out\.offsetHeight \|\| 4600;[\s\S]*?setScalerBox\(gridW, fullH, 1\);[\s\S]*?scaler\.style\.height = Math\.ceil\(fullH \* allScale\) \+ 'px';/);
+  assert.match(html, /const fullH = grid\.offsetHeight \|\| out\.offsetHeight \|\| 4600;[\s\S]*?setAllPreviewCanvasBox\(gridW, fullH, allScale\);/);
+});
+
+
+
+test('All 4 preview treats the card grid as one zoomed canvas with scaled workspace dimensions', () => {
+  assert.match(html, /function setAllPreviewCanvasBox\(canvasWidth, canvasHeight, scale\)\{[\s\S]*?scaler\.style\.width = Math\.ceil\(canvasWidth \* scale\) \+ 'px';[\s\S]*?scaler\.style\.transform = 'none';[\s\S]*?scaler\.style\.height = Math\.ceil\(canvasHeight \* scale\) \+ 'px';/);
+  assert.match(html, /const allScale = baseScale \* SINGLE_PREVIEW_SCALE;/);
+  assert.match(html, /grid\.style\.cssText = 'display:grid;[\s\S]*?transform:scale\(' \+ allScale \+ '\);transform-origin:top left;/);
+  assert.match(html, /setAllPreviewCanvasBox\(gridW, fullH, allScale\);/);
+  assert.doesNotMatch(html, /all-preview-card[^\n]+transform:scale/);
 });
 
 test('preview-only scaling leaves export dimensions unchanged', () => {

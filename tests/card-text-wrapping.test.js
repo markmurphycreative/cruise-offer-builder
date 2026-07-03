@@ -301,7 +301,7 @@ test("single preview recentres after normal and long You'll Visit height adjustm
 test("email and all-card previews adjust You'll Visit height before measuring centred scaler", () => {
   const renderPreviewMode = extractFunction('renderPreviewMode');
   assert.match(renderPreviewMode, /cardWrap\.innerHTML = renderOfferWithOptionalCtaHTML\(d, getCtaSettingsFromUI\(\)\);\n      adjustVisitSectionHeights\(cardWrap\);[\s\S]*?setScalerBox\(1200, out\.offsetHeight \|\| stackWrap\.offsetHeight, baseScale \* EMAIL_PREVIEW_SCALE\);/);
-  assert.match(renderPreviewMode, /if\(getCtaSettingsFromUI\(\)\.enabled\) c\.innerHTML = renderOfferWithOptionalCtaHTML\(d \|\| \{\}, getCtaSettingsFromUI\(\)\);\n      adjustVisitSectionHeights\(c\);[\s\S]*?setScalerBox\(gridW, fullH, 1\);[\s\S]*?scaler\.style\.height = Math\.ceil\(fullH \* allScale\) \+ 'px';/);
+  assert.match(renderPreviewMode, /if\(getCtaSettingsFromUI\(\)\.enabled\) c\.innerHTML = renderOfferWithOptionalCtaHTML\(d \|\| \{\}, getCtaSettingsFromUI\(\)\);\n      adjustVisitSectionHeights\(c\);[\s\S]*?setAllPreviewCanvasBox\(gridW, fullH, allScale\);/);
 });
 
 test('export and preview centring use fixed 1200 card width without changing export dimensions', () => {
