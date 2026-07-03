@@ -36,12 +36,12 @@ test('preview mode switches render immediately without fade, slide, or deferred 
 
 test('view selector uses restrained toolbar buttons with an active underline', () => {
   assert.match(html, /<span class="view-pill" id="view-pill" aria-hidden="true"><\/span>/);
-  assert.match(html, /\.view-btns\{[^}]*gap:12px;[^}]*border:0;[^}]*background:var\(--navy\);[^}]*\}/);
+  assert.match(html, /\.view-btns\{[^}]*gap:8px;[^}]*border:0;[^}]*background:var\(--navy\);[^}]*\}/);
   assert.match(html, /\.view-pill\{display:none;\}/);
   assert.match(html, /\.vbtn\{[^}]*font-weight:500;[^}]*background:transparent;[^}]*color:#fff;[^}]*cursor:default;/);
-  assert.match(html, /\.vbtn::after\{[^}]*height:2px;[^}]*background:var\(--gold\);[^}]*opacity:0;/);
+  assert.match(html, /\.vbtn::after\{[^}]*height:1px;[^}]*background:rgba\(212,175,55,\.58\);[^}]*opacity:0;/);
   assert.match(html, /\.vbtn:hover:not\(\.active\)\{color:var\(--gold\);\}/);
-  assert.match(html, /\.vbtn\.active\{color:#fff;font-weight:500;text-shadow:none;\}/);
+  assert.match(html, /\.vbtn\.active\{color:#fff;font-weight:600;text-shadow:none;\}/);
   assert.match(html, /\.vbtn\.active::after\{opacity:1;transform:scaleX\(1\);\}/);
   assert.match(html, /syncViewSelector\(\);[\s\S]*?runSpellQA\(\);[\s\S]*?renderPreviewMode\(true\);/);
   assert.doesNotMatch(html, /\.vbtn\.active\{[^}]*background:/);
@@ -88,9 +88,9 @@ test('Single, Email and All 4 previews share the same zoom scaling controls', ()
   assert.match(html, /const scale = \(zoomPct \/ 100\) \* SINGLE_PREVIEW_SCALE;/);
   assert.match(html, /setScalerBox\(1200, out\.offsetHeight \|\| stackWrap\.offsetHeight, baseScale \* EMAIL_PREVIEW_SCALE\);/);
   assert.match(html, /const ALL_PREVIEW_SCALE = 0\.68;/);
-  assert.match(html, /const allScale = baseScale \* ALL_PREVIEW_SCALE;/);
+  assert.match(html, /let allScale = baseScale \* ALL_PREVIEW_SCALE;/);
   assert.match(html, /setAllPreviewCanvasBox\(gridW, fullH, allScale\);/);
-  assert.doesNotMatch(html, /const fitScale = Math\.min\(pane\.w \/ gridW, pane\.h \/ fullH, 0\.32\);/);
+  assert.match(html, /if\(zoomPct === 32\)\{[\s\S]*?allScale = Math\.min\(allScale, pane\.w \/ gridW, pane\.h \/ fullH\);/);
 });
 
 test('preview canvas uses a slightly darker warm neutral background across modes', () => {
@@ -116,7 +116,7 @@ test('shared preview scaler retains stable dimensions for Email and All 4 layout
 
 test('All 4 preview treats the card grid as one zoomed canvas with scaled workspace dimensions', () => {
   assert.match(html, /function setAllPreviewCanvasBox\(canvasWidth, canvasHeight, scale\)\{[\s\S]*?scaler\.style\.width = canvasWidth \+ 'px';[\s\S]*?scaler\.style\.transform = 'scale\(' \+ scale \+ '\)';[\s\S]*?scaler\.style\.height = Math\.ceil\(canvasHeight \* scale\) \+ 'px';/);
-  assert.match(html, /const allScale = baseScale \* ALL_PREVIEW_SCALE;/);
+  assert.match(html, /let allScale = baseScale \* ALL_PREVIEW_SCALE;/);
   assert.match(html, /grid\.style\.cssText = 'display:grid;[\s\S]*?justify-content:center;';/);
   assert.match(html, /setAllPreviewCanvasBox\(gridW, fullH, allScale\);/);
   assert.doesNotMatch(html, /all-preview-card[^\n]+transform:scale/);
