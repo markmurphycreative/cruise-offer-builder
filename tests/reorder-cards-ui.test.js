@@ -17,11 +17,20 @@ test('Offer selector, Reorder Cards and scrolling section stack share the sideba
   assert.match(html, /\.reorder-group\{[^}]*margin:2px var\(--sidebar-content-right-inset\) 1px var\(--sidebar-content-inset\);[^}]*border:1px solid var\(--border\);[^}]*background:#fafaf8;/);
   assert.match(html, /\.sb-body\{[^}]*scrollbar-gutter:stable;[^}]*padding:1px var\(--sidebar-content-inset\) 4px;/);
   assert.match(html, /\.sb-body::-webkit-scrollbar\{width:var\(--sidebar-scrollbar-width\);/);
-  assert.match(html, /<div class="sidebar-section-label">Campaign<\/div>/);
   assert.match(html, /<div class="sidebar-section-label offer-status-label">Offer Status<\/div>/);
-  assert.match(html, /<div class="sidebar-section-label">Build Workflow<\/div>/);
+  assert.match(html, /<div class="sidebar-section-label">Import<\/div>/);
   assert.match(html, /<div class="sidebar-section-label">Assets<\/div>/);
-  assert.match(html, /<div class="sidebar-section-label">Campaign Tools<\/div>/);
+  assert.match(html, /<div class="sidebar-section-label">Utilities<\/div>/);
+  assert.match(html, /<div class="sidebar-section-label">Campaign Details<\/div>/);
+  const order = [
+    'offer-status-label">Offer Status',
+    '>Import<',
+    '>Assets<',
+    '>Utilities<',
+    '>Campaign Details<'
+  ].map(marker => html.indexOf(marker));
+  assert.deepEqual(order.every(index => index >= 0), true);
+  assert.deepEqual([...order].sort((a, b) => a - b), order);
 });
 
 test('Reorder Cards is a persistent compact quick control instead of an accordion section', () => {
