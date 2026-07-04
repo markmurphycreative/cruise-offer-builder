@@ -34,17 +34,21 @@ test('preview mode switches render immediately without fade, slide, or deferred 
   assert.doesNotMatch(html, /renderPreviewMode\(true\);\s*if\(didChange\)/);
 });
 
-test('view selector uses restrained toolbar buttons with an active underline', () => {
-  assert.match(html, /<span class="view-pill" id="view-pill" aria-hidden="true"><\/span>/);
-  assert.match(html, /\.view-btns\{[^}]*gap:8px;[^}]*border:0;[^}]*background:var\(--navy\);[^}]*\}/);
-  assert.match(html, /\.view-pill\{display:none;\}/);
-  assert.match(html, /\.vbtn\{[^}]*font-weight:300;[^}]*line-height:1\.25;[^}]*background:transparent;[^}]*color:#fff;[^}]*cursor:default;/);
-  assert.match(html, /\.vbtn::after\{[^}]*height:1px;[^}]*background:var\(--gold\);[^}]*opacity:0;/);
-  assert.match(html, /\.vbtn:hover:not\(\.active\)\{color:var\(--gold\);\}/);
-  assert.match(html, /\.vbtn\.active\{color:#fff;font-weight:300;text-shadow:none;\}/);
+test('view selector uses desktop toolbar grouping with an active underline', () => {
+  assert.match(html, /<div class="toolbar-group workspace-group" aria-label="Workspace">[\s\S]*?<span class="preview-title" id="preview-title">All 4 Cards<\/span>/);
+  assert.match(html, /<div class="toolbar-group tools-group">[\s\S]*?<div class="ptool" aria-label="Zoom">[\s\S]*?<span>Zoom<\/span>/);
+  assert.match(html, /<div class="toolbar-group right-group">[\s\S]*?<button class="toolbar-action" type="button" onclick="returnHomeFromBuilder\(\)">Home<\/button>/);
+  assert.match(html, /<div class="toolbar-stack view-selector">\s*<span class="toolbar-label">View<\/span>\s*<div class="view-btns">[\s\S]*?<button class="vbtn" id="vb-single"[^>]*>Single<\/button>[\s\S]*?<button class="vbtn" id="vb-email"[^>]*>Email<\/button>[\s\S]*?<button class="vbtn active" id="vb-all"[^>]*>All 4<\/button>/);
+  assert.match(html, /\.preview-toolbar\{[^}]*gap:18px;[^}]*flex-wrap:wrap;/);
+  assert.match(html, /\.toolbar-group\.right-group\{[^}]*gap:18px;/);
+  assert.match(html, /\.toolbar-label\{[^}]*color:rgba\(255,255,255,\.62\);/);
+  assert.match(html, /\.view-btns\{[^}]*display:grid;[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\);[^}]*background:rgba\(255,255,255,\.045\);/);
+  assert.match(html, /\.vbtn\{[^}]*font-weight:300;[^}]*transition:color var\(--ui-transition\),background var\(--ui-transition\),opacity var\(--ui-transition\);/);
+  assert.match(html, /\.vbtn::after\{[^}]*height:2px;[^}]*background:var\(--gold\);[^}]*opacity:0;/);
+  assert.match(html, /\.vbtn:hover:not\(\.active\)\{color:#fff;background:rgba\(255,255,255,\.055\);\}/);
+  assert.match(html, /\.vbtn\.active\{color:#fff;font-weight:600;text-shadow:none;background:rgba\(160,146,103,\.14\);\}/);
   assert.match(html, /\.vbtn\.active::after\{opacity:1;transform:scaleX\(1\);\}/);
   assert.match(html, /syncViewSelector\(\);[\s\S]*?runSpellQA\(\);[\s\S]*?renderPreviewMode\(true\);/);
-  assert.doesNotMatch(html, /\.vbtn\.active\{[^}]*background:/);
 });
 
 
