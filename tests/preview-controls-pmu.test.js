@@ -31,15 +31,17 @@ test('preview mode buttons use restrained navy styling with gold underline activ
 });
 
 test('preview zoom shows relative adjustment while preserving internal slider scale and reset', () => {
-  assert.match(html, /<input type="range" min="10" max="150" value="32" oninput="setZoom\(this\.value\)" id="zoom-slider" aria-label="Preview zoom adjustment">/);
+  assert.match(html, /<input type="range" min="-100" max="100" value="0" oninput="setZoomFromSlider\(this\.value\)" id="zoom-slider" aria-label="Preview zoom adjustment">/);
   assert.match(html, /<span class="pval" id="zoom-val" aria-live="polite" onclick="beginZoomInputEdit\(\)">0<\/span>/);
   assert.match(html, /pattern="\[\+-\]\?\[0-9\]\*" data-min="-100" data-max="100" value="0" aria-label="Relative preview zoom adjustment"/);
   assert.doesNotMatch(html, /<span>Zoom<\/span>/);
   assert.match(extractFunction('normalisePreviewZoomValue'), /parseInt\(val,10\)/);
   assert.match(extractFunction('getRelativePreviewZoomValue'), /current < base/);
   assert.match(extractFunction('formatRelativePreviewZoomValue'), /relative>0 \? "\+"\+relative : String\(relative\)/);
+  assert.match(extractFunction('updatePreviewZoomControls'), /if\(slider\) slider\.value=String\(getRelativePreviewZoomValue\(value\)\);/);
   assert.match(extractFunction('updatePreviewZoomControls'), /if\(label\) label\.textContent=relative;/);
   assert.match(extractFunction('updatePreviewZoomControls'), /if\(input && document\.activeElement !== input\) input\.value=relative;/);
+  assert.match(extractFunction('setZoomFromSlider'), /setZoom\(previewZoomFromRelativeValue\(normalisePreviewZoomSliderValue\(val\)\)\)/);
   assert.match(extractFunction('commitZoomInput'), /previewZoomFromRelativeValue\(input\.value\)/);
   assert.match(extractFunction('resetPreviewZoom'), /setZoom\(getDefaultPreviewZoom\(\)\)/);
 });

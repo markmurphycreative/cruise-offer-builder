@@ -5,7 +5,7 @@ import test from 'node:test';
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
 test('preview toolbar has restrained active mode styling and always-visible zoom reset control', () => {
-  assert.match(html, /<div class="toolbar-group toolbar-group-zoom">\s*<input type="range" min="10" max="150" value="32" oninput="setZoom\(this\.value\)" id="zoom-slider" aria-label="Preview zoom adjustment">\s*<span class="pval" id="zoom-val" aria-live="polite" onclick="beginZoomInputEdit\(\)">0<\/span>/);
+  assert.match(html, /<div class="toolbar-group toolbar-group-zoom">\s*<input type="range" min="-100" max="100" value="0" oninput="setZoomFromSlider\(this\.value\)" id="zoom-slider" aria-label="Preview zoom adjustment">\s*<span class="pval" id="zoom-val" aria-live="polite" onclick="beginZoomInputEdit\(\)">0<\/span>/);
   assert.match(html, /<div class="toolbar-group toolbar-group-utility">[\s\S]*?<button class="zoom-reset" id="zoom-reset" type="button" onclick="resetPreviewZoom\(\)"[\s\S]*?<button class="vbtn utility-home" id="vb-home" onclick="returnHomeFromBuilder\(\)">[\s\S]*?<svg class="home-icon"/);
   assert.match(html, /<div class="toolbar-group view-btns">[\s\S]*?Single[\s\S]*?Email[\s\S]*?All 4/);
   assert.match(html, /<div class="toolbar-group toolbar-group-actions">[\s\S]*?New Campaign[\s\S]*?Shortcuts/);
