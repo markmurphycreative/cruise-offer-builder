@@ -1222,7 +1222,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
         <input type="range" min="10" max="150" value="32" oninput="setZoom(this.value)" id="zoom-slider" aria-label="Preview zoom adjustment">
         <span class="pval" id="zoom-val" aria-live="polite" onclick="beginZoomInputEdit()">0</span>
         <span class="zoom-input-wrap" id="zoom-input-wrap">
-          <input class="zoom-input" id="zoom-input" type="text" inputmode="numeric" pattern="[+-]?[0-9]*" data-min="-69" data-max="369" value="0" aria-label="Relative preview zoom adjustment" onkeydown="handleZoomInputKeydown(event)" onblur="commitZoomInput()">
+          <input class="zoom-input" id="zoom-input" type="text" inputmode="numeric" pattern="[+-]?[0-9]*" data-min="-100" data-max="100" value="0" aria-label="Relative preview zoom adjustment" onkeydown="handleZoomInputKeydown(event)" onblur="commitZoomInput()">
         </span>
       </div>
       <div class="toolbar-group toolbar-group-utility">
@@ -8697,18 +8697,30 @@ function normalisePreviewZoomValue(val){
 }
 function getDefaultPreviewZoom(){ return 32; }
 function getRelativePreviewZoomValue(value){
+  const bounds=getPreviewZoomBounds();
   const base=getDefaultPreviewZoom();
   const current=normalisePreviewZoomValue(value);
-  return Math.round(((current-base)/base)*100);
+  if(current === base) return 0;
+  if(current < base){
+    const leftSpan=base-bounds.min;
+    return leftSpan ? Math.round(((current-base)/leftSpan)*100) : 0;
+  }
+  const rightSpan=bounds.max-base;
+  return rightSpan ? Math.round(((current-base)/rightSpan)*100) : 0;
 }
 function formatRelativePreviewZoomValue(value){
   const relative=getRelativePreviewZoomValue(value);
   return relative>0 ? "+"+relative : String(relative);
 }
 function previewZoomFromRelativeValue(val){
+  const bounds=getPreviewZoomBounds();
+  const base=getDefaultPreviewZoom();
   const parsed=parseInt(String(val).replace(/%/g,""),10);
-  if(!Number.isFinite(parsed)) return getDefaultPreviewZoom();
-  return normalisePreviewZoomValue(Math.round(getDefaultPreviewZoom()*(1+(parsed/100))));
+  if(!Number.isFinite(parsed)) return base;
+  const relative=Math.max(-100,Math.min(100,parsed));
+  if(relative === 0) return base;
+  if(relative < 0) return normalisePreviewZoomValue(Math.round(base+((base-bounds.min)*(relative/100))));
+  return normalisePreviewZoomValue(Math.round(base+((bounds.max-base)*(relative/100))));
 }
 function updatePreviewZoomControls(){
   const value=normalisePreviewZoomValue(zoomPct);
