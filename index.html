@@ -3,7 +3,6 @@
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#927F52">
 <title>Cruise Builder</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" crossorigin="anonymous"></script>
@@ -17,11 +16,8 @@
   --green:#2a7a4a;--red:#c0392b;--amber:#d4820a;--radius:5px;
   --ui-radius:4px;--ui-button-height:28px;--ui-button-padding:5px 9px;--ui-button-font:9.5px;--ui-button-weight:400;
   --ui-icon:16px;--ui-muted-opacity:.72;--ui-transition:.18s ease;--status-bg:rgba(216,213,206,.22);
-  --desktop-titlebar-bg:#927F52;--desktop-titlebar-fg:#fff;
 }
-html,body{height:100%;font-family:'Montserrat',sans-serif;font-size:12px;color:var(--text);background:var(--desktop-titlebar-bg,var(--bg));}
-body{color-scheme:dark light;}
-@media (display-mode:browser){html,body{background:var(--bg);}}
+html,body{height:100%;font-family:'Montserrat',sans-serif;font-size:12px;color:var(--text);background:var(--bg);}
 button{cursor:pointer;font-family:'Montserrat',sans-serif;}
 button:focus-visible,[role="button"]:focus-visible{outline:none;box-shadow:0 0 0 2px rgba(160,146,103,.28);}
 input,textarea,select{font-family:'Montserrat',sans-serif;}
@@ -335,7 +331,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash-inner{text-align:center;color:#fff;padding:18px;min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;width:min(560px,100%);}
 .splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;transform:translateY(-66px);animation:splashFadeIn .28s ease-out both;}
 .splash-icon{display:block;width:132px;height:auto;margin:0 auto 24px;filter:none;}
-.splash-title{font-size:14.5px;font-weight:300;letter-spacing:.065em;}
+.splash-title{font-size:14.5px;font-weight:300;letter-spacing:.045em;}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
 .splash-actions{margin-top:38px;display:grid;gap:17px;max-width:212px;margin-left:auto;margin-right:auto;width:100%;}
 .splash-footer{position:fixed;left:50%;bottom:52px;transform:translateX(-50%);width:min(320px,calc(100vw - 36px));text-align:center;display:none;animation:splashFadeIn .28s ease-out both;}
@@ -532,8 +528,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .campaign-history-actions{display:grid;grid-template-columns:1.16fr 1fr 1fr;gap:4px;margin-top:0;}
 .campaign-history-actions .abtn:first-child{border-color:rgba(160,146,103,.48);box-shadow:0 1px 4px rgba(160,146,103,.16);font-weight:700;}
 .campaign-library-utility{display:grid;gap:4px;}
-.toolbar-groups{display:flex;align-items:center;gap:10px;flex:0 0 auto;}
-.toolbar-group{display:inline-flex;align-items:center;gap:8px;line-height:1;white-space:nowrap;}
+.toolbar-groups{display:flex;align-items:center;gap:24px;flex:0 0 auto;}
+.toolbar-group{display:inline-flex;align-items:center;gap:8px;line-height:1.25;white-space:nowrap;}
 .toolbar-group-zoom{gap:9px;}
 .toolbar-group-utility{gap:11px;}
 .toolbar-group-actions{gap:14px;}
@@ -542,31 +538,31 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .toolbar-group-zoom input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;margin-top:-4.5px;border-radius:999px;border:1px solid rgba(255,255,255,.72);background:linear-gradient(180deg,#fff 0%,#d8cfb2 100%);box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 2px rgba(160,146,103,.18);}
 .toolbar-group-zoom input[type=range]::-moz-range-track{height:3px;border-radius:999px;background:linear-gradient(90deg,rgba(255,255,255,.24),rgba(160,146,103,.92),rgba(255,255,255,.24));box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);}
 .toolbar-group-zoom input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:999px;border:1px solid rgba(255,255,255,.72);background:linear-gradient(180deg,#fff 0%,#d8cfb2 100%);box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 2px rgba(160,146,103,.18);}
-.pval{display:inline-flex;align-items:center;font-size:9px;line-height:1;color:#fff;font-weight:300;min-width:28px;text-align:left;cursor:default;background:transparent;border:0;box-shadow:none;padding:0;font-variant-numeric:tabular-nums;}
-.toolbar-divider{display:inline-flex;align-items:center;align-self:center;color:rgba(255,255,255,.46);font-size:9px;font-weight:300;line-height:1;margin:0 2px;transform:translateY(-.25px);user-select:none;}
+.pval{font-size:9px;line-height:1.25;color:#fff;font-weight:300;min-width:28px;text-align:left;cursor:default;background:transparent;border:0;box-shadow:none;padding:0;font-variant-numeric:tabular-nums;}
+.toolbar-divider{display:none;}
 .zoom-input-wrap{display:none;align-items:center;box-sizing:border-box;width:34px;background:transparent;border:0;border-radius:0;box-shadow:none;overflow:visible;}
 .zoom-input-wrap.editing{display:inline-flex;}
 .zoom-input{width:32px;min-width:0;box-sizing:border-box;border:0;background:transparent;color:#fff;font-size:9px;font-weight:300;line-height:1.25;padding:0;text-align:left;appearance:textfield;cursor:text;font-variant-numeric:tabular-nums;}
 .zoom-input::-webkit-outer-spin-button,.zoom-input::-webkit-inner-spin-button{margin:0;appearance:none;}
 .zoom-input:focus{outline:none;}
 .zoom-input-suffix{display:none;}
-.zoom-reset{display:inline-flex;align-items:center;border:0;border-radius:0;background:transparent;color:#fff;font-size:9px;font-weight:300;line-height:1;padding:4px 0;cursor:default;letter-spacing:.04em;transition:color var(--ui-transition),opacity var(--ui-transition);}
+.zoom-reset{display:inline-flex;align-items:center;border:0;border-radius:0;background:transparent;color:#fff;font-size:9px;font-weight:300;line-height:1.25;padding:4px 0 5px;cursor:default;letter-spacing:.04em;transition:color var(--ui-transition),opacity var(--ui-transition);}
 .zoom-reset.visible{display:inline-flex;}
 .zoom-reset:hover{background:transparent;border-color:transparent;color:var(--gold);}
 .view-btns{position:relative;display:flex;flex:0 0 auto;align-items:center;gap:8px;border:0;border-radius:0;overflow:visible;isolation:isolate;background:var(--navy);}
 .view-pill{display:none;}
-.vbtn{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:max-content;box-sizing:border-box;padding:4px 0;font-size:9px;font-weight:300;line-height:1.25;border:none;background:transparent;color:#fff;letter-spacing:.04em;white-space:nowrap;cursor:default;transition:color var(--ui-transition),opacity var(--ui-transition);}
+.vbtn{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:max-content;box-sizing:border-box;padding:4px 0 5px;font-size:9px;font-weight:300;line-height:1.25;border:none;background:transparent;color:#fff;letter-spacing:.04em;white-space:nowrap;cursor:default;transition:color var(--ui-transition),opacity var(--ui-transition);}
 .vbtn::after{content:"";position:absolute;left:35%;right:35%;bottom:0;height:1px;background:var(--gold);opacity:0;transform:scaleX(.7);transform-origin:center;transition:opacity var(--ui-transition),transform var(--ui-transition);}
 .vbtn:hover:not(.active){color:var(--gold);}
 .vbtn.active{color:#fff;font-weight:300;text-shadow:none;}
 .vbtn.active::after{opacity:1;transform:scaleX(1);}
 .utility-home{gap:4px;}
 .utility-home::after{display:none;}
-.home-icon{width:10px;height:10px;display:block;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round;fill:none;opacity:.82;transform:translateY(-.15px);}
+.home-icon{width:10px;height:10px;display:block;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round;fill:none;opacity:.82;}
 .tbtn{padding:3px 7px;font-size:9px;font-weight:400;border:1px solid rgba(255,255,255,.2);border-radius:3px;background:transparent;color:rgba(255,255,255,.6);margin-left:3px;}
 .tbtn.on{background:rgba(255,255,255,.15);color:#fff;}
-.shortcuts-trigger{position:relative;display:inline-flex;align-items:center;justify-content:center;padding:4px 0;font-size:9px;font-weight:300;line-height:1;border:0;border-radius:0;background:transparent;color:#fff;box-shadow:none;letter-spacing:.04em;}
-.toolbar-action{position:relative;display:inline-flex;align-items:center;justify-content:center;padding:4px 0;font-size:9px;font-weight:300;line-height:1;border:0;border-radius:0;background:transparent;color:#fff;box-shadow:none;letter-spacing:.04em;}
+.shortcuts-trigger{position:relative;display:inline-flex;align-items:center;justify-content:center;padding:4px 0 5px;font-size:9px;font-weight:300;line-height:1.25;border:0;border-radius:0;background:transparent;color:#fff;box-shadow:none;letter-spacing:.04em;}
+.toolbar-action{position:relative;display:inline-flex;align-items:center;justify-content:center;padding:4px 0 5px;font-size:9px;font-weight:300;line-height:1.25;border:0;border-radius:0;background:transparent;color:#fff;box-shadow:none;letter-spacing:.04em;}
 .shortcuts-trigger:hover,.toolbar-action:hover{color:var(--gold);transition:color var(--ui-transition);}
 .shortcuts-trigger.active::after,.toolbar-action.active::after{content:"";position:absolute;left:35%;right:35%;bottom:0;height:1px;background:var(--gold);}
 .shortcuts-trigger:hover,.toolbar-action:hover{color:var(--gold);background:transparent;}
@@ -1229,19 +1225,16 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
           <input class="zoom-input" id="zoom-input" type="text" inputmode="numeric" pattern="[+-]?[0-9]*" data-min="-100" data-max="100" value="0" aria-label="Relative preview zoom adjustment" onkeydown="handleZoomInputKeydown(event)" onblur="commitZoomInput()">
         </span>
       </div>
-      <span class="toolbar-divider" aria-hidden="true">|</span>
       <div class="toolbar-group toolbar-group-utility">
         <button class="zoom-reset" id="zoom-reset" type="button" onclick="resetPreviewZoom()" aria-label="Reset preview zoom">Reset</button>
         <button class="vbtn utility-home" id="vb-home" onclick="returnHomeFromBuilder()"><svg class="home-icon" aria-hidden="true" focusable="false" viewBox="0 0 16 16"><path d="M2.5 7.1 8 2.6l5.5 4.5"></path><path d="M4.2 6.8v6h7.6v-6"></path></svg><span>Home</span></button>
       </div>
-      <span class="toolbar-divider" aria-hidden="true">|</span>
       <div class="toolbar-group view-btns">
         <span class="view-pill" id="view-pill" aria-hidden="true"></span>
         <button class="vbtn" id="vb-single" onclick="setView(&#39;single&#39;)">Single</button>
         <button class="vbtn" id="vb-email" onclick="setView(&#39;email&#39;)">Email</button>
         <button class="vbtn active" id="vb-all" onclick="setView(&#39;all&#39;)">All 4</button>
       </div>
-      <span class="toolbar-divider" aria-hidden="true">|</span>
       <div class="toolbar-group toolbar-group-actions">
         <button class="toolbar-action" type="button" onclick="newCampaign()">New Campaign</button>
         <button class="shortcuts-trigger" type="button" onclick="openShortcutsModal()" aria-haspopup="dialog">Shortcuts</button>
