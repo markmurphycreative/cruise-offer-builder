@@ -29,13 +29,13 @@ test('the application version is defined once and hydrates every displayed versi
   assert.equal((html.match(/data-app-version(?=[ >])/g) || []).length, 1);
 
   const { context, labels } = runVersionBootstrap();
-  assert.equal(context.document.title, `Cruise Offer Builder ${context.APP_VERSION} — Dawson & Sanderson`);
+  assert.equal(context.document.title, `Cruise Offer Builder ${context.APP_VERSION}`);
   assert.deepEqual(labels.map(label => label.textContent), [context.APP_VERSION]);
 });
 
 test('changing only APP_VERSION updates the title and every version label', () => {
   const changedHtml = html.replace(/const APP_VERSION = "v\d+\.\d+\.\d+(?:\.\d+)?";/, 'const APP_VERSION = "v9.9.9";');
   const { context, labels } = runVersionBootstrap(changedHtml);
-  assert.equal(context.document.title, 'Cruise Offer Builder v9.9.9 — Dawson & Sanderson');
+  assert.equal(context.document.title, 'Cruise Offer Builder v9.9.9');
   assert.deepEqual(labels.map(label => label.textContent), ['v9.9.9']);
 });

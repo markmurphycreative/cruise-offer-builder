@@ -3,7 +3,7 @@
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cruise Offer Builder — Dawson &amp; Sanderson</title>
+<title>Cruise Offer Builder</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" crossorigin="anonymous"></script>
@@ -26,9 +26,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .preview-pane{display:flex;flex-direction:column;overflow:hidden;height:100vh;}
 
 /* ── SIDEBAR HEADER ── */
-.sb-top{background:var(--navy);padding:10px 14px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:8px;}
-.sb-brand{color:#fff;font-size:11px;font-weight:400;letter-spacing:.08em;text-transform:uppercase;line-height:1.3;}
-.sb-brand span{color:var(--gold);font-size:9px;font-weight:400;letter-spacing:.12em;display:block;}
+.sb-top{background:var(--navy);min-height:38px;padding:10px 14px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.sb-brand{color:#fff;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;line-height:1;display:flex;align-items:center;}
 .version-tag{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6);font-size:9px;padding:2px 6px;border-radius:3px;white-space:nowrap;}
 
 /* ── CAMPAIGN BAR ── */
@@ -321,15 +320,14 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .hero-preset-feedback{min-height:12px;margin-top:4px;font-size:9px;color:var(--green);line-height:1.2;}
 
 /* ── SPLASH ── */
-.splash{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:1;visibility:visible;}
+.splash{position:fixed;inset:0;background:radial-gradient(circle at 50% 38%,rgba(38,62,88,.28) 0%,rgba(12,27,43,.18) 34%,rgba(6,17,31,0) 68%),#071323;display:flex;align-items:center;justify-content:center;z-index:9999;opacity:1;visibility:visible;}
 .splash.hidden,.splash.is-exiting{opacity:0;visibility:hidden;pointer-events:none;}
 .splash-inner{text-align:center;color:#fff;padding:18px;min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;width:min(560px,100%);}
-.splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;transform:translateY(-76px);animation:splashFadeIn .28s ease-out both;}
-.splash-icon{display:block;width:132px;height:auto;margin:0 auto 15px;}
-.splash-title{font-size:14.5px;font-weight:300;letter-spacing:.04em;text-transform:uppercase;}
-.splash-brand{margin-top:6px;font-size:9.5px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;}
+.splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;transform:translateY(-66px);animation:splashFadeIn .28s ease-out both;}
+.splash-icon{display:block;width:132px;height:auto;margin:0 auto 18px;filter:drop-shadow(0 12px 28px rgba(0,0,0,.22));}
+.splash-title{font-size:14.5px;font-weight:300;letter-spacing:.045em;text-transform:uppercase;}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
-.splash-actions{margin-top:24px;display:grid;gap:9px;max-width:200px;margin-left:auto;margin-right:auto;width:100%;}
+.splash-actions{margin-top:30px;display:grid;gap:9px;max-width:200px;margin-left:auto;margin-right:auto;width:100%;}
 .splash-footer{position:fixed;left:50%;bottom:52px;transform:translateX(-50%);width:min(320px,calc(100vw - 36px));text-align:center;display:none;animation:splashFadeIn .28s ease-out both;}
 .splash-footer.active{display:block;}
 .splash-recent-title{font-size:9.5px;font-weight:400;letter-spacing:.02em;color:rgba(255,255,255,.58);line-height:1.35;}
@@ -742,7 +740,6 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <div class="splash-main">
       <img class="splash-icon" src="assets/operator-logos/cb-icon.png" alt="" aria-hidden="true">
       <div class="splash-title">Cruise Offer Builder</div>
-      <div class="splash-brand">Dawson &amp; Sanderson</div>
       <div class="splash-actions">
         <button class="splash-btn gold" id="splash-continue-session-btn" type="button" style="display:none;">Continue Last Session</button>
         <button class="splash-btn gold" id="splash-open-builder-btn" type="button">New Campaign</button>
@@ -761,7 +758,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 <!-- ══════════════════════ SIDEBAR ══════════════════════ -->
 <div class="sidebar">
   <div class="sb-top">
-    <div class="sb-brand">Cruise Offer Builder<span>Dawson &amp; Sanderson</span></div>
+    <div class="sb-brand">Cruise Offer Builder</div>
     <span class="version-tag" data-app-version></span>
   </div>
 
@@ -1347,7 +1344,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 // Single source of truth for application version
 const APP_VERSION = "v3.4.22";
 const draggableModalState = new Map();
-document.title = `Cruise Offer Builder ${APP_VERSION} — Dawson & Sanderson`;
+document.title = `Cruise Offer Builder ${APP_VERSION}`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
 
