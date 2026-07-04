@@ -39,20 +39,20 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .version-tag{background:rgba(255,255,255,.08);color:rgba(255,255,255,.48);font-size:9px;font-weight:300;padding:2px 6px;border-radius:3px;white-space:nowrap;}
 
 /* ── CAMPAIGN BAR ── */
-.campaign-bar{background:var(--panel);border-bottom:1px solid var(--border);padding:7px 12px 8px;flex-shrink:0;display:grid;grid-template-columns:1fr 1fr;gap:5px 7px;}
-.sidebar-section-label{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:rgba(122,122,122,.72);line-height:1;margin:0 var(--sidebar-content-right-inset) 6px var(--sidebar-content-inset);padding-top:2px;}
-.campaign-bar .sidebar-section-label{grid-column:1/-1;margin:0 0 1px;padding-top:0;}
-.campaign-bar input{font-size:11px;padding:3px 7px;border:1px solid var(--border);border-radius:var(--radius);background:#fff;color:var(--text);width:100%;}
+.campaign-bar{background:var(--panel);border-bottom:1px solid var(--border);padding:6px 12px 6px;flex-shrink:0;display:grid;grid-template-columns:1fr 1fr;gap:4px 7px;}
+.sidebar-section-label{font-size:10px;font-weight:500;text-transform:none;letter-spacing:.055em;color:rgba(122,122,122,.62);line-height:1;margin:10px var(--sidebar-content-right-inset) 4px var(--sidebar-content-inset);padding-top:0;}
+.campaign-bar .sidebar-section-label{grid-column:1/-1;margin:0 0 0;padding-top:0;}
+.campaign-bar input{font-size:11px;padding:2px 7px;border:1px solid var(--border);border-radius:var(--radius);background:#fff;color:var(--text);width:100%;}
 .campaign-bar input:focus{outline:none;border-color:var(--gold);}
 .campaign-name-heading{display:flex;align-items:center;}
-.clabel{font-size:9px;font-weight:400;text-transform:none;letter-spacing:.03em;color:var(--muted);display:block;margin-bottom:2px;}
+.clabel{font-size:9px;font-weight:400;text-transform:none;letter-spacing:.03em;color:var(--muted);display:block;margin-bottom:1px;}
 
 /* ── OFFER SEGMENTED CONTROL ── */
 .offer-tabs{position:relative;display:flex;margin:0 var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:0;background:#fafaf8;flex-shrink:0;overflow:hidden;isolation:isolate;}
 .offer-tabs.empty-hidden{display:none;}
-.offer-empty-state{display:none;margin:0 var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);min-height:48px;padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius);background:transparent;text-align:left;flex-shrink:0;cursor:pointer;align-items:flex-start;justify-content:center;flex-direction:column;}
+.offer-empty-state{display:none;margin:0 var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);min-height:44px;padding:5px 12px;border:1px solid var(--border);border-radius:var(--radius);background:transparent;text-align:left;flex-shrink:0;cursor:pointer;align-items:flex-start;justify-content:center;flex-direction:column;}
 .offer-empty-state.active{display:flex;}
-.offer-empty-state-title{font-size:11px;font-weight:600;letter-spacing:0;color:var(--navy);margin-bottom:3px;}
+.offer-empty-state-title{font-size:11px;font-weight:600;letter-spacing:0;color:var(--navy);margin-bottom:2px;}
 .offer-empty-state-copy{font-size:9.5px;line-height:1.3;color:var(--muted);white-space:normal;}
 .offer-context-label.empty-hidden{display:none;}
 .offer-pill{position:absolute;z-index:0;top:1px;bottom:1px;left:0;width:0;border-radius:0;background:#dedbd3;box-shadow:inset 0 0 0 1px rgba(14,27,42,.06);transform:translateX(0);transition:transform .2s ease,width .2s ease;pointer-events:none;}
@@ -98,16 +98,16 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .offer-lock-toggle.locked .lock-icon-locked{display:block;}
 
 /* ── SIDEBAR BODY ── */
-.sb-body{flex:1;overflow-y:auto;scrollbar-gutter:stable;padding:8px var(--sidebar-content-inset) 3px;}
+.sb-body{flex:1;overflow-y:auto;scrollbar-gutter:stable;padding:5px var(--sidebar-content-inset) 2px;}
 .sb-body::-webkit-scrollbar{width:var(--sidebar-scrollbar-width);}
 .sb-body::-webkit-scrollbar-thumb{background:var(--border);}
 
 /* ── SECTIONS ── */
 .section{margin-bottom:8px;border:0;border-bottom:1px solid rgba(216,213,206,.62);border-radius:0;overflow:visible;background:transparent;}
-.section{margin-bottom:4px;border:0;border-bottom:1px solid rgba(216,213,206,.82);border-radius:0;overflow:visible;background:transparent;}
+.section{margin-bottom:3px;border:0;border-bottom:1px solid rgba(216,213,206,.82);border-radius:0;overflow:visible;background:transparent;}
 .section:hover{background:#fbfaf7;}
 .campaign-presets-hidden{display:none;}
-.section-hdr{min-height:27px;background:transparent;padding:5px 9px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;transition:background var(--ui-transition),box-shadow var(--ui-transition);}
+.section-hdr{min-height:27px;background:transparent;padding:4px 9px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;transition:background var(--ui-transition),box-shadow var(--ui-transition);}
 .section-hdr:hover{background:rgba(160,146,103,.045);}
 .section-hdr:not(.collapsed){background:#fbfaf7;box-shadow:inset 2px 0 0 var(--gold);}
 .section-hdr h3{font-size:10px;font-weight:500;text-transform:none;letter-spacing:.02em;color:var(--navy);display:flex;align-items:center;gap:7px;min-width:0;}
@@ -119,8 +119,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .section-toggle{font-size:9px;color:var(--muted);transition:transform var(--ui-transition),color var(--ui-transition);display:inline-block;}
 .section-hdr:not(.collapsed) .section-toggle{color:var(--navy);}
 .section-hdr.collapsed .section-toggle{color:var(--muted);transform:rotate(-90deg);}
-.section-body{padding:7px 10px 12px 17px;background:transparent;border-top:1px solid rgba(216,213,206,.38);}
-.section-hdr:not(.collapsed)+.section-body:not(.hidden){margin-bottom:5px;}
+.section-body{padding:6px 10px 10px 17px;background:transparent;border-top:1px solid rgba(216,213,206,.38);}
+.section-hdr:not(.collapsed)+.section-body:not(.hidden){margin-bottom:4px;}
 .csv-import-layout{display:grid;gap:8px;}
 .csv-import-actions{display:grid;grid-template-columns:1fr;gap:6px;}
 .csv-import-actions .abtn{width:100%;}
@@ -132,7 +132,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .csv-load-btn[disabled]{display:none;}
 .csv-sheet-btn{background:#fff;color:var(--navy);border-color:var(--border);}
 .section-body.hidden{display:none;}
-.reorder-group{margin:5px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;padding:5px 8px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0;}
+.reorder-group{margin:4px var(--sidebar-content-right-inset) 0 var(--sidebar-content-inset);border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;padding:4px 8px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0;}
 .reorder-title{font-size:10px;font-weight:400;text-transform:none;letter-spacing:.03em;color:var(--navy);display:flex;align-items:center;gap:6px;white-space:nowrap;}
 .reorder-title .section-icon{width:16px;height:16px;}
 .reorder-actions{display:flex;align-items:center;gap:4px;}
@@ -265,9 +265,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .op-select{width:100%;padding:5px 8px;font-size:12px;font-weight:600;border:1px solid var(--border);border-radius:var(--radius);background:#fff;color:var(--text);appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
 
 /* ── FIELDS ── */
-.fg2{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
-.fg1{display:grid;grid-template-columns:1fr;gap:6px;}
-.field{display:flex;flex-direction:column;gap:2px;margin-bottom:4px;}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.fg1{display:grid;grid-template-columns:1fr;gap:5px;}
+.field{display:flex;flex-direction:column;gap:2px;margin-bottom:3px;}
 .field label{font-size:9px;font-weight:400;text-transform:none;letter-spacing:.03em;color:var(--muted);}
 .field input,.field textarea,.field select{font-size:11px;padding:4px 7px;border:1px solid var(--border);border-radius:var(--radius);background:#fafaf8;color:var(--text);width:100%;}
 .field input:focus,.field textarea:focus{outline:none;border-color:var(--gold);background:#fff;}
@@ -451,8 +451,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .template-actions{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px;}
 
 /* ── ACTION BUTTONS ── */
-.sb-actions{padding:4px 9px 6px;border-top:1px solid rgba(216,213,206,.72);background:#f7f6f3;flex-shrink:0;}
-.act-row{display:flex;gap:4px;margin-bottom:4px;}
+.sb-actions{padding:3px 9px 5px;border-top:1px solid rgba(216,213,206,.72);background:#f7f6f3;flex-shrink:0;}
+.act-row{display:flex;gap:4px;margin-bottom:3px;}
 .abtn{flex:1;min-height:var(--ui-button-height);padding:var(--ui-button-padding);font-size:var(--ui-button-font);font-weight:400;border-radius:var(--ui-radius);border:1px solid var(--border);background:#fff;color:var(--text);letter-spacing:.015em;white-space:nowrap;transition:background var(--ui-transition),border-color var(--ui-transition),color var(--ui-transition),box-shadow var(--ui-transition),transform var(--ui-transition),opacity var(--ui-transition);}
 .abtn:hover:not(:disabled){background:#f7f6f3;border-color:rgba(14,27,42,.18);}
 .abtn:focus-visible{outline:none;box-shadow:0 0 0 2px rgba(160,146,103,.28);}
@@ -795,7 +795,6 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
   </div>
 
   <!-- Offer tabs -->
-  <div class="sidebar-section-label sidebar-offer-status-label">Offer Status</div>
   <div class="offer-tabs empty-hidden">
     <span class="offer-pill" id="offer-pill" aria-hidden="true"></span>
     <div class="offer-tab-item"><button class="otab active" id="ot0" onclick="sv(0)" draggable="true" data-offer-tab="0" title="No offer loaded" aria-label="Offer 1 status: No offer loaded"><span class="offer-tab-label"><span class="offer-tab-number">Offer 1</span></span><span class="offer-lock-toggle" role="button" tabindex="0" id="lock-toggle-0" onclick="toggleOfferLockFromTile(event,0)" onkeydown="if(event.key==='Enter'||event.key===' ') toggleOfferLockFromTile(event,0)" aria-label="Lock offer" title="Lock offer"><svg class="lock-icon-open" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 7.2-2.4"></path></svg><svg class="lock-icon-locked" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span></button></div>
@@ -818,7 +817,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
   <div class="sb-body">
     <div class="lock-ind" id="lock-ind">Card locked — unlock it to edit</div>
 
-    <div class="sidebar-section-label">Build Workflow</div>
+    <div class="sidebar-section-label">Import</div>
     <div class="section csv-core-section" data-section-key="csv-import">
       <div class="section-hdr" onclick="toggleSec(this)">
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>Campaign Import</h3><span class="section-toggle">▾</span>
@@ -1163,7 +1162,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       </div>
     </div>
 
-    <div class="sidebar-section-label">Campaign Tools</div>
+    <div class="sidebar-section-label">Utilities</div>
     <div class="section" data-section-key="campaign-summary">
       <div class="section-hdr collapsed" role="button" tabindex="0" onclick="openSummary()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSummary();}">
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M3 3v18h18"></path><rect width="3" height="7" x="7" y="10"></rect><rect width="3" height="11" x="12" y="6"></rect><rect width="3" height="5" x="17" y="12"></rect></svg>Campaign Summary</h3><svg class="manage-campaigns-launch-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg>
