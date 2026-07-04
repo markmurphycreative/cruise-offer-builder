@@ -20,15 +20,17 @@ function extractFunction(name) {
   throw new Error(`Could not extract ${name}`);
 }
 
-test('preview mode buttons use restrained navy styling with gold underline active state', () => {
-  assert.match(html, /\.view-btns\{[^}]*border:0;[^}]*background:var\(--navy\);/);
+test('preview mode buttons use desktop segmented styling with gold underline active state', () => {
+  assert.match(html, /\.view-btns\{[^}]*display:grid;[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\);[^}]*background:rgba\(255,255,255,\.045\);/);
   assert.match(html, /\.view-pill\{display:none;\}/);
-  assert.match(html, /\.vbtn\{[^}]*font-weight:300;[^}]*line-height:1\.25;[^}]*background:transparent;[^}]*color:#fff;[^}]*cursor:default;/);
-  assert.match(html, /\.vbtn::after\{[^}]*height:1px;[^}]*background:var\(--gold\);[^}]*opacity:0;/);
-  assert.match(html, /\.vbtn:hover:not\(\.active\)\{color:var\(--gold\);\}/);
+  assert.match(html, /\.vbtn\{[^}]*font-weight:300;[^}]*line-height:1\.25;[^}]*background:transparent;[^}]*color:rgba\(255,255,255,\.78\);[^}]*cursor:default;/);
+  assert.match(html, /\.vbtn::after\{[^}]*height:2px;[^}]*background:var\(--gold\);[^}]*opacity:0;/);
+  assert.match(html, /\.vbtn:hover:not\(\.active\)\{color:#fff;background:rgba\(255,255,255,\.055\);\}/);
+  assert.match(html, /\.vbtn\.active\{color:#fff;font-weight:600;text-shadow:none;background:rgba\(160,146,103,\.14\);\}/);
   assert.match(html, /\.vbtn\.active::after\{opacity:1;transform:scaleX\(1\);\}/);
   assert.doesNotMatch(html, /neon|#ff0|background:linear-gradient\(180deg,#d4af37|color:#0e1b2a;font-weight:800/);
 });
+
 
 test('preview zoom has typed whole-number input synced with slider and reset', () => {
   assert.match(html, /<span class="zoom-input-wrap" id="zoom-input-wrap">\s*<input class="zoom-input" id="zoom-input" type="text" inputmode="numeric" pattern="\[0-9%\]\*" data-min="10" data-max="150" value="32"/);
