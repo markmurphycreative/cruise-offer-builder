@@ -53,7 +53,7 @@ test('Offer 1–4 selector reuses the sliding segmented-control pill while retai
   assert.match(html, /<div class="offer-empty-state active" id="offer-empty-state" role="button" tabindex="0" title="Open Campaign Import" aria-label="Open Campaign Import" onclick="openCampaignImportFromEmptyState\(\)" onkeydown="handleEmptyOfferStateKeydown\(event\)">[\s\S]*?No offers loaded[\s\S]*?Load a sheet, CSV, campaign or paste an offer\./);
   assert.match(html, /\.offer-tabs\{[^}]*border:1px solid var\(--border\);[^}]*border-radius:0;[^}]*overflow:hidden;[^}]*isolation:isolate;/);
   assert.match(html, /\.offer-tabs\.empty-hidden\{display:none;\}/);
-  assert.match(html, /\.offer-empty-state\{[^}]*min-height:48px;[^}]*padding:6px 12px;[^}]*border:1px solid var\(--border\);[^}]*border-radius:var\(--radius\);[^}]*background:transparent;[^}]*text-align:left;[^}]*cursor:pointer;[^}]*justify-content:center;/);
+  assert.match(html, /\.offer-empty-state\{[^}]*min-height:44px;[^}]*padding:5px 12px;[^}]*border:1px solid var\(--border\);[^}]*border-radius:var\(--radius\);[^}]*background:transparent;[^}]*text-align:left;[^}]*cursor:pointer;[^}]*justify-content:center;/);
   assert.match(html, /\.offer-empty-state\.active\{display:flex;\}/);
   assert.match(html, /\.offer-empty-state-title\{[^}]*font-weight:600;[^}]*letter-spacing:0;[^}]*color:var\(--navy\);/);
   assert.match(html, /\.offer-empty-state-copy\{[^}]*font-size:9\.5px;[^}]*color:var\(--muted\);/);

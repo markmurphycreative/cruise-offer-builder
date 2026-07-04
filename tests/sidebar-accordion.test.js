@@ -203,11 +203,11 @@ function extractFunction(name) {
 
 test('sidebar polish adds subtle spacing, compact active-offer context and professional empty states', () => {
   assert.match(html, /\.section\{margin-bottom:8px;border:0;border-bottom:1px solid rgba\(216,213,206,\.62\);/);
-  assert.match(html, /\.section\{margin-bottom:4px;border:0;border-bottom:1px solid rgba\(216,213,206,\.82\);/);
-  assert.match(html, /<div class="sidebar-section-label">Build Workflow<\/div>/);
+  assert.match(html, /\.section\{margin-bottom:3px;border:0;border-bottom:1px solid rgba\(216,213,206,\.82\);/);
+  assert.match(html, /<div class="sidebar-section-label">Import<\/div>/);
   assert.match(html, /<div class="sidebar-section-label">Assets<\/div>/);
-  assert.match(html, /<div class="sidebar-section-label">Campaign Tools<\/div>/);
-  assert.match(html, /\.section-body\{padding:7px 10px 12px 17px;background:transparent;border-top:1px solid rgba\(216,213,206,\.38\);\}/);
+  assert.match(html, /<div class="sidebar-section-label">Utilities<\/div>/);
+  assert.match(html, /\.section-body\{padding:6px 10px 10px 17px;background:transparent;border-top:1px solid rgba\(216,213,206,\.38\);\}/);
   assert.match(html, /id="active-offer-label" aria-live="polite">Editing Offer 1 of 4/);
   assert.match(html, /function updateActiveOfferLabel\(\)\{[\s\S]*?label\.textContent=`Editing Offer \$\{cur\+1\} of 4`;/);
   assert.match(html, /<div id="sheets-status" aria-live="polite"><\/div>/);

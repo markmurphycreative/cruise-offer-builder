@@ -13,11 +13,15 @@ function extract(pattern, label) {
 test('Offer selector, Reorder Cards and scrolling section stack share the sidebar content edges', () => {
   assert.match(html, /\.sidebar\{--sidebar-content-inset:9px;--sidebar-scrollbar-width:3px;--sidebar-content-right-inset:calc\(var\(--sidebar-content-inset\) \+ var\(--sidebar-scrollbar-width\)\);/);
   assert.match(html, /\.offer-tabs\{[^}]*margin:0 var\(--sidebar-content-right-inset\) 0 var\(--sidebar-content-inset\);[^}]*border:1px solid var\(--border\);/);
-  assert.match(html, /\.section\{[^}]*margin-bottom:4px;[^}]*border:0;[^}]*border-bottom:1px solid rgba\(216,213,206,\.82\);[^}]*border-radius:0;/);
-  assert.match(html, /\.reorder-group\{[^}]*margin:5px var\(--sidebar-content-right-inset\) 0 var\(--sidebar-content-inset\);[^}]*border:1px solid var\(--border\);[^}]*background:#fafaf8;/);
-  assert.match(html, /\.sb-body\{[^}]*scrollbar-gutter:stable;[^}]*padding:8px var\(--sidebar-content-inset\) 3px;/);
+  assert.match(html, /\.section\{[^}]*margin-bottom:3px;[^}]*border:0;[^}]*border-bottom:1px solid rgba\(216,213,206,\.82\);[^}]*border-radius:0;/);
+  assert.match(html, /\.reorder-group\{[^}]*margin:4px var\(--sidebar-content-right-inset\) 0 var\(--sidebar-content-inset\);[^}]*border:1px solid var\(--border\);[^}]*background:#fafaf8;/);
+  assert.match(html, /\.sb-body\{[^}]*scrollbar-gutter:stable;[^}]*padding:5px var\(--sidebar-content-inset\) 2px;/);
   assert.match(html, /\.sb-body::-webkit-scrollbar\{width:var\(--sidebar-scrollbar-width\);/);
-  assert.match(html, /<div class="sidebar-section-label sidebar-offer-status-label">Offer Status<\/div>/);
+  assert.doesNotMatch(html, /Offer Status|Build Workflow|Campaign Tools/);
+  assert.match(html, /<div class="sidebar-section-label">Campaign<\/div>/);
+  assert.match(html, /<div class="sidebar-section-label">Import<\/div>/);
+  assert.match(html, /<div class="sidebar-section-label">Assets<\/div>/);
+  assert.match(html, /<div class="sidebar-section-label">Utilities<\/div>/);
 });
 
 test('Reorder Cards is a persistent compact quick control instead of an accordion section', () => {
