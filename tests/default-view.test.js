@@ -53,7 +53,7 @@ test('Offer 1–4 selector reuses the sliding segmented-control pill while retai
   assert.match(html, /<div class="offer-empty-state active" id="offer-empty-state" role="button" tabindex="0" title="Open Campaign Import" aria-label="Open Campaign Import" onclick="openCampaignImportFromEmptyState\(\)" onkeydown="handleEmptyOfferStateKeydown\(event\)">[\s\S]*?No offers loaded[\s\S]*?Load a sheet, CSV, campaign or paste an offer\./);
   assert.match(html, /\.offer-tabs\{[^}]*border:1px solid var\(--border\);[^}]*border-radius:0;[^}]*overflow:hidden;[^}]*isolation:isolate;/);
   assert.match(html, /\.offer-tabs\.empty-hidden\{display:none;\}/);
-  assert.match(html, /\.offer-empty-state\{[^}]*min-height:56px;[^}]*padding:7px 12px;[^}]*border:1px solid var\(--border\);[^}]*border-radius:var\(--radius\);[^}]*background:transparent;[^}]*text-align:left;[^}]*cursor:pointer;[^}]*justify-content:center;/);
+  assert.match(html, /\.offer-empty-state\{[^}]*min-height:48px;[^}]*padding:6px 12px;[^}]*border:1px solid var\(--border\);[^}]*border-radius:var\(--radius\);[^}]*background:transparent;[^}]*text-align:left;[^}]*cursor:pointer;[^}]*justify-content:center;/);
   assert.match(html, /\.offer-empty-state\.active\{display:flex;\}/);
   assert.match(html, /\.offer-empty-state-title\{[^}]*font-weight:600;[^}]*letter-spacing:0;[^}]*color:var\(--navy\);/);
   assert.match(html, /\.offer-empty-state-copy\{[^}]*font-size:9\.5px;[^}]*color:var\(--muted\);/);
@@ -66,7 +66,7 @@ test('Offer 1–4 selector reuses the sliding segmented-control pill while retai
   assert.match(html, /\.otab\.active\{color:var\(--navy\);border-radius:0;box-shadow:inset 0 -2px 0 rgba\(14,27,42,\.18\);\}/);
   assert.doesNotMatch(html, /\.otab\.active\{[^}]*border-bottom/);
   assert.match(html, /\.offer-tab-item\{[^}]*position:relative;[^}]*flex:1;[^}]*min-width:0;/);
-  assert.match(html, /\.otab\{[^}]*width:100%;[^}]*min-height:52px;[^}]*padding:8px 6px 18px;[^}]*font-size:10px;/);
+  assert.match(html, /\.otab\{[^}]*width:100%;[^}]*min-height:44px;[^}]*padding:6px 6px 16px;[^}]*font-size:10px;/);
   assert.match(html, /\.offer-tab-label\{[^}]*gap:3px;[^}]*line-height:1\.14;/);
   assert.match(html, /\.otab::after\{[^}]*position:absolute;[^}]*bottom:0;[^}]*height:2px;[^}]*background:transparent;/);
   assert.match(html, /\.otab\.status-green::after\{background:rgba\(42,122,74,\.72\);\}\s*\.otab\.status-amber::after\{background:rgba\(212,130,10,\.72\);\}\s*\.otab\.status-red::after\{background:rgba\(192,57,43,\.72\);\}/);
