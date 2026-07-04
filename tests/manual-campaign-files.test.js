@@ -79,7 +79,7 @@ test('campaign parser accepts builder files and rejects malformed, foreign and i
   const valid = { fileType: 'cruise-offer-builder-campaign', schemaVersion: '1.0', state: { offers: [{}, {}, {}, {}] } };
   assert.equal(context.parseCampaignFileText(JSON.stringify(valid)).state.offers.length, 4);
   assert.throws(() => context.parseCampaignFileText('{bad json'), /Invalid JSON/);
-  assert.throws(() => context.parseCampaignFileText(JSON.stringify({ hello: 'world' })), /Not a Cruise Builder campaign file/);
+  assert.throws(() => context.parseCampaignFileText(JSON.stringify({ hello: 'world' })), /Not a Cruise Offer Builder campaign file/);
   assert.throws(() => context.parseCampaignFileText(JSON.stringify({ ...valid, schemaVersion: '2.0' })), /Incompatible campaign file version/);
   assert.equal(context.parseCampaignFileText(JSON.stringify({ projectType: 'cruise-offer-builder-project', offers: [{}, {}, {}, {}] })).isLegacyProject, true);
 });
