@@ -23,11 +23,11 @@ test('Offer selector, Reorder Cards and scrolling section stack share the sideba
   assert.match(html, /<div class="sidebar-section-label">Utilities<\/div>/);
   assert.match(html, /<div class="sidebar-section-label">Campaign Details<\/div>/);
   const order = [
+    '>Campaign Details<',
     'offer-status-label">Offer Status',
     '>Import<',
     '>Assets<',
-    '>Utilities<',
-    '>Campaign Details<'
+    '>Utilities<'
   ].map(marker => html.indexOf(marker));
   assert.deepEqual(order.every(index => index >= 0), true);
   assert.deepEqual([...order].sort((a, b) => a - b), order);
