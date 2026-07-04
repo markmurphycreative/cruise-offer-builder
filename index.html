@@ -3,7 +3,7 @@
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cruise Offer Builder</title>
+<title>Cruise Builder</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" crossorigin="anonymous"></script>
@@ -30,7 +30,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 
 /* ── SIDEBAR HEADER ── */
 .sb-top{background:var(--navy);min-height:38px;padding:10px 14px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:8px;}
-.sb-brand{color:#fff;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;line-height:1;display:flex;align-items:center;}
+.sb-brand{color:#fff;font-size:11px;font-weight:400;letter-spacing:.04em;text-transform:none;line-height:1;display:flex;align-items:center;}
 .sb-brand-gold{color:var(--gold);}
 .version-tag{background:rgba(255,255,255,.08);color:rgba(255,255,255,.48);font-size:9px;font-weight:300;padding:2px 6px;border-radius:3px;white-space:nowrap;}
 
@@ -331,7 +331,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash-inner{text-align:center;color:#fff;padding:18px;min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;width:min(560px,100%);}
 .splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;transform:translateY(-66px);animation:splashFadeIn .28s ease-out both;}
 .splash-icon{display:block;width:132px;height:auto;margin:0 auto 24px;filter:none;}
-.splash-title{font-size:14.5px;font-weight:300;letter-spacing:.045em;text-transform:uppercase;}
+.splash-title{font-size:14.5px;font-weight:300;letter-spacing:.028em;text-transform:none;}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
 .splash-actions{margin-top:38px;display:grid;gap:17px;max-width:212px;margin-left:auto;margin-right:auto;width:100%;}
 .splash-footer{position:fixed;left:50%;bottom:52px;transform:translateX(-50%);width:min(320px,calc(100vw - 36px));text-align:center;display:none;animation:splashFadeIn .28s ease-out both;}
@@ -750,8 +750,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 <div id="app-splash" class="splash" aria-hidden="false">
   <div class="splash-inner">
     <div class="splash-main">
-      <img class="splash-icon" src="assets/operator-logos/cb-icon.png" alt="" aria-hidden="true">
-      <div class="splash-title">Cruise Offer Builder</div>
+      <img class="splash-icon" src="cb-icon.svg" alt="" aria-hidden="true">
+      <div class="splash-title">Cruise Builder</div>
       <div class="splash-actions">
         <button class="splash-btn gold" id="splash-continue-session-btn" type="button" style="display:none;">Continue Last Session</button>
         <button class="splash-btn gold" id="splash-open-builder-btn" type="button">New Campaign</button>
@@ -770,7 +770,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 <!-- ══════════════════════ SIDEBAR ══════════════════════ -->
 <div class="sidebar">
   <div class="sb-top">
-    <div class="sb-brand"><span class="sb-brand-gold">Cruise</span>&nbsp;Offer Builder</div>
+    <div class="sb-brand"><span class="sb-brand-gold">Cruise</span>&nbsp;Builder</div>
     <span class="version-tag" data-app-version></span>
   </div>
 
@@ -1355,7 +1355,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 // Single source of truth for application version
 const APP_VERSION = "v3.4.22";
 const draggableModalState = new Map();
-document.title = `Cruise Offer Builder ${APP_VERSION}`;
+document.title = `Cruise Builder ${APP_VERSION}`;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
 
 
@@ -6283,7 +6283,7 @@ function loadCampaignBackup(event){
 }
 function getDetachedManageCampaignsWindowHtml(initialContentHtml){
   const contentHtml=typeof initialContentHtml==="string"?initialContentHtml:"";
-  return `<!doctype html><html><head><meta charset="utf-8"><title>Manage Campaigns — Cruise Offer Builder</title><style>
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Manage Campaigns — Cruise Builder</title><style>
 :root{--navy:#0e1b2a;--gold:#c6a15b;--border:#d8d2c7;--muted:#667085;--red:#b42318;--radius:6px;font-family:Arial,Helvetica,sans-serif;color:#0e1b2a;background:#f7f6f3;}
 *{box-sizing:border-box;} body{margin:0;background:#f7f6f3;color:var(--navy);font-family:Arial,Helvetica,sans-serif;}.detached-manage-shell{min-height:100vh;display:flex;flex-direction:column;}.detached-manage-head{position:sticky;top:0;z-index:2;background:var(--navy);color:#fff;padding:14px 18px;border-bottom:3px solid var(--gold);display:flex;align-items:center;justify-content:space-between;gap:12px;}.detached-manage-head h1{font-size:14px;font-weight:400;letter-spacing:.04em;margin:0;}.detached-manage-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}.summary-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;font-size:10px;font-weight:400;letter-spacing:.04em;border-radius:var(--radius);border:1px solid rgba(255,255,255,.35);background:#fff;color:var(--navy);text-transform:uppercase;cursor:pointer;}.summary-btn.primary{background:var(--gold);border-color:var(--gold);color:#fff;}.detached-manage-body{padding:12px;background:#fafaf8;overflow:auto;flex:1;}.campaign-library-categories{display:grid;gap:5px;}.campaign-library-category{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:#fff;}.campaign-modal-category-head{padding:7px 8px;border-bottom:1px solid var(--border);background:#fff;}.campaign-modal-category-head h3{font-size:10px;font-weight:400;letter-spacing:.04em;color:var(--navy);margin:0;}.campaign-history-list,.campaign-library-utility{padding:8px;}.campaign-history-list{display:grid;gap:4px;}.campaign-history-item{border:1px solid var(--border);border-radius:var(--radius);padding:7px;background:#fff;display:grid;gap:5px;}.campaign-history-meta{font-size:9px;color:var(--muted);}.campaign-history-actions{display:grid;grid-template-columns:1.16fr 1fr 1fr;gap:4px;}.campaign-library-utility{display:grid;gap:4px;}.abtn{padding:6px 9px;border-radius:var(--radius);border:1px solid var(--border);background:#fff;color:var(--navy);font-size:10px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;}.abtn.red{color:var(--red);border-color:rgba(180,35,24,.35);}.action-icon{width:13px;height:13px;display:inline-block;vertical-align:-2px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;}.pin-action.active{background:rgba(42,122,74,.10);border-color:rgba(42,122,74,.42);color:var(--green);font-weight:700;}.pin-action.active .action-icon{fill:currentColor;stroke:currentColor;}.btn-compact{padding:5px 8px;font-size:9px;}.campaign-history-actions .abtn:first-child{border-color:rgba(160,146,103,.48);box-shadow:0 1px 4px rgba(160,146,103,.16);font-weight:700;}.campaign-thumbnail{border:1px solid rgba(216,210,199,.8);border-radius:6px;padding:7px;background:#fdfdfc;cursor:pointer;display:grid;gap:5px;}.campaign-thumbnail-operators{display:flex;gap:4px;flex-wrap:wrap;}.campaign-thumbnail-pill{display:inline-flex;border:1px solid rgba(160,146,103,.36);border-radius:999px;padding:2px 5px;font-size:8px;font-weight:700;}.campaign-thumbnail-name{font-size:11px;color:var(--navy);}.campaign-thumbnail-meta,.empty-state{font-size:9px;color:var(--muted);}.empty-state{padding:8px;}.empty-state strong{display:block;color:var(--navy);font-size:10px;margin-bottom:2px;}.confirm-overlay{position:fixed;inset:0;z-index:20;background:rgba(14,27,42,.58);display:none;align-items:center;justify-content:center;padding:18px;}.confirm-overlay.active{display:flex;}.session-restore-modal{width:min(100%,420px);padding:0;border-radius:10px;overflow:hidden;border:1px solid rgba(14,27,42,.16);box-shadow:0 18px 40px rgba(14,27,42,.28);}.session-restore-head{background:var(--navy);padding:14px 18px;border-bottom:3px solid var(--gold);}.session-restore-head h2{color:#fff;font-size:14px;letter-spacing:.04em;margin:0;}.session-restore-body{padding:16px 18px 18px;background:#fff;}.session-restore-body p{font-size:11px;line-height:1.5;color:var(--muted);margin:0 0 12px;}.session-restore-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;}.session-restore-btn{padding:8px 10px;font-size:10px;font-weight:400;letter-spacing:.04em;border-radius:var(--radius);border:1px solid var(--border);background:#fff;color:var(--navy);text-transform:uppercase;cursor:pointer;}.session-restore-btn.restore{background:var(--gold);border-color:var(--gold);color:#fff;}
 </style></head><body><div class="detached-manage-shell"><header class="detached-manage-head"><h1>Manage Campaigns</h1><div class="detached-manage-actions"><button class="summary-btn primary" type="button" onclick="refreshManageCampaigns()">Refresh</button></div></header><main class="detached-manage-body" id="detached-manage-campaigns-content">${contentHtml}</main></div><div class="confirm-overlay" id="detached-confirm-action-modal"><div class="session-restore-modal" role="dialog" aria-modal="true" aria-labelledby="detached-confirm-title"><div class="session-restore-head"><h2 id="detached-confirm-title">Delete this campaign?</h2></div><div class="session-restore-body"><p id="detached-confirm-copy">This cannot be undone.</p><div class="session-restore-actions"><button class="session-restore-btn" type="button" onclick="closeDetachedConfirmActionModal()">Cancel</button><button class="session-restore-btn restore" type="button" onclick="confirmDetachedDelete()">Delete</button></div></div></div></div><script>
@@ -6292,7 +6292,7 @@ function refreshManageCampaigns(){
   const content=document.getElementById('detached-manage-campaigns-content');
   if(!content) return;
   if(window.opener&&!window.opener.closed&&typeof window.opener.getManageCampaignsContentHtml==='function') content.innerHTML=window.opener.getManageCampaignsContentHtml();
-  else content.innerHTML='<div class="empty-state"><strong>Manage Campaigns unavailable</strong>The Cruise Offer Builder window is closed or unavailable.</div>';
+  else content.innerHTML='<div class="empty-state"><strong>Manage Campaigns unavailable</strong>The Cruise Builder window is closed or unavailable.</div>';
 }
 function callOpener(name){
   if(window.opener&&!window.opener.closed&&typeof window.opener[name]==='function'){
@@ -6337,7 +6337,7 @@ function openDetachedManageCampaignsWindow(){
   const features="popup=yes,width=920,height=760,resizable=yes,scrollbars=yes";
   const detached=window.open("","manage-campaigns-detached",features);
   if(!detached){
-    alert("Unable to open the Manage Campaigns window. Please allow pop-ups for Cruise Offer Builder and try again.");
+    alert("Unable to open the Manage Campaigns window. Please allow pop-ups for Cruise Builder and try again.");
     return;
   }
   detachedManageCampaignsWindow=detached;
@@ -6382,7 +6382,7 @@ function parseCampaignFileText(text){
   if(!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Invalid campaign file");
   const isCurrent=parsed.fileType === CAMPAIGN_FILE_TYPE;
   const isLegacyProject=parsed.projectType === "cruise-offer-builder-project";
-  if(!isCurrent && !isLegacyProject) throw new Error("Not a Cruise Offer Builder campaign file");
+  if(!isCurrent && !isLegacyProject) throw new Error("Not a Cruise Builder campaign file");
   if(isCurrent){
     const major=String(parsed.schemaVersion||"").split(".")[0];
     if(major !== String(CAMPAIGN_FILE_SCHEMA_VERSION).split(".")[0]) throw new Error("Incompatible campaign file version");
@@ -8909,7 +8909,7 @@ function renderCampaignSummaryInto(targetId){
 
 function getDetachedSummaryWindowHtml(initialSummaryHtml){
   const summaryHtml=typeof initialSummaryHtml==="string"?initialSummaryHtml:"";
-  return `<!doctype html><html><head><meta charset="utf-8"><title>Campaign Summary — Cruise Offer Builder</title><style>
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Campaign Summary — Cruise Builder</title><style>
 :root{--navy:#0e1b2a;--gold:#c6a15b;--border:#d8d2c7;--muted:#667085;--green:#1f7a4d;--amber:#b7791f;--radius:6px;font-family:Arial,Helvetica,sans-serif;color:#0e1b2a;background:#f7f6f3;}
 *{box-sizing:border-box;} body{margin:0;background:#f7f6f3;color:var(--navy);font-family:Arial,Helvetica,sans-serif;}
 .detached-summary-shell{min-height:100vh;display:flex;flex-direction:column;}
@@ -8927,7 +8927,7 @@ function refreshSummary(){
   if(window.opener&&!window.opener.closed&&typeof window.opener.getCampaignSummaryHtml==='function'){
     content.innerHTML=window.opener.getCampaignSummaryHtml();
   }else{
-    content.innerHTML='<div class="summary-health"><strong>Campaign Summary unavailable</strong><br>The Cruise Offer Builder window is closed or unavailable.</div>';
+    content.innerHTML='<div class="summary-health"><strong>Campaign Summary unavailable</strong><br>The Cruise Builder window is closed or unavailable.</div>';
   }
 }
 function copyAllUtmsFromOpener(){
@@ -8962,7 +8962,7 @@ function openDetachedSummaryWindow(){
   const features="popup=yes,width=920,height=760,resizable=yes,scrollbars=yes";
   const detached=window.open("","campaign-summary-detached",features);
   if(!detached){
-    alert("Unable to open the Campaign Summary window. Please allow pop-ups for Cruise Offer Builder and try again.");
+    alert("Unable to open the Campaign Summary window. Please allow pop-ups for Cruise Builder and try again.");
     return;
   }
   detachedSummaryWindow=detached;
