@@ -815,14 +815,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
             <input id="sheets-url" type="url" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
           </div>
           <button class="abtn csv-sheet-btn" onclick="loadFromSheets()">Import Google Sheet</button>
-          <div class="field">
-            <label for="sheets-file">Campaign File</label>
-            <div class="csv-import-actions">
-              <button class="abtn csv-file-btn" onclick="triggerCsvFilePicker()">Choose Campaign File...</button>
-              <div class="csv-selected-file" id="csv-selected-file" aria-live="polite"></div>
-              <button class="abtn csv-load-btn" id="csv-load-btn" onclick="loadSelectedCampaignImportFile()" disabled>Load Campaign</button>
-            </div>
-          </div>
+          <div class="csv-import-separator">or</div>
+          <button class="abtn csv-file-btn" onclick="triggerCsvFilePicker()">Load Campaign...</button>
           <div id="sheets-status" aria-live="polite"></div>
 
       </div>
@@ -1230,6 +1224,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     </div>
     <div class="view-btns">
       <span class="view-pill" id="view-pill" aria-hidden="true"></span>
+      <button class="vbtn" id="vb-home" onclick="returnHomeFromBuilder()">Home</button>
       <button class="vbtn" id="vb-single" onclick="setView(&#39;single&#39;)">Single</button>
       <button class="vbtn" id="vb-email" onclick="setView(&#39;email&#39;)">Email</button>
       <button class="vbtn active" id="vb-all" onclick="setView(&#39;all&#39;)">All 4</button>
@@ -1295,6 +1290,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <div class="session-restore-body">
       <p id="confirm-action-copy">Are you sure?</p>
       <div class="session-restore-actions">
+        <button class="session-restore-btn" id="confirm-action-secondary-btn" type="button" onclick="confirmActionModalSecondary()" style="display:none;">Return Without Saving</button>
         <button class="session-restore-btn fresh" type="button" onclick="closeConfirmActionModal()">Cancel</button>
         <button class="session-restore-btn restore" id="confirm-action-ok-btn" type="button" onclick="confirmActionModalAccept()">Confirm</button>
       </div>
@@ -4479,34 +4475,15 @@ async function loadFromSheets(){
   storeGoogleSheetSource(source);
   return loadSheetCsvUrl(csvUrl,"Offers loaded",sheetSource.type);
 }
-let pendingCampaignImportFile = null;
-function renderSelectedCampaignImportFile(){
-  const label=document.getElementById("csv-selected-file");
-  const loadBtn=document.getElementById("csv-load-btn");
-  if(label){
-    if(pendingCampaignImportFile){
-      label.classList.add("active");
-      label.innerHTML=`Selected: <strong>${escapeHtml(pendingCampaignImportFile.name||"Campaign file")}</strong>`;
-    }else{
-      label.classList.remove("active");
-      label.textContent="";
-    }
-  }
-  if(loadBtn) loadBtn.disabled=!pendingCampaignImportFile;
-}
 function handleCampaignImportFileSelected(event){
-  const input=event&&event.target;
-  pendingCampaignImportFile=input&&input.files&&input.files[0] ? input.files[0] : null;
-  renderSelectedCampaignImportFile();
+  return loadSelectedCampaignImportFile(event);
 }
-function loadSelectedCampaignImportFile(){
-  const input=document.getElementById("sheets-file");
-  const file=pendingCampaignImportFile || (input&&input.files&&input.files[0]);
-  if(!file){ renderSelectedCampaignImportFile(); return false; }
+function loadSelectedCampaignImportFile(event){
+  const input=(event&&event.target) || document.getElementById("sheets-file");
+  const file=input&&input.files&&input.files[0];
+  if(!file) return false;
   loadFromCSVFile({target:{files:[file],value:""},_onSuccess:()=>dismissSplashAndShowBuilder("csv")});
-  pendingCampaignImportFile=null;
   if(input) input.value="";
-  renderSelectedCampaignImportFile();
   return true;
 }
 function triggerCsvFilePicker(){
@@ -5833,22 +5810,37 @@ function clearSavedSession(){
   if(modal) modal.classList.add('active');
 }
 let confirmActionModalHandler=null;
+let confirmActionModalSecondaryHandler=null;
 function openConfirmActionModal(opts={}){
   const modal=document.getElementById('confirm-action-modal');
   if(!modal) return;
   const titleEl=document.getElementById('confirm-action-title');
   const copyEl=document.getElementById('confirm-action-copy');
   const okBtn=document.getElementById('confirm-action-ok-btn');
+  const secondaryBtn=document.getElementById('confirm-action-secondary-btn');
   if(titleEl) titleEl.textContent=opts.title||"Confirm Action";
   if(copyEl) copyEl.textContent=opts.message||"Are you sure?";
   if(okBtn) okBtn.textContent=opts.confirmLabel||"Confirm";
+  if(secondaryBtn){
+    secondaryBtn.textContent=opts.secondaryLabel||"Secondary";
+    secondaryBtn.style.display=typeof opts.onSecondary==="function" ? "" : "none";
+  }
+  const actions=modal.querySelector('.session-restore-actions');
+  if(actions) actions.style.gridTemplateColumns=typeof opts.onSecondary==="function" ? "1fr 1fr 1fr" : "1fr 1fr";
   confirmActionModalHandler=typeof opts.onConfirm==="function" ? opts.onConfirm : null;
+  confirmActionModalSecondaryHandler=typeof opts.onSecondary==="function" ? opts.onSecondary : null;
   modal.classList.add('active');
 }
 function closeConfirmActionModal(){
   const modal=document.getElementById('confirm-action-modal');
   if(modal) modal.classList.remove('active');
   confirmActionModalHandler=null;
+  confirmActionModalSecondaryHandler=null;
+}
+function confirmActionModalSecondary(){
+  const fn=confirmActionModalSecondaryHandler;
+  closeConfirmActionModal();
+  if(fn) fn();
 }
 function confirmActionModalAccept(){
   const fn=confirmActionModalHandler;
@@ -10337,7 +10329,34 @@ function hideSplashImmediately(){
   const splash=document.getElementById("app-splash");
   if(!splash) return;
   splash.classList.add("hidden");
-  splash.remove();
+  splash.setAttribute("aria-hidden","true");
+}
+function showStartScreenHome(){
+  markBuilderOpenState(false);
+  const app=document.getElementById("builder-app");
+  const splash=document.getElementById("app-splash");
+  if(app){
+    app.classList.add("start-hidden");
+    app.setAttribute("aria-hidden","true");
+  }
+  if(splash){
+    splashClosed=false;
+    splash.classList.remove("hidden","is-exiting");
+    splash.setAttribute("aria-hidden","false");
+  }
+  hydrateSplashRecentSession();
+}
+function returnHomeFromBuilder(){
+  const goHome=()=>showStartScreenHome();
+  if(!hasUnsavedBuilderChanges()){ goHome(); return; }
+  openConfirmActionModal({
+    title:"Return to Home?",
+    message:"Save your current campaign before returning to the Start Screen?",
+    confirmLabel:"Save & Return",
+    secondaryLabel:"Return Without Saving",
+    onConfirm:()=>{ saveCampaignFile(); autosaveHasUnsavedChanges=false; goHome(); },
+    onSecondary:goHome
+  });
 }
 function closeSplash(){
   if(splashClosed) return;
@@ -10357,7 +10376,7 @@ function closeSplash(){
   splash.classList.add("is-exiting");
   window.setTimeout(()=>{
     splash.classList.add("hidden");
-    splash.remove();
+    splash.setAttribute("aria-hidden","true");
   },520);
 }
 function renderActiveOfferImmediately(){
