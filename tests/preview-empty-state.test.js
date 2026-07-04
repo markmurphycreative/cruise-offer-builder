@@ -120,7 +120,9 @@ test('loaded and session-restored offers bypass the empty upload zone and keep n
 
 test('CSV import button and zero-offer workspace share the existing hidden file input click path', () => {
   assert.equal((html.match(/id="sheets-file"/g) || []).length, 1);
-  assert.match(html, /<button class="abtn csv-file-btn" onclick="triggerCsvFilePicker\(\)">Choose Campaign File\.\.\.<\/button>[\s\S]*?id="csv-selected-file"[\s\S]*?<button class="abtn csv-load-btn" id="csv-load-btn" onclick="loadSelectedCampaignImportFile\(\)" disabled>Load Campaign<\/button>/);
+  assert.match(html, /<button class="abtn csv-file-btn" onclick="triggerCsvFilePicker\(\)">Load Campaign\.\.\.<\/button>/);
+  assert.doesNotMatch(html, /Choose Campaign File\.\.\./);
+  assert.doesNotMatch(html, /id="csv-load-btn"/);
   assert.match(extractFunction('triggerCsvFilePicker'), /const input=document\.getElementById\("sheets-file"\);[\s\S]*if\(input\) input\.click\(\);/);
   assert.match(extractFunction('renderEmptyPreviewIfNeeded'), /const showEmptyState = !offers\.some\(isOfferLoaded\);[\s\S]*wrap\.classList\.toggle\('empty-upload-zone', showEmptyState\);/);
   assert.match(extractFunction('initEmptyWorkspaceUploadZone'), /wrap\.addEventListener\('click',[\s\S]*triggerCsvFilePicker\(\);/);
