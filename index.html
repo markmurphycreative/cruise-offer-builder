@@ -1219,7 +1219,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
     <span class="autosave-status" id="autosave-status" aria-live="polite" hidden>Autosave paused</span>
     <div class="toolbar-groups" aria-label="Preview controls">
       <div class="toolbar-group toolbar-group-zoom">
-        <input type="range" min="10" max="150" value="32" oninput="setZoom(this.value)" id="zoom-slider" aria-label="Preview zoom adjustment">
+        <input type="range" min="-100" max="100" value="0" oninput="setZoomFromSlider(this.value)" id="zoom-slider" aria-label="Preview zoom adjustment">
         <span class="pval" id="zoom-val" aria-live="polite" onclick="beginZoomInputEdit()">0</span>
         <span class="zoom-input-wrap" id="zoom-input-wrap">
           <input class="zoom-input" id="zoom-input" type="text" inputmode="numeric" pattern="[+-]?[0-9]*" data-min="-100" data-max="100" value="0" aria-label="Relative preview zoom adjustment" onkeydown="handleZoomInputKeydown(event)" onblur="commitZoomInput()">
@@ -8684,10 +8684,10 @@ function setView(v){
   rv();
 }
 function getPreviewZoomBounds(){
-  const slider=document.getElementById("zoom-slider");
-  const min=slider ? parseInt(slider.min,10) : 10;
-  const max=slider ? parseInt(slider.max,10) : 70;
-  return {min:Number.isFinite(min)?min:10,max:Number.isFinite(max)?max:70};
+  return {min:10,max:150};
+}
+function getPreviewZoomSliderBounds(){
+  return {min:-100,max:100};
 }
 function normalisePreviewZoomValue(val){
   const bounds=getPreviewZoomBounds();
@@ -8730,12 +8730,19 @@ function updatePreviewZoomControls(){
   const label=document.getElementById("zoom-val");
   const input=document.getElementById("zoom-input");
   const reset=document.getElementById("zoom-reset");
-  if(slider) slider.value=String(value);
+  if(slider) slider.value=String(getRelativePreviewZoomValue(value));
   if(label) label.textContent=relative;
   if(input && document.activeElement !== input) input.value=relative;
   if(reset) reset.classList.add("visible");
 }
+function normalisePreviewZoomSliderValue(val){
+  const bounds=getPreviewZoomSliderBounds();
+  const parsed=parseInt(val,10);
+  const whole=Number.isFinite(parsed) ? parsed : 0;
+  return Math.min(bounds.max, Math.max(bounds.min, whole));
+}
 function setZoom(val){ zoomPct=normalisePreviewZoomValue(val); updatePreviewZoomControls(); rv(); }
+function setZoomFromSlider(val){ setZoom(previewZoomFromRelativeValue(normalisePreviewZoomSliderValue(val))); }
 function beginZoomInputEdit(){
   const label=document.getElementById("zoom-val");
   const wrap=document.getElementById("zoom-input-wrap");
