@@ -528,22 +528,25 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .campaign-history-actions{display:grid;grid-template-columns:1.16fr 1fr 1fr;gap:4px;margin-top:0;}
 .campaign-history-actions .abtn:first-child{border-color:rgba(160,146,103,.48);box-shadow:0 1px 4px rgba(160,146,103,.16);font-weight:700;}
 .campaign-library-utility{display:grid;gap:4px;}
-.ptool{display:flex;align-items:center;gap:8px;line-height:1.25;}
-.ptool span{font-size:9px;font-weight:300;line-height:1.25;color:rgba(255,255,255,.62);white-space:nowrap;}
-.ptool input[type=range]{accent-color:var(--gold);width:78px;height:18px;cursor:default;appearance:none;background:transparent;display:block;}
-.ptool input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:999px;background:linear-gradient(90deg,rgba(160,146,103,.92),rgba(255,255,255,.24));box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);}
-.ptool input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;margin-top:-4.5px;border-radius:999px;border:1px solid rgba(255,255,255,.72);background:linear-gradient(180deg,#fff 0%,#d8cfb2 100%);box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 2px rgba(160,146,103,.18);}
-.ptool input[type=range]::-moz-range-track{height:3px;border-radius:999px;background:linear-gradient(90deg,rgba(160,146,103,.92),rgba(255,255,255,.24));box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);}
-.ptool input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:999px;border:1px solid rgba(255,255,255,.72);background:linear-gradient(180deg,#fff 0%,#d8cfb2 100%);box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 2px rgba(160,146,103,.18);}
-.ptool .pval{font-size:9px;line-height:1.25;color:#fff;font-weight:300;min-width:26px;text-align:center;cursor:default;background:transparent;border:0;box-shadow:none;padding:0;}
-.toolbar-divider{display:inline-block;width:1px;height:13px;background:rgba(255,255,255,.18);}
+.toolbar-groups{display:flex;align-items:center;gap:24px;flex:0 0 auto;}
+.toolbar-group{display:inline-flex;align-items:center;gap:8px;line-height:1.25;white-space:nowrap;}
+.toolbar-group-zoom{gap:9px;}
+.toolbar-group-utility{gap:11px;}
+.toolbar-group-actions{gap:14px;}
+.toolbar-group-zoom input[type=range]{accent-color:var(--gold);width:86px;height:18px;cursor:default;appearance:none;background:transparent;display:block;}
+.toolbar-group-zoom input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:999px;background:linear-gradient(90deg,rgba(255,255,255,.24),rgba(160,146,103,.92),rgba(255,255,255,.24));box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);}
+.toolbar-group-zoom input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;margin-top:-4.5px;border-radius:999px;border:1px solid rgba(255,255,255,.72);background:linear-gradient(180deg,#fff 0%,#d8cfb2 100%);box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 2px rgba(160,146,103,.18);}
+.toolbar-group-zoom input[type=range]::-moz-range-track{height:3px;border-radius:999px;background:linear-gradient(90deg,rgba(255,255,255,.24),rgba(160,146,103,.92),rgba(255,255,255,.24));box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);}
+.toolbar-group-zoom input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:999px;border:1px solid rgba(255,255,255,.72);background:linear-gradient(180deg,#fff 0%,#d8cfb2 100%);box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 2px rgba(160,146,103,.18);}
+.pval{font-size:9px;line-height:1.25;color:#fff;font-weight:300;min-width:28px;text-align:left;cursor:default;background:transparent;border:0;box-shadow:none;padding:0;font-variant-numeric:tabular-nums;}
+.toolbar-divider{display:none;}
 .zoom-input-wrap{display:none;align-items:center;box-sizing:border-box;width:34px;background:transparent;border:0;border-radius:0;box-shadow:none;overflow:visible;}
 .zoom-input-wrap.editing{display:inline-flex;}
-.zoom-input{width:24px;min-width:0;box-sizing:border-box;border:0;background:transparent;color:#fff;font-size:9px;font-weight:300;line-height:1.25;padding:0;text-align:right;appearance:textfield;cursor:text;}
+.zoom-input{width:32px;min-width:0;box-sizing:border-box;border:0;background:transparent;color:#fff;font-size:9px;font-weight:300;line-height:1.25;padding:0;text-align:left;appearance:textfield;cursor:text;font-variant-numeric:tabular-nums;}
 .zoom-input::-webkit-outer-spin-button,.zoom-input::-webkit-inner-spin-button{margin:0;appearance:none;}
 .zoom-input:focus{outline:none;}
-.zoom-input-suffix{flex:0 0 auto;font-size:9px;font-weight:300;color:#fff;line-height:1.25;padding:0;}
-.zoom-reset{display:inline-flex;align-items:center;border:0;border-radius:0;background:transparent;color:var(--gold);font-size:9px;font-weight:300;line-height:1.25;padding:4px 0;cursor:default;transition:color var(--ui-transition),opacity var(--ui-transition);}
+.zoom-input-suffix{display:none;}
+.zoom-reset{display:inline-flex;align-items:center;border:0;border-radius:0;background:transparent;color:#fff;font-size:9px;font-weight:300;line-height:1.25;padding:4px 0 5px;cursor:default;letter-spacing:.04em;transition:color var(--ui-transition),opacity var(--ui-transition);}
 .zoom-reset.visible{display:inline-flex;}
 .zoom-reset:hover{background:transparent;border-color:transparent;color:var(--gold);}
 .view-btns{position:relative;display:flex;flex:0 0 auto;align-items:center;gap:8px;border:0;border-radius:0;overflow:visible;isolation:isolate;background:var(--navy);}
@@ -553,6 +556,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .vbtn:hover:not(.active){color:var(--gold);}
 .vbtn.active{color:#fff;font-weight:300;text-shadow:none;}
 .vbtn.active::after{opacity:1;transform:scaleX(1);}
+.utility-home{gap:4px;}
+.utility-home::after{display:none;}
+.home-icon{width:10px;height:10px;display:block;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round;fill:none;opacity:.82;}
 .tbtn{padding:3px 7px;font-size:9px;font-weight:400;border:1px solid rgba(255,255,255,.2);border-radius:3px;background:transparent;color:rgba(255,255,255,.6);margin-left:3px;}
 .tbtn.on{background:rgba(255,255,255,.15);color:#fff;}
 .shortcuts-trigger{position:relative;display:inline-flex;align-items:center;justify-content:center;padding:4px 0 5px;font-size:9px;font-weight:300;line-height:1.25;border:0;border-radius:0;background:transparent;color:#fff;box-shadow:none;letter-spacing:.04em;}
@@ -1211,26 +1217,29 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
   <div class="preview-toolbar">
     <span class="preview-title" id="preview-title">All 4 Cards</span>
     <span class="autosave-status" id="autosave-status" aria-live="polite" hidden>Autosave paused</span>
-    <div class="ptool">
-      <span>Zoom</span>
-      <input type="range" min="10" max="150" value="32" oninput="setZoom(this.value)" id="zoom-slider">
-      <span class="toolbar-divider" aria-hidden="true"></span>
-      <span class="pval" id="zoom-val" aria-live="polite" onclick="beginZoomInputEdit()">32%</span>
-      <span class="zoom-input-wrap" id="zoom-input-wrap">
-        <input class="zoom-input" id="zoom-input" type="text" inputmode="numeric" pattern="[0-9%]*" data-min="10" data-max="150" value="32" aria-label="Preview zoom percentage" onkeydown="handleZoomInputKeydown(event)" onblur="commitZoomInput()"><span class="zoom-input-suffix" aria-hidden="true">%</span>
-      </span>
-      <span class="toolbar-divider" aria-hidden="true"></span>
-      <button class="zoom-reset" id="zoom-reset" type="button" onclick="resetPreviewZoom()" aria-label="Reset preview zoom">Reset</button>
+    <div class="toolbar-groups" aria-label="Preview controls">
+      <div class="toolbar-group toolbar-group-zoom">
+        <input type="range" min="10" max="150" value="32" oninput="setZoom(this.value)" id="zoom-slider" aria-label="Preview zoom adjustment">
+        <span class="pval" id="zoom-val" aria-live="polite" onclick="beginZoomInputEdit()">0</span>
+        <span class="zoom-input-wrap" id="zoom-input-wrap">
+          <input class="zoom-input" id="zoom-input" type="text" inputmode="numeric" pattern="[+-]?[0-9]*" data-min="-69" data-max="369" value="0" aria-label="Relative preview zoom adjustment" onkeydown="handleZoomInputKeydown(event)" onblur="commitZoomInput()">
+        </span>
+      </div>
+      <div class="toolbar-group toolbar-group-utility">
+        <button class="zoom-reset" id="zoom-reset" type="button" onclick="resetPreviewZoom()" aria-label="Reset preview zoom">Reset</button>
+        <button class="vbtn utility-home" id="vb-home" onclick="returnHomeFromBuilder()"><svg class="home-icon" aria-hidden="true" focusable="false" viewBox="0 0 16 16"><path d="M2.5 7.1 8 2.6l5.5 4.5"></path><path d="M4.2 6.8v6h7.6v-6"></path></svg><span>Home</span></button>
+      </div>
+      <div class="toolbar-group view-btns">
+        <span class="view-pill" id="view-pill" aria-hidden="true"></span>
+        <button class="vbtn" id="vb-single" onclick="setView(&#39;single&#39;)">Single</button>
+        <button class="vbtn" id="vb-email" onclick="setView(&#39;email&#39;)">Email</button>
+        <button class="vbtn active" id="vb-all" onclick="setView(&#39;all&#39;)">All 4</button>
+      </div>
+      <div class="toolbar-group toolbar-group-actions">
+        <button class="toolbar-action" type="button" onclick="newCampaign()">New Campaign</button>
+        <button class="shortcuts-trigger" type="button" onclick="openShortcutsModal()" aria-haspopup="dialog">Shortcuts</button>
+      </div>
     </div>
-    <div class="view-btns">
-      <span class="view-pill" id="view-pill" aria-hidden="true"></span>
-      <button class="vbtn" id="vb-home" onclick="returnHomeFromBuilder()">Home</button>
-      <button class="vbtn" id="vb-single" onclick="setView(&#39;single&#39;)">Single</button>
-      <button class="vbtn" id="vb-email" onclick="setView(&#39;email&#39;)">Email</button>
-      <button class="vbtn active" id="vb-all" onclick="setView(&#39;all&#39;)">All 4</button>
-    </div>
-    <button class="toolbar-action" type="button" onclick="newCampaign()">New Campaign</button>
-    <button class="shortcuts-trigger" type="button" onclick="openShortcutsModal()" aria-haspopup="dialog">Shortcuts</button>
   </div>
   <div class="preview-wrap">
     <div class="preview-scaler" id="preview-scaler" style="width: 1200px; transform: scale(0.32); transform-origin: center top; height: 885.44px;">
@@ -8686,16 +8695,32 @@ function normalisePreviewZoomValue(val){
   const whole=Number.isFinite(parsed) ? parsed : 32;
   return Math.min(bounds.max, Math.max(bounds.min, whole));
 }
+function getDefaultPreviewZoom(){ return 32; }
+function getRelativePreviewZoomValue(value){
+  const base=getDefaultPreviewZoom();
+  const current=normalisePreviewZoomValue(value);
+  return Math.round(((current-base)/base)*100);
+}
+function formatRelativePreviewZoomValue(value){
+  const relative=getRelativePreviewZoomValue(value);
+  return relative>0 ? "+"+relative : String(relative);
+}
+function previewZoomFromRelativeValue(val){
+  const parsed=parseInt(String(val).replace(/%/g,""),10);
+  if(!Number.isFinite(parsed)) return getDefaultPreviewZoom();
+  return normalisePreviewZoomValue(Math.round(getDefaultPreviewZoom()*(1+(parsed/100))));
+}
 function updatePreviewZoomControls(){
   const value=normalisePreviewZoomValue(zoomPct);
+  const relative=formatRelativePreviewZoomValue(value);
   zoomPct=value;
   const slider=document.getElementById("zoom-slider");
   const label=document.getElementById("zoom-val");
   const input=document.getElementById("zoom-input");
   const reset=document.getElementById("zoom-reset");
   if(slider) slider.value=String(value);
-  if(label) label.textContent=value+"%";
-  if(input && document.activeElement !== input) input.value=String(value);
+  if(label) label.textContent=relative;
+  if(input && document.activeElement !== input) input.value=relative;
   if(reset) reset.classList.add("visible");
 }
 function setZoom(val){ zoomPct=normalisePreviewZoomValue(val); updatePreviewZoomControls(); rv(); }
@@ -8705,7 +8730,7 @@ function beginZoomInputEdit(){
   const input=document.getElementById("zoom-input");
   if(label) label.hidden=true;
   if(wrap) wrap.classList.add("editing");
-  if(input){ input.value=String(normalisePreviewZoomValue(zoomPct)); input.focus(); input.select(); }
+  if(input){ input.value=formatRelativePreviewZoomValue(zoomPct); input.focus(); input.select(); }
 }
 function endZoomInputEdit(){
   const label=document.getElementById("zoom-val");
@@ -8715,7 +8740,7 @@ function endZoomInputEdit(){
 }
 function commitZoomInput(){
   const input=document.getElementById("zoom-input");
-  setZoom(input ? input.value : zoomPct);
+  setZoom(input ? previewZoomFromRelativeValue(input.value) : zoomPct);
   endZoomInputEdit();
 }
 function handleZoomInputKeydown(event){
@@ -8726,7 +8751,7 @@ function handleZoomInputKeydown(event){
   }
 }
 function resetPreviewZoom(){
-  setZoom(32);
+  setZoom(getDefaultPreviewZoom());
   const wrap=document.querySelector('.preview-wrap');
   if(wrap) requestAnimationFrame(function(){ wrap.scrollTo({top:0,behavior:'auto'}); });
 }

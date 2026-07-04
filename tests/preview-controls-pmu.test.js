@@ -30,17 +30,18 @@ test('preview mode buttons use restrained navy styling with gold underline activ
   assert.doesNotMatch(html, /neon|#ff0|background:linear-gradient\(180deg,#d4af37|color:#0e1b2a;font-weight:800/);
 });
 
-test('preview zoom has typed whole-number input synced with slider and reset', () => {
-  assert.match(html, /<span class="zoom-input-wrap" id="zoom-input-wrap">\s*<input class="zoom-input" id="zoom-input" type="text" inputmode="numeric" pattern="\[0-9%\]\*" data-min="10" data-max="150" value="32"/);
-  assert.match(html, /<span class="zoom-input-suffix" aria-hidden="true">%<\/span>/);
-  assert.match(html, /onkeydown="handleZoomInputKeydown\(event\)" onblur="commitZoomInput\(\)"/);
+test('preview zoom shows relative adjustment while preserving internal slider scale and reset', () => {
+  assert.match(html, /<input type="range" min="10" max="150" value="32" oninput="setZoom\(this\.value\)" id="zoom-slider" aria-label="Preview zoom adjustment">/);
+  assert.match(html, /<span class="pval" id="zoom-val" aria-live="polite" onclick="beginZoomInputEdit\(\)">0<\/span>/);
+  assert.match(html, /pattern="\[\+-\]\?\[0-9\]\*" data-min="-69" data-max="369" value="0" aria-label="Relative preview zoom adjustment"/);
+  assert.doesNotMatch(html, /<span>Zoom<\/span>/);
   assert.match(extractFunction('normalisePreviewZoomValue'), /parseInt\(val,10\)/);
-  assert.match(extractFunction('normalisePreviewZoomValue'), /Math\.min\(bounds\.max, Math\.max\(bounds\.min, whole\)\)/);
-  assert.match(extractFunction('updatePreviewZoomControls'), /const input=document\.getElementById\("zoom-input"\);[\s\S]*if\(input && document\.activeElement !== input\) input\.value=String\(value\);/);
-  assert.match(extractFunction('handleZoomInputKeydown'), /event\.key === "Enter"[\s\S]*commitZoomInput\(\)/);
-  assert.match(extractFunction('beginZoomInputEdit'), /label\) label\.hidden=true/);
-  assert.match(extractFunction('commitZoomInput'), /endZoomInputEdit\(\)/);
-  assert.match(extractFunction('resetPreviewZoom'), /setZoom\(32\)/);
+  assert.match(extractFunction('getRelativePreviewZoomValue'), /Math\.round\(\(\(current-base\)\/base\)\*100\)/);
+  assert.match(extractFunction('formatRelativePreviewZoomValue'), /relative>0 \? "\+"\+relative : String\(relative\)/);
+  assert.match(extractFunction('updatePreviewZoomControls'), /if\(label\) label\.textContent=relative;/);
+  assert.match(extractFunction('updatePreviewZoomControls'), /if\(input && document\.activeElement !== input\) input\.value=relative;/);
+  assert.match(extractFunction('commitZoomInput'), /previewZoomFromRelativeValue\(input\.value\)/);
+  assert.match(extractFunction('resetPreviewZoom'), /setZoom\(getDefaultPreviewZoom\(\)\)/);
 });
 
 test('preview pan mode is removed so Spacebar/browser behaviour is restored', () => {
