@@ -40,6 +40,11 @@ function createHarness(keys = ['csv-import', 'campaign-presets', 'paste-raw-offe
         if (selector === '.section[data-section-key]') return sections;
         if (selector === '.section[data-section-key] .section-hdr') return sections.map(section => section.hdr);
         return [];
+      },
+      querySelector(selector) {
+        const match = selector.match(/\.section\[data-section-key="([^"]+)"\]/);
+        if(match) return sections.find(section => section.dataset.sectionKey === match[1]) || null;
+        return null;
       }
     }
   };
@@ -49,7 +54,8 @@ function createHarness(keys = ['csv-import', 'campaign-presets', 'paste-raw-offe
     extract(/function getSectionCollapseState\(\)\{[\s\S]*?\n\}/, 'getSectionCollapseState'),
     extract(/function getOpenSectionKey\(\)\{[\s\S]*?\n\}/, 'getOpenSectionKey'),
     extract(/function applySectionCollapseState\(sectionState, preferredOpenKey\)\{[\s\S]*?\n\}/, 'applySectionCollapseState'),
-    extract(/function openCsvImportWhenNoOffersLoaded\(\)\{[\s\S]*?\n\}/, 'openCsvImportWhenNoOffersLoaded')
+    extract(/function openCsvImportWhenNoOffersLoaded\(\)\{[\s\S]*?\n\}/, 'openCsvImportWhenNoOffersLoaded'),
+    extract(/function collapseCsvImportAfterCampaignLoaded\(\)\{[\s\S]*?\n\}/, 'collapseCsvImportAfterCampaignLoaded')
   ].join('\n');
   vm.createContext(context);
   vm.runInContext(source, context);
@@ -64,6 +70,17 @@ test('the default sidebar keeps CSV Import as the only expanded section', () => 
   const sections = [...html.matchAll(/<div class="section(?: [^"]*)?" data-section-key="([^"]+)">\s*<div class="section-hdr( collapsed)?"/g)];
   assert.equal(sections.length, 13);
   assert.deepEqual(sections.filter(([, , collapsed]) => !collapsed).map(([, key]) => key), ['csv-import']);
+});
+
+test('fresh empty builders expand Campaign Import while loaded campaigns collapse it once', () => {
+  const { context, sections } = createHarness();
+  sections.forEach(section => context.setSectionCollapsedByHeader(section.hdr, true));
+  assert.equal(context.openCsvImportWhenNoOffersLoaded(), true);
+  assert.deepEqual(openKeys(sections), ['csv-import']);
+
+  context.offers = [{ name: 'Loaded offer' }, {}, {}, {}];
+  assert.equal(context.collapseCsvImportAfterCampaignLoaded(), true);
+  assert.deepEqual(openKeys(sections), []);
 });
 
 test('CSV Import uses the same quiet row treatment as the other accordion sections', () => {
@@ -234,4 +251,3 @@ test('campaign library saved and pinned categories use understated visual identi
   assert.match(html, /\.campaign-library-category\[data-campaign-category="recent"\] \.section-hdr:not\(\.collapsed\),\.campaign-library-category\[data-campaign-category="pinned"\] \.section-hdr:not\(\.collapsed\)\{background:#fff;box-shadow:inset 2px 0 0 rgba\(158,147,108,\.34\);\}/);
   assert.doesNotMatch(html, /\.count-badge/);
 });
-
