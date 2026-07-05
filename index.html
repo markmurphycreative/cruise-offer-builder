@@ -10741,6 +10741,57 @@ function syncSailDateFromHidden(){
   dateEl.value = [day, month].filter(Boolean).join(' ');
 }
 (function(){
+  const traceEnabled = (function(){
+    try{
+      return new URLSearchParams(window.location.search).has("cobFieldTrace") || localStorage.getItem("cobFieldTrace")==="1";
+    }catch(_e){ return false; }
+  })();
+  if(traceEnabled && typeof window !== "undefined"){
+    const traceIds = new Set(["f-name","f-operator","f-ship","f-price"]);
+    const traceWrites = window.COB_EDITOR_FIELD_WRITES = [];
+    const descriptorCache = new Map();
+    function findValueDescriptor(proto){
+      if(!proto) return null;
+      if(descriptorCache.has(proto)) return descriptorCache.get(proto);
+      const descriptor = Object.getOwnPropertyDescriptor(proto, "value") || findValueDescriptor(Object.getPrototypeOf(proto));
+      descriptorCache.set(proto, descriptor);
+      return descriptor;
+    }
+    function traceEditorFieldWrite(el, nextValue){
+      if(!el || !traceIds.has(el.id)) return;
+      const descriptor = findValueDescriptor(Object.getPrototypeOf(el));
+      const previousValue = descriptor && descriptor.get ? descriptor.get.call(el) : el.value;
+      if(String(previousValue ?? "") === String(nextValue ?? "")) return;
+      const stack = String((new Error()).stack || "");
+      const functionName = (stack.split("\n").map(line=>{
+        const match = line.match(/at\s+([^\s(]+)/);
+        return match ? match[1] : "";
+      }).find(name=>name && !/traceEditorFieldWrite|set/.test(name))) || "unknown";
+      traceWrites.push({
+        fieldId: el.id,
+        functionName,
+        previousValue: String(previousValue ?? ""),
+        newValue: String(nextValue ?? ""),
+        currentOfferIndex: typeof cur !== "undefined" ? cur : null,
+        currentOfferName: (typeof offers !== "undefined" && offers && offers[cur]) ? String(offers[cur].name || "") : "",
+        restoreOrLoadingActive: !!((typeof autosaveHydrating !== "undefined" && autosaveHydrating) || (typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) || (typeof autosaveAwaitingRestoreDecision !== "undefined" && autosaveAwaitingRestoreDecision) || (typeof campaignHistoryState !== "undefined" && campaignHistoryState && campaignHistoryState.isRestoring))
+      });
+    }
+    [HTMLInputElement, HTMLTextAreaElement, HTMLSelectElement].forEach(Ctor=>{
+      if(!Ctor || !Ctor.prototype) return;
+      const descriptor = findValueDescriptor(Ctor.prototype);
+      if(!descriptor || !descriptor.configurable || !descriptor.get || !descriptor.set) return;
+      Object.defineProperty(Ctor.prototype, "value", {
+        configurable: true,
+        enumerable: descriptor.enumerable,
+        get: descriptor.get,
+        set: function(nextValue){
+          traceEditorFieldWrite(this, nextValue);
+          return descriptor.set.call(this, nextValue);
+        }
+      });
+    });
+  }
   if(typeof loadOfferToEditor === 'function'){
     const previousLoadOfferToEditor = loadOfferToEditor;
     loadOfferToEditor = function(i){
