@@ -40,9 +40,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 
 /* ── CAMPAIGN BAR ── */
 .campaign-bar{background:#fff;border-bottom:1px solid rgba(216,213,206,.78);padding:8px 12px 9px;flex-shrink:0;display:grid;grid-template-columns:1fr 1fr;gap:5px 8px;box-shadow:0 1px 0 rgba(255,255,255,.75) inset;}
-.sidebar-section-label{font-size:10px;font-weight:500;text-transform:none;letter-spacing:.055em;color:rgba(122,122,122,.62);line-height:1;margin:2px var(--sidebar-content-right-inset) 1px var(--sidebar-content-inset);padding-top:0;}
+.sidebar-section-label{font-size:10px;font-weight:500;text-transform:none;letter-spacing:.055em;color:rgba(122,122,122,.62);line-height:1;margin:1px var(--sidebar-content-right-inset) 1px var(--sidebar-content-inset);padding-top:0;}
 .campaign-bar .sidebar-section-label{grid-column:1/-1;margin:0 0 1px;padding-top:0;color:rgba(14,27,42,.70);font-weight:500;}
-.offer-status-label{margin-top:4px;}
+.offer-status-label{margin-top:2px;}
 .campaign-bar input{font-size:10.5px;padding:3px 0 4px;border:0;border-bottom:1px solid rgba(216,213,206,.86);border-radius:0;background:transparent;color:var(--text);width:100%;transition:border-color var(--ui-transition),box-shadow var(--ui-transition);}
 .campaign-bar input:focus{outline:none;border-color:var(--gold);box-shadow:0 1px 0 rgba(198,161,91,.28);}
 .campaign-name-heading{display:flex;align-items:center;}
@@ -99,7 +99,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .offer-lock-toggle.locked .lock-icon-locked{display:block;}
 
 /* ── SIDEBAR BODY ── */
-.sb-body{flex:1 1 auto;min-height:0;overflow-y:auto;scrollbar-gutter:stable;padding:1px var(--sidebar-content-inset) 4px;}
+.sb-body{flex:1 1 auto;min-height:0;overflow-y:auto;scrollbar-gutter:stable;padding:0 var(--sidebar-content-inset) 0;}
 .sb-body::-webkit-scrollbar{width:var(--sidebar-scrollbar-width);}
 .sb-body::-webkit-scrollbar-thumb{background:var(--border);}
 
@@ -452,7 +452,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .template-actions{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px;}
 
 /* ── ACTION BUTTONS ── */
-.sb-actions{padding:17px 9px 5px;border-top:1px solid rgba(216,213,206,.72);background:#f7f6f3;flex-shrink:0;}
+.sb-actions{padding:5px 9px 9px;border-top:1px solid rgba(216,213,206,.72);background:#f7f6f3;flex-shrink:0;}
 .act-row{display:flex;gap:4px;margin-bottom:3px;}
 .abtn{flex:1;min-height:var(--ui-button-height);padding:var(--ui-button-padding);font-size:var(--ui-button-font);font-weight:400;border-radius:var(--ui-radius);border:1px solid var(--border);background:#fff;color:var(--text);letter-spacing:.015em;white-space:nowrap;transition:background var(--ui-transition),border-color var(--ui-transition),color var(--ui-transition),box-shadow var(--ui-transition),transform var(--ui-transition),opacity var(--ui-transition);}
 .abtn:hover:not(:disabled){background:#f7f6f3;border-color:rgba(14,27,42,.18);}
@@ -470,7 +470,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .btn-compact{font-size:9px;padding:4px 7px;min-height:24px;}
 .lock-ind{display:none;min-height:34px;font-size:9px;color:#6f684f;font-weight:500;text-align:center;margin-bottom:6px;padding:5px 8px;background:#efeee7;border:1px solid rgba(126,119,91,.20);border-radius:4px;line-height:1.2;align-items:center;justify-content:center;}
 .lock-ind.active{display:flex;}
-.session-status{font-size:8.5px;color:rgba(122,122,122,.82);background:transparent;border:0;border-radius:0;padding:0 2px 3px;margin-bottom:16px;line-height:1.2;text-align:center;}
+.session-status{font-size:8.5px;color:rgba(122,122,122,.82);background:transparent;border:0;border-radius:0;padding:0 2px 3px;margin-bottom:5px;line-height:1.2;text-align:center;}
 .session-status-summary{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .session-hint{font-size:9px;color:var(--muted);text-align:center;margin-top:3px;line-height:1.35;}
 .session-feedback{font-size:9px;color:var(--green);text-align:center;margin-top:3px;min-height:12px;opacity:0;transition:opacity .2s ease;}
