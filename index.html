@@ -5505,7 +5505,7 @@ function restoreSavedSessionOnStartup(){
   const saved=readSavedSession();
   if(!(saved && Array.isArray(saved.offers))) return false;
   const hasRefs=saved.offers.some(o=>o&&(o._imgAssetId||o._itineraryImgAssetId));
-  const restorePayload=payload=>{ applySessionPayload(payload); if(typeof migrateLegacyEmbeddedHeroAssets==="function") migrateLegacyEmbeddedHeroAssets(payload); autosaveLastSavedAt=payload.savedAt || autosaveLastSavedAt; syncAutosaveStatus(); const partial=sessionHasMissingHeroImages(payload); showSessionFeedback(partial ? "Session restored, but hero images need re-uploading" : "Previous session restored", partial); return true; };
+  const restorePayload=payload=>{ applySessionPayload(payload); if(typeof migrateLegacyEmbeddedHeroAssets==="function") migrateLegacyEmbeddedHeroAssets(payload); autosaveLastSavedAt=payload.savedAt || autosaveLastSavedAt; syncAutosaveStatus(); const partial=sessionHasMissingHeroImages(payload); showSessionFeedback(partial ? "Session restored, but hero images need re-uploading" : "Previous session restored", partial); if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Session restore"); if(typeof resetCampaignHistoryBaseline==="function") resetCampaignHistoryBaseline(); if(typeof markBuilderStateClean==="function") markBuilderStateClean(); return true; };
   if(hasRefs) return hydrateHeroAssetsFromIndexedDb(saved).then(restorePayload);
   return restorePayload(saved);
 }
@@ -5854,7 +5854,7 @@ function chooseRestoreSession(){
   pendingRestoreSession = null;
   closeSessionRestoreModal();
   if(payload){
-    const applyRestored=restored=>{ applySessionPayload(restored); autosaveLastSavedAt = restored.savedAt || autosaveLastSavedAt; setAutosaveStatus(`Autosaved ${formatAutosaveTime(autosaveLastSavedAt)}`); const partial=sessionHasMissingHeroImages(restored); showSessionFeedback(partial ? "Session restored, but hero images need re-uploading" : "Previous session restored", partial); if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Session restore"); return true; };
+    const applyRestored=restored=>{ applySessionPayload(restored); autosaveLastSavedAt = restored.savedAt || autosaveLastSavedAt; setAutosaveStatus(`Autosaved ${formatAutosaveTime(autosaveLastSavedAt)}`); const partial=sessionHasMissingHeroImages(restored); showSessionFeedback(partial ? "Session restored, but hero images need re-uploading" : "Previous session restored", partial); if(typeof resetCampaignHistoryBaseline==="function") resetCampaignHistoryBaseline(); if(typeof markBuilderStateClean==="function") markBuilderStateClean(); return true; };
     if((payload.offers||[]).some(o=>o&&(o._imgAssetId||o._itineraryImgAssetId))) return hydrateHeroAssetsFromIndexedDb(payload).then(applyRestored);
     return applyRestored(payload);
   }
@@ -10512,6 +10512,7 @@ function dismissSplashAndShowBuilder(mode="open"){
     if(typeof rv==="function") rv();
     if(typeof updateAllStatus==="function") updateAllStatus();
     renderActiveOfferImmediately();
+    if(["fresh","restored","campaign"].includes(mode) && typeof markBuilderStateClean==="function") markBuilderStateClean();
   }catch(err){
     console.error("[splash] Builder UI refresh failed after splash dismissal.", err);
   }
@@ -10642,12 +10643,14 @@ async function initBuilderApp(){
     initEmptyWorkspaceUploadZone();
     updateMoveOfferButtons();
     syncAutosaveStatus();
-    if(restoredSession || !savedSessionAvailable) queueAutosave();
+    if(restoredSession && typeof markBuilderStateClean==="function") markBuilderStateClean();
+    if(!savedSessionAvailable) saveSessionNow();
     // Ensure preview is initialised through the same path as clicking the active offer tab.
     sv(cur);
     initCampaignHistoryListeners();
     resetCampaignLibraryStartupState();
     resetCampaignHistoryBaseline();
+    if(restoredSession && typeof markBuilderStateClean==="function") markBuilderStateClean();
   }catch(err){
     console.error("[init] Builder app initialisation failed.", err);
   }
