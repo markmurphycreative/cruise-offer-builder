@@ -2714,15 +2714,55 @@ function resetBuilderToFreshSession(){
   openCsvImportWhenNoOffersLoaded();
   if(typeof confirmClearSavedSession==="function") confirmClearSavedSession();
   showSessionFeedback("New campaign ready",false);
+  markBuilderStateClean();
 }
-function hasUnsavedBuilderChanges(){
-  if(autosaveHasUnsavedChanges) return true;
+function getBuilderDirtyStateSignature(){
+  const valueOf=id=>{ const el=document.getElementById(id); return el ? String(el.value||"") : ""; };
+  return JSON.stringify({
+    campaign:{
+      name:valueOf("g-campaign"),
+      date:valueOf("g-date"),
+      description:valueOf("g-description"),
+      owner:valueOf("g-owner"),
+      airport:valueOf("g-airport"),
+      terms:valueOf("g-terms"),
+      autoCampaignName:getAutoCampaignNameState()
+    },
+    offers:(offers||[]).slice(0,4),
+    lockedOffers:(lockedOffers||[]).slice(0,4),
+    lockedHeroImages:(lockedHeroImages||[]).slice(0,4),
+    ctaSettings:ctaSettings || CTA_DEFAULTS,
+    sheetsUrl:valueOf("sheets-url")
+  });
+}
+let lastCleanBuilderStateSignature = null;
+function markBuilderStateClean(){
+  lastCleanBuilderStateSignature = getBuilderDirtyStateSignature();
+  autosaveHasUnsavedChanges = false;
+}
+function hasMeaningfulBuilderContent(){
+  const campaignDefaults={
+    "g-description":DEFAULT_CAMPAIGN_DESCRIPTION,
+    "g-owner":DEFAULT_CAMPAIGN_OWNER,
+    "g-airport":"Newcastle",
+    "g-terms":"T&Cs Apply"
+  };
   const globalIds=["g-campaign","g-date","g-description","g-owner","g-airport","g-terms","raw-paste","multi-offer-paste","sheets-url","f-utm-content"];
-  if(globalIds.some(id=>{ const el=document.getElementById(id); return el && String(el.value||"").trim(); })) return true;
+  if(globalIds.some(id=>{
+    const el=document.getElementById(id);
+    const value=el ? String(el.value||"").trim() : "";
+    if(!value) return false;
+    return !(id in campaignDefaults) || value !== campaignDefaults[id];
+  })) return true;
   if((offers||[]).some(isOfferLoaded)) return true;
   if((lockedOffers||[]).some(Boolean) || (lockedHeroImages||[]).some(Boolean)) return true;
   if(ctaSettings && JSON.stringify(ctaSettings)!==JSON.stringify(CTA_DEFAULTS)) return true;
   return false;
+}
+function hasUnsavedBuilderChanges(){
+  const currentSignature=getBuilderDirtyStateSignature();
+  if(lastCleanBuilderStateSignature != null) return currentSignature !== lastCleanBuilderStateSignature && hasMeaningfulBuilderContent();
+  return !!autosaveHasUnsavedChanges && hasMeaningfulBuilderContent();
 }
 function newCampaign(){
   const startFresh=()=>resetBuilderToFreshSession();
@@ -5798,6 +5838,7 @@ function resetBuilderToBlankSession(){
   }
   syncAutosaveStatus();
   resetCampaignHistoryBaseline();
+  markBuilderStateClean();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -6389,6 +6430,7 @@ function saveCampaignFile(){
     a.click();
     URL.revokeObjectURL(a.href);
     showSessionFeedback("Campaign saved",false);
+    if(typeof markBuilderStateClean==="function") markBuilderStateClean();
     addCampaignHistoryEntry(buildCampaignHistoryEntryFromPayload(payload, "saved"));
     refreshCampaignHistoryUI();
   }catch(e){
@@ -6441,6 +6483,7 @@ function restoreCampaignFilePayload(filePayload){
   if(typeof collapseCsvImportAfterCampaignLoaded==="function") collapseCsvImportAfterCampaignLoaded();
   if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Campaign load");
   saveSessionNow();
+  if(typeof markBuilderStateClean==="function") markBuilderStateClean();
   const differentAppVersion=!!(parsed.appVersion && parsed.appVersion !== APP_VERSION);
   const imageWarning=campaignFileNeedsImageCheck(restored);
   const compatibilityWarning=isLegacyProject || differentAppVersion;
@@ -6459,7 +6502,10 @@ function loadCampaignFile(event){
   if(!file) return;
   const reader=new FileReader();
   reader.onload=()=>{
-    try{ restoreCampaignFilePayload(parseCampaignFileText(reader.result)); }
+    try{
+      restoreCampaignFilePayload(parseCampaignFileText(reader.result));
+      if(event && typeof event._onSuccess === "function") event._onSuccess();
+    }
     catch(e){
       console.warn("Campaign load rejected",e);
       showSessionFeedback(`Invalid campaign file: ${e.message}`,true);
@@ -10479,8 +10525,11 @@ window.openBuilderFromSplash = function(event){
 };
 window.loadCampaignFromSplash = function(event){
   if(event) event.preventDefault();
-  dismissSplashAndShowBuilder("campaign");
-  triggerLoadCampaignFile();
+  const temp=document.createElement("input");
+  temp.type="file";
+  temp.accept=".json,application/json";
+  temp.onchange=(e)=>loadCampaignFile(Object.assign(e,{_onSuccess:()=>dismissSplashAndShowBuilder("campaign")}));
+  temp.click();
 };
 window.loadCsvFromSplash = function(event){
   if(event) event.preventDefault();
