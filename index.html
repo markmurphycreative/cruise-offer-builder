@@ -5552,6 +5552,7 @@ function applySessionPayload(data){
   refreshAfterRestore();
 }
 function refreshAfterRestore(){
+  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
   updateLockUI();
   genUtm();
   genAllUtms(true);
@@ -6473,6 +6474,7 @@ function restoreCampaignFilePayload(filePayload){
   allowLargeEmbeddedImagesDuringRestore=true;
   try{ applySessionPayload(restored); }
   finally{ allowLargeEmbeddedImagesDuringRestore=false; }
+  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) finishSplashCampaignHydration();
   const sheetUrl=parsed.sourceInfo && typeof parsed.sourceInfo.googleSheetUrl === "string" ? parsed.sourceInfo.googleSheetUrl : "";
   const sheetsInput=document.getElementById("sheets-url");
   if(sheetsInput) sheetsInput.value=sheetUrl;
@@ -6500,6 +6502,8 @@ function loadCampaignFile(event){
   const input=event && event.target;
   const file=input && input.files && input.files[0];
   if(!file) return;
+  const isSplashCampaignLoad=!!(event&&event._fromSplash);
+  if(isSplashCampaignLoad && typeof prepareSplashCampaignHydration==="function") prepareSplashCampaignHydration();
   const reader=new FileReader();
   reader.onload=()=>{
     try{
@@ -6507,11 +6511,12 @@ function loadCampaignFile(event){
       if(event && typeof event._onSuccess === "function") event._onSuccess();
     }
     catch(e){
+      if(typeof isSplashCampaignLoad !== "undefined" && isSplashCampaignLoad && typeof abortSplashCampaignHydration==="function") abortSplashCampaignHydration();
       console.warn("Campaign load rejected",e);
       showSessionFeedback(`Invalid campaign file: ${e.message}`,true);
     }finally{ input.value=""; }
   };
-  reader.onerror=()=>{ input.value=""; showSessionFeedback("Invalid campaign file: could not read file",true); };
+  reader.onerror=()=>{ if(typeof isSplashCampaignLoad !== "undefined" && isSplashCampaignLoad && typeof abortSplashCampaignHydration==="function") abortSplashCampaignHydration(); input.value=""; showSessionFeedback("Invalid campaign file: could not read file",true); };
   reader.readAsText(file);
 }
 function buildProjectFilename(){
@@ -8846,7 +8851,47 @@ function resetPreviewZoom(){
   const wrap=document.querySelector('.preview-wrap');
   if(wrap) requestAnimationFrame(function(){ wrap.scrollTo({top:0,behavior:'auto'}); });
 }
+let splashCampaignHydrating = false;
+function clearActiveEditorDomFields(){
+  FLDS.forEach(function(f){ const e=document.getElementById('f-'+f); if(e) e.value=''; });
+  ['f-operator','f-logo-display','raw-paste','f-img-url','sheets-url'].forEach(function(id){ const e=document.getElementById(id); if(e) e.value=''; });
+  ['crop-zoom','itinerary-crop-zoom'].forEach(function(id){ const e=document.getElementById(id); if(e) e.value=100; });
+  ['crop-x','crop-y','itinerary-crop-x','itinerary-crop-y'].forEach(function(id){ const e=document.getElementById(id); if(e) e.value=50; });
+  try{ setThumb('logo',''); setThumb('hero',''); setThumb('itinerary',''); }catch(_e){}
+  try{ syncHeroUi(); }catch(_e){}
+  try{ syncItineraryUi(); }catch(_e){}
+}
+function clearCurrentPreviewOutputState(){
+  const out=document.getElementById('card-output');
+  const scaler=document.getElementById('preview-scaler');
+  if(out){ out.innerHTML=''; out.classList.remove('empty-preview-output'); }
+  if(scaler){ scaler.classList.remove('empty-preview'); scaler.style.width='100%'; scaler.style.height='100%'; scaler.style.transform='none'; }
+}
+function prepareSplashCampaignHydration(){
+  splashCampaignHydrating = true;
+  autosaveHydrating = true;
+  clearActiveEditorDomFields();
+  clearCurrentPreviewOutputState();
+  offers = [{},{},{},{}];
+  cur = 0;
+  lockedOffers = [false,false,false,false];
+  lockedHeroImages = [false,false,false,false];
+  if(typeof applyCtaSettings === 'function') applyCtaSettings(CTA_DEFAULTS);
+  viewMode = 'all';
+  if(typeof syncViewSelector === 'function') syncViewSelector();
+  document.querySelectorAll('.otab').forEach(function(t,idx){ t.classList.toggle('active', idx===0); });
+}
+function finishSplashCampaignHydration(){
+  splashCampaignHydrating = false;
+  autosaveHydrating = false;
+  refreshAfterRestore();
+}
+function abortSplashCampaignHydration(){
+  splashCampaignHydrating = false;
+  autosaveHydrating = false;
+}
 function currentFormData(){
+  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return {...(offers[cur]||{})};
   const d={...(offers[cur]||{})};
   FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e) d[f]=e.value; });
   const op=document.getElementById("f-operator");
@@ -9119,6 +9164,7 @@ function fillEx(){
 // The preview is rendered from offers[cur], and the sidebar fields are only the editor.
 // ═══════════════════════════════════════════════════════
 function saveEditorToOffer(){
+  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
   if(typeof isOfferLocked==="function" && isOfferLocked(cur)) return;
   try { autoBoardLabel(); } catch(e){}
   const o = stripTransientPasteOfferFields(offers[cur] || (offers[cur] = {}));
@@ -9217,6 +9263,7 @@ function renderOfferIndex(i){
 
 const oldRvNoPatch = rv;
 function rv(skipSave){
+  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
   if(!skipSave) saveEditorToOffer();
   renderOfferIndex(cur);
 }
@@ -9284,6 +9331,7 @@ processSheetCSV = function(csv,status){
 // offer data after CSV imports.
 // ═══════════════════════════════════════════════════════
 function visibleFieldsToData(){
+  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}));
   const base = stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}));
   const rawPaste=document.getElementById("raw-paste");
   if(rawPaste) base[PERSISTED_PASTE_OFFER_KEY]=rawPaste.value||"";
@@ -9313,11 +9361,13 @@ function visibleFieldsToData(){
   return base;
 }
 function commitVisibleFields(){
+  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
   try { autoBoardLabel(); } catch(e){}
   offers[cur] = stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}, visibleFieldsToData()));
   syncTopBarUspManualState(offers[cur]);
 }
 function renderVisibleCard(){
+  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
   const scaler = document.getElementById('preview-scaler');
   const out = document.getElementById('card-output');
   if(!scaler || !out) return;
@@ -9733,6 +9783,7 @@ function renderEmptyPreviewIfNeeded(){
 }
 
 function renderPreviewMode(skipSave){
+  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
   if(!skipSave){ try { commitVisibleFields(); } catch(e){} }
 
   const scaler = document.getElementById('preview-scaler');
@@ -10529,7 +10580,7 @@ window.loadCampaignFromSplash = function(event){
   const temp=document.createElement("input");
   temp.type="file";
   temp.accept=".json,application/json";
-  temp.onchange=(e)=>loadCampaignFile(Object.assign(e,{_onSuccess:()=>dismissSplashAndShowBuilder("campaign")}));
+  temp.onchange=(e)=>loadCampaignFile(Object.assign(e,{_fromSplash:true,_onSuccess:()=>dismissSplashAndShowBuilder("campaign")}));
   temp.click();
 };
 window.loadCsvFromSplash = function(event){
