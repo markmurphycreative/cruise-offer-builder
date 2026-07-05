@@ -117,7 +117,7 @@ test('an empty builder opens CSV Import and collapses every other section withou
 });
 
 test('session hydration forces Campaign Import open for empty restored sessions but first-run startup only opens without saved sessions', () => {
-  assert.match(html, /function applySessionPayload\(data\)\{[\s\S]*?autosaveHydrating = false;\s*openCsvImportWhenNoOffersLoaded\(\);\s*refreshAfterRestore\(\);/);
+  assert.match(html, /function applySessionPayload\(data\)\{[\s\S]*?setPreviewSource\('offers'\);[\s\S]*?openCsvImportWhenNoOffersLoaded\(\);\s*refreshAfterRestore\(\);[\s\S]*?autosaveHydrating = false;/);
   assert.match(html, /function initBuilderApp\(\)\{[\s\S]*?refreshOfferUi\(\{utm:true,spell:true,autosave:false\}\);\s*if\(!savedSessionAvailable\) openCsvImportWhenNoOffersLoaded\(\);/);
 });
 
@@ -195,7 +195,7 @@ test('builder startup, splash dismissal, session restore, and campaign file rest
   assert.match(html, /function initBuilderApp\(\)\{\s*\/\/[^\n]+\n\s*refreshPresetList\(\);\s*try\{\s*resetCampaignLibraryStartupState\(\);[\s\S]*?sv\(cur\);\s*initCampaignHistoryListeners\(\);\s*resetCampaignLibraryStartupState\(\);/);
   assert.match(html, /function dismissSplashAndShowBuilder\(mode="open"\)\{\s*markBuilderOpenState\(true,mode\);\s*resetCampaignLibraryStartupState\(\);/);
   assert.match(html, /function initStartScreenActions\(\)\{[\s\S]*?if\(shouldBypassSplashOnLoad\(\)\)\{\s*resetCampaignLibraryStartupState\(\);/);
-  assert.match(html, /function applySessionPayload\(data\)\{[\s\S]*?applySectionCollapseState\(data\.sectionState, data\.openSectionKey\);[\s\S]*?if\(typeof resetCampaignLibraryStartupState==="function"\) resetCampaignLibraryStartupState\(\);\s*loadOfferToEditor\(cur\);/);
+  assert.match(html, /function applySessionPayload\(data\)\{[\s\S]*?applySectionCollapseState\(data\.sectionState, data\.openSectionKey\);[\s\S]*?if\(typeof resetCampaignLibraryStartupState==="function"\) resetCampaignLibraryStartupState\(\);[\s\S]*?setPreviewSource\('offers'\);[\s\S]*?refreshAfterRestore\(\);[\s\S]*?loadOfferToEditor\(cur\);/);
   assert.match(html, /function restoreCampaignFilePayload\(filePayload\)\{[\s\S]*?clearTimeout\(autosaveTimer\);\s*if\(typeof resetCampaignLibraryStartupState==="function"\) resetCampaignLibraryStartupState\(\);/);
 });
 
