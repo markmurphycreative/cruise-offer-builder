@@ -87,6 +87,8 @@ test('sidebar footer follows the Utilities rows without a flex spacer', () => {
   assert.ok(actionsStart < sbBodyEnd, 'Expected footer to be normal content within sb-body instead of a viewport-pinned flex child');
   assert.match(html.slice(utilitiesStart, actionsStart), /Campaign Summary[\s\S]*Manage Campaigns/);
   assert.match(html, /\.sb-actions\{[^}]*margin-top:14px;[^}]*flex:0 0 auto;[^}]*\}/);
+  assert.match(html, /\.sidebar\{[^}]*background:transparent;[^}]*\}/);
+  assert.match(html, /\.sb-body\{[^}]*flex:0 1 auto;[^}]*background:#fff;[^}]*\}/);
   assert.doesNotMatch(html, /\.sb-actions\{[^}]*margin-top:auto/);
   assert.doesNotMatch(html, /(?:footer|spacer)[^{]*\{[^}]*(?:flex-grow:1|flex:1|margin-top:auto)/);
 });
