@@ -111,10 +111,10 @@ test('Generated UTM context identifier falls back safely when operator and offer
   context.genUtm();
   assert.equal(elements['utm-context-meta'].textContent, 'CARD 1');
   assert.equal(elements['utm-context-title'].textContent, 'Untitled Offer');
-  assert.equal(elements['utm-current-card'].style.values['--utm-operator-accent'], '#a09267');
-  assert.equal(elements['utm-current-card'].style.values['--utm-operator-tint'], 'rgba(160,146,103,0.04)');
-  assert.equal(elements['utm-context-id'].style.values['--utm-accent'], '#a09267');
-  assert.equal(elements['utm-context-id'].style.values['--utm-accent-tint'], 'rgba(160,146,103,0.025)');
+  assert.equal(elements['utm-current-card'].style.values['--utm-operator-accent'], '#9e936c');
+  assert.equal(elements['utm-current-card'].style.values['--utm-operator-tint'], 'rgba(158,147,108,0.04)');
+  assert.equal(elements['utm-context-id'].style.values['--utm-accent'], '#9e936c');
+  assert.equal(elements['utm-context-id'].style.values['--utm-accent-tint'], 'rgba(158,147,108,0.025)');
 });
 
 test('Generated UTM card applies the subtle configured operator colour mapping', () => {
@@ -123,7 +123,7 @@ test('Generated UTM card applies the subtle configured operator colour mapping',
     cunard: { accent: '#8b0000', tint: 'rgba(139,0,0,0.04)' },
     msc: { accent: '#003399', tint: 'rgba(0,51,153,0.04)' },
     princess: { accent: '#7fb6d9', tint: 'rgba(127,182,217,0.04)' },
-    fred: { accent: '#a09267', tint: 'rgba(160,146,103,0.04)' },
+    fred: { accent: '#9e936c', tint: 'rgba(158,147,108,0.04)' },
     marella: { accent: '#008c95', tint: 'rgba(0,140,149,0.04)' },
     royal: { accent: '#003087', tint: 'rgba(0,48,135,0.04)' },
     ambassador: { accent: '#6f1d46', tint: 'rgba(111,29,70,0.04)' }

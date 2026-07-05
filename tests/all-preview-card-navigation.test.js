@@ -71,7 +71,7 @@ test('clicking an All 4 preview card selects that offer and switches to Single w
 
 test('All 4 rendered cards expose click, keyboard, and accessible edit affordances', () => {
   assert.match(html, /\.all-preview-card\{[^}]*cursor:default;[^}]*transition:transform \.18s ease,box-shadow \.18s ease,outline-color \.18s ease;/);
-  assert.match(html, /\.all-preview-card:hover,\.all-preview-card:focus-visible\{[^}]*transform:translateY\(-4px\);[^}]*outline:2px solid rgba\(160,146,103,\.42\);/);
+  assert.match(html, /\.all-preview-card:hover,\.all-preview-card:focus-visible\{[^}]*transform:translateY\(-4px\);[^}]*outline:2px solid rgba\(158,147,108,\.42\);/);
   const renderer = extractFunction('renderPreviewMode');
   assert.match(renderer, /loadedPreviewOffers\.forEach\(function\(item, loadedIndex\)\{/);
   assert.match(renderer, /const d = item\.data;[\s\S]*?const index = item\.index;/);

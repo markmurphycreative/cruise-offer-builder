@@ -71,7 +71,7 @@ function createHarness(offers) {
 test('fresh previews use the whole blank workspace as a subtle upload zone before rendering cards', () => {
   assert.match(html, /\.preview-scaler\.empty-preview\{[^}]*display:flex;[^}]*align-items:center;[^}]*justify-content:center;/);
   assert.match(html, /\.preview-wrap\.empty-upload-zone\{cursor:pointer;\}/);
-  assert.match(html, /\.preview-wrap\.empty-upload-zone:hover,\.preview-wrap\.empty-upload-zone\.drag-over\{[^}]*background:#d4d0c7;[^}]*box-shadow:inset 0 0 0 2px rgba\(160,146,103,\.48\)/);
+  assert.match(html, /\.preview-wrap\.empty-upload-zone:hover,\.preview-wrap\.empty-upload-zone\.drag-over\{[^}]*background:#d4d0c7;[^}]*box-shadow:inset 0 0 0 2px rgba\(158,147,108,\.48\)/);
   assert.match(html, /\.preview-empty-state\{[^}]*width:min\(475px,calc\(100% - 30px\)\);[^}]*text-align:center;[^}]*background:none;[^}]*border:none;[^}]*border-radius:0;[^}]*box-shadow:none;[^}]*font-family:'Montserrat',sans-serif;[^}]*color:var\(--navy\);[^}]*cursor:pointer;[^}]*transition:opacity \.18s ease,transform \.18s ease;/);
   assert.match(html, /\.preview-empty-state::before\{[^}]*content:'⇧';[^}]*border:1px dashed rgba\(21,39,63,\.42\);/);
   assert.match(html, /\.preview-empty-state h2\{[^}]*padding:0;[^}]*background:none;[^}]*color:var\(--navy\);[^}]*font-family:'Montserrat',sans-serif;[^}]*font-size:16\.5px;[^}]*font-weight:400;/);

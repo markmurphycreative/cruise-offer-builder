@@ -18,7 +18,7 @@ function renderHeader(offer) {
   ].join('\n');
   const context = {
     OPERATOR_SKINS: { po: { background: '#123456', accentStrip: '#abcdef' } },
-    OPERATOR_HEADERS: { po: { name: 'P&O Cruises', pngData: 'assets/operator-logos/po-cruises-logo.png', color: '#a09267' } },
+    OPERATOR_HEADERS: { po: { name: 'P&O Cruises', pngData: 'assets/operator-logos/po-cruises-logo.png', color: '#9e936c' } },
     OPERATOR_USP_PRESETS: { po: 'Preset USP' }
   };
   vm.createContext(context);

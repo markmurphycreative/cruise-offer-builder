@@ -231,7 +231,7 @@ test('campaign library removes dashboard count badges while refresh keeps lists 
 
 
 test('campaign library saved and pinned categories use understated visual identities', () => {
-  assert.match(html, /\.campaign-library-category\[data-campaign-category="recent"\] \.section-hdr:not\(\.collapsed\),\.campaign-library-category\[data-campaign-category="pinned"\] \.section-hdr:not\(\.collapsed\)\{background:#fff;box-shadow:inset 2px 0 0 rgba\(160,146,103,\.34\);\}/);
+  assert.match(html, /\.campaign-library-category\[data-campaign-category="recent"\] \.section-hdr:not\(\.collapsed\),\.campaign-library-category\[data-campaign-category="pinned"\] \.section-hdr:not\(\.collapsed\)\{background:#fff;box-shadow:inset 2px 0 0 rgba\(158,147,108,\.34\);\}/);
   assert.doesNotMatch(html, /\.count-badge/);
 });
 
