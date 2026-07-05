@@ -77,16 +77,21 @@ test('sticky Save Campaign remains wired to existing campaign save behaviour', (
   assert.match(saveCampaignFile, /addCampaignHistoryEntry\(buildCampaignHistoryEntryFromPayload\(payload, "saved"\)\);/);
 });
 
-test('sidebar footer follows the Utilities rows without a flex spacer', () => {
+test('sidebar footer sits outside the scrolling sidebar body as a bottom-anchored sibling', () => {
   const utilitiesStart = html.indexOf('<div class="sidebar-section-label">Utilities</div>');
-  const actionsStart = html.indexOf('<div class="sb-actions">', utilitiesStart);
-  const sbBodyEnd = html.indexOf('</div><!-- end sb-body -->', actionsStart);
+  const sbBodyEnd = html.indexOf('</div><!-- end sb-body -->', utilitiesStart);
+  const actionsStart = html.indexOf('<div class="sb-actions">', sbBodyEnd);
+  const sidebarEnd = html.indexOf('</div>\n\n<!-- ══════════════════════ PREVIEW', actionsStart);
   assert.notEqual(utilitiesStart, -1, 'Expected Utilities label to exist');
-  assert.notEqual(actionsStart, -1, 'Expected sidebar actions to follow Utilities');
-  assert.notEqual(sbBodyEnd, -1, 'Expected sidebar actions to remain inside the scrolling sidebar body');
-  assert.ok(actionsStart < sbBodyEnd, 'Expected footer to be normal content within sb-body instead of a viewport-pinned flex child');
-  assert.match(html.slice(utilitiesStart, actionsStart), /Campaign Summary[\s\S]*Manage Campaigns/);
-  assert.match(html, /\.sb-actions\{[^}]*margin-top:14px;[^}]*flex:0 0 auto;[^}]*\}/);
+  assert.notEqual(sbBodyEnd, -1, 'Expected scrolling sidebar body to close after Utilities');
+  assert.notEqual(actionsStart, -1, 'Expected sidebar actions after the scrolling body');
+  assert.notEqual(sidebarEnd, -1, 'Expected sidebar actions to remain inside the sidebar');
+  assert.ok(utilitiesStart < sbBodyEnd, 'Expected Utilities content to remain in sb-body');
+  assert.ok(sbBodyEnd < actionsStart, 'Expected footer to be a sibling after sb-body');
+  assert.ok(actionsStart < sidebarEnd, 'Expected footer to stay inside .sidebar');
+  assert.match(html.slice(utilitiesStart, sbBodyEnd), /Campaign Summary[\s\S]*Manage Campaigns/);
+  assert.match(html, /\.sb-body\{[^}]*flex:1 1 auto;[^}]*overflow-y:auto;[^}]*\}/);
+  assert.match(html, /\.sb-actions\{[^}]*padding:14px var\(--sidebar-content-right-inset\) 10px var\(--sidebar-content-inset\);[^}]*margin-top:0;[^}]*flex:0 0 auto;[^}]*\}/);
   assert.doesNotMatch(html, /\.sb-actions\{[^}]*margin-top:auto/);
   assert.doesNotMatch(html, /(?:footer|spacer)[^{]*\{[^}]*(?:flex-grow:1|flex:1|margin-top:auto)/);
 });
