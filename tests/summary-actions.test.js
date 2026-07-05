@@ -76,3 +76,26 @@ test('sticky Save Campaign remains wired to existing campaign save behaviour', (
   assert.match(saveCampaignFile, /showSessionFeedback\("Campaign saved",false\);/);
   assert.match(saveCampaignFile, /addCampaignHistoryEntry\(buildCampaignHistoryEntryFromPayload\(payload, "saved"\)\);/);
 });
+
+test('sidebar footer follows the Utilities rows without a flex spacer', () => {
+  const utilitiesStart = html.indexOf('<div class="sidebar-section-label">Utilities</div>');
+  const actionsStart = html.indexOf('<div class="sb-actions">', utilitiesStart);
+  const sbBodyEnd = html.indexOf('</div><!-- end sb-body -->', actionsStart);
+  assert.notEqual(utilitiesStart, -1, 'Expected Utilities label to exist');
+  assert.notEqual(actionsStart, -1, 'Expected sidebar actions to follow Utilities');
+  assert.notEqual(sbBodyEnd, -1, 'Expected sidebar actions to remain inside the scrolling sidebar body');
+  assert.ok(actionsStart < sbBodyEnd, 'Expected footer to be normal content within sb-body instead of a viewport-pinned flex child');
+  assert.match(html.slice(utilitiesStart, actionsStart), /Campaign Summary[\s\S]*Manage Campaigns/);
+  assert.match(html, /\.sb-actions\{[^}]*margin-top:14px;[^}]*flex:0 0 auto;[^}]*\}/);
+  assert.doesNotMatch(html, /\.sb-actions\{[^}]*margin-top:auto/);
+  assert.doesNotMatch(html, /(?:footer|spacer)[^{]*\{[^}]*(?:flex-grow:1|flex:1|margin-top:auto)/);
+});
+
+test('primary gold controls render Cruise Builder gold at full opacity', () => {
+  assert.match(html, /--cb-gold:#9e936c;--gold:var\(--cb-gold\);--gold-d:var\(--cb-gold\);/);
+  assert.match(html, /\.abtn\.gold\{background:var\(--gold\);color:#fff;border-color:var\(--gold\);\}/);
+  assert.match(html, /\.splash-btn\.gold\{background:var\(--gold\);border-color:var\(--gold\);color:#fff;box-shadow:none;\}/);
+  assert.match(html, /\.preview-pane \.hph\.clickable-hero-placeholder:focus-visible,\.preview-pane \.hero\.clickable-hero-image:focus-visible\{outline:4px solid var\(--gold\);/);
+  assert.doesNotMatch(html, /#d4af37/i);
+  assert.doesNotMatch(html, /\.splash-btn\.gold[^}]*rgba\(158,147,108,/);
+});

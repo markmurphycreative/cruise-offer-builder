@@ -348,8 +348,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash-recent-time{margin-top:3px;font-size:8.8px;font-weight:300;color:rgba(255,255,255,.42);line-height:1.35;}
 .splash-btn{min-height:30px;padding:7px 14px;font-size:9.5px;font-weight:300;letter-spacing:.035em;text-transform:uppercase;border-radius:3px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.055);color:rgba(255,255,255,.9);box-shadow:none;transition:background .16s ease,border-color .16s ease,color .16s ease,transform .16s ease;}
 .splash-btn:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.3);color:#fff;transform:translateY(-1px);}
-.splash-btn.gold{background:rgba(158,147,108,.92);border-color:rgba(158,147,108,.72);color:#fff;box-shadow:none;}
-.splash-btn.gold:hover{background:rgba(158,147,108,.96);border-color:rgba(158,147,108,.82);box-shadow:none;transform:translateY(-1px);}
+.splash-btn.gold{background:var(--gold);border-color:var(--gold);color:#fff;box-shadow:none;}
+.splash-btn.gold:hover{background:var(--gold);border-color:var(--gold);box-shadow:none;transform:translateY(-1px);}
 .splash-btn.secondary{padding:7px 14px;border-color:rgba(255,255,255,.26);background:rgba(255,255,255,.045);box-shadow:none;}
 .splash-btn.secondary:hover{background:rgba(255,255,255,.085);border-color:rgba(255,255,255,.3);box-shadow:none;transform:translateY(-1px);}
 @keyframes splashFadeIn{from{opacity:0;}to{opacity:1;}}
@@ -452,7 +452,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .template-actions{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px;}
 
 /* ── ACTION BUTTONS ── */
-.sb-actions{padding:17px 9px 10px;border-top:1px solid rgba(216,213,206,.72);background:#f7f6f3;flex-shrink:0;}
+.sb-actions{padding:14px 0 10px;margin-top:14px;border-top:1px solid rgba(216,213,206,.72);background:#f7f6f3;flex:0 0 auto;}
 .act-row{display:flex;gap:4px;margin-bottom:3px;}
 .abtn{flex:1;min-height:var(--ui-button-height);padding:var(--ui-button-padding);font-size:var(--ui-button-font);font-weight:400;border-radius:var(--ui-radius);border:1px solid var(--border);background:#fff;color:var(--text);letter-spacing:.015em;white-space:nowrap;transition:background var(--ui-transition),border-color var(--ui-transition),color var(--ui-transition),box-shadow var(--ui-transition),transform var(--ui-transition),opacity var(--ui-transition);}
 .abtn:hover:not(:disabled){background:#f7f6f3;border-color:rgba(14,27,42,.18);}
@@ -706,7 +706,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .all-preview-card .hph::before{width:72px;height:72px;}
 .preview-pane .hph.clickable-hero-placeholder,.preview-pane .hero.clickable-hero-image{cursor:pointer;position:relative;transition:filter .15s ease;}
 .preview-pane .hph.clickable-hero-placeholder:hover,.preview-pane .hero.clickable-hero-image:hover{filter:brightness(1.05);}
-.preview-pane .hph.clickable-hero-placeholder:focus-visible,.preview-pane .hero.clickable-hero-image:focus-visible{outline:4px solid rgba(212,175,55,.85);outline-offset:-8px;}
+.preview-pane .hph.clickable-hero-placeholder:focus-visible,.preview-pane .hero.clickable-hero-image:focus-visible{outline:4px solid var(--gold);outline-offset:-8px;}
 .preview-hero-drop-target{position:relative;}
 .preview-hero-drop-target.hero-drag-over{outline:5px solid var(--gold);outline-offset:8px;box-shadow:0 0 0 10px rgba(158,147,108,.18);}
 .preview-pane .hph.clickable-hero-placeholder::after{content:"Add Hero Image";display:inline-flex;align-items:center;justify-content:center;opacity:1;font-family:'Montserrat',sans-serif;font-size:38px;font-weight:500;color:#fff;background:transparent;border:0;border-radius:0;padding:0;line-height:1;text-align:center;box-shadow:none;pointer-events:none;}
@@ -1211,19 +1211,19 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
       <input id="f-utm-content" value="">
     </div>
 
-  </div><!-- end sb-body -->
-
-  <!-- Actions -->
-  <div class="sb-actions">
-    <div class="session-status" id="saved-session-status" aria-live="polite"><span class="session-status-summary">No saved session</span></div>
-    <div class="act-row">
-      <button class="abtn gold" type="button" onclick="saveCampaignFile()">Save Campaign</button>
-      <button class="abtn navy" type="button" onclick="triggerLoadCampaignFile()">Load Campaign</button>
-      <input id="campaign-file-input" type="file" accept=".json,application/json" style="display:none" onchange="loadCampaignFile(event)">
-      <button class="abtn" type="button" onclick="newCampaign()">New Campaign</button>
+    <!-- Actions -->
+    <div class="sb-actions">
+      <div class="session-status" id="saved-session-status" aria-live="polite"><span class="session-status-summary">No saved session</span></div>
+      <div class="act-row">
+        <button class="abtn gold" type="button" onclick="saveCampaignFile()">Save Campaign</button>
+        <button class="abtn navy" type="button" onclick="triggerLoadCampaignFile()">Load Campaign</button>
+        <input id="campaign-file-input" type="file" accept=".json,application/json" style="display:none" onchange="loadCampaignFile(event)">
+        <button class="abtn" type="button" onclick="newCampaign()">New Campaign</button>
+      </div>
+      <div class="session-feedback" id="session-feedback" aria-live="polite"></div>
     </div>
-    <div class="session-feedback" id="session-feedback" aria-live="polite"></div>
-  </div>
+
+  </div><!-- end sb-body -->
 </div>
 
 <!-- ══════════════════════ PREVIEW ══════════════════════ -->
