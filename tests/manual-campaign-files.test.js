@@ -169,6 +169,14 @@ test('campaign load defaults to Offer 1 while preserving restored campaign data 
 });
 
 
+test('campaign restore renders from offers before hydrating editor fields', () => {
+  const source = extractFunction('applySessionPayload');
+  assert.match(source, /setPreviewSource\('offers'\);[\s\S]*?refreshAfterRestore\(\);[\s\S]*?loadOfferToEditor\(cur\);[\s\S]*?setPreviewSource\('editor'\);/);
+  assert.match(extractFunction('currentFormData'), /isPreviewSourceOffers\(\)[\s\S]*?offers\[cur\]/);
+  assert.match(extractFunction('visibleFieldsToData'), /isPreviewSourceOffers\(\)[\s\S]*?offers\[cur\]/);
+  assert.match(extractFunction('commitVisibleFields'), /isPreviewSourceOffers\(\)\) return;/);
+});
+
 test('manual file loads opt into restoring large embedded hero data while normal autosave hydration keeps its storage guard', () => {
   const source = extractFunction('applySessionPayload');
   assert.match(source, /!allowLargeEmbeddedImagesDuringRestore && o\._img/);

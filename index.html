@@ -4274,9 +4274,19 @@ function isOfferLoaded(o){
   ];
   return meaningfulFields.some(value=>String(value||'').trim());
 }
+let previewSource = 'editor';
+function setPreviewSource(source){
+  previewSource = source === 'offers' ? 'offers' : 'editor';
+}
+function isPreviewSourceOffers(){
+  return previewSource === 'offers' || (typeof autosaveHydrating !== 'undefined' && autosaveHydrating) || (typeof splashCampaignHydrating !== 'undefined' && splashCampaignHydrating);
+}
+function getActivePreviewOfferData(){
+  return isPreviewSourceOffers() ? stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {})) : currentFormData();
+}
 function getLoadedPreviewOffers(){
   return (offers||[]).slice(0,4).map(function(offer,index){
-    const data=(index===cur)?currentFormData():(offer||{});
+    const data=(!isPreviewSourceOffers() && index===cur)?currentFormData():(offer||{});
     return {data:data||{},index:index};
   }).filter(function(item){ return isOfferLoaded(item.data); });
 }
@@ -5544,15 +5554,16 @@ function applySessionPayload(data){
     applySectionCollapseState(data.sectionState, data.openSectionKey);
   }
   if(typeof resetCampaignLibraryStartupState==="function") resetCampaignLibraryStartupState();
-  loadOfferToEditor(cur);
+  if(typeof setPreviewSource === "function") setPreviewSource('offers');
   document.querySelectorAll('.otab').forEach((t,idx)=>t.classList.toggle('active', idx===cur));
   updateOfferPill();
-  autosaveHydrating = false;
   openCsvImportWhenNoOffersLoaded();
   refreshAfterRestore();
+  loadOfferToEditor(cur);
+  autosaveHydrating = false;
+  if(typeof setPreviewSource === "function") setPreviewSource('editor');
 }
 function refreshAfterRestore(){
-  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
   updateLockUI();
   genUtm();
   genAllUtms(true);
@@ -8882,16 +8893,19 @@ function prepareSplashCampaignHydration(){
   document.querySelectorAll('.otab').forEach(function(t,idx){ t.classList.toggle('active', idx===0); });
 }
 function finishSplashCampaignHydration(){
+  if(typeof setPreviewSource === 'function') setPreviewSource('offers');
+  refreshAfterRestore();
+  loadOfferToEditor(cur);
   splashCampaignHydrating = false;
   autosaveHydrating = false;
-  refreshAfterRestore();
+  if(typeof setPreviewSource === 'function') setPreviewSource('editor');
 }
 function abortSplashCampaignHydration(){
   splashCampaignHydrating = false;
   autosaveHydrating = false;
 }
 function currentFormData(){
-  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return {...(offers[cur]||{})};
+  if(typeof isPreviewSourceOffers === "function" && isPreviewSourceOffers()) return {...(offers[cur]||{})};
   const d={...(offers[cur]||{})};
   FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e) d[f]=e.value; });
   const op=document.getElementById("f-operator");
@@ -9331,7 +9345,7 @@ processSheetCSV = function(csv,status){
 // offer data after CSV imports.
 // ═══════════════════════════════════════════════════════
 function visibleFieldsToData(){
-  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}));
+  if(typeof isPreviewSourceOffers === "function" && isPreviewSourceOffers()) return stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}));
   const base = stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}));
   const rawPaste=document.getElementById("raw-paste");
   if(rawPaste) base[PERSISTED_PASTE_OFFER_KEY]=rawPaste.value||"";
@@ -9361,13 +9375,13 @@ function visibleFieldsToData(){
   return base;
 }
 function commitVisibleFields(){
-  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
+  if(typeof isPreviewSourceOffers === "function" && isPreviewSourceOffers()) return;
   try { autoBoardLabel(); } catch(e){}
   offers[cur] = stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}, visibleFieldsToData()));
   syncTopBarUspManualState(offers[cur]);
 }
 function renderVisibleCard(){
-  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
+  if(typeof isPreviewSourceOffers === "function" && isPreviewSourceOffers()) return renderPreviewMode(true);
   const scaler = document.getElementById('preview-scaler');
   const out = document.getElementById('card-output');
   if(!scaler || !out) return;
@@ -9598,29 +9612,37 @@ function rv(skipSave){
 // After CSV import, keep the active tab stable and force a full UI/UTM refresh.
 const processSheetCSVStable = processSheetCSV;
 processSheetCSV = function(csv,status){
-  const activeBeforeImport = Number(cur);
-  processSheetCSVStable(csv,status);
+  if(typeof setPreviewSource === 'function') setPreviewSource('offers');
+  try{
+    const activeBeforeImport = Number(cur);
+    processSheetCSVStable(csv,status);
 
-  const nextActive = (Number.isInteger(activeBeforeImport) && activeBeforeImport >= 0 && activeBeforeImport <= 3)
-    ? activeBeforeImport
-    : 0;
-  cur = nextActive;
+    const nextActive = (Number.isInteger(activeBeforeImport) && activeBeforeImport >= 0 && activeBeforeImport <= 3)
+      ? activeBeforeImport
+      : 0;
+    cur = nextActive;
 
-  syncOfferSelector();
+    syncOfferSelector();
 
-  try { loadOfferToEditor(cur); } catch(e) { try { load(cur); } catch(_e){} }
-  try { updateLockUI(); } catch(e){}
-  try { updateMoveOfferButtons(); } catch(e){}
+    try { renderPreviewMode(true); } catch(e){}
+    try { loadOfferToEditor(cur); } catch(e) { try { load(cur); } catch(_e){} }
+    if(typeof setPreviewSource === 'function') setPreviewSource('editor');
+    try { updateLockUI(); } catch(e){}
+    try { updateMoveOfferButtons(); } catch(e){}
 
-  try { genAllUtms(true); } catch(e){}
-  try { genUtm(); } catch(e){}
-  try { genStandardUtms(); } catch(e){}
-  try { updateAllStatus(); } catch(e){}
-  try { updateExportFilenames(); } catch(e){}
-  try { runSpellQA(); } catch(e){}
+    try { genAllUtms(true); } catch(e){}
+    try { genUtm(); } catch(e){}
+    try { genStandardUtms(); } catch(e){}
+    try { updateAllStatus(); } catch(e){}
+    try { updateExportFilenames(); } catch(e){}
+    try { runSpellQA(); } catch(e){}
 
-  try { renderPreviewMode(true); } catch(e){ try { renderVisibleCard(); } catch(_e){} }
-  try { if(typeof queueAutosave==="function") queueAutosave({immediate:true}); } catch(e){}
+    try { renderPreviewMode(true); } catch(e){ try { renderVisibleCard(); } catch(_e){} }
+    try { if(typeof queueAutosave==="function") queueAutosave({immediate:true}); } catch(e){}
+  }catch(e){
+    if(typeof setPreviewSource === 'function') setPreviewSource('editor');
+    throw e;
+  }
 };
 
 
@@ -9783,8 +9805,7 @@ function renderEmptyPreviewIfNeeded(){
 }
 
 function renderPreviewMode(skipSave){
-  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
-  if(!skipSave){ try { commitVisibleFields(); } catch(e){} }
+  if(!skipSave && !(typeof isPreviewSourceOffers === 'function' && isPreviewSourceOffers())){ try { commitVisibleFields(); } catch(e){} }
 
   const scaler = document.getElementById('preview-scaler');
   const out = document.getElementById('card-output');
@@ -9873,7 +9894,18 @@ function renderPreviewMode(skipSave){
     return;
   }
 
-  // Single view renders from visible fields so the active tab preview always matches the editor.
+  // Single view renders from the active source of truth.
+  if(typeof isPreviewSourceOffers === 'function' && isPreviewSourceOffers()){
+    updatePreviewTitle();
+    out.innerHTML = renderOfferWithOptionalCtaHTML(getActivePreviewOfferData(), getCtaSettingsFromUI());
+    adjustVisitSectionHeights(out);
+    bindSinglePreviewHeroPickerTargets(out, cur);
+    enhanceClickableHeroImagesAndPlaceholders(out, cur);
+    enhanceHeroDropTarget(out, cur);
+    scheduleHeroCropPositions(out);
+    setScalerBox(1200, out.offsetHeight, baseScale * SINGLE_PREVIEW_SCALE);
+    return;
+  }
   renderVisibleCard();
 }
 
