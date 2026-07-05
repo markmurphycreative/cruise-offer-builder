@@ -2369,12 +2369,55 @@ function getOperatorAccentColor(offerData){
 function escapeHtml(value){
   return String(value == null ? '' : value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+
+function cobRenderTraceEnabled(){
+  try{ return window.localStorage && window.localStorage.getItem("cobRenderTrace") === "1"; }catch(e){ return false; }
+}
+function cobTraceSourceTag(data, source){
+  if(!data || typeof data !== "object") return data;
+  try{ Object.defineProperty(data, "__cobRenderTraceSource", {value:source, configurable:true, writable:true, enumerable:false}); }catch(e){}
+  return data;
+}
+function cobTraceRestoreActive(){
+  return !!(
+    (typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) ||
+    (typeof autosaveHydrating !== "undefined" && autosaveHydrating) ||
+    (typeof autosaveAwaitingRestoreDecision !== "undefined" && autosaveAwaitingRestoreDecision) ||
+    (typeof restoringLastSuccessfulCsv !== "undefined" && restoringLastSuccessfulCsv) ||
+    (typeof campaignHistoryState !== "undefined" && campaignHistoryState && campaignHistoryState.isRestoring)
+  );
+}
+function cobTraceInferSource(data, fallback){
+  if(data && typeof data === "object" && data.__cobRenderTraceSource) return data.__cobRenderTraceSource;
+  if(typeof offers !== "undefined" && Array.isArray(offers) && typeof cur !== "undefined" && data === offers[cur]) return "offers[cur]";
+  return fallback || "unknown";
+}
+function cobTraceOfferSnapshot(fnName, data, source){
+  if(!cobRenderTraceEnabled()) return;
+  const offerData = data || {};
+  const nameField = document.getElementById("f-name");
+  const entry = {
+    functionName: fnName,
+    cardIndex: (typeof cur !== "undefined" ? cur : null),
+    viewMode: (typeof viewMode !== "undefined" ? viewMode : null),
+    renderedOfferTitle: String((offerData && offerData.name) || ""),
+    renderedOperator: String((offerData && offerData.operator) || ""),
+    sourceUsed: cobTraceInferSource(data, source),
+    offersCurName: String(((typeof offers !== "undefined" && Array.isArray(offers) && offers[cur]) ? offers[cur].name : "") || ""),
+    editorFNameValue: nameField ? String(nameField.value || "") : "",
+    restoreLoadingActive: cobTraceRestoreActive()
+  };
+  window.COB_RENDER_TRACE = Array.isArray(window.COB_RENDER_TRACE) ? window.COB_RENDER_TRACE : [];
+  window.COB_RENDER_TRACE.push(entry);
+}
+
 function renderCtaHTML(offerData, settings){
   const s=normaliseCtaSettings(settings || ctaSettings);
   const accent=getOperatorAccentColor(offerData);
   return `<div class="cta-preview-asset" data-cta-link="${escapeHtml(getCtaLink(s))}"><div class="cta-preview-button" style="--cta-accent:${escapeHtml(accent)};background:${escapeHtml(accent)};">${escapeHtml(s.text)}</div></div>`;
 }
 function renderOfferWithOptionalCtaHTML(offerData, settings){
+  cobTraceOfferSnapshot("renderOfferWithOptionalCtaHTML", offerData || {}, cobTraceInferSource(offerData));
   const s=normaliseCtaSettings(settings || ctaSettings);
   const card=bc(offerData || {});
   if(!s.enabled) return card;
@@ -4275,8 +4318,10 @@ function isOfferLoaded(o){
   return meaningfulFields.some(value=>String(value||'').trim());
 }
 function getLoadedPreviewOffers(){
+  cobTraceOfferSnapshot("getLoadedPreviewOffers", (offers && offers[cur]) || {}, "getLoadedPreviewOffers()");
   return (offers||[]).slice(0,4).map(function(offer,index){
     const data=(index===cur)?currentFormData():(offer||{});
+    cobTraceSourceTag(data, index===cur ? "currentFormData()" : "getLoadedPreviewOffers()");
     return {data:data||{},index:index};
   }).filter(function(item){ return isOfferLoaded(item.data); });
 }
@@ -8891,11 +8936,13 @@ function abortSplashCampaignHydration(){
   autosaveHydrating = false;
 }
 function currentFormData(){
-  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return {...(offers[cur]||{})};
+  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating){ const hydratingData=cobTraceSourceTag({...(offers[cur]||{})}, "offers[cur]"); cobTraceOfferSnapshot("currentFormData", hydratingData, "offers[cur]"); return hydratingData; }
   const d={...(offers[cur]||{})};
   FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e) d[f]=e.value; });
   const op=document.getElementById("f-operator");
   if(op) d.operator=op.value;
+  cobTraceSourceTag(d, "currentFormData()");
+  cobTraceOfferSnapshot("currentFormData", d, "currentFormData()");
   return d;
 }
 function adjustVisitSectionHeights(root){
@@ -9331,7 +9378,7 @@ processSheetCSV = function(csv,status){
 // offer data after CSV imports.
 // ═══════════════════════════════════════════════════════
 function visibleFieldsToData(){
-  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}));
+  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating){ const hydratingData=cobTraceSourceTag(stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {})), "offers[cur]"); cobTraceOfferSnapshot("visibleFieldsToData", hydratingData, "offers[cur]"); return hydratingData; }
   const base = stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}));
   const rawPaste=document.getElementById("raw-paste");
   if(rawPaste) base[PERSISTED_PASTE_OFFER_KEY]=rawPaste.value||"";
@@ -9358,6 +9405,8 @@ function visibleFieldsToData(){
   if(ix) base._itineraryCropX = parseInt(ix.value || base._itineraryCropX || 50, 10);
   if(iy) base._itineraryCropY = parseInt(iy.value || base._itineraryCropY || 50, 10);
   base._itineraryFitMode = base._itineraryFitMode === 'fill' ? 'fill' : 'fit';
+  cobTraceSourceTag(base, "visibleFieldsToData()");
+  cobTraceOfferSnapshot("visibleFieldsToData", base, "visibleFieldsToData()");
   return base;
 }
 function commitVisibleFields(){
@@ -9367,6 +9416,7 @@ function commitVisibleFields(){
   syncTopBarUspManualState(offers[cur]);
 }
 function renderVisibleCard(){
+  cobTraceOfferSnapshot("renderVisibleCard", (offers && offers[cur]) || {}, "unknown");
   if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
   const scaler = document.getElementById('preview-scaler');
   const out = document.getElementById('card-output');
@@ -9783,6 +9833,7 @@ function renderEmptyPreviewIfNeeded(){
 }
 
 function renderPreviewMode(skipSave){
+  cobTraceOfferSnapshot("renderPreviewMode", (offers && offers[cur]) || {}, "unknown");
   if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
   if(!skipSave){ try { commitVisibleFields(); } catch(e){} }
 
@@ -10547,6 +10598,7 @@ function closeSplash(){
   },520);
 }
 function renderActiveOfferImmediately(){
+  cobTraceOfferSnapshot("renderActiveOfferImmediately", (offers && offers[cur]) || {}, "unknown");
   try{
     if(typeof sv==="function") sv(cur);
     else if(typeof rv==="function") rv();
