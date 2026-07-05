@@ -83,4 +83,5 @@ test('splash action labels are stored in Title Case in the markup', () => {
   assert.match(html, /id="splash-open-builder-btn"[^>]*>New Campaign<\/button>/);
   assert.match(html, /id="splash-load-campaign-btn"[^>]*>Load Campaign<\/button>/);
   assert.match(html, /id="splash-load-csv-btn"[^>]*>Load CSV<\/button>/);
+  assert.doesNotMatch(html, /\.splash-btn\{[^}]*text-transform/);
 });
