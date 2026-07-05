@@ -116,8 +116,8 @@ test('an empty builder opens CSV Import and collapses every other section withou
   assert.deepEqual(openKeys(sections), ['hero-image']);
 });
 
-test('session hydration and first-run startup apply CSV Import only when no persisted UI state exists', () => {
-  assert.match(html, /function applySessionPayload\(data\)\{[\s\S]*?autosaveHydrating = false;\s*if\(!\(data\.sectionState && typeof data\.sectionState === \"object\"\)\) openCsvImportWhenNoOffersLoaded\(\);\s*refreshAfterRestore\(\);/);
+test('session hydration forces Campaign Import open for empty restored sessions but first-run startup only opens without saved sessions', () => {
+  assert.match(html, /function applySessionPayload\(data\)\{[\s\S]*?autosaveHydrating = false;\s*openCsvImportWhenNoOffersLoaded\(\);\s*refreshAfterRestore\(\);/);
   assert.match(html, /function initBuilderApp\(\)\{[\s\S]*?refreshOfferUi\(\{utm:true,spell:true,autosave:false\}\);\s*if\(!savedSessionAvailable\) openCsvImportWhenNoOffersLoaded\(\);/);
 });
 

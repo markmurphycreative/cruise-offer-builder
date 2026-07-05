@@ -5508,7 +5508,7 @@ function applySessionPayload(data){
   document.querySelectorAll('.otab').forEach((t,idx)=>t.classList.toggle('active', idx===cur));
   updateOfferPill();
   autosaveHydrating = false;
-  if(!(data.sectionState && typeof data.sectionState === "object")) openCsvImportWhenNoOffersLoaded();
+  openCsvImportWhenNoOffersLoaded();
   refreshAfterRestore();
 }
 function refreshAfterRestore(){
