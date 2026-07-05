@@ -2288,6 +2288,14 @@ function openCsvImportWhenNoOffersLoaded(){
   });
   return true;
 }
+function collapseCsvImportAfterCampaignLoaded(){
+  if(!offers.some(isOfferLoaded)) return false;
+  const section=document.querySelector('.section[data-section-key="csv-import"]');
+  const hdr=section&&section.querySelector ? section.querySelector(".section-hdr") : null;
+  if(!hdr) return false;
+  setSectionCollapsedByHeader(hdr, true);
+  return true;
+}
 function collapseBuilderSections(){
   document.querySelectorAll(".section[data-section-key]").forEach(sec=>{
     const hdr = sec.querySelector(".section-hdr");
@@ -4467,6 +4475,7 @@ function importCsvPreservingOffersOnFailure(csv,status,successMessage){
     processSheetCSV(csv,status);
     if(status.className==="csv-error") throw new Error(status.textContent||"CSV import failed");
     if(successMessage && !status.textContent) status.textContent=successMessage;
+    if(typeof collapseCsvImportAfterCampaignLoaded==="function") collapseCsvImportAfterCampaignLoaded();
     resetShortcutFocusAfterImport();
     return true;
   }catch(e){
@@ -4578,6 +4587,7 @@ function loadFromCSVFile(event){
     try{
       processSheetCSV(reader.result,status);
       if(status.className!=="csv-error" && typeof applyCsvFilenameCampaignMetadata==="function") applyCsvFilenameCampaignMetadata(file.name);
+      if(status.className!=="csv-error" && typeof collapseCsvImportAfterCampaignLoaded==="function") collapseCsvImportAfterCampaignLoaded();
       if(typeof event._onSuccess==="function") event._onSuccess();
       if(status.className!=="csv-error" && typeof resetShortcutFocusAfterImport==="function") resetShortcutFocusAfterImport();
       if(status.className!=="csv-error") if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("CSV import");
@@ -5780,6 +5790,7 @@ function resetBuilderToBlankSession(){
     document.querySelectorAll('.otab').forEach((t,idx)=>t.classList.toggle('active', idx===0));
     if(typeof updateOfferPill === "function") updateOfferPill();
     collapseBuilderSections();
+    openCsvImportWhenNoOffersLoaded();
     refreshAfterRestore();
     showSessionFeedback("",false);
   }finally{
@@ -6427,6 +6438,7 @@ function restoreCampaignFilePayload(filePayload){
   else try{ localStorage.removeItem(GOOGLE_SHEET_SOURCE_KEY); }catch(e){}
   clearTimeout(autosaveTimer);
   if(typeof resetCampaignLibraryStartupState==="function") resetCampaignLibraryStartupState();
+  if(typeof collapseCsvImportAfterCampaignLoaded==="function") collapseCsvImportAfterCampaignLoaded();
   if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Campaign load");
   saveSessionNow();
   const differentAppVersion=!!(parsed.appVersion && parsed.appVersion !== APP_VERSION);
