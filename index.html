@@ -8936,7 +8936,7 @@ function abortSplashCampaignHydration(){
   autosaveHydrating = false;
 }
 function currentFormData(){
-  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating){ const hydratingData=cobTraceSourceTag({...(offers[cur]||{})}, "offers[cur]"); cobTraceOfferSnapshot("currentFormData", hydratingData, "offers[cur]"); return hydratingData; }
+  if((typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) || (typeof autosaveHydrating !== "undefined" && autosaveHydrating)){ const hydratingData=cobTraceSourceTag({...(offers[cur]||{})}, "offers[cur]"); cobTraceOfferSnapshot("currentFormData", hydratingData, "offers[cur]"); return hydratingData; }
   const d={...(offers[cur]||{})};
   FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e) d[f]=e.value; });
   const op=document.getElementById("f-operator");
@@ -9378,7 +9378,7 @@ processSheetCSV = function(csv,status){
 // offer data after CSV imports.
 // ═══════════════════════════════════════════════════════
 function visibleFieldsToData(){
-  if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating){ const hydratingData=cobTraceSourceTag(stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {})), "offers[cur]"); cobTraceOfferSnapshot("visibleFieldsToData", hydratingData, "offers[cur]"); return hydratingData; }
+  if((typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) || (typeof autosaveHydrating !== "undefined" && autosaveHydrating)){ const hydratingData=cobTraceSourceTag(stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {})), "offers[cur]"); cobTraceOfferSnapshot("visibleFieldsToData", hydratingData, "offers[cur]"); return hydratingData; }
   const base = stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}));
   const rawPaste=document.getElementById("raw-paste");
   if(rawPaste) base[PERSISTED_PASTE_OFFER_KEY]=rawPaste.value||"";

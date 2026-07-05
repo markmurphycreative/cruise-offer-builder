@@ -180,3 +180,14 @@ test('standalone initialization is registered after DOM ready and keeps autosave
   assert.match(html, /window\.openBuilderFromSplash = function\(event\)\{[\s\S]*?resetBuilderToBlankSession\(\);[\s\S]*?dismissSplashAndShowBuilder\("fresh"\);/);
   assert.doesNotMatch(html, /DISABLE_AUTORESTORE_SESSION/);
 });
+
+test('fresh New Campaign renders from blank offer state during reset hydration instead of stale editor fields', () => {
+  assert.match(
+    extractFunction('currentFormData'),
+    /autosaveHydrating[\s\S]*?const hydratingData=cobTraceSourceTag\(\{\.\.\.\(offers\[cur\]\|\|\{\}\)\}, "offers\[cur\]"\)/
+  );
+  assert.match(
+    extractFunction('visibleFieldsToData'),
+    /autosaveHydrating[\s\S]*?const hydratingData=cobTraceSourceTag\(stripTransientPasteOfferFields\(Object\.assign\(\{\}, offers\[cur\] \|\| \{\}\)\), "offers\[cur\]"\)/
+  );
+});
