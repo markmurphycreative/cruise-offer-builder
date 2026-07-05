@@ -21,8 +21,8 @@ test('preview toolbar has restrained active mode styling and always-visible zoom
 });
 
 test('UTM current card selected state is visibly stronger than inactive cards', () => {
-  assert.match(html, /\.utm-current-card\{--utm-operator-accent:var\(--gold\);--utm-operator-tint:rgba\(160,146,103,\.14\);\}/);
-  assert.match(html, /\.utm-offer-card\.utm-current-card\{[^}]*border-color:rgba\(160,146,103,\.72\);[^}]*box-shadow:/);
+  assert.match(html, /\.utm-current-card\{--utm-operator-accent:var\(--gold\);--utm-operator-tint:rgba\(158,147,108,\.14\);\}/);
+  assert.match(html, /\.utm-offer-card\.utm-current-card\{[^}]*border-color:rgba\(158,147,108,\.72\);[^}]*box-shadow:/);
   assert.match(html, /\.utm-offer-card\.utm-current-card \.utm-context-id strong,\.utm-offer-card\.utm-current-card \.utm-context-id span\{color:var\(--navy\);font-weight:800;\}/);
 });
 

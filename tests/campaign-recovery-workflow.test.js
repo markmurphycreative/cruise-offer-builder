@@ -307,19 +307,19 @@ test('campaign thumbnail operator abbreviations and missing data fall back safel
 
   assert.equal(
     context.getCampaignThumbnailPillStyle('P&O Cruises'),
-    'background:rgba(160,146,103,0.2);border-color:rgba(160,146,103,0.52);color:rgba(160,146,103,0.68);'
+    'background:rgba(158,147,108,0.2);border-color:rgba(158,147,108,0.52);color:rgba(158,147,108,0.68);'
   );
   assert.equal(
     context.getCampaignThumbnailPillStyle('Marella Cruises'),
-    'background:rgba(160,146,103,0.2);border-color:rgba(160,146,103,0.52);color:rgba(160,146,103,0.68);'
+    'background:rgba(158,147,108,0.2);border-color:rgba(158,147,108,0.52);color:rgba(158,147,108,0.68);'
   );
   assert.equal(
     context.getCampaignThumbnailPillStyle('Fred. Olsen Cruise Lines'),
-    'background:rgba(160,146,103,0.24);border-color:rgba(160,146,103,0.58);color:rgba(160,146,103,0.68);'
+    'background:rgba(158,147,108,0.24);border-color:rgba(158,147,108,0.58);color:rgba(158,147,108,0.68);'
   );
   assert.equal(
     context.getCampaignThumbnailPillStyle('Cunard'),
-    'background:rgba(160,146,103,0.14);border-color:rgba(160,146,103,0.36);color:rgba(160,146,103,0.68);'
+    'background:rgba(158,147,108,0.14);border-color:rgba(158,147,108,0.36);color:rgba(158,147,108,0.68);'
   );
   const missing = { payload: { state: { campaign: {}, offers: [{ operator: '', heroLocked: true }] } } };
   assert.equal(context.getCampaignThumbnailName(missing), 'Untitled Campaign');
@@ -328,7 +328,7 @@ test('campaign thumbnail operator abbreviations and missing data fall back safel
   const markup = context.renderCampaignThumbnail(missing);
   assert.match(markup, /Untitled Campaign/);
   assert.match(markup, />—<\/span>/);
-  assert.match(markup, /style="background:rgba\(160,146,103,0\.14\);border-color:rgba\(160,146,103,0\.36\);color:rgba\(160,146,103,0\.68\);"/);
+  assert.match(markup, /style="background:rgba\(158,147,108,0\.14\);border-color:rgba\(158,147,108,0\.36\);color:rgba\(158,147,108,0\.68\);"/);
   assert.match(markup, /0 Offers/);
   assert.doesNotMatch(markup, /Saved \d/);
 });

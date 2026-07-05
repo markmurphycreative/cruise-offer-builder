@@ -13,7 +13,7 @@ test('desktop window title bar uses neutral charcoal rather than CB Gold', () =>
 
   const titlebarBg = html.match(/--desktop-titlebar-bg:([^;]+);/)?.[1];
   const themeColor = html.match(/<meta name="theme-color" content="([^"]+)">/)?.[1];
-  assert.notEqual(titlebarBg?.toLowerCase(), '#a09267');
-  assert.notEqual(themeColor?.toLowerCase(), '#a09267');
-  assert.notEqual(themeColor?.toLowerCase(), '#927f52');
+  assert.notEqual(titlebarBg?.toLowerCase(), '#9e936c');
+  assert.notEqual(themeColor?.toLowerCase(), '#9e936c');
+  assert.notEqual(themeColor?.toLowerCase(), '#9e936c');
 });
