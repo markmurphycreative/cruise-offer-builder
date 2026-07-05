@@ -8852,6 +8852,22 @@ function resetPreviewZoom(){
   if(wrap) requestAnimationFrame(function(){ wrap.scrollTo({top:0,behavior:'auto'}); });
 }
 let splashCampaignHydrating = false;
+let splashRestoreCommitLocked = false;
+let editorHydratedOfferIndex = null;
+function isRestoreEditorCommitBlocked(){
+  return !!(splashRestoreCommitLocked && editorHydratedOfferIndex !== cur);
+}
+function markEditorHydratedFromOffer(i){
+  editorHydratedOfferIndex = Number(i);
+}
+function beginSplashRestoreCommitLock(){
+  splashRestoreCommitLocked = true;
+  editorHydratedOfferIndex = null;
+}
+function finishSplashRestoreCommitLock(){
+  markEditorHydratedFromOffer(cur);
+  splashRestoreCommitLocked = false;
+}
 function clearActiveEditorDomFields(){
   FLDS.forEach(function(f){ const e=document.getElementById('f-'+f); if(e) e.value=''; });
   ['f-operator','f-logo-display','raw-paste','f-img-url','sheets-url'].forEach(function(id){ const e=document.getElementById(id); if(e) e.value=''; });
@@ -8868,6 +8884,7 @@ function clearCurrentPreviewOutputState(){
   if(scaler){ scaler.classList.remove('empty-preview'); scaler.style.width='100%'; scaler.style.height='100%'; scaler.style.transform='none'; }
 }
 function prepareSplashCampaignHydration(){
+  beginSplashRestoreCommitLock();
   splashCampaignHydrating = true;
   autosaveHydrating = true;
   clearActiveEditorDomFields();
@@ -8884,11 +8901,14 @@ function prepareSplashCampaignHydration(){
 function finishSplashCampaignHydration(){
   splashCampaignHydrating = false;
   autosaveHydrating = false;
+  if(typeof loadOfferToEditor === 'function') loadOfferToEditor(cur);
   refreshAfterRestore();
 }
 function abortSplashCampaignHydration(){
   splashCampaignHydrating = false;
   autosaveHydrating = false;
+  splashRestoreCommitLocked = false;
+  editorHydratedOfferIndex = null;
 }
 function currentFormData(){
   if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return {...(offers[cur]||{})};
@@ -9165,6 +9185,7 @@ function fillEx(){
 // ═══════════════════════════════════════════════════════
 function saveEditorToOffer(){
   if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
+  if(typeof isRestoreEditorCommitBlocked === "function" && isRestoreEditorCommitBlocked()) return;
   if(typeof isOfferLocked==="function" && isOfferLocked(cur)) return;
   try { autoBoardLabel(); } catch(e){}
   const o = stripTransientPasteOfferFields(offers[cur] || (offers[cur] = {}));
@@ -9236,6 +9257,7 @@ function loadOfferToEditor(i){
   updateHeroImageLockUI();
   const logoArea=document.getElementById('logo-override-area'); if(logoArea) logoArea.style.display=(o.operator==='custom'||!o.operator)?'block':'none';
   updateHeroRestoreNote();
+  if(typeof markEditorHydratedFromOffer === "function") markEditorHydratedFromOffer(i);
 }
 
 function renderOfferIndex(i){
@@ -9332,6 +9354,7 @@ processSheetCSV = function(csv,status){
 // ═══════════════════════════════════════════════════════
 function visibleFieldsToData(){
   if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}));
+  if(typeof isRestoreEditorCommitBlocked === "function" && isRestoreEditorCommitBlocked()) return stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}));
   const base = stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}));
   const rawPaste=document.getElementById("raw-paste");
   if(rawPaste) base[PERSISTED_PASTE_OFFER_KEY]=rawPaste.value||"";
@@ -9362,6 +9385,7 @@ function visibleFieldsToData(){
 }
 function commitVisibleFields(){
   if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
+  if(typeof isRestoreEditorCommitBlocked === "function" && isRestoreEditorCommitBlocked()) return;
   try { autoBoardLabel(); } catch(e){}
   offers[cur] = stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}, visibleFieldsToData()));
   syncTopBarUspManualState(offers[cur]);
@@ -10559,12 +10583,23 @@ function dismissSplashAndShowBuilder(mode="open"){
   resetCampaignLibraryStartupState();
   closeSplash();
   try{
-    if(typeof refreshOfferUi==="function") refreshOfferUi({utm:true,spell:true,autosave:false});
-    if(typeof rv==="function") rv();
-    if(typeof updateAllStatus==="function") updateAllStatus();
-    renderActiveOfferImmediately();
+    const isRestoreDismiss = ["restored","campaign"].includes(mode);
+    if(isRestoreDismiss && typeof beginSplashRestoreCommitLock === "function") beginSplashRestoreCommitLock();
+    if(isRestoreDismiss && typeof loadOfferToEditor === "function") loadOfferToEditor(cur);
+    if(isRestoreDismiss){
+      if(typeof refreshOfferUi==="function") refreshOfferUi({render:false,utm:true,spell:true,autosave:false});
+      if(typeof renderPreviewMode==="function") renderPreviewMode(true);
+      if(typeof updateAllStatus==="function") updateAllStatus();
+      if(typeof finishSplashRestoreCommitLock === "function") finishSplashRestoreCommitLock();
+    }else{
+      if(typeof refreshOfferUi==="function") refreshOfferUi({utm:true,spell:true,autosave:false});
+      if(typeof rv==="function") rv();
+      if(typeof updateAllStatus==="function") updateAllStatus();
+      renderActiveOfferImmediately();
+    }
     if(["fresh","restored","campaign"].includes(mode) && typeof markBuilderStateClean==="function") markBuilderStateClean();
   }catch(err){
+    if(typeof finishSplashRestoreCommitLock === "function") finishSplashRestoreCommitLock();
     console.error("[splash] Builder UI refresh failed after splash dismissal.", err);
   }
 }
@@ -10629,6 +10664,7 @@ function initStartScreenActions(){
     continueBtn.addEventListener("click",async (e)=>{
       if(e) e.preventDefault();
       markBuilderOpenState(true,"restored");
+      if(typeof beginSplashRestoreCommitLock === "function") beginSplashRestoreCommitLock();
       await Promise.resolve(chooseRestoreSession());
       dismissSplashAndShowBuilder("restored");
     });

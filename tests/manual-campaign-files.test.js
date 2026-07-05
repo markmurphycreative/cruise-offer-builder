@@ -193,3 +193,16 @@ test('invalid JSON selected through the file input reports feedback and does not
   assert.deepEqual(calls, [['Invalid campaign file: Invalid JSON', true]]);
   assert.equal(input.value, '');
 });
+
+test('splash campaign dismiss hydrates editor before any restored offer commit can run', () => {
+  assert.match(html, /let splashRestoreCommitLocked = false;/);
+  assert.match(extractFunction('isRestoreEditorCommitBlocked'), /splashRestoreCommitLocked && editorHydratedOfferIndex !== cur/);
+  assert.match(extractFunction('saveEditorToOffer'), /isRestoreEditorCommitBlocked[\s\S]*?return;/);
+  assert.match(extractFunction('visibleFieldsToData'), /isRestoreEditorCommitBlocked[\s\S]*?offers\[cur\]/);
+  assert.match(extractFunction('commitVisibleFields'), /isRestoreEditorCommitBlocked[\s\S]*?return;/);
+  assert.match(extractFunction('loadOfferToEditor'), /markEditorHydratedFromOffer\(i\)/);
+  const dismissSource = extractFunction('dismissSplashAndShowBuilder');
+  assert.match(dismissSource, /const isRestoreDismiss = \["restored","campaign"\]\.includes\(mode\);/);
+  assert.match(dismissSource, /beginSplashRestoreCommitLock[\s\S]*?loadOfferToEditor\(cur\)[\s\S]*?refreshOfferUi\(\{render:false,utm:true,spell:true,autosave:false\}\)[\s\S]*?renderPreviewMode\(true\)[\s\S]*?finishSplashRestoreCommitLock/);
+  assert.match(dismissSource, /}else{[\s\S]*?renderActiveOfferImmediately\(\);[\s\S]*?}/);
+});
