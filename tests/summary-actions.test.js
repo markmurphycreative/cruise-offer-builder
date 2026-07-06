@@ -96,10 +96,11 @@ test('sidebar footer sits outside the scrolling sidebar body as a bottom-anchore
   assert.doesNotMatch(html, /(?:footer|spacer)[^{]*\{[^}]*(?:flex-grow:1|flex:1|margin-top:auto)/);
 });
 
-test('primary gold controls render murfi gold at full opacity', () => {
-  assert.match(html, /--cb-gold:#9e936c;--gold:var\(--cb-gold\);--gold-d:var\(--cb-gold\);/);
-  assert.match(html, /\.abtn\.gold\{background:var\(--gold\);color:#fff;border-color:var\(--gold\);\}/);
-  assert.match(html, /\.splash-btn\.gold\{background:var\(--gold\);border-color:var\(--gold\);color:#fff;box-shadow:none;\}/);
+test('primary gold controls render murfi champagne gold without legacy yellow', () => {
+  assert.match(html, /--champagne-gold:#c8b98a;--cb-gold:var\(--champagne-gold\);--gold:var\(--champagne-gold\);--gold-d:var\(--champagne-gold\);/);
+  assert.match(html, /\.abtn\.gold\{background:var\(--gold\);color:var\(--text-inverse\);border-color:var\(--gold\);\}/);
+  assert.match(html, /\.splash-btn\.gold,\.splash-btn\.secondary\{background:transparent;border-color:rgba\(255,255,255,\.18\);color:rgba\(255,255,255,\.78\);box-shadow:none;\}/);
+  assert.match(html, /\.splash-btn\.gold:hover,\.splash-btn\.secondary:hover,\.splash-btn\.gold:focus-visible,\.splash-btn\.secondary:focus-visible\{[^}]*color:var\(--gold\);/);
   assert.match(html, /\.preview-pane \.hph\.clickable-hero-placeholder:focus-visible,\.preview-pane \.hero\.clickable-hero-image:focus-visible\{outline:4px solid var\(--gold\);/);
   assert.doesNotMatch(html, /#d4af37/i);
   assert.doesNotMatch(html, /\.splash-btn\.gold[^}]*rgba\(158,147,108,/);
