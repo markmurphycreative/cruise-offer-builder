@@ -78,7 +78,17 @@ test('restored blank sessions use the same clean baseline as new blank campaigns
   assert.equal(restored.context.hasUnsavedBuilderChanges(), true);
 });
 
-test('splash action labels are stored uppercase and ordered in the markup', () => {
-  assert.match(html, /id="splash-open-builder-btn"[^>]*>NEW CAMPAIGN<\/button>[\s\S]*id="splash-continue-session-btn"[^>]*>CONTINUE LAST SESSION<\/button>[\s\S]*id="splash-load-campaign-btn"[^>]*>LOAD CAMPAIGN<\/button>[\s\S]*id="splash-load-csv-btn"[^>]*>LOAD CSV<\/button>/);
+test('splash action labels are simplified and ordered in the markup', () => {
+  assert.match(html, /id="splash-open-builder-btn"[^>]*>New<\/button>[\s\S]*id="splash-continue-session-btn"[^>]*>Continue<\/button>[\s\S]*id="splash-load-campaign-btn"[^>]*>Load<\/button>[\s\S]*id="splash-load-csv-btn"[^>]*>CSV<\/button>/);
   assert.doesNotMatch(html, /\.splash-btn\{[^}]*text-transform/);
+});
+
+
+test('splash markup does not include an in-app title bar label', () => {
+  assert.doesNotMatch(html, /Cruise Builder - murfi v4\.0/);
+});
+
+test('splash outline buttons use neutral charcoal styling', () => {
+  assert.match(html, /\.splash-btn\.secondary\{[^}]*border-color:rgba\(138,145,153,\.52\);[^}]*background:rgba\(47,51,56,\.34\);/);
+  assert.doesNotMatch(html, /\.splash-btn\.secondary\{[^}]*(?:var\(--gold|gold|170,160,125|158,147,108)/i);
 });
