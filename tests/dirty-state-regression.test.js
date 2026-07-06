@@ -88,7 +88,9 @@ test('splash markup does not include an in-app title bar label', () => {
   assert.doesNotMatch(html, /Cruise Builder - murfi v4\.0/);
 });
 
-test('splash outline buttons use neutral charcoal styling', () => {
-  assert.match(html, /\.splash-btn\.secondary\{[^}]*border-color:rgba\(138,145,153,\.52\);[^}]*background:rgba\(47,51,56,\.34\);/);
-  assert.doesNotMatch(html, /\.splash-btn\.secondary\{[^}]*(?:var\(--gold|gold|170,160,125|158,147,108)/i);
+test('splash navigation uses understated light typography', () => {
+  assert.match(html, /\.splash-icon\{[^}]*margin:0 auto 32px;/);
+  assert.match(html, /\.splash-btn\{[^}]*font-size:15\.5px;[^}]*font-weight:300;[^}]*letter-spacing:\.9px;[^}]*color:rgba\(255,255,255,\.78\);/);
+  assert.match(html, /\.splash-btn\.gold,\.splash-btn\.secondary\{[^}]*background:transparent;[^}]*color:rgba\(255,255,255,\.78\);/);
+  assert.match(html, /\.splash-btn:hover\{[^}]*color:var\(--gold\);/);
 });
