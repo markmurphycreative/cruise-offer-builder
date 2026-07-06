@@ -78,10 +78,7 @@ test('restored blank sessions use the same clean baseline as new blank campaigns
   assert.equal(restored.context.hasUnsavedBuilderChanges(), true);
 });
 
-test('splash action labels are stored in Title Case in the markup', () => {
-  assert.match(html, /id="splash-continue-session-btn"[^>]*>Continue Last Session<\/button>/);
-  assert.match(html, /id="splash-open-builder-btn"[^>]*>New Campaign<\/button>/);
-  assert.match(html, /id="splash-load-campaign-btn"[^>]*>Load Campaign<\/button>/);
-  assert.match(html, /id="splash-load-csv-btn"[^>]*>Load CSV<\/button>/);
+test('splash action labels are stored uppercase and ordered in the markup', () => {
+  assert.match(html, /id="splash-open-builder-btn"[^>]*>NEW CAMPAIGN<\/button>[\s\S]*id="splash-continue-session-btn"[^>]*>CONTINUE LAST SESSION<\/button>[\s\S]*id="splash-load-campaign-btn"[^>]*>LOAD CAMPAIGN<\/button>[\s\S]*id="splash-load-csv-btn"[^>]*>LOAD CSV<\/button>/);
   assert.doesNotMatch(html, /\.splash-btn\{[^}]*text-transform/);
 });
