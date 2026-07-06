@@ -96,7 +96,7 @@ test('sidebar footer sits outside the scrolling sidebar body as a bottom-anchore
   assert.doesNotMatch(html, /(?:footer|spacer)[^{]*\{[^}]*(?:flex-grow:1|flex:1|margin-top:auto)/);
 });
 
-test('primary gold controls render Cruise Builder gold at full opacity', () => {
+test('primary gold controls render murfi gold at full opacity', () => {
   assert.match(html, /--cb-gold:#9e936c;--gold:var\(--cb-gold\);--gold-d:var\(--cb-gold\);/);
   assert.match(html, /\.abtn\.gold\{background:var\(--gold\);color:#fff;border-color:var\(--gold\);\}/);
   assert.match(html, /\.splash-btn\.gold\{background:var\(--gold\);border-color:var\(--gold\);color:#fff;box-shadow:none;\}/);
