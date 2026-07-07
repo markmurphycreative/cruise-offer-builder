@@ -79,7 +79,9 @@ test('restored blank sessions use the same clean baseline as new blank campaigns
 });
 
 test('splash action labels are simplified and ordered in the markup', () => {
-  assert.match(html, /id="splash-open-builder-btn"[^>]*>New<\/button>[\s\S]*id="splash-continue-session-btn"[^>]*>Continue<\/button>[\s\S]*id="splash-load-campaign-btn"[^>]*>Load<\/button>[\s\S]*id="splash-load-csv-btn"[^>]*>CSV<\/button>/);
+  assert.match(html, /id="splash-open-builder-btn"[^>]*>New<\/button>[\s\S]*id="splash-continue-session-btn"[^>]*>Continue<\/button>[\s\S]*id="splash-load-campaign-btn"[^>]*>Load<\/button>/);
+  assert.doesNotMatch(html, /id="splash-load-csv-btn"|>CSV<\/button>/);
+  assert.match(html, /<img class="splash-icon" src="assets\/operator-logos\/em-logo\.png"/);
   assert.doesNotMatch(html, /\.splash-btn\{[^}]*text-transform/);
 });
 
@@ -89,8 +91,8 @@ test('splash markup does not include an in-app title bar label', () => {
 });
 
 test('splash navigation uses understated light typography', () => {
-  assert.match(html, /\.splash-icon\{[^}]*margin:0 auto 32px;/);
-  assert.match(html, /\.splash-btn\{[^}]*font-size:15\.5px;[^}]*font-weight:300;[^}]*letter-spacing:\.9px;[^}]*color:rgba\(255,255,255,\.78\);/);
+  assert.match(html, /\.splash-icon\{[^}]*margin:0 auto 45px;/);
+  assert.match(html, /\.splash-btn\{[^}]*font-size:15\.5px;[^}]*font-weight:300;[^}]*letter-spacing:\.95px;[^}]*color:rgba\(255,255,255,\.78\);/);
   assert.match(html, /\.splash-btn\.gold,\.splash-btn\.secondary\{[^}]*background:transparent;[^}]*color:rgba\(255,255,255,\.78\);/);
   assert.match(html, /\.splash-btn:hover\{[^}]*color:var\(--gold\);/);
 });

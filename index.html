@@ -348,8 +348,8 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash{position:fixed;inset:0;background:var(--splash-bg);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:1;visibility:visible;}
 .splash.hidden,.splash.is-exiting{opacity:0;visibility:hidden;pointer-events:none;}
 .splash-inner{text-align:center;color:var(--text-inverse);padding:18px;min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;width:min(560px,100%);}
-.splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;transform:translateY(-112px);animation:splashFadeIn .28s ease-out both;}
-.splash-icon{display:block;width:144px;height:auto;margin:0 auto 32px;filter:none;}
+.splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;transform:translateY(-58px);animation:splashFadeIn .28s ease-out both;}
+.splash-icon{display:block;width:min(236px,54vw);height:auto;margin:0 auto 45px;filter:none;image-rendering:auto;}
 .splash-title{font-size:14.5px;font-weight:300;letter-spacing:.06em;color:rgba(255,255,255,.88);}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
 .splash-actions{margin-top:0;display:flex;align-items:center;justify-content:center;gap:0;margin-left:auto;margin-right:auto;width:auto;}
@@ -358,11 +358,11 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash-recent-title{font-size:8.5px;font-weight:300;letter-spacing:.03em;color:rgba(255,255,255,.36);line-height:1.45;}
 .splash-recent-name{display:block;margin-top:3px;font-size:8.5px;color:rgba(255,255,255,.42);font-weight:300;line-height:1.45;}
 .splash-recent-time{margin-top:4px;font-size:8px;font-weight:300;color:rgba(255,255,255,.30);line-height:1.45;}
-.splash-btn{position:relative;min-height:24px;padding:2px 16px;font-size:15.5px;font-weight:300;letter-spacing:.9px;border:0;border-left:1px solid rgba(255,255,255,.18);border-radius:0;background:transparent;color:rgba(255,255,255,.78);box-shadow:none;line-height:1.2;transition:color .18s ease,opacity .18s ease;}
+.splash-btn{position:relative;min-height:24px;padding:2px 18px;font-size:15.5px;font-weight:300;letter-spacing:.95px;border:0;border-left:1px solid rgba(255,255,255,.28);border-radius:0;background:transparent;color:rgba(255,255,255,.78);box-shadow:none;line-height:1.2;transition:color .18s ease,border-color .18s ease,opacity .18s ease;}
 .splash-btn:first-child{border-left:0;}
 .splash-btn:hover{background:transparent;border-color:rgba(255,255,255,.24);color:var(--gold);transform:none;}
 .splash-btn:focus-visible{outline:none;box-shadow:none;color:var(--gold);}
-.splash-btn.gold,.splash-btn.secondary{background:transparent;border-color:rgba(255,255,255,.18);color:rgba(255,255,255,.78);box-shadow:none;}
+.splash-btn.gold,.splash-btn.secondary{background:transparent;border-color:rgba(255,255,255,.28);color:rgba(255,255,255,.78);box-shadow:none;}
 .splash-btn.gold:hover,.splash-btn.secondary:hover,.splash-btn.gold:focus-visible,.splash-btn.secondary:focus-visible{background:transparent;border-color:rgba(255,255,255,.24);color:var(--gold);box-shadow:none;transform:none;}
 @keyframes splashFadeIn{from{opacity:0;}to{opacity:1;}}
 @media (prefers-reduced-motion:reduce){
@@ -770,12 +770,11 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 <div id="app-splash" class="splash" aria-hidden="false">
   <div class="splash-inner">
     <div class="splash-main">
-      <img class="splash-icon" src="assets/operator-logos/murfi-logo.png" alt="" aria-hidden="true">
+      <img class="splash-icon" src="assets/operator-logos/em-logo.png" alt="" aria-hidden="true">
       <div class="splash-actions">
         <button class="splash-btn gold" id="splash-open-builder-btn" type="button">New</button>
         <button class="splash-btn gold" id="splash-continue-session-btn" type="button" style="display:none;">Continue</button>
         <button class="splash-btn secondary" id="splash-load-campaign-btn" type="button">Load</button>
-        <button class="splash-btn secondary" id="splash-load-csv-btn" type="button">CSV</button>
       </div>
     </div>
   </div>
@@ -10643,8 +10642,12 @@ window.loadCampaignFromSplash = function(event){
   if(event) event.preventDefault();
   const temp=document.createElement("input");
   temp.type="file";
-  temp.accept=".json,application/json";
-  temp.onchange=(e)=>loadCampaignFile(Object.assign(e,{_fromSplash:true,_onSuccess:()=>dismissSplashAndShowBuilder("campaign")}));
+  temp.accept=".json,application/json,.csv,text/csv,.tsv,text/tab-separated-values";
+  temp.onchange=(e)=>{
+    const file=e&&e.target&&e.target.files&&e.target.files[0];
+    if(typeof isCsvUploadFile==="function" && isCsvUploadFile(file)) return loadFromCSVFile(Object.assign(e,{_onSuccess:()=>dismissSplashAndShowBuilder("csv")}));
+    return loadCampaignFile(Object.assign(e,{_fromSplash:true,_onSuccess:()=>dismissSplashAndShowBuilder("campaign")}));
+  };
   temp.click();
 };
 window.loadCsvFromSplash = function(event){
@@ -10658,13 +10661,11 @@ window.loadCsvFromSplash = function(event){
 function initStartScreenActions(){
   const openBtn=document.getElementById("splash-open-builder-btn") || document.querySelector("#app-splash .splash-btn.gold");
   const campaignBtn=document.getElementById("splash-load-campaign-btn");
-  const csvBtn=document.getElementById("splash-load-csv-btn") || document.querySelector("#app-splash .splash-btn:not(.gold)");
   const continueBtn=document.getElementById("splash-continue-session-btn");
   const splash=document.getElementById("app-splash");
   if(!splash) console.warn("[splash] Missing #app-splash; start screen actions cannot be wired.");
   if(!openBtn) console.warn("[splash] Missing Open Builder button; action not bound.");
   if(!campaignBtn) console.warn("[splash] Missing Load Campaign button; action not bound.");
-  if(!csvBtn) console.warn("[splash] Missing Load CSV button; action not bound.");
 
   if(shouldBypassSplashOnLoad()){
     resetCampaignLibraryStartupState();
@@ -10695,11 +10696,6 @@ function initStartScreenActions(){
       markBuilderOpenState(true,"restored");
       await Promise.resolve(chooseRestoreSession());
       dismissSplashAndShowBuilder("restored");
-    });
-  }
-  if(csvBtn){
-    csvBtn.addEventListener("click",(e)=>{
-      window.loadCsvFromSplash(e);
     });
   }
   const sheetsFile=document.getElementById("sheets-file");
