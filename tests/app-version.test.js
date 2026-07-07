@@ -36,6 +36,6 @@ test('the application version is defined once and hydrates every displayed versi
 test('changing only APP_VERSION updates the title and every version label', () => {
   const changedHtml = html.replace(/const APP_VERSION = "v\d+\.\d+(?:\.\d+)?(?:\.\d+)?";/, 'const APP_VERSION = "v9.9.9";');
   const { context, labels } = runVersionBootstrap(changedHtml);
-  assert.equal(context.document.title, 'em / builder v9.9.9');
+  assert.equal(context.document.title, 'em | builder v9.9.9');
   assert.deepEqual(labels.map(label => label.textContent), ['v9.9.9']);
 });
