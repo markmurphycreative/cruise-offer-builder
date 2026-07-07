@@ -86,8 +86,10 @@ test('splash action labels are simplified and ordered in the markup', () => {
 });
 
 
-test('splash markup does not include an in-app title bar label', () => {
-  assert.doesNotMatch(html, /Cruise Builder - murfi v4\.0/);
+test('application markup does not include legacy builder branding', () => {
+  const legacyBrand = ['Cruise', 'Builder'].join(' ');
+  assert.doesNotMatch(html, new RegExp(`${legacyBrand}\\s*-`));
+  assert.doesNotMatch(html, new RegExp(legacyBrand));
 });
 
 test('splash navigation uses understated light typography', () => {

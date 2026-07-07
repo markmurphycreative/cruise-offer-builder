@@ -20,7 +20,7 @@ function runVersionBootstrap(source = html) {
     }
   };
   vm.createContext(context);
-  vm.runInContext(extractVersionBootstrap(source).replace('const APP_VERSION', 'var APP_VERSION'), context);
+  vm.runInContext(extractVersionBootstrap(source).replace('const APP_VERSION', 'var APP_VERSION').replace('const APP_TITLE', 'var APP_TITLE'), context);
   return { context, labels };
 }
 
@@ -29,7 +29,7 @@ test('the application version is defined once and hydrates every displayed versi
   assert.equal((html.match(/data-app-version(?=[ >])/g) || []).length, 1);
 
   const { context, labels } = runVersionBootstrap();
-  assert.equal(context.document.title, `em / builder ${context.APP_VERSION}`);
+  assert.equal(context.document.title, context.APP_TITLE);
   assert.deepEqual(labels.map(label => label.textContent), [context.APP_VERSION]);
 });
 
