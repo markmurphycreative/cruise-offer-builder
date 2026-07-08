@@ -79,7 +79,7 @@ test('fresh previews use the whole blank workspace as a subtle upload zone befor
   assert.match(html, /\.preview-empty-state p \+ p\{margin-top:7px;\}/);
   assert.doesNotMatch(html, /\.preview-empty-state(?: h2| p)?\{[^}]*background:var\(--(?:navy|gold)\)/);
   assert.doesNotMatch(html, /preview-empty-rule/);
-  assert.match(html, /<h2>Ready To Build<\/h2><p>Load a Google Sheet, CSV or campaign file to generate your cruise cards instantly\.<\/p><p>Click anywhere or drag a CSV or campaign file into this workspace\.<\/p>/);
+  assert.match(html, /<h2>Ready to build<\/h2><p>Connect a Google Sheet or open a campaign file to build your cruise cards\.<\/p><p>Click anywhere or drag a campaign file into this workspace\.<\/p>/);
 
   const renderPreviewMode = extractFunction('renderPreviewMode');
   assert.ok(renderPreviewMode.indexOf('if(renderEmptyPreviewIfNeeded()) return;') < renderPreviewMode.indexOf("if(viewMode === 'email')"));
@@ -92,8 +92,8 @@ test('fresh previews use the whole blank workspace as a subtle upload zone befor
   assert.equal(elements['preview-scaler'].classList.contains('empty-preview'), true);
   assert.equal(elements['card-output'].classList.contains('empty-preview-output'), true);
   assert.equal(elements['preview-wrap'].classList.contains('empty-upload-zone'), true);
-  assert.match(elements['card-output'].innerHTML, /Ready To Build/);
-  assert.match(elements['card-output'].innerHTML, /Click anywhere or drag a CSV or campaign file into this workspace\./);
+  assert.match(elements['card-output'].innerHTML, /Ready to build/);
+  assert.match(elements['card-output'].innerHTML, /Click anywhere or drag a campaign file into this workspace\./);
   context.triggerCsvFilePicker();
   assert.equal(elements['sheets-file'].clickCount, 1);
 });
@@ -120,7 +120,7 @@ test('loaded and session-restored offers bypass the empty upload zone and keep n
 
 test('CSV import button and zero-offer workspace share the existing hidden file input click path', () => {
   assert.equal((html.match(/id="sheets-file"/g) || []).length, 1);
-  assert.match(html, /<button class="abtn csv-file-btn" onclick="triggerCsvFilePicker\(\)">Load Campaign\.\.\.<\/button>/);
+  assert.match(html, /<button class="abtn csv-file-btn" onclick="triggerCsvFilePicker\(\)">Open Campaign…<\/button>/);
   assert.doesNotMatch(html, /Choose Campaign File\.\.\./);
   assert.doesNotMatch(html, /id="csv-load-btn"/);
   assert.match(extractFunction('triggerCsvFilePicker'), /const input=document\.getElementById\("sheets-file"\);[\s\S]*if\(input\) input\.click\(\);/);
