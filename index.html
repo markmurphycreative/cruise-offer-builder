@@ -2431,6 +2431,33 @@ function cobTraceInferSource(data, fallback){
   if(typeof offers !== "undefined" && Array.isArray(offers) && typeof cur !== "undefined" && data === offers[cur]) return "offers[cur]";
   return fallback || "unknown";
 }
+function cobPerfEnabled(){
+  try{ return window.localStorage && window.localStorage.getItem("cobPerfAudit") === "1"; }catch(e){ return false; }
+}
+function cobPerfNow(){
+  return (window.performance && typeof window.performance.now === "function") ? window.performance.now() : Date.now();
+}
+function cobPerfRecord(name, start, detail){
+  if(!cobPerfEnabled()) return;
+  window.COB_PERF_AUDIT = Array.isArray(window.COB_PERF_AUDIT) ? window.COB_PERF_AUDIT : [];
+  window.COB_PERF_AUDIT.push({
+    name,
+    duration: Math.round((cobPerfNow() - start) * 100) / 100,
+    detail: detail || {},
+    cardIndex: (typeof cur !== "undefined" ? cur : null),
+    viewMode: (typeof viewMode !== "undefined" ? viewMode : null),
+    at: new Date().toISOString()
+  });
+}
+function cobPerfMeasure(name, fn, detail){
+  const start=cobPerfNow();
+  try{ return fn(); }
+  finally{ cobPerfRecord(name, start, detail); }
+}
+function cobPerfMark(name, detail){
+  if(!cobPerfEnabled()) return;
+  cobPerfRecord(name, cobPerfNow(), detail);
+}
 function cobTraceOfferSnapshot(fnName, data, source){
   if(!cobRenderTraceEnabled()) return;
   const offerData = data || {};
@@ -2893,6 +2920,7 @@ function showHeroDropStatus(message,isError){
   try{ console[isError?"warn":"log"](message); }catch(e){}
 }
 function applyHeroImageSourceToOffer(src,index){
+  const perfStart=(typeof cobPerfNow==="function"?cobPerfNow():Date.now());
   const offerIndex=Number(index);
   if(!Number.isInteger(offerIndex)||offerIndex<0||offerIndex>=offers.length) return false;
   if(typeof isOfferLocked==="function" && isOfferLocked(offerIndex)) return showOfferLockStatus(offerIndex);
@@ -2902,6 +2930,7 @@ function applyHeroImageSourceToOffer(src,index){
   refreshOfferUi({utm:false,spell:false,autosave:false});
   if(typeof queueAutosave==="function") queueAutosave({immediate:true});
   if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Hero image change");
+  if(typeof cobPerfRecord==="function") cobPerfRecord("hero image replacement", perfStart, {offer:offerIndex, bytes:String(src||"").length});
   return true;
 }
 function readHeroDropFile(file,index){
@@ -4778,6 +4807,7 @@ function restoreLastSuccessfulCsv(){
 }
 
 function processSheetCSV(csv,status){
+  const perfStart=(typeof cobPerfNow==="function"?cobPerfNow():Date.now());
   function norm(v){return (v==null?"":String(v)).replace(/^\uFEFF/,"").trim();}
   function slugHeader(v){
     return norm(v)
@@ -5152,6 +5182,7 @@ function processSheetCSV(csv,status){
   status.className=loaded?"csv-success csv-loaded-status":"csv-error";
   status.textContent=loaded?"✓ "+loaded+" offer"+(loaded===1?"":"s")+" loaded":"No offers found. Columns detected: "+headers.join(", ");
   if(loaded && !restoringLastSuccessfulCsv) storeLastSuccessfulCsv(csv);
+  if(typeof cobPerfRecord==="function") cobPerfRecord("campaign loading", perfStart, {offers:loaded, rows:rows.length});
 }
 
 function parseCSV(str){
@@ -9201,6 +9232,7 @@ function openDetachedSummaryWindow(){
   closeSummaryModalAfterDetachedOpen();
 }
 function openSummary(){
+  const perfStart=(typeof cobPerfNow==="function"?cobPerfNow():Date.now());
   const modal=document.getElementById("summary-modal");
   const content=document.getElementById("summary-content");
   if(!modal||!content){
@@ -9210,6 +9242,7 @@ function openSummary(){
   content.innerHTML=getCampaignSummaryHtml();
   if(typeof resetDraggableModalPosition==="function") resetDraggableModalPosition("summary-modal");
   modal.classList.add("active");
+  if(typeof cobPerfRecord==="function") cobPerfRecord("summary generation", perfStart, {offers:(offers||[]).filter(isOfferLoaded).length});
 }
 function getSummaryText(){
   let txt=`CAMPAIGN SUMMARY\nCampaign Readiness: ${getCampaignHealthReviewText()}\nCampaign: ${document.getElementById("g-campaign").value||"(unnamed)"}\nSend Date: ${document.getElementById("g-date").value||"(TBC)"}\nGenerated: ${new Date().toLocaleString()}\n\n`;
@@ -9645,6 +9678,7 @@ function initOfferTabDragDrop(){
 }
 
 function sv(i){
+  const perfStart=(typeof cobPerfNow==="function"?cobPerfNow():Date.now());
   const next = Number(i) || 0;
   const switched = next !== cur;
   try { commitVisibleFields(); } catch(e) { console.warn('Could not save current offer before tab switch', e); }
@@ -9661,6 +9695,7 @@ function sv(i){
   try { runSpellQA(); } catch(e){}
   renderPreviewMode(true);
   queueAutosave();
+  if(typeof cobPerfRecord==="function") cobPerfRecord("campaign switching", perfStart, {from: switched ? 'different' : 'same', to: cur});
 }
 function up(){
   try { commitVisibleFields(); } catch(e){}
@@ -9784,6 +9819,8 @@ function updateViewPill(){
 }
 
 function setView(v){
+  const perfStart=(typeof cobPerfNow==="function"?cobPerfNow():Date.now());
+  const previousViewMode=viewMode;
   const nextViewMode = normalisePreviewMode(v);
   viewMode = nextViewMode;
   syncViewSelector();
@@ -9791,6 +9828,7 @@ function setView(v){
   try { runSpellQA(); } catch(e){}
   renderPreviewMode(true);
   queueAutosave();
+  if(typeof cobPerfRecord==="function") cobPerfRecord("preview rendering: view switch", perfStart, {from:previousViewMode,to:viewMode});
 }
 
 function editOfferFromAllPreview(index){
@@ -9873,6 +9911,7 @@ function renderEmptyPreviewIfNeeded(){
 }
 
 function renderPreviewMode(skipSave){
+  const perfStart=(typeof cobPerfNow==="function"?cobPerfNow():Date.now());
   cobTraceOfferSnapshot("renderPreviewMode", (offers && offers[cur]) || {}, "unknown");
   if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
   if(!skipSave){ try { commitVisibleFields(); } catch(e){} }
@@ -9883,8 +9922,9 @@ function renderPreviewMode(skipSave){
 
   syncViewSelector();
   updatePreviewZoomControls();
-  if(renderEmptyPreviewIfNeeded()) return;
+  if(renderEmptyPreviewIfNeeded()){ if(typeof cobPerfRecord==="function") cobPerfRecord("preview rendering: empty", perfStart); return; }
   const baseScale = zoomPct / 100;
+  const currentCtaSettings = getCtaSettingsFromUI();
 
   if(viewMode === 'email'){
     updatePreviewTitle();
@@ -9902,7 +9942,7 @@ function renderPreviewMode(skipSave){
       const cardWrap = document.createElement('div');
       cardWrap.className = 'email-card-wrap';
       cardWrap.style.cssText = 'width:1200px;background:var(--surface);overflow:hidden;';
-      cardWrap.innerHTML = renderOfferWithOptionalCtaHTML(d, getCtaSettingsFromUI());
+      cardWrap.innerHTML = renderOfferWithOptionalCtaHTML(d, currentCtaSettings);
       adjustVisitSectionHeights(cardWrap);
       bindEmailPreviewHeroPickerTargets(cardWrap, i);
       enhanceClickableHeroImagesAndPlaceholders(cardWrap, i);
@@ -9914,6 +9954,7 @@ function renderPreviewMode(skipSave){
     out.innerHTML = '';
     out.appendChild(stackWrap);
     setScalerBox(1200, out.offsetHeight || stackWrap.offsetHeight, baseScale * EMAIL_PREVIEW_SCALE);
+    if(typeof cobPerfRecord==="function") cobPerfRecord("preview rendering: email view", perfStart, {offers:getLoadedPreviewOffers().length});
     return;
   }
 
@@ -9943,8 +9984,7 @@ function renderPreviewMode(skipSave){
       c.setAttribute('aria-label', (typeof isOfferLocked==='function' && isOfferLocked(index) ? 'Locked offer. ' : '') + 'Edit Offer ' + (index + 1));
       c.addEventListener('click', function(){ editOfferFromAllPreview(index); });
       c.addEventListener('keydown', function(event){ handleAllPreviewCardKeydown(event, index); });
-      c.innerHTML = bc(d || {});
-      if(getCtaSettingsFromUI().enabled) c.innerHTML = renderOfferWithOptionalCtaHTML(d || {}, getCtaSettingsFromUI());
+      c.innerHTML = currentCtaSettings.enabled ? renderOfferWithOptionalCtaHTML(d || {}, currentCtaSettings) : bc(d || {});
       adjustVisitSectionHeights(c);
       enhanceClickableHeroImagesAndPlaceholders(c, index);
       enhanceHeroDropTarget(c, index);
@@ -9961,11 +10001,13 @@ function renderPreviewMode(skipSave){
       allScale = Math.min(allScale, pane.w / gridW, pane.h / fullH);
     }
     setAllPreviewCanvasBox(gridW, fullH, allScale);
+    if(typeof cobPerfRecord==="function") cobPerfRecord("preview rendering: all 4 view", perfStart, {offers:loadedPreviewOffers.length});
     return;
   }
 
   // Single view renders from visible fields so the active tab preview always matches the editor.
   renderVisibleCard();
+  if(typeof cobPerfRecord==="function") cobPerfRecord("preview rendering: single view", perfStart, {offer:cur});
 }
 
 function rv(skipSave){
@@ -10195,9 +10237,11 @@ function updateUtmOutput(showAll){
 }
 function genUtm(){ const result=updateUtmOutput(false); if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow(); return result; }
 function genAllUtms(silent){
+  const perfStart=(typeof cobPerfNow==="function"?cobPerfNow():Date.now());
   const txt = updateUtmOutput(true);
   if(!silent) console.log("All tracking links ready", txt);
   if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow();
+  if(typeof cobPerfRecord==="function") cobPerfRecord("UTM generation", perfStart, {silent:!!silent});
   return txt;
 }
 function copyUtm(index, btn){
@@ -10485,6 +10529,7 @@ setTimeout(()=>{ try{ genStandardUtms(); }catch(e){} }, 250);
 
 
 async function exportCampaignPack(){
+  const perfStart=(typeof cobPerfNow==="function"?cobPerfNow():Date.now());
   if(exportRunning){ showExportToast('Export in progress','error'); return; }
   save();
   if(!(await ensureJSZipLoaded())){ showExportToast('Export could not be completed','error'); return; }
@@ -10550,6 +10595,7 @@ CTA Assets: ${ctaRows.map(row=>row.filename+' -> '+row.utm).join(', ') || 'None'
     markExportComplete('exp-pack-complete');
     showExportToast('Campaign pack exported.');
   }catch(err){ console.error(err); if(prog) prog.textContent='Campaign pack export could not be completed.'; showExportToast('Export could not be completed','error'); }
+  if(typeof cobPerfRecord==="function") cobPerfRecord("export preparation", perfStart);
   exportRunning=false; if(btn) btn.disabled=false; if(lbl) lbl.textContent='Export Campaign Pack';
 }
 
@@ -10914,8 +10960,14 @@ function syncSailDateFromHidden(){
 
 // Ensure Standard UTMs stay in sync with the active editor context and CSV/import flows.
 (function(){
+  let standardUtmRefreshQueued=false;
   function refreshStandardUtmsSafe(){
-    try { genStandardUtms(); } catch(e){}
+    if(standardUtmRefreshQueued) return;
+    standardUtmRefreshQueued=true;
+    Promise.resolve().then(function(){
+      standardUtmRefreshQueued=false;
+      try { genStandardUtms(); } catch(e){}
+    });
   }
   ["loadOfferToEditor","load","rv","sv","up","processSheetCSV"].forEach(function(fnName){
     if(typeof window[fnName] !== "function") return;
