@@ -28,7 +28,7 @@ function extractConstant(name) {
 test('successful export actions expose session-only green completion ticks', () => {
   const ids = ['exp-single-jpg-complete', 'exp-all-jpg-complete', 'exp-pack-complete'];
   ids.forEach(id => {
-    assert.match(html, new RegExp(`id="${id}"[^>]*aria-label="Export completed"`));
+    assert.match(html, new RegExp(`id="${id}"[^>]*aria-label="Export complete"`));
     assert.match(html, new RegExp(`markExportComplete\\(["']${id}["']\\)`));
   });
   assert.match(html, /\.export-complete\{display:none;color:#b8f0c7;/);
@@ -54,14 +54,14 @@ test('export toasts replace the active notification and dismiss automatically af
   vm.createContext(context);
   vm.runInContext(`var exportToastTimer;\n${extractFunction('showExportToast')}`, context);
 
-  context.showExportToast('Card exported successfully');
-  assert.equal(toast.textContent, 'Card exported successfully');
+  context.showExportToast('Card exported.');
+  assert.equal(toast.textContent, 'Card exported.');
   assert.equal(toast.className, 'export-toast active');
   assert.equal(timers.size, 1);
   assert.equal([...timers.values()][0].delay, 2500);
 
-  context.showExportToast('Export failed', 'error');
-  assert.equal(toast.textContent, 'Export failed');
+  context.showExportToast('Export could not be completed', 'error');
+  assert.equal(toast.textContent, 'Export could not be completed');
   assert.equal(toast.className, 'export-toast error active');
   assert.equal(timers.size, 1, 'replacing a toast clears its previous dismissal timer');
 
@@ -70,14 +70,14 @@ test('export toasts replace the active notification and dismiss automatically af
 });
 
 test('all export entry points report their existing success and failure outcomes through toasts', () => {
-  assert.match(extractFunction('exportCurrent'), /showExportToast\("Card exported successfully"\)/);
-  assert.match(extractFunction('exportAll'), /showExportToast\("ZIP exported successfully"\)/);
-  assert.match(extractFunction('exportCurrentJPG'), /showExportToast\('Card exported successfully'\)/);
-  assert.match(extractFunction('exportAllJPG'), /showExportToast\('All cards exported successfully'\)/);
-  assert.match(extractFunction('exportCampaignPack'), /showExportToast\('Campaign pack exported successfully'\)/);
-  assert.match(extractFunction('exportAllJPG'), /showExportToast\('No offer loaded','error'\)/);
+  assert.match(extractFunction('exportCurrent'), /showExportToast\("Card exported."\)/);
+  assert.match(extractFunction('exportAll'), /showExportToast\("Cards exported."\)/);
+  assert.match(extractFunction('exportCurrentJPG'), /showExportToast\('Card exported.'\)/);
+  assert.match(extractFunction('exportAllJPG'), /showExportToast\('All cards exported.'\)/);
+  assert.match(extractFunction('exportCampaignPack'), /showExportToast\('Campaign pack exported.'\)/);
+  assert.match(extractFunction('exportAllJPG'), /showExportToast\('No offer ready','error'\)/);
   ['exportCurrent', 'exportAll', 'exportCurrentJPG', 'exportAllJPG', 'exportCampaignPack'].forEach(name => {
-    assert.match(extractFunction(name), /showExportToast\(['"]Export failed['"],["']error["']\)/);
+    assert.match(extractFunction(name), /showExportToast\(['"]Export could not be completed['"],["']error["']\)/);
   });
 });
 
@@ -91,7 +91,7 @@ test('export panel exposes a compact toolbar while retaining export entry points
   assert.doesNotMatch(html, /class="export-actions single-action"/);
   assert.doesNotMatch(html, /class="export-group-title">(?:Current Card|All 4 Cards|Campaign Pack)<\/div>/);
   assert.match(html, /\.export-btn\{[^}]*min-height:28px;[^}]*padding:4px 7px;[^}]*border-radius:3px;/);
-  assert.match(html, /\.export-btn\.primary\{background:var\(--gold\);color:#fff;/);
+  assert.match(html, /\.export-btn\.primary\{background:var\(--gold\);color:var\(--text-inverse\);/);
   assert.doesNotMatch(html, /id="exp-single-btn"/);
   assert.doesNotMatch(html, /id="exp-all-btn"/);
   assert.match(html, /function exportCurrent\(\)/);
@@ -173,11 +173,11 @@ test('empty hero placeholder uses a centred upload icon and CTA without changing
 test('required hero QA retains passive logic while adding a stronger warning treatment', () => {
   assert.match(html, /warnLbl:"⚠ Hero image required for export",warningClass:"hero-warning"/);
   assert.match(html, /\.prod-status-item\.hero-warning\{color:var\(--red\);background:#fff0f0;border:1px solid #f0b0b0;/);
-  assert.match(html, /Passive checks only — no auto-correction\. Export is never blocked\./);
+  assert.match(html, /Suggestions are optional and do not block export./);
 });
 
 test('saved-session utility bar starts compact before autosave hydration', () => {
-  assert.match(html, /<div class="session-status" id="saved-session-status" aria-live="polite"><span class="session-status-summary">No saved session<\/span><\/div>/);
+  assert.match(html, /<div class="session-status" id="saved-session-status" aria-live="polite"><span class="session-status-summary">No saved work<\/span><\/div>/);
 });
 
 test('saved-session summary reports the existing autosave payload without changing storage', () => {
@@ -194,9 +194,9 @@ test('saved-session summary reports the existing autosave payload without changi
   ].join('\n'), context);
 
   context.updateSavedSessionStatus();
-  assert.equal(status.innerHTML, '<span class="session-status-summary">No saved session</span>');
+  assert.equal(status.innerHTML, '<span class="session-status-summary">No saved work</span>');
 
   context.updateSavedSessionStatus({ savedAt: '2026-05-30T09:24:00Z', offers: [{ name: 'One' }, { price: '999' }, {}, { _img: 'hero.jpg' }] });
-  assert.match(status.innerHTML, /^<span class="session-status-summary">✓ Session saved • 3 offers • \d{2}:\d{2}<\/span>$/);
+  assert.match(status.innerHTML, /^<span class="session-status-summary">✓ Work saved • 3 offers • \d{2}:\d{2}<\/span>$/);
   assert.doesNotMatch(extractFunction('updateSavedSessionStatus'), /setItem|removeItem/);
 });

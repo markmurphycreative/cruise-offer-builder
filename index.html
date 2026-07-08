@@ -423,7 +423,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .spell-flag{border-color:#e8c88a!important;background:#fffdf6!important;box-shadow:inset 0 0 0 1px rgba(212,130,10,.08);}
 .parse-preview-item.spell-flag{border-color:#e8c88a;background:#fffdf6;}
 
-/* ── WARNINGS ── */
+/* ── CHECKS ── */
 .warn-box{background:#fff8f0;border:1px solid #f0c080;border-radius:var(--radius);padding:5px 7px;margin-top:4px;display:none;font-size:10px;color:#8a5000;line-height:1.5;}
 .warn-box.active{display:block;}
 
@@ -838,21 +838,21 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
   <div class="sidebar-section-label offer-status-label">Offer Status</div>
   <div class="offer-tabs empty-hidden">
     <span class="offer-pill" id="offer-pill" aria-hidden="true"></span>
-    <div class="offer-tab-item"><button class="otab active" id="ot0" onclick="sv(0)" draggable="true" data-offer-tab="0" title="No offer loaded" aria-label="Offer 1 status: No offer loaded"><span class="offer-tab-label"><span class="offer-tab-number">Offer 1</span></span><span class="offer-lock-toggle" role="button" tabindex="0" id="lock-toggle-0" onclick="toggleOfferLockFromTile(event,0)" onkeydown="if(event.key==='Enter'||event.key===' ') toggleOfferLockFromTile(event,0)" aria-label="Lock offer" title="Lock offer"><svg class="lock-icon-open" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 7.2-2.4"></path></svg><svg class="lock-icon-locked" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span></button></div>
-    <div class="offer-tab-item"><button class="otab" id="ot1" onclick="sv(1)" draggable="true" data-offer-tab="1" title="No offer loaded" aria-label="Offer 2 status: No offer loaded"><span class="offer-tab-label"><span class="offer-tab-number">Offer 2</span></span><span class="offer-lock-toggle" role="button" tabindex="0" id="lock-toggle-1" onclick="toggleOfferLockFromTile(event,1)" onkeydown="if(event.key==='Enter'||event.key===' ') toggleOfferLockFromTile(event,1)" aria-label="Lock offer" title="Lock offer"><svg class="lock-icon-open" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 7.2-2.4"></path></svg><svg class="lock-icon-locked" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span></button></div>
-    <div class="offer-tab-item"><button class="otab" id="ot2" onclick="sv(2)" draggable="true" data-offer-tab="2" title="No offer loaded" aria-label="Offer 3 status: No offer loaded"><span class="offer-tab-label"><span class="offer-tab-number">Offer 3</span></span><span class="offer-lock-toggle" role="button" tabindex="0" id="lock-toggle-2" onclick="toggleOfferLockFromTile(event,2)" onkeydown="if(event.key==='Enter'||event.key===' ') toggleOfferLockFromTile(event,2)" aria-label="Lock offer" title="Lock offer"><svg class="lock-icon-open" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 7.2-2.4"></path></svg><svg class="lock-icon-locked" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span></button></div>
-    <div class="offer-tab-item"><button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3" title="No offer loaded" aria-label="Offer 4 status: No offer loaded"><span class="offer-tab-label"><span class="offer-tab-number">Offer 4</span></span><span class="offer-lock-toggle" role="button" tabindex="0" id="lock-toggle-3" onclick="toggleOfferLockFromTile(event,3)" onkeydown="if(event.key==='Enter'||event.key===' ') toggleOfferLockFromTile(event,3)" aria-label="Lock offer" title="Lock offer"><svg class="lock-icon-open" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 7.2-2.4"></path></svg><svg class="lock-icon-locked" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span></button></div>
+    <div class="offer-tab-item"><button class="otab active" id="ot0" onclick="sv(0)" draggable="true" data-offer-tab="0" title="No offer ready" aria-label="Offer 1 status: No offer ready"><span class="offer-tab-label"><span class="offer-tab-number">Offer 1</span></span><span class="offer-lock-toggle" role="button" tabindex="0" id="lock-toggle-0" onclick="toggleOfferLockFromTile(event,0)" onkeydown="if(event.key==='Enter'||event.key===' ') toggleOfferLockFromTile(event,0)" aria-label="Lock offer" title="Lock offer"><svg class="lock-icon-open" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 7.2-2.4"></path></svg><svg class="lock-icon-locked" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span></button></div>
+    <div class="offer-tab-item"><button class="otab" id="ot1" onclick="sv(1)" draggable="true" data-offer-tab="1" title="No offer ready" aria-label="Offer 2 status: No offer ready"><span class="offer-tab-label"><span class="offer-tab-number">Offer 2</span></span><span class="offer-lock-toggle" role="button" tabindex="0" id="lock-toggle-1" onclick="toggleOfferLockFromTile(event,1)" onkeydown="if(event.key==='Enter'||event.key===' ') toggleOfferLockFromTile(event,1)" aria-label="Lock offer" title="Lock offer"><svg class="lock-icon-open" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 7.2-2.4"></path></svg><svg class="lock-icon-locked" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span></button></div>
+    <div class="offer-tab-item"><button class="otab" id="ot2" onclick="sv(2)" draggable="true" data-offer-tab="2" title="No offer ready" aria-label="Offer 3 status: No offer ready"><span class="offer-tab-label"><span class="offer-tab-number">Offer 3</span></span><span class="offer-lock-toggle" role="button" tabindex="0" id="lock-toggle-2" onclick="toggleOfferLockFromTile(event,2)" onkeydown="if(event.key==='Enter'||event.key===' ') toggleOfferLockFromTile(event,2)" aria-label="Lock offer" title="Lock offer"><svg class="lock-icon-open" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 7.2-2.4"></path></svg><svg class="lock-icon-locked" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span></button></div>
+    <div class="offer-tab-item"><button class="otab" id="ot3" onclick="sv(3)" draggable="true" data-offer-tab="3" title="No offer ready" aria-label="Offer 4 status: No offer ready"><span class="offer-tab-label"><span class="offer-tab-number">Offer 4</span></span><span class="offer-lock-toggle" role="button" tabindex="0" id="lock-toggle-3" onclick="toggleOfferLockFromTile(event,3)" onkeydown="if(event.key==='Enter'||event.key===' ') toggleOfferLockFromTile(event,3)" aria-label="Lock offer" title="Lock offer"><svg class="lock-icon-open" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 7.2-2.4"></path></svg><svg class="lock-icon-locked" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></span></button></div>
   </div>
-  <div class="offer-empty-state active" id="offer-empty-state" role="button" tabindex="0" title="Open Campaign Import" aria-label="Open Campaign Import" onclick="openCampaignImportFromEmptyState()" onkeydown="handleEmptyOfferStateKeydown(event)">
-    <div class="offer-empty-state-title">No offers loaded</div>
-    <div class="offer-empty-state-copy">Load a sheet, CSV, campaign or paste an offer.</div>
+  <div class="offer-empty-state active" id="offer-empty-state" role="button" tabindex="0" title="Open import options" aria-label="Open import options" onclick="openCampaignImportFromEmptyState()" onkeydown="handleEmptyOfferStateKeydown(event)">
+    <div class="offer-empty-state-title">No offers yet</div>
+    <div class="offer-empty-state-copy">Import a campaign, connect a sheet, or paste offer details.</div>
   </div>
   <div class="offer-context-label empty-hidden" id="active-offer-label" aria-live="polite">Editing Offer 1 of 4</div>
 
   <!-- ── REORDER CARDS ── -->
-  <div class="reorder-group" aria-label="Reorder Cards quick controls">
-    <div class="reorder-title"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="m3 6 1 1 2-2"></path><path d="m3 12 1 1 2-2"></path><path d="m3 18 1 1 2-2"></path></svg><span>Reorder Cards</span></div>
-    <div class="reorder-actions" aria-label="Reorder selected card"><button class="abtn reorder-btn" id="move-left-btn" onclick="moveOfferLeft()" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button><button class="abtn reorder-btn" id="move-right-btn" onclick="moveOfferRight()" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button></div>
+  <div class="reorder-group" aria-label="Arrange Cards controls">
+    <div class="reorder-title"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="m3 6 1 1 2-2"></path><path d="m3 12 1 1 2-2"></path><path d="m3 18 1 1 2-2"></path></svg><span>Arrange Cards</span></div>
+    <div class="reorder-actions" aria-label="Move selected card"><button class="abtn reorder-btn" id="move-left-btn" onclick="moveOfferLeft()" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button><button class="abtn reorder-btn" id="move-right-btn" onclick="moveOfferRight()" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button></div>
   </div>
 
   <div class="sb-body">
@@ -861,7 +861,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
     <div class="sidebar-section-label">Import</div>
     <div class="section csv-core-section" data-section-key="csv-import">
       <div class="section-hdr" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>Campaign Import</h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>Import Campaign</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body csv-import-layout">
           <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values,.json,application/json" style="display:none">
@@ -869,9 +869,9 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
             <label for="sheets-url">Google Sheet URL</label>
             <input id="sheets-url" type="url" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
           </div>
-          <button class="abtn csv-sheet-btn" onclick="loadFromSheets()">Import Google Sheet</button>
+          <button class="abtn csv-sheet-btn" onclick="loadFromSheets()">Connect Google Sheet</button>
           <div class="csv-import-separator">or</div>
-          <button class="abtn csv-file-btn" onclick="triggerCsvFilePicker()">Load Campaign...</button>
+          <button class="abtn csv-file-btn" onclick="triggerCsvFilePicker()">Open Campaign…</button>
           <div id="sheets-status" aria-live="polite"></div>
 
       </div>
@@ -884,7 +884,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M11 14h10"></path><path d="m17 10 4 4-4 4"></path><path d="M9 5V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"></path><path d="M17 5h1a2 2 0 0 1 2 2v3"></path><path d="M9 18H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1"></path><rect width="8" height="5" x="8" y="4" rx="1"></rect></svg>Paste Offer</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body parse-area hidden">
-        <textarea id="raw-paste" spellcheck="true" oninput="handlePasteOfferInput(event)" onkeydown="handlePasteOfferKeydown(event)" placeholder="Paste an offer here..."></textarea>
+        <textarea id="raw-paste" spellcheck="true" oninput="handlePasteOfferInput(event)" onkeydown="handlePasteOfferKeydown(event)" placeholder="Paste offer details here…"></textarea>
         <button class="parse-btn" onclick="parseOffer()"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M12 18v-6"></path><path d="m9 15 3 3 3-3"></path></svg>Load Offer</button>
         <div class="parse-result" id="parse-result"></div>
         <div class="offer-intel-panel" id="offer-intel-panel" aria-live="polite"></div>
@@ -895,11 +895,11 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
     <!-- ── MULTI OFFER IMPORT ── -->
     <div class="section" data-section-key="multi-offer-import">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M4 4h16"></path><path d="M4 10h16"></path><path d="M4 16h10"></path><path d="m16 17 2 2 4-4"></path></svg>Multi Offer Import</h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M4 4h16"></path><path d="M4 10h16"></path><path d="M4 16h10"></path><path d="m16 17 2 2 4-4"></path></svg>Import Multiple Offers</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body parse-area hidden">
-        <textarea id="multi-offer-paste" spellcheck="true" oninput="handleMultiOfferInput(event)" onkeydown="handleMultiOfferKeydown(event)" placeholder="Paste up to 4 offers here..."></textarea>
-        <button class="parse-btn" onclick="loadAllOffers()"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h6"></path></svg>Load All Offers</button>
+        <textarea id="multi-offer-paste" spellcheck="true" oninput="handleMultiOfferInput(event)" onkeydown="handleMultiOfferKeydown(event)" placeholder="Paste up to four offers here…"></textarea>
+        <button class="parse-btn" onclick="loadAllOffers()"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h6"></path></svg>Load Offers</button>
         <div class="parse-result" id="multi-offer-result"></div>
       </div>
     </div>
@@ -916,19 +916,19 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
           <div class="field"><label>Sailing From</label><input id="f-sailingFrom" spellcheck="true" placeholder="Rome" oninput="handleSailingFromInput()"></div>
         </div>
         <div class="spell-warn" id="spell-warn-name"></div>
-        <div class="field" id="field-tags"><label>Top Bar USP Text</label><input id="f-tags" spellcheck="true" placeholder="Adult Only Options · Cuisine · Entertainment · Family" oninput="up()"></div>
+        <div class="field" id="field-tags"><label>Top Bar Highlights</label><input id="f-tags" spellcheck="true" placeholder="Adult Only Options · Cuisine · Entertainment · Family" oninput="up()"></div>
         <div class="spell-warn" id="spell-warn-tags"></div>
         <div class="field" id="field-incl"><label>Inclusions</label><input id="f-incl" spellcheck="true" placeholder="Newcastle Flights, Luggage &amp; Transfers Included" oninput="up()"></div>
         <div class="field" id="field-theme_tags"><label>Theme Tags</label><input id="f-theme_tags" spellcheck="true" placeholder="Luxury · Scenic Cruising · Norwegian Fjords" oninput="up()"></div>
         <div class="fg2">
           <div class="field"><label>Price (£)</label><input id="f-price" placeholder="1669" oninput="up()"></div>
           <div class="field"><label>Price Basis</label><input id="f-basis" placeholder="Based On 2 Adults Sharing" oninput="up()"></div>
-          <div class="field"><label>Board Code</label><input id="f-board" placeholder="FB" oninput="autoBoardLabel(); up()"></div>
+          <div class="field"><label>Board</label><input id="f-board" placeholder="FB" oninput="autoBoardLabel(); up()"></div>
           <div class="field"><label>Board Basis</label><input id="f-boardlbl" placeholder="Full Board" oninput="up()"></div>
           <div class="field"><label>Date</label><input id="f-saildate" placeholder="20 November 2026" oninput="splitSailDate();up()"><input type="hidden" id="f-day" value=""><input type="hidden" id="f-month" value=""></div>
           <div class="field"><label>Nights</label><input id="f-nights" placeholder="14" oninput="up()"></div>
         </div>
-        <div class="field"><label>Ports — separate with •</label><textarea id="f-ports" spellcheck="true" placeholder="Barbados • Martinique • St Kitts • Tortola • St Maarten • Antigua • St Lucia • Grenada" oninput="handlePortsInput()"></textarea></div>
+        <div class="field"><label>Ports (separate with •)</label><textarea id="f-ports" spellcheck="true" placeholder="Barbados • Martinique • St Kitts • Tortola • St Maarten • Antigua • St Lucia • Grenada" oninput="handlePortsInput()"></textarea></div>
         <div class="warn-box" id="ports-warn"></div>
         <div class="spell-warn" id="spell-warn-ports"></div>
       </div>
@@ -937,15 +937,15 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
     <!-- ── UTM LINK ── -->
     <div class="section" data-section-key="utm-link">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>UTM Link</h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>Tracking Links</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body hidden">
         <div class="field"><label>Operator Landing Page</label><input id="f-url" placeholder="https://dawsonandsanderson.co.uk/cruises" oninput="genUtm()"></div>
         <div class="utm-out" id="utm-out" aria-hidden="true"></div>
         <div id="utm-current-card" class="generated-utm-panel utm-current-card">
-          <div class="generated-utm-title"><strong id="utm-panel-title">Generated UTMs</strong></div>
+          <div class="generated-utm-title"><strong id="utm-panel-title">Tracking Links</strong></div>
           <div id="utm-generated-list" class="generated-utm-list" role="list" aria-live="polite">
-            <div id="utm-visible-output" class="generated-utm-empty empty-state" role="status"><strong>No UTMs generated yet.</strong>Add offer details and a landing page to generate tracking links.</div>
+            <div id="utm-visible-output" class="generated-utm-empty empty-state" role="status"><strong>No tracking links yet.</strong>Add offer details and a landing page to create tracking links.</div>
           </div>
         </div>
       </div>
@@ -961,7 +961,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
       <div class="section-body hidden">
         <details class="prod-status" id="prod-status">
           <summary class="prod-status-toggle">
-            <span class="prod-status-title">Campaign Health</span>
+            <span class="prod-status-title">Campaign Readiness</span>
             <span class="prod-status-collapsed-summary" id="prod-status-collapsed-summary"></span>
             <span class="section-toggle" aria-hidden="true">▾</span>
           </summary>
@@ -969,33 +969,33 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
           <div class="prod-status-list" id="prod-status-list"></div>
         </details>
         <div class="copy-qa-panel">
-          <div class="copy-qa-title">Copy QA</div>
-          <div class="copy-qa-status" id="copy-qa-status">— QA not run yet</div>
+          <div class="copy-qa-title">Copy Review</div>
+          <div class="copy-qa-status" id="copy-qa-status">— Review not run yet</div>
           <div class="copy-qa-checklist" id="copy-qa-checklist"></div>
           <div class="copy-qa-fixes" id="copy-qa-spelling-fixes" aria-live="polite"></div>
-          <div class="copy-qa-note" id="copy-qa-note">Suggestions are optional — export is never blocked.</div>
+          <div class="copy-qa-note" id="copy-qa-note">Suggestions are optional and do not block export.</div>
         </div>
       <div class="export-group export-toolbar-group">
         <div class="export-actions export-toolbar" role="group" aria-label="Exports">
           <button class="export-btn secondary" onclick="exportCurrentJPG()" id="exp-single-jpg-btn">
-            <span>⬇</span><span class="export-label-state" id="exp-single-jpg-lbl">Export Card</span><span aria-hidden="true">Card</span><span class="export-complete" id="exp-single-jpg-complete" aria-label="Export completed">✓</span>
+            <span>⬇</span><span class="export-label-state" id="exp-single-jpg-lbl">Export Card</span><span aria-hidden="true">Card</span><span class="export-complete" id="exp-single-jpg-complete" aria-label="Export complete">✓</span>
           </button>
           <button class="export-btn secondary" onclick="exportAllJPG()" id="exp-all-jpg-btn">
-            <span>⬇</span><span class="export-label-state" id="exp-all-jpg-lbl">Export All Cards</span><span aria-hidden="true">All Cards</span><span class="export-complete" id="exp-all-jpg-complete" aria-label="Export completed">✓</span>
+            <span>⬇</span><span class="export-label-state" id="exp-all-jpg-lbl">Export All Cards</span><span aria-hidden="true">All Cards</span><span class="export-complete" id="exp-all-jpg-complete" aria-label="Export complete">✓</span>
           </button>
           <button class="export-btn primary" onclick="exportCampaignPack()" id="exp-pack-btn">
-            <span>⬇</span><span class="export-label-state" id="exp-pack-lbl">Export Campaign Pack</span><span aria-hidden="true">Campaign</span><span class="export-complete" id="exp-pack-complete" aria-label="Export completed">✓</span>
+            <span>⬇</span><span class="export-label-state" id="exp-pack-lbl">Export Campaign Pack</span><span aria-hidden="true">Campaign</span><span class="export-complete" id="exp-pack-complete" aria-label="Export complete">✓</span>
           </button>
         </div>
       </div>
       <div class="export-progress" id="export-progress"></div>
       <div class="export-warn" id="export-warn">
-        <strong>⚠ Export Warning</strong><br>
-        One or more cards uses an external image URL which may not render in the export due to browser CORS restrictions.<br><br>
-        <strong>For best results:</strong> Upload images directly using the drag-and-drop area, or download your Adobe Stock image and drop it in locally.
+        <strong>Export note</strong><br>
+        One or more cards uses a web image that may not appear in the export.<br><br>
+        <strong>For best results:</strong> Upload images directly, or download your stock image and drop it into the card.
       </div>
         <div class="export-filenames" id="export-filenames">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px;">Export filenames:</div>
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px;">Export file names:</div>
           <div id="filename-list"></div>
         </div>
       </div>
@@ -1091,7 +1091,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
         </div>
         <label class="hero-lock-toggle" id="hero-lock-label"><input id="hero-lock-toggle" type="checkbox" onchange="toggleHeroImageLock()"> <span class="hero-lock-state" id="hero-lock-state">Protect Hero Image</span></label>
         <div class="hero-source-block">
-          <div class="field"><label>Image URL (Optional)</label><input id="f-img-url" placeholder="https://..." oninput="imgUrlCh()"></div>
+          <div class="field"><label>Image URL (optional)</label><input id="f-img-url" placeholder="https://..." oninput="imgUrlCh()"></div>
           <div style="font-size:9px;color:var(--muted);margin-top:2px;">External URLs may fail export; local upload is safer.</div>
         </div>
       </div>
@@ -1132,7 +1132,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
       </div>
       <div class="section-body hidden">
         <label class="hero-lock-toggle"><input id="cta-enabled" type="checkbox" onchange="ctaSettingsChanged()"> <span>Enable CTA</span></label>
-        <div class="field"><label>CTA Text</label><input id="cta-text" spellcheck="true" placeholder="Click To Call Us For More Info" oninput="ctaSettingsChanged()"></div>
+        <div class="field"><label>CTA Text</label><input id="cta-text" spellcheck="true" placeholder="Call Us For More Info" oninput="ctaSettingsChanged()"></div>
         <div class="field"><label>CTA Phone Number</label><input id="cta-phone" inputmode="tel" placeholder="01912229701" oninput="ctaSettingsChanged()"></div>
       </div>
     </div>
@@ -1164,7 +1164,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
           <label for="ai-generate-scope">Generate For</label>
           <select id="ai-generate-scope" onchange="updateAiCopyCampaignContextPreview()">
             <option value="current-card" selected>Current Card</option>
-            <option value="all-loaded-cards">All Loaded Cards</option>
+            <option value="all-loaded-cards">All Ready Cards</option>
             <option value="campaign-summary">Campaign Summary</option>
           </select>
           <div id="ai-campaign-context-preview" class="ai-campaign-context-preview" aria-live="polite"></div>
@@ -1183,7 +1183,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
         <button class="abtn navy" type="button" style="width:100%;margin-bottom:6px;" onclick="generateAiCopyPrompt()">Generate Prompt</button>
         <div class="field">
           <label for="ai-prompt-output">Prompt Output</label>
-          <textarea id="ai-prompt-output" readonly rows="12" placeholder="Generated ChatGPT prompt will appear here."></textarea>
+          <textarea id="ai-prompt-output" readonly rows="12" placeholder="Your writing prompt will appear here."></textarea>
         </div>
         <div class="utm-btn-row ai-prompt-actions">
           <button class="abtn btn-compact" type="button" onclick="copyAiCopyPrompt()">
@@ -1253,7 +1253,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 
   <!-- Actions -->
   <div class="sb-actions">
-    <div class="session-status" id="saved-session-status" aria-live="polite"><span class="session-status-summary">No saved session</span></div>
+    <div class="session-status" id="saved-session-status" aria-live="polite"><span class="session-status-summary">No saved work</span></div>
     <div class="act-row">
       <button class="abtn gold" type="button" onclick="saveCampaignFile()">Save Campaign</button>
       <button class="abtn navy" type="button" onclick="triggerLoadCampaignFile()">Load Campaign</button>
@@ -1311,7 +1311,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
   <div class="manage-campaigns-modal" role="dialog" aria-modal="true" aria-labelledby="manage-campaigns-title">
     <div class="manage-campaigns-head">
       <h2 id="manage-campaigns-title">Manage Campaigns</h2>
-      <button class="manage-campaigns-close" type="button" aria-label="Close Manage Campaigns" onclick="closeManageCampaignsModal()">×</button>
+      <button class="manage-campaigns-close" type="button" aria-label="Close campaigns" onclick="closeManageCampaignsModal()">×</button>
     </div>
     <div class="manage-campaigns-body">
       <div class="campaign-library-dashboard" id="campaign-library-dashboard" aria-live="polite"></div>
@@ -1347,9 +1347,9 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 
 <div class="modal-overlay" id="confirm-action-modal" onclick="if(event.target===this) closeConfirmActionModal()">
   <div class="session-restore-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-action-title">
-    <div class="session-restore-head"><h2 id="confirm-action-title">Confirm Action</h2></div>
+    <div class="session-restore-head"><h2 id="confirm-action-title">Confirm action</h2></div>
     <div class="session-restore-body">
-      <p id="confirm-action-copy">Are you sure?</p>
+      <p id="confirm-action-copy">Are you sure you want to continue?</p>
       <div class="session-restore-actions">
         <button class="session-restore-btn" id="confirm-action-secondary-btn" type="button" onclick="confirmActionModalSecondary()" style="display:none;">Return Without Saving</button>
         <button class="session-restore-btn fresh" type="button" onclick="closeConfirmActionModal()">Cancel</button>
@@ -1380,7 +1380,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
       <dt>Open / Close AI Copy</dt><dd><kbd>G</kbd></dd>
       <dt>Export Cards section</dt><dd><kbd>X</kbd></dd>
       <dt>Toggle CTA preview</dt><dd><kbd>Shift</kbd> + <kbd>C</kbd></dd>
-      <dt>Reorder selected card</dt><dd><kbd>←</kbd> / <kbd>→</kbd></dd>
+      <dt>Move selected card</dt><dd><kbd>←</kbd> / <kbd>→</kbd></dd>
       <dt>Campaign Summary</dt><dd><kbd>M</kbd></dd>
       <dt>Open / close this help</dt><dd><kbd>?</kbd></dd>
       <dt>Close this help</dt><dd><kbd>Esc</kbd></dd>
@@ -1398,7 +1398,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
     <div class="summary-body" id="summary-content"></div>
     <div class="summary-actions modal-footer-actions">
       <button class="summary-btn" type="button" onclick="openDetachedSummaryWindow()"><svg class="action-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg>Open in New Window</button>
-      <button class="summary-btn" type="button" onclick="copyAllUtms()">Copy All UTMs</button>
+      <button class="summary-btn" type="button" onclick="copyAllUtms()">Copy All Links</button>
     </div>
   </div>
 </div>
@@ -1946,7 +1946,7 @@ function getAiCopyGenerationScope(){
   const value=document.getElementById("ai-generate-scope")?.value || "current-card";
   const scopes={
     "current-card":{key:"current-card",mode:"offer",label:"Current Card",campaignLevel:false},
-    "all-loaded-cards":{key:"all-loaded-cards",mode:"loaded-offers",label:"All Loaded Cards",campaignLevel:false},
+    "all-loaded-cards":{key:"all-loaded-cards",mode:"loaded-offers",label:"All Ready Cards",campaignLevel:false},
     "campaign-summary":{key:"campaign-summary",mode:"loaded-offers",label:"Campaign Summary",campaignLevel:true}
   };
   return scopes[value] || scopes["current-card"];
@@ -2056,7 +2056,7 @@ function buildAiCopyCampaignIntelligence(offerItems){
 }
 function buildAiCopyCampaignIntelligenceSection(offerItems){
   const data=buildAiCopyCampaignIntelligence(offerItems);
-  const sections=[["Loaded offers",data.loadedOfferCount || ""]];
+  const sections=[["Ready offers",data.loadedOfferCount || ""]];
   [["Operators",data.operators],["Ships",data.ships],["Regions",data.regions],["Cruise Types",data.cruiseTypes],["Audiences",data.audiences]].forEach(([label,values])=>{ if(values.length) sections.push([label,values.join("\n")]); });
   [["Price Range",data.priceRange],["Nights",data.nightsRange],["Departure Airports",data.departureAirports.join("\n")],["Common USPs",data.commonUsps.join("\n")],["Campaign Mix",data.campaignMix]].forEach(([label,value])=>{ if(String(value||"").trim()) sections.push([label,value]); });
   if(!data.loadedOfferCount) return "";
@@ -2080,7 +2080,7 @@ function updateAiCopyCampaignContextPreview(){
     return;
   }
   const lines=[data.operators.slice(0,4).join(" • "),data.regions.slice(0,4).join(" • ")].filter(Boolean);
-  preview.innerHTML=`<strong>${data.loadedOfferCount} offer${data.loadedOfferCount===1?"":"s"} loaded</strong>${lines.map(line=>`<span>${line}</span>`).join("")}`;
+  preview.innerHTML=`<strong>${data.loadedOfferCount} offer${data.loadedOfferCount===1?"":"s"} ready</strong>${lines.map(line=>`<span>${line}</span>`).join("")}`;
   preview.classList.add("active");
 }
 function getAiCopySelectedOffer(){
@@ -2138,11 +2138,11 @@ function buildAiCopyLoadedOfferPromptDetails(offerItems,options={}){
   const offerBlocks=items.map((item,position)=>buildAiCopyOfferDetails(item.offer,{offerNumber:items.length>1 ? item.index+1 || position+1 : 0,includeDepartureAirport:items.length===1}).join("\n")).filter(Boolean);
   const campaignIntelligence=items.length>1 ? buildAiCopyCampaignIntelligenceSection(items) : "";
   return [
-    items.length>1 ? "Use every loaded offer included below." : "Use the offer included below.",
+    items.length>1 ? "Use every ready offer included below." : "Use the offer included below.",
     campaignIntelligence ? `
 ${campaignIntelligence}` : "",
     items.length>1 ? "Offer Details:" : "Offer Details:",
-    offerBlocks.length ? offerBlocks.join("\n\n") : "No offer details have been loaded yet."
+    offerBlocks.length ? offerBlocks.join("\n\n") : "No offer details are ready yet."
   ].join("\n");
 }
 function buildAiCopyCampaignPromptDetails(offerItems){
@@ -2155,10 +2155,10 @@ function buildAiCopyCampaignPromptDetails(offerItems){
     buildAiCopyCampaignIntelligenceSection(loadedOffers),
     "",
     "Campaign Details:",
-    campaignRows.length ? campaignRows.join("\n") : "No campaign details have been loaded yet.",
+    campaignRows.length ? campaignRows.join("\n") : "No campaign details are ready yet.",
     "",
     "Offers:",
-    offerBlocks.length ? offerBlocks.join("\n\n") : "No loaded offers are available yet."
+    offerBlocks.length ? offerBlocks.join("\n\n") : "No ready offers are available yet."
   ].join("\n");
 }
 function getAiCopyTask(type){
@@ -2166,7 +2166,7 @@ function getAiCopyTask(type){
     "subject-lines":"Write 10 email subject line options for the full multi-offer campaign.\n\nRequirements:\n\n• British English\n• Travel retail audience\n• Keep subject lines under 45 characters\n• Avoid clichés\n• Make the campaign feel compelling and clear\n• Represent the range of offers provided",
     "preview-text":"Write 10 email preview text options for the full multi-offer campaign.\n\nRequirements:\n\n• British English\n• Travel retail audience\n• Keep each option concise\n• Avoid repeating the subject line\n• Make the reason to click clear\n• Represent the range of offers provided",
     "subject-preview":"Write 10 matched email subject line and preview text pairs for the full multi-offer campaign.\n\nRequirements:\n\n• British English\n• Travel retail audience\n• Keep subject lines under 45 characters\n• Avoid clichés\n• Avoid excessive luxury wording\n• Make the campaign feel compelling and clear\n• Represent the range of offers provided",
-    "copy-pack-campaign":"Create a complete copy pack for this multi-offer campaign.\n\nReturn the copy in this order:\n\n1. 10 Email Subject Lines\n2. 10 Preview Text Options\n3. 10 Subject + Preview Pairs\n4. 15 Campaign Taglines\n5. For each loaded offer: 1 Short Description\n6. For each loaded offer: 1 Long Description\n\nRequirements:\n\n• Treat this as a multi-offer campaign\n• Create campaign-level copy first\n• Then create offer-level copy for each loaded offer\n• Use British English\n• Write for a travel retail audience\n• Avoid clichés\n• Avoid sounding AI-generated\n• Use only the information provided\n• Represent the range of offers provided\n\nShort Description rules:\n\n• Focus on the overall holiday experience\n• Do not list every port\n• Do not mention price\n• Use destination information selectively\n\nLong Description rules:\n\n• Focus on experience and itinerary highlights\n• Do not list every port\n• Do not mention price unless specifically relevant",
+    "copy-pack-campaign":"Create a complete copy pack for this multi-offer campaign.\n\nReturn the copy in this order:\n\n1. 10 Email Subject Lines\n2. 10 Preview Text Options\n3. 10 Subject + Preview Pairs\n4. 15 Campaign Taglines\n5. For each ready offer: 1 Short Description\n6. For each ready offer: 1 Long Description\n\nRequirements:\n\n• Treat this as a multi-offer campaign\n• Create campaign-level copy first\n• Then create offer-level copy for each ready offer\n• Use British English\n• Write for a travel retail audience\n• Avoid clichés\n• Avoid sounding AI-generated\n• Use only the information provided\n• Represent the range of offers provided\n\nShort Description rules:\n\n• Focus on the overall holiday experience\n• Do not list every port\n• Do not mention price\n• Use destination information selectively\n\nLong Description rules:\n\n• Focus on experience and itinerary highlights\n• Do not list every port\n• Do not mention price unless specifically relevant",
     "taglines":"Create 15 short travel taglines.\n\nRequirements:\n\n• Maximum 5 words\n• British English\n• Avoid mentioning operator names\n• Avoid clichés",
     "short-description":"Write a concise travel offer description.\n\nRequirements:\n\n• Maximum 40 words\n• British English\n• Clear and compelling\n• Focus on the overall holiday experience. Do not list every port. Do not mention the price. Use destination and itinerary information selectively.\n• Do not sound AI-generated\n• Use only the information provided",
     "long-description":"Write a polished travel offer description.\n\nRequirements:\n\n• 90–120 words\n• British English\n• Clear, useful and sales-focused\n• Focus on the experience, destinations and itinerary highlights. Do not list every port. Do not mention the price unless specifically relevant.\n• Do not invent details\n• Do not sound AI-generated\n• Use only the information provided",
@@ -2209,7 +2209,7 @@ async function copyAiCopyPrompt(message){
     if(status) status.textContent=message || "✓ Prompt copied";
     return true;
   }catch(e){
-    if(status) status.textContent="Copy failed — select the prompt and copy manually.";
+    if(status) status.textContent="Could not copy. Select the prompt and copy it manually.";
     return false;
   }
 }
@@ -2219,7 +2219,7 @@ async function openAiCopyPromptInChatGPT(){
   window.open("https://chatgpt.com/","_blank","noopener");
   if(!copied){
     const status=document.getElementById("ai-prompt-copy-status");
-    if(status) status.textContent="Prompt generated. Copy it manually, then paste into ChatGPT.";
+    if(status) status.textContent="Prompt ready. Copy it manually, then paste it into ChatGPT.";
   }
 }
 
@@ -2785,7 +2785,7 @@ function resetBuilderToFreshSession(){
   ["raw-paste","multi-offer-paste","sheets-url","f-utm-content"].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
   ["parse-result","multi-offer-result","sheets-status","utm-out","utm-visible-output","utm-generated-list","utm-panel-title","utm-current-card","copy-qa-checklist"].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=""; });
   const utmEmpty=document.getElementById("utm-visible-output");
-  if(utmEmpty) utmEmpty.innerHTML='<strong>No UTMs generated yet.</strong>Add offer details and a landing page to generate tracking links.';
+  if(utmEmpty) utmEmpty.innerHTML='<strong>No tracking links yet.</strong>Add offer details and a landing page to create tracking links.';
   const utmTitle=document.getElementById("utm-panel-title"); if(utmTitle) utmTitle.textContent="Generated UTMs";
   if(typeof applyCtaSettings==="function") applyCtaSettings(CTA_DEFAULTS);
   resetPasteOfferState();
@@ -3456,7 +3456,7 @@ function renderEditableImageHTML(type,d){
   const imgClass=type==="itinerary"?"itinerary-img":"hero";
   const dataHero=type==="hero"?` data-hero-src="${escapeAttr(src)}"`:"";
   const frameStyle=type==="itinerary"?`background:${cfg.background||"#eef2e8"};`:(type==="hero"&&fitMode==="fit"?"background:#0e1b2a;":"");
-  const errorHandler=type==="itinerary"?"this.closest('.route-map-section').remove()":"this.parentElement.innerHTML='<div class=hph><span>Image failed to load</span></div>'";
+  const errorHandler=type==="itinerary"?"this.closest('.route-map-section').remove()":"this.parentElement.innerHTML='<div class=hph><span>Image unavailable</span></div>'";
   return `<div class="${frameClass}" style="${frameStyle}"><img class="${imgClass}" src="${escapeAttr(src)}"${dataHero} data-editable-image-type="${type}" data-crop-x="${cx}" data-crop-y="${cy}" data-crop-zoom="${cz}" data-fit-mode="${fitMode}" style="object-fit:fill;object-position:50% 50%;transform:none;left:0;top:0;width:100%;height:100%;" onload="if(typeof applyHeroCropPositions==='function') applyHeroCropPositions(document)" onerror="${errorHandler}"></div>`;
 }
 function renderItineraryImageHTML(d){
@@ -3560,7 +3560,7 @@ function loadScriptOnce(url, globalName){
     const existing = Array.from(document.querySelectorAll("script[src]")).find(s => s.src === url);
     if(existing){
       existing.addEventListener('load', ()=>resolve(true), {once:true});
-      existing.addEventListener('error', ()=>reject(new Error(`Failed to load ${url}`)), {once:true});
+      existing.addEventListener('error', ()=>reject(new Error(`Could not connect ${url}`)), {once:true});
       return;
     }
     const sc = document.createElement('script');
@@ -3568,7 +3568,7 @@ function loadScriptOnce(url, globalName){
     sc.async = true;
     sc.crossOrigin = 'anonymous';
     sc.onload = () => resolve(true);
-    sc.onerror = () => reject(new Error(`Failed to load ${url}`));
+    sc.onerror = () => reject(new Error(`Could not connect ${url}`));
     document.head.appendChild(sc);
   });
 }
@@ -3643,7 +3643,7 @@ function markExportComplete(id){
 }
 
 async function exportCurrent(){
-  if(exportRunning){ showExportToast('Export already in progress','error'); return; }
+  if(exportRunning){ showExportToast('Export in progress','error'); return; }
   save();
   const o=offers[cur];
   const btn=document.getElementById("exp-single-btn");
@@ -3657,28 +3657,28 @@ async function exportCurrent(){
   }
 
   exportRunning=true; btn.disabled=true;
-  document.getElementById("exp-single-lbl").textContent="Rendering...";
-  prog.textContent="Building card at 1200px...";
+  document.getElementById("exp-single-lbl").textContent="Preparing…";
+  prog.textContent="Preparing card…";
 
   try{
     const filename=getExportFilename(cur);
     await renderCardToPNG(o, filename);
     prog.textContent="✓ Exported: "+filename;
     markExportComplete("exp-single-complete");
-    showExportToast("Card exported successfully");
+    showExportToast("Card exported.");
     document.getElementById("exp-single-lbl").textContent="Export Current Card PNG";
   } catch(err){
-    prog.textContent="⚠ Export failed — try using a locally uploaded image";
+    prog.textContent="⚠ Export could not be completed — try using a locally uploaded image";
     warn.classList.add("active");
     console.error("Export error:",err);
-    showExportToast("Export failed","error");
+    showExportToast("Export could not be completed","error");
     document.getElementById("exp-single-lbl").textContent="Export Current Card PNG";
   }
   exportRunning=false; btn.disabled=false;
 }
 
 async function exportAll(){
-  if(exportRunning){ showExportToast('Export already in progress','error'); return; }
+  if(exportRunning){ showExportToast('Export in progress','error'); return; }
   save();
   const btn=document.getElementById("exp-all-btn");
   const prog=document.getElementById("export-progress");
@@ -3686,10 +3686,10 @@ async function exportAll(){
   warn.classList.remove("active");
 
   const toExport=offers.map((o,i)=>({o,i})).filter(({o})=>isOfferLoaded(o));
-  if(!toExport.length){ prog.textContent="No offers to export — fill in at least one offer first"; showExportToast("No offer loaded","error"); return; }
+  if(!toExport.length){ prog.textContent="Add at least one offer before exporting."; showExportToast("No offer ready","error"); return; }
   if(!(await ensureJSZipLoaded())){
-    prog.textContent="⚠ All cards export unavailable — export library did not load. Check your internet connection and try again.";
-    showExportToast("Export failed","error");
+    prog.textContent="All-card export is unavailable right now. Check your connection and try again.";
+    showExportToast("Export could not be completed","error");
     return;
   }
 
@@ -3726,16 +3726,16 @@ async function exportAll(){
     link.click();
     setTimeout(()=>URL.revokeObjectURL(link.href), 1000);
     document.body.removeChild(link);
-    prog.textContent=`✓ ZIP exported — ${done} card(s) included`;
+    prog.textContent=`✓ Cards exported — ${done} card(s) included`;
     markExportComplete("exp-all-complete");
-    showExportToast("ZIP exported successfully");
+    showExportToast("Cards exported.");
   } catch(err){
-    prog.textContent="⚠ ZIP export failed";
+    prog.textContent="Download could not be completed.";
     console.error("ZIP creation error:", err);
-    showExportToast("Export failed","error");
+    showExportToast("Export could not be completed","error");
   }
 
-  document.getElementById("exp-all-lbl").textContent="Export All 4 Cards ZIP";
+  document.getElementById("exp-all-lbl").textContent="Export All Cards";
   exportRunning=false; btn.disabled=false;
 }
 
@@ -3938,12 +3938,12 @@ function renderDestinationSpellingFixes(){
   if(!host) return;
   const suggestions=getQaActionableSuggestions();
   if(!suggestions.length){
-    host.innerHTML=`<div class="copy-qa-passed">✔ Offer QA passed</div>`;
+    host.innerHTML=`<div class="copy-qa-passed">✔ Offer copy looks good</div>`;
     host.classList.add("active");
     return;
   }
   const rows=suggestions.map((s,index)=>`<div class="copy-qa-fix-row"><span class="copy-qa-fix-text"><strong>${escapeQaHtml(s.original)}</strong> &rarr; ${escapeQaHtml(s.replacement)}</span><button class="copy-qa-fix-btn" type="button" onclick="applyQaSuggestion(${index})">Apply</button></div>`).join("");
-  host.innerHTML=`<div class="copy-qa-fixes-title">Actionable QA suggestions</div>${rows}${suggestions.length>1?`<button class="copy-qa-apply-all" type="button" onclick="applyAllQaSuggestions()">Apply All</button>`:""}`;
+  host.innerHTML=`<div class="copy-qa-fixes-title">Suggested copy refinements</div>${rows}${suggestions.length>1?`<button class="copy-qa-apply-all" type="button" onclick="applyAllQaSuggestions()">Apply all</button>`:""}`;
   host.classList.add("active");
 }
 function getQaOperatorKey(){
@@ -4063,7 +4063,7 @@ function runSpellQA(){
   if(qaStatus){
     qaStatus.classList.toggle("ok",qaIssues.length===0);
     qaStatus.classList.toggle("warn",qaIssues.length>0);
-    qaStatus.textContent=qaIssues.length===0?`✓ QA ran (${copyQaRunCount}) — no unusual terms flagged`:`⚠ QA ran (${copyQaRunCount}) — ${qaIssues.length} unusual term${qaIssues.length===1?'':'s'} flagged`;
+    qaStatus.textContent=qaIssues.length===0?`✓ Review complete (${copyQaRunCount}) — no unusual terms found`:`⚠ Review complete (${copyQaRunCount}) — ${qaIssues.length} term${qaIssues.length===1?'':'s'} to review`;
   }
   if(qaNote){
     qaNote.textContent=qaIssues.length===0
@@ -4126,7 +4126,7 @@ function getOfferStatusTooltip(i){
   const o=offers[i]||{};
   const readiness=getOfferReadiness(o);
   const status=getOfferStatus(i);
-  if(!status) return "No offer loaded";
+  if(!status) return "No offer ready";
   if(status==="green") return "Ready for export";
   if(status==="red"){
     const blocker=getMissingCriticalOfferFields(o)[0];
@@ -4135,7 +4135,7 @@ function getOfferStatusTooltip(i){
   if(!readiness.heroLoaded) return "Hero image missing";
   if(!readiness.operatorSelected) return "Operator not selected";
   if(!readiness.operatorLogoPresent) return "Operator logo missing";
-  if(!readiness.utmGenerated) return "UTM missing";
+  if(!readiness.utmGenerated) return "Tracking link missing";
   return "Missing non-critical items";
 }
 const OFFER_TAB_OPERATOR_LABELS = {
@@ -4378,11 +4378,11 @@ function updatePreviewTitle(){
   if(!title) return;
   const loadedOffers=typeof getLoadedOfferCount==="function"?getLoadedOfferCount():offers.filter(isOfferLoaded).length;
   if(viewMode==="all"){
-    title.textContent="All 4 Cards"+(loadedOffers?` • ${loadedOffers}/${offers.length} Loaded`:"");
+    title.textContent="All Cards"+(loadedOffers?` • ${loadedOffers}/${offers.length} Ready`:"");
     return;
   }
   if(viewMode==="email"){
-    title.textContent="Email Preview"+(loadedOffers?` • ${loadedOffers}/${offers.length} Loaded`:"");
+    title.textContent="Email Preview"+(loadedOffers?` • ${loadedOffers}/${offers.length} Ready`:"");
     return;
   }
   const status=getPreviewOfferStatusLabel(cur);
@@ -4436,11 +4436,11 @@ function updateProductionStatus(){
     const offer=offers[index]||{};
     const offerReadiness=getOfferReadiness(offer);
     assetChecks.push(
-      {ok:offerReadiness.heroLoaded,okLbl:"✓ Hero image loaded",warnLbl:"⚠ Hero image required for export",warningClass:"hero-warning",severity:"blocker",offerIndex:index},
+      {ok:offerReadiness.heroLoaded,okLbl:"✓ Hero image ready",warnLbl:"⚠ Hero image required for export",warningClass:"hero-warning",severity:"blocker",offerIndex:index},
       {ok:offerReadiness.operatorLogoPresent,okLbl:"✓ Operator logo present",warnLbl:"⚠ Operator logo missing",severity:"warning",offerIndex:index},
       {ok:offerReadiness.operatorSelected,okLbl:"✓ Operator selected",warnLbl:"⚠ Operator not selected",severity:"warning",offerIndex:index}
     );
-    marketingChecks.push({ok:offerReadiness.utmGenerated,okLbl:"✓ UTMs generated",warnLbl:"⚠ UTM missing",severity:"warning",offerIndex:index});
+    marketingChecks.push({ok:offerReadiness.utmGenerated,okLbl:"✓ Tracking links ready",warnLbl:"⚠ Tracking link missing",severity:"warning",offerIndex:index});
     if(offer._img && String(offer._img).startsWith("http")){
       assetChecks.push({ok:false,warnLbl:"⚠ External image URL may affect export",severity:"warning",offerIndex:index});
     }
@@ -4453,7 +4453,7 @@ function updateProductionStatus(){
       {ok:!!value("g-terms"),okLbl:"✓ Default T&Cs present",warnLbl:"⚠ Default T&Cs missing",severity:"warning"}
     ]},
     {label:"Offers",checks:[
-      {ok:loadedOffers>0,okLbl:"✓ At least one offer loaded",warnLbl:"⚠ No offers loaded",render:loadedOffers<offers.length,severity:"warning"},
+      {ok:loadedOffers>0,okLbl:"✓ At least one offer loaded",warnLbl:"⚠ No offers yet",render:loadedOffers<offers.length,severity:"warning"},
       // Keep the existing readiness requirement while rendering the loaded count as progress.
       {ok:loadedOffers===offers.length,okLbl:`✓ Offers loaded (${loadedOffers}/${offers.length})`,render:loadedOffers>0,displayOk:true}
     ]},
@@ -4487,13 +4487,13 @@ function updateProductionStatus(){
   const summary=document.getElementById("prod-status-summary");
   if(summary){
     summary.className=`prod-status-summary ${attentionCount?"warn":"ok"}`;
-    summary.innerHTML=attentionCount?`⚠ Campaign Not Ready<br><span class="prod-status-secondary">${countText}</span>`:`Ready for Export<br><span class="prod-status-secondary">${countText}</span>`;
+    summary.innerHTML=attentionCount?`⚠ Campaign needs attention<br><span class="prod-status-secondary">${countText}</span>`:`Ready to export<br><span class="prod-status-secondary">${countText}</span>`;
   }
   const host=document.getElementById("prod-status-list");
   if(!host) return;
   const renderIssue=issue=>`<div class="${`prod-status-item warn ${issue.warningClass||""}`.trim()}"><span>⚠</span><span>${issue.text}</span></div>`;
   const renderSection=(label,issues)=>`<div class="prod-status-group">${label}</div>${issues.length?issues.map(renderIssue).join(""):`<div class="prod-status-empty">None</div>`}`;
-  host.innerHTML=renderSection("BLOCKERS",diagnostics.blockers)+renderSection("WARNINGS",diagnostics.warnings);
+  host.innerHTML=renderSection("NEEDS ACTION",diagnostics.blockers)+renderSection("CHECKS",diagnostics.warnings);
   return {blockerCount, warningCount, attentionCount, diagnostics};
 }
 function autoExpandCampaignHealthForExport(){
@@ -4619,7 +4619,7 @@ async function loadSheetCsvUrl(csvUrl,successMessage,sourceType="published"){
     return true;
   }catch(e){
     console.error("Sheets import error:",e);
-    setSheetsStatus(sourceType==="normal"?"Load failed. Try the published Google Sheet link from File > Share > Publish to web.":"Failed to load","csv-error");
+    setSheetsStatus(sourceType==="normal"?"Could not connect. Use the published Google Sheet link from File > Share > Publish to web.":"Could not connect","csv-error");
     return false;
   }
 }
@@ -4627,7 +4627,7 @@ async function loadFromSheets(){
   const source=(document.getElementById("sheets-url")||{}).value.trim();
   const sheetSource=parseGoogleSheetSource(source);
   const csvUrl=googleSheetUrlToCsvUrl(source);
-  if(!csvUrl){ setSheetsStatus("Failed to load: paste a valid public Google Sheet URL","csv-error"); return false; }
+  if(!csvUrl){ setSheetsStatus("Paste a valid public Google Sheet URL.","csv-error"); return false; }
   storeGoogleSheetSource(source);
   return loadSheetCsvUrl(csvUrl,"Offers loaded",sheetSource.type);
 }
@@ -4677,7 +4677,7 @@ function loadDroppedCampaignFile(file){
   reader.onload=()=>{
     try{
       restoreCampaignFilePayload(parseCampaignFileText(reader.result));
-      showSessionFeedback('Campaign JSON loaded',false);
+      showSessionFeedback('Campaign ready',false);
       dismissSplashAndShowBuilder('campaign');
     }catch(e){
       console.warn('Dropped campaign load rejected',e);
@@ -4705,7 +4705,7 @@ function loadFromCSVFile(event){
     return;
   }
   status.className="";
-  status.textContent="Reading local CSV file...";
+  status.textContent="Reading campaign file…";
   const reader=new FileReader();
   reader.onload=function(){
     try{
@@ -4718,12 +4718,12 @@ function loadFromCSVFile(event){
     }catch(e){
       console.error("CSV file import error:",e);
       status.className="csv-error";
-      status.textContent="⚠ CSV file read, but import failed. Open Console for details.";
+      status.textContent="We could not import this file. Check the format and try again.";
     }
   };
   reader.onerror=function(){
     status.className="csv-error";
-    status.textContent="⚠ Could not read CSV file";
+    status.textContent="We could not read this file. Please try again.";
   };
   reader.readAsText(file);
   event.target.value="";
@@ -5039,7 +5039,7 @@ function processSheetCSV(csv,status){
   }
   if(rows.length<2){
     status.className="csv-error";
-    status.textContent="⚠ No data rows found";
+    status.textContent="No offer rows found.";
     return;
   }
 
@@ -5048,7 +5048,7 @@ function processSheetCSV(csv,status){
   const hasUsefulHeader=useful.some(h=>headers.includes(h));
   if(!hasUsefulHeader){
     status.className="csv-error";
-    status.textContent="⚠ CSV headers did not map. Found: "+headers.join(", ");
+    status.textContent="We could not match the columns in this file: "+headers.join(", ");
     return;
   }
 
@@ -5150,7 +5150,7 @@ function processSheetCSV(csv,status){
   try{ genAllUtms(true); }catch(e){ console.error("CSV UTM update error",e); }
   try{ updateExportFilenames(); }catch(e){ console.error("CSV filename update error",e); }
   status.className=loaded?"csv-success csv-loaded-status":"csv-error";
-  status.textContent=loaded?"✓ "+loaded+" offer"+(loaded===1?"":"s")+" loaded":"⚠ CSV read, but no offer rows found. Headers found: "+headers.join(", ");
+  status.textContent=loaded?"✓ "+loaded+" offer"+(loaded===1?"":"s")+" loaded":"No offers found. Columns detected: "+headers.join(", ");
   if(loaded && !restoringLastSuccessfulCsv) storeLastSuccessfulCsv(csv);
 }
 
@@ -5179,7 +5179,7 @@ function currentSheetTemplateTSV(){
   return [h,r1,r2].join("\n");
 }
 function copySheetTemplate(){
-  navigator.clipboard.writeText(currentSheetTemplateTSV()).then(()=>alert("CSV template copied — paste into Google Sheets from cell A1"));
+  navigator.clipboard.writeText(currentSheetTemplateTSV()).then(()=>alert("Template copied. Paste it into Google Sheets from cell A1."));
 }
 function downloadCSVTemplate(){
   const tsv=currentSheetTemplateTSV();
@@ -5401,12 +5401,12 @@ function updateSavedSessionStatus(payload){
   if(!el) return;
   const saved=payload||readSavedSession();
   if(!(saved&&saved.offers)){
-    el.innerHTML='<span class="session-status-summary">No saved session</span>';
+    el.innerHTML='<span class="session-status-summary">No saved work</span>';
     return;
   }
   const loaded=countLoadedSessionOffers(saved);
   const updated=formatAutosaveTime(saved.savedAt)||"—";
-  el.innerHTML=`<span class="session-status-summary">✓ Session saved • ${loaded} offer${loaded===1?"":"s"} • ${updated}</span>`;
+  el.innerHTML=`<span class="session-status-summary">✓ Work saved • ${loaded} offer${loaded===1?"":"s"} • ${updated}</span>`;
 }
 function setAutosaveStatus(label,isWarn=false){
   const el=document.getElementById("autosave-status");
@@ -5511,7 +5511,7 @@ async function migrateLegacyEmbeddedHeroAssets(payload){
   }
   if(migrated){
     try{ await saveHeroAssetsToIndexedDb(payload); localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(payload)); }
-    catch(err){ showSessionFeedback("Legacy hero images could not be moved to IndexedDB. They remain in the saved session until re-saved.",true); try{ console.warn("[autosave] migration failed",err); }catch(_e){} }
+    catch(err){ showSessionFeedback("Some saved images need refreshing. They remain available until the campaign is saved again.",true); try{ console.warn("[autosave] migration failed",err); }catch(_e){} }
   }
   return payload;
 }
@@ -5532,11 +5532,11 @@ function describeStorageSaveError(error){
   const name=String((error&&error.name)||"");
   const message=String((error&&error.message)||"");
   if(/quota|storage|exceeded/i.test(name+" "+message)) return "Browser storage is full. Session was not saved — export/download your campaign or remove old browser data before closing.";
-  return "Autosave failed. Session was not saved — please use Save Campaign before closing.";
+  return "Autosave could not save this session. Please use Save Campaign before closing.";
 }
 function notifySessionStorageFailure(error){
   const message=describeStorageSaveError(error);
-  setAutosaveStatus("Autosave failed", true);
+  setAutosaveStatus("Autosave needs attention", true);
   showSessionFeedback(message,true);
   try{ showHeroDropStatus(message,true); }catch(_e){}
   try{ console.warn("[autosave]", message, error); }catch(_e){}
@@ -5978,8 +5978,8 @@ function openConfirmActionModal(opts={}){
   const copyEl=document.getElementById('confirm-action-copy');
   const okBtn=document.getElementById('confirm-action-ok-btn');
   const secondaryBtn=document.getElementById('confirm-action-secondary-btn');
-  if(titleEl) titleEl.textContent=opts.title||"Confirm Action";
-  if(copyEl) copyEl.textContent=opts.message||"Are you sure?";
+  if(titleEl) titleEl.textContent=opts.title||"Confirm action";
+  if(copyEl) copyEl.textContent=opts.message||"Are you sure you want to continue?";
   if(okBtn) okBtn.textContent=opts.confirmLabel||"Confirm";
   if(secondaryBtn){
     secondaryBtn.textContent=opts.secondaryLabel||"Secondary";
@@ -6443,7 +6443,7 @@ function refreshManageCampaigns(){
   const content=document.getElementById('detached-manage-campaigns-content');
   if(!content) return;
   if(window.opener&&!window.opener.closed&&typeof window.opener.getManageCampaignsContentHtml==='function') content.innerHTML=window.opener.getManageCampaignsContentHtml();
-  else content.innerHTML='<div class="empty-state"><strong>Manage Campaigns unavailable</strong>The em window is closed or unavailable.</div>';
+  else content.innerHTML='<div class="empty-state"><strong>Campaign manager unavailable</strong>The main window is closed or unavailable.</div>';
 }
 function callOpener(name){
   if(window.opener&&!window.opener.closed&&typeof window.opener[name]==='function'){
@@ -6488,7 +6488,7 @@ function openDetachedManageCampaignsWindow(){
   const features="popup=yes,width=920,height=760,resizable=yes,scrollbars=yes";
   const detached=window.open("","manage-campaigns-detached",features);
   if(!detached){
-    alert("Unable to open the Manage Campaigns window. Please allow pop-ups for em and try again.");
+    alert("Could not open Campaign Manager. Please allow pop-ups and try again.");
     return;
   }
   detachedManageCampaignsWindow=detached;
@@ -6574,10 +6574,10 @@ function restoreCampaignFilePayload(filePayload){
   const differentAppVersion=!!(parsed.appVersion && parsed.appVersion !== APP_VERSION);
   const imageWarning=campaignFileNeedsImageCheck(restored);
   const compatibilityWarning=isLegacyProject || differentAppVersion;
-  if(imageWarning) showSessionFeedback("Campaign loaded, images may need checking",true);
-  else if(compatibilityWarning) showSessionFeedback("Campaign loaded with compatibility warning",true);
-  else showSessionFeedback("Campaign loaded",false);
-  if(typeof setSheetsStatus==="function") setSheetsStatus("✓ Campaign loaded","csv-success csv-loaded-status");
+  if(imageWarning) showSessionFeedback("Campaign ready. Check images before exporting.",true);
+  else if(compatibilityWarning) showSessionFeedback("Campaign upgraded to the latest version.",true);
+  else showSessionFeedback("Campaign ready",false);
+  if(typeof setSheetsStatus==="function") setSheetsStatus("✓ Campaign ready","csv-success csv-loaded-status");
   if(typeof addCampaignHistoryEntry==="function") addCampaignHistoryEntry(buildCampaignHistoryEntryFromPayload(parsed, "backup"));
   if(typeof refreshCampaignHistoryUI==="function") refreshCampaignHistoryUI();
   resetShortcutFocusAfterImport();
@@ -6677,7 +6677,7 @@ function refreshPresetList(selectedName){
   if(!names.length){
     const opt = document.createElement("option");
     opt.value = "";
-    opt.textContent = "No presets saved";
+    opt.textContent = "No presets yet";
     sel.appendChild(opt);
     sel.value = "";
   }else{
@@ -6706,7 +6706,7 @@ function saveCampaignPreset(forceOverwrite){
   const nameInput = document.getElementById("preset-name");
   const status = document.getElementById("preset-status");
   const name = (nameInput.value || "").trim();
-  if(!name){ if(status) status.textContent = "⚠ Enter a preset name"; return; }
+  if(!name){ if(status) status.textContent = "Enter a preset name."; return; }
   const presets = readCampaignPresets();
   if(presets[name] && !forceOverwrite){
     openConfirmActionModal({
@@ -6731,9 +6731,9 @@ function loadCampaignPreset(){
   const sel = document.getElementById("preset-select");
   const status = document.getElementById("preset-status");
   const name = sel ? sel.value : "";
-  if(!name){ if(status) status.textContent = "⚠ Select a preset to load"; return; }
+  if(!name){ if(status) status.textContent = "Choose a preset to load."; return; }
   const payload = readCampaignPresets()[name];
-  if(!payload){ if(status) status.textContent = "⚠ Preset not found"; refreshPresetList(); return; }
+  if(!payload){ if(status) status.textContent = "Preset not found."; refreshPresetList(); return; }
   offers = payload.offers || [{},{},{},{}];
   const c = payload.campaign || {};
   document.getElementById("g-campaign").value = c.name || "";
@@ -6746,14 +6746,14 @@ function loadCampaignPreset(){
   genUtm();
   genStandardUtms();
   updateExportFilenames();
-  if(status) status.textContent = "✓ Preset loaded";
+  if(status) status.textContent = "✓ Preset ready";
 }
 
 function deleteCampaignPreset(){
   const sel = document.getElementById("preset-select");
   const status = document.getElementById("preset-status");
   const name = sel ? sel.value : "";
-  if(!name){ if(status) status.textContent = "⚠ Select a preset to delete"; return; }
+  if(!name){ if(status) status.textContent = "Choose a preset to delete."; return; }
   openConfirmActionModal({
     title:"Delete Preset?",
     message:`Delete preset "${name}"?`,
@@ -6783,7 +6783,7 @@ function loadDraft(){
   const raw=localStorage.getItem("draftCampaign"); if(!raw){alert("No saved draft found");return;}
   const data=JSON.parse(raw); offers=data.offers||[{},{},{},{}];
   if(data.campaign){document.getElementById("g-campaign").value=data.campaign.name||"";document.getElementById("g-date").value=data.campaign.date||"";document.getElementById("g-airport").value=data.campaign.airport||"";document.getElementById("g-terms").value=data.campaign.terms||"";}
-  load(cur); refreshOfferUi({utm:false,spell:false,autosave:false}); runSpellQA(); document.getElementById("save-status").textContent="✓ Draft loaded";
+  load(cur); refreshOfferUi({utm:false,spell:false,autosave:false}); runSpellQA(); document.getElementById("save-status").textContent="✓ Draft ready";
 }
 function exportJSON(){
   save(); const blob=new Blob([JSON.stringify({offers,version:"1.1",exportedAt:new Date().toISOString()},null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="DAS_campaign_"+Date.now()+".json"; a.click();
@@ -7404,7 +7404,7 @@ function performMultiOfferImport(replaceConfirmed){
     const missing=quality.missing;
     const qaWarnings=quality.qaWarnings;
     const ok=missing===0||result.confidence==='high';
-    const label=ok?`✓ Offer ${index+1} Loaded`:`⚠ Offer ${index+1} Needs Review`;
+    const label=ok?`✓ Offer ${index+1} Ready`:`⚠ Offer ${index+1} Review needed`;
     const cls=ok&&!qaWarnings?'high':'partial';
     const warningText=qaWarnings?` · ${qaWarnings} QA warning${qaWarnings===1?"":"s"}`:"";
     return `<div class="multi-offer-status-row" role="button" tabindex="0" title="Jump to Offer" onclick="jumpToMultiOfferStatus(${index})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();jumpToMultiOfferStatus(${index});}"><span class="multi-offer-status-label">${label}</span> <span class="parse-result ${cls}">Confidence ${clampParseConfidenceScore(quality.score)} · ${missing} missing fields${warningText}</span></div>`;
@@ -7734,7 +7734,7 @@ function setPoaSuggestionHighlight(fieldKey,on){
 function getPoaSuggestionConfidenceLabel(parsed,rawText){
   const summary=typeof getOfferIntelligenceSummary==="function"?getOfferIntelligenceSummary(parsed,rawText):null;
   const level=summary&&summary.level;
-  if(level==="high") return "High Confidence";
+  if(level==="high") return "Strong match";
   if(level==="partial") return "Medium Confidence";
   return "Low Confidence";
 }
@@ -7818,7 +7818,7 @@ function getCruiseTitleRecoveryPortsSuggestion(portsIntelligence,parsed,rawText)
     confidence="High";
   }
   if(confidence!=="High") return null;
-  return {id:"cruise-title-recovery-ports",title:"Cruise Title",value:inferred,confidenceLabel:"High Confidence",targetLabel:"Cruise Title",fieldKey:"name",fieldId:"f-name",reason:"Inferred from operator, ship and itinerary profile"};
+  return {id:"cruise-title-recovery-ports",title:"Cruise Title",value:inferred,confidenceLabel:"Strong match",targetLabel:"Cruise Title",fieldKey:"name",fieldId:"f-name",reason:"Inferred from operator, ship and itinerary profile"};
 }
 function getCruiseTitleRecoverySuggestion(parsed,rawText){
   const p=parsed||{};
@@ -7833,8 +7833,8 @@ function getCruiseTitleRecoverySuggestion(parsed,rawText){
   if(!candidates.length) return portsSuggestion;
   const top=candidates[0];
   const tied=candidates.filter(candidate=>candidate.score>=top.score-1);
-  const confidenceLabel=tied.length===1&&top.score>=14?"High Confidence":"Low Confidence";
-  if(confidenceLabel!=="High Confidence") return null;
+  const confidenceLabel=tied.length===1&&top.score>=14?"Strong match":"Low Confidence";
+  if(confidenceLabel!=="Strong match") return null;
   return {id:"cruise-title-recovery",title:"Cruise Title",value:top.value,confidenceLabel,targetLabel:"Cruise Title",fieldKey:"name",fieldId:"f-name",reason:"High-confidence source line from pasted offer"};
 }
 
@@ -8266,7 +8266,7 @@ function detectPreCruiseStay(text){
 }
 function getOfferIntelligenceSummary(parsed,rawText){
   const count=getOfferIntelligenceDetectedFields(parsed,rawText).fields.length;
-  const label=count>=7?"High Confidence":count>=4?"Partial Match":"Needs Review";
+  const label=count>=7?"Strong match":count>=4?"Review suggested":"Review needed";
   const level=count>=7?"high":count>=4?"partial":"low";
   return {count,label,level};
 }
@@ -8306,7 +8306,7 @@ function renderOfferIntelligencePanel(parsed,rawText){
     const poaOutlineIcon=(type)=>type==="sparkle"?`<svg class="poa-icon-svg" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"></path><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z"></path></svg>`:`<svg class="poa-icon-svg" aria-hidden="true" viewBox="0 0 24 24"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M8 14a6 6 0 1 1 8 0c-.8.7-1 1.5-1 2H9c0-.5-.2-1.3-1-2z"></path></svg>`;
     const section=(heading,html,empty="")=>`<div class="offer-intel-section"><div class="offer-intel-heading">${heading}</div><div class="offer-intel-list">${html||`<div class="offer-intel-empty">${empty}</div>`}</div></div>`;
     const summaryHtml=section("POA Summary",[summary.label,`${summary.count} Fields Detected`,`${visibleSuggestionCount} Suggestions Available`,`Quality Score: ${quality.score}`].map(label=>item("detected","✓",label)).join(""));
-    panel.innerHTML=`<div class="offer-intel-title">Offer Intelligence</div>`+
+    panel.innerHTML=`<div class="offer-intel-title">Offer Insights</div>`+
       summaryHtml+
       section("Detected",detected.map(label=>item("detected","✓",label)).join(""),"No core fields detected yet.")+
       (typeof renderPortsIntelligenceSection==="function"?renderPortsIntelligenceSection(p,item,section):"")+
@@ -8318,11 +8318,11 @@ function renderOfferIntelligencePanel(parsed,rawText){
       (actionSuggestions.length?section("Suggested Actions",actionSuggestions.map(label=>item("suggestion",poaOutlineIcon("sparkle"),label)).join("")):"")+
       section("Suggestions / Missing Information",missing.map(label=>item("missing","⚠",label)).concat(suggestions.map(label=>item("suggestion",poaOutlineIcon("sparkle"),label))).join(""),"No suggestions or missing fields.");
     panel.classList.add("active");
-  }catch(err){ console.warn("Offer Intelligence could not run",err); }
+  }catch(err){ console.warn("Offer Insights could not run",err); }
 }
 
-function setParseStatus(msg,level){if(msg==="Nothing to parse"&&typeof clearOfferIntelligencePanel==="function") clearOfferIntelligencePanel(); const el=document.getElementById('parse-result'); if(!el) return; el.textContent=msg; el.className='parse-result '+(level||'');}
-function showParsePreview(){const modal=document.getElementById('parse-preview-modal'); if(!modal||!pendingParseResult) return false; const {parsed,confidence,score}=pendingParseResult; const body=document.getElementById('parse-preview-body'); const conf=document.getElementById('parse-confidence-badge'); const label=confidence==='high'?'High Confidence':confidence==='partial'?'Partial Match':'Needs Review'; conf.className='parse-result '+confidence; conf.textContent=`${label} (${score})`; const keys=['operatorKey','tags','name','ship','day','month','nights','price','board','boardlbl','incl','ports']; body.innerHTML=keys.filter(k=>parsed[k]).map(k=>{const typos=getLikelyTypos(parsed[k]); return `<div class="parse-preview-item ${typos.length?'spell-flag':''}"><strong>${k}</strong>${parsed[k]}</div>`;}).join('')||'<div class="parse-preview-item">No fields confidently detected.</div>'; const parseTypos=Object.values(parsed).flatMap(v=>getLikelyTypos(v)); setSpellWarn("spell-warn-parse-preview",parseTypos.length?`Spelling QA: ${[...new Set(parseTypos)].slice(0,6).join(", ")}`:""); modal.classList.add('active'); runSpellQA(); return true;}
+function setParseStatus(msg,level){if(msg==="Paste offer details to continue."&&typeof clearOfferIntelligencePanel==="function") clearOfferIntelligencePanel(); const el=document.getElementById('parse-result'); if(!el) return; el.textContent=msg; el.className='parse-result '+(level||'');}
+function showParsePreview(){const modal=document.getElementById('parse-preview-modal'); if(!modal||!pendingParseResult) return false; const {parsed,confidence,score}=pendingParseResult; const body=document.getElementById('parse-preview-body'); const conf=document.getElementById('parse-confidence-badge'); const label=confidence==='high'?'Strong match':confidence==='partial'?'Review suggested':'Review needed'; conf.className='parse-result '+confidence; conf.textContent=`${label} (${score})`; const keys=['operatorKey','tags','name','ship','day','month','nights','price','board','boardlbl','incl','ports']; body.innerHTML=keys.filter(k=>parsed[k]).map(k=>{const typos=getLikelyTypos(parsed[k]); return `<div class="parse-preview-item ${typos.length?'spell-flag':''}"><strong>${k}</strong>${parsed[k]}</div>`;}).join('')||'<div class="parse-preview-item">No fields confidently detected.</div>'; const parseTypos=Object.values(parsed).flatMap(v=>getLikelyTypos(v)); setSpellWarn("spell-warn-parse-preview",parseTypos.length?`Spelling QA: ${[...new Set(parseTypos)].slice(0,6).join(", ")}`:""); modal.classList.add('active'); runSpellQA(); return true;}
 function cancelParsedOffer(){const m=document.getElementById('parse-preview-modal'); if(m) m.classList.remove('active'); pendingParseResult=null;}
 function prepareOfferSlotForParsedOffer(parsed){
   const hasParsedFields=['price','day','month','nights','board','ports'].some(k=>parsed[k]!==undefined&&parsed[k]!=='');
@@ -8344,8 +8344,8 @@ function applyParsedOffer(){if(!pendingParseResult) return; if(typeof isOfferLoc
     if(sf) sf.value=offers[cur].sailingFrom||'';
   }
   touched.forEach(el=>{el.classList.remove('parse-field-flash'); void el.offsetWidth; el.classList.add('parse-field-flash'); setTimeout(()=>el.classList.remove('parse-field-flash'),1700);});
-  const applied=touched.length; const summary=typeof getOfferIntelligenceSummary==="function"?getOfferIntelligenceSummary(parsed,rawText):{count:applied,label:(confidence==='high'?'High Confidence':confidence==='partial'?'Partial Match':'Needs Review'),level:confidence};
-  setParseStatus(`✓ Detected ${summary.count} fields — ${summary.label}`,summary.level); cancelParsedOffer(); rv(); updateAllStatus(); genUtm(); checkPortsWarn(); updateExportFilenames(); runSpellQA(); if(applied){ if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Offer loaded"); if(typeof queueAutosave==="function") queueAutosave({immediate:true}); }}
+  const applied=touched.length; const summary=typeof getOfferIntelligenceSummary==="function"?getOfferIntelligenceSummary(parsed,rawText):{count:applied,label:(confidence==='high'?'Strong match':confidence==='partial'?'Review suggested':'Review needed'),level:confidence};
+  setParseStatus(`✓ Found ${summary.count} details — ${summary.label}`,summary.level); cancelParsedOffer(); rv(); updateAllStatus(); genUtm(); checkPortsWarn(); updateExportFilenames(); runSpellQA(); if(applied){ if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Offer loaded"); if(typeof queueAutosave==="function") queueAutosave({immediate:true}); }}
 
 // ═══════════════════════════════════════════════════════
 // CARD BUILDER
@@ -9074,11 +9074,11 @@ function summaryHtml(value,fallback="Missing"){
 }
 function getCampaignHealthReviewHtml(){
   const summary=document.getElementById("prod-status-summary");
-  return summary&&summary.innerHTML?summary.innerHTML:"Campaign Health unavailable";
+  return summary&&summary.innerHTML?summary.innerHTML:"Campaign readiness unavailable";
 }
 function getCampaignHealthReviewText(){
   const summary=document.getElementById("prod-status-summary");
-  if(!(summary&&summary.innerHTML)) return "Campaign Health unavailable";
+  if(!(summary&&summary.innerHTML)) return "Campaign readiness unavailable";
   return summary.innerHTML.replace(/<br\s*\/?>/gi,"\n").replace(/<[^>]+>/g,"").trim();
 }
 function getSummaryOperatorLogoHtml(o){
@@ -9094,7 +9094,7 @@ function getSummaryOperatorLogoHtml(o){
 }
 function getSummaryOfferDetails(o,i){
   const op=OPERATOR_HEADERS[o.operator];
-  const imageStatus=o._img?"Loaded":(o._imgNeedsReupload?"Needs re-upload":"Missing");
+  const imageStatus=o._img?"Ready":(o._imgNeedsReupload?"Needs re-upload":"Missing");
   const board=[o.board,o.boardlbl].filter(Boolean).join(" / ");
   const ready=getOfferStatus(i)==="green";
   return [
@@ -9123,7 +9123,7 @@ function getCampaignSummaryHtml(){
     const rows=getSummaryOfferDetails(o,i).map(([label,value,statusClass])=>`<div><strong>${label}</strong><span${statusClass?` class="${statusClass}"`:""}>${summaryHtml(value)}</span></div>`).join("");
     return `<div class="summary-offer-card"><div class="summary-offer-head">${getSummaryOperatorLogoHtml(o)}<div class="summary-offer-title">Offer ${i+1} — ${summaryHtml(o.name,"Unnamed offer")}</div></div><div class="summary-list">${rows}</div></div>`;
   }).join("");
-  return `<div class="summary-health"><strong>Campaign Health</strong><br>${getCampaignHealthReviewHtml()}</div><div class="summary-meta"><div class="summary-chip"><strong>Campaign</strong><br>${name}</div><div class="summary-chip"><strong>Send date</strong><br>${date}</div><div class="summary-chip"><strong>Export pack hints</strong><br>offer-cards/, utms/all-utms.csv, summary/campaign-summary.txt, summary/utm_lookup.csv</div><div class="summary-chip"><strong>Locked cards</strong><br>${summaryHtml(lockedSummary)}</div></div><div class="summary-grid">${offerCards}</div>`;
+  return `<div class="summary-health"><strong>Campaign Readiness</strong><br>${getCampaignHealthReviewHtml()}</div><div class="summary-meta"><div class="summary-chip"><strong>Campaign</strong><br>${name}</div><div class="summary-chip"><strong>Send date</strong><br>${date}</div><div class="summary-chip"><strong>Export pack hints</strong><br>offer-cards/, utms/all-utms.csv, summary/campaign-summary.txt, summary/utm_lookup.csv</div><div class="summary-chip"><strong>Locked cards</strong><br>${summaryHtml(lockedSummary)}</div></div><div class="summary-grid">${offerCards}</div>`;
 }
 function renderCampaignSummaryInto(targetId){
   const content=document.getElementById(targetId);
@@ -9143,14 +9143,14 @@ function getDetachedSummaryWindowHtml(initialSummaryHtml){
 .summary-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:6px;}.summary-chip{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:10px;line-height:1.35;}.summary-health{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:6px;padding:7px 9px;font-size:10px;line-height:1.45;}.summary-health strong{color:var(--navy);font-weight:400;}.summary-grid{display:grid;gap:6px;}.summary-offer-card{border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--surface-raised);}.summary-offer-head{display:flex;align-items:center;gap:10px;margin-bottom:4px;}.summary-offer-logo-wrap{width:70px;height:40px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;padding:3px 4px;box-sizing:border-box;border-radius:0;background:var(--chrome);}.summary-offer-logo{display:block;max-width:62px;max-height:32px;width:auto;height:auto;object-fit:contain;object-position:center;}.summary-offer-logo[src="assets/operator-logos/po-cruises-logo.png"]{transform:translateY(2px);}.summary-offer-title{font-size:11px;font-weight:400;color:var(--navy);letter-spacing:.04em;}.summary-list{display:grid;gap:3px;font-size:10px;}.summary-list div{display:flex;justify-content:space-between;gap:8px;}.summary-list strong{color:var(--muted);font-weight:700;}.summary-list span{text-align:right;}.sum-ok{color:var(--green);font-weight:700;}.sum-warn{color:var(--amber);font-weight:700;}.sum-bad{color:#b42318;font-weight:700;}
 .summary-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;font-size:10px;font-weight:400;letter-spacing:.04em;border-radius:var(--radius);border:1px solid rgba(255,255,255,.35);background:var(--surface);color:var(--navy);text-transform:uppercase;cursor:pointer;}.summary-btn.primary{background:var(--gold);border-color:var(--gold);color:var(--text-inverse);}
 .detached-summary-note{padding:8px 16px;background:var(--surface);border-top:1px solid var(--border);font-size:10px;color:var(--muted);}
-</style></head><body><div class="detached-summary-shell"><header class="detached-summary-head"><h1>Campaign Summary</h1><div class="detached-summary-actions"><button class="summary-btn primary" type="button" onclick="refreshSummary()">Refresh</button><button class="summary-btn" type="button" onclick="copyAllUtmsFromOpener()">Copy All UTMs</button></div></header><main class="summary-body" id="detached-summary-content">${summaryHtml}</main><div class="detached-summary-note">Read-only detached summary. Use Refresh to pull the latest em data.</div></div><script>
+</style></head><body><div class="detached-summary-shell"><header class="detached-summary-head"><h1>Campaign Summary</h1><div class="detached-summary-actions"><button class="summary-btn primary" type="button" onclick="refreshSummary()">Refresh</button><button class="summary-btn" type="button" onclick="copyAllUtmsFromOpener()">Copy All Links</button></div></header><main class="summary-body" id="detached-summary-content">${summaryHtml}</main><div class="detached-summary-note">Read-only detached summary. Use Refresh to pull the latest em data.</div></div><script>
 function refreshSummary(){
   const content=document.getElementById('detached-summary-content');
   if(!content) return;
   if(window.opener&&!window.opener.closed&&typeof window.opener.getCampaignSummaryHtml==='function'){
     content.innerHTML=window.opener.getCampaignSummaryHtml();
   }else{
-    content.innerHTML='<div class="summary-health"><strong>Campaign Summary unavailable</strong><br>The em window is closed or unavailable.</div>';
+    content.innerHTML='<div class="summary-health"><strong>Campaign summary unavailable</strong><br>The main window is closed or unavailable.</div>';
   }
 }
 function copyAllUtmsFromOpener(){
@@ -9185,7 +9185,7 @@ function openDetachedSummaryWindow(){
   const features="popup=yes,width=920,height=760,resizable=yes,scrollbars=yes";
   const detached=window.open("","campaign-summary-detached",features);
   if(!detached){
-    alert("Unable to open the Campaign Summary window. Please allow pop-ups for em and try again.");
+    alert("Could not open Campaign Summary. Please allow pop-ups and try again.");
     return;
   }
   detachedSummaryWindow=detached;
@@ -9212,7 +9212,7 @@ function openSummary(){
   modal.classList.add("active");
 }
 function getSummaryText(){
-  let txt=`CAMPAIGN SUMMARY\nCampaign Health: ${getCampaignHealthReviewText()}\nCampaign: ${document.getElementById("g-campaign").value||"(unnamed)"}\nSend Date: ${document.getElementById("g-date").value||"(TBC)"}\nGenerated: ${new Date().toLocaleString()}\n\n`;
+  let txt=`CAMPAIGN SUMMARY\nCampaign Readiness: ${getCampaignHealthReviewText()}\nCampaign: ${document.getElementById("g-campaign").value||"(unnamed)"}\nSend Date: ${document.getElementById("g-date").value||"(TBC)"}\nGenerated: ${new Date().toLocaleString()}\n\n`;
   offers.forEach((o,i)=>{
     if(!isOfferLoaded(o)){ txt+=`Offer ${i+1} — Empty\n\n`; return; }
     txt+=`Offer ${i+1} — ${summaryDisplay(o.name,"Unnamed offer")}\n`;
@@ -9864,7 +9864,7 @@ function renderEmptyPreviewIfNeeded(){
   }
   if(!showEmptyState) return false;
   updatePreviewTitle();
-  out.innerHTML = '<div class="preview-empty-state" role="status" aria-label="CSV or campaign upload zone"><h2>Ready To Build</h2><p>Load a Google Sheet, CSV or campaign file to generate your cruise cards instantly.</p><p>Click anywhere or drag a CSV or campaign file into this workspace.</p></div>';
+  out.innerHTML = '<div class="preview-empty-state" role="status" aria-label="Campaign upload area"><h2>Ready to build</h2><p>Connect a Google Sheet or open a campaign file to build your cruise cards.</p><p>Click anywhere or drag a campaign file into this workspace.</p></div>';
   scaler.style.width = '100%';
   scaler.style.height = '100%';
   scaler.style.transform = 'none';
@@ -10153,8 +10153,8 @@ function renderGeneratedUtmCards(results){
     return;
   }
   if(!valid.length){
-    const emptyMessage = current.result.message || 'No UTMs generated yet. Add offer details and a landing page to generate tracking links.';
-    list.innerHTML = `<div id="utm-visible-output" class="generated-utm-empty empty-state" role="status"><strong>No UTMs generated yet.</strong>Add offer details and a landing page to generate tracking links.</div>`;
+    const emptyMessage = current.result.message || 'No tracking links yet. Add offer details and a landing page to create tracking links.';
+    list.innerHTML = `<div id="utm-visible-output" class="generated-utm-empty empty-state" role="status"><strong>No tracking links yet.</strong>Add offer details and a landing page to create tracking links.</div>`;
     const empty = document.getElementById('utm-visible-output');
     if(empty){
       if("value" in empty) empty.value = emptyMessage;
@@ -10164,7 +10164,7 @@ function renderGeneratedUtmCards(results){
   }
   const campaignRows = buildCampaignUtmRows(results);
   const standardRows = typeof buildAllStandardUtmRows === "function" ? buildAllStandardUtmRows() : [];
-  list.innerHTML = `<div class="utm-btn-row std-utm-actions"><button class="abtn btn-compact" type="button" onclick="copyAllUtms()">Copy All UTMs</button></div>` + valid.map(item => {
+  list.innerHTML = `<div class="utm-btn-row std-utm-actions"><button class="abtn btn-compact" type="button" onclick="copyAllUtms()">Copy All Links</button></div>` + valid.map(item => {
     const parts = getUtmContextParts(item.index);
     const isCurrent = item.index === cur;
     const accent = parts.accent;
@@ -10196,14 +10196,14 @@ function updateUtmOutput(showAll){
 function genUtm(){ const result=updateUtmOutput(false); if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow(); return result; }
 function genAllUtms(silent){
   const txt = updateUtmOutput(true);
-  if(!silent) console.log("All UTMs generated", txt);
+  if(!silent) console.log("All tracking links ready", txt);
   if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow();
   return txt;
 }
 function copyUtm(index, btn){
   const cardIndex = Number.isInteger(index) ? index : cur;
   const result = buildUtmForOffer(cardIndex);
-  if(!result.url || result.url.indexOf("http") !== 0) return alert("This card is missing operator/operator URL, offer name, or send date.");
+  if(!result.url || result.url.indexOf("http") !== 0) return alert("Add an operator, landing page, offer name, and send date first.");
   renderGeneratedUtmCards(buildAllGeneratedUtmResults());
   navigator.clipboard.writeText(result.url).then(()=>{
     const b=btn || (document.querySelector ? document.querySelector(`#utm-generated-list button[onclick="copyUtm(${cardIndex}, this)"]`) : null);
@@ -10221,7 +10221,7 @@ function copyAllUtms(){
   const lines = cardLines.concat(campaignLines, standardLines).join("\n\n");
   const visible = document.getElementById("utm-visible-output");
   setUtmVisibleOutput(visible, lines);
-  navigator.clipboard.writeText(lines).then(()=>alert("All UTMs copied"));
+  navigator.clipboard.writeText(lines).then(()=>alert("All tracking links copied."));
 }
 
 function buildCampaignUtmRows(results){
@@ -10244,7 +10244,7 @@ function renderSupplementaryUtmRows(title, rows){
 function copySupplementaryUtm(label, btn){
   const rows = buildCampaignUtmRows(buildAllGeneratedUtmResults());
   const item = rows.find(row => row.label === label);
-  if(!(item && item.utm)) return alert("This UTM needs operator, landing page, and send date.");
+  if(!(item && item.utm)) return alert("Add an operator, landing page, and send date first.");
   navigator.clipboard.writeText(item.utm).then(()=>{ if(btn){ const t=btn.textContent; btn.textContent="✓ Copied"; setTimeout(()=>btn.textContent=t,1600); } });
 }
 
@@ -10283,7 +10283,7 @@ function copyStandardUtm(idx, btn){
   const link = STANDARD_UTM_LINKS[idx];
   if(!link) return;
   const full = buildStandardUtm(link.url, link.content);
-  if(full.indexOf("http") !== 0) return alert("Standard UTMs need operator and send date.");
+  if(full.indexOf("http") !== 0) return alert("Add an operator and send date first.");
   navigator.clipboard.writeText(full).then(()=>{
     const b = btn || document.getElementById(`std-copy-${idx}`);
     if(b){ const t=b.textContent; b.textContent="✓ Copied"; setTimeout(()=>b.textContent=t,1600); }
@@ -10391,7 +10391,7 @@ function downloadBlob(blob, filename){
   document.body.removeChild(link);
 }
 async function exportCurrentJPG(){
-  if(exportRunning){ showExportToast('Export already in progress','error'); return; }
+  if(exportRunning){ showExportToast('Export in progress','error'); return; }
   save();
   const o=offers[cur];
   const btn=document.getElementById('exp-single-jpg-btn');
@@ -10400,8 +10400,8 @@ async function exportCurrentJPG(){
   const warn=document.getElementById('export-warn');
   if(warn) warn.classList.remove('active');
   if(hasExternalImg(o) && warn) warn.classList.add('active');
-  exportRunning=true; if(btn) btn.disabled=true; if(lbl) lbl.textContent='Rendering...';
-  if(prog) prog.textContent='Building card at 1200px...';
+  exportRunning=true; if(btn) btn.disabled=true; if(lbl) lbl.textContent='Preparing…';
+  if(prog) prog.textContent='Preparing card…';
   try{
     const filename=filenameWithExt(cur,'jpg');
     const blob=await renderCardToImageBlob(o,'image/jpeg',0.92);
@@ -10415,18 +10415,18 @@ async function exportCurrentJPG(){
       if(prog) prog.textContent='✓ Exported: '+filename+' + '+ctaFilename+' — CTA link '+getCtaLink(cta);
     } else if(prog) prog.textContent='✓ Exported: '+filename;
     markExportComplete('exp-single-jpg-complete');
-    showExportToast('Card exported successfully');
+    showExportToast('Card exported.');
   }catch(err){
-    if(prog) prog.textContent='⚠ Card export failed — try using a locally uploaded image';
+    if(prog) prog.textContent='Card export could not be completed. Try using an uploaded image.';
     if(warn) warn.classList.add('active');
     console.error('JPG export error:',err);
-    showExportToast('Export failed','error');
+    showExportToast('Export could not be completed','error');
   }
   if(lbl) lbl.textContent='Export Card';
   exportRunning=false; if(btn) btn.disabled=false;
 }
 async function exportAllJPG(){
-  if(exportRunning){ showExportToast('Export already in progress','error'); return; }
+  if(exportRunning){ showExportToast('Export in progress','error'); return; }
   save();
   const btn=document.getElementById('exp-all-jpg-btn');
   const lbl=document.getElementById('exp-all-jpg-lbl');
@@ -10434,8 +10434,8 @@ async function exportAllJPG(){
   const warn=document.getElementById('export-warn');
   if(warn) warn.classList.remove('active');
   const toExport=offers.map((o,i)=>({o,i})).filter(({o})=>isOfferLoaded(o));
-  if(!toExport.length){ if(prog) prog.textContent='No offers to export — fill in at least one offer first'; showExportToast('No offer loaded','error'); return; }
-  if(!(await ensureJSZipLoaded())){ if(prog) prog.textContent='⚠ All cards export unavailable — export library did not load. Check your internet connection and try again.'; showExportToast('Export failed','error'); return; }
+  if(!toExport.length){ if(prog) prog.textContent='Add at least one offer before exporting.'; showExportToast('No offer ready','error'); return; }
+  if(!(await ensureJSZipLoaded())){ if(prog) prog.textContent='All-card export is unavailable right now. Check your connection and try again.'; showExportToast('Export could not be completed','error'); return; }
   if(toExport.some(({o})=>hasExternalImg(o)) && warn) warn.classList.add('active');
   exportRunning=true; if(btn) btn.disabled=true;
   const zip=new JSZip(); const offerCardsFolder=zip.folder('offer-cards'); let done=0;
@@ -10464,17 +10464,17 @@ async function exportAllJPG(){
     offerCardsFolder.file(sharedCta.filename,ctaBlob);
   }
   try{
-    if(prog) prog.textContent='Compressing all cards...';
+    if(prog) prog.textContent='Preparing download…';
     if(lbl) lbl.textContent='Packaging...';
     const zipBlob=await zip.generateAsync({type:'blob'});
     downloadBlob(zipBlob,getCampaignZipFilenameExt('jpg'));
     if(prog) prog.textContent=`✓ All cards exported — ${done} card(s)${getCtaSettingsFromUI().enabled ? (sharedCta ? ' + shared CTA asset' : ' + CTA asset(s)') : ''} included`;
     markExportComplete('exp-all-jpg-complete');
-    showExportToast('All cards exported successfully');
+    showExportToast('All cards exported.');
   }catch(err){
-    if(prog) prog.textContent='⚠ All cards export failed';
+    if(prog) prog.textContent='All-card export could not be completed.';
     console.error('JPG ZIP creation error:',err);
-    showExportToast('Export failed','error');
+    showExportToast('Export could not be completed','error');
   }
   if(lbl) lbl.textContent='Export All Cards';
   exportRunning=false; if(btn) btn.disabled=false;
@@ -10485,11 +10485,11 @@ setTimeout(()=>{ try{ genStandardUtms(); }catch(e){} }, 250);
 
 
 async function exportCampaignPack(){
-  if(exportRunning){ showExportToast('Export already in progress','error'); return; }
+  if(exportRunning){ showExportToast('Export in progress','error'); return; }
   save();
-  if(!(await ensureJSZipLoaded())){ showExportToast('Export failed','error'); return; }
+  if(!(await ensureJSZipLoaded())){ showExportToast('Export could not be completed','error'); return; }
   const btn=document.getElementById('exp-pack-btn'); const lbl=document.getElementById('exp-pack-lbl'); const prog=document.getElementById('export-progress');
-  exportRunning=true; if(btn) btn.disabled=true; if(lbl) lbl.textContent='Building Pack...';
+  exportRunning=true; if(btn) btn.disabled=true; if(lbl) lbl.textContent='Preparing pack…';
   try{
     // Export pack flow: render assets through canonical renderCardToImageBlob path, then zip once complete.
     const zip=new JSZip(); const cardsFolder=zip.folder('offer-cards'); const utmFolder=zip.folder('utms'); const summaryFolder=zip.folder('summary');
@@ -10548,8 +10548,8 @@ CTA Assets: ${ctaRows.map(row=>row.filename+' -> '+row.utm).join(', ') || 'None'
     downloadBlob(blob,getCampaignPackFilename());
     if(prog) prog.textContent='✓ Campaign pack exported';
     markExportComplete('exp-pack-complete');
-    showExportToast('Campaign pack exported successfully');
-  }catch(err){ console.error(err); if(prog) prog.textContent='⚠ Campaign pack export failed'; showExportToast('Export failed','error'); }
+    showExportToast('Campaign pack exported.');
+  }catch(err){ console.error(err); if(prog) prog.textContent='Campaign pack export could not be completed.'; showExportToast('Export could not be completed','error'); }
   exportRunning=false; if(btn) btn.disabled=false; if(lbl) lbl.textContent='Export Campaign Pack';
 }
 
@@ -10745,7 +10745,7 @@ function hydrateSplashRecentSession(){
   syncAutosaveStatus();
   wrap.classList.add("active");
   continueBtn.style.display="block";
-  name.textContent="Recovered session";
+  name.textContent="Previous work found";
   const autosaveLabel=formatRelativeAutosave(saved.savedAt)?.replace(/^Autosaved\s+/i, "") || "recently";
   time.textContent=`${APP_VERSION} • ${autosaveLabel}`;
 }
