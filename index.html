@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- murfi is intentionally kept as a single-file GitHub Pages tool for simple deployment. Keep changes grouped by section and avoid patch stacking. -->
+<!-- em is intentionally kept as a single-file GitHub Pages tool for simple deployment. Keep changes grouped by section and avoid patch stacking. -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#2f3338">
-<title>em | builder v4.0</title>
+<title>em v4.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" crossorigin="anonymous"></script>
@@ -352,6 +352,9 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .splash-inner{text-align:center;color:var(--text-inverse);padding:18px;min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;width:min(560px,100%);}
 .splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;transform:translateY(-30px);animation:splashFadeIn .28s ease-out both;}
 .splash-icon{display:block;width:min(236px,54vw);height:auto;margin:0 auto 32px;filter:none;image-rendering:auto;}
+.splash-brand{display:flex;align-items:baseline;justify-content:center;margin:0 auto 32px;font-size:clamp(86px,20vw,152px);font-weight:500;letter-spacing:.04em;line-height:.82;}
+.splash-brand-white{color:var(--text-inverse);}
+.splash-brand-gold{color:var(--gold);}
 .splash-title{font-size:14.5px;font-weight:300;letter-spacing:.06em;color:rgba(255,255,255,.88);}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
 .splash-actions{margin-top:0;display:flex;align-items:center;justify-content:center;gap:0;margin-left:auto;margin-right:auto;width:auto;}
@@ -794,7 +797,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 <div id="app-splash" class="splash" aria-hidden="false">
   <div class="splash-inner">
     <div class="splash-main">
-      <img class="splash-icon" src="assets/operator-logos/em-logo-builder.png" alt="" aria-hidden="true">
+      <div class="splash-brand" aria-label="em"><span class="splash-brand-white">e</span><span class="splash-brand-gold">m</span></div>
       <div class="splash-actions">
         <button class="splash-btn gold" id="splash-open-builder-btn" type="button">New</button>
         <button class="splash-btn gold" id="splash-continue-session-btn" type="button" style="display:none;">Continue</button>
@@ -1403,7 +1406,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 <script>
 // Single source of truth for application version and browser/Electron window title
 const APP_VERSION = "v4.0";
-const APP_TITLE = `em | builder ${APP_VERSION}`;
+const APP_TITLE = `em ${APP_VERSION}`;
 const draggableModalState = new Map();
 document.title = APP_TITLE;
 document.querySelectorAll("[data-app-version]").forEach(label => { label.textContent = APP_VERSION; });
@@ -4667,7 +4670,7 @@ function isCampaignJsonUploadFile(file){
 }
 function loadDroppedCampaignFile(file){
   if(!isCampaignJsonUploadFile(file)){
-    showSessionFeedback('Drop a CSV or murfi campaign JSON file',true);
+    showSessionFeedback('Drop a CSV or em campaign JSON file',true);
     return false;
   }
   const reader=new FileReader();
@@ -4688,7 +4691,7 @@ function loadDroppedCampaignFile(file){
 function loadDroppedWorkspaceFile(file){
   if(isCsvUploadFile(file)) return loadDroppedCSVFile(file);
   if(isCampaignJsonUploadFile(file)) return loadDroppedCampaignFile(file);
-  setSheetsStatus('Drop a CSV or murfi campaign JSON file','csv-error');
+  setSheetsStatus('Drop a CSV or em campaign JSON file','csv-error');
   return false;
 }
 
@@ -5185,7 +5188,7 @@ function downloadCSVTemplate(){
   const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
   const a=document.createElement("a");
   a.href=URL.createObjectURL(blob);
-  a.download="cruise_builder_template.csv";
+  a.download="em_template.csv";
   a.click();
   URL.revokeObjectURL(a.href);
 }
@@ -6029,7 +6032,7 @@ function slugifyCampaignName(name){
   return String(name||"campaign").trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"") || "campaign";
 }
 
-const CAMPAIGN_FILE_TYPE = "cruise-offer-builder-campaign";
+const CAMPAIGN_FILE_TYPE = "em-campaign";
 const CAMPAIGN_FILE_SCHEMA_VERSION = "1.0";
 
 function buildCampaignFilename(){
@@ -6440,7 +6443,7 @@ function refreshManageCampaigns(){
   const content=document.getElementById('detached-manage-campaigns-content');
   if(!content) return;
   if(window.opener&&!window.opener.closed&&typeof window.opener.getManageCampaignsContentHtml==='function') content.innerHTML=window.opener.getManageCampaignsContentHtml();
-  else content.innerHTML='<div class="empty-state"><strong>Manage Campaigns unavailable</strong>The murfi window is closed or unavailable.</div>';
+  else content.innerHTML='<div class="empty-state"><strong>Manage Campaigns unavailable</strong>The em window is closed or unavailable.</div>';
 }
 function callOpener(name){
   if(window.opener&&!window.opener.closed&&typeof window.opener[name]==='function'){
@@ -6485,7 +6488,7 @@ function openDetachedManageCampaignsWindow(){
   const features="popup=yes,width=920,height=760,resizable=yes,scrollbars=yes";
   const detached=window.open("","manage-campaigns-detached",features);
   if(!detached){
-    alert("Unable to open the Manage Campaigns window. Please allow pop-ups for murfi and try again.");
+    alert("Unable to open the Manage Campaigns window. Please allow pop-ups for em and try again.");
     return;
   }
   detachedManageCampaignsWindow=detached;
@@ -6530,13 +6533,14 @@ function parseCampaignFileText(text){
   catch(e){ throw new Error("Invalid JSON"); }
   if(!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Invalid campaign file");
   const isCurrent=parsed.fileType === CAMPAIGN_FILE_TYPE;
-  const isLegacyProject=parsed.projectType === "cruise-offer-builder-project";
-  if(!isCurrent && !isLegacyProject) throw new Error("Not a murfi campaign file");
-  if(isCurrent){
+  const isLegacyCampaign=parsed.fileType === "cruise-offer-builder-campaign";
+  const isLegacyProject=parsed.projectType === "cruise-offer-builder-project" || parsed.projectType === "em-project";
+  if(!isCurrent && !isLegacyCampaign && !isLegacyProject) throw new Error("Not an em campaign file");
+  if(isCurrent || isLegacyCampaign){
     const major=String(parsed.schemaVersion||"").split(".")[0];
     if(major !== String(CAMPAIGN_FILE_SCHEMA_VERSION).split(".")[0]) throw new Error("Incompatible campaign file version");
   }
-  const state=isCurrent ? parsed.state : parsed;
+  const state=(isCurrent || isLegacyCampaign) ? parsed.state : parsed;
   if(!state || !Array.isArray(state.offers)) throw new Error("Campaign file is missing offer cards");
   return {parsed,state,isLegacyProject};
 }
@@ -6605,12 +6609,12 @@ function buildProjectFilename(){
   const dd = String(now.getDate()).padStart(2,"0");
   const mm = String(now.getMonth()+1).padStart(2,"0");
   const yy = String(now.getFullYear()).slice(-2);
-  return `${dd}${mm}${yy}_${slugifyCampaignName(document.getElementById("g-campaign").value)}_builder-project.json`;
+  return `${dd}${mm}${yy}_${slugifyCampaignName(document.getElementById("g-campaign").value)}_em-project.json`;
 }
 function buildProjectPayload(){
   const payload = buildAutosavePayload();
   return {
-    projectType: "cruise-offer-builder-project",
+    projectType: "em-project",
     version: "2.0",
     savedAt: new Date().toISOString(),
     ...payload
@@ -9139,14 +9143,14 @@ function getDetachedSummaryWindowHtml(initialSummaryHtml){
 .summary-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:6px;}.summary-chip{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:10px;line-height:1.35;}.summary-health{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:6px;padding:7px 9px;font-size:10px;line-height:1.45;}.summary-health strong{color:var(--navy);font-weight:400;}.summary-grid{display:grid;gap:6px;}.summary-offer-card{border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--surface-raised);}.summary-offer-head{display:flex;align-items:center;gap:10px;margin-bottom:4px;}.summary-offer-logo-wrap{width:70px;height:40px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;padding:3px 4px;box-sizing:border-box;border-radius:0;background:var(--chrome);}.summary-offer-logo{display:block;max-width:62px;max-height:32px;width:auto;height:auto;object-fit:contain;object-position:center;}.summary-offer-logo[src="assets/operator-logos/po-cruises-logo.png"]{transform:translateY(2px);}.summary-offer-title{font-size:11px;font-weight:400;color:var(--navy);letter-spacing:.04em;}.summary-list{display:grid;gap:3px;font-size:10px;}.summary-list div{display:flex;justify-content:space-between;gap:8px;}.summary-list strong{color:var(--muted);font-weight:700;}.summary-list span{text-align:right;}.sum-ok{color:var(--green);font-weight:700;}.sum-warn{color:var(--amber);font-weight:700;}.sum-bad{color:#b42318;font-weight:700;}
 .summary-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;font-size:10px;font-weight:400;letter-spacing:.04em;border-radius:var(--radius);border:1px solid rgba(255,255,255,.35);background:var(--surface);color:var(--navy);text-transform:uppercase;cursor:pointer;}.summary-btn.primary{background:var(--gold);border-color:var(--gold);color:var(--text-inverse);}
 .detached-summary-note{padding:8px 16px;background:var(--surface);border-top:1px solid var(--border);font-size:10px;color:var(--muted);}
-</style></head><body><div class="detached-summary-shell"><header class="detached-summary-head"><h1>Campaign Summary</h1><div class="detached-summary-actions"><button class="summary-btn primary" type="button" onclick="refreshSummary()">Refresh</button><button class="summary-btn" type="button" onclick="copyAllUtmsFromOpener()">Copy All UTMs</button></div></header><main class="summary-body" id="detached-summary-content">${summaryHtml}</main><div class="detached-summary-note">Read-only detached summary. Use Refresh to pull the latest builder data.</div></div><script>
+</style></head><body><div class="detached-summary-shell"><header class="detached-summary-head"><h1>Campaign Summary</h1><div class="detached-summary-actions"><button class="summary-btn primary" type="button" onclick="refreshSummary()">Refresh</button><button class="summary-btn" type="button" onclick="copyAllUtmsFromOpener()">Copy All UTMs</button></div></header><main class="summary-body" id="detached-summary-content">${summaryHtml}</main><div class="detached-summary-note">Read-only detached summary. Use Refresh to pull the latest em data.</div></div><script>
 function refreshSummary(){
   const content=document.getElementById('detached-summary-content');
   if(!content) return;
   if(window.opener&&!window.opener.closed&&typeof window.opener.getCampaignSummaryHtml==='function'){
     content.innerHTML=window.opener.getCampaignSummaryHtml();
   }else{
-    content.innerHTML='<div class="summary-health"><strong>Campaign Summary unavailable</strong><br>The murfi window is closed or unavailable.</div>';
+    content.innerHTML='<div class="summary-health"><strong>Campaign Summary unavailable</strong><br>The em window is closed or unavailable.</div>';
   }
 }
 function copyAllUtmsFromOpener(){
@@ -9181,7 +9185,7 @@ function openDetachedSummaryWindow(){
   const features="popup=yes,width=920,height=760,resizable=yes,scrollbars=yes";
   const detached=window.open("","campaign-summary-detached",features);
   if(!detached){
-    alert("Unable to open the Campaign Summary window. Please allow pop-ups for murfi and try again.");
+    alert("Unable to open the Campaign Summary window. Please allow pop-ups for em and try again.");
     return;
   }
   detachedSummaryWindow=detached;
