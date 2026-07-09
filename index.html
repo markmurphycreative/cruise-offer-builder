@@ -2571,7 +2571,7 @@ function sv(i){
 }
 function save(){
   if(typeof isOfferLocked==="function" && isOfferLocked(cur)) return;
-  FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e) offers[cur][f]=e.value; });
+  FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e){ if(typeof removeSubjectToConditions==="function") e.value=removeSubjectToConditions(e.value); offers[cur][f]=e.value; } });
   const sf=document.getElementById("f-sailingFrom"); if(sf && offers[cur]._sailingFromManual===undefined) offers[cur]._sailingFromManual=String(sf.value||"").trim()!==(typeof getAutoSailingFromForOffer==="function"?getAutoSailingFromForOffer(offers[cur]):getAutoSailingFromForPorts(offers[cur].ports||""));
   const op=document.getElementById("f-operator"); if(op) offers[cur].operator=op.value;
   const logoDisplay=document.getElementById("f-logo-display"); if(logoDisplay) offers[cur]._logoDisplay=logoDisplay.value||"operator";
@@ -7555,11 +7555,45 @@ function parseOffer(){
 function stripOfferHeadingPrefix(value){
   return String(value||"").replace(/^\s*(?:(?:offer\s*)?\d{1,2})\s*(?:[-–—:]\s*)/i,"").trim();
 }
+function removeSubjectToConditions(value){
+  return String(value||"")
+    .replace(/\(\s*subject\s+to\s+conditions\s*\)/gi," ")
+    .replace(/\bsubject\s+to\s+conditions\b/gi," ")
+    .replace(/\(\s*\)/g," ")
+    .replace(/[ \t]{2,}/g," ")
+    .replace(/\s+([,.;:!?])/g,"$1")
+    .replace(/([([{])\s+/g,"$1")
+    .replace(/\s+([)\]}])/g,"$1")
+    .trim();
+}
+function extractCruiseNights(lines,raw){
+  const sourceLines=Array.isArray(lines)?lines:String(raw||"").split(/\n/).map(line=>line.trim()).filter(Boolean);
+  const nightPattern=/\b(\d{1,2})\s*[- ]\s*(?:nights?|nts?)\b/i;
+  const hotelStayPattern=/\b(?:pre|post)[-\s]*cruise\b|\bhotel\b|\bstay\b/i;
+  const explicitCruiseLineMatch=sourceLines.map(line=>String(line||"").match(/\b(\d{1,2})\s*[- ]\s*(?:nights?|nts?)\b[^\n\r]{0,40}?\bcruise\b/i)).find(match=>match&&!hotelStayPattern.test(match[0]));
+  if(explicitCruiseLineMatch) return explicitCruiseLineMatch[1];
+  const genericCruiseLine=sourceLines.find(line=>nightPattern.test(line)&&!hotelStayPattern.test(line));
+  if(genericCruiseLine){
+    const match=genericCruiseLine.match(nightPattern);
+    if(match) return match[1];
+  }
+  const text=String(raw||"");
+  const explicitText=[...text.matchAll(/\b(\d{1,2})\s*[- ]\s*(?:nights?|nts?)\b[^\n\r]{0,40}\bcruise\b/gi)]
+    .find(match=>!hotelStayPattern.test(match[0]));
+  if(explicitText) return explicitText[1];
+  const genericText=[...text.matchAll(/\b(\d{1,2})\s*[- ]\s*(?:nights?|nts?)\b/gi)]
+    .find(match=>{
+      const start=Math.max(0,match.index-30);
+      const end=Math.min(text.length,match.index+match[0].length+60);
+      return !hotelStayPattern.test(text.slice(start,end));
+    });
+  return genericText?genericText[1]:"";
+}
 function extractSourceInclusionLine(lines){
   const inclusionPattern=/\b(?:flights?|fly(?:ing)?\s+from|luggage|baggage|transfers?|hotel\s+(?:stay|included|night)|drinks?\s+(?:package|included)|wi[-\s]?fi|gratuities|tips\s+included|on\s*board\s+(?:spend|credit)|on-board\s+(?:spend|credit)|onboard\s+(?:spend|credit)|included|all[\s-]*inclusive|adult(?:s)?\s*only|inside\s+cabin|outside\s+cabin|balcony\s+cabin|suite\s+cabin|cabin\s+upgrade)\b/i;
   const negativePattern=/\b(?:not\s+included|excludes?|excluding|optional|available\s+at\s+(?:a\s+)?supplement|available\s+at\s+(?:an\s+)?extra\s+cost|extra\s+cost|payable\s+locally|available\s+to\s+buy)\b/i;
   const sourceLine=(lines||[]).find(line=>inclusionPattern.test(line)&&!negativePattern.test(line));
-  return sourceLine?String(sourceLine).trim():"";
+  return sourceLine?(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(sourceLine):String(sourceLine).trim()):"";
 }
 function cleanParsedDeparturePort(value){
   let text=String(value||"").trim();
@@ -7607,7 +7641,7 @@ function applyAutoSailingFromToOffer(offer){
   return auto;
 }
 function parseOfferText(raw,options){
-  raw=String(raw||"");
+  raw=typeof removeSubjectToConditions==="function"?removeSubjectToConditions(raw):String(raw||"");
   if(!raw.trim()) return null;
   const renderIntelligence=!!(options&&options.renderIntelligence);
   const lines=raw.split(/\n/).map(l=>l.trim()).filter(Boolean); const txt=lines.join(" \n "); const parsed={}; let score=0;
@@ -7618,7 +7652,8 @@ function parseOfferText(raw,options){
   if(!parsed.operatorKey){ for(const[k,op]of Object.entries(OPERATOR_HEADERS)){ if(op.name&&new RegExp('\\b'+op.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i').test(txt)){ parsed.operatorKey=k; score+=20; break; } } }
   if(!parsed.operatorKey){ for(const [k,arr] of Object.entries(OPERATOR_ALIASES)){ if(arr.some(r=>r.test(txt))){ parsed.operatorKey=k; score+=22; break; } } }
   const pipe=lines.find(l=>l.includes('|')); if(pipe){const parts=pipe.split('|').map(s=>s.trim()); if(!parsed.operatorKey&&parts[0]){for(const[k,op]of Object.entries(OPERATOR_HEADERS)){if(op.name&&new RegExp('\\b'+op.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i').test(parts[0])){parsed.operatorKey=k;score+=18;break;}} if(!parsed.operatorKey){for(const[k,arr]of Object.entries(OPERATOR_ALIASES)){if(arr.some(r=>r.test(parts[0]))){parsed.operatorKey=k;score+=18;break;}}}} if(parts[1]){parsed.ship=parts[1];score+=8;} }
-  const nm=txt.match(/\b(\d{1,2})\s*(?:nights?|nts?)\b/i); if(nm){parsed.nights=nm[1];score+=14;}
+  const cruiseNights=typeof extractCruiseNights==="function"?extractCruiseNights(lines,raw):"";
+  if(cruiseNights){parsed.nights=cruiseNights;score+=14;}
   const extractedPrice=extractOfferPrice(txt); if(extractedPrice){parsed.price=extractedPrice;score+=14;}
   const passengerBasis=detectPassengerBasis(txt)||parseFamilyPassengerBasis(txt);
   if(passengerBasis){parsed.basis=passengerBasis; score+=6;}
@@ -8514,7 +8549,7 @@ function getHeaderHTML(d){
   return `<div class="header-block" style="width:1200px;height:497px;background:${background};overflow:hidden;display:block;line-height:0;"><div class="operator-png-usp" style="background:${accent};">${tags}</div><div style="height:390px;display:flex;align-items:center;justify-content:center;text-align:center;font-family:'Montserrat',sans-serif;font-size:72px;font-weight:300;letter-spacing:.14em;line-height:1.15;color:var(--text-inverse);">${label}</div></div>`;
 }
 function normaliseDestinationName(port){
-  let value=String(port||"")
+  let value=(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(port):String(port||""))
     .replace(/\s+,/g, ",")
     .replace(/,\s*,/g, ", ")
     .replace(/\s{2,}/g, " ")
@@ -8757,7 +8792,7 @@ const CARD_INCLUSION_CABIN_PHRASES=[
   "Suite"
 ];
 function normaliseCardInclusionComponent(value){
-  return String(value||"")
+  return (typeof removeSubjectToConditions==="function"?removeSubjectToConditions(value):String(value||""))
     .replace(/[\t ]+/g," ")
     .replace(/^\s*(?:[-–—•·,]+\s*)+|(?:\s*[-–—•·,]+)+\s*$/g,"")
     .trim();
