@@ -4,6 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const manifest = JSON.parse(fs.readFileSync(new URL('../manifest.json', import.meta.url), 'utf8'));
 
 function extractVersionBootstrap(source = html) {
   const match = source.match(/const APP_VERSION = "[^"]+";[\s\S]*?document\.querySelectorAll\("\[data-app-version\]"\)\.forEach\(label => \{ label\.textContent = APP_VERSION; \}\);/);
@@ -25,8 +26,15 @@ function runVersionBootstrap(source = html) {
 }
 
 
-test('static title tag matches the runtime browser/window title', () => {
+test('static title and installed app metadata match the runtime browser/window title', () => {
   assert.match(html, /<title>em \| builder v4\.0<\/title>/);
+  assert.match(html, /<meta name="application-name" content="em \| builder v4\.0">/);
+  assert.match(html, /<meta name="apple-mobile-web-app-title" content="em v4\.0">/);
+  assert.match(html, /<link rel="manifest" href="manifest\.json">/);
+  assert.equal(manifest.name, 'em | builder v4.0');
+  assert.equal(manifest.short_name, 'em v4.0');
+  assert.doesNotMatch(html, /Cruise Builder/);
+  assert.doesNotMatch(JSON.stringify(manifest), /Cruise Builder/);
 });
 
 test('the application version is defined once and hydrates every displayed version label', () => {
@@ -43,4 +51,15 @@ test('changing only APP_VERSION updates the title and every version label', () =
   const { context, labels } = runVersionBootstrap(changedHtml);
   assert.equal(context.document.title, 'em | builder v9.9.9');
   assert.deepEqual(labels.map(label => label.textContent), ['v9.9.9']);
+});
+
+test('splash logo and navigation are centred by the shared lock-up without translate offsets', () => {
+  assert.match(html, /\.splash-lockup\{[^}]*display:flex;[^}]*flex-direction:column;[^}]*align-items:center;[^}]*width:max-content;[^}]*margin:0 auto;/);
+  assert.match(html, /<div class="splash-lockup">[\s\S]*?<img class="splash-icon"[\s\S]*?<div class="splash-actions">/);
+  assert.doesNotMatch(html, /\.splash-actions\{[^}]*transform:translateX/);
+});
+
+test('splash saved session copy uses saved work wording', () => {
+  assert.match(html, /name\.textContent="Saved work found";/);
+  assert.doesNotMatch(html, /Previous work found/);
 });

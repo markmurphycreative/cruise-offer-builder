@@ -1,0 +1,10 @@
+{
+  "name": "em | builder v4.0",
+  "short_name": "em v4.0",
+  "description": "em builder campaign offer tool",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#080808",
+  "theme_color": "#2f3338"
+}
