@@ -43,6 +43,21 @@ body{color-scheme:dark light;}
 button{cursor:pointer;font-family:'Montserrat',sans-serif;-webkit-tap-highlight-color:transparent;}
 button:focus-visible,[role="button"]:focus-visible{outline:none;box-shadow:0 0 0 2px rgba(158,147,108,.30),0 0 0 4px rgba(158,147,108,.10);}
 button:disabled,[aria-disabled="true"]{cursor:not-allowed;}
+.desktop-file-menu{position:fixed;top:0;left:0;z-index:1300;display:flex;align-items:stretch;height:24px;background:var(--desktop-titlebar-bg);color:var(--desktop-titlebar-fg);font-size:11px;line-height:1;}
+.desktop-file-menu details{position:relative;}
+.desktop-file-menu summary{list-style:none;height:24px;padding:6px 12px;cursor:default;user-select:none;}
+.desktop-file-menu summary::-webkit-details-marker{display:none;}
+.desktop-file-menu details[open] summary,.desktop-file-menu summary:hover{background:rgba(255,255,255,.10);}
+.desktop-file-menu-list,.desktop-file-submenu-list{min-width:190px;margin:0;padding:4px 0;list-style:none;background:var(--surface);border:1px solid var(--border);box-shadow:0 10px 28px rgba(0,0,0,.22);color:var(--text);}
+.desktop-file-menu-list{position:absolute;top:24px;left:0;}
+.desktop-file-menu-item{position:relative;}
+.desktop-file-menu button{width:100%;border:0;background:transparent;color:inherit;text-align:left;padding:6px 14px;font-size:11px;line-height:1.2;white-space:nowrap;}
+.desktop-file-menu button:hover,.desktop-file-menu button:focus-visible,.desktop-file-menu-item:hover>button{background:rgba(158,147,108,.12);}
+.desktop-file-menu button:disabled{opacity:.48;}
+.desktop-file-submenu-list{display:none;position:absolute;top:-4px;left:100%;}
+.desktop-file-menu-item:hover>.desktop-file-submenu-list,.desktop-file-menu-item:focus-within>.desktop-file-submenu-list{display:block;}
+.desktop-file-menu-separator{height:1px;margin:4px 8px;background:var(--border);}
+.desktop-file-menu-empty{padding:6px 14px;color:var(--muted);font-size:11px;white-space:nowrap;}
 [hidden]{display:none!important;}
 input,textarea,select{font-family:'Montserrat',sans-serif;}
 input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.58;background:rgba(216,213,206,.28);color:var(--muted);}
@@ -373,9 +388,11 @@ input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.58;
 .splash-actions{margin-top:0;display:flex;align-items:center;justify-content:center;gap:0;width:100%;}
 .splash-footer{width:min(320px,100%);text-align:center;display:none;animation:splashFadeIn .28s ease-out both;}
 .splash-footer.active{display:block;}
-.splash-recent-title{font-size:8.5px;font-weight:300;letter-spacing:.03em;color:rgba(255,255,255,.36);line-height:1.45;}
-.splash-recent-name{display:block;margin-top:3px;font-size:8.5px;color:rgba(255,255,255,.42);font-weight:300;line-height:1.45;}
-.splash-recent-time{margin-top:4px;font-size:8px;font-weight:300;color:rgba(255,255,255,.30);line-height:1.45;}
+.splash-recent-title{font-size:8px;font-weight:300;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.34);line-height:1.45;}
+.splash-recent-name{display:block;margin-top:4px;border:0;background:transparent;padding:0;color:rgba(255,255,255,.62);font-size:10px;font-weight:300;line-height:1.45;cursor:pointer;}
+.splash-recent-name:hover,.splash-recent-name:focus-visible{color:var(--gold);}
+.splash-recent-date{margin-top:2px;font-size:8.5px;font-weight:300;color:rgba(255,255,255,.40);line-height:1.45;}
+.splash-recent-time{margin-top:3px;font-size:8px;font-weight:300;color:rgba(255,255,255,.30);line-height:1.45;}
 .splash-btn{position:relative;min-height:20px;padding:2px 18px;font-size:9.6px;font-weight:300;letter-spacing:3px;border:0;border-left:1.25px solid rgba(255,255,255,.48);border-radius:0;background:transparent;color:#fff;box-shadow:none;line-height:1.2;transition:color .18s ease,border-color .18s ease,opacity .18s ease;}
 .splash-btn:first-child{border-left:0;}
 .splash-btn:hover{background:transparent;border-color:rgba(255,255,255,.32);color:var(--gold);transform:none;}
@@ -810,6 +827,20 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 </style>
 </head>
 <body>
+<nav class="desktop-file-menu" aria-label="Application menu">
+  <details id="file-menu-details">
+    <summary>File</summary>
+    <ul class="desktop-file-menu-list" role="menu">
+      <li><button type="button" role="menuitem" onclick="newCampaign();closeFileMenu()">New Campaign</button></li>
+      <li><button type="button" role="menuitem" onclick="triggerLoadCampaignFile();closeFileMenu()">Open...</button></li>
+      <li class="desktop-file-menu-item">
+        <button type="button" role="menuitem" aria-haspopup="true">Open Recent ▶</button>
+        <ul class="desktop-file-submenu-list" id="file-open-recent-menu" role="menu"></ul>
+      </li>
+      <li><button type="button" role="menuitem" onclick="returnHomeFromBuilder();closeFileMenu()">Close Window</button></li>
+    </ul>
+  </details>
+</nav>
 <div id="app-splash" class="splash" aria-hidden="false">
   <div class="splash-inner">
     <div class="splash-main">
@@ -823,7 +854,9 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
       </div>
     </div>
     <footer id="splash-recent-session" class="splash-footer" aria-live="polite">
-      <div><span class="splash-recent-title" id="splash-recent-name"></span></div>
+      <div class="splash-recent-title" id="splash-recent-label"></div>
+      <button class="splash-recent-name" id="splash-recent-name" type="button"></button>
+      <div class="splash-recent-date" id="splash-recent-date"></div>
       <div class="splash-recent-time" id="splash-recent-time"></div>
     </footer>
   </div>
@@ -6237,6 +6270,70 @@ function buildCampaignFilePayload(){
   };
 }
 
+
+const RECENT_CAMPAIGNS_KEY = "cobRecentCampaignsV1";
+const RECENT_CAMPAIGNS_MAX = 10;
+function readRecentCampaigns(){
+  try{ const list=JSON.parse(localStorage.getItem(RECENT_CAMPAIGNS_KEY)||"[]"); return Array.isArray(list) ? list.filter(item=>item&&item.payload) : []; }
+  catch(e){ return []; }
+}
+function writeRecentCampaigns(list){
+  const clean=(Array.isArray(list)?list:[]).filter(item=>item&&item.payload).slice(0,RECENT_CAMPAIGNS_MAX);
+  try{ localStorage.setItem(RECENT_CAMPAIGNS_KEY,JSON.stringify(clean)); return true; }catch(e){ return false; }
+}
+function getCampaignMetadataFromPayload(payload){
+  const campaign=(payload&&payload.campaign) || (payload&&payload.state&&payload.state.campaign) || {};
+  return {name:String(campaign.name||"Untitled Campaign").trim()||"Untitled Campaign",date:String(campaign.date||"").trim(),savedAt:(payload&&payload.exportedAt) || (payload&&payload.sessionMetadata&&payload.sessionMetadata.savedAt) || new Date().toISOString()};
+}
+function recentCampaignKey(payload){
+  const meta=getCampaignMetadataFromPayload(payload);
+  return `${meta.name}\n${meta.date}`.toLowerCase();
+}
+function touchRecentCampaign(payload){
+  if(!payload) return false;
+  const copy=JSON.parse(JSON.stringify(payload));
+  const meta=getCampaignMetadataFromPayload(copy);
+  const now=new Date().toISOString();
+  const key=recentCampaignKey(copy);
+  const entry={id:`${Date.now()}-${Math.random().toString(36).slice(2,8)}`,name:meta.name,date:meta.date,savedAt:now,lastOpenedAt:now,payload:copy};
+  const list=readRecentCampaigns().filter(item=>recentCampaignKey(item.payload)!==key && String(item.name||"").toLowerCase()!==meta.name.toLowerCase());
+  writeRecentCampaigns([entry].concat(list));
+  refreshRecentCampaignSurfaces();
+  return true;
+}
+function clearRecentCampaigns(){ writeRecentCampaigns([]); refreshRecentCampaignSurfaces(); closeFileMenu(); }
+function openRecentCampaign(id){
+  const entry=readRecentCampaigns().find(item=>item.id===id);
+  if(!entry || !entry.payload) return false;
+  restoreCampaignFilePayload(parseCampaignFileText(JSON.stringify(entry.payload)));
+  touchRecentCampaign(entry.payload);
+  dismissSplashAndShowBuilder("campaign");
+  closeFileMenu();
+  return true;
+}
+function formatRecentSavedTime(value){
+  if(typeof formatRelativeAutosave==="function") return (formatRelativeAutosave(value)||"Saved recently").replace(/^Autosaved/i,"Saved");
+  return "Saved recently";
+}
+function formatRecentCampaignDate(value){ return String(value||"").trim(); }
+function refreshOpenRecentMenu(){
+  const menu=document.getElementById("file-open-recent-menu");
+  if(!menu) return;
+  const recent=readRecentCampaigns();
+  if(!recent.length){ menu.innerHTML='<li class="desktop-file-menu-empty">No recent campaign</li><li class="desktop-file-menu-separator"></li><li><button type="button" role="menuitem" disabled>Clear Recent</button></li>'; return; }
+  const items=recent.map(item=>`<li><button type="button" role="menuitem" onclick="openRecentCampaign('${escapeCampaignHistoryText(item.id)}')">${escapeCampaignHistoryText(item.name||"Untitled Campaign")}</button></li>`).join("");
+  menu.innerHTML=items+'<li class="desktop-file-menu-separator"></li><li><button type="button" role="menuitem" onclick="clearRecentCampaigns()">Clear Recent</button></li>';
+}
+function refreshSplashRecentCampaign(){
+  const wrap=document.getElementById("splash-recent-session"), label=document.getElementById("splash-recent-label"), name=document.getElementById("splash-recent-name"), date=document.getElementById("splash-recent-date"), time=document.getElementById("splash-recent-time");
+  if(!(wrap&&label&&name&&date&&time)) return;
+  const recent=readRecentCampaigns()[0];
+  if(!recent){ wrap.classList.remove("active"); label.textContent=""; name.textContent=""; date.textContent=""; time.textContent=""; name.onclick=null; return; }
+  wrap.classList.add("active"); label.textContent="Recent Campaign"; name.textContent=recent.name||"Untitled Campaign"; date.textContent=formatRecentCampaignDate(recent.date); time.textContent=formatRecentSavedTime(recent.savedAt||recent.lastOpenedAt); name.onclick=()=>openRecentCampaign(recent.id);
+}
+function refreshRecentCampaignSurfaces(){ refreshOpenRecentMenu(); refreshSplashRecentCampaign(); }
+function closeFileMenu(){ const details=document.getElementById("file-menu-details"); if(details) details.open=false; }
+
 const CAMPAIGN_HISTORY_KEY = "cobCampaignHistoryV1";
 const CAMPAIGN_RECENT_MAX = 20;
 
@@ -6634,6 +6731,7 @@ function saveCampaignFile(){
   try{
     const fileName=buildCampaignFilename();
     const payload=buildCampaignFilePayload();
+    touchRecentCampaign(payload);
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
     const a=document.createElement("a");
     a.href=URL.createObjectURL(blob);
@@ -6682,6 +6780,7 @@ function getCampaignReadyMessage(prefix="Campaign ready"){
 function restoreCampaignFilePayload(filePayload){
   const {parsed,state,isLegacyProject}=filePayload;
   const restored=JSON.parse(JSON.stringify(state));
+  if(typeof touchRecentCampaign==="function") touchRecentCampaign(parsed);
   if(!Array.isArray(restored.lockedHeroImages) && parsed.heroImages && Array.isArray(parsed.heroImages.byCard)){
     restored.lockedHeroImages=[false,false,false,false];
     parsed.heroImages.byCard.forEach(item=>{ if(item && Number.isInteger(item.cardIndex)) restored.lockedHeroImages[item.cardIndex]=!!(item.heroLocked||item.locked); });
@@ -10917,20 +11016,15 @@ function initStartScreenActions(){
   }
 }
 function hydrateSplashRecentSession(){
-  const wrap=document.getElementById("splash-recent-session");
-  const name=document.getElementById("splash-recent-name");
-  const time=document.getElementById("splash-recent-time");
   const continueBtn=document.getElementById("splash-continue-session-btn");
   const saved=readSavedSession();
-  if(!(wrap&&name&&time&&continueBtn&&saved&&saved.offers)) return;
-  pendingRestoreSession = saved;
-  autosaveAwaitingRestoreDecision = !builderStartupBypassMode;
-  syncAutosaveStatus();
-  wrap.classList.add("active");
-  continueBtn.style.display="block";
-  name.textContent="Saved work found";
-  const autosaveLabel=formatRelativeAutosave(saved.savedAt)?.replace(/^Autosaved\s+/i, "") || "recently";
-  time.textContent=`${APP_VERSION} • ${autosaveLabel}`;
+  if(saved&&saved.offers){
+    pendingRestoreSession = saved;
+    autosaveAwaitingRestoreDecision = !builderStartupBypassMode;
+    syncAutosaveStatus();
+    if(continueBtn) continueBtn.style.display="block";
+  }else if(continueBtn) continueBtn.style.display="none";
+  refreshRecentCampaignSurfaces();
 }
 function initStandaloneApp(){
   resetCampaignLibraryStartupState();
