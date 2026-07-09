@@ -24,6 +24,11 @@ function runVersionBootstrap(source = html) {
   return { context, labels };
 }
 
+
+test('static title tag matches the runtime browser/window title', () => {
+  assert.match(html, /<title>em \| builder v4\.0<\/title>/);
+});
+
 test('the application version is defined once and hydrates every displayed version label', () => {
   assert.equal((html.match(/const APP_VERSION = "v\d+\.\d+(?:\.\d+)?(?:\.\d+)?";/g) || []).length, 1);
   assert.equal((html.match(/data-app-version(?=[ >])/g) || []).length, 1);
