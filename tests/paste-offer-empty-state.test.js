@@ -221,6 +221,8 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('getPortIntelligence'),
     extractFunction('isRecognisedPortTitleLine'),
     extractFunction('stripOfferHeadingPrefix'),
+    extractFunction('removeSubjectToConditions'),
+    extractFunction('extractCruiseNights'),
     extractFunction('extractSourceInclusionLine'),
     extractFunction('detectCabinType'),
     extractFunction('detectTransferStatus'),
@@ -280,6 +282,49 @@ Transfers Included`, 'Transfers Included\nInside Cabin'],
     const result = harness.context.parseOfferText(raw, { renderIntelligence: false });
     assert.equal(result.parsed.incl, expected);
   }
+});
+
+test('PMU: Paste Offer parser detects cruise night formats and prioritises cruise over hotel stays', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  const examples = [
+    ['5-night cruise', '5'],
+    ['5 night cruise', '5'],
+    ['5 nights', '5'],
+    ['5-night', '5'],
+    ['5 night', '5'],
+    ['10-night cruise', '10'],
+    ['17-night cruise', '17']
+  ];
+
+  for (const [duration, expected] of examples) {
+    const result = harness.context.parseOfferText(`Mediterranean Highlights
+Celebrity Apex
+${duration}
+Full Board
+£999`, { renderIntelligence: false });
+    assert.equal(result.parsed.nights, expected, duration);
+  }
+
+  const withHotelStay = harness.context.parseOfferText(`Includes 3-night pre-cruise stay
+Mediterranean Highlights
+Celebrity Apex
+10-night cruise
+Full Board
+£999`, { renderIntelligence: false });
+  assert.equal(withHotelStay.parsed.nights, '10');
+});
+
+test('PMU: Paste Offer parser removes subject to conditions from parsed output', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  const result = harness.context.parseOfferText(`Celebrity Cruises | Celebrity Apex
+FREE return taxi transfer from home to port (subject to conditions)
+7-night cruise
+Full Board
+£999
+Southampton • Lisbon`, { renderIntelligence: false });
+
+  assert.equal(result.parsed.incl, 'FREE return taxi transfer from home to port');
+  assert.doesNotMatch(JSON.stringify(result.parsed), /subject to conditions/i);
 });
 
 test('permanent PMU: Paste Offer keeps inclusion labels and cabin types out of parsed ports', () => {
