@@ -359,10 +359,10 @@ input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.58;
 .hero-preset-feedback{min-height:12px;margin-top:4px;font-size:9px;color:var(--green);line-height:1.2;}
 
 /* ── SPLASH ── */
-.splash{position:fixed;inset:0;background:var(--splash-bg);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:1;visibility:visible;}
+.splash{position:fixed;inset:0;background:var(--splash-bg);display:grid;place-items:stretch;z-index:9999;opacity:1;visibility:visible;}
 .splash.hidden,.splash.is-exiting{opacity:0;visibility:hidden;pointer-events:none;}
-.splash-inner{text-align:center;color:var(--text-inverse);padding:18px;min-height:72vh;display:grid;place-items:center;position:relative;width:min(560px,100%);}
-.splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;width:min(320px,100%);transform:translateY(-34px);animation:splashFadeIn .28s ease-out both;}
+.splash-inner{text-align:center;color:var(--text-inverse);padding:18px 18px clamp(28px,7vh,72px);min-height:100vh;display:grid;grid-template-rows:minmax(0,1fr) auto;justify-items:center;align-items:center;position:relative;width:100%;}
+.splash-main{display:flex;flex-direction:column;align-items:center;justify-content:center;width:min(320px,100%);animation:splashFadeIn .28s ease-out both;}
 .splash-lockup{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;max-width:100%;}
 .splash-icon{display:block;width:min(208px,48vw);height:auto;margin:0 0 30px;filter:none;image-rendering:auto;}
 .splash-brand{display:flex;align-items:baseline;justify-content:center;margin:0 auto 32px;font-size:clamp(86px,20vw,152px);font-weight:500;letter-spacing:.04em;line-height:.82;}
@@ -371,7 +371,7 @@ input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.58;
 .splash-title{font-size:14.5px;font-weight:300;letter-spacing:.06em;color:rgba(255,255,255,.88);}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
 .splash-actions{margin-top:0;display:flex;align-items:center;justify-content:center;gap:0;width:100%;}
-.splash-footer{width:100%;max-width:320px;margin-top:86px;text-align:center;display:none;animation:splashFadeIn .28s ease-out both;}
+.splash-footer{width:min(320px,100%);text-align:center;display:none;animation:splashFadeIn .28s ease-out both;}
 .splash-footer.active{display:block;}
 .splash-recent-title{font-size:8.5px;font-weight:300;letter-spacing:.03em;color:rgba(255,255,255,.36);line-height:1.45;}
 .splash-recent-name{display:block;margin-top:3px;font-size:8.5px;color:rgba(255,255,255,.42);font-weight:300;line-height:1.45;}
@@ -821,11 +821,11 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
           <button class="splash-btn secondary" id="splash-load-campaign-btn" type="button">Load</button>
         </div>
       </div>
-      <footer id="splash-recent-session" class="splash-footer" aria-live="polite">
-        <div><span class="splash-recent-title" id="splash-recent-name"></span></div>
-        <div class="splash-recent-time" id="splash-recent-time"></div>
-      </footer>
     </div>
+    <footer id="splash-recent-session" class="splash-footer" aria-live="polite">
+      <div><span class="splash-recent-title" id="splash-recent-name"></span></div>
+      <div class="splash-recent-time" id="splash-recent-time"></div>
+    </footer>
   </div>
 </div>
 <div class="app start-hidden" id="builder-app" aria-hidden="true" tabindex="-1">

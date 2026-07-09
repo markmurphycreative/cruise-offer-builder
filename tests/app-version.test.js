@@ -54,11 +54,14 @@ test('changing only APP_VERSION updates the title and every version label', () =
 });
 
 test('splash logo, navigation, and saved-session copy are centred by one splash composition', () => {
-  assert.match(html, /\.splash-inner\{[^}]*display:grid;[^}]*place-items:center;/);
+  assert.match(html, /\.splash\{[^}]*display:grid;[^}]*place-items:stretch;/);
+  assert.match(html, /\.splash-inner\{[^}]*min-height:100vh;[^}]*display:grid;[^}]*grid-template-rows:minmax\(0,1fr\) auto;[^}]*justify-items:center;[^}]*align-items:center;/);
   assert.match(html, /\.splash-main\{[^}]*display:flex;[^}]*flex-direction:column;[^}]*align-items:center;[^}]*width:min\(320px,100%\);/);
   assert.match(html, /\.splash-lockup\{[^}]*display:flex;[^}]*flex-direction:column;[^}]*align-items:center;[^}]*width:100%;/);
-  assert.match(html, /<div class="splash-main">[\s\S]*?<div class="splash-lockup">[\s\S]*?<img class="splash-icon"[\s\S]*?<div class="splash-actions">[\s\S]*?<footer id="splash-recent-session"/);
+  assert.match(html, /<div class="splash-main">[\s\S]*?<div class="splash-lockup">[\s\S]*?<img class="splash-icon"[\s\S]*?<div class="splash-actions">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>\s*<footer id="splash-recent-session"/);
+  assert.doesNotMatch(html, /\.splash-main\{[^}]*transform:/);
   assert.doesNotMatch(html, /\.splash-(?:actions|footer)\{[^}]*transform:translateX/);
+  assert.doesNotMatch(html, /\.splash-(?:actions|footer|main|lockup|icon)\{[^}]*(?:margin-left|left):/);
   assert.doesNotMatch(html, /\.splash-footer\{[^}]*left:50%/);
 });
 
