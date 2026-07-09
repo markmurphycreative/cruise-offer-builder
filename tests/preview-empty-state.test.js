@@ -56,6 +56,7 @@ function createHarness(offers) {
   vm.createContext(context);
   vm.runInContext([
     extractFunction('isOfferLoaded'),
+    extractFunction('isOfferStarted'),
     extractFunction('triggerCsvFilePicker'),
     extractFunction('isCsvUploadFile'),
     extractFunction('loadDroppedCSVFile'),
@@ -111,12 +112,26 @@ test('loaded and session-restored offers bypass the empty upload zone and keep n
   assert.equal(elements['preview-wrap'].classList.contains('drag-over'), false);
   assert.equal(elements['card-output'].innerHTML, '<div class="existing-card">Previously rendered card</div>');
 
-  assert.match(extractFunction('renderEmptyPreviewIfNeeded'), /const showEmptyState = !offers\.some\(isOfferLoaded\);/);
+  assert.match(extractFunction('renderEmptyPreviewIfNeeded'), /const showEmptyState = !offers\.some\(isOfferStarted\);/);
   assert.match(extractFunction('refreshAfterRestore'), /renderPreviewMode\(true\);/);
   assert.match(extractFunction('renderPreviewMode'), /c\.innerHTML = bc\(d \|\| \{\}\);/);
   assert.match(extractFunction('renderVisibleCard'), /out\.innerHTML = renderOfferWithOptionalCtaHTML\(visibleFieldsToData\(\), getCtaSettingsFromUI\(\)\);/);
 });
 
+
+
+test('operator-only started offers bypass the empty upload zone without becoming loaded offers', () => {
+  const { context, elements } = createHarness([{}, {}, { operator: 'celebrity' }, {}]);
+  elements['card-output'].innerHTML = '<div class="existing-card">Started card shell</div>';
+
+  assert.equal(context.isOfferLoaded(context.offers[2]), false);
+  assert.equal(context.isOfferStarted(context.offers[2]), true);
+  assert.equal(context.renderEmptyPreviewIfNeeded(), false);
+  assert.equal(elements['preview-scaler'].classList.contains('empty-preview'), false);
+  assert.equal(elements['card-output'].classList.contains('empty-preview-output'), false);
+  assert.equal(elements['preview-wrap'].classList.contains('empty-upload-zone'), false);
+  assert.equal(elements['card-output'].innerHTML, '<div class="existing-card">Started card shell</div>');
+});
 
 test('CSV import button and zero-offer workspace share the existing hidden file input click path', () => {
   assert.equal((html.match(/id="sheets-file"/g) || []).length, 1);
@@ -124,7 +139,7 @@ test('CSV import button and zero-offer workspace share the existing hidden file 
   assert.doesNotMatch(html, /Choose Campaign File\.\.\./);
   assert.doesNotMatch(html, /id="csv-load-btn"/);
   assert.match(extractFunction('triggerCsvFilePicker'), /const input=document\.getElementById\("sheets-file"\);[\s\S]*if\(input\) input\.click\(\);/);
-  assert.match(extractFunction('renderEmptyPreviewIfNeeded'), /const showEmptyState = !offers\.some\(isOfferLoaded\);[\s\S]*wrap\.classList\.toggle\('empty-upload-zone', showEmptyState\);/);
+  assert.match(extractFunction('renderEmptyPreviewIfNeeded'), /const showEmptyState = !offers\.some\(isOfferStarted\);[\s\S]*wrap\.classList\.toggle\('empty-upload-zone', showEmptyState\);/);
   assert.match(extractFunction('initEmptyWorkspaceUploadZone'), /wrap\.addEventListener\('click',[\s\S]*triggerCsvFilePicker\(\);/);
 });
 

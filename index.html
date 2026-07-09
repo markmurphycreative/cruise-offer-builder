@@ -2648,6 +2648,7 @@ function up(){
 // ═══════════════════════════════════════════════════════
 function operatorChanged(silent){
   const key=(document.getElementById("f-operator")||{}).value||"";
+  if(!offers[cur]) offers[cur]={};
   const previousOperator=(offers[cur]||{}).operator||"";
   offers[cur].operator=key;
   if(!silent&&previousOperator!==key) offers[cur]._tagsManualOverride=false;
@@ -4176,7 +4177,7 @@ function isCleanOfferValid(o){
 }
 function getOfferStatus(i){
   const readiness=getOfferReadiness(offers[i]);
-  if(!readiness.loaded) return "";
+  if(!readiness.loaded) return (offers[i]&&String(offers[i].operator||offers[i]._logoCustom||"").trim()) ? "red" : "";
   if(!readiness.criticalContentPresent) return "red";
   if(!readiness.ready) return "amber";
   return "green";
@@ -4184,14 +4185,14 @@ function getOfferStatus(i){
 function getOfferStatusLabel(i){
   const tooltip=getOfferStatusTooltip(i);
   if(tooltip === "Ready for export") return "Ready";
-  if(tooltip === "No offer ready") return "Empty";
+  if(tooltip === "No offer loaded") return "Empty";
   return tooltip;
 }
 function getOfferStatusTooltip(i){
   const o=offers[i]||{};
   const readiness=getOfferReadiness(o);
   const status=getOfferStatus(i);
-  if(!status) return "No offer ready";
+  if(!status) return "No offer loaded";
   if(status==="green") return "Ready for export";
   if(status==="red"){
     const blocker=getMissingCriticalOfferFields(o)[0];
@@ -4200,7 +4201,7 @@ function getOfferStatusTooltip(i){
   if(!readiness.heroLoaded) return "Hero image missing";
   if(!readiness.operatorSelected) return "Operator not selected";
   if(!readiness.operatorLogoPresent) return "Operator logo missing";
-  if(!readiness.utmGenerated) return "Tracking link missing";
+  if(!readiness.utmGenerated) return "UTM missing";
   return "Missing non-critical items";
 }
 const OFFER_TAB_OPERATOR_LABELS = {
@@ -4430,17 +4431,22 @@ function isOfferLoaded(o){
   ];
   return meaningfulFields.some(value=>String(value||'').trim());
 }
+function isOfferStarted(o){
+  if(!o) return false;
+  return isOfferLoaded(o) || !!String(o.operator||o._logoCustom||'').trim();
+}
 function getLoadedPreviewOffers(){
   cobTraceOfferSnapshot("getLoadedPreviewOffers", (offers && offers[cur]) || {}, "getLoadedPreviewOffers()");
   return (offers||[]).slice(0,4).map(function(offer,index){
     const data=(index===cur)?currentFormData():(offer||{});
     cobTraceSourceTag(data, index===cur ? "currentFormData()" : "getLoadedPreviewOffers()");
     return {data:data||{},index:index};
-  }).filter(function(item){ return isOfferLoaded(item.data); });
+  }).filter(function(item){ return isOfferStarted(item.data); });
 }
 
 function getPreviewOfferStatusLabel(i){
   const readiness=getOfferReadiness(offers[i]||{});
+  if(!readiness.loaded && isOfferStarted(offers[i]||{})) return "STARTED • MISSING DATA";
   if(!readiness.loaded) return "";
   if(!readiness.criticalContentPresent) return "MISSING DATA";
   if(readiness.ready) return "READY";
@@ -4561,7 +4567,7 @@ function updateProductionStatus(){
   const summary=document.getElementById("prod-status-summary");
   if(summary){
     summary.className=`prod-status-summary ${attentionCount?"warn":"ok"}`;
-    summary.innerHTML=attentionCount?`⚠ Campaign needs attention<br><span class="prod-status-secondary">${countText}</span>`:`Ready to export<br><span class="prod-status-secondary">${countText}</span>`;
+    summary.innerHTML=attentionCount?`⚠ Campaign needs attention<br><span class="prod-status-secondary">${countText}</span>`:`Ready for Export<br><span class="prod-status-secondary">${countText}</span>`;
   }
   const host=document.getElementById("prod-status-list");
   if(!host) return;
@@ -10121,7 +10127,7 @@ function renderEmptyPreviewIfNeeded(){
   const out = document.getElementById('card-output');
   const wrap = document.querySelector('.preview-wrap');
   if(!scaler || !out) return false;
-  const showEmptyState = !offers.some(isOfferLoaded);
+  const showEmptyState = !offers.some(isOfferStarted);
   scaler.classList.toggle('empty-preview', showEmptyState);
   out.classList.toggle('empty-preview-output', showEmptyState);
   if(wrap){
