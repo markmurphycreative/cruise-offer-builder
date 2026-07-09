@@ -93,7 +93,7 @@ test('application markup does not include legacy builder branding', () => {
 });
 
 test('splash navigation uses understated light typography', () => {
-  assert.match(html, /\.splash-icon\{[^}]*width:min\(208px,48vw\);[^}]*margin:0 auto 30px;/);
+  assert.match(html, /\.splash-icon\{[^}]*width:min\(208px,48vw\);[^}]*margin:0 0 30px;/);
   assert.match(html, /\.splash-btn\{[^}]*font-size:9\.6px;[^}]*font-weight:300;[^}]*letter-spacing:3px;[^}]*color:#fff;/);
   assert.match(html, /\.splash-btn\.gold,\.splash-btn\.secondary\{[^}]*background:transparent;[^}]*color:#fff;/);
   assert.match(html, /\.splash-btn:hover\{[^}]*color:var\(--gold\);/);
