@@ -138,6 +138,7 @@ input,textarea,select{font-family:'Montserrat',sans-serif;}
 .section-hdr:not(.collapsed)+.section-body:not(.hidden){margin-bottom:0;}
 .csv-import-layout{display:grid;gap:8px;}
 .csv-import-actions{display:grid;grid-template-columns:1fr;gap:6px;}
+.csv-import-quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
 .csv-import-actions .abtn{width:100%;}
 .csv-selected-file{display:none;min-height:18px;padding:3px 1px;font-size:9px;line-height:1.35;color:var(--muted);}
 .csv-selected-file.active{display:block;}
@@ -871,7 +872,10 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
           </div>
           <button class="abtn csv-sheet-btn" onclick="loadFromSheets()">Connect Google Sheet</button>
           <div class="csv-import-separator">or</div>
-          <button class="abtn csv-file-btn" onclick="triggerCsvFilePicker()">Open Campaign…</button>
+          <div class="csv-import-quick-actions">
+            <button class="abtn csv-file-btn" onclick="triggerCsvFilePicker()">Open Campaign…</button>
+            <button class="abtn csv-file-btn" onclick="openManageCampaignsModal()">Recent Campaigns</button>
+          </div>
           <div id="sheets-status" aria-live="polite"></div>
 
       </div>
@@ -3668,7 +3672,9 @@ function showExportToast(message,type='success'){
 
 function markExportComplete(id){
   const indicator=document.getElementById(id);
-  if(indicator) indicator.classList.add("active");
+  if(!indicator) return;
+  indicator.classList.add("active");
+  window.setTimeout(()=>indicator.classList.remove("active"),6000);
 }
 
 async function exportCurrent(){
@@ -4151,6 +4157,12 @@ function getOfferStatus(i){
   if(!readiness.ready) return "amber";
   return "green";
 }
+function getOfferStatusLabel(i){
+  const tooltip=getOfferStatusTooltip(i);
+  if(tooltip === "Ready for export") return "Ready";
+  if(tooltip === "No offer ready") return "Empty";
+  return tooltip;
+}
 function getOfferStatusTooltip(i){
   const o=offers[i]||{};
   const readiness=getOfferReadiness(o);
@@ -4346,6 +4358,14 @@ function updateEmptyOfferState(){
   if(reorderActions) reorderActions.classList.toggle("empty-hidden", !hasLoadedOffers);
   if(activeLabel) activeLabel.classList.toggle("empty-hidden", !hasLoadedOffers);
 }
+function updateActiveOfferWorkflowLabel(){
+  const label=document.getElementById("active-offer-label");
+  if(!label) return;
+  const loaded=typeof getLoadedOfferCount==="function" ? getLoadedOfferCount() : 0;
+  const status=typeof getOfferStatusLabel==="function" ? getOfferStatusLabel(cur) : "";
+  label.textContent=`Editing Offer ${cur+1} of 4${status ? ` · ${status}` : ""} · ${loaded}/4 loaded`;
+}
+
 function updateAllStatus(){
   if(typeof updateOfferTabLabels==="function") updateOfferTabLabels();
   if(typeof updateEmptyOfferState==="function") updateEmptyOfferState();
@@ -4362,6 +4382,7 @@ function updateAllStatus(){
   }
   updateProductionStatus();
   if(typeof updateSectionCompletionIndicators==="function") updateSectionCompletionIndicators();
+  if(typeof updateActiveOfferWorkflowLabel==="function") updateActiveOfferWorkflowLabel();
   if(typeof updatePreviewTitle==="function") updatePreviewTitle();
 }
 function isOfferLoaded(o){
@@ -4648,7 +4669,7 @@ async function loadSheetCsvUrl(csvUrl,successMessage,sourceType="published"){
     return true;
   }catch(e){
     console.error("Sheets import error:",e);
-    setSheetsStatus(sourceType==="normal"?"Could not connect. Use the published Google Sheet link from File > Share > Publish to web.":"Could not connect","csv-error");
+    setSheetsStatus(sourceType==="normal"?"Load failed. Try the published Google Sheet link from File > Share > Publish to web.":"Could not connect","csv-error");
     return false;
   }
 }
@@ -4667,7 +4688,8 @@ function loadSelectedCampaignImportFile(event){
   const input=(event&&event.target) || document.getElementById("sheets-file");
   const file=input&&input.files&&input.files[0];
   if(!file) return false;
-  loadFromCSVFile({target:{files:[file],value:""},_onSuccess:()=>dismissSplashAndShowBuilder("csv")});
+  if(typeof setSheetsStatus==="function") setSheetsStatus(`Opening ${file.name || "campaign file"}…`);
+  loadFromCSVFile({target:{files:[file],value:""},_onSuccess:()=>dismissSplashAndShowBuilder(isCampaignJsonUploadFile(file)?"campaign":"csv")});
   if(input) input.value="";
   return true;
 }
@@ -4688,6 +4710,7 @@ function loadDroppedCSVFile(file){
     setSheetsStatus('Drop a CSV file to load offers','csv-error');
     return false;
   }
+  if(typeof setSheetsStatus==="function") setSheetsStatus(`Opening ${file.name || "CSV file"}…`);
   loadFromCSVFile({target:{files:[file],value:''},_onSuccess:()=>dismissSplashAndShowBuilder('csv')});
   return true;
 }
@@ -4740,6 +4763,7 @@ function loadFromCSVFile(event){
     try{
       processSheetCSV(reader.result,status);
       if(status.className!=="csv-error" && typeof applyCsvFilenameCampaignMetadata==="function") applyCsvFilenameCampaignMetadata(file.name);
+      if(status.className!=="csv-error" && typeof setSheetsStatus==="function") setSheetsStatus(`✓ ${file.name || "Campaign file"} loaded · ${typeof getLoadedOfferCount==="function" ? getLoadedOfferCount() : ""} of 4 offers ready to review`,"csv-success csv-loaded-status");
       if(status.className!=="csv-error" && typeof collapseCsvImportAfterCampaignLoaded==="function") collapseCsvImportAfterCampaignLoaded();
       if(typeof event._onSuccess==="function") event._onSuccess();
       if(status.className!=="csv-error" && typeof resetShortcutFocusAfterImport==="function") resetShortcutFocusAfterImport();
@@ -6578,6 +6602,12 @@ function parseCampaignFileText(text){
 function campaignFileNeedsImageCheck(state){
   return !!((state&&state.offers)||[]).find(o=>o&&(o._imgNeedsReupload||o._logoNeedsReupload));
 }
+function getCampaignReadyMessage(prefix="Campaign ready"){
+  const loaded=typeof getLoadedOfferCount==="function" ? getLoadedOfferCount() : (Array.isArray(offers)&&typeof isOfferLoaded==="function" ? offers.filter(isOfferLoaded).length : 0);
+  const nameEl=document.getElementById("g-campaign");
+  const name=String((nameEl&&nameEl.value)||"").trim();
+  return `${prefix}${name ? `: ${name}` : ""} · ${loaded}/4 offer${loaded===1?"":"s"} loaded`;
+}
 function restoreCampaignFilePayload(filePayload){
   const {parsed,state,isLegacyProject}=filePayload;
   const restored=JSON.parse(JSON.stringify(state));
@@ -6605,10 +6635,10 @@ function restoreCampaignFilePayload(filePayload){
   const differentAppVersion=!!(parsed.appVersion && parsed.appVersion !== APP_VERSION);
   const imageWarning=campaignFileNeedsImageCheck(restored);
   const compatibilityWarning=isLegacyProject || differentAppVersion;
-  if(imageWarning) showSessionFeedback("Campaign ready. Check images before exporting.",true);
-  else if(compatibilityWarning) showSessionFeedback("Campaign upgraded to the latest version.",true);
-  else showSessionFeedback("Campaign ready",false);
-  if(typeof setSheetsStatus==="function") setSheetsStatus("✓ Campaign ready","csv-success csv-loaded-status");
+  if(imageWarning) showSessionFeedback(getCampaignReadyMessage("Campaign ready — check images before exporting"),true);
+  else if(compatibilityWarning) showSessionFeedback(getCampaignReadyMessage("Campaign upgraded to the latest version"),true);
+  else showSessionFeedback(getCampaignReadyMessage("Campaign ready"),false);
+  if(typeof setSheetsStatus==="function") setSheetsStatus("✓ "+getCampaignReadyMessage("Campaign ready"),"csv-success csv-loaded-status");
   if(typeof addCampaignHistoryEntry==="function") addCampaignHistoryEntry(buildCampaignHistoryEntryFromPayload(parsed, "backup"));
   if(typeof refreshCampaignHistoryUI==="function") refreshCampaignHistoryUI();
   resetShortcutFocusAfterImport();
