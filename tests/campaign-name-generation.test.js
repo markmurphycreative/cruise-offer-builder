@@ -185,3 +185,29 @@ test('saved campaign restoration preserves exact name, metadata and auto state w
   assert.equal(elements['g-description'].value, 'Cruise Worldwide Mixed');
   assert.equal(elements['g-owner'].value, 'Mark');
 });
+
+test('send date changes update only the campaign name date prefix and recalculate weekday', () => {
+  const { context, elements } = createHarness();
+  context.initialiseCampaignNamingDefaults(new Date('2026-07-10T12:00:00'));
+  elements['g-campaign'].value = '10th July 2026 - Thursday - Cruise Worldwide Mixed';
+  context.handleCampaignNameInput();
+
+  elements['g-date'].value = '11th July 2026';
+  elements['g-date'].listener.fn();
+
+  assert.equal(elements['g-date'].value, '11th July 2026');
+  assert.equal(elements['g-campaign'].value, '11th July 2026 - Saturday - Cruise Worldwide Mixed');
+  assert.equal(elements['g-auto-campaign'].checked, false);
+});
+
+test('campaign name prefix date changes update send date without changing title suffix', () => {
+  const { context, elements } = createHarness();
+  context.initialiseCampaignNamingDefaults(new Date('2026-07-10T12:00:00'));
+
+  elements['g-campaign'].value = '11th July 2026 - Friday - Cruise Worldwide Mixed';
+  elements['g-campaign'].listener.fn();
+
+  assert.equal(elements['g-date'].value, '11th July 2026');
+  assert.equal(elements['g-campaign'].value, '11th July 2026 - Saturday - Cruise Worldwide Mixed');
+  assert.equal(elements['g-auto-campaign'].checked, false);
+});
