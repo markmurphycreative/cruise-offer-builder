@@ -7709,6 +7709,7 @@ function normaliseInclusionEditorialText(value,options){
   INCLUSION_EDITORIAL_RULES.forEach(rule=>{ text=applyInclusionEditorialRule(text,rule); });
   text=text.replace(/[ \t]{2,}/g," ")
     .replace(/\s+([,.;:!?])/g,"$1")
+    .replace(/[.]+$/,"")
     .trim();
   if(options&&options.sentence&&text&&!/[.!?]$/.test(text)) text+=".";
   return text;
@@ -7752,13 +7753,16 @@ function getPreCruiseImpliedPlaces(lines){
 function formatPreCruiseHotelInclusion(value,lines){
   return String(value||"").replace(/\s*@\s*/g," at ").replace(/[ \t]{2,}/g," ").trim();
 }
-function extractSourceInclusionLine(lines){
+function extractSourceInclusionLine(lines,options){
   const displayText=value=>(typeof normaliseKnownDisplayText==="function"?normaliseKnownDisplayText(value):String(value||"").replace(/\s*@\s*/g," at ").replace(/\bLaspezia\b/gi,"La Spezia").replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca").replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne").replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing").replace(/[ \t]{2,}/g," ").trim());
   const negativePattern=/\b(?:not\s+included|excludes?|excluding|optional|available\s+at\s+(?:a\s+)?supplement|available\s+at\s+(?:an\s+)?extra\s+cost|extra\s+cost|payable\s+locally|available\s+to\s+buy)\b/i;
   const cleanInclusionLine=line=>formatPreCruiseHotelInclusion(displayText(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(line):line),lines);
+  const isFredOlsen=!!((options&&String(options.operatorKey||"").toLowerCase()==="fred")||(lines||[]).some(line=>/\bfred\.?\s*olsen\b/i.test(String(line||""))));
+  const isFredTaxiLine=line=>isFredOlsen&&/\b(?:free\s+)?return\s+taxi\s+transfer\s+from\s+home\s+to\s+port\b/i.test(String(line||""));
   const formatInclusionLine=line=>{
-    let formatted=normaliseInclusionEditorialText(cleanInclusionLine(line),{sentence:/^(?:includes?|free)\b/i.test(cleanInclusionLine(line))});
+    let formatted=normaliseInclusionEditorialText(cleanInclusionLine(line));
     formatted=formatted.replace(/^free\b/i,"Free").replace(/^includes\b/i,"Includes");
+    if(isFredTaxiLine(formatted)&&!/\*$/.test(formatted)) formatted+="*";
     return formatted;
   };
   const explicitIncludes=(lines||[])
@@ -7863,7 +7867,7 @@ function parseOfferText(raw,options){
     }
   }
   const uspTags=inferUspTagsFromLines(lines); if(uspTags){parsed.tags=uspTags;score+=8;}
-  const sourceInclusion=extractSourceInclusionLine(lines);
+  const sourceInclusion=extractSourceInclusionLine(lines,{operatorKey:parsed.operatorKey});
   if(sourceInclusion){parsed.incl=sourceInclusion;score+=6;}
   const detectedCabin=detectCabinType(raw);
   const parsedAirport=typeof detectFlightAirport==="function"?detectFlightAirport(raw):"";
@@ -8960,7 +8964,7 @@ function normaliseSubtitleSeparator(value){
 }
 function normaliseOfferDetailsText(value){
   return String(value||"").replace(/\r\n?/g,"\n").split("\n")
-    .map(line=>normaliseInclusionEditorialText(normaliseKnownDisplayText(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(line):line),{sentence:true}))
+    .map(line=>normaliseInclusionEditorialText(normaliseKnownDisplayText(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(line):line)))
     .filter(Boolean).join("\n");
 }
 const CARD_INCLUSION_SEPARATOR=" - ";
@@ -9007,6 +9011,8 @@ function makeCardInclusionComponent(value,type){
 }
 function splitCardInclusionLineComponents(line){
   const raw=String(line||"");
+  const canonical=normaliseCardInclusionComponent(raw);
+  if(/^(?:includes?\s+)?\d+\s*[- ]\s*night(?:s)?\s+pre[-\s]?cruise\b/i.test(canonical)) return [makeCardInclusionComponent(canonical,"precruise")].filter(Boolean);
   const separatorParts=raw.split(/\s*(?:[•·]|\s[-–—]\s)\s*/).map(normaliseCardInclusionComponent).filter(Boolean);
   const parts=[];
   separatorParts.forEach(part=>{
