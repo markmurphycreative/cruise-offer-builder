@@ -7701,7 +7701,6 @@ function applyInclusionEditorialRule(text,rule){
 }
 const INCLUSION_EDITORIAL_RULES=[
   {pattern:/\bone\s+way\b/gi,replacement:"one-way"},
-  {pattern:/\bselected\s+drinks\s+with\s+lunch\s*(?:&|and)\s*dinner\b/gi,replacement:"selected drinks at lunch and dinner"},
   {pattern:/\btransfer\s+to\s+hotel\b/gi,replacement:"hotel transfer"}
 ];
 function normaliseInclusionEditorialText(value,options){
@@ -7751,7 +7750,11 @@ function getPreCruiseImpliedPlaces(lines){
   return places;
 }
 function formatPreCruiseHotelInclusion(value,lines){
-  return String(value||"").replace(/\s*@\s*/g," at ").replace(/[ \t]{2,}/g," ").trim();
+  let text=String(value||"").replace(/\s*@\s*/g," at ");
+  if(/\b(?:pre|post)[-\s]*cruise\b|\bhotel\b|\bstay\b/i.test(text)){
+    text=text.replace(/(\b(?:stay|hotel)\s+(?:at|in)\s+[^.\n\r]*?)\s+-\s+[^.\n\r]*$/i,(match,hotelText)=>hotelText.trim());
+  }
+  return text.replace(/[ \t]{2,}/g," ").trim();
 }
 function extractSourceInclusionLine(lines,options){
   const displayText=value=>(typeof normaliseKnownDisplayText==="function"?normaliseKnownDisplayText(value):String(value||"").replace(/\s*@\s*/g," at ").replace(/\bLaspezia\b/gi,"La Spezia").replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca").replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne").replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing").replace(/[ \t]{2,}/g," ").trim());
@@ -7761,7 +7764,6 @@ function extractSourceInclusionLine(lines,options){
   const isFredTaxiLine=line=>isFredOlsen&&/\b(?:free\s+)?return\s+taxi\s+transfer\s+from\s+home\s+to\s+port\b/i.test(String(line||""));
   const formatInclusionLine=line=>{
     let formatted=normaliseInclusionEditorialText(cleanInclusionLine(line));
-    formatted=formatted.replace(/^free\b/i,"Free").replace(/^includes\b/i,"Includes");
     if(isFredTaxiLine(formatted)&&!/\*$/.test(formatted)) formatted+="*";
     return formatted;
   };
