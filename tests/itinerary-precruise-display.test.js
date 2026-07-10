@@ -450,7 +450,7 @@ test('CSV pre-cruise stay is detected and excluded from title, details, sailing 
   const { context, status } = createCsvHarness();
   const csv = [
     'operator,offer_name,ship_name,price,nights,date,board_basis,inclusions,ports,passenger_basis',
-    'Celebrity Cruises,Greek Islands,Celebrity Infinity,1299,7,12 June 2027,FB,"1 night pre-cruise stay at 4 Star hotel Athens Piraeus (Athens) Bed & Breakfast, Newcastle flights, luggage and transfers", "Piraeus (Athens)|Mykonos (overnight)|Souda (for Chania), Crete",Based On 2 Adults Sharing'
+    'Celebrity Cruises,Greek Islands,Celebrity Infinity,1299,7,12 June 2027,FB,"1 night pre-cruise stay at 4 Star hotel Athens Piraeus (Athens) Bed & Breakfast, Newcastle flights, luggage and transfers", "Piraeus (Athens)|Mykonos (overnight)|Souda (for Chania), Crete",Based on 2 Adults Sharing'
   ].join('\n');
 
   context.processSheetCSV(csv, status);
@@ -470,7 +470,7 @@ test('CSV pre-cruise stay is detected and excluded from title, details, sailing 
   const second = createCsvHarness();
   second.context.processSheetCSV([
     'operator,offer_name,ship_name,price,nights,date,board_basis,inclusions,ports,passenger_basis',
-    'Celebrity Cruises,Greek Islands,Celebrity Infinity,1299,7,12 June 2027,FB,"1 night pre-cruise stay at 4 Star hotel Piraeus, Athens Bed & Breakfast, Newcastle flights", "Piraeus, Athens|Mykonos",Based On 2 Adults Sharing'
+    'Celebrity Cruises,Greek Islands,Celebrity Infinity,1299,7,12 June 2027,FB,"1 night pre-cruise stay at 4 Star hotel Piraeus, Athens Bed & Breakfast, Newcastle flights", "Piraeus, Athens|Mykonos",Based on 2 Adults Sharing'
   ].join('\n'), second.status);
   assert.equal(second.context.offers[0].preCruiseStay.text, '1 Night Pre-Cruise at the 4 Star Hotel Athens');
   assert.doesNotMatch(second.context.offers[0].preCruiseStay.text, /Piraeus, Athens|Bed & Breakfast/i);
@@ -483,7 +483,7 @@ test('pre-cruise note renders above You\'ll Visit while passenger basis remains 
     incl: 'Newcastle Flights · Luggage & Transfers Included',
     ship: 'Celebrity Infinity',
     price: '1299',
-    basis: 'Based On 2 Adults Sharing',
+    basis: 'Based on 2 Adults Sharing',
     board: 'FB',
     boardlbl: 'Full Board',
     day: '12',
@@ -509,13 +509,13 @@ test('pre-cruise note renders above You\'ll Visit while passenger basis remains 
   assert.doesNotMatch(detailsLine, /Full Board|Based On|Celebrity Infinity|Pre-Cruise/i);
   assert.equal(sailingLine, 'Sailing on Celebrity Infinity from Piraeus');
   assert.doesNotMatch(destinations, /Pre-Cruise|Bed & Breakfast|Based On|Celebrity Infinity|overnight/i);
-  assert.equal((card.match(/Based On 2 Adults Sharing/g) || []).length, 1);
-  assert.match(card, /<div class="pbasis">Based On 2 Adults Sharing<\/div>/);
+  assert.equal((card.match(/Based on 2 Adults Sharing/g) || []).length, 1);
+  assert.match(card, /<div class="pbasis">Based on 2 Adults Sharing<\/div>/);
 });
 
 test('cards without pre-cruise stay keep the existing itinerary section HTML while cleaning duplicated return embarkation ports', () => {
   const { renderCardHTML } = createRenderContext();
-  const card = renderCardHTML({ ship: 'Liberty of the Seas', ports: 'Southampton • Lisbon • Southampton', basis: 'Based On 2 Adults Sharing' });
+  const card = renderCardHTML({ ship: 'Liberty of the Seas', ports: 'Southampton • Lisbon • Southampton', basis: 'Based on 2 Adults Sharing' });
 
   assert.match(card, /<div class="sname">Sailing on Liberty of the Seas from Southampton<\/div>/);
   assert.match(card, /<div class="vsec"><div class="visit-inner"><div class="vtit">You'll Visit<\/div><div class="vpts"><span class="port-line"><span class="port-unit">Lisbon<\/span><\/span><\/div><\/div><\/div>/);

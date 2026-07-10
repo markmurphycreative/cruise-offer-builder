@@ -950,7 +950,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
         <div class="field" id="field-theme_tags"><label>Theme Tags</label><input id="f-theme_tags" spellcheck="true" placeholder="Luxury · Scenic Cruising · Norwegian Fjords" oninput="up()"></div>
         <div class="fg2">
           <div class="field"><label>Price (£)</label><input id="f-price" placeholder="1669" oninput="up()"></div>
-          <div class="field"><label>Price Basis</label><input id="f-basis" placeholder="Based On 2 Adults Sharing" oninput="up()"></div>
+          <div class="field"><label>Price Basis</label><input id="f-basis" placeholder="Based on 2 Adults Sharing" oninput="up()"></div>
           <div class="field"><label>Board</label><input id="f-board" placeholder="FB" oninput="autoBoardLabel(); up()"></div>
           <div class="field"><label>Board Basis</label><input id="f-boardlbl" placeholder="Full Board" oninput="up()"></div>
           <div class="field"><label>Date</label><input id="f-saildate" placeholder="20 November 2026" oninput="splitSailDate();up()"><input type="hidden" id="f-day" value=""><input type="hidden" id="f-month" value=""></div>
@@ -4822,7 +4822,7 @@ function parseFamilyPassengerBasis(text){
   if(!match) return "";
   const childCount=parseInt(match[1],10);
   if(!childCount || childCount<1 || childCount>4) return "";
-  return `Based On 2 Adults & ${childCount} ${childCount===1?"Child":"Children"} Sharing`;
+  return `Based on 2 Adults & ${childCount} ${childCount===1?"Child":"Children"} Sharing`;
 }
 
 const LAST_SUCCESSFUL_CSV_KEY = "cobLastSuccessfulCsvV1";
@@ -4963,12 +4963,12 @@ function processSheetCSV(csv,status){
     const combined=norm([rawText,searchText].filter(Boolean).join(" "));
     const family=parseFamilyPassengerBasis(combined);
     if(family) return family;
-    if(/based\s+on\s+2\s+adults\s+sharing/i.test(combined)) return "Based On 2 Adults Sharing";
-    if(/\b2\s+adults\s+sharing\b/i.test(combined)) return "Based On 2 Adults Sharing";
+    if(/based\s+on\s+2\s+adults\s+sharing/i.test(combined)) return "Based on 2 Adults Sharing";
+    if(/\b2\s+adults\s+sharing\b/i.test(combined)) return "Based on 2 Adults Sharing";
     const raw=norm(rawText);
-    if(!raw) return "Based On 2 Adults Sharing";
+    if(!raw) return "Based on 2 Adults Sharing";
     if(/^based\s+on\b/i.test(raw)) return /sharing\b/i.test(raw) ? raw : raw+" Sharing";
-    if(/\badults?\b/i.test(raw)) return "Based On "+raw.replace(/^based\s+on\s+/i,"").replace(/\s+sharing\b/i,"")+" Sharing";
+    if(/\badults?\b/i.test(raw)) return "Based on "+raw.replace(/^based\s+on\s+/i,"").replace(/\s+sharing\b/i,"")+" Sharing";
     return raw;
   }
   function cleanPreCruiseStayPlace(rawPlace,itineraryText){
@@ -7029,18 +7029,18 @@ const OPERATOR_ALIASES={po:[/\bp\s*&\s*o\b/i,/\bp\s*and\s*o\b/i,/\bp&o\s+cruises
 const AIRPORT_WORDS=["newcastle","manchester","edinburgh","leeds bradford","glasgow","birmingham","london","heathrow","gatwick","stansted","bristol","belfast"];
 const PASTE_OPERATOR_BOARD_DEFAULTS={po:["FB","Full Board"],celebrity:["FB","Full Board"],fred:["FB","Full Board"],amawaterways:["FB","Full Board"],ambassador:["FB","Full Board"],ncl:["FB","Full Board"],cunard:["FB","Full Board"],marella:["AI","All Inclusive"],princess:["AI","All Inclusive"],msc:["AI","All Inclusive"],virgin:["AI","All Inclusive"],riviera:["AI","All Inclusive"]};
 const CRUISE_PASSENGER_BASIS_DEFAULT_OPERATORS=new Set(["po","royal","marella","celebrity","fred","cunard","msc","ncl","princess","ambassador","virgin","amawaterways"]);
-const DEFAULT_CRUISE_PASSENGER_BASIS="Based On 2 Adults Sharing";
+const DEFAULT_CRUISE_PASSENGER_BASIS="Based on 2 Adults Sharing";
 function shouldDefaultCruisePassengerBasis(operatorKey){
   return CRUISE_PASSENGER_BASIS_DEFAULT_OPERATORS.has(String(operatorKey||"").toLowerCase());
 }
 function detectPassengerBasis(text){
   const value=String(text||"").replace(/\u00a0/g," ");
-  if(/\b(?:solo\s+travell?er|single\s+occupancy|sole\s+occupancy|single\s+travell?er)\b/i.test(value)) return "Based On Solo Occupancy";
-  if(/\b(?:family\s+of\s+)?(?:2|two)\s+adults?\s*(?:&|and|\+)\s*(?:2|two)\s+children\b/i.test(value)) return "Based On 2 Adults & 2 Children Sharing";
-  if(/\b(?:family\s+of\s+)?(?:2|two)\s+adults?\s*(?:&|and|\+)\s*(?:1|one)\s+child\b/i.test(value)) return "Based On 2 Adults & 1 Child Sharing";
+  if(/\b(?:solo\s+travell?er|single\s+occupancy|sole\s+occupancy|single\s+travell?er)\b/i.test(value)) return "Based on Solo Occupancy";
+  if(/\b(?:family\s+of\s+)?(?:2|two)\s+adults?\s*(?:&|and|\+)\s*(?:2|two)\s+children\b/i.test(value)) return "Based on 2 Adults & 2 Children Sharing";
+  if(/\b(?:family\s+of\s+)?(?:2|two)\s+adults?\s*(?:&|and|\+)\s*(?:1|one)\s+child\b/i.test(value)) return "Based on 2 Adults & 1 Child Sharing";
   if(/\b(?:per\s+person\s+)?based\s+on\s+(?:2|two)(?:\s+(?:adults?|people))?(?:\s+sharing)?\b/i.test(value)||
      /\b(?:2|two)\s+adults?\s+sharing\b/i.test(value)||
-     /\bbased\s+on\s+twin\s+share\b|\btwin\s+share\b/i.test(value)) return "Based On 2 Adults Sharing";
+     /\bbased\s+on\s+twin\s+share\b|\btwin\s+share\b/i.test(value)) return "Based on 2 Adults Sharing";
   return "";
 }
 function detectBoardBasis(text){
@@ -7262,7 +7262,8 @@ function cleanParsedPorts(lines,options){
   const ignored=/^(?:at sea|(?:\d+\s+)?days?\s+at\s+sea|(?:\d+\s+)?sea\s+days?|overnight port stay|overnight stay|overnight|luggage\s*(?:&|and)\s*transfers?\s+included|flights?\s+included)[, .!]*$/i;
   return cleanDestinationOnlyLines(lines).flatMap(line=>line.split(/(?:[•·▪◦●]|\s+[-–—]\s+|[-–—]\s*$)/)).map(item=>{
     const cleaned=item.trim().replace(/^[-–—]\s*/,"");
-    return typeof removeParsedPortCountrySuffix==="function"?removeParsedPortCountrySuffix(cleaned):cleaned;
+    const display=(typeof normaliseKnownDisplayText==="function"?normaliseKnownDisplayText(cleaned):String(cleaned||"").replace(/\s*@\s*/g," at ").replace(/\bLaspezia\b/gi,"La Spezia").replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca").replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne").replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing").replace(/[ \t]{2,}/g," ").trim());
+    return typeof removeParsedPortCountrySuffix==="function"?removeParsedPortCountrySuffix(display):display;
   }).filter(item=>item&&!ignored.test(item)&&!isExcludedParsedPort(item,options)&&isStandalonePortCandidate(item)).join(" • ");
 }
 function escapeRegExp(value){ return String(value||"").replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
@@ -7653,8 +7654,20 @@ function parseOffer(){
 function stripOfferHeadingPrefix(value){
   return String(value||"").replace(/^\s*(?:(?:offer\s*)?\d{1,2})\s*(?:[-–—:]\s*)/i,"").trim();
 }
+function replaceAtSymbolsForDisplay(value){
+  return String(value||"").replace(/\s*@\s*/g," at ");
+}
+function normaliseKnownDisplayText(value){
+  return String(value||"").replace(/\s*@\s*/g," at ")
+    .replace(/\bLaspezia\b/gi,"La Spezia")
+    .replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca")
+    .replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne")
+    .replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing")
+    .replace(/[ \t]{2,}/g," ")
+    .trim();
+}
 function removeSubjectToConditions(value){
-  return String(value||"")
+  return String(value||"").replace(/\s*@\s*/g," at ")
     .replace(/\(\s*subject\s+to\s+conditions\s*\)/gi," ")
     .replace(/\bsubject\s+to\s+conditions\b/gi," ")
     .replace(/\(\s*\)/g," ")
@@ -7688,10 +7701,16 @@ function extractCruiseNights(lines,raw){
   return genericText?genericText[1]:"";
 }
 function extractSourceInclusionLine(lines){
+  const displayText=value=>(typeof normaliseKnownDisplayText==="function"?normaliseKnownDisplayText(value):String(value||"").replace(/\s*@\s*/g," at ").replace(/\bLaspezia\b/gi,"La Spezia").replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca").replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne").replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing").replace(/[ \t]{2,}/g," ").trim());
+  const explicitIncludes=(lines||[])
+    .map(line=>displayText(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(line):line))
+    .filter(line=>/^includes\b/i.test(line)&&!/\b(?:not\s+included|excludes?|excluding|optional|available\s+at\s+(?:a\s+)?supplement|available\s+at\s+(?:an\s+)?extra\s+cost|extra\s+cost|payable\s+locally|available\s+to\s+buy)\b/i.test(line))
+    .map(line=>/[.!?]$/.test(line)?line:`${line}.`);
+  if(explicitIncludes.length) return explicitIncludes.join("\n");
   const inclusionPattern=/\b(?:flights?|fly(?:ing)?\s+from|luggage|baggage|transfers?|hotel\s+(?:stay|included|night)|drinks?\s+(?:package|included)|wi[-\s]?fi|gratuities|tips\s+included|on\s*board\s+(?:spend|credit)|on-board\s+(?:spend|credit)|onboard\s+(?:spend|credit)|included|all[\s-]*inclusive|adult(?:s)?\s*only|inside\s+cabin|outside\s+cabin|balcony\s+cabin|suite\s+cabin|cabin\s+upgrade)\b/i;
   const negativePattern=/\b(?:not\s+included|excludes?|excluding|optional|available\s+at\s+(?:a\s+)?supplement|available\s+at\s+(?:an\s+)?extra\s+cost|extra\s+cost|payable\s+locally|available\s+to\s+buy)\b/i;
   const sourceLine=(lines||[]).find(line=>inclusionPattern.test(line)&&!negativePattern.test(line));
-  return sourceLine?(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(sourceLine):String(sourceLine).trim()):"";
+  return sourceLine?displayText(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(sourceLine):String(sourceLine).trim()):"";
 }
 function cleanParsedDeparturePort(value){
   let text=String(value||"").trim();
@@ -7742,7 +7761,8 @@ function parseOfferText(raw,options){
   raw=typeof removeSubjectToConditions==="function"?removeSubjectToConditions(raw):String(raw||"");
   if(!raw.trim()) return null;
   const renderIntelligence=!!(options&&options.renderIntelligence);
-  const lines=raw.split(/\n/).map(l=>l.trim()).filter(Boolean); const txt=lines.join(" \n "); const parsed={}; let score=0;
+  const displayText=value=>(typeof normaliseKnownDisplayText==="function"?normaliseKnownDisplayText(value):String(value||"").replace(/\s*@\s*/g," at ").replace(/\bLaspezia\b/gi,"La Spezia").replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca").replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne").replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing").replace(/[ \t]{2,}/g," ").trim());
+  const lines=raw.split(/\n/).map(l=>displayText(l.trim())).filter(Boolean); const txt=lines.join(" \n "); const parsed={}; let score=0;
   const parsedDeparturePort=(typeof extractParsedSailingDeparturePort==="function") ? extractParsedSailingDeparturePort(lines,raw) : ((txt.match(/\bsailing\s+from\s+([^\n|•;]+)/i)||[])[1]||"").replace(/\s+to\s+.*$/i,"").trim();
   if(parsedDeparturePort){ parsed.departurePort=parsedDeparturePort; parsed.sailingFrom=(typeof getCruiseGatewayDepartureDisplay==="function"?getCruiseGatewayDepartureDisplay(parsedDeparturePort):parsedDeparturePort); score+=8; }
   const earlyShipMatch=findKnownOperatorShip(txt);
@@ -7830,7 +7850,7 @@ function getOfferIntelligenceCruiseTypes(parsed,rawText,operatorKey){
 }
 
 function getCruiseDepartureWording(value){
-  const clean=String(value||"").split(",").map(part=>part.trim()).filter(Boolean).join(", ");
+  const clean=normaliseKnownDisplayText(value).split(",").map(part=>part.trim()).filter(Boolean).join(", ");
   return /^(?:newcastle|newcastle upon tyne|newcastle, england)$/i.test(clean)?"Port of Tyne":clean;
 }
 function hasPortOfTyneDepartureKnowledge(parsed,rawText){
@@ -8775,7 +8795,8 @@ function getCleanItineraryPorts(str){
     .filter(Boolean);
 }
 function formatRenderedItineraryPort(port){
-  const value=String(port||"").trim();
+  const displayText=value=>(typeof normaliseKnownDisplayText==="function"?normaliseKnownDisplayText(value):String(value||"").replace(/\s*@\s*/g," at ").replace(/\bLaspezia\b/gi,"La Spezia").replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca").replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne").replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing").replace(/[ \t]{2,}/g," ").trim());
+  const value=displayText(port);
   return /^(?:newcastle|newcastle upon tyne|newcastle, england|port of tyne)$/i.test(value)?"Port of Tyne":value;
 }
 function isEmbarkationPortForVisitRemoval(port){
@@ -8872,6 +8893,9 @@ function chunkBullets(str,options){
 function normaliseSubtitleSeparator(value){
   return buildCardInclusionRenderLines(value).join("\n");
 }
+function normaliseOfferDetailsText(value){
+  return String(value||"").replace(/\r\n?/g,"\n").split("\n").map(line=>normaliseKnownDisplayText(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(line):line)).filter(Boolean).join("\n");
+}
 const CARD_INCLUSION_SEPARATOR=" - ";
 const CARD_INCLUSION_SAFE_WIDTH=952;
 const CARD_INCLUSION_FONT='300 40px Montserrat, sans-serif';
@@ -8890,7 +8914,8 @@ const CARD_INCLUSION_CABIN_PHRASES=[
   "Suite"
 ];
 function normaliseCardInclusionComponent(value){
-  return (typeof removeSubjectToConditions==="function"?removeSubjectToConditions(value):String(value||""))
+  const displayText=text=>(typeof normaliseKnownDisplayText==="function"?normaliseKnownDisplayText(text):String(text||"").replace(/\s*@\s*/g," at ").replace(/\bLaspezia\b/gi,"La Spezia").replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca").replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne").replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing").replace(/[ \t]{2,}/g," ").trim());
+  return displayText(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(value):String(value||""))
     .replace(/[\t ]+/g," ")
     .replace(/^\s*(?:[-–—•·,]+\s*)+|(?:\s*[-–—•·,]+)+\s*$/g,"")
     .trim();
@@ -8898,7 +8923,7 @@ function normaliseCardInclusionComponent(value){
 function classifyCardInclusionComponent(value){
   const text=normaliseCardInclusionComponent(value);
   if(!text) return "";
-  if(/\b\d+\s+nights?\s+pre[-\s]?cruise\s+stay\b/i.test(text)) return "precruise";
+  if(/\b(?:includes?\s+)?\d+\s*[- ]\s*nights?\s+pre[-\s]?cruise\s+stay\b/i.test(text)) return "precruise";
   if(CARD_INCLUSION_CABIN_PHRASES.some(phrase=>new RegExp(`^${escapeRegExp(phrase)}$`,"i").test(text))) return "cabin";
   if(/\bluggage\b/i.test(text)&&/\btransfers?\b/i.test(text)) return "luggage-transfer";
   if(/\bluggage\b/i.test(text)) return "luggage";
@@ -8919,7 +8944,7 @@ function splitCardInclusionLineComponents(line){
   const parts=[];
   separatorParts.forEach(part=>{
     let remaining=part;
-    const pre=remaining.match(/\d+\s+nights?\s+pre[-\s]?cruise\s+stay(?:\s+in\s+[^•·\n]+)?/i);
+    const pre=remaining.match(/(?:includes?\s+)?\d+\s*[- ]\s*nights?\s+pre[-\s]?cruise\s+stay(?:\s+(?:at|in)\s+[^•·\n]+)?/i);
     if(pre){ remaining=remaining.slice(0,pre.index).trim(); parts.push(pre[0]); }
     const tokens=[];
     CARD_INCLUSION_CABIN_PHRASES.forEach(phrase=>{
@@ -9053,7 +9078,8 @@ function renderCardInclusionLayout(value,options){
     const trailing=rendered.slice(1).map(component=>`<span class="incl-segment">&nbsp;-&nbsp;${component}</span>`).join("");
     return `<span class="incl-line">${first}${trailing}</span>`;
   };
-  const lines=groupCardInclusionRenderLines(buildCardInclusionComponents(value),options).map(renderLine);
+  const measureText=getCardInclusionMeasureText(options);
+  const lines=groupCardInclusionRenderLines(buildCardInclusionComponents(value),options).map(renderLine).filter(line=>measureText(String(line).replace(/<[^>]+>/g,"").replace(/&nbsp;/g," "))<=CARD_INCLUSION_SAFE_WIDTH);
   if(!validateCardInclusionLines(lines.map(line=>String(line).replace(/<[^>]+>/g,"").replace(/&nbsp;/g," ")))) return "";
   return lines.join(html?"":"\n");
 }
@@ -9076,16 +9102,17 @@ function renderCruiseTitle(value){
   return title;
 }
 function renderCardHTML(d){
-  const name=typeof renderCruiseTitle==="function"?renderCruiseTitle(d.name):String(d.name||"").replace(/-/g,"‑");
+  const displayText=value=>(typeof normaliseKnownDisplayText==="function"?normaliseKnownDisplayText(value):String(value||"").replace(/\s*@\s*/g," at ").replace(/\bLaspezia\b/gi,"La Spezia").replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca").replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne").replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing").replace(/[ \t]{2,}/g," ").trim());
+  const name=typeof renderCruiseTitle==="function"?renderCruiseTitle(displayText(d.name)):String(displayText(d.name)||"").replace(/-/g,"‑");
   const incl=typeof renderCardInclusion==="function"?renderCardInclusion(d.incl):(typeof normaliseSubtitleSeparator==="function"?normaliseSubtitleSeparator(d.incl):String(d.incl||"").replace(/\s*•\s*/g," - ").replace(/\s{2,}/g," ").trim());
-  const ship=d.ship||"";
+  const ship=displayText(d.ship);
   const priceRaw=(d.price||"").toString().replace(/[^0-9]/g,"");
   const price=priceRaw?Number(priceRaw).toLocaleString("en-GB"):"";
-  const basis=d.basis||"";
-  const board=d.board||""; const boardlbl=d.boardlbl||"";
+  const basis=displayText(d.basis);
+  const board=displayText(d.board); const boardlbl=displayText(d.boardlbl);
   const day=d.day||"";
-  const month=d.month||""; const nights=d.nights||"";
-  const ports=(d.ports||"").trim();
+  const month=displayText(d.month); const nights=d.nights||"";
+  const ports=displayText(d.ports);
   const portsHTML=ports?chunkBullets(ports):"";
   const embarkationPort=ports?getSailingFromDisplay(d):"";
   const preCruiseStay=d.preCruiseStay||null;
@@ -9370,9 +9397,9 @@ function getSummaryOfferDetails(o,i){
     ["Duration",o.nights?`${o.nights} nights`:"Missing"],
     ["Board",summaryDisplay(board)],
     ["USP",summaryDisplay(o.tags)],
-    ["Ports",summaryDisplay(o.ports)],
-    ["Inclusions",summaryDisplay(typeof normaliseSubtitleSeparator==="function"?normaliseSubtitleSeparator(o.incl):o.incl)],
-    ["Price basis",summaryDisplay(o.basis)],
+    ["Ports",summaryDisplay(normaliseKnownDisplayText(o.ports))],
+    ["Inclusions",summaryDisplay(typeof normaliseOfferDetailsText==="function"?normaliseOfferDetailsText(o.incl):o.incl)],
+    ["Price basis",summaryDisplay(normaliseKnownDisplayText(o.basis))],
     ["Destination URL",summaryDisplay(o.url)],
     ["Hero image",imageStatus,o._img?"sum-ok":"sum-bad"],
     ["UTM",o._utm?"Generated":"Missing",o._utm?"sum-ok":"sum-warn"],
@@ -9500,8 +9527,8 @@ function closeModal(id){ const modal=document.getElementById(id); if(!modal){ co
 // EXAMPLES
 // ═══════════════════════════════════════════════════════
 function fillEx(){
-  offers[0]={operator:"po",tags:"Adult Only Options · Cuisine · Entertainment · Family",name:"Eastern Caribbean Islands Fly-Cruise",ship:"Arvia",incl:"Newcastle Flights, Luggage & Transfers Included",price:"1669",basis:"Based On 2 Adults Sharing",board:"FB",boardlbl:"Full Board",day:"20",month:"November 2026",nights:"14",ports:"Barbados • Martinique • St Kitts • Tortola • St Maarten • Antigua • St Lucia • Grenada",url:"https://dawsonandsanderson.co.uk/cruises",_img:"",_logoCustom:""};
-  offers[1]={operator:"marella",tags:"Accessible · All Inclusive · Entertainment · Adults Only Cruise",name:"Captivating Coasts",ship:"Marella Explorer",incl:"Newcastle Flights, Luggage & Transfers Included",price:"1439",basis:"Based On 2 Adults Sharing",board:"AI",boardlbl:"All Inclusive",day:"27",month:"April 2027",nights:"10",ports:"Tenerife • Arrecife • Tangier • Malaga • Mahon • Syracuse • Corfu",url:"https://dawsonandsanderson.co.uk/cruises",_img:"",_logoCustom:""};
+  offers[0]={operator:"po",tags:"Adult Only Options · Cuisine · Entertainment · Family",name:"Eastern Caribbean Islands Fly-Cruise",ship:"Arvia",incl:"Newcastle Flights, Luggage & Transfers Included",price:"1669",basis:"Based on 2 Adults Sharing",board:"FB",boardlbl:"Full Board",day:"20",month:"November 2026",nights:"14",ports:"Barbados • Martinique • St Kitts • Tortola • St Maarten • Antigua • St Lucia • Grenada",url:"https://dawsonandsanderson.co.uk/cruises",_img:"",_logoCustom:""};
+  offers[1]={operator:"marella",tags:"Accessible · All Inclusive · Entertainment · Adults Only Cruise",name:"Captivating Coasts",ship:"Marella Explorer",incl:"Newcastle Flights, Luggage & Transfers Included",price:"1439",basis:"Based on 2 Adults Sharing",board:"AI",boardlbl:"All Inclusive",day:"27",month:"April 2027",nights:"10",ports:"Tenerife • Arrecife • Tangier • Malaga • Mahon • Syracuse • Corfu",url:"https://dawsonandsanderson.co.uk/cruises",_img:"",_logoCustom:""};
   document.getElementById("g-campaign").value="cruise-may-2026";
   document.getElementById("g-date").value="16th May 2026";
   document.getElementById("g-airport").value="Newcastle";
