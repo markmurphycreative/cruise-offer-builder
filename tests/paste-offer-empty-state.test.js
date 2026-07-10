@@ -332,7 +332,7 @@ Full Board
 £999
 Southampton • Lisbon`, { renderIntelligence: false });
 
-  assert.equal(result.parsed.incl, 'Free return taxi transfer from home to port.');
+  assert.equal(result.parsed.incl, 'Free return taxi transfer from home to port');
   assert.doesNotMatch(JSON.stringify(result.parsed), /subject to conditions/i);
 });
 
@@ -1630,11 +1630,12 @@ Includes 3-night pre-cruise stay @ Harbour Rocks Hotel Sydney - MGallery Collect
   assert.equal(result.parsed.name, 'Australia, Wine & Tasmania');
   assert.equal(result.parsed.nights, '10');
   assert.equal(result.parsed.basis, 'Based on 2 Adults Sharing');
-  assert.match(result.parsed.incl, /Includes luggage and one-way hotel transfer\./);
-  assert.match(result.parsed.incl, /Includes selected drinks at lunch and dinner\./);
-  assert.match(result.parsed.incl, /Includes return transfers\./);
+  assert.match(result.parsed.incl, /Includes luggage and one-way hotel transfer/);
+  assert.match(result.parsed.incl, /Includes selected drinks at lunch and dinner/);
+  assert.match(result.parsed.incl, /Includes return transfers/);
   assert.doesNotMatch(result.parsed.incl, /return airport transfers/);
-  assert.match(result.parsed.incl, /Includes 3-night pre-cruise stay at Harbour Rocks Hotel Sydney - MGallery Collection\./);
+  assert.match(result.parsed.incl, /Includes 3-night pre-cruise stay at Harbour Rocks Hotel Sydney - MGallery Collection/);
+  assert.ok(result.parsed.incl.split('\n').every(line => !line.endsWith('.')));
   assert.match(result.parsed.ports, /Sydney/);
   assert.match(result.parsed.ports, /Hobart, Tasmania/);
   assert.match(result.parsed.ports, /Adelaide/);
@@ -1682,8 +1683,9 @@ Includes 3-night pre-cruise stay @ Harbour Rocks Hotel Sydney - MGallery Collect
     'Sydney'
   ]);
   assert.doesNotMatch(result.parsed.ports, /MGallery Collection|Harbour Rocks Hotel|Hotel Sydney|luggage|transfer|hotel|pre-cruise|collection/i);
-  assert.match(result.parsed.incl, /Includes luggage and one-way hotel transfer\./);
-  assert.match(result.parsed.incl, /Includes 3-night pre-cruise stay at Harbour Rocks Hotel Sydney - MGallery Collection\./);
+  assert.match(result.parsed.incl, /Includes luggage and one-way hotel transfer/);
+  assert.match(result.parsed.incl, /Includes 3-night pre-cruise stay at Harbour Rocks Hotel Sydney - MGallery Collection/);
+  assert.ok(result.parsed.incl.split('\n').every(line => !line.endsWith('.')));
 });
 
 
@@ -1702,9 +1704,11 @@ Southampton - Lisbon - Vigo - Southampton
 Includes selected drinks with lunch & dinner.
 FREE return taxi transfer from home to port (subject to conditions)`, { renderIntelligence: false });
 
-  assert.match(result.parsed.incl, /Includes selected drinks at lunch and dinner\./);
-  assert.match(result.parsed.incl, /Free return taxi transfer from home to port\./);
+  assert.match(result.parsed.incl, /Includes selected drinks at lunch and dinner/);
+  assert.match(result.parsed.incl, /Free return taxi transfer from home to port\*/);
   assert.doesNotMatch(result.parsed.incl, /\(subject to conditions\)/i);
+  assert.ok(result.parsed.incl.split('\n').every(line => !line.endsWith('.')));
+  assert.equal((result.parsed.incl.match(/\*/g) || []).length, 1);
   assert.doesNotMatch(result.parsed.ports, /taxi|transfer|home|port|subject to conditions/i);
 });
 
