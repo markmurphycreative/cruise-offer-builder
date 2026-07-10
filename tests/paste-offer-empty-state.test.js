@@ -222,6 +222,9 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('isRecognisedPortTitleLine'),
     extractFunction('stripOfferHeadingPrefix'),
     extractFunction('removeSubjectToConditions'),
+    extractFunction('applyInclusionEditorialRule'),
+    extractConst('INCLUSION_EDITORIAL_RULES'),
+    extractFunction('normaliseInclusionEditorialText'),
     extractFunction('extractCruiseNights'),
     extractFunction('getPreCruiseImpliedPlaces'),
     extractFunction('formatPreCruiseHotelInclusion'),
@@ -1615,13 +1618,18 @@ Itinerary
 Sydney - Hobart, Tasmania - Kangaroo Island (Penneshaw) -
 Adelaide - Melbourne - Eden - Sydney
 Includes luggage and one way transfer to hotel.
+Includes selected drinks with lunch & dinner.
+Includes return transfers.
 Includes 3-night pre-cruise stay @ Harbour Rocks Hotel Sydney - MGallery Collection`, { renderIntelligence: false });
 
   assert.equal(result.parsed.operatorKey, 'celebrity');
   assert.equal(result.parsed.name, 'Australia, Wine & Tasmania');
   assert.equal(result.parsed.nights, '10');
   assert.equal(result.parsed.basis, 'Based on 2 Adults Sharing');
-  assert.match(result.parsed.incl, /Includes luggage and one way transfer to hotel\./);
+  assert.match(result.parsed.incl, /Includes luggage and one-way hotel transfer\./);
+  assert.match(result.parsed.incl, /Includes selected drinks at lunch and dinner\./);
+  assert.match(result.parsed.incl, /Includes return transfers\./);
+  assert.doesNotMatch(result.parsed.incl, /return airport transfers/);
   assert.match(result.parsed.incl, /Includes 3-Night pre-cruise at Harbour Rocks Hotel - MGallery Collection\./);
   assert.doesNotMatch(JSON.stringify(result.parsed), /@|subject to conditions/i);
 
