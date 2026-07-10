@@ -332,7 +332,7 @@ Full Board
 £999
 Southampton • Lisbon`, { renderIntelligence: false });
 
-  assert.equal(result.parsed.incl, 'FREE return taxi transfer from home to port');
+  assert.equal(result.parsed.incl, 'Free return taxi transfer from home to port.');
   assert.doesNotMatch(JSON.stringify(result.parsed), /subject to conditions/i);
 });
 
@@ -1684,6 +1684,28 @@ Includes 3-night pre-cruise stay @ Harbour Rocks Hotel Sydney - MGallery Collect
   assert.doesNotMatch(result.parsed.ports, /MGallery Collection|Harbour Rocks Hotel|Hotel Sydney|luggage|transfer|hotel|pre-cruise|collection/i);
   assert.match(result.parsed.incl, /Includes luggage and one-way hotel transfer\./);
   assert.match(result.parsed.incl, /Includes 3-night pre-cruise stay at Harbour Rocks Hotel Sydney - MGallery Collection\./);
+});
+
+
+test('PMU parser preserves Fred Olsen selected drinks and free taxi inclusions outside itinerary', () => {
+  const harness = createHarness([{}, {}, {}, {}]);
+  const result = harness.context.parseOfferText(`Fred. Olsen Cruise Lines
+Scenic Spain and Portugal
+15th May 2027
+7-night cruise
+Bolette
+Sailing from Southampton
+Full Board
+£999 per person based on 2 sharing
+Itinerary
+Southampton - Lisbon - Vigo - Southampton
+Includes selected drinks with lunch & dinner.
+FREE return taxi transfer from home to port (subject to conditions)`, { renderIntelligence: false });
+
+  assert.match(result.parsed.incl, /Includes selected drinks at lunch and dinner\./);
+  assert.match(result.parsed.incl, /Free return taxi transfer from home to port\./);
+  assert.doesNotMatch(result.parsed.incl, /\(subject to conditions\)/i);
+  assert.doesNotMatch(result.parsed.ports, /taxi|transfer|home|port|subject to conditions/i);
 });
 
 test('Paste Offer rejects marketing labels, cabin types, USPs and board basis as ports', () => {

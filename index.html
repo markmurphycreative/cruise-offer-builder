@@ -7754,17 +7754,28 @@ function formatPreCruiseHotelInclusion(value,lines){
 }
 function extractSourceInclusionLine(lines){
   const displayText=value=>(typeof normaliseKnownDisplayText==="function"?normaliseKnownDisplayText(value):String(value||"").replace(/\s*@\s*/g," at ").replace(/\bLaspezia\b/gi,"La Spezia").replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca").replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne").replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing").replace(/[ \t]{2,}/g," ").trim());
-  const explicitIncludes=(lines||[])
-    .map(line=>formatPreCruiseHotelInclusion(displayText(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(line):line),lines))
-    .filter(line=>/^includes\b/i.test(line)&&!/\b(?:not\s+included|excludes?|excluding|optional|available\s+at\s+(?:a\s+)?supplement|available\s+at\s+(?:an\s+)?extra\s+cost|extra\s+cost|payable\s+locally|available\s+to\s+buy)\b/i.test(line))
-    .map(line=>normaliseInclusionEditorialText(line,{sentence:true}));
-  if(explicitIncludes.length) return explicitIncludes.join("\n");
-  const inclusionPattern=/\b(?:flights?|fly(?:ing)?\s+from|luggage|baggage|transfers?|hotel\s+(?:stay|included|night)|drinks?\s+(?:package|included)|wi[-\s]?fi|gratuities|tips\s+included|on\s*board\s+(?:spend|credit)|on-board\s+(?:spend|credit)|onboard\s+(?:spend|credit)|included|all[\s-]*inclusive|adult(?:s)?\s*only|inside\s+cabin|outside\s+cabin|balcony\s+cabin|suite\s+cabin|cabin\s+upgrade)\b/i;
   const negativePattern=/\b(?:not\s+included|excludes?|excluding|optional|available\s+at\s+(?:a\s+)?supplement|available\s+at\s+(?:an\s+)?extra\s+cost|extra\s+cost|payable\s+locally|available\s+to\s+buy)\b/i;
+  const cleanInclusionLine=line=>formatPreCruiseHotelInclusion(displayText(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(line):line),lines);
+  const formatInclusionLine=line=>{
+    let formatted=normaliseInclusionEditorialText(cleanInclusionLine(line),{sentence:/^(?:includes?|free)\b/i.test(cleanInclusionLine(line))});
+    formatted=formatted.replace(/^free\b/i,"Free").replace(/^includes\b/i,"Includes");
+    return formatted;
+  };
+  const explicitIncludes=(lines||[])
+    .map(cleanInclusionLine)
+    .filter(line=>/^includes\b/i.test(line)&&!negativePattern.test(line))
+    .map(formatInclusionLine);
+  const supplementalTransferIncludes=(lines||[])
+    .map(cleanInclusionLine)
+    .filter(line=>/^(?:free\s+)?(?:return\s+)?(?:taxi\s+)?transfers?\b|^free\b/i.test(line))
+    .filter(line=>/\b(?:taxi|transfer|port|home)\b/i.test(line)&&!/^includes\b/i.test(line)&&!negativePattern.test(line))
+    .map(formatInclusionLine);
+  const combined=[...explicitIncludes,...supplementalTransferIncludes].filter((line,index,self)=>line&&self.findIndex(item=>item.toLowerCase()===line.toLowerCase())===index);
+  if(combined.length) return combined.join("\n");
+  const inclusionPattern=/\b(?:flights?|fly(?:ing)?\s+from|luggage|baggage|taxi|transfers?|hotel\s+(?:stay|included|night)|drinks?\s+(?:package|included)|wi[-\s]?fi|gratuities|tips\s+included|on\s*board\s+(?:spend|credit)|on-board\s+(?:spend|credit)|onboard\s+(?:spend|credit)|included|all[\s-]*inclusive|adult(?:s)?\s*only|inside\s+cabin|outside\s+cabin|balcony\s+cabin|suite\s+cabin|cabin\s+upgrade)\b/i;
   const sourceLine=(lines||[]).find(line=>inclusionPattern.test(line)&&!negativePattern.test(line));
   if(!sourceLine) return "";
-  const formatted=formatPreCruiseHotelInclusion(displayText(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(sourceLine):String(sourceLine).trim()),lines);
-  return normaliseInclusionEditorialText(formatted,{sentence:/^includes\b/i.test(formatted)});
+  return formatInclusionLine(sourceLine);
 }
 function cleanParsedDeparturePort(value){
   let text=String(value||"").trim();
