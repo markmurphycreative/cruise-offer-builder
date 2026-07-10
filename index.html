@@ -7771,6 +7771,7 @@ function formatPreCruiseHotelInclusion(value,lines){
   let text=String(value||"").replace(/\s*@\s*/g," at ");
   if(/\b(?:pre|post)[-\s]*cruise\b|\bhotel\b|\bstay\b/i.test(text)){
     text=text.replace(/(\b(?:stay|hotel)\s+(?:at|in)\s+[^.\n\r]*?)\s+-\s+[^.\n\r]*$/i,(match,hotelText)=>hotelText.trim());
+    text=text.replace(/\b(Harbour\s+Rocks\s+Hotel)\s+(Sydney)\b/ig,(match,hotel,city)=>`${hotel}, ${city}`);
   }
   return text.replace(/[ \t]{2,}/g," ").trim();
 }
