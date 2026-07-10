@@ -223,6 +223,8 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('stripOfferHeadingPrefix'),
     extractFunction('removeSubjectToConditions'),
     extractFunction('extractCruiseNights'),
+    extractFunction('getPreCruiseImpliedPlaces'),
+    extractFunction('formatPreCruiseHotelInclusion'),
     extractFunction('extractSourceInclusionLine'),
     extractFunction('detectCabinType'),
     extractFunction('detectTransferStatus'),
@@ -1620,7 +1622,7 @@ Includes 3-night pre-cruise stay @ Harbour Rocks Hotel Sydney - MGallery Collect
   assert.equal(result.parsed.nights, '10');
   assert.equal(result.parsed.basis, 'Based on 2 Adults Sharing');
   assert.match(result.parsed.incl, /Includes luggage and one way transfer to hotel\./);
-  assert.match(result.parsed.incl, /Includes 3-night pre-cruise stay at Harbour Rocks Hotel Sydney - MGallery Collection\./);
+  assert.match(result.parsed.incl, /Includes 3-Night pre-cruise at Harbour Rocks Hotel - MGallery Collection\./);
   assert.doesNotMatch(JSON.stringify(result.parsed), /@|subject to conditions/i);
 
   const portsResult = harness.context.parseOfferText(`Marella Cruises
