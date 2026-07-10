@@ -152,8 +152,10 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractConst('ITINERARY_FOOTER_LABEL'),
     extractConst('USP_TAG_LABEL'),
     extractConst('USP_TAG_KEYWORDS'),
+    extractConst('ITINERARY_HARD_STOP_PATTERN'),
     extractFunction('normaliseUspTagText'),
     extractFunction('inferUspTagsFromLines'),
+    extractFunction('isItineraryHardStopLine'),
     extractFunction('getItineraryLines'),
     extractConst('CABIN_TYPE_EXCLUSIONS'),
     extractConst('NON_PORT_EXTRACTION_EXCLUSION_PATTERNS'),
@@ -164,6 +166,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('formatParsedPriceDisplay'),
     extractFunction('isInclusionCopyLine'),
     extractFunction('cleanDestinationOnlyLines'),
+    extractFunction('truncateLinesAtItineraryHardStop'),
     extractFunction('normalisePortComparisonValue'),
     extractFunction('isExcludedParsedPort'),
     extractFunction('isStandalonePortCandidate'),
@@ -1649,6 +1652,38 @@ Laspezia - Palma De Mallorca - Port Of Tyne`, { renderIntelligence: false });
   assert.match(portsResult.parsed.ports, /La Spezia/);
   assert.match(portsResult.parsed.ports, /Palma de Mallorca/);
   assert.match(portsResult.parsed.ports, /Port of Tyne/);
+});
+
+test('PMU parser hard-stops Celebrity itinerary before hotel inclusion copy', () => {
+  const harness = createHarness([{}, {}, {}, {}]);
+  const result = harness.context.parseOfferText(`Celebrity Cruises
+Australia, Wine & Tasmania Cruise
+27th October 2026
+10-night cruise
+Celebrity Solstice
+Flying from Newcastle
+Sailing from Sydney
+Full Board
+£3119 per person based on 2 sharing
+Itinerary
+Sydney - Hobart, Tasmania - Kangaroo Island (Penneshaw) -
+Adelaide - Melbourne - Eden - Sydney
+Includes luggage and one way transfer to hotel.
+Includes 3-night pre-cruise stay @ Harbour Rocks Hotel Sydney - MGallery Collection`, { renderIntelligence: false });
+
+  const ports = result.parsed.ports.split(' • ');
+  assert.deepEqual(ports, [
+    'Sydney',
+    'Hobart, Tasmania',
+    'Kangaroo Island, Penneshaw',
+    'Adelaide',
+    'Melbourne',
+    'Eden',
+    'Sydney'
+  ]);
+  assert.doesNotMatch(result.parsed.ports, /MGallery Collection|Harbour Rocks Hotel|Hotel Sydney|luggage|transfer|hotel|pre-cruise|collection/i);
+  assert.match(result.parsed.incl, /Includes luggage and one-way hotel transfer\./);
+  assert.match(result.parsed.incl, /Includes 3-night pre-cruise stay at Harbour Rocks Hotel Sydney - MGallery Collection\./);
 });
 
 test('Paste Offer rejects marketing labels, cabin types, USPs and board basis as ports', () => {

@@ -7124,6 +7124,11 @@ const NON_PORT_EXTRACTION_EXCLUSION_PATTERNS=[
   /(?:^|\s)(?:from\s*)?[£$€]\s*\d[\d,]*(?:\.\d{2})?\s*(?:pp|per\s+person)?\b/i,
   /\b(?:save|saving|offer|deal|sale|exclusive|limited|book\s+now|call\s+to\s+book|terms|t&cs?|subject\s+to\s+availability)\b/i
 ];
+const ITINERARY_HARD_STOP_PATTERN=/^(?:includes?|including|free|transfers?|transfer|luggage|hotel|pre[-\s]?cruise|post[-\s]?cruise|stay|subject\s+to\s+conditions)\b|\b(?:mgallery|collection|harbour\s+rocks\s+hotel|hotel\s+sydney|transfers?|transfer|luggage|hotel|pre[-\s]?cruise|post[-\s]?cruise|subject\s+to\s+conditions)\b/i;
+function isItineraryHardStopLine(line){
+  const value=String(line||"").trim();
+  return !!value&&ITINERARY_HARD_STOP_PATTERN.test(value);
+}
 function normaliseExtractionExclusionValue(value){
   return String(value||"").replace(/[’]/g,"'").replace(/^[\s•·|:-]+|[\s•·|:-]+$/g,"").replace(/\s+/g," ").trim().toLowerCase();
 }
@@ -7133,7 +7138,7 @@ function isCabinTypeExclusion(value){
 }
 function isNonPortExtractionValue(value){
   const text=String(value||"").trim();
-  return !text||isCabinTypeExclusion(text)||NON_PORT_EXTRACTION_EXCLUSION_PATTERNS.some(pattern=>pattern.test(text));
+  return !text||isCabinTypeExclusion(text)||(typeof isItineraryHardStopLine==="function"&&isItineraryHardStopLine(text))||NON_PORT_EXTRACTION_EXCLUSION_PATTERNS.some(pattern=>pattern.test(text));
 }
 function extractOfferPrice(text){
   const value=String(text||"").replace(/\u00a0/g," ");
@@ -7156,7 +7161,7 @@ function removeDuplicateReturnEmbarkationPortsString(ports){
 function isInclusionCopyLine(line){
   const value=String(line||"").trim();
   if(!value) return false;
-  return /^(?:includes?|free)\b/i.test(value)&&/\b(?:luggage|baggage|transfers?|taxi|hotel|pre[-\s]?cruise|post[-\s]?cruise|stay|drinks?|wi[-\s]?fi|gratuities|tips|on\s*board|on-board|onboard|credit|spend|flights?|cabin|included)\b/i.test(value);
+  return (typeof isItineraryHardStopLine==="function"&&isItineraryHardStopLine(value))||(/^(?:includes?|free)\b/i.test(value)&&/\b(?:luggage|baggage|transfers?|taxi|hotel|pre[-\s]?cruise|post[-\s]?cruise|stay|drinks?|wi[-\s]?fi|gratuities|tips|on\s*board|on-board|onboard|credit|spend|flights?|cabin|included)\b/i.test(value));
 }
 function cleanDestinationOnlyLines(lines){
   return (lines||[]).map(line=>String(line||"").trim()).filter(line=>line&&!isNonPortExtractionValue(line)&&!(typeof isInclusionCopyLine==="function"&&isInclusionCopyLine(line)));
@@ -7183,10 +7188,18 @@ function getItineraryLines(lines){
   const itineraryLines=labelMatch&&labelMatch[1]?[labelMatch[1]]:[];
   for(let index=sectionIndex+1;index<lines.length;index+=1){
     const line=lines[index];
-    if(ITINERARY_FOOTER_LABEL.test(line)||isNonPortExtractionValue(line)||(typeof isInclusionCopyLine==="function"&&isInclusionCopyLine(line))||(itineraryLines.length&&USP_TAG_KEYWORDS.test(line))) break;
+    if((typeof isItineraryHardStopLine==="function"&&isItineraryHardStopLine(line))||ITINERARY_FOOTER_LABEL.test(line)||isNonPortExtractionValue(line)||(typeof isInclusionCopyLine==="function"&&isInclusionCopyLine(line))||(itineraryLines.length&&USP_TAG_KEYWORDS.test(line))) break;
     itineraryLines.push(line);
   }
   return itineraryLines;
+}
+function truncateLinesAtItineraryHardStop(lines){
+  const output=[];
+  for(const line of (lines||[])){
+    if(typeof isItineraryHardStopLine==="function"&&isItineraryHardStopLine(line)) break;
+    output.push(line);
+  }
+  return output;
 }
 function normalisePortComparisonValue(value){
   return String(value||"").replace(/^[\s•·|:-]+|[\s•·|:-]+$/g, "").replace(/\s+/g, " ").trim().toLowerCase();
@@ -7228,6 +7241,7 @@ function normaliseParsedPortBracketText(label){
   }
   value=value.replace(/^(.+?)\s+\(([^()]+)\)(\s*,\s*.+)$/,(match,city,port,country)=>`${city}, for ${port}${country}`);
   value=value.replace(/^(.+?)\s+\(([^()]+)\)\s+([^,()]+)$/,(match,city,port,country)=>`${city}, ${port}, ${country}`);
+  value=value.replace(/^(Kangaroo\s+Island)\s+\((Penneshaw)\)$/i,(match,city,port)=>`${city}, ${port}`);
   return value.replace(/\s+/g," ").trim();
 }
 function removeParsedPortCountrySuffix(label){
