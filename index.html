@@ -7700,17 +7700,46 @@ function extractCruiseNights(lines,raw){
     });
   return genericText?genericText[1]:"";
 }
+function getPreCruiseImpliedPlaces(lines){
+  const places=new Set();
+  (lines||[]).forEach(line=>{
+    String(line||"").split(/[•|]/).forEach(part=>{
+      const value=part.replace(/\([^)]*\)/g," ").replace(/\b(?:sailing|departing|from|itinerary|includes?|cruise|night|nights|pre[-\s]?cruise|stay|hotel|full board|based on|person|sharing)\b/gi," ").replace(/[£$€]\s*\d+.*/g," ").trim();
+      value.split(/\s+-\s+|,/).forEach(piece=>{
+        const place=piece.trim();
+        if(/^[A-Z][A-Za-z'’.-]+(?:\s+[A-Z][A-Za-z'’.-]+){0,2}$/.test(place)&&place.length>2) places.add(place.toLowerCase());
+      });
+    });
+  });
+  return places;
+}
+function formatPreCruiseHotelInclusion(value,lines){
+  let text=String(value||"").replace(/\s*@\s*/g," at ").replace(/[ \t]{2,}/g," ").trim();
+  const match=text.match(/^(includes?\s+)?(\d{1,2})\s*[- ]\s*nights?\s+pre[-\s]?cruise\s+(?:stay\s+)?(?:at|in)\s+(.+?)\s*([.!?])?$/i);
+  if(!match) return text;
+  let hotel=match[3].trim().replace(/\s+stay\b/gi," ").replace(/[ \t]{2,}/g," ").trim();
+  const implied=getPreCruiseImpliedPlaces(lines);
+  const parts=hotel.split(/\s+-\s+/);
+  let primary=parts.shift().trim();
+  const impliedSuffix=[...implied].filter(place=>new RegExp(`\\s+${escapeRegExp(place)}$`,"i").test(primary)).sort((a,b)=>b.length-a.length)[0];
+  if(impliedSuffix){
+    const withoutPlace=primary.replace(new RegExp(`\\s+${escapeRegExp(impliedSuffix)}$`,"i"),"").trim();
+    if(/\b(?:hotel|resort|inn|suites?|collection|mgallery|hilton|marriott|hyatt|sheraton|radisson|rocks)\b/i.test(withoutPlace)) primary=withoutPlace;
+  }
+  hotel=[primary].concat(parts).filter(Boolean).join(" - ").replace(/[ \t]{2,}/g," ").trim();
+  return `${match[1]?"Includes ":""}${match[2]}-Night pre-cruise at ${hotel}`.replace(/[ \t]{2,}/g," ").trim();
+}
 function extractSourceInclusionLine(lines){
   const displayText=value=>(typeof normaliseKnownDisplayText==="function"?normaliseKnownDisplayText(value):String(value||"").replace(/\s*@\s*/g," at ").replace(/\bLaspezia\b/gi,"La Spezia").replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca").replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne").replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing").replace(/[ \t]{2,}/g," ").trim());
   const explicitIncludes=(lines||[])
-    .map(line=>displayText(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(line):line))
+    .map(line=>formatPreCruiseHotelInclusion(displayText(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(line):line),lines))
     .filter(line=>/^includes\b/i.test(line)&&!/\b(?:not\s+included|excludes?|excluding|optional|available\s+at\s+(?:a\s+)?supplement|available\s+at\s+(?:an\s+)?extra\s+cost|extra\s+cost|payable\s+locally|available\s+to\s+buy)\b/i.test(line))
     .map(line=>/[.!?]$/.test(line)?line:`${line}.`);
   if(explicitIncludes.length) return explicitIncludes.join("\n");
   const inclusionPattern=/\b(?:flights?|fly(?:ing)?\s+from|luggage|baggage|transfers?|hotel\s+(?:stay|included|night)|drinks?\s+(?:package|included)|wi[-\s]?fi|gratuities|tips\s+included|on\s*board\s+(?:spend|credit)|on-board\s+(?:spend|credit)|onboard\s+(?:spend|credit)|included|all[\s-]*inclusive|adult(?:s)?\s*only|inside\s+cabin|outside\s+cabin|balcony\s+cabin|suite\s+cabin|cabin\s+upgrade)\b/i;
   const negativePattern=/\b(?:not\s+included|excludes?|excluding|optional|available\s+at\s+(?:a\s+)?supplement|available\s+at\s+(?:an\s+)?extra\s+cost|extra\s+cost|payable\s+locally|available\s+to\s+buy)\b/i;
   const sourceLine=(lines||[]).find(line=>inclusionPattern.test(line)&&!negativePattern.test(line));
-  return sourceLine?displayText(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(sourceLine):String(sourceLine).trim()):"";
+  return sourceLine?formatPreCruiseHotelInclusion(displayText(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(sourceLine):String(sourceLine).trim()),lines):"";
 }
 function cleanParsedDeparturePort(value){
   let text=String(value||"").trim();
@@ -8923,7 +8952,7 @@ function normaliseCardInclusionComponent(value){
 function classifyCardInclusionComponent(value){
   const text=normaliseCardInclusionComponent(value);
   if(!text) return "";
-  if(/\b(?:includes?\s+)?\d+\s*[- ]\s*nights?\s+pre[-\s]?cruise\s+stay\b/i.test(text)) return "precruise";
+  if(/\b(?:includes?\s+)?\d+\s*[- ]\s*night(?:s)?\s+pre[-\s]?cruise\b/i.test(text)) return "precruise";
   if(CARD_INCLUSION_CABIN_PHRASES.some(phrase=>new RegExp(`^${escapeRegExp(phrase)}$`,"i").test(text))) return "cabin";
   if(/\bluggage\b/i.test(text)&&/\btransfers?\b/i.test(text)) return "luggage-transfer";
   if(/\bluggage\b/i.test(text)) return "luggage";
@@ -8944,7 +8973,7 @@ function splitCardInclusionLineComponents(line){
   const parts=[];
   separatorParts.forEach(part=>{
     let remaining=part;
-    const pre=remaining.match(/(?:includes?\s+)?\d+\s*[- ]\s*nights?\s+pre[-\s]?cruise\s+stay(?:\s+(?:at|in)\s+[^•·\n]+)?/i);
+    const pre=remaining.match(/(?:includes?\s+)?\d+\s*[- ]\s*night(?:s)?\s+pre[-\s]?cruise(?:\s+stay)?(?:\s+(?:at|in)\s+[^•·\n]+)?/i);
     if(pre){ remaining=remaining.slice(0,pre.index).trim(); parts.push(pre[0]); }
     const tokens=[];
     CARD_INCLUSION_CABIN_PHRASES.forEach(phrase=>{
