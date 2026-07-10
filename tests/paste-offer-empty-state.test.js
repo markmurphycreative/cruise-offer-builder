@@ -498,10 +498,10 @@ test('Paste Offer preserves the selected slot when offers are already loaded', (
 
 test('Trello hardening detects occupancy variants and default sharing basis', () => {
   const cases = [
-    ['£1249 per person based on 2 sharing', 'Based On 2 Adults Sharing'],
-    ['£1689 for a family of two adults & 1 child', 'Based On 2 Adults & 1 Child Sharing'],
-    ['£1189pp based on 2 adults sharing', 'Based On 2 Adults Sharing'],
-    ['solo traveller', 'Based On Solo Occupancy']
+    ['£1249 per person based on 2 sharing', 'Based on 2 Adults Sharing'],
+    ['£1689 for a family of two adults & 1 child', 'Based on 2 Adults & 1 Child Sharing'],
+    ['£1189pp based on 2 adults sharing', 'Based on 2 Adults Sharing'],
+    ['solo traveller', 'Based on Solo Occupancy']
   ];
   for (const [raw, expected] of cases) {
     const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
@@ -521,7 +521,7 @@ Flights included from Newcastle
 Inside Cabin
 Full Board
 £1259pp`);
-  assert.equal(missing.context.offers[0].basis, 'Based On 2 Adults Sharing');
+  assert.equal(missing.context.offers[0].basis, 'Based on 2 Adults Sharing');
   assert.equal(missing.context.offers[0].price, '1259');
 
   const detectedStandard = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
@@ -530,7 +530,7 @@ Celebrity Ascent
 7 nights
 £1259pp
 Based on 2 Adults Sharing`);
-  assert.equal(detectedStandard.context.offers[0].basis, 'Based On 2 Adults Sharing');
+  assert.equal(detectedStandard.context.offers[0].basis, 'Based on 2 Adults Sharing');
 
   const detectedDifferent = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
   detectedDifferent.parse(`Celebrity Cruises
@@ -538,7 +538,7 @@ Celebrity Ascent
 7 nights
 £1259pp
 solo traveller`);
-  assert.equal(detectedDifferent.context.offers[0].basis, 'Based On Solo Occupancy');
+  assert.equal(detectedDifferent.context.offers[0].basis, 'Based on Solo Occupancy');
 });
 
 test('Trello hardening detects board variants without applying operator defaults', () => {
@@ -748,7 +748,7 @@ test('clearing Paste Offer resets only the selected offer, editor, preview and i
     'f-month': { value: 'November 2026' },
     'f-nights': { value: '14' },
     'f-ports': { value: 'Barbados • Martinique' },
-    'f-basis': { value: 'Based On 2 Adults Sharing' },
+    'f-basis': { value: 'Based on 2 Adults Sharing' },
     'f-url': { value: 'https://example.com' },
     'f-utm_content': { value: 'utm' },
     'f-logo-display': { value: 'operator' }
@@ -853,10 +853,10 @@ test('family passenger basis parser recognises child counts one through four', (
   vm.createContext(context);
   vm.runInContext(extractFunction('parseFamilyPassengerBasis'), context);
 
-  assert.equal(context.parseFamilyPassengerBasis('for a family of two adults & 1 child'), 'Based On 2 Adults & 1 Child Sharing');
-  assert.equal(context.parseFamilyPassengerBasis('for a family of 2 adults & 2 children'), 'Based On 2 Adults & 2 Children Sharing');
-  assert.equal(context.parseFamilyPassengerBasis('for a family of two adults & 3 children'), 'Based On 2 Adults & 3 Children Sharing');
-  assert.equal(context.parseFamilyPassengerBasis('for a family of 2 adults & 4 children'), 'Based On 2 Adults & 4 Children Sharing');
+  assert.equal(context.parseFamilyPassengerBasis('for a family of two adults & 1 child'), 'Based on 2 Adults & 1 Child Sharing');
+  assert.equal(context.parseFamilyPassengerBasis('for a family of 2 adults & 2 children'), 'Based on 2 Adults & 2 Children Sharing');
+  assert.equal(context.parseFamilyPassengerBasis('for a family of two adults & 3 children'), 'Based on 2 Adults & 3 Children Sharing');
+  assert.equal(context.parseFamilyPassengerBasis('for a family of 2 adults & 4 children'), 'Based on 2 Adults & 4 Children Sharing');
   assert.equal(context.parseFamilyPassengerBasis('£1249 per person based on 2 sharing'), '');
 });
 
@@ -865,7 +865,7 @@ test('Paste Offer sets family passenger basis for one child while keeping the pa
   harness.parse('P&O Cruises\nFamily Caribbean offer\nArvia\n7 nights\nFull Board\n£1689 for a family of two adults & 1 child');
 
   assert.equal(harness.context.offers[0].price, '1689');
-  assert.equal(harness.context.offers[0].basis, 'Based On 2 Adults & 1 Child Sharing');
+  assert.equal(harness.context.offers[0].basis, 'Based on 2 Adults & 1 Child Sharing');
 });
 
 test('Paste Offer sets family passenger basis for multiple children with numeric adults', () => {
@@ -873,14 +873,14 @@ test('Paste Offer sets family passenger basis for multiple children with numeric
   harness.parse('Marella Cruises\nFamily Mediterranean offer\nMarella Explorer\n7 nights\nFull Board\n£2499 for a family of 2 adults & 2 children');
 
   assert.equal(harness.context.offers[0].price, '2499');
-  assert.equal(harness.context.offers[0].basis, 'Based On 2 Adults & 2 Children Sharing');
+  assert.equal(harness.context.offers[0].basis, 'Based on 2 Adults & 2 Children Sharing');
 });
 
 test('Paste Offer normalises standard per-person passenger basis', () => {
   const harness = createHarness([], 0, { hasParsePreviewModal: false });
   harness.parse(CELEBRITY_CRUISES_OFFER);
 
-  assert.equal(harness.context.offers[0].basis, 'Based On 2 Adults Sharing');
+  assert.equal(harness.context.offers[0].basis, 'Based on 2 Adults Sharing');
 });
 
 test("Paste Offer recognises Itinerary, Ports, and You'll Visit labels with line and bullet-separated destinations", () => {
@@ -1596,6 +1596,42 @@ Family • Entertainment • Value`, { renderIntelligence: false });
 
   assert.equal(transfersResult.parsed.incl, 'Glasgow Transfers Included');
   assert.equal(transfersResult.parsed.ports, 'Athens • Kusadasi, Turkey • Istanbul, Turkey • Mykonos');
+});
+
+test('PMU parser normalises known destinations, at symbols, basis casing and Celebrity include lines', () => {
+  const harness = createHarness([{}, {}, {}, {}]);
+  const result = harness.context.parseOfferText(`Celebrity Cruises
+Australia, Wine & Tasmania Cruise
+27th October 2026
+10-night cruise
+Celebrity Solstice
+Flying from Newcastle
+Sailing from Sydney
+Full Board
+£3119 per person based on 2 sharing
+Itinerary
+Sydney - Hobart, Tasmania - Kangaroo Island (Penneshaw) -
+Adelaide - Melbourne - Eden - Sydney
+Includes luggage and one way transfer to hotel.
+Includes 3-night pre-cruise stay @ Harbour Rocks Hotel Sydney - MGallery Collection`, { renderIntelligence: false });
+
+  assert.equal(result.parsed.operatorKey, 'celebrity');
+  assert.equal(result.parsed.name, 'Australia, Wine & Tasmania');
+  assert.equal(result.parsed.nights, '10');
+  assert.equal(result.parsed.basis, 'Based on 2 Adults Sharing');
+  assert.match(result.parsed.incl, /Includes luggage and one way transfer to hotel\./);
+  assert.match(result.parsed.incl, /Includes 3-night pre-cruise stay at Harbour Rocks Hotel Sydney - MGallery Collection\./);
+  assert.doesNotMatch(JSON.stringify(result.parsed), /@|subject to conditions/i);
+
+  const portsResult = harness.context.parseOfferText(`Marella Cruises
+Mediterranean
+7 nights
+£999 per person based on 2 sharing
+Itinerary
+Laspezia - Palma De Mallorca - Port Of Tyne`, { renderIntelligence: false });
+  assert.match(portsResult.parsed.ports, /La Spezia/);
+  assert.match(portsResult.parsed.ports, /Palma de Mallorca/);
+  assert.match(portsResult.parsed.ports, /Port of Tyne/);
 });
 
 test('Paste Offer rejects marketing labels, cabin types, USPs and board basis as ports', () => {

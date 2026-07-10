@@ -233,9 +233,9 @@ test('CSV import derives the family passenger basis from family offer price text
   context.processSheetCSV(csv, status);
 
   assert.equal(context.offers[0].price, '1689');
-  assert.equal(context.offers[0].basis, 'Based On 2 Adults & 1 Child Sharing');
+  assert.equal(context.offers[0].basis, 'Based on 2 Adults & 1 Child Sharing');
   assert.equal(context.offers[1].price, '2499');
-  assert.equal(context.offers[1].basis, 'Based On 2 Adults & 2 Children Sharing');
+  assert.equal(context.offers[1].basis, 'Based on 2 Adults & 2 Children Sharing');
   assert.equal(context.offers[2].price, '1249');
-  assert.equal(context.offers[2].basis, 'Based On 2 Adults Sharing');
+  assert.equal(context.offers[2].basis, 'Based on 2 Adults Sharing');
 });

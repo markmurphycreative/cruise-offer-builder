@@ -82,7 +82,7 @@ test('CSV Title column cannot be replaced by ship names or passenger basis text'
   assert.equal(offer.name, 'Spain & France');
   assert.equal(offer.ship, 'Liberty of the Seas');
   assert.equal(offer.incl, 'Ocean View Cabin · Family');
-  assert.equal(offer.basis, 'Based On 2 Adults & 1 Child Sharing');
+  assert.equal(offer.basis, 'Based on 2 Adults & 1 Child Sharing');
   assert.doesNotMatch(offer.name, /Liberty of the Seas|Based On|Child/i);
 });
 
@@ -105,7 +105,7 @@ test('details line is built only from inclusions and attributes while ship and b
   assert.equal(offer.name, 'Swiss Alps & Rhine Castles');
   assert.equal(offer.incl, 'Luggage & Transfers Included');
   assert.equal(offer.ship, 'AmaSerena');
-  assert.equal(offer.basis, 'Based On 2 Adults Sharing');
+  assert.equal(offer.basis, 'Based on 2 Adults Sharing');
   assert.doesNotMatch(offer.incl, /AmaSerena|Based On|Swiss Alps|£|Basel|Strasbourg|Cologne|Amsterdam/);
 });
 
@@ -178,7 +178,7 @@ test('passenger basis wording never appears in title, details, sailing or itiner
     'Royal Caribbean,Family Fjords,£2089,Odyssey of the Seas,Balcony Cabin,2 Adults & 2 Children,Bergen | Flam | Stavanger'
   ].join('\n'));
 
-  assert.equal(offer.basis, 'Based On 2 Adults & 2 Children Sharing');
+  assert.equal(offer.basis, 'Based on 2 Adults & 2 Children Sharing');
   assert.doesNotMatch([offer.name, offer.incl, offer.ship, offer.ports].join(' || '), /Based On|2 Adults|Children Sharing/);
 });
 
