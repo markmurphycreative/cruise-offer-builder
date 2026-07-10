@@ -7262,6 +7262,23 @@ function removeParsedPortCountrySuffix(label){
   }
   return value;
 }
+function normaliseParsedDestinationDisplay(port){
+  let value=String(port||"")
+    .replace(/^[\s,;:•·|\-–—]+/,"")
+    .replace(/[\s,;:•·|\-–—]+$/," ")
+    .replace(/,\s*[-–—]?\s*$/," ")
+    .replace(/\s{2,}/g," ")
+    .trim();
+  if(!value) return "";
+  value=typeof removeParsedPortCountrySuffix==="function" ? removeParsedPortCountrySuffix(value) : value;
+  value=typeof normaliseDestinationName==="function" ? normaliseDestinationName(value) : value;
+  value=typeof simplifyDestinationCountrySuffix==="function" ? simplifyDestinationCountrySuffix(value) : value;
+  return String(value||"")
+    .replace(/^[\s,;:•·|\-–—]+/,"")
+    .replace(/[\s,;:•·|\-–—]+$/," ")
+    .replace(/\s{2,}/g," ")
+    .trim();
+}
 function buildCardInclusionFromComponents(components){
   return renderCardInclusionLayout(components,{html:false});
 }
@@ -7609,6 +7626,7 @@ function applyParsedOfferToSlot(result,index,sourceText){
     else offers[index][k]=String(parsed[k]);
   }
   if(parsed.departurePort) offers[index].departurePort=String(parsed.departurePort);
+  if(parsed._poaDepartureAirport) offers[index]._poaDepartureAirport=String(parsed._poaDepartureAirport);
   if(!offers[index]._sailingFromManual && typeof applyAutoSailingFromToOffer==="function") applyAutoSailingFromToOffer(offers[index]);
   offers[index]._tagsManualOverride=false;
   applyOperatorTopBarUspDefault(offers[index],offers[index].operator||parsed.operatorKey||"");
@@ -7866,11 +7884,7 @@ function parseExactStructuredOfferText(raw,options){
   const firstLabel=lines[itineraryIndex].match(ITINERARY_SECTION_LABEL); if(firstLabel&&firstLabel[1]) itineraryLines.push(firstLabel[1]);
   let inInclusions=false;
   for(let index=itineraryIndex+1;index<lines.length;index+=1){ const line=lines[index]; if(!inInclusions&&isInclusionCopyLine(line)) inInclusions=true; (inInclusions?inclusionLines:itineraryLines).push(line); }
-  const exactPortItems=itineraryLines.flatMap(line=>String(line||"").split(/\s+[-–—]\s+/)).map(item=>{
-    let port=displayText(item).replace(/,\s*[-–—]?\s*$/," ").replace(/^[,\s-–—]+/," ").replace(/,\s*/g,", ").replace(/\bPalma de Mallorca,\s*Spain$/i,"Palma de Mallorca");
-    port=removeParsedPortCountrySuffix(port).replace(/,\s*[-–—]?\s*$/," ").trim();
-    return port;
-  }).filter(port=>port&&!isNonPortExtractionValue(port));
+  const exactPortItems=itineraryLines.flatMap(line=>String(line||"").split(/\s+[-–—]\s+|[-–—]\s*$/)).map(item=>normaliseParsedDestinationDisplay(displayText(item))).filter(port=>port&&!isNonPortExtractionValue(port));
   const ports=exactPortItems.join(" • "); if(ports){ parsed.ports=ports; score+=8; }
   const sourceInclusion=extractSourceInclusionLine(inclusionLines,{operatorKey:parsed.operatorKey}); if(sourceInclusion){ parsed.incl=sourceInclusion; score+=6; }
   score=Math.min(score,100);
@@ -8746,6 +8760,7 @@ function prepareOfferSlotForParsedOffer(parsed){
 }
 function applyParsedOffer(){if(!pendingParseResult) return; if(typeof isOfferLocked==="function" && isOfferLocked(cur)){ setParseStatus(getLockedOfferMessage(cur),"low"); cancelParsedOffer(); return; } const {parsed,confidence,rawText}=pendingParseResult; if(!prepareOfferSlotForParsedOffer(parsed)){ setParseStatus('No offer fields detected','low'); cancelParsedOffer(); return; } const pasteSourceText=rawText||((document.getElementById("raw-paste")||{}).value||""); if(pasteSourceText) offers[cur]._rawPastedOfferText=pasteSourceText; if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(cur); const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offers[cur].operator)){ continue; } const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; offers[cur]._tagsManualOverride=false; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
   if(parsed.departurePort) offers[cur].departurePort=String(parsed.departurePort);
+  if(parsed._poaDepartureAirport) offers[cur]._poaDepartureAirport=String(parsed._poaDepartureAirport);
   if(!offers[cur]._sailingFromManual && typeof applyAutoSailingFromToOffer==="function"){
     applyAutoSailingFromToOffer(offers[cur]);
     const sf=document.getElementById('f-sailingFrom');
@@ -9248,7 +9263,11 @@ function renderCardHTML(d){
   const heroPlaceholder=OPERATOR_HERO_PLACEHOLDERS[d.operator];
   const heroHTML=renderHeroHTML(d, heroPlaceholder);
   const itineraryImageHTML=renderItineraryImageHTML(d);
-  const shipLine=ship?`Sailing on ${ship}${embarkationPort?` from ${embarkationPort}`:""}`:"";
+  const flyingFrom=displayText(d._poaDepartureAirport||d.flyingFrom||"");
+  const shipLineParts=[];
+  if(ship) shipLineParts.push(`Sailing on ${ship}${embarkationPort?` from ${embarkationPort}`:""}`);
+  if(flyingFrom) shipLineParts.push(`Flying from ${flyingFrom}`);
+  const shipLine=shipLineParts.join("<br>");
   const priceHTML=price?`<div class="pfrom">From</div><div class="pmain">£${price}<span class="ppp">pp</span></div>`:`<div class="pfrom"></div><div class="pmain"></div>`;
   const dateHTML=(day||month)?`${day}`:"";
   const nightLabel=nights?"Nights":"";
