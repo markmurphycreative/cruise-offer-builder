@@ -128,9 +128,9 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     },
     isOfferLoaded: offer => !!(offer && (offer.name || offer.ship || offer.price || offer._img)),
     BOARD_MAP: { FB: ['FB', 'Full Board'], 'FULL BOARD': ['FB', 'Full Board'], AI: ['AI', 'All Inclusive'], 'ALL INCLUSIVE': ['AI', 'All Inclusive'], HB: ['HB', 'Half Board'], 'HALF BOARD': ['HB', 'Half Board'] },
-    OPERATOR_HEADERS: { cunard: { name: 'Cunard' }, ncl: { name: 'Norwegian Cruise Line' }, po: { name: 'P&O Cruises' }, royal: { name: 'Royal Caribbean' } },
-    OPERATOR_SHIPS: { celebrity: ['Celebrity Apex', 'Celebrity Ascent'], amawaterways: ['AmaBella', 'AmaDouro', 'AmaMagna', 'Zambezi Queen'], cunard: ['Queen Anne'], ncl: ['Norwegian Prima', 'Pride of America'], po: ['Arvia'], royal: ['Oasis of the Seas'] },
-    OPERATOR_ALIASES: { celebrity: [/\bcelebrity\b/i, /\bcelebrity\s+cruises\b/i], cunard: [/\bcunard\b/i], ncl: [/\bnorwegian\s+cruise\s+line\b/i, /\bncl\b/i], po: [/\bp\s*&\s*o\b/i, /\bp&o\s+cruises\b/i], royal: [/\broyal\s+caribbean\b/i, /\broyal\s+caribbean\s+international\b/i] },
+    OPERATOR_HEADERS: { cunard: { name: 'Cunard' }, ncl: { name: 'Norwegian Cruise Line' }, po: { name: 'P&O Cruises' }, royal: { name: 'Royal Caribbean' }, marella: { name: 'Marella Cruises' }, celebrity: { name: 'Celebrity Cruises' }, fred: { name: 'Fred. Olsen Cruise Lines' } },
+    OPERATOR_SHIPS: { celebrity: ['Celebrity Apex', 'Celebrity Ascent'], amawaterways: ['AmaBella', 'AmaDouro', 'AmaMagna', 'Zambezi Queen'], cunard: ['Queen Anne'], ncl: ['Norwegian Prima', 'Pride of America'], po: ['Arvia'], royal: ['Oasis of the Seas', 'Legend of the Seas'], marella: ['Marella Discovery'], fred: ['Bolette'] },
+    OPERATOR_ALIASES: { celebrity: [/\bcelebrity\b/i, /\bcelebrity\s+cruises\b/i], cunard: [/\bcunard\b/i], ncl: [/\bnorwegian\s+cruise\s+line\b/i, /\bncl\b/i], po: [/\bp\s*&\s*o\b/i, /\bp&o\s+cruises\b/i], royal: [/\broyal\s+caribbean\b/i, /\broyal\s+caribbean\s+international\b/i], marella: [/\bmarella\b/i], fred: [/\bfred\.?\s*olsen\b/i] },
     AIRPORT_WORDS: ['newcastle', 'manchester', 'edinburgh', 'leeds bradford', 'glasgow', 'birmingham', 'london', 'heathrow', 'gatwick', 'stansted', 'belfast'],
     getLikelyTypos() { return []; },
     setSpellWarn() {},
@@ -236,6 +236,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('detectCabinType'),
     extractFunction('detectTransferStatus'),
     extractFunction('detectPreCruiseStay'),
+    extractFunction('parseExactStructuredOfferText'),
     extractFunction('parseOfferText'),
     extractFunction('getOfferIntelligenceAirport'),
     extractFunction('parseOffer'),
@@ -1724,4 +1725,98 @@ test('Paste Offer rejects marketing labels, cabin types, USPs and board basis as
 
 test('Paste Offer clears stale hero data only on the selected slot before applying parsed fields', () => {
   assert.match(extractFunction('applyParsedOffer'), /clearHeroImageDataFromOffer\(cur\)/);
+});
+
+
+const EXACT_FOUR_OFFER_SOURCE = `Marella Cruises
+Autumn Escape
+26 November 2026
+5-night cruise
+Marella Discovery
+Flying from Newcastle
+Sailing from Malaga
+All Inclusive
+£799 per person based on 2 sharing
+Itinerary
+Malaga - Gibraltar - Casablanca, Morocco - Las Palmas, Gran Canaria - Santa Cruz de Tenerife
+
+Celebrity Cruises
+Australia, Wine & Tasmania
+20 January 2027
+10-night cruise
+Celebrity Solstice
+Flying from Newcastle
+Sailing from Sydney
+Full Board
+£2999 per person based on 2 sharing
+Itinerary
+Sydney - Hobart, Tasmania - Kangaroo Island (Penneshaw) - Adelaide - Melbourne - Eden - Sydney
+Includes luggage and one way transfer to hotel
+Includes 3-night pre-cruise stay @ Harbour Rocks Hotel Sydney - MGallery Collection
+
+Royal Caribbean
+Western Mediterranean
+14 June 2027
+7-night cruise
+Legend of the Seas
+Flying from Newcastle
+Sailing from Barcelona
+Full Board
+£1499 per person based on 2 sharing
+Itinerary
+Barcelona - Palma De Mallorca,Spain - Provence (Marseille), France - Florence / Pisa (Laspezia), Italy - Rome (Civitavecchia), Italy - Naples - Barcelona
+Includes luggage and return transfers
+
+Fred. Olsen Cruise Lines
+Sunlit Shores Of Spain
+18 August 2027
+17-night cruise
+Bolette
+Sailing from Port Of Tyne
+Full Board
+£2499 per person based on 2 sharing
+Itinerary
+Saint Malo - Lisbon - Motril - Alicante - Barcelona - Gibraltar - Cadiz - La Coruna, Galicia
+Includes selected drinks with lunch & dinner
+FREE return taxi transfer from home to port (subject to conditions)`;
+
+test('Paste Offer exact PMU four-offer source format preserves itinerary ports and separates inclusions', () => {
+  const expected = [
+    {
+      operator: 'marella', name: 'Autumn Escape', nights: '5', airport: 'Newcastle',
+      ports: ['Malaga', 'Gibraltar', 'Casablanca, Morocco', 'Las Palmas, Gran Canaria', 'Santa Cruz de Tenerife']
+    },
+    {
+      operator: 'celebrity', name: 'Australia, Wine & Tasmania', nights: '10', airport: 'Newcastle',
+      incl: 'Includes luggage and one-way hotel transfer\nIncludes 3-night pre-cruise stay at Harbour Rocks Hotel Sydney',
+      ports: ['Sydney', 'Hobart, Tasmania', 'Kangaroo Island, Penneshaw', 'Adelaide', 'Melbourne', 'Eden', 'Sydney']
+    },
+    {
+      operator: 'royal', name: 'Western Mediterranean', nights: '7', airport: 'Newcastle',
+      incl: 'Includes luggage and return transfers',
+      ports: ['Barcelona', 'Palma de Mallorca', 'Provence, for Marseille', 'Florence / Pisa, for La Spezia', 'Rome, for Civitavecchia', 'Naples', 'Barcelona']
+    },
+    {
+      operator: 'fred', name: 'Sunlit Shores Of Spain', nights: '17',
+      incl: 'Includes selected drinks with lunch & dinner\nFREE return taxi transfer from home to port*',
+      ports: ['Saint Malo', 'Lisbon', 'Motril', 'Alicante', 'Barcelona', 'Gibraltar', 'Cadiz', 'La Coruna, Galicia']
+    }
+  ];
+  const blocks = EXACT_FOUR_OFFER_SOURCE.split(/\n\s*\n(?=(?:Celebrity Cruises|Royal Caribbean|Fred\. Olsen Cruise Lines)\b)/);
+  assert.equal(blocks.length, 4);
+  const harness = createHarness([], 0, { hasParsePreviewModal: false });
+  const parsedOffers = blocks.map(block => harness.context.parseOfferText(block, { renderIntelligence: false }).parsed);
+
+  expected.forEach((item, index) => {
+    const parsed = parsedOffers[index];
+    assert.equal(parsed.operatorKey, item.operator);
+    assert.equal(parsed.name, item.name);
+    assert.equal(parsed.nights, item.nights);
+    if (item.airport) assert.equal(parsed._poaDepartureAirport, item.airport);
+    if (item.incl) assert.equal(parsed.incl, item.incl);
+    assert.deepEqual(parsed.ports.split(' • '), item.ports);
+    assert.doesNotMatch(parsed.ports, /Harbour Rocks|MGallery|taxi transfer|subject to conditions|Includes/i);
+  });
+  assert.doesNotMatch(parsedOffers[1].incl, /MGallery Collection/);
+  assert.doesNotMatch(parsedOffers[3].incl, /subject to conditions/i);
 });
