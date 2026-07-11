@@ -185,6 +185,8 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('makeCardInclusionComponent'),
     extractFunction('splitCardInclusionLineComponents'),
     extractFunction('normaliseFlightInclusionDisplay'),
+    extractFunction('stripCardInclusionRenderMarkup'),
+    extractFunction('escapeCardInclusionHtml'),
     extractFunction('buildCardInclusionComponents'),
     extractFunction('orderCardInclusionComponents'),
     extractFunction('validateCardInclusionLines'),
@@ -1887,6 +1889,50 @@ test('PMU renderer keeps exact four-offer inclusions visible and immutable after
   assert.match(fredHtml, /FREE return taxi transfer from <span class="no-break">home to port\*<\/span>/);
   assert.equal(visibleText(fredHtml).includes('FREE return taxi transfer from home to port*'), true);
   assert.doesNotMatch(fredHtml, />port\*<\/span>/);
+});
+
+test('PMU regression: Fred Olsen taxi no-break rendering is rebuilt from plain text across view switching', () => {
+  const harness = createHarness([], 0, { hasParsePreviewModal: false });
+  const blocks = EXACT_FOUR_OFFER_SOURCE.split(/\n\s*\n(?=(?:Celebrity Cruises|Royal Caribbean|Fred\. Olsen Cruise Lines)\b)/);
+  const parsedOffers = blocks.map(block => harness.context.parseOfferText(block, { renderIntelligence: false }).parsed);
+  const celebrity = parsedOffers.find(offer => offer.operatorKey === 'celebrity');
+  const fred = parsedOffers.find(offer => offer.operatorKey === 'fred');
+  const fredTaxiLine = 'FREE return taxi transfer from home to port*';
+  const expectedFredHtml = '<span class="incl-line"><span class="incl-component">Includes selected drinks with lunch & dinner</span></span><span class="incl-line"><span class="incl-component">FREE return taxi transfer from <span class="no-break">home to port*</span></span></span>';
+  const expectedCelebrityHtml = '<span class="incl-line"><span class="incl-component">Includes luggage and one-way hotel transfer</span></span><span class="incl-line"><span class="incl-component">3-night pre-cruise stay at <span class="no-break">Harbour Rocks Hotel, Sydney</span></span></span>';
+  const originalInclusions = parsedOffers.map(offer => offer.incl);
+  const originalComponents = harness.context.buildCardInclusionComponents(fred.incl);
+
+  assert.equal(fred.incl.split('\n')[1], fredTaxiLine);
+  assert.doesNotMatch(fred.incl, /<[^>]+>/);
+
+  const assertFredRenderState = (label, rendered) => {
+    assert.equal(fred.incl.split('\n')[1], fredTaxiLine, `${label}: stored Fred Olsen taxi line should remain plain text`);
+    assert.doesNotMatch(fred.incl, /<[^>]+>/, `${label}: stored Fred Olsen inclusion should contain no HTML`);
+    const components = harness.context.buildCardInclusionComponents(fred.incl);
+    assert.deepEqual(components, originalComponents, `${label}: component data should be rebuilt without mutation`);
+    components.forEach(component => assert.doesNotMatch(component.text, /<[^>]+>/, `${label}: component text should contain no HTML`));
+    assert.equal((rendered.match(/<span class="no-break">home to port\*<\/span>/g) || []).length, 1, `${label}: should render one full home-to-port no-break wrapper`);
+    assert.equal(rendered, expectedFredHtml, `${label}: rendered Fred Olsen HTML should be regenerated exactly`);
+    assert.doesNotMatch(rendered.replace(/<span class="no-break">home to port\*<\/span>/g, ''), /port\*/, `${label}: port* should not appear outside the protected phrase`);
+    assert.doesNotMatch(rendered, /<span class="incl-line">\s*<span class="incl-component">\s*port\*\s*<\/span>\s*<\/span>/i, `${label}: port* should not become its own row`);
+  };
+
+  let initialAllFourRender = null;
+  const sequence = ['all', 'single', 'email', 'all', 'single', 'email'];
+  for (let pass = 0; pass < 2; pass += 1) {
+    for (const view of sequence) {
+      const rendered = harness.context.renderCardInclusion(fred.incl);
+      if (view === 'all' && initialAllFourRender === null) initialAllFourRender = rendered;
+      if (view === 'all') assert.equal(rendered, initialAllFourRender, `${view} pass ${pass}: All 4 render should match the original All 4 render`);
+      assertFredRenderState(`${view} pass ${pass}`, rendered);
+      assert.equal(harness.context.renderCardInclusion(celebrity.incl), expectedCelebrityHtml, `${view} pass ${pass}: Celebrity rendering should remain unchanged`);
+      assert.deepEqual(parsedOffers.map(offer => offer.incl), originalInclusions, `${view} pass ${pass}: no inclusion data should be mutated`);
+    }
+  }
+
+  const renderedFromPreviousMarkup = harness.context.renderCardInclusion(initialAllFourRender);
+  assert.equal(renderedFromPreviousMarkup, expectedFredHtml, 'rendering defensively strips any accidental previously-rendered inclusion markup before rebuilding');
 });
 
 test('PMU regression: structured Celebrity offer keeps consecutive hotel inclusion out of itinerary and card destinations', () => {
