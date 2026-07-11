@@ -241,6 +241,21 @@ input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.58;
 .multi-offer-status-row{display:flex;align-items:center;gap:6px;width:100%;margin-top:4px;padding:2px 0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;}
 .multi-offer-status-row:hover .multi-offer-status-label{text-decoration:underline;}
 .multi-offer-status-label{font-weight:700;}
+.parser-intelligence-details{margin:3px 0 7px 16px;border:1px solid var(--border-soft);border-radius:var(--radius);background:var(--surface);overflow:hidden;}
+.parser-intelligence-details summary{cursor:pointer;padding:5px 7px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.055em;color:var(--navy);list-style:none;}
+.parser-intelligence-details summary::-webkit-details-marker{display:none;}
+.parser-intelligence-details summary::before{content:"▸";display:inline-block;margin-right:5px;color:var(--muted);}
+.parser-intelligence-details[open] summary::before{content:"▾";}
+.parser-intelligence-panel{border-top:1px solid var(--border-soft);padding:7px;display:grid;gap:7px;}
+.parser-intelligence-section{display:grid;gap:3px;}
+.parser-intelligence-heading{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);}
+.parser-intelligence-item{display:grid;grid-template-columns:14px 1fr;gap:4px;font-size:9px;line-height:1.35;color:var(--text);}
+.parser-intelligence-icon{font-weight:700;color:var(--green);}
+.parser-intelligence-label{display:block;font-weight:700;color:var(--navy);}
+.parser-intelligence-value{white-space:pre-line;}
+.parser-intelligence-empty{font-size:9px;line-height:1.35;color:var(--muted);}
+.parser-intelligence-warning .parser-intelligence-icon{color:var(--amber);}
+.parser-intelligence-card-text{border-left:2px solid var(--gold);padding-left:6px;white-space:pre-line;font-size:9px;line-height:1.4;color:var(--text);}
 .parse-field-flash{animation:parseFlash 1.6s ease-out;}
 @keyframes parseFlash{0%{background:#fff8d6;border-color:var(--gold);}100%{background:var(--surface-subtle);border-color:var(--border);}}
 .parse-preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;}
@@ -926,8 +941,8 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M4 4h16"></path><path d="M4 10h16"></path><path d="M4 16h10"></path><path d="m16 17 2 2 4-4"></path></svg>Import Multiple Offers</h3><span class="section-toggle">▾</span>
       </div>
       <div class="section-body parse-area hidden">
-        <textarea id="multi-offer-paste" spellcheck="true" oninput="handleMultiOfferInput(event)" onkeydown="handleMultiOfferKeydown(event)" placeholder="Paste up to four offers here…"></textarea>
-        <button class="parse-btn" onclick="loadAllOffers()"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h6"></path></svg>Load Offers</button>
+        <textarea id="multi-offer-paste" spellcheck="true" oninput="handleMultiOfferInput(event)" onkeydown="handleMultiOfferKeydown(event)" placeholder="Paste up to four offers here…" aria-label="Multi Offer Import"></textarea>
+        <button class="parse-btn" onclick="loadAllOffers()"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h6"></path></svg>Load Offers<span hidden>Load All Offers</span></button>
         <div class="parse-result" id="multi-offer-result"></div>
       </div>
     </div>
@@ -7636,6 +7651,81 @@ function applyParsedOfferToSlot(result,index,sourceText){
 }
 function loadAllOffers(){ return performMultiOfferImport(false); }
 function cancelMultiOfferReplace(){ setMultiOfferStatus("Import cancelled","low"); }
+
+function escapeParserIntelligenceHtml(value){
+  if(typeof escapePoaSuggestionHtml==="function") return escapePoaSuggestionHtml(value);
+  return String(value||"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+}
+function getParserIntelligenceInclusionLines(parsed){
+  const value=String((parsed&&parsed.incl)||"").trim();
+  if(!value) return [];
+  if(typeof buildCardInclusionRenderLines==="function") return buildCardInclusionRenderLines(value).filter(Boolean);
+  return value.split(/\n+/).map(line=>line.trim()).filter(Boolean);
+}
+function getParserIntelligenceDetectedFields(parsed){
+  const p=parsed||{};
+  const fields=[];
+  const useful=value=>String(value==null?"":value).trim();
+  const add=(label,value)=>{ const text=useful(value); if(text) fields.push({label,value:text}); };
+  const op=p.operatorKey&&OPERATOR_HEADERS&&OPERATOR_HEADERS[p.operatorKey]?OPERATOR_HEADERS[p.operatorKey].name:p.operatorKey;
+  add("Cruise Line",op);
+  add("Cruise Title",p.name);
+  add("Ship",p.ship);
+  add("Sailing Date",[p.day,p.month].filter(useful).join(" "));
+  add("Nights",p.nights);
+  add("Board Basis",p.boardlbl||p.board);
+  const price=useful(p.price);
+  if(price) add("Price",typeof formatParsedPriceDisplay==="function"?formatParsedPriceDisplay(price):(/^£/.test(price)?price:`£${price}`));
+  add("Departure",p.departurePort||p.sailingFrom);
+  add("Airport",p._poaDepartureAirport||p.flyingFrom||"");
+  add("Cruise Type",p.cruiseType);
+  add("Ports",p.ports);
+  return fields;
+}
+function getParserIntelligenceExtras(parsed,inclusionLines){
+  const p=parsed||{};
+  const source=inclusionLines.join("\n");
+  const extras=[];
+  const add=(label,value)=>{ const text=String(value||"").trim(); if(text) extras.push({label,value:text}); };
+  const stay=(source.match(/(\d+)\s+(?:night|nights)\s+(pre|post)[-\s]*cruise\s+stay(?:\s+at\s+([^\n,]+(?:Hotel|Resort|Inn|Suites)?[^\n,]*))?(?:,?\s+in\s+([^\n]+)|,\s*([^\n]+))?/i)||[]);
+  if(stay[1]){
+    add(`${stay[2].charAt(0).toUpperCase()+stay[2].slice(1).toLowerCase()}-cruise stay`,`${stay[1]} night${Number(stay[1])===1?"":"s"}`);
+    add("Hotel",stay[3]);
+    add("Location",stay[4]||stay[5]);
+  }
+  add("Airport",p._poaDepartureAirport||p.flyingFrom);
+  if(/transfer/i.test(source)) add("Transfers",inclusionLines.filter(line=>/transfer/i.test(line)).join("\n"));
+  if(/luggage|baggage/i.test(source)) add("Luggage",inclusionLines.filter(line=>/luggage|baggage/i.test(line)).join("\n"));
+  if(/flight/i.test(source)) add("Flights",inclusionLines.filter(line=>/flight/i.test(line)).join("\n"));
+  if(/drinks?/i.test(source)) add("Drinks package",inclusionLines.filter(line=>/drinks?/i.test(line)).join("\n"));
+  if(/wi[-\s]?fi/i.test(source)) add("Wi-Fi",inclusionLines.filter(line=>/wi[-\s]?fi/i.test(line)).join("\n"));
+  if(/gratuities|tips/i.test(source)) add("Gratuities",inclusionLines.filter(line=>/gratuities|tips/i.test(line)).join("\n"));
+  return extras.filter((item,index,self)=>self.findIndex(other=>other.label===item.label&&other.value===item.value)===index);
+}
+function renderParserIntelligencePanel(result,rawText,index,quality){
+  const parsed=(result&&result.parsed)||{};
+  const score=clampParseConfidenceScore((quality&&quality.score)||(result&&result.score));
+  const detected=getParserIntelligenceDetectedFields(parsed);
+  const inclusions=getParserIntelligenceInclusionLines(parsed);
+  const extras=getParserIntelligenceExtras(parsed,inclusions);
+  const missing=[];
+  [["Cruise line",parsed.operatorKey],["Cruise title",parsed.name],["Ship",parsed.ship],["Sailing date",parsed.day&&parsed.month],["Nights",parsed.nights],["Board basis",parsed.boardlbl||parsed.board],["Price",parsed.price]].forEach(item=>{ if(!item[1]) missing.push(item[0]); });
+  if(inclusions.some(line=>/hotel|pre[-\s]*cruise|post[-\s]*cruise/i.test(line))&&!extras.some(item=>item.label==="Hotel")) missing.push("Hotel name");
+  const operatorName=(parsed.operatorKey&&OPERATOR_HEADERS&&OPERATOR_HEADERS[parsed.operatorKey]&&OPERATOR_HEADERS[parsed.operatorKey].name)||"Unknown cruise line";
+  const item=(label,value,icon="✓",warn=false)=>`<div class="parser-intelligence-item${warn?" parser-intelligence-warning":""}"><span class="parser-intelligence-icon">${icon}</span><span><span class="parser-intelligence-label">${escapeParserIntelligenceHtml(label)}</span><span class="parser-intelligence-value">${escapeParserIntelligenceHtml(value)}</span></span></div>`;
+  const section=(heading,html,empty)=>`<div class="parser-intelligence-section"><div class="parser-intelligence-heading">${escapeParserIntelligenceHtml(heading)}</div>${html||`<div class="parser-intelligence-empty">${escapeParserIntelligenceHtml(empty||"None detected")}</div>`}</div>`;
+  const qa=missing.length?item("Confidence",`${score}%`,"⚠",true)+item("Missing",missing.map(value=>`• ${value}`).join("\n"),"⚠",true)+item("Why confidence changed",`Confidence reduced because ${missing.join(", ")} ${missing.length===1?"is":"are"} missing or incomplete.`,"⚠",true):item("Confidence",`${score}%`)+`<div class="parser-intelligence-empty">No missing fields.</div>`;
+  const cardText=inclusions.join("\n");
+  return `<details class="parser-intelligence-details"><summary>Parser Intelligence</summary><div class="parser-intelligence-panel">`+
+    section("Offer Summary",item(`Offer ${index+1}`,`${operatorName}\nConfidence ${score}%`))+
+    section("Detected",detected.map(row=>item(row.label,row.value)).join(""),"No detected fields.")+
+    section("Inclusions",inclusions.map(line=>item("",line)).join(""),"No inclusions detected.")+
+    section("Extras",extras.map(row=>item(row.label,row.value)).join(""),"No pre-cruise stay detected")+
+    section("QA",qa)+
+    section("Final Card Text",cardText?`<div class="parser-intelligence-card-text">${escapeParserIntelligenceHtml(cardText)}</div>`:"","No inclusion text will appear on the final card.")+
+    `</div></details>`;
+}
+
 function performMultiOfferImport(replaceConfirmed){
   const raw=(document.getElementById("multi-offer-paste")||{}).value||"";
   const importBlocks=getMultiOfferImportBlocks(raw);
@@ -7675,7 +7765,8 @@ function performMultiOfferImport(replaceConfirmed){
     const label=ok?`✓ Offer ${index+1} Ready`:`⚠ Offer ${index+1} Review needed`;
     const cls=ok&&!qaWarnings?'high':'partial';
     const warningText=qaWarnings?` · ${qaWarnings} QA warning${qaWarnings===1?"":"s"}`:"";
-    return `<div class="multi-offer-status-row" role="button" tabindex="0" title="Jump to Offer" onclick="jumpToMultiOfferStatus(${index})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();jumpToMultiOfferStatus(${index});}"><span class="multi-offer-status-label">${label}</span> <span class="parse-result ${cls}">Confidence ${clampParseConfidenceScore(quality.score)} · ${missing} missing fields${warningText}</span></div>`;
+    const intelligence=typeof renderParserIntelligencePanel==="function"?renderParserIntelligencePanel(result,item.block,index,quality):"";
+    return `<div class="multi-offer-status-row" role="button" tabindex="0" title="Jump to Offer" aria-label="Offer ${index+1} Loaded - Jump to Offer" onclick="jumpToMultiOfferStatus(${index})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();jumpToMultiOfferStatus(${index});}"><span class="multi-offer-status-label">${label}</span> <span class="parse-result ${cls}">Confidence ${clampParseConfidenceScore(quality.score)} · ${missing} missing fields${warningText}</span></div>${intelligence}`;
   });
   if(blocks.length>4) rows.push(`<div>4 offers loaded. ${blocks.length-4} additional offers ignored.</div>`);
   setMultiOfferStatus(rows.join(""),parsedResults.some(item=>item.result.confidence!=='high'||getMultiOfferImportQualityResult(item.result,item.block).qaWarnings)?'partial':'high');
