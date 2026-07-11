@@ -438,13 +438,14 @@ test('Multi Offer Import manual clear removes stale result rows and imported off
 test('Multi Offer Import result rows are clickable navigation shortcuts without buttons', () => {
   const performMultiOfferImport = extractFunction('performMultiOfferImport');
   assert.match(performMultiOfferImport, /class="multi-offer-status-row"/);
-  assert.match(performMultiOfferImport, /title="Jump to Offer"/);
+  assert.match(performMultiOfferImport, /title="Open Offer \$\{index\+1\}"/);
+  assert.match(performMultiOfferImport, /title="Open this offer"/);
   assert.match(performMultiOfferImport, /onclick="jumpToMultiOfferStatus\(\$\{index\}\)"/);
   assert.doesNotMatch(performMultiOfferImport, /<button class="abtn btn-compact" type="button" onclick="cur=\$\{index\}/);
   assert.match(html, /\.multi-offer-status-row\{[^}]*cursor:pointer;/);
 });
 
-test('jumpToMultiOfferStatus reuses tab selection, switches to Single view, opens Offer Details, and scrolls it into view', () => {
+test('jumpToMultiOfferStatus reuses tab selection, switches to Single view, and preserves sidebar scroll position', () => {
   const calls = [];
   const offerDetailsHeader = {
     classList: {
@@ -487,10 +488,7 @@ test('jumpToMultiOfferStatus reuses tab selection, switches to Single view, open
   assert.equal(context.jumpToMultiOfferStatus(2), true);
   assert.deepEqual(calls, [
     ['sv', 2],
-    ['setView', 'single'],
-    ['toggle-header', 'collapsed', false],
-    ['toggle-body', 'hidden', false],
-    ['scroll', 'start']
+    ['setView', 'single']
   ]);
 });
 
