@@ -775,10 +775,10 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .cc .cname,.cc .incl,.cc .sname,.cc .pbasis{max-width:1000px;margin-left:auto;margin-right:auto;}
 .cc .price-block{max-width:1000px;}
 .cc .cname{font-size:74px;font-weight:300;color:var(--operator-text,var(--navy));line-height:1.0;margin-bottom:6px;}
-.cc .incl{font-size:40px;font-weight:300;color:#555;line-height:1.22;margin:0 auto 20px;padding:0 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:0;align-items:center;justify-content:center;text-align:center;}
+.cc .incl{font-size:40px;font-weight:300;color:#555;line-height:1.22;margin:0 auto 20px;padding:0 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;align-items:center;justify-content:center;text-align:center;}
 .cc .incl-line{display:block;width:100%;max-width:100%;line-height:1.22;margin-inline:auto;text-align:center;box-sizing:border-box;font-size:inherit;letter-spacing:inherit;white-space:normal;}
-.cc .incl-component{display:inline;white-space:normal;}
-.cc .incl-segment{display:inline;white-space:normal;}
+.cc .incl-component{display:block;width:100%;box-sizing:border-box;margin-inline:auto;text-align:center;white-space:normal;}
+.cc .incl-segment{display:block;width:100%;box-sizing:border-box;margin-inline:auto;text-align:center;white-space:normal;}
 .cc .cabin-phrase,.cc .no-break{white-space:nowrap;}
 .cc .sname{font-size:40px;font-weight:300;color:var(--operator-accent,var(--gold));line-height:1.2;margin-bottom:16px;}
 .cc .price-block{display:inline-flex;flex-direction:column;align-items:center;}
@@ -7729,6 +7729,8 @@ function normaliseInclusionEditorialText(value,options){
     .replace(/[.]+$/,"")
     .trim();
   if(/\b(?:pre|post)[-\s]*cruise\b/i.test(text)&&/\bstay\b/i.test(text)) text=text.replace(/^includes\s+/i,"").trim();
+  if(/^includes\b/i.test(text)) text=text.replace(/^includes\b/i,"Includes");
+  if(/^luggage and one-way hotel transfer$/i.test(text)) text=`Includes ${text.replace(/^luggage/i,"luggage")}`;
   if(options&&options.sentence&&text&&!/[.!?]$/.test(text)) text+=".";
   return text;
 }
@@ -9066,6 +9068,8 @@ function normaliseCardInclusionComponent(value){
     .replace(/^\s*(?:[-–—•·,]+\s*)+|(?:\s*[-–—•·,]+)+\s*$/g,"")
     .trim();
   if(/\b(?:pre|post)[-\s]*cruise\b/i.test(text)&&/\bstay\b/i.test(text)) text=text.replace(/^includes\s+/i,"").trim();
+  if(/^includes\b/i.test(text)) text=text.replace(/^includes\b/i,"Includes");
+  if(/^luggage and one-way hotel transfer$/i.test(text)) text=`Includes ${text.replace(/^luggage/i,"luggage")}`;
   return text.replace(/[.]+$/,"").trim();
 }
 function classifyCardInclusionComponent(value){
@@ -9198,18 +9202,7 @@ function packCardInclusionComponents(components,options){
   return lines;
 }
 function groupCardInclusionRenderLines(components,options){
-  const ordered=orderCardInclusionComponents(components);
-  const preCruise=ordered.filter(component=>component.type==="precruise");
-  const groups=[
-    ordered.filter(component=>["luggage-transfer","luggage","transfer"].includes(component.type)),
-    ordered.filter(component=>component.type==="flight"),
-    ordered.filter(component=>component.type==="cabin"),
-    ordered.filter(component=>component.type!=="precruise"&&! ["luggage-transfer","luggage","transfer","flight","cabin"].includes(component.type))
-  ];
-  const lines=[];
-  groups.forEach(group=>packCardInclusionComponents(group,options).forEach(line=>lines.push(line)));
-  preCruise.forEach(component=>lines.push([component]));
-  return lines;
+  return orderCardInclusionComponents(components).map(component=>[component]);
 }
 function renderCardInclusionLayout(value,options){
   const html=!!(options&&options.html);
@@ -9218,7 +9211,9 @@ function renderCardInclusionLayout(value,options){
     if(!html) return text;
     let content=component.type==="cabin" ? text.replace(/ /g,"&nbsp;") : text;
     if(/\bFREE return taxi transfer from home to port\*$/i.test(text)){
-      content=text.replace(/to port\*$/i,match=>`<span class="no-break">${match.replace(/ /g,"&nbsp;")}</span>`);
+      content=text.replace(/home to port\*$/i,match=>`<span class="no-break">${match}</span>`);
+    }else if(/\bHarbour Rocks Hotel, Sydney\b/i.test(text)){
+      content=text.replace(/Harbour Rocks Hotel, Sydney/i,match=>`<span class="no-break">${match}</span>`);
     }
     const phraseClass=component.type==="cabin"?" cabin-phrase":"";
     return `<span class="incl-component${phraseClass}">${content}</span>`;
@@ -9227,9 +9222,7 @@ function renderCardInclusionLayout(value,options){
     const rendered=line.map(renderComponent);
     if(!html) return rendered.join(CARD_INCLUSION_SEPARATOR);
     if(!rendered.length) return `<span class="incl-line"></span>`;
-    const first=rendered[0];
-    const trailing=rendered.slice(1).map(component=>`<span class="incl-segment">&nbsp;-&nbsp;${component}</span>`).join("");
-    return `<span class="incl-line">${first}${trailing}</span>`;
+    return `<span class="incl-line">${rendered.join("")}</span>`;
   };
   const componentLines=groupCardInclusionRenderLines(buildCardInclusionComponents(value),options);
   const lines=componentLines.map(renderLine);

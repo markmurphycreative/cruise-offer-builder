@@ -1858,7 +1858,7 @@ test('PMU renderer keeps exact four-offer inclusions visible and immutable after
   ]);
 
   const original = parsedOffers.map(offer => offer.incl);
-  const visibleText = html => html.replace(/<[^>]+>/g, '\n').replace(/&nbsp;/g, ' ').replace(/[ \t]*\n[ \t]*/g, '\n').replace(/home\nto port\*/g, 'home to port*').replace(/\n+/g, '\n').trim();
+  const visibleText = html => html.replace(/<[^>]+>/g, '\n').replace(/&nbsp;/g, ' ').replace(/[ \t]*\n[ \t]*/g, '\n').replace(/home\nto port\*/g, 'home to port*').replace(/from\nhome to port\*/g, 'from home to port*').replace(/at\nHarbour Rocks Hotel/g, 'at Harbour Rocks Hotel').replace(/\n+/g, '\n').trim();
 
   for (const view of ['single', 'all', 'email']) {
     for (const offer of [celebrity, fred]) {
@@ -1879,12 +1879,12 @@ test('PMU renderer keeps exact four-offer inclusions visible and immutable after
   assert.doesNotMatch(fred.ports, /selected drinks|taxi transfer/i);
 
   const celebrityHtml = harness.context.renderCardInclusion(celebrity.incl);
-  assert.match(celebrityHtml, /^<span class="incl-line"><span class="incl-component">Includes luggage and one-way hotel transfer<\/span><\/span><span class="incl-line"><span class="incl-component">3-night pre-cruise stay at Harbour Rocks Hotel, Sydney<\/span><\/span>$/);
+  assert.match(celebrityHtml, /^<span class="incl-line"><span class="incl-component">Includes luggage and one-way hotel transfer<\/span><\/span><span class="incl-line"><span class="incl-component">3-night pre-cruise stay at <span class="no-break">Harbour Rocks Hotel, Sydney<\/span><\/span><\/span>$/);
   assert.match(html, /\.cc \.incl\{[^}]*display:flex;flex-direction:column;[^}]*align-items:center;[^}]*text-align:center;/);
   assert.match(html, /\.cc \.incl-line\{display:block;width:100%;max-width:100%;line-height:1\.22;margin-inline:auto;text-align:center;box-sizing:border-box;font-size:inherit;letter-spacing:inherit;white-space:normal;\}/);
 
   const fredHtml = harness.context.renderCardInclusion(fred.incl);
-  assert.match(fredHtml, /FREE return taxi transfer from home <span class="no-break">to&nbsp;port\*<\/span>/);
+  assert.match(fredHtml, /FREE return taxi transfer from <span class="no-break">home to port\*<\/span>/);
   assert.equal(visibleText(fredHtml).includes('FREE return taxi transfer from home to port*'), true);
   assert.doesNotMatch(fredHtml, />port\*<\/span>/);
 });
