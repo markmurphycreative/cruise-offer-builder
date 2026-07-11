@@ -7728,8 +7728,13 @@ function normaliseInclusionEditorialText(value,options){
     .replace(/\s+([,.;:!?])/g,"$1")
     .replace(/[.]+$/,"")
     .trim();
+  if(/\b(?:pre|post)[-\s]*cruise\b/i.test(text)&&/\bstay\b/i.test(text)) text=text.replace(/^includes\s+/i,"").trim();
   if(options&&options.sentence&&text&&!/[.!?]$/.test(text)) text+=".";
   return text;
+}
+function isHotelStayInclusionLine(value){
+  const text=String(value||"").trim();
+  return /\b(?:pre|post)[-\s]*cruise\b/i.test(text)&&/\bstay\b/i.test(text);
 }
 function extractCruiseNights(lines,raw){
   const sourceLines=Array.isArray(lines)?lines:String(raw||"").split(/\n/).map(line=>line.trim()).filter(Boolean);
@@ -9056,10 +9061,12 @@ const CARD_INCLUSION_CABIN_PHRASES=[
 ];
 function normaliseCardInclusionComponent(value){
   const displayText=text=>(typeof normaliseKnownDisplayText==="function"?normaliseKnownDisplayText(text):String(text||"").replace(/\s*@\s*/g," at ").replace(/\bLaspezia\b/gi,"La Spezia").replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca").replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne").replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing").replace(/[ \t]{2,}/g," ").trim());
-  return displayText(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(value):String(value||""))
+  let text=displayText(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(value):String(value||""))
     .replace(/[\t ]+/g," ")
     .replace(/^\s*(?:[-–—•·,]+\s*)+|(?:\s*[-–—•·,]+)+\s*$/g,"")
     .trim();
+  if(/\b(?:pre|post)[-\s]*cruise\b/i.test(text)&&/\bstay\b/i.test(text)) text=text.replace(/^includes\s+/i,"").trim();
+  return text.replace(/[.]+$/,"").trim();
 }
 function classifyCardInclusionComponent(value){
   const text=normaliseCardInclusionComponent(value);

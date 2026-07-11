@@ -1650,7 +1650,7 @@ Includes 3-night pre-cruise stay @ Harbour Rocks Hotel Sydney - MGallery Collect
   assert.match(result.parsed.incl, /Includes selected drinks with lunch & dinner/);
   assert.match(result.parsed.incl, /Includes return transfers/);
   assert.doesNotMatch(result.parsed.incl, /return airport transfers/);
-  assert.match(result.parsed.incl, /Includes 3-night pre-cruise stay at Harbour Rocks Hotel, Sydney/);
+  assert.match(result.parsed.incl, /3-night pre-cruise stay at Harbour Rocks Hotel, Sydney/);
   assert.doesNotMatch(result.parsed.incl, /MGallery Collection/);
   assert.ok(result.parsed.incl.split('\n').every(line => !line.endsWith('.')));
   assert.match(result.parsed.ports, /Sydney/);
@@ -1701,7 +1701,7 @@ Includes 3-night pre-cruise stay @ Harbour Rocks Hotel Sydney - MGallery Collect
   ]);
   assert.doesNotMatch(result.parsed.ports, /MGallery Collection|Harbour Rocks Hotel|Hotel Sydney|luggage|transfer|hotel|pre-cruise|collection/i);
   assert.match(result.parsed.incl, /Includes luggage and one-way hotel transfer/);
-  assert.match(result.parsed.incl, /Includes 3-night pre-cruise stay at Harbour Rocks Hotel, Sydney/);
+  assert.match(result.parsed.incl, /3-night pre-cruise stay at Harbour Rocks Hotel, Sydney/);
   assert.ok(result.parsed.incl.split('\n').every(line => !line.endsWith('.')));
 });
 
@@ -1723,6 +1723,10 @@ FREE return taxi transfer from home to port (subject to conditions)`, { renderIn
 
   assert.match(result.parsed.incl, /Includes selected drinks with lunch & dinner/);
   assert.match(result.parsed.incl, /FREE return taxi transfer from home to port\*/);
+  assert.deepEqual(result.parsed.incl.split('\n'), [
+    'Includes selected drinks with lunch & dinner',
+    'FREE return taxi transfer from home to port*'
+  ]);
   assert.doesNotMatch(result.parsed.incl, /\(subject to conditions\)/i);
   assert.ok(result.parsed.incl.split('\n').every(line => !line.endsWith('.')));
   assert.equal((result.parsed.incl.match(/\*/g) || []).length, 1);
@@ -1803,7 +1807,7 @@ test('Paste Offer exact PMU four-offer source format preserves itinerary ports a
     },
     {
       operator: 'celebrity', name: 'Australia, Wine & Tasmania', nights: '10', airport: 'Newcastle',
-      incl: 'Includes luggage and one-way hotel transfer\nIncludes 3-night pre-cruise stay at Harbour Rocks Hotel, Sydney',
+      incl: 'Includes luggage and one-way hotel transfer\n3-night pre-cruise stay at Harbour Rocks Hotel, Sydney',
       ports: ['Sydney', 'Hobart, Tasmania', 'Kangaroo Island, Penneshaw', 'Adelaide', 'Melbourne', 'Eden', 'Sydney']
     },
     {
@@ -1877,8 +1881,10 @@ Includes 3-night pre-cruise stay @ Harbour Rocks Hotel Sydney - MGallery Collect
   assert.equal(parsed._poaDepartureAirport, 'Newcastle');
   assert.deepEqual(inclusionArray, [
     'Includes luggage and one-way hotel transfer',
-    'Includes 3-night pre-cruise stay at Harbour Rocks Hotel, Sydney'
+    '3-night pre-cruise stay at Harbour Rocks Hotel, Sydney'
   ]);
+  assert.equal(inclusionArray.filter(line => /^Includes\b/.test(line)).length, 1);
+  assert.ok(inclusionArray.every(line => !line.endsWith('.')));
   assert.doesNotMatch(parsed.ports, /Harbour Rocks Hotel|MGallery Collection/);
   assert.deepEqual(parsed.ports.split(' • '), [
     'Sydney',
@@ -1890,6 +1896,7 @@ Includes 3-night pre-cruise stay @ Harbour Rocks Hotel Sydney - MGallery Collect
     'Sydney'
   ]);
   assert.equal(parsed.ports, 'Sydney • Hobart, Tasmania • Kangaroo Island, Penneshaw • Adelaide • Melbourne • Eden • Sydney');
-  assert.doesNotMatch(parsed.ports, /Harbour Rocks Hotel|MGallery Collection/);
-  assert.match(renderedInclusions, /Includes 3-night pre-cruise stay at Harbour Rocks Hotel, Sydney/);
+  assert.doesNotMatch(parsed.ports, /Harbour Rocks Hotel|MGallery Collection|luggage|transfer|pre-cruise/i);
+  assert.match(renderedInclusions, /3-night pre-cruise stay at Harbour Rocks Hotel, Sydney/);
+  assert.doesNotMatch(renderedInclusions, /Includes 3-night pre-cruise stay/);
 });
