@@ -1840,6 +1840,50 @@ test('Paste Offer exact PMU four-offer source format preserves itinerary ports a
   assert.doesNotMatch(parsedOffers[3].incl, /subject to conditions/i);
 });
 
+
+test('PMU renderer keeps exact four-offer inclusions visible and immutable after repeated render passes', () => {
+  const harness = createHarness([], 0, { hasParsePreviewModal: false });
+  const blocks = EXACT_FOUR_OFFER_SOURCE.split(/\n\s*\n(?=(?:Celebrity Cruises|Royal Caribbean|Fred\. Olsen Cruise Lines)\b)/);
+  const parsedOffers = blocks.map(block => harness.context.parseOfferText(block, { renderIntelligence: false }).parsed);
+  const celebrity = parsedOffers.find(offer => offer.operatorKey === 'celebrity');
+  const fred = parsedOffers.find(offer => offer.operatorKey === 'fred');
+
+  assert.deepEqual(celebrity.incl.split('\n'), [
+    'Includes luggage and one-way hotel transfer',
+    '3-night pre-cruise stay at Harbour Rocks Hotel, Sydney'
+  ]);
+  assert.deepEqual(fred.incl.split('\n'), [
+    'Includes selected drinks with lunch & dinner',
+    'FREE return taxi transfer from home to port*'
+  ]);
+
+  const original = parsedOffers.map(offer => offer.incl);
+  const visibleText = html => html.replace(/<[^>]+>/g, '\n').replace(/&nbsp;/g, ' ').replace(/\n+/g, '\n').trim();
+
+  for (const view of ['single', 'all', 'email']) {
+    for (const offer of [celebrity, fred]) {
+      const firstPass = harness.context.renderCardInclusion(offer.incl);
+      const measuredLines = harness.context.groupCardInclusionRenderLines(
+        harness.context.buildCardInclusionComponents(offer.incl),
+        { measureText: text => harness.context.estimateCardInclusionTextWidth(text) }
+      );
+      assert.ok(measuredLines.length >= 2, `${offer.operatorKey} should keep multiple inclusion render lines in ${view}`);
+      const secondPass = harness.context.renderCardInclusion(offer.incl);
+      assert.equal(secondPass, firstPass, `${offer.operatorKey} inclusion rendering should be stable in ${view}`);
+      assert.match(visibleText(secondPass), new RegExp(offer.incl.split('\n').map(line => line.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('[\\s\\S]*')));
+    }
+  }
+
+  assert.deepEqual(parsedOffers.map(offer => offer.incl), original);
+  assert.doesNotMatch(celebrity.ports, /Harbour Rocks|hotel transfer/i);
+  assert.doesNotMatch(fred.ports, /selected drinks|taxi transfer/i);
+
+  const celebrityHtml = harness.context.renderCardInclusion(celebrity.incl);
+  assert.match(celebrityHtml, /^<span class="incl-line"><span class="incl-component">Includes luggage and one-way hotel transfer<\/span><\/span><span class="incl-line"><span class="incl-component precruise-phrase">3-night pre-cruise stay at Harbour Rocks Hotel, Sydney<\/span><\/span>$/);
+  assert.match(html, /\.cc \.incl\{[^}]*display:flex;flex-direction:column;[^}]*align-items:center;[^}]*text-align:center;/);
+  assert.match(html, /\.cc \.incl-line\{display:block;width:100%;max-width:100%;line-height:1\.22;margin:0 auto;text-align:center;\}/);
+});
+
 test('PMU regression: structured Celebrity offer keeps consecutive hotel inclusion out of itinerary and card destinations', () => {
   const raw = `Celebrity Cruises
 

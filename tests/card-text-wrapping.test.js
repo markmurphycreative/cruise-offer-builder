@@ -420,6 +420,76 @@ test('subtitle renders flights, transfers, and cabin as one compact grouped incl
   assert.match(html, /\.cc \.incl\{[^}]*line-height:1\.22;[^}]*margin:0 auto 20px;[^}]*display:flex;flex-direction:column;gap:0;/);
 });
 
+test('PMU renderer preserves exact Celebrity and Fred Olsen inclusions through repeated layout passes', () => {
+  const context = {};
+  vm.createContext(context);
+  vm.runInContext([
+    extractConstant('CARD_INCLUSION_SEPARATOR'),
+    extractConstant('CARD_INCLUSION_SAFE_WIDTH'),
+    extractConstant('CARD_INCLUSION_FONT'),
+    'const CARD_INCLUSION_CABIN_PHRASES=["Ocean View Cabin","Inside Stateroom","Oceanview Stateroom","Balcony Stateroom","Infinite Veranda","Concierge Class","Outside Cabin","Balcony Cabin","Inside Cabin","Junior Suite","AquaClass","Suite"];',
+    'function escapeRegExp(value){return String(value).replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&");}',
+    'function removeSubjectToConditions(value){return String(value||"").replace(/\\s*\\(subject to conditions\\)\\s*$/i,"*");}',
+    extractFunction('normaliseCardInclusionComponent'),
+    extractFunction('classifyCardInclusionComponent'),
+    extractFunction('makeCardInclusionComponent'),
+    extractFunction('splitCardInclusionLineComponents'),
+    extractFunction('normaliseFlightInclusionDisplay'),
+    extractFunction('buildCardInclusionComponents'),
+    extractFunction('orderCardInclusionComponents'),
+    extractFunction('validateCardInclusionLines'),
+    extractFunction('estimateCardInclusionTextWidth'),
+    extractFunction('getCardInclusionMeasureText'),
+    extractFunction('packCardInclusionComponents'),
+    extractFunction('groupCardInclusionRenderLines'),
+    extractFunction('renderCardInclusionLayout'),
+    extractFunction('renderCardInclusion')
+  ].join('\n'), context);
+
+  const celebrityInclusions = [
+    'Includes luggage and one-way hotel transfer',
+    '3-night pre-cruise stay at Harbour Rocks Hotel, Sydney'
+  ];
+  const fredInclusions = [
+    'Includes selected drinks with lunch & dinner',
+    'FREE return taxi transfer from home to port*'
+  ];
+  const offers = [
+    { operator: 'celebrity', incl: celebrityInclusions.join('\n'), ports: 'Sydney • Hobart, Tasmania • Kangaroo Island, Penneshaw • Adelaide • Melbourne • Eden • Sydney' },
+    { operator: 'fred', incl: fredInclusions.join('\n'), ports: 'Saint Malo • Lisbon • Motril • Alicante • Barcelona • Gibraltar • Cadiz • La Coruna, Galicia' }
+  ];
+  const original = offers.map(offer => offer.incl);
+  const visibleText = html => html.replace(/<[^>]+>/g, '\n').replace(/&nbsp;/g, ' ').replace(/\n+/g, '\n').trim();
+
+  for (const view of ['single', 'all', 'email']) {
+    for (const offer of offers) {
+      const firstPass = context.renderCardInclusion(offer.incl);
+      const measuredLines = context.groupCardInclusionRenderLines(context.buildCardInclusionComponents(offer.incl), {
+        measureText: text => context.estimateCardInclusionTextWidth(text)
+      });
+      assert.ok(measuredLines.length >= 2, `${offer.operator} should still have measured render lines in ${view}`);
+      const secondPass = context.renderCardInclusion(offer.incl);
+      assert.equal(firstPass, secondPass, `${offer.operator} render should be stable in ${view}`);
+      const text = visibleText(secondPass);
+      const expected = offer.operator === 'celebrity' ? celebrityInclusions : fredInclusions;
+      expected.forEach(line => assert.match(text, new RegExp(line.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')), `${line} visible in ${view}`));
+      assert.doesNotMatch(offer.ports, /Harbour Rocks|hotel transfer|taxi transfer|selected drinks/i);
+    }
+  }
+
+  assert.deepEqual(offers.map(offer => offer.incl), original);
+
+  const celebrityHtml = context.renderCardInclusion(offers[0].incl);
+  assert.match(celebrityHtml, /^<span class="incl-line"><span class="incl-component">Includes luggage and one-way hotel transfer<\/span><\/span><span class="incl-line"><span class="incl-component precruise-phrase">3-night pre-cruise stay at Harbour Rocks Hotel, Sydney<\/span><\/span>$/);
+  assert.match(html, /\.cc \.incl\{[^}]*display:flex;flex-direction:column;[^}]*align-items:center;[^}]*text-align:center;/);
+  assert.match(html, /\.cc \.incl-line\{display:block;width:100%;max-width:100%;line-height:1\.22;margin:0 auto;text-align:center;\}/);
+  assert.match(html, /\.cc \.incl-component\{display:inline;white-space:normal;\}/);
+
+  const fredText = visibleText(context.renderCardInclusion(offers[1].incl));
+  assert.match(fredText, /Includes selected drinks with lunch & dinner/);
+  assert.match(fredText, /FREE return taxi transfer from home to port\*/);
+});
+
 function extractFunction(name) {
   const start = html.indexOf(`function ${name}(`);
   assert.notEqual(start, -1, `Could not find ${name}`);
