@@ -304,6 +304,11 @@ test("email and all-card previews adjust You'll Visit height before measuring ce
   assert.match(renderPreviewMode, /if\(currentCtaSettings\.enabled\) c\.innerHTML = renderOfferWithOptionalCtaHTML\(d \|\| \{\}, currentCtaSettings\);\n      adjustVisitSectionHeights\(c\);[\s\S]*?setAllPreviewCanvasBox\(gridW, fullH, allScale\);/);
 });
 
+test('card inclusion layout has fixed card and subtitle widths across preview wrappers', () => {
+  assert.match(html, /\.cc\{width:1200px;min-width:1200px;max-width:1200px;box-sizing:border-box;/);
+  assert.match(html, /\.cc \.incl\{width:1000px;font-size:40px;[^}]*box-sizing:border-box;display:flex;/);
+});
+
 test('export and preview centring use fixed 1200 card width without changing export dimensions', () => {
   assert.match(html, /scaler\.style\.width = '1200px';/);
   assert.match(html, /const exportWidth = 1200;/);
