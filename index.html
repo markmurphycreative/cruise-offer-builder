@@ -7515,7 +7515,7 @@ function getMultiOfferImportBlocks(raw){
       const trimmed=line.trim();
       if(!trimmed){ blankRun+=1; current.push(line); return; }
       const currentBlock=current.join("\n").trim();
-      const shouldSplit=currentBlock && (blankRun>=2 || (isLikelyOfferStartLine(trimmed)&&hasAccumulatedOfferEvidence(currentBlock)));
+      const shouldSplit=currentBlock && isLikelyOfferStartLine(trimmed) && (blankRun>=2 || hasAccumulatedOfferEvidence(currentBlock));
       if(shouldSplit){ blocks.push(cleanBlock(current.join("\n"))); current=[]; }
       blankRun=0;
       current.push(line);
@@ -9222,7 +9222,11 @@ function renderCardInclusionLayout(value,options){
     return `<span class="incl-line">${first}${trailing}</span>`;
   };
   const measureText=getCardInclusionMeasureText(options);
-  const lines=groupCardInclusionRenderLines(buildCardInclusionComponents(value),options).map(renderLine).filter(line=>measureText(String(line).replace(/<[^>]+>/g,"").replace(/&nbsp;/g," "))<=CARD_INCLUSION_SAFE_WIDTH);
+  const componentLines=groupCardInclusionRenderLines(buildCardInclusionComponents(value),options);
+  const lines=componentLines.map(line=>({components:line,rendered:renderLine(line)})).filter(item=>{
+    if((item.components||[]).some(component=>component&&component.type==="precruise")) return true;
+    return measureText(String(item.rendered).replace(/<[^>]+>/g,"").replace(/&nbsp;/g," "))<=CARD_INCLUSION_SAFE_WIDTH;
+  }).map(item=>item.rendered);
   if(!validateCardInclusionLines(lines.map(line=>String(line).replace(/<[^>]+>/g,"").replace(/&nbsp;/g," ")))) return "";
   return lines.join(html?"":"\n");
 }
