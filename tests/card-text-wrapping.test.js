@@ -244,7 +244,7 @@ test("You'll Visit section uses fixed stacked spacing and grows only for extra p
     html,
     /\.cc \.vsec\{width:1200px;min-height:536px;height:auto;background:var\(--operator-bg,var\(--navy\)\);display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;padding:110px 80px;text-align:center;overflow:visible;position:relative;\}/
   );
-  assert.match(html, /\.cc \.vtit\{width:100%;font-size:68px;font-weight:300;color:#fff;margin-bottom:26px;letter-spacing:\.03em;line-height:1\.1;text-align:center;\}/);
+  assert.match(html, /\.cc \.vtit\{width:100%;font-size:68px;font-weight:300;color:var\(--text-inverse\);margin-bottom:26px;letter-spacing:\.03em;line-height:1\.1;text-align:center;\}/);
   assert.doesNotMatch(html, /\.cc \.vsec\{[^}]*(?:^|;)height:536px/);
   assert.doesNotMatch(html, /\.cc \.vsec\{[^}]*max-height:536px/);
   assert.doesNotMatch(html, /\.cc \.vpts\{[^}]*font-size:(?!40px)/);
@@ -301,7 +301,7 @@ test("single preview recentres after normal and long You'll Visit height adjustm
 test("email and all-card previews adjust You'll Visit height before measuring centred scaler", () => {
   const renderPreviewMode = extractFunction('renderPreviewMode');
   assert.match(renderPreviewMode, /cardWrap\.innerHTML = renderOfferWithOptionalCtaHTML\(d, getCtaSettingsFromUI\(\)\);\n      adjustVisitSectionHeights\(cardWrap\);[\s\S]*?setScalerBox\(1200, out\.offsetHeight \|\| stackWrap\.offsetHeight, baseScale \* EMAIL_PREVIEW_SCALE\);/);
-  assert.match(renderPreviewMode, /if\(getCtaSettingsFromUI\(\)\.enabled\) c\.innerHTML = renderOfferWithOptionalCtaHTML\(d \|\| \{\}, getCtaSettingsFromUI\(\)\);\n      adjustVisitSectionHeights\(c\);[\s\S]*?setAllPreviewCanvasBox\(gridW, fullH, allScale\);/);
+  assert.match(renderPreviewMode, /if\(currentCtaSettings\.enabled\) c\.innerHTML = renderOfferWithOptionalCtaHTML\(d \|\| \{\}, currentCtaSettings\);\n      adjustVisitSectionHeights\(c\);[\s\S]*?setAllPreviewCanvasBox\(gridW, fullH, allScale\);/);
 });
 
 test('export and preview centring use fixed 1200 card width without changing export dimensions', () => {
@@ -364,7 +364,7 @@ test('itinerary line groups never start or end with bullet separators when desti
 test('white information panel narrows editorial copy, grows naturally, and centres the content group', () => {
   assert.match(
     html,
-    /\.cc \.isec\{width:1200px;height:auto;min-height:0;overflow:visible;background:#fff;padding:70px 62px 92px;text-align:center;\}/
+    /\.cc \.isec\{width:1200px;height:auto;min-height:0;overflow:visible;background:var\(--surface\);padding:70px 62px 92px;text-align:center;\}/
   );
   assert.match(html, /\.cc \.isec-content\{position:relative;top:0;\}/);
   assert.match(html, /<div class="isec"><div class="isec-content"><div class="cname">\$\{name\}<\/div>/);
@@ -417,7 +417,7 @@ test('subtitle renders flights, transfers, and cabin as one compact grouped incl
   assert.doesNotMatch(rendered, /<br>/);
   assert.match(rendered, /<span class="incl-line">/);
   assert.match(rendered, /<span class="incl-component cabin-phrase">Inside&nbsp;Cabin<\/span>/);
-  assert.match(html, /\.cc \.incl\{[^}]*line-height:1\.22;[^}]*margin:0 auto 20px;[^}]*display:flex;flex-direction:column;gap:0;/);
+  assert.match(html, /\.cc \.incl\{[^}]*line-height:1\.22;[^}]*margin:0 auto 20px;[^}]*display:flex;flex-direction:column;gap:2px;/);
 });
 
 test('PMU renderer preserves exact Celebrity and Fred Olsen inclusions through repeated layout passes', () => {
@@ -459,7 +459,7 @@ test('PMU renderer preserves exact Celebrity and Fred Olsen inclusions through r
     { operator: 'fred', incl: fredInclusions.join('\n'), ports: 'Saint Malo • Lisbon • Motril • Alicante • Barcelona • Gibraltar • Cadiz • La Coruna, Galicia' }
   ];
   const original = offers.map(offer => offer.incl);
-  const visibleText = html => html.replace(/<[^>]+>/g, '\n').replace(/&nbsp;/g, ' ').replace(/[ \t]*\n[ \t]*/g, '\n').replace(/home\nto port\*/g, 'home to port*').replace(/\n+/g, '\n').trim();
+  const visibleText = html => html.replace(/<[^>]+>/g, '\n').replace(/&nbsp;/g, ' ').replace(/[ \t]*\n[ \t]*/g, '\n').replace(/home\nto port\*/g, 'home to port*').replace(/from\nhome to port\*/g, 'from home to port*').replace(/at\nHarbour Rocks Hotel/g, 'at Harbour Rocks Hotel').replace(/\n+/g, '\n').trim();
 
   for (const view of ['single', 'all', 'email']) {
     for (const offer of offers) {
@@ -480,16 +480,16 @@ test('PMU renderer preserves exact Celebrity and Fred Olsen inclusions through r
   assert.deepEqual(offers.map(offer => offer.incl), original);
 
   const celebrityHtml = context.renderCardInclusion(offers[0].incl);
-  assert.match(celebrityHtml, /^<span class="incl-line"><span class="incl-component">Includes luggage and one-way hotel transfer<\/span><\/span><span class="incl-line"><span class="incl-component">3-night pre-cruise stay at Harbour Rocks Hotel, Sydney<\/span><\/span>$/);
+  assert.match(celebrityHtml, /^<span class="incl-line"><span class="incl-component">Includes luggage and one-way hotel transfer<\/span><\/span><span class="incl-line"><span class="incl-component">3-night pre-cruise stay at <span class="no-break">Harbour Rocks Hotel, Sydney<\/span><\/span><\/span>$/);
   assert.match(html, /\.cc \.incl\{[^}]*display:flex;flex-direction:column;[^}]*align-items:center;[^}]*text-align:center;/);
   assert.match(html, /\.cc \.incl-line\{display:block;width:100%;max-width:100%;line-height:1\.22;margin-inline:auto;text-align:center;box-sizing:border-box;font-size:inherit;letter-spacing:inherit;white-space:normal;\}/);
-  assert.match(html, /\.cc \.incl-component\{display:inline;white-space:normal;\}/);
+  assert.match(html, /\.cc \.incl-component\{display:block;width:100%;box-sizing:border-box;margin-inline:auto;text-align:center;white-space:normal;\}/);
 
   const fredHtml = context.renderCardInclusion(offers[1].incl);
   const fredText = visibleText(fredHtml);
   assert.match(fredText, /Includes selected drinks with lunch & dinner/);
   assert.match(fredText, /FREE return taxi transfer from home to port\*/);
-  assert.match(fredHtml, /FREE return taxi transfer from home <span class="no-break">to&nbsp;port\*<\/span>/);
+  assert.match(fredHtml, /FREE return taxi transfer from <span class="no-break">home to port\*<\/span>/);
   assert.doesNotMatch(fredHtml, />port\*<\/span>/);
 });
 
