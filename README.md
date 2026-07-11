@@ -21,3 +21,4 @@ Instead, Campaign Pack export writes `summary/utm_lookup.csv` automatically from
 filename,utm
 offer-1.png,https://example.com/?utm_source=klaviyo...
 ```
+Trigger fresh Pages deployment
