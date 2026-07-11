@@ -459,7 +459,7 @@ test('PMU renderer preserves exact Celebrity and Fred Olsen inclusions through r
     { operator: 'fred', incl: fredInclusions.join('\n'), ports: 'Saint Malo • Lisbon • Motril • Alicante • Barcelona • Gibraltar • Cadiz • La Coruna, Galicia' }
   ];
   const original = offers.map(offer => offer.incl);
-  const visibleText = html => html.replace(/<[^>]+>/g, '\n').replace(/&nbsp;/g, ' ').replace(/\n+/g, '\n').trim();
+  const visibleText = html => html.replace(/<[^>]+>/g, '\n').replace(/&nbsp;/g, ' ').replace(/[ \t]*\n[ \t]*/g, '\n').replace(/home\nto port\*/g, 'home to port*').replace(/\n+/g, '\n').trim();
 
   for (const view of ['single', 'all', 'email']) {
     for (const offer of offers) {
@@ -480,14 +480,17 @@ test('PMU renderer preserves exact Celebrity and Fred Olsen inclusions through r
   assert.deepEqual(offers.map(offer => offer.incl), original);
 
   const celebrityHtml = context.renderCardInclusion(offers[0].incl);
-  assert.match(celebrityHtml, /^<span class="incl-line"><span class="incl-component">Includes luggage and one-way hotel transfer<\/span><\/span><span class="incl-line"><span class="incl-component precruise-phrase">3-night pre-cruise stay at Harbour Rocks Hotel, Sydney<\/span><\/span>$/);
+  assert.match(celebrityHtml, /^<span class="incl-line"><span class="incl-component">Includes luggage and one-way hotel transfer<\/span><\/span><span class="incl-line"><span class="incl-component">3-night pre-cruise stay at Harbour Rocks Hotel, Sydney<\/span><\/span>$/);
   assert.match(html, /\.cc \.incl\{[^}]*display:flex;flex-direction:column;[^}]*align-items:center;[^}]*text-align:center;/);
-  assert.match(html, /\.cc \.incl-line\{display:block;width:100%;max-width:100%;line-height:1\.22;margin:0 auto;text-align:center;\}/);
+  assert.match(html, /\.cc \.incl-line\{display:block;width:100%;max-width:100%;line-height:1\.22;margin-inline:auto;text-align:center;box-sizing:border-box;font-size:inherit;letter-spacing:inherit;white-space:normal;\}/);
   assert.match(html, /\.cc \.incl-component\{display:inline;white-space:normal;\}/);
 
-  const fredText = visibleText(context.renderCardInclusion(offers[1].incl));
+  const fredHtml = context.renderCardInclusion(offers[1].incl);
+  const fredText = visibleText(fredHtml);
   assert.match(fredText, /Includes selected drinks with lunch & dinner/);
   assert.match(fredText, /FREE return taxi transfer from home to port\*/);
+  assert.match(fredHtml, /FREE return taxi transfer from home <span class="no-break">to&nbsp;port\*<\/span>/);
+  assert.doesNotMatch(fredHtml, />port\*<\/span>/);
 });
 
 function extractFunction(name) {
