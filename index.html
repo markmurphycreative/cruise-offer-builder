@@ -9228,12 +9228,8 @@ function renderCardInclusionLayout(value,options){
     const trailing=rendered.slice(1).map(component=>`<span class="incl-segment">&nbsp;-&nbsp;${component}</span>`).join("");
     return `<span class="incl-line">${first}${trailing}</span>`;
   };
-  const measureText=getCardInclusionMeasureText(options);
   const componentLines=groupCardInclusionRenderLines(buildCardInclusionComponents(value),options);
-  const lines=componentLines.map(line=>({components:line,rendered:renderLine(line)})).filter(item=>{
-    if((item.components||[]).some(component=>component&&component.type==="precruise")) return true;
-    return measureText(String(item.rendered).replace(/<[^>]+>/g,"").replace(/&nbsp;/g," "))<=CARD_INCLUSION_SAFE_WIDTH;
-  }).map(item=>item.rendered);
+  const lines=componentLines.map(renderLine);
   if(!validateCardInclusionLines(lines.map(line=>String(line).replace(/<[^>]+>/g,"").replace(/&nbsp;/g," ")))) return "";
   return lines.join(html?"":"\n");
 }
