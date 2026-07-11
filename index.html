@@ -236,19 +236,26 @@ input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.58;
 .parse-btn:disabled{opacity:.46;cursor:not-allowed;transform:none;filter:saturate(.82);}
 .parse-result{margin-top:4px;font-size:10px;color:var(--muted);min-height:14px;}
 .parse-result.high{color:var(--green);}
-.parse-result.partial{color:var(--amber);}
+.parse-result.partial{color:var(--gold);}
 .parse-result.low{color:var(--red);}
-.multi-offer-status-row{display:flex;align-items:center;gap:6px;width:100%;margin-top:4px;padding:2px 0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;}
-.multi-offer-status-row:hover .multi-offer-status-label{text-decoration:underline;}
-.multi-offer-status-label{font-weight:700;}
+.multi-offer-status-row{display:flex;align-items:center;gap:6px;width:100%;margin-top:4px;padding:4px 6px;border:1px solid transparent;border-radius:var(--radius);background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;transition:background var(--ui-transition),border-color var(--ui-transition),box-shadow var(--ui-transition);}
+.multi-offer-status-row:hover{background:var(--hover-tint);}
+.multi-offer-status-row.active{background:rgba(158,147,108,.10);border-color:rgba(158,147,108,.32);box-shadow:inset 2px 0 0 var(--gold);}
+.multi-offer-status-label{font-weight:700;white-space:nowrap;flex:0 0 auto;color:var(--gold);}
+.multi-offer-status-meta{margin-left:auto;display:inline-flex;align-items:center;gap:5px;min-width:0;white-space:nowrap;}
+.qa-warning-badge{display:inline-flex;align-items:center;padding:1px 5px;border:1px solid rgba(212,130,10,.38);border-radius:999px;color:var(--amber);font-size:8px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:rgba(212,130,10,.08);white-space:nowrap;}
+.multi-offer-open-indicator{color:var(--muted);font-weight:700;}
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;}
 .parser-intelligence-details{margin:3px 0 7px 16px;border:1px solid var(--border-soft);border-radius:var(--radius);background:var(--surface);overflow:hidden;}
 .parser-intelligence-details summary{cursor:pointer;padding:5px 7px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.055em;color:var(--navy);list-style:none;}
 .parser-intelligence-details summary::-webkit-details-marker{display:none;}
 .parser-intelligence-details summary::before{content:"▸";display:inline-block;margin-right:5px;color:var(--muted);}
 .parser-intelligence-details[open] summary::before{content:"▾";}
-.parser-intelligence-panel{border-top:1px solid var(--border-soft);padding:7px;display:grid;gap:7px;}
-.parser-intelligence-section{display:grid;gap:3px;}
-.parser-intelligence-heading{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);}
+.parser-intelligence-panel{border-top:1px solid var(--border-soft);padding:8px;display:grid;gap:8px;}
+.parser-intelligence-summary{display:flex;gap:5px;flex-wrap:wrap;}
+.parser-intelligence-summary-pill{padding:2px 6px;border:1px solid var(--border-soft);border-radius:999px;background:var(--surface-subtle);font-size:8.5px;font-weight:700;color:var(--navy);white-space:nowrap;}
+.parser-intelligence-section{display:grid;gap:4px;padding-top:7px;border-top:1px solid var(--border-soft);}
+.parser-intelligence-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);}
 .parser-intelligence-item{display:grid;grid-template-columns:14px 1fr;gap:4px;font-size:9px;line-height:1.35;color:var(--text);}
 .parser-intelligence-icon{font-weight:700;color:var(--green);}
 .parser-intelligence-label{display:block;font-weight:700;color:var(--navy);}
@@ -256,6 +263,8 @@ input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.58;
 .parser-intelligence-empty{font-size:9px;line-height:1.35;color:var(--muted);}
 .parser-intelligence-warning .parser-intelligence-icon{color:var(--amber);}
 .parser-intelligence-card-text{border-left:2px solid var(--gold);padding-left:6px;white-space:pre-line;font-size:9px;line-height:1.4;color:var(--text);}
+.parser-intelligence-copy-btn{border:1px solid var(--border);border-radius:var(--ui-radius);background:var(--surface-subtle);color:var(--navy);font-size:10px;line-height:1;padding:2px 5px;}
+.parser-intelligence-copy-status{font-size:8px;color:var(--green);font-weight:700;text-transform:none;letter-spacing:0;margin-left:4px;}
 .parse-field-flash{animation:parseFlash 1.6s ease-out;}
 @keyframes parseFlash{0%{background:#fff8d6;border-color:var(--gold);}100%{background:var(--surface-subtle);border-color:var(--border);}}
 .parse-preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;}
@@ -2593,7 +2602,7 @@ function sv(i){
 }
 function save(){
   if(typeof isOfferLocked==="function" && isOfferLocked(cur)) return;
-  FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e){ if(typeof removeSubjectToConditions==="function") e.value=removeSubjectToConditions(e.value); offers[cur][f]=e.value; } });
+  FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e){ if(typeof removeSubjectToConditions==="function") e.value=removeSubjectToConditions(e.value); offers[cur][f]=f==="ship"&&typeof normaliseRoyalCaribbeanShipName==="function"?normaliseRoyalCaribbeanShipName(e.value):e.value; } });
   const sf=document.getElementById("f-sailingFrom"); if(sf && offers[cur]._sailingFromManual===undefined) offers[cur]._sailingFromManual=String(sf.value||"").trim()!==(typeof getAutoSailingFromForOffer==="function"?getAutoSailingFromForOffer(offers[cur]):getAutoSailingFromForPorts(offers[cur].ports||""));
   const op=document.getElementById("f-operator"); if(op) offers[cur].operator=op.value;
   const logoDisplay=document.getElementById("f-logo-display"); if(logoDisplay) offers[cur]._logoDisplay=logoDisplay.value||"operator";
@@ -7551,13 +7560,15 @@ function openOfferDetailsSection(){
   if(hdr.classList.contains("collapsed")) setSectionCollapsedByHeader(hdr,false);
   return section;
 }
+function refreshMultiOfferStatusActiveRow(){
+  try{ document.querySelectorAll(".multi-offer-status-row").forEach(row=>row.classList.toggle("active",Number(row.dataset.offerIndex)===cur)); }catch(e){}
+}
 function jumpToMultiOfferStatus(index){
   const next=Number(index);
   if(!Number.isInteger(next)||next<0||next>=4) return false;
   sv(next);
   setView("single");
-  const section=openOfferDetailsSection();
-  if(section&&typeof section.scrollIntoView==="function") section.scrollIntoView({block:"start"});
+  try{ document.querySelectorAll(".multi-offer-status-row").forEach(row=>row.classList.toggle("active",Number(row.dataset.offerIndex)===cur)); }catch(e){}
   return true;
 }
 let activeMultiOfferImportIndexes=[];
@@ -7702,27 +7713,53 @@ function getParserIntelligenceExtras(parsed,inclusionLines){
   if(/gratuities|tips/i.test(source)) add("Gratuities",inclusionLines.filter(line=>/gratuities|tips/i.test(line)).join("\n"));
   return extras.filter((item,index,self)=>self.findIndex(other=>other.label===item.label&&other.value===item.value)===index);
 }
+function getParserIntelligenceRulesApplied(parsed,inclusionLines,rawText){
+  const p=parsed||{};
+  const source=[String(rawText||""),String(p.incl||""),...(inclusionLines||[])].join("\n");
+  const rules=[];
+  const add=(text,condition=true)=>{ if(condition&&!rules.includes(text)) rules.push(text); };
+  add("Taxi transfer recognised",/\btaxi\s+transfer\b/i.test(source));
+  add("Home to port detected",/\bhome\s+to\s+port\b/i.test(source));
+  add("Split into multiple inclusion lines",(inclusionLines||[]).length>1);
+  add("Protected port* phrase",/\bport\*/i.test(source));
+  add("Based on 2 adults sharing inserted",/based\s+on\s+2\s+adults\s+sharing/i.test(source));
+  add("Port abbreviations expanded",/\b(?:La\s+Spezia|Port\s+of\s+Tyne|Palma\s+de\s+Mallorca)\b/.test(source));
+  add("Board basis normalised",!!(p.boardlbl||p.board));
+  add("Known ship matched",!!(p.ship&&typeof findKnownOperatorShip==="function"&&findKnownOperatorShip(p.ship,p.operatorKey)));
+  add("Sailing date parsed",!!(p.day&&p.month));
+  add("Final card inclusion rendered",(inclusionLines||[]).length>0);
+  return rules;
+}
+function copyParserIntelligenceCardText(button){
+  const details=button&&button.closest&&button.closest(".parser-intelligence-details");
+  const textEl=details&&details.querySelector(".parser-intelligence-card-text");
+  const text=textEl?textEl.innerText:"";
+  const status=details&&details.querySelector(".parser-intelligence-copy-status");
+  const done=()=>{ if(status){ status.textContent="Copied"; setTimeout(()=>{ status.textContent=""; },1600); } };
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done).catch(()=>{}); }
+  else { const ta=document.createElement("textarea"); ta.value=text; document.body.appendChild(ta); ta.select(); try{ document.execCommand("copy"); done(); }catch(e){} ta.remove(); }
+}
 function renderParserIntelligencePanel(result,rawText,index,quality){
   const parsed=(result&&result.parsed)||{};
   const score=clampParseConfidenceScore((quality&&quality.score)||(result&&result.score));
   const detected=getParserIntelligenceDetectedFields(parsed);
   const inclusions=getParserIntelligenceInclusionLines(parsed);
-  const extras=getParserIntelligenceExtras(parsed,inclusions);
+  const rules=getParserIntelligenceRulesApplied(parsed,inclusions,rawText);
   const missing=[];
   [["Cruise line",parsed.operatorKey],["Cruise title",parsed.name],["Ship",parsed.ship],["Sailing date",parsed.day&&parsed.month],["Nights",parsed.nights],["Board basis",parsed.boardlbl||parsed.board],["Price",parsed.price]].forEach(item=>{ if(!item[1]) missing.push(item[0]); });
-  if(inclusions.some(line=>/hotel|pre[-\s]*cruise|post[-\s]*cruise/i.test(line))&&!extras.some(item=>item.label==="Hotel")) missing.push("Hotel name");
-  const operatorName=(parsed.operatorKey&&OPERATOR_HEADERS&&OPERATOR_HEADERS[parsed.operatorKey]&&OPERATOR_HEADERS[parsed.operatorKey].name)||"Unknown cruise line";
-  const item=(label,value,icon="✓",warn=false)=>`<div class="parser-intelligence-item${warn?" parser-intelligence-warning":""}"><span class="parser-intelligence-icon">${icon}</span><span><span class="parser-intelligence-label">${escapeParserIntelligenceHtml(label)}</span><span class="parser-intelligence-value">${escapeParserIntelligenceHtml(value)}</span></span></div>`;
-  const section=(heading,html,empty)=>`<div class="parser-intelligence-section"><div class="parser-intelligence-heading">${escapeParserIntelligenceHtml(heading)}</div>${html||`<div class="parser-intelligence-empty">${escapeParserIntelligenceHtml(empty||"None detected")}</div>`}</div>`;
-  const qa=missing.length?item("Confidence",`${score}%`,"⚠",true)+item("Missing",missing.map(value=>`• ${value}`).join("\n"),"⚠",true)+item("Why confidence changed",`Confidence reduced because ${missing.join(", ")} ${missing.length===1?"is":"are"} missing or incomplete.`,"⚠",true):item("Confidence",`${score}%`)+`<div class="parser-intelligence-empty">No missing fields.</div>`;
+  const qaWarnings=(quality&&quality.qaWarnings)||0;
+  const item=(label,value,icon="✓",warn=false)=>`<div class="parser-intelligence-item${warn?" parser-intelligence-warning":""}"><span class="parser-intelligence-icon">${icon}</span><span>${label?`<span class="parser-intelligence-label">${escapeParserIntelligenceHtml(label)}</span>`:""}<span class="parser-intelligence-value">${escapeParserIntelligenceHtml(value)}</span></span></div>`;
+  const section=(heading,html,empty,action="")=>`<div class="parser-intelligence-section"><div class="parser-intelligence-heading"><span>${escapeParserIntelligenceHtml(heading)}</span>${action}</div>${html||`<div class="parser-intelligence-empty">${escapeParserIntelligenceHtml(empty||"None detected")}</div>`}</div>`;
+  const qa=missing.length||qaWarnings?item("Confidence",`${score}%`,"⚠",true)+(missing.length?item("Missing",missing.map(value=>`• ${value}`).join("\n"),"⚠",true):"")+(qaWarnings?item("QA Warning",`${qaWarnings} warning${qaWarnings===1?"":"s"} detected`,"⚠",true):""):item("Confidence",`${score}%`)+`<div class="parser-intelligence-empty">No warnings.</div>`;
   const cardText=inclusions.join("\n");
-  return `<details class="parser-intelligence-details"><summary>Parser Intelligence</summary><div class="parser-intelligence-panel">`+
-    section("Offer Summary",item(`Offer ${index+1}`,`${operatorName}\nConfidence ${score}%`))+
-    section("Detected",detected.map(row=>item(row.label,row.value)).join(""),"No detected fields.")+
-    section("Inclusions",inclusions.map(line=>item("",line)).join(""),"No inclusions detected.")+
-    section("Extras",extras.map(row=>item(row.label,row.value)).join(""),"No pre-cruise stay detected")+
+  const summary=`<div class="parser-intelligence-summary"><span class="parser-intelligence-summary-pill">${detected.length} fields detected</span><span class="parser-intelligence-summary-pill">${rules.length} rules applied</span><span class="parser-intelligence-summary-pill">${missing.length+qaWarnings} warnings</span></div>`;
+  const copyAction=cardText?`<span><button type="button" class="parser-intelligence-copy-btn" aria-label="Copy final card text" onclick="copyParserIntelligenceCardText(this)">📋</button><span class="parser-intelligence-copy-status" aria-live="polite"></span></span>`:"";
+  return `<details class="parser-intelligence-details"><summary>Offer Intelligence</summary><div class="parser-intelligence-panel">`+
+    summary+
+    section("Detected Fields",detected.map(row=>item(row.label,row.value)).join(""),"No detected fields.")+
+    section("Rules Applied",rules.map(rule=>item("",rule)).join(""),"No rules applied.")+
     section("QA",qa)+
-    section("Final Card Text",cardText?`<div class="parser-intelligence-card-text">${escapeParserIntelligenceHtml(cardText)}</div>`:"","No inclusion text will appear on the final card.")+
+    section("Final Card Text",cardText?`<div class="parser-intelligence-card-text">${escapeParserIntelligenceHtml(cardText)}</div>`:"","No inclusion text will appear on the final card.",copyAction)+
     `</div></details>`;
 }
 
@@ -7764,12 +7801,14 @@ function performMultiOfferImport(replaceConfirmed){
     const ok=missing===0||result.confidence==='high';
     const label=ok?`✓ Offer ${index+1} Ready`:`⚠ Offer ${index+1} Review needed`;
     const cls=ok&&!qaWarnings?'high':'partial';
-    const warningText=qaWarnings?` · ${qaWarnings} QA warning${qaWarnings===1?"":"s"}`:"";
+    const warningBadge=qaWarnings?`<span class="qa-warning-badge">QA Warning</span>`:"";
+    const legacyStatusText=`Confidence ${clampParseConfidenceScore(quality.score)} · ${missing} missing fields${qaWarnings?` · ${qaWarnings} QA warning${qaWarnings===1?"":"s"}`:""}`;
     const intelligence=typeof renderParserIntelligencePanel==="function"?renderParserIntelligencePanel(result,item.block,index,quality):"";
-    return `<div class="multi-offer-status-row" role="button" tabindex="0" title="Jump to Offer" aria-label="Offer ${index+1} Loaded - Jump to Offer" onclick="jumpToMultiOfferStatus(${index})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();jumpToMultiOfferStatus(${index});}"><span class="multi-offer-status-label">${label}</span> <span class="parse-result ${cls}">Confidence ${clampParseConfidenceScore(quality.score)} · ${missing} missing fields${warningText}</span></div>${intelligence}`;
+    return `<div class="multi-offer-status-row" data-offer-index="${index}" role="button" tabindex="0" title="Jump to Offer" aria-label="Offer ${index+1} Loaded - Open Offer" onclick="jumpToMultiOfferStatus(${index})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();jumpToMultiOfferStatus(${index});}"><span class="multi-offer-status-label">${label}</span><span class="multi-offer-status-meta"><span class="parse-result ${cls}">Confidence ${clampParseConfidenceScore(quality.score)}</span><span class="parse-result">${missing} missing fields</span>${warningBadge}<span class="sr-only">${legacyStatusText}</span><span class="multi-offer-open-indicator" aria-hidden="true">→</span></span></div>${intelligence}`;
   });
   if(blocks.length>4) rows.push(`<div>4 offers loaded. ${blocks.length-4} additional offers ignored.</div>`);
   setMultiOfferStatus(rows.join(""),parsedResults.some(item=>item.result.confidence!=='high'||getMultiOfferImportQualityResult(item.result,item.block).qaWarnings)?'partial':'high');
+  try{ document.querySelectorAll(".multi-offer-status-row").forEach(row=>row.classList.toggle("active",Number(row.dataset.offerIndex)===cur)); }catch(e){}
 }
 
 function parseOffer(){
@@ -7785,14 +7824,17 @@ function stripOfferHeadingPrefix(value){
 function replaceAtSymbolsForDisplay(value){
   return String(value||"").replace(/\s*@\s*/g," at ");
 }
+function normaliseRoyalCaribbeanShipName(value){
+  return String(value||"").replace(/\b([A-Z][A-Za-z'’.-]*(?:\s+[A-Z][A-Za-z'’.-]*){0,3})\s+Of\s+The\s+Seas\b/g,(match,prefix)=>`${prefix} of the Seas`);
+}
 function normaliseKnownDisplayText(value){
-  return String(value||"").replace(/\s*@\s*/g," at ")
+  return normaliseRoyalCaribbeanShipName(String(value||"").replace(/\s*@\s*/g," at ")
     .replace(/\bLaspezia\b/gi,"La Spezia")
     .replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca")
     .replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne")
     .replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing")
     .replace(/[ \t]{2,}/g," ")
-    .trim();
+    .trim());
 }
 function removeSubjectToConditions(value){
   return String(value||"").replace(/\s*@\s*/g," at ")
@@ -9528,7 +9570,7 @@ function abortSplashCampaignHydration(){
 function currentFormData(){
   if((typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) || (typeof autosaveHydrating !== "undefined" && autosaveHydrating)){ const hydratingData=cobTraceSourceTag({...(offers[cur]||{})}, "offers[cur]"); cobTraceOfferSnapshot("currentFormData", hydratingData, "offers[cur]"); return hydratingData; }
   const d={...(offers[cur]||{})};
-  FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e) d[f]=e.value; });
+  FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e) d[f]=f==="ship"&&typeof normaliseRoyalCaribbeanShipName==="function"?normaliseRoyalCaribbeanShipName(e.value):e.value; });
   const op=document.getElementById("f-operator");
   if(op) d.operator=op.value;
   cobTraceSourceTag(d, "currentFormData()");
