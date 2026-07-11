@@ -1708,6 +1708,11 @@ Includes 3-night pre-cruise stay @ Harbour Rocks Hotel Sydney - MGallery Collect
 });
 
 
+test('PMU inclusion editor stores multi-line card inclusions in a textarea', () => {
+  assert.match(html, /<textarea id="f-incl"[^>]*oninput="up\(\)"[^>]*><\/textarea>/);
+  assert.doesNotMatch(html, /<input id="f-incl"/);
+});
+
 test('PMU parser preserves Fred Olsen selected drinks and free taxi inclusions outside itinerary', () => {
   const harness = createHarness([{}, {}, {}, {}]);
   const result = harness.context.parseOfferText(`Fred. Olsen Cruise Lines
