@@ -776,10 +776,10 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .cc .price-block{max-width:1000px;}
 .cc .cname{font-size:74px;font-weight:300;color:var(--operator-text,var(--navy));line-height:1.0;margin-bottom:6px;}
 .cc .incl{font-size:40px;font-weight:300;color:#555;line-height:1.22;margin:0 auto 20px;padding:0 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:0;align-items:center;justify-content:center;text-align:center;}
-.cc .incl-line{display:block;width:100%;max-width:100%;line-height:1.22;margin:0 auto;text-align:center;}
+.cc .incl-line{display:block;width:100%;max-width:100%;line-height:1.22;margin-inline:auto;text-align:center;box-sizing:border-box;font-size:inherit;letter-spacing:inherit;white-space:normal;}
 .cc .incl-component{display:inline;white-space:normal;}
-.cc .incl-segment{display:inline-block;white-space:nowrap;}
-.cc .cabin-phrase,.cc .precruise-phrase{white-space:nowrap;}
+.cc .incl-segment{display:inline;white-space:normal;}
+.cc .cabin-phrase,.cc .no-break{white-space:nowrap;}
 .cc .sname{font-size:40px;font-weight:300;color:var(--operator-accent,var(--gold));line-height:1.2;margin-bottom:16px;}
 .cc .price-block{display:inline-flex;flex-direction:column;align-items:center;}
 .cc .pfrom{font-size:30px;font-weight:300;color:#888;line-height:1;margin-bottom:0;}
@@ -9216,8 +9216,11 @@ function renderCardInclusionLayout(value,options){
   const renderComponent=component=>{
     const text=normaliseCardInclusionComponent(component&&component.text);
     if(!html) return text;
-    const content=component.type==="cabin" ? text.replace(/ /g,"&nbsp;") : text;
-    const phraseClass=component.type==="precruise"?" precruise-phrase":component.type==="cabin"?" cabin-phrase":"";
+    let content=component.type==="cabin" ? text.replace(/ /g,"&nbsp;") : text;
+    if(/\bFREE return taxi transfer from home to port\*$/i.test(text)){
+      content=text.replace(/to port\*$/i,match=>`<span class="no-break">${match.replace(/ /g,"&nbsp;")}</span>`);
+    }
+    const phraseClass=component.type==="cabin"?" cabin-phrase":"";
     return `<span class="incl-component${phraseClass}">${content}</span>`;
   };
   const renderLine=line=>{
