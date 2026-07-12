@@ -6276,7 +6276,7 @@ function buildCampaignFilePayload(){
     operatorLandingPages:portableOffers.map(({url=""})=>url),
     qa:getCampaignQaSnapshot(),
     sourceInfo:{googleSheetUrl:googleSheetSource},
-    sessionMetadata:{savedAt:exportedAt,autosaveKey:AUTOSAVE_KEY,autosave:readSavedSession(),lockedOffers:Array.isArray(lockedOffers) ? lockedOffers.slice(0,4) : [],lockedHeroImages:Array.isArray(lockedHeroImages) ? lockedHeroImages.slice(0,4) : [],sectionState,openSectionKey:getOpenSectionKey()}
+    sessionMetadata:{savedAt:exportedAt,autosaveKey:AUTOSAVE_KEY,autosave:readSavedSession(),lockedOffers:Array.isArray(lockedOffers) ? lockedOffers.slice(0,4) : [],lockedHeroImages:Array.isArray(lockedHeroImages) ? lockedHeroImages.slice(0,4) : [],sectionState,openSectionKey:getOpenSectionKey(),summaryMetadata:{title:String(campaign.name||"Untitled Campaign").trim()||"Untitled Campaign",name:String(campaign.name||"Untitled Campaign").trim()||"Untitled Campaign",description:String(campaign.description||"").trim(),sendDate:String(campaign.date||"").trim(),date:String(campaign.date||"").trim(),dayOfWeek:typeof formatCampaignWeekday==="function" ? formatCampaignWeekday(campaign.date) : "",owner:String(campaign.owner||"").trim(),departure:String(campaign.airport||"").trim(),offerCount:portableOffers.filter(offer=>offer&&Object.keys(offer).some(key=>{ const value=offer[key]; return value!==undefined && value!==null && String(value).trim()!==""; })).length,operatorBadges:portableOffers.filter(offer=>offer&&Object.keys(offer).some(key=>{ const value=offer[key]; return value!==undefined && value!==null && String(value).trim()!==""; })).map(offer=>typeof getCampaignOperatorShortLabel==="function" ? getCampaignOperatorShortLabel(offer&&offer.operator) : String((offer&&offer.operator)||"").trim().slice(0,3).toUpperCase()).slice(0,4),savedAt:exportedAt,updatedAt:exportedAt,lastSavedAt:exportedAt}}
   };
 }
 
@@ -6284,16 +6284,50 @@ function buildCampaignFilePayload(){
 const RECENT_CAMPAIGNS_KEY = "cobRecentCampaignsV1";
 const RECENT_CAMPAIGNS_MAX = 10;
 function readRecentCampaigns(){
-  try{ const list=JSON.parse(localStorage.getItem(RECENT_CAMPAIGNS_KEY)||"[]"); return Array.isArray(list) ? list.filter(item=>item&&item.payload) : []; }
+  try{
+    const list=JSON.parse(localStorage.getItem(RECENT_CAMPAIGNS_KEY)||"[]");
+    return (Array.isArray(list) ? list.filter(item=>item&&item.payload) : []).sort((a,b)=>campaignSummaryTime(b)-campaignSummaryTime(a));
+  }
   catch(e){ return []; }
 }
 function writeRecentCampaigns(list){
   const clean=(Array.isArray(list)?list:[]).filter(item=>item&&item.payload).slice(0,RECENT_CAMPAIGNS_MAX);
   try{ localStorage.setItem(RECENT_CAMPAIGNS_KEY,JSON.stringify(clean)); return true; }catch(e){ return false; }
 }
+function getCampaignSummaryMetadataFromPayload(payload,savedAt){
+  const source=(payload&&payload.campaign) || (payload&&payload.state&&payload.state.campaign) || {};
+  const offers=(payload&&payload.state&&payload.state.offers) || (payload&&payload.offers) || [];
+  const sendDate=String(source.date||source.sendDate||"").trim();
+  const saved=(savedAt || (payload&&payload.exportedAt) || (payload&&payload.sessionMetadata&&payload.sessionMetadata.savedAt) || new Date().toISOString());
+  return {
+    title:String(source.name||"Untitled Campaign").trim()||"Untitled Campaign",
+    name:String(source.name||"Untitled Campaign").trim()||"Untitled Campaign",
+    description:String(source.description||"").trim(),
+    sendDate,
+    date:sendDate,
+    dayOfWeek:typeof formatCampaignWeekday==="function" ? formatCampaignWeekday(sendDate) : "",
+    owner:String(source.owner||"").trim(),
+    departure:String(source.airport||"").trim(),
+    offerCount:Array.isArray(offers) ? offers.filter(isCampaignThumbnailOfferPresent).length : 0,
+    operatorBadges:Array.isArray(offers) ? offers.filter(isCampaignThumbnailOfferPresent).map(offer=>getCampaignOperatorShortLabel(offer&&offer.operator)).slice(0,4) : [],
+    savedAt:saved,
+    updatedAt:saved,
+    lastSavedAt:saved
+  };
+}
+function applyCampaignSummaryMetadataToPayload(payload,metadata){
+  if(!payload || !metadata) return payload;
+  payload.summaryMetadata={...metadata};
+  payload.exportedAt=metadata.savedAt;
+  payload.sessionMetadata={...(payload.sessionMetadata||{}),savedAt:metadata.savedAt,summaryMetadata:{...metadata}};
+  return payload;
+}
+function campaignSummaryTime(item){
+  const meta=(item&&item.summaryMetadata) || {};
+  return new Date(meta.savedAt || (item&&item.savedAt) || (item&&item.updatedAt) || 0).getTime() || 0;
+}
 function getCampaignMetadataFromPayload(payload){
-  const campaign=(payload&&payload.campaign) || (payload&&payload.state&&payload.state.campaign) || {};
-  return {name:String(campaign.name||"Untitled Campaign").trim()||"Untitled Campaign",date:String(campaign.date||"").trim(),savedAt:(payload&&payload.exportedAt) || (payload&&payload.sessionMetadata&&payload.sessionMetadata.savedAt) || new Date().toISOString()};
+  return getCampaignSummaryMetadataFromPayload(payload);
 }
 function recentCampaignKey(payload){
   const meta=getCampaignMetadataFromPayload(payload);
@@ -6302,10 +6336,11 @@ function recentCampaignKey(payload){
 function touchRecentCampaign(payload){
   if(!payload) return false;
   const copy=JSON.parse(JSON.stringify(payload));
-  const meta=getCampaignMetadataFromPayload(copy);
   const now=new Date().toISOString();
+  const meta=typeof getCampaignSummaryMetadataFromPayload==="function" ? getCampaignSummaryMetadataFromPayload(copy,now) : {title:campaignHistoryTitleFromPayload(copy),name:campaignHistoryTitleFromPayload(copy),description:"",sendDate:String(((copy&&copy.campaign)||(copy&&copy.state&&copy.state.campaign)||{}).date||""),date:String(((copy&&copy.campaign)||(copy&&copy.state&&copy.state.campaign)||{}).date||""),dayOfWeek:"",owner:String(((copy&&copy.campaign)||(copy&&copy.state&&copy.state.campaign)||{}).owner||""),departure:String(((copy&&copy.campaign)||(copy&&copy.state&&copy.state.campaign)||{}).airport||""),offerCount:0,operatorBadges:[],savedAt:now,updatedAt:now,lastSavedAt:now};
+  if(typeof applyCampaignSummaryMetadataToPayload==="function") applyCampaignSummaryMetadataToPayload(copy,meta);
   const key=recentCampaignKey(copy);
-  const entry={id:`${Date.now()}-${Math.random().toString(36).slice(2,8)}`,name:meta.name,date:meta.date,savedAt:now,lastOpenedAt:now,payload:copy};
+  const entry={id:`${Date.now()}-${Math.random().toString(36).slice(2,8)}`,name:meta.name,title:meta.title,date:meta.sendDate,sendDate:meta.sendDate,owner:meta.owner,summaryMetadata:meta,savedAt:now,updatedAt:now,lastOpenedAt:now,payload:copy};
   const list=readRecentCampaigns().filter(item=>recentCampaignKey(item.payload)!==key && String(item.name||"").toLowerCase()!==meta.name.toLowerCase());
   writeRecentCampaigns([entry].concat(list));
   refreshRecentCampaignSurfaces();
@@ -6358,13 +6393,15 @@ function refreshSplashRecentCampaign(){
   if(!(wrap&&label&&name&&date&&time)) return;
   const recent=readRecentCampaigns()[0];
   if(!recent){ wrap.classList.remove("active"); label.textContent=""; name.textContent=""; date.textContent=""; time.textContent=""; name.onclick=null; return; }
-  wrap.classList.add("active"); label.textContent="Recent Campaign"; name.textContent=recent.name||"Untitled Campaign"; date.textContent=formatRecentCampaignDate(recent.date); time.textContent=formatRecentSavedTime(recent.savedAt||recent.lastOpenedAt); name.onclick=()=>openRecentCampaign(recent.id);
+  const meta=recent.summaryMetadata || getCampaignMetadataFromPayload(recent.payload);
+  wrap.classList.add("active"); label.textContent="Recent Campaign"; name.textContent=meta.title||recent.name||"Untitled Campaign"; date.textContent=formatRecentCampaignDate(meta.sendDate||recent.date); time.textContent=formatRecentSavedTime(meta.savedAt||recent.savedAt||recent.lastOpenedAt); name.onclick=()=>openRecentCampaign(recent.id);
 }
 function refreshRecentCampaignSurfaces(){ syncNativeFileMenu(); refreshSplashRecentCampaign(); }
 function closeFileMenu(){}
 
 const CAMPAIGN_HISTORY_KEY = "cobCampaignHistoryV1";
 const CAMPAIGN_RECENT_MAX = 20;
+let activeCampaignHistoryId = "";
 
 function readCampaignHistory(){
   try{
@@ -6380,18 +6417,31 @@ function campaignHistoryTitleFromPayload(payload){
   const campaign=(payload&&payload.campaign) || (payload&&payload.state&&payload.state.campaign) || {};
   return campaign.name || document.getElementById("g-campaign").value || "Untitled Campaign";
 }
-function buildCampaignHistoryEntryFromPayload(payload,type="saved"){
-  const title=campaignHistoryTitleFromPayload(payload);
+function buildCampaignHistoryEntryFromPayload(payload,type="saved",existingId=""){
+  const copy=JSON.parse(JSON.stringify(payload||buildCampaignFilePayload()));
   const now=new Date().toISOString();
+  const meta=typeof getCampaignSummaryMetadataFromPayload==="function" ? getCampaignSummaryMetadataFromPayload(copy,now) : {title:campaignHistoryTitleFromPayload(copy),name:campaignHistoryTitleFromPayload(copy),description:"",sendDate:String(((copy&&copy.campaign)||(copy&&copy.state&&copy.state.campaign)||{}).date||""),date:String(((copy&&copy.campaign)||(copy&&copy.state&&copy.state.campaign)||{}).date||""),dayOfWeek:"",owner:String(((copy&&copy.campaign)||(copy&&copy.state&&copy.state.campaign)||{}).owner||""),departure:String(((copy&&copy.campaign)||(copy&&copy.state&&copy.state.campaign)||{}).airport||""),offerCount:0,operatorBadges:[],savedAt:now,updatedAt:now,lastSavedAt:now};
+  if(typeof applyCampaignSummaryMetadataToPayload==="function") applyCampaignSummaryMetadataToPayload(copy,meta);
+  const title=meta.title || campaignHistoryTitleFromPayload(copy);
   return {
-    id:`${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+    id:existingId || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
     title,
+    name:meta.name,
+    description:meta.description,
+    sendDate:meta.sendDate,
+    date:meta.sendDate,
+    dayOfWeek:meta.dayOfWeek,
+    owner:meta.owner,
+    departure:meta.departure,
+    offerCount:meta.offerCount,
+    operatorBadges:meta.operatorBadges,
+    summaryMetadata:meta,
     type,
     savedAt:now,
     updatedAt:now,
     recentAt:now,
     pinned:false,
-    payload:JSON.parse(JSON.stringify(payload||buildCampaignFilePayload()))
+    payload:copy
   };
 }
 function campaignHistoryTime(item,field){
@@ -6409,10 +6459,12 @@ function sortCampaignHistoryNewest(list,field="updatedAt"){
 }
 function addCampaignHistoryEntry(entry){
   if(!entry || !entry.payload) return false;
-  const previous=readCampaignHistory().find(item=>item.title===entry.title && item.type===entry.type);
+  const existingId=activeCampaignHistoryId || entry.id;
+  const previous=readCampaignHistory().find(item=>item.id===existingId) || readCampaignHistory().find(item=>item.title===entry.title && item.type===entry.type);
   const merged=previous ? {...entry,id:previous.id,pinned:!!previous.pinned,pinnedAt:previous.pinnedAt} : entry;
   const list=readCampaignHistory().filter(item=>item.id!==merged.id && (item.title!==entry.title || item.type!==entry.type));
   list.unshift(merged);
+  activeCampaignHistoryId=merged.id;
   return writeCampaignHistory(sortCampaignHistory(list));
 }
 function restoreCampaignHistoryEntry(id){
@@ -6420,6 +6472,7 @@ function restoreCampaignHistoryEntry(id){
   const entry=list.find(item=>item.id===id);
   if(!entry || !entry.payload) return false;
   const now=new Date().toISOString();
+  activeCampaignHistoryId=id;
   if(typeof writeCampaignHistory==="function") writeCampaignHistory(list.map(item=>item.id===id ? {...item,recentAt:now,lastOpenedAt:now} : item));
   restoreCampaignFilePayload(parseCampaignFileText(JSON.stringify(entry.payload)));
   if(typeof refreshCampaignHistoryUI==="function") refreshCampaignHistoryUI();
@@ -6596,9 +6649,10 @@ function getCampaignThumbnailSavedTime(item){
   catch(e){ return ""; }
 }
 function renderCampaignThumbnail(item,loadId){
-  const name=escapeCampaignHistoryText(getCampaignThumbnailName(item));
+  const summary=(item&&item.summaryMetadata) || null;
+  const name=escapeCampaignHistoryText((summary&&summary.title) || getCampaignThumbnailName(item));
   const operators=getCampaignThumbnailOperatorEntries(item).map(entry=>`<span class="campaign-thumbnail-pill" style="${escapeCampaignHistoryText(getCampaignThumbnailPillStyle(entry.operator))}">${escapeCampaignHistoryText(entry.label)}</span>`).join("");
-  const offerCount=getCampaignThumbnailOfferCount(item);
+  const offerCount=(summary&&Number.isFinite(Number(summary.offerCount))) ? Number(summary.offerCount) : getCampaignThumbnailOfferCount(item);
   const savedTime=getCampaignThumbnailSavedTime(item);
   const offerLabel=`${offerCount} ${offerCount===1 ? "Offer" : "Offers"}`;
   const meta=savedTime ? `${offerLabel} · Saved ${savedTime}` : offerLabel;
@@ -6609,7 +6663,8 @@ function getCampaignHistoryListHtml(items,emptyLabel){
   if(!items.length) return renderCampaignHistoryEmptyState(emptyLabel);
   return items.map(item=>{
     const safeId=escapeCampaignHistoryText(item.id);
-    const safeMeta=escapeCampaignHistoryText(campaignHistoryMeta(item));
+    const summary=(item&&item.summaryMetadata) || null;
+    const safeMeta=escapeCampaignHistoryText(summary&&summary.sendDate ? `${summary.sendDate} · ${summary.dayOfWeek || ""} · ${campaignHistoryMeta(item)}` : campaignHistoryMeta(item));
     const isPinned=!!item.pinned;
     const pinLabel=isPinned ? "Pinned" : "Pin";
     const pinTitle=isPinned ? "Unpin campaign" : "Pin campaign";
@@ -6834,10 +6889,11 @@ function restoreCampaignFilePayload(filePayload){
   const differentAppVersion=!!(parsed.appVersion && parsed.appVersion !== APP_VERSION);
   const imageWarning=campaignFileNeedsImageCheck(restored);
   const compatibilityWarning=isLegacyProject || differentAppVersion;
-  if(imageWarning) showSessionFeedback(getCampaignReadyMessage("Campaign ready — check images before exporting"),true);
-  else if(compatibilityWarning) showSessionFeedback(getCampaignReadyMessage("Campaign upgraded to the latest version"),true);
-  else showSessionFeedback(getCampaignReadyMessage("Campaign ready"),false);
-  if(typeof setSheetsStatus==="function") setSheetsStatus("✓ "+getCampaignReadyMessage("Campaign ready"),"csv-success csv-loaded-status");
+  const readyMessage=typeof getCampaignReadyMessage==="function" ? getCampaignReadyMessage : (prefix=>prefix.indexOf("check images")>-1 ? "Campaign loaded, images may need checking" : (prefix.indexOf("upgraded")>-1 ? "Campaign loaded with compatibility warning" : "Campaign loaded"));
+  if(imageWarning) showSessionFeedback(readyMessage("Campaign ready — check images before exporting"),true);
+  else if(compatibilityWarning) showSessionFeedback(readyMessage("Campaign upgraded to the latest version"),true);
+  else showSessionFeedback(readyMessage("Campaign ready"),false);
+  if(typeof setSheetsStatus==="function") setSheetsStatus("✓ "+readyMessage("Campaign ready"),"csv-success csv-loaded-status");
   if(typeof addCampaignHistoryEntry==="function") addCampaignHistoryEntry(buildCampaignHistoryEntryFromPayload(parsed, "backup"));
   if(typeof refreshCampaignHistoryUI==="function") refreshCampaignHistoryUI();
   resetShortcutFocusAfterImport();
