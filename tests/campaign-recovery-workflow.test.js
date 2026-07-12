@@ -629,3 +629,26 @@ test('campaign library delete action removes only the selected history entry and
   assert.equal(history[0].title, 'Keep Me');
   assert.equal(refreshed, 1);
 });
+
+test('campaign save regenerates summary metadata from the current editor values for existing campaigns', () => {
+  assert.match(html, /sessionMetadata:\{[\s\S]*summaryMetadata:\{title:String\(campaign\.name\|\|"Untitled Campaign"\)/);
+  assert.match(html, /sendDate:String\(campaign\.date\|\|""\)\.trim\(\)/);
+  assert.match(html, /dayOfWeek:typeof formatCampaignWeekday==="function" \? formatCampaignWeekday\(campaign\.date\) : ""/);
+  assert.match(html, /owner:String\(campaign\.owner\|\|""\)\.trim\(\)/);
+  assert.match(html, /offerCount:portableOffers\.filter\(offer=>offer&&Object\.keys\(offer\)\.some/);
+  assert.match(html, /operatorBadges:portableOffers\.filter\(offer=>offer&&Object\.keys\(offer\)\.some/);
+});
+
+test('campaign history refresh keeps the loaded campaign id and replaces stale metadata on save', () => {
+  assert.match(html, /let activeCampaignHistoryId = "";/);
+  assert.match(html, /activeCampaignHistoryId=id;[\s\S]*?restoreCampaignFilePayload/);
+  assert.match(html, /const existingId=activeCampaignHistoryId \|\| entry\.id;/);
+  assert.match(html, /const previous=readCampaignHistory\(\)\.find\(item=>item\.id===existingId\) \|\| readCampaignHistory\(\)\.find\(item=>item\.title===entry\.title && item\.type===entry\.type\);/);
+  assert.match(html, /activeCampaignHistoryId=merged\.id;/);
+  assert.match(html, /summary&&summary\.sendDate \? `\$\{summary\.sendDate\} · \$\{summary\.dayOfWeek \|\| ""\} · \$\{campaignHistoryMeta\(item\)\}` : campaignHistoryMeta\(item\)/);
+});
+test('splash Recent Campaign is selected by newest saved summary metadata and Continue opens the displayed campaign', () => {
+  assert.match(html, /return \(Array\.isArray\(list\) \? list\.filter\(item=>item&&item\.payload\) : \[\]\)\.sort\(\(a,b\)=>campaignSummaryTime\(b\)-campaignSummaryTime\(a\)\)/);
+  assert.match(html, /const meta=recent\.summaryMetadata \|\| getCampaignMetadataFromPayload\(recent\.payload\);\n\s*wrap\.classList\.add\("active"\); label\.textContent="Recent Campaign"; name\.textContent=meta\.title\|\|recent\.name\|\|"Untitled Campaign"; date\.textContent=formatRecentCampaignDate\(meta\.sendDate\|\|recent\.date\); time\.textContent=formatRecentSavedTime\(meta\.savedAt\|\|recent\.savedAt\|\|recent\.lastOpenedAt\); name\.onclick=\(\)=>openRecentCampaign\(recent\.id\)/);
+  assert.match(html, /function openRecentCampaign\(id\)\{[\s\S]*?restoreCampaignFilePayload\(parseCampaignFileText\(JSON\.stringify\(entry\.payload\)\)\);[\s\S]*?dismissSplashAndShowBuilder\("campaign"\);/);
+});
