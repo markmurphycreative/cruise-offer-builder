@@ -238,23 +238,29 @@ input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.58;
 .parse-result.high{color:var(--green);}
 .parse-result.partial{color:var(--gold);}
 .parse-result.low{color:var(--red);}
-.multi-offer-status-row{display:flex;align-items:center;gap:6px;width:100%;margin-top:4px;padding:4px 6px;border:1px solid transparent;border-radius:var(--radius);background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;transition:background var(--ui-transition),border-color var(--ui-transition),box-shadow var(--ui-transition);}
+.multi-offer-status-row{display:flex;align-items:center;gap:8px;width:100%;margin-top:5px;padding:5px 6px 5px 8px;border:1px solid transparent;border-radius:var(--radius);background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;transition:background var(--ui-transition),border-color var(--ui-transition),box-shadow var(--ui-transition);}
 .multi-offer-status-row:hover{background:var(--hover-tint);}
-.multi-offer-status-row.active{background:rgba(158,147,108,.10);border-color:rgba(158,147,108,.32);box-shadow:inset 2px 0 0 var(--gold);}
-.multi-offer-status-label{font-weight:700;white-space:nowrap;flex:0 0 auto;color:var(--gold);}
+.multi-offer-status-row.active{background:rgba(158,147,108,.055);border-color:rgba(158,147,108,.20);box-shadow:inset 2px 0 0 rgba(200,185,138,.82);}
+.multi-offer-status-label{font-weight:600;white-space:nowrap;flex:0 0 auto;color:var(--gold);letter-spacing:.005em;}
 .multi-offer-status-meta{margin-left:auto;display:inline-flex;align-items:center;gap:5px;min-width:0;white-space:nowrap;}
-.qa-warning-badge{display:inline-flex;align-items:center;padding:1px 5px;border:1px solid rgba(212,130,10,.38);border-radius:999px;color:var(--amber);font-size:8px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:rgba(212,130,10,.08);white-space:nowrap;}
-.multi-offer-open-indicator{color:var(--muted);font-weight:700;}
+.multi-offer-confidence,.multi-offer-missing{margin-top:0;min-height:0;font-size:9px;font-weight:500;line-height:1;color:var(--muted);opacity:.82;}
+.multi-offer-confidence.high,.multi-offer-confidence.partial{color:var(--muted);}
+.multi-offer-missing{opacity:.70;}
+.qa-warning-badge{display:inline-flex;align-items:center;padding:1px 5px;border:1px solid rgba(212,130,10,.42);border-radius:999px;color:var(--amber);font-size:8px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;background:rgba(212,130,10,.09);white-space:nowrap;}
+.multi-offer-open-indicator{display:inline-flex;align-items:center;justify-content:center;align-self:center;width:20px;height:18px;margin-left:2px;border:1px solid rgba(158,147,108,.24);border-radius:999px;background:rgba(158,147,108,.08);color:var(--navy);font-size:12px;font-weight:600;line-height:1;transition:background var(--ui-transition),border-color var(--ui-transition),transform var(--ui-transition-fast);}
+.multi-offer-status-row:hover .multi-offer-open-indicator{background:rgba(158,147,108,.15);border-color:rgba(158,147,108,.38);transform:translateX(1px);}
 .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;}
-.parser-intelligence-details{margin:3px 0 7px 16px;border:1px solid var(--border-soft);border-radius:var(--radius);background:var(--surface);overflow:hidden;}
-.parser-intelligence-details summary{cursor:pointer;padding:5px 7px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.055em;color:var(--navy);list-style:none;}
+.parser-intelligence-details{margin:1px 0 8px 18px;border:0;border-left:1px solid rgba(200,185,138,.34);border-radius:0;background:transparent;overflow:visible;}
+.parser-intelligence-details summary{cursor:pointer;padding:4px 4px 4px 8px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.055em;color:var(--navy);list-style:none;display:flex;align-items:center;gap:6px;min-height:22px;}
 .parser-intelligence-details summary::-webkit-details-marker{display:none;}
-.parser-intelligence-details summary::before{content:"▸";display:inline-block;margin-right:5px;color:var(--muted);}
+.parser-intelligence-details summary::before{content:"▸";display:inline-block;color:var(--muted);font-size:9px;}
 .parser-intelligence-details[open] summary::before{content:"▾";}
-.parser-intelligence-panel{border-top:1px solid var(--border-soft);padding:8px;display:grid;gap:8px;}
+.parser-intelligence-collapsed-summary{margin-left:auto;font-size:8.5px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted);white-space:nowrap;}
+.parser-intelligence-details[open] .parser-intelligence-collapsed-summary{display:none;}
+.parser-intelligence-panel{padding:4px 4px 7px 8px;display:grid;gap:7px;}
 .parser-intelligence-summary{display:flex;gap:5px;flex-wrap:wrap;}
-.parser-intelligence-summary-pill{padding:2px 6px;border:1px solid var(--border-soft);border-radius:999px;background:var(--surface-subtle);font-size:8.5px;font-weight:700;color:var(--navy);white-space:nowrap;}
-.parser-intelligence-section{display:grid;gap:4px;padding-top:7px;border-top:1px solid var(--border-soft);}
+.parser-intelligence-summary-pill{padding:2px 6px;border:0;border-radius:999px;background:rgba(158,147,108,.08);font-size:8.5px;font-weight:600;color:var(--navy);white-space:nowrap;}
+.parser-intelligence-section{display:grid;gap:4px;padding-top:6px;border-top:1px solid rgba(216,213,206,.48);}
 .parser-intelligence-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);}
 .parser-intelligence-item{display:grid;grid-template-columns:14px 1fr;gap:4px;font-size:9px;line-height:1.35;color:var(--text);}
 .parser-intelligence-icon{font-weight:700;color:var(--green);}
@@ -7752,9 +7758,11 @@ function renderParserIntelligencePanel(result,rawText,index,quality){
   const section=(heading,html,empty,action="")=>`<div class="parser-intelligence-section"><div class="parser-intelligence-heading"><span>${escapeParserIntelligenceHtml(heading)}</span>${action}</div>${html||`<div class="parser-intelligence-empty">${escapeParserIntelligenceHtml(empty||"None detected")}</div>`}</div>`;
   const qa=missing.length||qaWarnings?item("Confidence",`${score}%`,"⚠",true)+(missing.length?item("Missing",missing.map(value=>`• ${value}`).join("\n"),"⚠",true):"")+(qaWarnings?item("QA Warning",`${qaWarnings} warning${qaWarnings===1?"":"s"} detected`,"⚠",true):""):item("Confidence",`${score}%`)+`<div class="parser-intelligence-empty">No warnings.</div>`;
   const cardText=inclusions.join("\n");
-  const summary=`<div class="parser-intelligence-summary"><span class="parser-intelligence-summary-pill">${detected.length} fields detected</span><span class="parser-intelligence-summary-pill">${rules.length} rules applied</span><span class="parser-intelligence-summary-pill">${missing.length+qaWarnings} warnings</span></div>`;
+  const warningCount=missing.length+qaWarnings;
+  const healthSummary=warningCount?`${detected.length} detected • ${rules.length} rules • QA ${warningCount}`:`Healthy ✓`;
+  const summary=`<div class="parser-intelligence-summary"><span class="parser-intelligence-summary-pill">${detected.length} detected</span><span class="parser-intelligence-summary-pill">${rules.length} rules</span><span class="parser-intelligence-summary-pill">QA ${warningCount}</span></div>`;
   const copyAction=cardText?`<span><button type="button" class="parser-intelligence-copy-btn" aria-label="Copy final card text" onclick="copyParserIntelligenceCardText(this)">📋</button><span class="parser-intelligence-copy-status" aria-live="polite"></span></span>`:"";
-  return `<details class="parser-intelligence-details"><summary>Offer Intelligence</summary><div class="parser-intelligence-panel">`+
+  return `<details class="parser-intelligence-details"><summary><span>Offer Intelligence</span><span class="parser-intelligence-collapsed-summary">${escapeParserIntelligenceHtml(healthSummary)}</span></summary><div class="parser-intelligence-panel">`+
     summary+
     section("Detected Fields",detected.map(row=>item(row.label,row.value)).join(""),"No detected fields.")+
     section("Rules Applied",rules.map(rule=>item("",rule)).join(""),"No rules applied.")+
@@ -7804,7 +7812,7 @@ function performMultiOfferImport(replaceConfirmed){
     const warningBadge=qaWarnings?`<span class="qa-warning-badge">QA Warning</span>`:"";
     const legacyStatusText=`Confidence ${clampParseConfidenceScore(quality.score)} · ${missing} missing fields${qaWarnings?` · ${qaWarnings} QA warning${qaWarnings===1?"":"s"}`:""}`;
     const intelligence=typeof renderParserIntelligencePanel==="function"?renderParserIntelligencePanel(result,item.block,index,quality):"";
-    return `<div class="multi-offer-status-row" data-offer-index="${index}" role="button" tabindex="0" title="Jump to Offer" aria-label="Offer ${index+1} Loaded - Open Offer" onclick="jumpToMultiOfferStatus(${index})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();jumpToMultiOfferStatus(${index});}"><span class="multi-offer-status-label">${label}</span><span class="multi-offer-status-meta"><span class="parse-result ${cls}">Confidence ${clampParseConfidenceScore(quality.score)}</span><span class="parse-result">${missing} missing fields</span>${warningBadge}<span class="sr-only">${legacyStatusText}</span><span class="multi-offer-open-indicator" aria-hidden="true">→</span></span></div>${intelligence}`;
+    return `<div class="multi-offer-status-row" data-offer-index="${index}" role="button" tabindex="0" title="Open Offer ${index+1}" aria-label="Offer ${index+1} Loaded - Open Offer" onclick="jumpToMultiOfferStatus(${index})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();jumpToMultiOfferStatus(${index});}"><span class="multi-offer-status-label">${label}</span><span class="multi-offer-status-meta">${warningBadge}<span class="parse-result ${cls} multi-offer-confidence">Confidence ${clampParseConfidenceScore(quality.score)}</span><span class="parse-result multi-offer-missing">${missing} missing fields</span><span class="sr-only">${legacyStatusText}</span><span class="multi-offer-open-indicator" aria-hidden="true" title="Open this offer">›</span></span></div>${intelligence}`;
   });
   if(blocks.length>4) rows.push(`<div>4 offers loaded. ${blocks.length-4} additional offers ignored.</div>`);
   setMultiOfferStatus(rows.join(""),parsedResults.some(item=>item.result.confidence!=='high'||getMultiOfferImportQualityResult(item.result,item.block).qaWarnings)?'partial':'high');
