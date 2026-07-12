@@ -2608,7 +2608,7 @@ function sv(i){
 }
 function save(){
   if(typeof isOfferLocked==="function" && isOfferLocked(cur)) return;
-  FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e){ if(typeof removeSubjectToConditions==="function") e.value=removeSubjectToConditions(e.value); offers[cur][f]=f==="ship"&&typeof normaliseRoyalCaribbeanShipName==="function"?normaliseRoyalCaribbeanShipName(e.value):e.value; } });
+  FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e){ if(typeof removeSubjectToConditions==="function") e.value=removeSubjectToConditions(e.value); offers[cur][f]=f==="ship"&&typeof normaliseRoyalCaribbeanShipName==="function"?normaliseRoyalCaribbeanShipName(e.value):(f==="name"&&typeof normaliseTitleConnectors==="function"?normaliseTitleConnectors(e.value):e.value); } });
   const sf=document.getElementById("f-sailingFrom"); if(sf && offers[cur]._sailingFromManual===undefined) offers[cur]._sailingFromManual=String(sf.value||"").trim()!==(typeof getAutoSailingFromForOffer==="function"?getAutoSailingFromForOffer(offers[cur]):getAutoSailingFromForPorts(offers[cur].ports||""));
   const op=document.getElementById("f-operator"); if(op) offers[cur].operator=op.value;
   const logoDisplay=document.getElementById("f-logo-display"); if(logoDisplay) offers[cur]._logoDisplay=logoDisplay.value||"operator";
@@ -5253,7 +5253,7 @@ function processSheetCSV(csv,status){
   if(campRow){
     const camp=val(campRow,headers,["campaign_name","campaign"]);
     const el=document.getElementById("g-campaign");
-    if(el && camp) el.value=camp;
+    if(el && camp) el.value=typeof normaliseTitleConnectors==="function"?normaliseTitleConnectors(camp):camp;
   }
 
   cur=0;
@@ -5458,7 +5458,7 @@ function applyCampaignMetadata(metadata={},source="generated",force=false){
   if(metadata.sendDate && dateEl) dateEl.value=metadata.sendDate;
   if(metadata.description && descEl) descEl.value=metadata.description;
   if(metadata.owner && ownerEl) ownerEl.value=metadata.owner;
-  if(metadata.name && nameEl) nameEl.value=metadata.name;
+  if(metadata.name && nameEl) nameEl.value=typeof normaliseTitleConnectors==="function"?normaliseTitleConnectors(metadata.name):metadata.name;
   campaignNameSource=source;
   if(source!=="generated") setAutoCampaignNameState(false);
   return true;
@@ -7835,14 +7835,22 @@ function replaceAtSymbolsForDisplay(value){
 function normaliseRoyalCaribbeanShipName(value){
   return String(value||"").replace(/\b([A-Z][A-Za-z'’.-]*(?:\s+[A-Z][A-Za-z'’.-]*){0,3})\s+Of\s+The\s+Seas\b/g,(match,prefix)=>`${prefix} of the Seas`);
 }
+const TITLE_CONNECTOR_WORDS=new Set(["of","the","and","in","on","to","for"]);
+function normaliseTitleConnectors(value){
+  return String(value||"").replace(/\b([A-Za-z]+)\b/g,(word,match,offset)=>{
+    const lower=word.toLowerCase();
+    if(offset===0 || !TITLE_CONNECTOR_WORDS.has(lower)) return word;
+    return lower;
+  });
+}
 function normaliseKnownDisplayText(value){
-  return normaliseRoyalCaribbeanShipName(String(value||"").replace(/\s*@\s*/g," at ")
+  return normaliseTitleConnectors(normaliseRoyalCaribbeanShipName(String(value||"").replace(/\s*@\s*/g," at ")
     .replace(/\bLaspezia\b/gi,"La Spezia")
     .replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca")
     .replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne")
     .replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing")
     .replace(/[ \t]{2,}/g," ")
-    .trim());
+    .trim()));
 }
 function removeSubjectToConditions(value){
   return String(value||"").replace(/\s*@\s*/g," at ")
@@ -9081,9 +9089,30 @@ function getCleanItineraryPorts(str){
     .map(s=>s.trim())
     .filter(Boolean);
 }
+const RENDERED_PORT_COUNTRY_CLEANUP=new Set([
+  "casablanca|morocco",
+  "lisbon|portugal",
+  "barcelona|spain",
+  "naples|italy",
+  "bilbao|spain",
+  "vigo|spain",
+  "cadiz|spain",
+  "cherbourg|france",
+  "kusadasi|turkey",
+  "istanbul|turkey"
+]);
+function normaliseRenderedPortCleanupKey(value){
+  return String(value||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").replace(/\s+/g," ").trim();
+}
+function removeRenderedPortTrailingCountry(value){
+  const parts=String(value||"").split(",").map(part=>part.trim()).filter(Boolean);
+  if(parts.length!==2) return String(value||"").trim();
+  const key=`${normaliseRenderedPortCleanupKey(parts[0])}|${normaliseRenderedPortCleanupKey(parts[1])}`;
+  return RENDERED_PORT_COUNTRY_CLEANUP.has(key)?parts[0]:String(value||"").trim();
+}
 function formatRenderedItineraryPort(port){
   const displayText=value=>(typeof normaliseKnownDisplayText==="function"?normaliseKnownDisplayText(value):String(value||"").replace(/\s*@\s*/g," at ").replace(/\bLaspezia\b/gi,"La Spezia").replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca").replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne").replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing").replace(/[ \t]{2,}/g," ").trim());
-  const value=displayText(port);
+  const value=removeRenderedPortTrailingCountry(displayText(port));
   return /^(?:newcastle|newcastle upon tyne|newcastle, england|port of tyne)$/i.test(value)?"Port of Tyne":value;
 }
 function isEmbarkationPortForVisitRemoval(port){
