@@ -6276,7 +6276,7 @@ function buildCampaignFilePayload(){
     operatorLandingPages:portableOffers.map(({url=""})=>url),
     qa:getCampaignQaSnapshot(),
     sourceInfo:{googleSheetUrl:googleSheetSource},
-    sessionMetadata:{savedAt:exportedAt,autosaveKey:AUTOSAVE_KEY,autosave:readSavedSession(),lockedOffers:Array.isArray(lockedOffers) ? lockedOffers.slice(0,4) : [],lockedHeroImages:Array.isArray(lockedHeroImages) ? lockedHeroImages.slice(0,4) : [],sectionState,openSectionKey:getOpenSectionKey(),summaryMetadata:{title:String(campaign.name||"Untitled Campaign").trim()||"Untitled Campaign",name:String(campaign.name||"Untitled Campaign").trim()||"Untitled Campaign",description:String(campaign.description||"").trim(),sendDate:String(campaign.date||"").trim(),date:String(campaign.date||"").trim(),dayOfWeek:typeof formatCampaignWeekday==="function" ? formatCampaignWeekday(campaign.date) : "",owner:String(campaign.owner||"").trim(),departure:String(campaign.airport||"").trim(),offerCount:portableOffers.filter(offer=>offer&&Object.keys(offer).some(key=>{ const value=offer[key]; return value!==undefined && value!==null && String(value).trim()!==""; })).length,operatorBadges:portableOffers.filter(offer=>offer&&Object.keys(offer).some(key=>{ const value=offer[key]; return value!==undefined && value!==null && String(value).trim()!==""; })).map(offer=>typeof getCampaignOperatorShortLabel==="function" ? getCampaignOperatorShortLabel(offer&&offer.operator) : String((offer&&offer.operator)||"").trim().slice(0,3).toUpperCase()).slice(0,4),savedAt:exportedAt,updatedAt:exportedAt,lastSavedAt:exportedAt}}
+    sessionMetadata:{savedAt:exportedAt,autosaveKey:AUTOSAVE_KEY,autosave:readSavedSession(),lockedOffers:Array.isArray(lockedOffers) ? lockedOffers.slice(0,4) : [],lockedHeroImages:Array.isArray(lockedHeroImages) ? lockedHeroImages.slice(0,4) : [],sectionState,openSectionKey:getOpenSectionKey(),summaryMetadata:getCampaignSummaryMetadataFromPayload({campaign,state:{campaign,offers:portableOffers,cur,activeOfferIndex:cur},appVersion:APP_VERSION},exportedAt)}
   };
 }
 
@@ -6294,11 +6294,50 @@ function writeRecentCampaigns(list){
   const clean=(Array.isArray(list)?list:[]).filter(item=>item&&item.payload).slice(0,RECENT_CAMPAIGNS_MAX);
   try{ localStorage.setItem(RECENT_CAMPAIGNS_KEY,JSON.stringify(clean)); return true; }catch(e){ return false; }
 }
+function getCampaignSummaryOperatorName(operator){
+  const raw=String(operator||"").trim();
+  if(!raw) return "";
+  const key=typeof getCampaignThumbnailOperatorKey==="function" ? getCampaignThumbnailOperatorKey(raw) : raw;
+  const headers=(typeof OPERATOR_HEADERS!=="undefined" && OPERATOR_HEADERS) ? OPERATOR_HEADERS : {};
+  return String((headers[key]&&headers[key].name) || raw).trim();
+}
+function getCampaignSummaryOfferQuality(offer){
+  const parsed={operatorKey:offer&&offer.operator,name:offer&&offer.name,ship:offer&&offer.ship,day:offer&&offer.day,month:offer&&offer.month,nights:offer&&offer.nights,price:offer&&offer.price,board:offer&&offer.board,boardlbl:offer&&offer.boardlbl,ports:offer&&offer.ports,incl:offer&&offer.incl};
+  const raw=String((offer&&((typeof PERSISTED_PASTE_OFFER_KEY!=="undefined"&&offer[PERSISTED_PASTE_OFFER_KEY])||offer._rawPastedOfferText)) || [parsed.name,parsed.ship,parsed.incl,parsed.ports,offer&&offer.tags].filter(Boolean).join(" "));
+  const effective=parsed.operatorKey||((typeof getOfferIntelligenceShipOperator==="function"&&(getOfferIntelligenceShipOperator(parsed.ship)||{}).operatorKey)||"");
+  if(typeof getOfferIntelligenceQualityDetails==="function"){
+    const quality=getOfferIntelligenceQualityDetails(parsed,raw,effective)||{};
+    return {score:clampParseConfidenceScore(quality.score),missing:(quality.checks||[]).filter(check=>check&&!check.ok).length,qaWarnings:(quality.spellingIssues||[]).length};
+  }
+  if(typeof getMultiOfferImportQualityResult==="function") return getMultiOfferImportQualityResult({parsed,score:offer&&offer._parserConfidence},raw);
+  return {score:clampParseConfidenceScore((offer&&offer._parserConfidence)||0),missing:typeof getParsedOfferMissingCount==="function" ? getParsedOfferMissingCount(parsed) : 0,qaWarnings:0};
+}
+function getCampaignSummaryLastEditedOffer(offers,activeIndex){
+  const valid=Array.isArray(offers) ? offers.filter(isCampaignThumbnailOfferPresent) : [];
+  if(!valid.length) return null;
+  const preferred=Number.isInteger(activeIndex) && offers[activeIndex] && isCampaignThumbnailOfferPresent(offers[activeIndex]) ? {offer:offers[activeIndex],index:activeIndex} : null;
+  const fallbackIndex=offers.findIndex(offer=>valid[valid.length-1]===offer);
+  const selected=preferred || {offer:valid[valid.length-1],index:fallbackIndex};
+  return {index:selected.index+1,operator:getCampaignSummaryOperatorName(selected.offer&&selected.offer.operator),ship:String((selected.offer&&selected.offer.ship)||"").trim(),title:String((selected.offer&&selected.offer.name)||"").trim()};
+}
 function getCampaignSummaryMetadataFromPayload(payload,savedAt){
   const source=(payload&&payload.campaign) || (payload&&payload.state&&payload.state.campaign) || {};
   const offers=(payload&&payload.state&&payload.state.offers) || (payload&&payload.offers) || [];
+  const validOffers=Array.isArray(offers) ? offers.filter(isCampaignThumbnailOfferPresent) : [];
+  const qualities=validOffers.map(getCampaignSummaryOfferQuality);
+  const missingFieldCount=qualities.reduce((sum,item)=>sum+(Number(item&&item.missing)||0),0);
+  const qaWarningCount=qualities.filter(item=>(Number(item&&item.qaWarnings)||0)>0).length;
+  const scores=qualities.map(item=>Number(item&&item.score)).filter(Number.isFinite);
+  const averageConfidence=scores.length ? Math.round(scores.reduce((sum,score)=>sum+score,0)/scores.length) : 0;
+  const operatorMap=new Map();
+  validOffers.forEach(offer=>{ const name=getCampaignSummaryOperatorName(offer&&offer.operator); const key=(typeof getCampaignThumbnailOperatorKey==="function" ? getCampaignThumbnailOperatorKey(name||offer&&offer.operator) : name).toLowerCase(); if(name&&!operatorMap.has(key)) operatorMap.set(key,name); });
   const sendDate=String(source.date||source.sendDate||"").trim();
-  const saved=(savedAt || (payload&&payload.exportedAt) || (payload&&payload.sessionMetadata&&payload.sessionMetadata.savedAt) || new Date().toISOString());
+  const existing=(payload&&payload.summaryMetadata) || (payload&&payload.sessionMetadata&&payload.sessionMetadata.summaryMetadata) || {};
+  const saved=(savedAt || existing.updatedAt || existing.savedAt || (payload&&payload.exportedAt) || (payload&&payload.sessionMetadata&&payload.sessionMetadata.savedAt) || new Date().toISOString());
+  const activeIndex=Number.isInteger(payload&&payload.state&&payload.state.activeOfferIndex) ? payload.state.activeOfferIndex : (Number.isInteger(payload&&payload.state&&payload.state.cur) ? payload.state.cur : -1);
+  const assetReady=validOffers.every(offer=>typeof getOfferReadiness==="function" ? !!(getOfferReadiness(offer)||{}).ready : true);
+  const exported=existing.campaignStatus==="exported" ? "exported" : "";
+  const campaignStatus=!validOffers.length ? "empty" : (qaWarningCount||missingFieldCount ? "needs_attention" : (!assetReady ? "draft" : (exported||"ready")));
   return {
     title:String(source.name||"Untitled Campaign").trim()||"Untitled Campaign",
     name:String(source.name||"Untitled Campaign").trim()||"Untitled Campaign",
@@ -6308,8 +6347,16 @@ function getCampaignSummaryMetadataFromPayload(payload,savedAt){
     dayOfWeek:typeof formatCampaignWeekday==="function" ? formatCampaignWeekday(sendDate) : "",
     owner:String(source.owner||"").trim(),
     departure:String(source.airport||"").trim(),
-    offerCount:Array.isArray(offers) ? offers.filter(isCampaignThumbnailOfferPresent).length : 0,
-    operatorBadges:Array.isArray(offers) ? offers.filter(isCampaignThumbnailOfferPresent).map(offer=>getCampaignOperatorShortLabel(offer&&offer.operator)).slice(0,4) : [],
+    offerCount:validOffers.length,
+    totalOffers:validOffers.length,
+    operators:Array.from(operatorMap.values()),
+    operatorBadges:validOffers.map(offer=>getCampaignOperatorShortLabel(offer&&offer.operator)).slice(0,4),
+    lastEditedOffer:getCampaignSummaryLastEditedOffer(offers,activeIndex),
+    averageConfidence,
+    qaWarningCount,
+    missingFieldCount,
+    campaignStatus,
+    builderVersion:String((typeof APP_VERSION!=="undefined"&&APP_VERSION) || (payload&&payload.appVersion) || existing.builderVersion || "").trim(),
     savedAt:saved,
     updatedAt:saved,
     lastSavedAt:saved
@@ -6318,13 +6365,13 @@ function getCampaignSummaryMetadataFromPayload(payload,savedAt){
 function applyCampaignSummaryMetadataToPayload(payload,metadata){
   if(!payload || !metadata) return payload;
   payload.summaryMetadata={...metadata};
-  payload.exportedAt=metadata.savedAt;
-  payload.sessionMetadata={...(payload.sessionMetadata||{}),savedAt:metadata.savedAt,summaryMetadata:{...metadata}};
+  payload.exportedAt=metadata.updatedAt;
+  payload.sessionMetadata={...(payload.sessionMetadata||{}),savedAt:metadata.updatedAt,summaryMetadata:{...metadata}};
   return payload;
 }
 function campaignSummaryTime(item){
   const meta=(item&&item.summaryMetadata) || {};
-  return new Date(meta.savedAt || (item&&item.savedAt) || (item&&item.updatedAt) || 0).getTime() || 0;
+  return new Date(meta.updatedAt || meta.savedAt || (item&&item.updatedAt) || (item&&item.savedAt) || 0).getTime() || 0;
 }
 function getCampaignMetadataFromPayload(payload){
   return getCampaignSummaryMetadataFromPayload(payload);
@@ -6394,7 +6441,7 @@ function refreshSplashRecentCampaign(){
   const recent=readRecentCampaigns()[0];
   if(!recent){ wrap.classList.remove("active"); label.textContent=""; name.textContent=""; date.textContent=""; time.textContent=""; name.onclick=null; return; }
   const meta=recent.summaryMetadata || getCampaignMetadataFromPayload(recent.payload);
-  wrap.classList.add("active"); label.textContent="Recent Campaign"; name.textContent=meta.title||recent.name||"Untitled Campaign"; date.textContent=formatRecentCampaignDate(meta.sendDate||recent.date); time.textContent=formatRecentSavedTime(meta.savedAt||recent.savedAt||recent.lastOpenedAt); name.onclick=()=>openRecentCampaign(recent.id);
+  wrap.classList.add("active"); label.textContent="Recent Campaign"; name.textContent=meta.title||recent.name||"Untitled Campaign"; date.textContent=formatRecentCampaignDate(meta.sendDate||recent.date); time.textContent=formatRecentSavedTime(meta.updatedAt||meta.savedAt||recent.updatedAt||recent.savedAt||recent.lastOpenedAt); name.onclick=()=>openRecentCampaign(recent.id);
 }
 function refreshRecentCampaignSurfaces(){ syncNativeFileMenu(); refreshSplashRecentCampaign(); }
 function closeFileMenu(){}
@@ -6651,11 +6698,13 @@ function getCampaignThumbnailSavedTime(item){
 function renderCampaignThumbnail(item,loadId){
   const summary=(item&&item.summaryMetadata) || null;
   const name=escapeCampaignHistoryText((summary&&summary.title) || getCampaignThumbnailName(item));
-  const operators=getCampaignThumbnailOperatorEntries(item).map(entry=>`<span class="campaign-thumbnail-pill" style="${escapeCampaignHistoryText(getCampaignThumbnailPillStyle(entry.operator))}">${escapeCampaignHistoryText(entry.label)}</span>`).join("");
-  const offerCount=(summary&&Number.isFinite(Number(summary.offerCount))) ? Number(summary.offerCount) : getCampaignThumbnailOfferCount(item);
+  const operatorEntries=(summary&&Array.isArray(summary.operators)&&summary.operators.length ? summary.operators.map(operator=>({operator,label:getCampaignOperatorShortLabel(operator)})) : getCampaignThumbnailOperatorEntries(item));
+  const operators=operatorEntries.map(entry=>`<span class="campaign-thumbnail-pill" style="${escapeCampaignHistoryText(getCampaignThumbnailPillStyle(entry.operator))}">${escapeCampaignHistoryText(entry.label)}</span>`).join("");
+  const offerCount=(summary&&Number.isFinite(Number(summary.totalOffers))) ? Number(summary.totalOffers) : ((summary&&Number.isFinite(Number(summary.offerCount))) ? Number(summary.offerCount) : getCampaignThumbnailOfferCount(item));
   const savedTime=getCampaignThumbnailSavedTime(item);
   const offerLabel=`${offerCount} ${offerCount===1 ? "Offer" : "Offers"}`;
-  const meta=savedTime ? `${offerLabel} · Saved ${savedTime}` : offerLabel;
+  const status=(summary&&summary.campaignStatus) ? ` · ${String(summary.campaignStatus).replace(/_/g," ")}` : "";
+  const meta=savedTime ? `${offerLabel}${status} · Saved ${savedTime}` : `${offerLabel}${status}`;
   const loadAttrs=loadId ? ` role="button" tabindex="0" title="Load campaign" aria-label="Load campaign" onclick="restoreCampaignHistoryEntry('${loadId}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();restoreCampaignHistoryEntry('${loadId}');}"` : ` aria-label="${name} campaign thumbnail"`;
   return `<div class="campaign-thumbnail"${loadAttrs}><div class="campaign-thumbnail-operators">${operators}</div><div class="campaign-thumbnail-name">${name}</div><div class="campaign-thumbnail-meta">${escapeCampaignHistoryText(meta)}</div></div>`;
 }
