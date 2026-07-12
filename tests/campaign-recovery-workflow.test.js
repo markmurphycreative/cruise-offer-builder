@@ -631,12 +631,11 @@ test('campaign library delete action removes only the selected history entry and
 });
 
 test('campaign save regenerates summary metadata from the current editor values for existing campaigns', () => {
-  assert.match(html, /sessionMetadata:\{[\s\S]*summaryMetadata:\{title:String\(campaign\.name\|\|"Untitled Campaign"\)/);
-  assert.match(html, /sendDate:String\(campaign\.date\|\|""\)\.trim\(\)/);
-  assert.match(html, /dayOfWeek:typeof formatCampaignWeekday==="function" \? formatCampaignWeekday\(campaign\.date\) : ""/);
-  assert.match(html, /owner:String\(campaign\.owner\|\|""\)\.trim\(\)/);
-  assert.match(html, /offerCount:portableOffers\.filter\(offer=>offer&&Object\.keys\(offer\)\.some/);
-  assert.match(html, /operatorBadges:portableOffers\.filter\(offer=>offer&&Object\.keys\(offer\)\.some/);
+  assert.match(html, /summaryMetadata:getCampaignSummaryMetadataFromPayload\(\{campaign,state:\{campaign,offers:portableOffers,cur,activeOfferIndex:cur\},appVersion:APP_VERSION\},exportedAt\)/);
+  assert.match(html, /function getCampaignSummaryMetadataFromPayload\(payload,savedAt\)/);
+  assert.match(html, /totalOffers:validOffers.length/);
+  assert.match(html, /operators:Array.from\(operatorMap.values\(\)\)/);
+  assert.match(html, /builderVersion:String\(\(typeof APP_VERSION!=="undefined"&&APP_VERSION\)/);
 });
 
 test('campaign history refresh keeps the loaded campaign id and replaces stale metadata on save', () => {
@@ -649,6 +648,77 @@ test('campaign history refresh keeps the loaded campaign id and replaces stale m
 });
 test('splash Recent Campaign is selected by newest saved summary metadata and Continue opens the displayed campaign', () => {
   assert.match(html, /return \(Array\.isArray\(list\) \? list\.filter\(item=>item&&item\.payload\) : \[\]\)\.sort\(\(a,b\)=>campaignSummaryTime\(b\)-campaignSummaryTime\(a\)\)/);
-  assert.match(html, /const meta=recent\.summaryMetadata \|\| getCampaignMetadataFromPayload\(recent\.payload\);\n\s*wrap\.classList\.add\("active"\); label\.textContent="Recent Campaign"; name\.textContent=meta\.title\|\|recent\.name\|\|"Untitled Campaign"; date\.textContent=formatRecentCampaignDate\(meta\.sendDate\|\|recent\.date\); time\.textContent=formatRecentSavedTime\(meta\.savedAt\|\|recent\.savedAt\|\|recent\.lastOpenedAt\); name\.onclick=\(\)=>openRecentCampaign\(recent\.id\)/);
+  assert.match(html, /const meta=recent\.summaryMetadata \|\| getCampaignMetadataFromPayload\(recent\.payload\);\n\s*wrap\.classList\.add\("active"\); label\.textContent="Recent Campaign"; name\.textContent=meta\.title\|\|recent\.name\|\|"Untitled Campaign"; date\.textContent=formatRecentCampaignDate\(meta\.sendDate\|\|recent\.date\); time\.textContent=formatRecentSavedTime\(meta\.updatedAt\|\|meta\.savedAt\|\|recent\.updatedAt\|\|recent\.savedAt\|\|recent\.lastOpenedAt\); name\.onclick=\(\)=>openRecentCampaign\(recent\.id\)/);
   assert.match(html, /function openRecentCampaign\(id\)\{[\s\S]*?restoreCampaignFilePayload\(parseCampaignFileText\(JSON\.stringify\(entry\.payload\)\)\);[\s\S]*?dismissSplashAndShowBuilder\("campaign"\);/);
+});
+
+test('campaign summary metadata v2 is lightweight, derived by the shared helper, and backward compatible', () => {
+  const context = runFunctions([
+    'isCampaignThumbnailOfferPresent',
+    'getCampaignThumbnailOperatorKey',
+    'getCampaignOperatorShortLabel',
+    'getCampaignSummaryOperatorName',
+    'clampParseConfidenceScore',
+    'getParsedOfferMissingCount',
+    'getCampaignSummaryOfferQuality',
+    'getCampaignSummaryLastEditedOffer',
+    'getCampaignSummaryMetadataFromPayload',
+    'applyCampaignSummaryMetadataToPayload',
+    'campaignSummaryTime'
+  ], {
+    APP_VERSION: 'v4.0',
+    OPERATOR_HEADERS: {
+      marella: { name: 'Marella' },
+      celebrity: { name: 'Celebrity' },
+      royal: { name: 'Royal Caribbean' },
+      fred: { name: 'Fred. Olsen' }
+    },
+    getOfferReadiness: offer => ({ ready: !!offer._img && !!offer._utm && !!offer.operator }),
+    getOfferIntelligenceQualityDetails: parsed => ({
+      score: parsed.ship === 'Bolette' ? 96 : 100,
+      spellingIssues: parsed.ship === 'Bolette' ? [{ token: 'QA' }] : [],
+      checks: [
+        { ok: !!parsed.operatorKey },
+        { ok: !!parsed.name },
+        { ok: !!parsed.ship },
+        { ok: !!parsed.price },
+        { ok: !!parsed.boardlbl },
+        { ok: !!parsed.nights },
+        { ok: !!parsed.ports }
+      ]
+    })
+  });
+  const payload = {
+    appVersion: 'legacy',
+    campaign: { name: 'PMU July', date: '2026-07-12', owner: 'EM', airport: 'MAN' },
+    state: {
+      activeOfferIndex: 3,
+      offers: [
+        { operator: 'marella', name: 'Greek Isles', ship: 'Discovery', price: '799', boardlbl: 'Full Board', nights: '7', ports: 'Rhodes', _img: 'hero', _utm: 'utm' },
+        {},
+        { heroLocked: true },
+        { operator: 'fred', name: 'Sunlit Shores of Spain', ship: 'Bolette', price: '999', boardlbl: 'Full Board', nights: '9', ports: '', _img: 'hero', _utm: 'utm' },
+        { operator: 'Marella', name: 'Duplicate Operator', ship: 'Explorer', price: '899', boardlbl: 'Full Board', nights: '7', ports: 'Corfu', _img: 'hero', _utm: 'utm' }
+      ]
+    }
+  };
+
+  const meta = context.getCampaignSummaryMetadataFromPayload(payload, '2026-07-12T19:46:00.000Z');
+
+  assert.equal(JSON.stringify(Object.keys(meta)), JSON.stringify(['title','name','description','sendDate','date','dayOfWeek','owner','departure','offerCount','totalOffers','operators','operatorBadges','lastEditedOffer','averageConfidence','qaWarningCount','missingFieldCount','campaignStatus','builderVersion','savedAt','updatedAt','lastSavedAt']));
+  assert.equal(meta.totalOffers, 3);
+  assert.equal(JSON.stringify(meta.operators), JSON.stringify(['Marella', 'Fred. Olsen']));
+  assert.equal(JSON.stringify(meta.lastEditedOffer), JSON.stringify({ index: 4, operator: 'Fred. Olsen', ship: 'Bolette', title: 'Sunlit Shores of Spain' }));
+  assert.equal(meta.averageConfidence, 99);
+  assert.equal(meta.qaWarningCount, 1);
+  assert.equal(meta.missingFieldCount, 1);
+  assert.equal(meta.campaignStatus, 'needs_attention');
+  assert.equal(meta.builderVersion, 'v4.0');
+  assert.equal(meta.updatedAt, '2026-07-12T19:46:00.000Z');
+  assert.doesNotMatch(JSON.stringify(meta), /data:image|base64|route|html|_img|exportedCard/i);
+
+  const applied = context.applyCampaignSummaryMetadataToPayload({ campaign: payload.campaign, state: payload.state }, meta);
+  assert.equal(JSON.stringify(applied.summaryMetadata), JSON.stringify(meta));
+  assert.equal(JSON.stringify(applied.sessionMetadata.summaryMetadata), JSON.stringify(meta));
+  assert.equal(context.campaignSummaryTime({ summaryMetadata: { updatedAt: '2026-07-12T19:46:00.000Z', savedAt: '2020-01-01T00:00:00.000Z' } }), Date.parse('2026-07-12T19:46:00.000Z'));
 });
