@@ -427,6 +427,55 @@ test('subtitle renders flights, transfers, and cabin as one compact grouped incl
   assert.match(html, /\.cc \.incl\{[^}]*line-height:1\.22;[^}]*margin:0 auto 20px;[^}]*display:flex;flex-direction:column;gap:2px;/);
 });
 
+test('PMU renders automatically added luggage and cabin as one editable inclusion row', () => {
+  const context = {};
+  vm.createContext(context);
+  vm.runInContext([
+    extractConstant('CARD_INCLUSION_SEPARATOR'),
+    extractConstant('CARD_INCLUSION_SAFE_WIDTH'),
+    extractConstant('CARD_INCLUSION_FONT'),
+    'const CARD_INCLUSION_CABIN_PHRASES=["Ocean View Cabin","Inside Stateroom","Oceanview Stateroom","Balcony Stateroom","Infinite Veranda","Concierge Class","Outside Cabin","Balcony Cabin","Inside Cabin","Junior Suite","AquaClass","Suite"];',
+    'function escapeRegExp(value){return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");}',
+    extractFunction('normaliseCardInclusionComponent'),
+    extractFunction('classifyCardInclusionComponent'),
+    extractFunction('makeCardInclusionComponent'),
+    extractFunction('splitCardInclusionLineComponents'),
+    extractFunction('normaliseFlightInclusionDisplay'),
+    extractFunction('stripCardInclusionRenderMarkup'),
+    extractFunction('escapeCardInclusionHtml'),
+    extractFunction('buildCardInclusionComponents'),
+    extractFunction('orderCardInclusionComponents'),
+    extractFunction('validateCardInclusionLines'),
+    extractFunction('estimateCardInclusionTextWidth'),
+    extractFunction('getCardInclusionMeasureText'),
+    extractFunction('packCardInclusionComponents'),
+    extractFunction('groupCardInclusionRenderLines'),
+    extractFunction('renderCardInclusionLayout'),
+    extractFunction('renderCardInclusion')
+  ].join('\n'), context);
+
+  const htmlSingle = context.renderCardInclusion('Includes luggage\nInside Cabin');
+  const visible = htmlSingle.replace(/<[^>]+>/g, '').replaceAll('&nbsp;', ' ');
+  assert.equal(visible, 'Includes luggage - Inside Cabin');
+  assert.equal((htmlSingle.match(/class="incl-line"/g) || []).length, 1);
+  assert.doesNotMatch(htmlSingle, /Includes luggage<\/span><\/span><span class="incl-line"><span class="incl-component cabin-phrase">Inside&nbsp;Cabin/);
+
+  const all4 = context.renderCardInclusion('Includes luggage\nInside Cabin');
+  const email = context.renderCardInclusion('Includes luggage\nInside Cabin');
+  assert.equal(all4, htmlSingle);
+  assert.equal(email, htmlSingle);
+
+  const changed = context.renderCardInclusion('Includes luggage\nBalcony Cabin');
+  assert.match(changed.replace(/<[^>]+>/g, '').replaceAll('&nbsp;', ' '), /Includes luggage - Balcony Cabin/);
+  assert.doesNotMatch(changed.replace(/<[^>]+>/g, '').replaceAll('&nbsp;', ' '), /Inside Cabin|Includes luggage.*Includes luggage/);
+
+  const withOther = context.renderCardInclusionLayout('Includes luggage\nBalcony Cabin\nCoach transfers', { html: false });
+  assert.equal(withOther, 'Includes luggage - Balcony Cabin - Coach transfers');
+
+  const explicit = context.renderCardInclusionLayout('Includes luggage and transfers', { html: false });
+  assert.equal(explicit, 'Includes luggage and transfers');
+});
+
 test('PMU renderer preserves exact Celebrity and Fred Olsen inclusions through repeated layout passes', () => {
   const context = {};
   vm.createContext(context);

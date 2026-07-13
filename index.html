@@ -9665,7 +9665,23 @@ function packCardInclusionComponents(components,options){
   return lines;
 }
 function groupCardInclusionRenderLines(components,options){
-  return orderCardInclusionComponents(components).map(component=>[component]);
+  const ordered=orderCardInclusionComponents(components);
+  const hasLuggage=ordered.some(component=>component&&/luggage/.test(component.type));
+  const hasCabin=ordered.some(component=>component&&component.type==="cabin");
+  if(!(hasLuggage&&hasCabin)) return ordered.map(component=>[component]);
+  const lines=[];
+  let editorialLine=[];
+  ordered.forEach(component=>{
+    if(!component) return;
+    if(component.type==="precruise"){
+      if(editorialLine.length){ lines.push(editorialLine); editorialLine=[]; }
+      lines.push([component]);
+      return;
+    }
+    editorialLine.push(component);
+  });
+  if(editorialLine.length) lines.push(editorialLine);
+  return lines;
 }
 function renderCardInclusionLayout(value,options){
   const html=!!(options&&options.html);
@@ -9685,7 +9701,7 @@ function renderCardInclusionLayout(value,options){
     const rendered=line.map(renderComponent);
     if(!html) return rendered.join(CARD_INCLUSION_SEPARATOR);
     if(!rendered.length) return `<span class="incl-line"></span>`;
-    return `<span class="incl-line">${rendered.join("")}</span>`;
+    return `<span class="incl-line">${rendered.join(escapeCardInclusionHtml(CARD_INCLUSION_SEPARATOR))}</span>`;
   };
   const componentLines=groupCardInclusionRenderLines(buildCardInclusionComponents(value),options);
   const lines=componentLines.map(renderLine);
