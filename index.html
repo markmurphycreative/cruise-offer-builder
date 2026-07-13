@@ -3010,7 +3010,8 @@ function setVisionReviewText(text,lowConfidence){
   const panel=document.getElementById("vision-review-panel");
   const review=document.getElementById("vision-review-text");
   const note=document.getElementById("vision-review-note");
-  if(review) review.value=text||"";
+  const cleaned=typeof normaliseVisionExtractedText==="function"?normaliseVisionExtractedText(text):String(text||"");
+  if(review) review.value=cleaned;
   if(panel) panel.classList.add("active");
   if(note) note.textContent=lowConfidence?"Some text may need reviewing before loading.":"Review extracted text before loading. The existing parser will process this text only after confirmation.";
 }
@@ -3054,7 +3055,9 @@ async function extractOfferTextFromVisionFile(file){
 }
 function loadOfferFromActiveMethod(){
   if(offerImportMethod==="vision"){
-    const reviewed=(document.getElementById("vision-review-text")||{}).value||"";
+    const reviewed=normaliseVisionExtractedText((document.getElementById("vision-review-text")||{}).value||"");
+    const review=document.getElementById("vision-review-text");
+    if(review) review.value=reviewed;
     const raw=document.getElementById("raw-paste");
     if(raw){ raw.value=reviewed; handlePasteOfferInput({target:raw}); }
   }
