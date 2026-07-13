@@ -423,7 +423,7 @@ test('subtitle renders flights, transfers, and cabin as one compact grouped incl
   assert.equal(text, 'Transfers IncludedNewcastle FlightsInside Cabin');
   assert.doesNotMatch(rendered, /<br>/);
   assert.match(rendered, /<span class="incl-line">/);
-  assert.match(rendered, /<span class="incl-component cabin-phrase">Inside&nbsp;Cabin<\/span>/);
+  assert.match(rendered, /<span class="incl-line"><span class="incl-component">Inside Cabin<\/span><\/span>/);
   assert.match(html, /\.cc \.incl\{[^}]*line-height:1\.22;[^}]*margin:0 auto 20px;[^}]*display:flex;flex-direction:column;gap:2px;/);
 });
 
@@ -457,7 +457,9 @@ test('PMU renders automatically added luggage and cabin as one editable inclusio
   const htmlSingle = context.renderCardInclusion('Includes luggage\nInside Cabin');
   const visible = htmlSingle.replace(/<[^>]+>/g, '').replaceAll('&nbsp;', ' ');
   assert.equal(visible, 'Includes luggage - Inside Cabin');
+  assert.equal(htmlSingle, '<span class="incl-line"><span class="incl-component">Includes luggage - Inside Cabin</span></span>');
   assert.equal((htmlSingle.match(/class="incl-line"/g) || []).length, 1);
+  assert.equal((htmlSingle.match(/class="incl-component"/g) || []).length, 1);
   assert.doesNotMatch(htmlSingle, /Includes luggage<\/span><\/span><span class="incl-line"><span class="incl-component cabin-phrase">Inside&nbsp;Cabin/);
 
   const all4 = context.renderCardInclusion('Includes luggage\nInside Cabin');
@@ -474,6 +476,47 @@ test('PMU renders automatically added luggage and cabin as one editable inclusio
 
   const explicit = context.renderCardInclusionLayout('Includes luggage and transfers', { html: false });
   assert.equal(explicit, 'Includes luggage and transfers');
+});
+
+
+test('Ambassador live card renderer keeps luggage and cabin in one final DOM row through view switches', () => {
+  const context = {};
+  vm.createContext(context);
+  vm.runInContext([
+    extractConstant('CARD_INCLUSION_SEPARATOR'),
+    extractConstant('CARD_INCLUSION_SAFE_WIDTH'),
+    extractConstant('CARD_INCLUSION_FONT'),
+    'const CARD_INCLUSION_CABIN_PHRASES=["Ocean View Cabin","Inside Stateroom","Oceanview Stateroom","Balcony Stateroom","Infinite Veranda","Concierge Class","Outside Cabin","Balcony Cabin","Inside Cabin","Junior Suite","AquaClass","Suite"];',
+    'function escapeRegExp(value){return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");}',
+    extractFunction('normaliseCardInclusionComponent'),
+    extractFunction('classifyCardInclusionComponent'),
+    extractFunction('makeCardInclusionComponent'),
+    extractFunction('splitCardInclusionLineComponents'),
+    extractFunction('normaliseFlightInclusionDisplay'),
+    extractFunction('stripCardInclusionRenderMarkup'),
+    extractFunction('escapeCardInclusionHtml'),
+    extractFunction('buildCardInclusionComponents'),
+    extractFunction('orderCardInclusionComponents'),
+    extractFunction('validateCardInclusionLines'),
+    extractFunction('estimateCardInclusionTextWidth'),
+    extractFunction('getCardInclusionMeasureText'),
+    extractFunction('packCardInclusionComponents'),
+    extractFunction('groupCardInclusionRenderLines'),
+    extractFunction('renderCardInclusionLayout'),
+    extractFunction('renderCardInclusion')
+  ].join('\n'), context);
+
+  const ambassadorOffer = { operator: 'ambassador', incl: 'Includes luggage\nInside Cabin' };
+  const expected = '<span class="incl-line"><span class="incl-component">Includes luggage - Inside Cabin</span></span>';
+  for (const view of ['all', 'single', 'email', 'all']) {
+    const finalDom = context.renderCardInclusion(ambassadorOffer.incl);
+    const visibleRows = [...finalDom.matchAll(/<span class="incl-line">([\s\S]*?)<\/span><\/span>/g)].map(match => match[1].replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' '));
+    assert.equal(finalDom, expected, `${view} should render one combined DOM row`);
+    assert.equal((finalDom.match(/class="incl-line"/g) || []).length, 1, `${view} incl-line count`);
+    assert.deepEqual(visibleRows, ['<span class="incl-component">Includes luggage - Inside Cabin'.replace(/<[^>]+>/g, '')], `${view} visible rows`);
+    assert.doesNotMatch(finalDom, /Includes luggage<\/span>\s*<\/span>\s*<span class="incl-line">/);
+    assert.doesNotMatch(finalDom, /<span class="incl-line">\s*<span class="incl-component(?: cabin-phrase)?">Inside(?:&nbsp;| )Cabin<\/span>/);
+  }
 });
 
 test('PMU renderer preserves exact Celebrity and Fred Olsen inclusions through repeated layout passes', () => {

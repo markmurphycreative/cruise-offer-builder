@@ -9685,23 +9685,18 @@ function groupCardInclusionRenderLines(components,options){
 }
 function renderCardInclusionLayout(value,options){
   const html=!!(options&&options.html);
-  const renderComponent=component=>{
-    const text=normaliseCardInclusionComponent(component&&component.text);
-    if(!html) return text;
-    let content=escapeCardInclusionHtml(component.type==="cabin" ? text.replace(/ /g,"\u00a0") : text).replace(/\u00a0/g,"&nbsp;");
-    if(/\bFREE return taxi transfer from home to port\*$/i.test(text)){
-      content=escapeCardInclusionHtml(text).replace(/home to port\*$/i,match=>`<span class="no-break">${match}</span>`);
-    }else if(/\bHarbour Rocks Hotel, Sydney\b/i.test(text)){
-      content=escapeCardInclusionHtml(text).replace(/Harbour Rocks Hotel, Sydney/i,match=>`<span class="no-break">${match}</span>`);
-    }
-    const phraseClass=component.type==="cabin"?" cabin-phrase":"";
-    return `<span class="incl-component${phraseClass}">${content}</span>`;
-  };
   const renderLine=line=>{
-    const rendered=line.map(renderComponent);
-    if(!html) return rendered.join(CARD_INCLUSION_SEPARATOR);
-    if(!rendered.length) return `<span class="incl-line"></span>`;
-    return `<span class="incl-line">${rendered.join(escapeCardInclusionHtml(CARD_INCLUSION_SEPARATOR))}</span>`;
+    const texts=line.map(component=>normaliseCardInclusionComponent(component&&component.text)).filter(Boolean);
+    if(!html) return texts.join(CARD_INCLUSION_SEPARATOR);
+    if(!texts.length) return `<span class="incl-line"></span>`;
+    const combinedText=texts.join(CARD_INCLUSION_SEPARATOR);
+    let content=escapeCardInclusionHtml(combinedText);
+    if(/\bFREE return taxi transfer from home to port\*$/i.test(combinedText)){
+      content=escapeCardInclusionHtml(combinedText).replace(/home to port\*$/i,match=>`<span class="no-break">${match}</span>`);
+    }else if(/\bHarbour Rocks Hotel, Sydney\b/i.test(combinedText)){
+      content=escapeCardInclusionHtml(combinedText).replace(/Harbour Rocks Hotel, Sydney/i,match=>`<span class="no-break">${match}</span>`);
+    }
+    return `<span class="incl-line"><span class="incl-component">${content}</span></span>`;
   };
   const componentLines=groupCardInclusionRenderLines(buildCardInclusionComponents(value),options);
   const lines=componentLines.map(renderLine);
