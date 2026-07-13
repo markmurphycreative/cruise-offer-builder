@@ -330,6 +330,35 @@ test('PMU Vision load re-cleans reviewed text before copying to Paste Offer text
 
 
 
+
+test('PMU parser preserves ordinal day suffixes in departure dates', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  const cases = [
+    ['20th June 2028', '20th', 'June 2028'],
+    ['21st June 2028', '21st', 'June 2028'],
+    ['22nd June 2028', '22nd', 'June 2028'],
+    ['23rd June 2028', '23rd', 'June 2028'],
+    ['1st July 2029', '1st', 'July 2029']
+  ];
+
+  for (const [dateText, expectedDay, expectedMonth] of cases) {
+    const raw = `Celebrity Cruises
+Norwegian Fjords
+${dateText}
+7 nights Cruise
+Celebrity Apex
+Full Board
+£999 per person based on 2 sharing
+Itinerary
+Southampton - Bergen - Southampton`;
+    harness.context.__raw = raw;
+    const result = vm.runInContext('parseOfferText(__raw,{renderIntelligence:false});', harness.context);
+    assert.equal(result.parsed.day, expectedDay, `${dateText} should retain its ordinal day`);
+    assert.equal(result.parsed.month, expectedMonth);
+    assert.equal([result.parsed.day, result.parsed.month].join(' '), dateText);
+  }
+});
+
 test('PMU Vision Ambassador ordinal date survives review, load, parsing and card date tile', () => {
   const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
   const raw = `Coastal Gems of Sweden & Denmark
@@ -357,7 +386,7 @@ Full Board
   assert.doesNotMatch(harness.rawPaste.value, /20™ June 2028/);
 
   const parsed = harness.context.offers[0];
-  assert.equal(parsed.day, '20');
+  assert.equal(parsed.day, '20th');
   assert.equal(parsed.month, 'June 2028');
   assert.notEqual(harness.status.textContent, 'DATE MISSING');
   assert.doesNotMatch(harness.status.textContent, /DATE MISSING/i);
@@ -380,7 +409,7 @@ Full Board
     cardContext.mode = mode;
     cardContext.offer = parsed;
     const html = vm.runInContext('renderCardHTML(offer)', cardContext);
-    assert.match(html, /<div class="ival">20<\/div><div class="ilbl">June 2028<\/div>/);
+    assert.match(html, /<div class="ival">20th<\/div><div class="ilbl">June 2028<\/div>/);
   }
 
   const repeat = harness.context.normaliseVisionExtractedText(raw);
@@ -978,7 +1007,7 @@ test('real Load Offer runtime path applies the supplied Celebrity offer when the
   assert.equal(harness.context.offers[0].ship, 'Celebrity Ascent');
   assert.equal(harness.context.offers[0].price, '2849');
   assert.equal(harness.context.offers[0].nights, '14');
-  assert.equal(harness.context.offers[0].day, '7');
+  assert.equal(harness.context.offers[0].day, '7th');
   assert.equal(harness.context.offers[0].month, 'March 2027');
   assert.equal(harness.context.offers[0].board, 'FB');
   assert.equal(harness.context.offers[0].boardlbl, 'Full Board');
