@@ -306,6 +306,30 @@ test('PMU Vision Import normalises OCR ordinal artefacts before review text', ()
 
 
 
+test('PMU Vision review textarea assignment defensively cleans OCR ordinal artefacts', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+
+  harness.context.setVisionReviewText('Norwegian Fjords\n20™ June 2028', false);
+
+  assert.equal(harness.visionReview.value, 'Norwegian Fjords\n20th June 2028');
+  assert.doesNotMatch(harness.visionReview.value, /20™ June 2028/);
+});
+
+
+test('PMU Vision load re-cleans reviewed text before copying to Paste Offer textarea', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+
+  harness.visionReview.value = 'Coastal Gems\n20™ June 2028';
+  harness.context.offerImportMethod = 'vision';
+  vm.runInContext('loadOfferFromActiveMethod();', harness.context);
+
+  assert.equal(harness.visionReview.value, 'Coastal Gems\n20th June 2028');
+  assert.equal(harness.rawPaste.value, 'Coastal Gems\n20th June 2028');
+  assert.equal(harness.calls.rawInput, 'Coastal Gems\n20th June 2028');
+});
+
+
+
 test('PMU Vision Ambassador ordinal date survives review, load, parsing and card date tile', () => {
   const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
   const raw = `Coastal Gems of Sweden & Denmark
