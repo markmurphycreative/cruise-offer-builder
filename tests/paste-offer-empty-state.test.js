@@ -242,6 +242,8 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('detectCabinType'),
     extractFunction('detectTransferStatus'),
     extractFunction('detectPreCruiseStay'),
+    extractFunction('getEnglishOrdinalSuffix'),
+    extractFunction('repairMalformedOrdinalDates'),
     extractFunction('parseExactStructuredOfferText'),
     extractFunction('parseOfferText'),
     extractFunction('getOfferIntelligenceAirport'),

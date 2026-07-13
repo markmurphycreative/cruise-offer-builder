@@ -44,6 +44,7 @@ function createHarness() {
     } },
     console: { warn() {} },
     window: {},
+    poaAppliedSuggestions: {},
     offers: [{}],
     cur: 0,
     up() {},
@@ -54,7 +55,8 @@ function createHarness() {
     OPERATOR_SHIPS: { royal: ['Liberty of the Seas'], po: ['Arvia', 'Iona'], cunard: ['Queen Anne'], fred: ['Bolette'], virgin: ['Scarlet Lady'], msc: ['MSC Virtuosa'], ncl: ['Norwegian Prima', 'Pride of America'] },
     OPERATOR_HEADERS: { royal: { name: 'Royal Caribbean' }, po: { name: 'P&O Cruises' }, cunard: { name: 'Cunard' }, fred: { name: 'Fred. Olsen Cruise Lines' }, virgin: { name: 'Virgin Voyages' }, msc: { name: 'MSC Cruises' }, ncl: { name: 'Norwegian Cruise Line' } },
     OPERATOR_INTELLIGENCE: { po: { name: 'P&O Cruises', category: 'Mainstream ocean cruise', dawsonUrl: 'https://example.test/po' }, cunard: { name: 'Cunard', category: 'Heritage ocean cruise', dawsonUrl: 'https://example.test/cunard' }, virgin: { name: 'Virgin Voyages', category: 'Adults-only lifestyle cruise' }, msc: { name: 'MSC Cruises', category: 'Mainstream ocean cruise' }, ncl: { name: 'Norwegian Cruise Line', category: 'Mainstream ocean cruise' } },
-    getOperatorLandingUrl(key) { return key === 'po' ? 'https://example.test/po' : ''; }
+    getOperatorLandingUrl(key) { return key === 'po' ? 'https://example.test/po' : ''; },
+    normaliseKnownDisplayText(value) { return String(value || '').trim(); }
   };
   vm.createContext(context);
   vm.runInContext([
@@ -90,6 +92,12 @@ function createHarness() {
     extractFunction('hasPortOfTyneDepartureKnowledge'),
     extractFunction('getOfferIntelligenceCruiseKnowledge'),
     extractFunction('hasOfferIntelligenceNegativeContext'),
+    extractFunction('getCruiseDefaultLuggageSuggestion'),
+    extractFunction('hasLuggageExclusionWording'),
+    extractFunction('hasLuggageIncludedWording'),
+    extractFunction('isConfidentCruiseOffer'),
+    extractFunction('repairMalformedOrdinalDates'),
+    extractFunction('getEnglishOrdinalSuffix'),
     extractFunction('detectOfferIntelligenceInclusions'),
     extractFunction('joinOfferIntelligenceSuggestionParts'),
     extractFunction('getOfferIntelligenceCardInclusionSuggestion'),
@@ -151,6 +159,89 @@ test('Cruise Knowledge standardises Newcastle embarkation wording without changi
   assert.equal(embarkation, 'Port of Tyne');
   const airport = vm.runInContext('detectFlightAirport("Flying from Newcastle")', context);
   assert.equal(airport, 'Newcastle');
+});
+
+
+test('Malformed ordinal date repair applies English suffix rules only when complete date is unambiguous', () => {
+  const { context } = createHarness();
+  const cases = [
+    ['20% June 2028', '20th June 2028'],
+    ['1* July 2027', '1st July 2027'],
+    ['2? August 2027', '2nd August 2027'],
+    ['3# September 2027', '3rd September 2027'],
+    ['11% May 2028', '11th May 2028'],
+    ['12% May 2028', '12th May 2028'],
+    ['13% May 2028', '13th May 2028'],
+    ['21% May 2028', '21st May 2028'],
+    ['22% May 2028', '22nd May 2028'],
+    ['23% May 2028', '23rd May 2028'],
+    ['24% May 2028', '24th May 2028'],
+    ['31% May 2028', '31st May 2028']
+  ];
+  for (const [raw, expected] of cases) {
+    const result = vm.runInContext('repairMalformedOrdinalDates(raw)', Object.assign(context, { raw }));
+    assert.equal(result.text, expected);
+    assert.equal(result.changed, true);
+  }
+  assert.equal(vm.runInContext('repairMalformedOrdinalDates("20th June 2028").text', context), '20th June 2028');
+  assert.equal(vm.runInContext('repairMalformedOrdinalDates("20% June").text', context), '20% June');
+  assert.equal(vm.runInContext('repairMalformedOrdinalDates("20% 2028").text', context), '20% 2028');
+});
+
+test('Cruise default luggage suggestion appears only for cruise offers without luggage wording or exclusions', () => {
+  const { context } = createHarness();
+  const missing = vm.runInContext('getCruiseDefaultLuggageSuggestion(parsed, raw, "po")', Object.assign(context, {
+    parsed: { operatorKey: 'po', ship: 'Iona', incl: '' },
+    raw: 'P&O Cruises\nIona\nNorwegian Fjords\n7 nights'
+  }));
+  assert.equal(missing.title, 'Suggested inclusion');
+  assert.equal(missing.value, 'Includes luggage');
+
+  const existing = vm.runInContext('getCruiseDefaultLuggageSuggestion(parsed, raw, "po")', Object.assign(context, {
+    parsed: { operatorKey: 'po', ship: 'Iona', incl: 'Includes luggage and return transfers' },
+    raw: 'Includes luggage and return transfers'
+  }));
+  assert.equal(existing, null);
+
+  const transfers = vm.runInContext('getCruiseDefaultLuggageSuggestion(parsed, raw, "po")', Object.assign(context, {
+    parsed: { operatorKey: 'po', ship: 'Iona', incl: 'Includes return transfers' },
+    raw: 'Includes return transfers'
+  }));
+  assert.equal(transfers.value, 'Includes return transfers - Includes luggage');
+
+  const excluded = vm.runInContext('getCruiseDefaultLuggageSuggestion(parsed, raw, "po")', Object.assign(context, {
+    parsed: { operatorKey: 'po', ship: 'Iona', incl: '' },
+    raw: 'Luggage not included'
+  }));
+  assert.equal(excluded, null);
+
+  const nonCruise = vm.runInContext('getCruiseDefaultLuggageSuggestion(parsed, raw, "")', Object.assign(context, {
+    parsed: { name: 'Beach hotel', incl: '' },
+    raw: '7 nights all inclusive hotel in Tenerife'
+  }));
+  assert.equal(nonCruise, null);
+});
+
+test('Offer Intelligence reports ordinal repair rule and default luggage suggestion', () => {
+  const { context, panel } = createHarness();
+  vm.runInContext([
+    extractFunction('getPoaCardInclusionSuggestion'),
+    extractFunction('getPoaUspStripSuggestion'),
+    extractFunction('clearPoaSuggestionHighlights'),
+    extractFunction('setPoaSuggestionHighlight'),
+    extractFunction('getPoaSuggestionConfidenceLabel'),
+    extractFunction('getPoaAssistedApplySuggestions'),
+    extractFunction('formatPoaSuggestionValue'),
+    extractFunction('getPoaSuggestionCurrentValue'),
+    extractFunction('renderPoaAssistedApplySuggestions')
+  ].join('\n'), context);
+  vm.runInContext('renderOfferIntelligencePanel(parsed, raw);', Object.assign(context, {
+    parsed: { operatorKey: 'po', ship: 'Iona', day: '20', month: 'June 2028', _normalisationRules: ['Malformed ordinal date repaired'] },
+    raw: 'P&O Cruises\n20% June 2028\nIona\n7 nights'
+  }));
+  assert.match(panel.innerHTML, /Rule applied: Malformed ordinal date repaired/);
+  assert.match(panel.innerHTML, /Suggested inclusion/);
+  assert.match(panel.innerHTML, /Includes luggage/);
 });
 
 test('POA cabin suggestion renders segmented chips and applying one preserves user choice', () => {
