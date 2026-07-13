@@ -99,7 +99,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
   const fields = Object.fromEntries([
     'operator', 'name', 'ship', 'incl', 'price', 'basis', 'board', 'boardlbl', 'day', 'month', 'nights', 'ports'
   ].map(name => [`f-${name}`, { value: '', classList: createClassList(), offsetWidth: 0 }]));
-  const modal = { classList: createClassList() };
+  const modal = { classList: createClassList(), dataset: {} };
   modal.classList.add('active');
   const status = { textContent: '', className: '' };
   const rawPaste = { value: '' };
@@ -360,7 +360,7 @@ Southampton - Bergen - Southampton`;
 });
 
 test('PMU Vision Ambassador ordinal date survives review, load, parsing and card date tile', () => {
-  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: true });
   const raw = `Coastal Gems of Sweden & Denmark
 20™ June 2028
 7 night cruise
@@ -415,6 +415,42 @@ Full Board
   const repeat = harness.context.normaliseVisionExtractedText(raw);
   assert.match(repeat, /20th June 2028/);
   assert.doesNotMatch(repeat, /20™ June 2028/);
+});
+
+
+test('parse preview gates only when confirmation mode is active', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: true });
+  harness.rawPaste.value = `Cruises for under £1k per person
+Ambassador Cruise Line
+Coastal Gems Of Sweden & Denmark
+20th June 2028
+7 night cruise
+Ambition
+Sailing from Port Of Tyne
+Inside Cabin
+Full Board
+£765 per person based on 2 sharing`;
+
+  vm.runInContext('parseOffer();', harness.context);
+
+  assert.equal(harness.context.offers[0].day, '20th');
+  assert.equal(harness.context.offers[0].month, 'June 2028');
+  assert.equal(vm.runInContext('pendingParseResult', harness.context), null);
+  assert.equal(harness.calls.rv, 1);
+
+  const previewHarness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: true });
+  previewHarness.modal.dataset.parsePreviewMode = 'confirm';
+  previewHarness.rawPaste.value = harness.rawPaste.value;
+
+  vm.runInContext('parseOffer();', previewHarness.context);
+
+  assert.equal(previewHarness.context.offers[0].day, undefined);
+  assert.equal(vm.runInContext('pendingParseResult.parsed.day', previewHarness.context), '20th');
+  assert.match(previewHarness.previewBody.innerHTML, /20th/);
+
+  vm.runInContext('applyParsedOffer();', previewHarness.context);
+  assert.equal(previewHarness.context.offers[0].day, '20th');
+  assert.equal(previewHarness.context.offers[0].month, 'June 2028');
 });
 
 test('PMU parser ordinal repair remains a safety net for malformed source text', () => {
@@ -875,6 +911,7 @@ test('empty pasted text resets the active pasted offer instead of keeping stale 
 
 test('restoring Paste Offer text after an empty clear re-runs parsing and preview state', () => {
   const harness = createHarness([{ name: 'Old Offer', price: '999' }], 0, { hasParsePreviewModal: true });
+  harness.modal.dataset.parsePreviewMode = 'confirm';
   vm.runInContext([
     'let pasteOfferClearedByInput=false;',
     'function resetActiveOfferFromEmptyPaste(){ offers[cur]={}; return true; }',
