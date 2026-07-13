@@ -361,7 +361,9 @@ Southampton - Bergen - Southampton`;
 
 test('PMU Vision Ambassador ordinal date survives review, load, parsing and card date tile', () => {
   const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
-  const raw = `Coastal Gems of Sweden & Denmark
+  const raw = `Cruises for under £1k per person
+Ambassador Cruise Line
+Coastal Gems Of Sweden & Denmark
 20™ June 2028
 7 night cruise
 Ambition
@@ -383,11 +385,14 @@ Full Board
   assert.equal(harness.rawPaste.value, harness.visionReview.value);
   assert.equal(harness.calls.rawInput, harness.visionReview.value);
   assert.match(harness.rawPaste.value, /Outside Cabin/);
+  assert.match(harness.rawPaste.value, /20th June 2028/);
   assert.doesNotMatch(harness.rawPaste.value, /20™ June 2028/);
 
   const parsed = harness.context.offers[0];
   assert.equal(parsed.day, '20th');
   assert.equal(parsed.month, 'June 2028');
+  assert.match([parsed.day, parsed.month].join(' '), /^20th June 2028$/);
+  assert.match(parsed.incl, /Includes luggage - Outside Cabin/);
   assert.notEqual(harness.status.textContent, 'DATE MISSING');
   assert.doesNotMatch(harness.status.textContent, /DATE MISSING/i);
 
@@ -411,6 +416,39 @@ Full Board
     const html = vm.runInContext('renderCardHTML(offer)', cardContext);
     assert.match(html, /<div class="ival">20th<\/div><div class="ilbl">June 2028<\/div>/);
   }
+
+  const pasted = harness.context.parseOfferText(cleaned, { renderIntelligence: false });
+  assert.equal(pasted.parsed.day, '20th');
+  assert.equal(pasted.parsed.month, 'June 2028');
+
+  const multiOffer = harness.context.splitMultiOfferImport(`Celebrity Cruises
+Norwegian Fjords
+20th June 2028
+7 nights Cruise
+Celebrity Apex
+Full Board
+£999 per person based on 2 sharing
+
+Celebrity Cruises
+Iceland Explorer
+20th June 2028
+7 nights Cruise
+Celebrity Apex
+Full Board
+£999 per person based on 2 sharing`)
+    .map(block => harness.context.parseOfferText(block, { renderIntelligence: false }));
+  assert.equal(multiOffer[0].parsed.day, '20th');
+  assert.equal(multiOffer[0].parsed.month, 'June 2028');
+  assert.equal(multiOffer[1].parsed.day, '20th');
+  assert.equal(multiOffer[1].parsed.month, 'June 2028');
+
+  const monthOnly = harness.context.parseOfferText('Celebrity Cruises\nJune 2028\n7 nights Cruise\nCelebrity Apex\nFull Board\n£999 per person based on 2 sharing', { renderIntelligence: false });
+  assert.equal(monthOnly.parsed.day || '', '');
+  assert.equal(monthOnly.parsed.month, 'June 2028');
+
+  const validOrdinal = harness.context.parseOfferText(cleaned.replace('20™ June 2028', '20th June 2028'), { renderIntelligence: false });
+  assert.equal(validOrdinal.parsed.day, '20th');
+  assert.equal(validOrdinal.parsed.month, 'June 2028');
 
   const repeat = harness.context.normaliseVisionExtractedText(raw);
   assert.match(repeat, /20th June 2028/);
