@@ -5337,7 +5337,7 @@ function processSheetCSV(csv,status){
       ship: shipText,
       price: val(row,headers,["price"]).replace(/[^0-9.]/g,"") || "",
       nights: val(row,headers,["nights"]).replace(/[^0-9]/g,"") || "",
-      day: dateParts.day || val(row,headers,["day"]),
+      day: dateParts.day || val(row,headers,["day"]) || previousOffer.day || "",
       month: dateParts.month || val(row,headers,["month_year","month"]),
       board: boardParts.code,
       boardlbl: boardParts.label,
