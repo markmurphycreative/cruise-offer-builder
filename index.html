@@ -8251,8 +8251,9 @@ function getEnglishOrdinalSuffix(day){
 }
 function repairMalformedOrdinalDates(text){
   const source=String(text||"");
-  const ordinalArtefact=String.raw`(?:[\u00AA\u00BA\u02B0-\u02FF\u1D00-\u1D7F\u2070-\u209F\u2120-\u214F\uFE00-\uFE0F™®©]+|s(?!t\b)|n(?!d\b)|r(?!d\b)|t(?!h\b)|(?:st|nd|rd|th)|(?:[sntdrh]\s+){1,2}[sntdrh]?)`;
-  const pattern=new RegExp(`\\b([1-9]|[12][0-9]|3[01])\\s*${ordinalArtefact}\\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\\s+(\\d{4})\\b`,"gi");
+  const months="january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec";
+  const ordinalArtefact=String.raw`(?:[\u00AA\u00BA\u02B0-\u02FF\u1D00-\u1D7F\u2070-\u209F\u2120-\u214F\uFE00-\uFE0F™®©]+|[%*?#]+|s(?!t\b)|n(?!d\b)|r(?!d\b)|t(?!h\b)|(?:st|nd|rd|th)|(?:[sntdrh]\s+){1,2}[sntdrh]?)`;
+  const pattern=new RegExp(`\\b([1-9]|[12][0-9]|3[01])\\s*${ordinalArtefact}\\s+(${months})\\s+(\\d{4})\\b`,"gi");
   let changed=false;
   const repaired=source.replace(pattern,(match,day,month,year)=>{
     const suffix=getEnglishOrdinalSuffix(day);

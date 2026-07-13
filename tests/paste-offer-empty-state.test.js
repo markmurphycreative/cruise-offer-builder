@@ -103,6 +103,9 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
   modal.classList.add('active');
   const status = { textContent: '', className: '' };
   const rawPaste = { value: '' };
+  const visionReview = { value: '' };
+  const visionReviewPanel = { classList: createClassList() };
+  const visionReviewNote = { textContent: '' };
   const previewBody = { innerHTML: '' };
   const confidenceBadge = { className: '', textContent: '' };
   const tabs = Array.from({ length: 4 }, (_, index) => ({ classList: createClassList(), index }));
@@ -121,6 +124,9 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
         if(id === 'parse-preview-modal') return hasParsePreviewModal ? modal : null;
         if(id === 'parse-result') return status;
         if(id === 'raw-paste') return rawPaste;
+        if(id === 'vision-review-text') return visionReview;
+        if(id === 'vision-review-panel') return visionReviewPanel;
+        if(id === 'vision-review-note') return visionReviewNote;
         if(id === 'parse-preview-body') return previewBody;
         if(id === 'parse-confidence-badge') return confidenceBadge;
         return fields[id] || null;
@@ -142,6 +148,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     genUtm() { calls.utm += 1; },
     checkPortsWarn() { calls.ports += 1; },
     updateExportFilenames() { calls.filenames += 1; },
+    handlePasteOfferInput(event) { calls.rawInput = event && event.target && event.target.value; },
     runSpellQA() { calls.spell += 1; },
     queueAutosave() { calls.autosave += 1; },
     setTimeout(callback) { callback(); }
@@ -244,6 +251,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('detectTransferStatus'),
     extractFunction('detectPreCruiseStay'),
     extractFunction('getEnglishOrdinalSuffix'),
+    extractFunction('setVisionReviewText'),
     extractFunction('normaliseVisionExtractedText'),
     extractFunction('repairMalformedOrdinalDates'),
     extractFunction('isConfidentCruiseOffer'),
@@ -274,7 +282,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('splitMultiOfferImport')
   ].join('\n'), context);
   return {
-    context, fields, modal, status, tabs, calls, rawPaste, previewBody,
+    context, fields, modal, status, tabs, calls, rawPaste, visionReview, visionReviewPanel, visionReviewNote, previewBody,
     apply(parsed, confidence = 'high') {
       context.__parsed = parsed;
       context.__confidence = confidence;
@@ -296,9 +304,69 @@ test('PMU Vision Import normalises OCR ordinal artefacts before review text', ()
   assert.equal(text, 'Norwegian Fjords\n20th June 2028\n20th June 2028');
 });
 
+
+
+test('PMU Vision Ambassador ordinal date survives review, load, parsing and card date tile', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  const raw = `Coastal Gems of Sweden & Denmark
+20™ June 2028
+7 night cruise
+Ambition
+Sailing from Port Of Tyne
+Inside Cabin
+Full Board
+£765 per person based on 2 sharing`;
+  const cleaned = harness.context.normaliseVisionExtractedText(raw);
+  assert.match(raw, /20™ June 2028/);
+  assert.match(cleaned, /20th June 2028/);
+  assert.doesNotMatch(cleaned, /20™ June 2028|20ᵀᴹ June 2028/);
+
+  harness.context.setVisionReviewText(cleaned, false);
+  assert.match(harness.visionReview.value, /20th June 2028/);
+
+  harness.visionReview.value = cleaned.replace('Inside Cabin', 'Outside Cabin');
+  harness.context.offerImportMethod = 'vision';
+  vm.runInContext('loadOfferFromActiveMethod();', harness.context);
+  assert.equal(harness.rawPaste.value, harness.visionReview.value);
+  assert.equal(harness.calls.rawInput, harness.visionReview.value);
+  assert.match(harness.rawPaste.value, /Outside Cabin/);
+  assert.doesNotMatch(harness.rawPaste.value, /20™ June 2028/);
+
+  const parsed = harness.context.offers[0];
+  assert.equal(parsed.day, '20');
+  assert.equal(parsed.month, 'June 2028');
+  assert.notEqual(harness.status.textContent, 'DATE MISSING');
+  assert.doesNotMatch(harness.status.textContent, /DATE MISSING/i);
+
+  const cardContext = {
+    document: { getElementById(id) { return id === 'g-terms' ? { value: 'T&Cs Apply' } : { value: '' }; } },
+    OPERATOR_HERO_PLACEHOLDERS: {},
+    getOperatorSkinStyle() { return ''; },
+    getHeaderHTML() { return ''; },
+    renderHeroHTML() { return ''; },
+    renderItineraryImageHTML() { return ''; },
+    getSailingFromDisplay() { return ''; },
+    chunkBullets(value) { return String(value || ''); },
+    renderCardInclusion(value) { return String(value || ''); },
+    normaliseKnownDisplayText(value) { return String(value || '').trim(); }
+  };
+  vm.createContext(cardContext);
+  vm.runInContext(extractFunction('renderCardHTML'), cardContext);
+  for (const mode of ['All 4', 'Single', 'Email', 'All 4']) {
+    cardContext.mode = mode;
+    cardContext.offer = parsed;
+    const html = vm.runInContext('renderCardHTML(offer)', cardContext);
+    assert.match(html, /<div class="ival">20<\/div><div class="ilbl">June 2028<\/div>/);
+  }
+
+  const repeat = harness.context.normaliseVisionExtractedText(raw);
+  assert.match(repeat, /20th June 2028/);
+  assert.doesNotMatch(repeat, /20™ June 2028/);
+});
+
 test('PMU parser ordinal repair remains a safety net for malformed source text', () => {
   const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
-  const examples = ['20™ June 2028', '20ᵀᴹ June 2028', '20TH June 2028', '20 th June 2028'];
+  const examples = ['20™ June 2028', '20ᵀᴹ June 2028', '20TH June 2028', '20 th June 2028', '20% June 2028', '20* June 2028', '20? June 2028', '20# June 2028'];
   for (const raw of examples) {
     assert.equal(harness.context.repairMalformedOrdinalDates(raw).text, '20th June 2028');
   }
