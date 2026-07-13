@@ -300,8 +300,35 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
 
 test('PMU Vision Import normalises OCR ordinal artefacts before review text', () => {
   const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
-  const text = harness.context.normaliseVisionExtractedText('Norwegian Fjords\n20™ June 2028\n20ᵀᴹ June 2028');
-  assert.equal(text, 'Norwegian Fjords\n20th June 2028\n20th June 2028');
+  const text = harness.context.normaliseVisionExtractedText('Norwegian Fjords\n20™" June 2028\n20™ June 2028\n20ᵀᴹ June 2028');
+  assert.equal(text, 'Norwegian Fjords\n20th June 2028\n20th June 2028\n20th June 2028');
+});
+
+test('PMU Vision ordinal repair handles short OCR artifact clusters with British suffixes', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  const cases = [
+    ['20™" June 2028', '20th June 2028'],
+    ['20™ June 2028', '20th June 2028'],
+    ['20" June 2028', '20th June 2028'],
+    ['20% June 2028', '20th June 2028'],
+    ['20*" June 2028', '20th June 2028'],
+    ['20ᵀᴹ June 2028', '20th June 2028'],
+    ['20TH June 2028', '20th June 2028'],
+    ['20 th June 2028', '20th June 2028'],
+    ['21™" June 2028', '21st June 2028'],
+    ['22™" June 2028', '22nd June 2028'],
+    ['23™" June 2028', '23rd June 2028'],
+    ['11™" June 2028', '11th June 2028'],
+    ['12™" June 2028', '12th June 2028'],
+    ['13™" June 2028', '13th June 2028']
+  ];
+
+  for (const [raw, expected] of cases) {
+    const repaired = harness.context.repairMalformedOrdinalDates(raw);
+    assert.equal(repaired.text, expected);
+    assert.equal(repaired.changed, true);
+    assert.equal(harness.context.normaliseVisionExtractedText(raw), expected);
+  }
 });
 
 
@@ -309,17 +336,17 @@ test('PMU Vision Import normalises OCR ordinal artefacts before review text', ()
 test('PMU Vision review textarea assignment defensively cleans OCR ordinal artefacts', () => {
   const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
 
-  harness.context.setVisionReviewText('Norwegian Fjords\n20™ June 2028', false);
+  harness.context.setVisionReviewText('Norwegian Fjords\n20™" June 2028', false);
 
   assert.equal(harness.visionReview.value, 'Norwegian Fjords\n20th June 2028');
-  assert.doesNotMatch(harness.visionReview.value, /20™ June 2028/);
+  assert.doesNotMatch(harness.visionReview.value, /20™" June 2028/);
 });
 
 
 test('PMU Vision load re-cleans reviewed text before copying to Paste Offer textarea', () => {
   const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
 
-  harness.visionReview.value = 'Coastal Gems\n20™ June 2028';
+  harness.visionReview.value = 'Coastal Gems\n20™" June 2028';
   harness.context.offerImportMethod = 'vision';
   vm.runInContext('loadOfferFromActiveMethod();', harness.context);
 
@@ -361,8 +388,10 @@ Southampton - Bergen - Southampton`;
 
 test('PMU Vision Ambassador ordinal date survives review, load, parsing and card date tile', () => {
   const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: true });
-  const raw = `Coastal Gems of Sweden & Denmark
-20™ June 2028
+  const raw = `Cruises for under £1k per person
+Ambassador Cruise Line
+Coastal Gems Of Sweden & Denmark
+20™" June 2028
 7 night cruise
 Ambition
 Sailing from Port Of Tyne
@@ -370,20 +399,20 @@ Inside Cabin
 Full Board
 £765 per person based on 2 sharing`;
   const cleaned = harness.context.normaliseVisionExtractedText(raw);
-  assert.match(raw, /20™ June 2028/);
+  assert.match(raw, /20™" June 2028/);
   assert.match(cleaned, /20th June 2028/);
-  assert.doesNotMatch(cleaned, /20™ June 2028|20ᵀᴹ June 2028/);
+  assert.doesNotMatch(cleaned, /20™" June 2028|20™ June 2028|20ᵀᴹ June 2028/);
 
   harness.context.setVisionReviewText(cleaned, false);
   assert.match(harness.visionReview.value, /20th June 2028/);
 
-  harness.visionReview.value = cleaned.replace('Inside Cabin', 'Outside Cabin');
+  harness.visionReview.value = cleaned;
   harness.context.offerImportMethod = 'vision';
   vm.runInContext('loadOfferFromActiveMethod();', harness.context);
   assert.equal(harness.rawPaste.value, harness.visionReview.value);
   assert.equal(harness.calls.rawInput, harness.visionReview.value);
-  assert.match(harness.rawPaste.value, /Outside Cabin/);
-  assert.doesNotMatch(harness.rawPaste.value, /20™ June 2028/);
+  assert.match(harness.rawPaste.value, /Inside Cabin/);
+  assert.doesNotMatch(harness.rawPaste.value, /20™" June 2028/);
 
   const parsed = harness.context.offers[0];
   assert.equal(parsed.day, '20th');
@@ -410,11 +439,12 @@ Full Board
     cardContext.offer = parsed;
     const html = vm.runInContext('renderCardHTML(offer)', cardContext);
     assert.match(html, /<div class="ival">20th<\/div><div class="ilbl">June 2028<\/div>/);
+    assert.match(html, /Includes luggage - Inside Cabin/);
   }
 
   const repeat = harness.context.normaliseVisionExtractedText(raw);
   assert.match(repeat, /20th June 2028/);
-  assert.doesNotMatch(repeat, /20™ June 2028/);
+  assert.doesNotMatch(repeat, /20™" June 2028/);
 });
 
 
@@ -455,7 +485,7 @@ Full Board
 
 test('PMU parser ordinal repair remains a safety net for malformed source text', () => {
   const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
-  const examples = ['20™ June 2028', '20ᵀᴹ June 2028', '20TH June 2028', '20 th June 2028', '20% June 2028', '20* June 2028', '20? June 2028', '20# June 2028'];
+  const examples = ['20™" June 2028', '20™ June 2028', '20" June 2028', '20% June 2028', '20*" June 2028', '20ᵀᴹ June 2028', '20TH June 2028', '20 th June 2028', '20* June 2028', '20? June 2028', '20# June 2028'];
   for (const raw of examples) {
     assert.equal(harness.context.repairMalformedOrdinalDates(raw).text, '20th June 2028');
   }
