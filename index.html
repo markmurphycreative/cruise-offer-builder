@@ -3033,7 +3033,8 @@ function loadTesseractVisionEngine(){
   return visionTesseractLoader;
 }
 function normaliseVisionExtractedText(text){
-  return String(text||"").split(/\n+/).map(line=>line.replace(/[\t ]+/g," ").trim()).filter(line=>line && !/^(https?:\/\/)?(www\.)?$/i.test(line) && !/^(minimize|maximize|close|back|forward|reload)$/i.test(line)).join("\n");
+  const repaired=typeof repairMalformedOrdinalDates==="function"?repairMalformedOrdinalDates(text).text:String(text||"");
+  return repaired.split(/\n+/).map(line=>line.replace(/[\t ]+/g," ").trim()).filter(line=>line && !/^(https?:\/\/)?(www\.)?$/i.test(line) && !/^(minimize|maximize|close|back|forward|reload)$/i.test(line)).join("\n");
 }
 async function extractOfferTextFromVisionFile(file){
   if(!isAcceptedVisionOfferFile(file)){ setVisionStatus("Use a PNG, JPG or JPEG image.","low"); return; }
@@ -7546,15 +7547,15 @@ function buildCardInclusionFromComponents(components){
 }
 function buildCabinCardInclusionSegments(options){
   const components=[];
-  if(options&&options.airport) components.push({type:"flight", text:`${options.airport} Flights`});
-  if(options&&options.luggageIncluded&&options.transfersIncluded) components.push({type:"luggage-transfer", text:"Luggage & Transfers Included"});
+  if(options&&options.luggageTransferIncluded) components.push("Luggage & Transfers Included");
   else {
-    if(options&&options.luggageIncluded) components.push({type:"luggage", text:"Luggage Included"});
-    if(options&&options.transfersIncluded) components.push({type:"transfer", text:"Transfers Included"});
+    if(options&&options.luggageIncluded) components.push("Includes luggage");
+    if(options&&options.transfersIncluded) components.push("Transfers Included");
   }
-  if(options&&options.cabin) components.push({type:"cabin", text:options.cabin});
-  if(options&&options.preCruiseInclusion) components.push({type:"precruise", text:options.preCruiseInclusion});
-  return buildCardInclusionFromComponents(components);
+  if(options&&options.airport) components.push(`${options.airport} Flights`);
+  if(options&&options.cabin) components.push(options.cabin);
+  if(options&&options.preCruiseInclusion) components.push(options.preCruiseInclusion);
+  return components.filter(Boolean).join(" - ");
 }
 function cleanParsedPorts(lines,options){
   const ignored=/^(?:at sea|(?:\d+\s+)?days?\s+at\s+sea|(?:\d+\s+)?sea\s+days?|overnight port stay|overnight stay|overnight|luggage\s*(?:&|and)\s*transfers?\s+included|flights?\s+included)[, .!]*$/i;
@@ -8250,9 +8251,10 @@ function getEnglishOrdinalSuffix(day){
 }
 function repairMalformedOrdinalDates(text){
   const source=String(text||"");
-  const pattern=/\b([1-9]|[12][0-9]|3[01])\s*([^\w\s]{1,2}|s(?!t\b)|n(?!d\b)|r(?!d\b)|t(?!h\b))\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\s+(\d{4})\b/gi;
+  const ordinalArtefact=String.raw`(?:[\u00AA\u00BA\u02B0-\u02FF\u1D00-\u1D7F\u2070-\u209F\u2120-\u214F\uFE00-\uFE0F™®©]+|s(?!t\b)|n(?!d\b)|r(?!d\b)|t(?!h\b)|(?:st|nd|rd|th)|(?:[sntdrh]\s+){1,2}[sntdrh]?)`;
+  const pattern=new RegExp(`\\b([1-9]|[12][0-9]|3[01])\\s*${ordinalArtefact}\\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\\s+(\\d{4})\\b`,"gi");
   let changed=false;
-  const repaired=source.replace(pattern,(match,day,_broken,month,year)=>{
+  const repaired=source.replace(pattern,(match,day,month,year)=>{
     const suffix=getEnglishOrdinalSuffix(day);
     if(!suffix) return match;
     changed=true;
@@ -8274,14 +8276,17 @@ function hasLuggageIncludedWording(text){
 function hasLuggageExclusionWording(text){
   return /\b(?:luggage\s+not\s+included|hand\s+luggage\s+only|cabin\s+baggage\s+only|baggage\s+extra|luggage\s+available\s+at\s+(?:a\s+)?supplement)\b/i.test(String(text||""));
 }
-function getCruiseDefaultLuggageSuggestion(parsed,rawText,effectiveOperator){
+function shouldApplyCruiseDefaultLuggage(parsed,rawText,effectiveOperator){
   const p=parsed||{};
   const text=[rawText,p.incl].filter(Boolean).join(" ");
-  if(!isConfidentCruiseOffer(p,rawText,effectiveOperator)) return null;
-  if(hasLuggageIncludedWording(text)||hasLuggageExclusionWording(text)) return null;
+  return isConfidentCruiseOffer(p,rawText,effectiveOperator)&&!hasLuggageIncludedWording(text)&&!hasLuggageExclusionWording(text);
+}
+function applyCruiseDefaultLuggage(parsed,rawText,effectiveOperator){
+  const p=parsed||{};
+  if(!shouldApplyCruiseDefaultLuggage(p,rawText,effectiveOperator)) return p;
   const current=String(p.incl||"").trim();
-  const value=current?`${current} - Includes luggage`:"Includes luggage";
-  return {id:"cruise-default-luggage",title:"Suggested inclusion",value,confidenceLabel:"Cruise default",targetLabel:"Card Inclusion Line",fieldKey:"incl",fieldId:"f-incl",reason:"Cruise offer with no luggage wording detected"};
+  p.incl=current?`Includes luggage - ${current}`:"Includes luggage";
+  return p;
 }
 
 function parseExactStructuredOfferText(raw,options){
@@ -8388,7 +8393,8 @@ function parseOfferText(raw,options){
       const preCruiseInclusion=preCruiseMatch?`${preCruiseMatch[1]} ${preCruiseMatch[2]} Pre-Cruise Stay${preCruiseMatch[3]?` in ${preCruiseMatch[3].trim()}`:""}`:"";
       parsed.incl=buildCabinCardInclusionSegments({
         airport:parsedAirport,
-        luggageIncluded:(typeof detectLuggageIncluded==="function"?detectLuggageIncluded(raw):/\b(?:luggage|baggage|checked\s+bags?)\b/i.test(raw)),
+        luggageTransferIncluded:/\bluggage\s*(?:&|and)\s*transfers?\s+included\b/i.test(raw),
+        luggageIncluded:(typeof detectLuggageIncluded==="function"?detectLuggageIncluded(raw):/\b(?:luggage|baggage|checked\s+bags?)\b/i.test(raw))||shouldApplyCruiseDefaultLuggage(parsed,raw,parsed.operatorKey),
         transfersIncluded:transferStatus==="Included"||(typeof detectTransfersIncluded==="function"?detectTransfersIncluded(raw):/\b(?:luggage\s*(?:&|and)\s*)?transfers?\s+included\b|\bincludes?\s+transfers?\b/i.test(raw)),
         cabin:detectedCabin,
         preCruiseInclusion
@@ -8396,6 +8402,7 @@ function parseOfferText(raw,options){
     }
     score+=6;
   }
+  applyCruiseDefaultLuggage(parsed,raw,parsed.operatorKey);
   const knownShipMatch=findKnownOperatorShip(txt,parsed.operatorKey); if(knownShipMatch){ if(!parsed.ship){parsed.ship=knownShipMatch.ship;score+=8;} if(!parsed.operatorKey){parsed.operatorKey=knownShipMatch.operatorKey;score+=18;} }
   if(!parsed.ship){const shipLine=lines.find(l=>/\b(cruise|explorer|symphony|arvia|voyager|queen|discovery)\b/i.test(l)); if(shipLine){const m=shipLine.match(/\b([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+){0,3})\b/); if(m) parsed.ship=m[1];}}
   score=Math.min(score,100);
@@ -8705,8 +8712,6 @@ function getPoaAssistedApplySuggestions(parsed,rawText,inclusions,effectiveOpera
   const suggestions=[];
   const titleRecovery=typeof getCruiseTitleRecoverySuggestion==="function"?getCruiseTitleRecoverySuggestion(parsed,rawText):null;
   if(titleRecovery) suggestions.push(titleRecovery);
-  const luggageSuggestion=typeof getCruiseDefaultLuggageSuggestion==="function"?getCruiseDefaultLuggageSuggestion(parsed,rawText,effectiveOperator):null;
-  if(luggageSuggestion) suggestions.push(luggageSuggestion);
   const confidenceLabel=getPoaSuggestionConfidenceLabel(parsed,rawText);
   const card=getPoaCardInclusionSuggestion(inclusions);
   if(card) suggestions.push({id:"card-inclusion",title:"Card Inclusion",value:card,confidenceLabel,targetLabel:"Card Inclusion Line",fieldKey:"incl",fieldId:"f-incl"});

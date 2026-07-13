@@ -111,6 +111,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
   const context = {
     offers,
     cur,
+    offerImportMethod: "paste",
     PARSE_FIELD_MAP: {
       operatorKey: 'f-operator', name: 'f-name', ship: 'f-ship', incl: 'f-incl', price: 'f-price', basis: 'f-basis',
       board: 'f-board', boardlbl: 'f-boardlbl', day: 'f-day', month: 'f-month', nights: 'f-nights', ports: 'f-ports'
@@ -243,11 +244,18 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('detectTransferStatus'),
     extractFunction('detectPreCruiseStay'),
     extractFunction('getEnglishOrdinalSuffix'),
+    extractFunction('normaliseVisionExtractedText'),
     extractFunction('repairMalformedOrdinalDates'),
+    extractFunction('isConfidentCruiseOffer'),
+    extractFunction('hasLuggageIncludedWording'),
+    extractFunction('hasLuggageExclusionWording'),
+    extractFunction('shouldApplyCruiseDefaultLuggage'),
+    extractFunction('applyCruiseDefaultLuggage'),
     extractFunction('parseExactStructuredOfferText'),
     extractFunction('parseOfferText'),
     extractFunction('getOfferIntelligenceAirport'),
     extractFunction('parseOffer'),
+    extractFunction('loadOfferFromActiveMethod'),
     extractFunction('setParseStatus'),
     extractFunction('showParsePreview'),
     extractFunction('cancelParsedOffer'),
@@ -281,29 +289,44 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
 
 
 
+
+test('PMU Vision Import normalises OCR ordinal artefacts before review text', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  const text = harness.context.normaliseVisionExtractedText('Norwegian Fjords\n20™ June 2028\n20ᵀᴹ June 2028');
+  assert.equal(text, 'Norwegian Fjords\n20th June 2028\n20th June 2028');
+});
+
+test('PMU parser ordinal repair remains a safety net for malformed source text', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  const examples = ['20™ June 2028', '20ᵀᴹ June 2028', '20TH June 2028', '20 th June 2028'];
+  for (const raw of examples) {
+    assert.equal(harness.context.repairMalformedOrdinalDates(raw).text, '20th June 2028');
+  }
+});
+
 test('Paste Offer formats cabin card inclusions with flights, transfers, and cabin in the expected order', () => {
   const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
   const examples = [
     [`Flying from Newcastle
 Inside Cabin
-Transfers Included`, 'Transfers Included\nNewcastle Flights\nInside Cabin'],
+Transfers Included`, 'Transfers Included - Newcastle Flights - Inside Cabin'],
     [`Flying from Newcastle
 Inside Cabin
 Transfers Included
-1 Night Pre-Cruise Stay in Miami`, 'Transfers Included\nNewcastle Flights\nInside Cabin\n1 Night Pre-Cruise Stay in Miami'],
+1 Night Pre-Cruise Stay in Miami`, 'Includes luggage - Transfers Included - Newcastle Flights - Inside Cabin - 1 Night Pre-Cruise Stay in Miami'],
     [`Flying from Newcastle
 Inside Cabin
 Transfers Included
-2 Nights Pre-Cruise Stay in Vancouver`, 'Transfers Included\nNewcastle Flights\nInside Cabin\n2 Nights Pre-Cruise Stay in Vancouver'],
+2 Nights Pre-Cruise Stay in Vancouver`, 'Includes luggage - Transfers Included - Newcastle Flights - Inside Cabin - 2 Nights Pre-Cruise Stay in Vancouver'],
     [`Flying from Newcastle
 Inside Cabin
-No Transfers`, 'Newcastle Flights\nInside Cabin'],
+No Transfers`, 'Newcastle Flights - Inside Cabin'],
     [`Flying from Newcastle
 Inside Cabin
 No Transfers
-1 Night Pre-Cruise Stay in Miami`, 'Newcastle Flights\nInside Cabin\n1 Night Pre-Cruise Stay in Miami'],
+1 Night Pre-Cruise Stay in Miami`, 'Includes luggage - Newcastle Flights - Inside Cabin - 1 Night Pre-Cruise Stay in Miami'],
     [`Inside Cabin
-Transfers Included`, 'Transfers Included\nInside Cabin'],
+Transfers Included`, 'Transfers Included - Inside Cabin'],
     [`Inside Cabin`, 'Inside Cabin']
   ];
 
@@ -352,7 +375,7 @@ Full Board
 £999
 Southampton • Lisbon`, { renderIntelligence: false });
 
-  assert.equal(result.parsed.incl, 'FREE return taxi transfer from home to port');
+  assert.equal(result.parsed.incl, 'Includes luggage - FREE return taxi transfer from home to port');
   assert.doesNotMatch(JSON.stringify(result.parsed), /subject to conditions/i);
 });
 
@@ -380,7 +403,7 @@ Valencia`;
 
   const result = harness.context.parseOfferText(raw, { renderIntelligence: false });
 
-  assert.equal(result.parsed.incl, 'Transfers Included\nNewcastle Flights\nInside Cabin');
+  assert.equal(result.parsed.incl, 'Includes luggage - Transfers Included - Newcastle Flights - Inside Cabin');
   assert.equal(result.parsed.ports, 'Barcelona • Marseille • Valencia');
   assert.doesNotMatch(result.parsed.ports, /Newcastle|Premium Drinks Package|Tips Included|Transfers Included|Flights Included|WiFi Included|Inside Cabin|Ocean View Cabin|Balcony Cabin/);
 });
@@ -393,7 +416,7 @@ No Transfers`, { renderIntelligence: false });
   const withoutAirport = harness.context.parseOfferText(`Flights Included
 Inside Cabin`, { renderIntelligence: false });
 
-  assert.equal(withAirport.parsed.incl, 'Newcastle Flights\nInside Cabin');
+  assert.equal(withAirport.parsed.incl, 'Newcastle Flights - Inside Cabin');
   assert.equal(withoutAirport.parsed.incl, 'Flights Included');
   assert.doesNotMatch(withAirport.parsed.incl, /^Flights Included\b/);
 });
@@ -421,7 +444,7 @@ test('permanent PMU: exports, POA helpers, and Paste Offer entry points remain w
   assert.match(html, /function updateExportFilenames\(\)\{\}/);
   assert.match(html, /function getOfferIntelligenceAirport\(parsed,rawText\)/);
   assert.match(html, /function getPoaAssistedApplySuggestions\(parsed,rawText,inclusions,effectiveOperator\)/);
-  assert.match(html, /<button class="parse-btn" onclick="parseOffer\(\)">/);
+  assert.match(html, /<button class="parse-btn" onclick="loadOfferFromActiveMethod\(\)">/);
   assert.match(html, /<textarea id="raw-paste"/);
 });
 
@@ -430,11 +453,11 @@ test('Paste Offer preserves Celebrity card inclusions and Norwegian port suffixe
   const offers = [
     { raw: `Flying from Newcastle
 Inside Cabin
-Transfers Included`, incl: 'Transfers Included\nNewcastle Flights\nInside Cabin' },
+Transfers Included`, incl: 'Transfers Included - Newcastle Flights - Inside Cabin' },
     { raw: `Flying from Newcastle
 Inside Cabin
 Transfers Included
-1 Night Pre-Cruise Stay in Miami`, incl: 'Transfers Included\nNewcastle Flights\nInside Cabin\n1 Night Pre-Cruise Stay in Miami' },
+1 Night Pre-Cruise Stay in Miami`, incl: 'Includes luggage - Transfers Included - Newcastle Flights - Inside Cabin - 1 Night Pre-Cruise Stay in Miami' },
     { raw: `Norwegian Fjords
 Inside Cabin
 You'll Visit:
@@ -444,11 +467,11 @@ Molde, Norway
 Trondheim, Norway
 Olden, Norway
 Bergen, Norway
-Southampton`, incl: 'Inside Cabin', ports: 'Southampton • Haugesund, Norway • Molde, Norway • Trondheim, Norway • Olden, Norway • Bergen, Norway' },
+Southampton`, incl: 'Includes luggage - Inside Cabin', ports: 'Southampton • Haugesund, Norway • Molde, Norway • Trondheim, Norway • Olden, Norway • Bergen, Norway' },
     { raw: `Flying from Newcastle
 Inside Cabin
 Transfers Included
-2 Nights Pre-Cruise Stay in Vancouver`, incl: 'Transfers Included\nNewcastle Flights\nInside Cabin\n2 Nights Pre-Cruise Stay in Vancouver' }
+2 Nights Pre-Cruise Stay in Vancouver`, incl: 'Includes luggage - Transfers Included - Newcastle Flights - Inside Cabin - 2 Nights Pre-Cruise Stay in Vancouver' }
   ];
 
   offers.forEach(offer => {
@@ -609,7 +632,7 @@ Sailing on Bolette from ${airport}
 ${airport} Included
 7 nights
 From £999pp`, { renderIntelligence: false });
-    assert.equal(result.parsed.incl, `${airport} Included`);
+    assert.equal(result.parsed.incl, `Includes luggage - ${airport} Included`);
     assert.equal(harness.context.getOfferIntelligenceAirport(result.parsed, result.rawText), "");
   }
 });
@@ -630,7 +653,7 @@ You'll visit:
 Southampton • Vigo, Spain • Lisbon, Portugal • Cadiz, Spain • Paris, Le Havre, France • Southampton
 
 Full Board
-Balcony Cabin • Family • Premium Ship`, 'Manchester Included', 'Southampton • Vigo, Spain • Lisbon, Portugal • Cadiz, Spain • Paris, Le Havre, France'],
+Balcony Cabin • Family • Premium Ship`, 'Includes luggage - Manchester Included', 'Southampton • Vigo, Spain • Lisbon, Portugal • Cadiz, Spain • Paris, Le Havre, France'],
     [`MSC Cruises | MSC World Europa
 Western Mediterranean
 10 Nights • 3rd June 2027
@@ -643,7 +666,7 @@ You'll visit:
 Barcelona • Marseille, France • Genoa, Italy • Naples, Italy • Messina, Sicily • Valletta, Malta • Barcelona
 
 Full Board
-Family • Value • Entertainment`, 'Glasgow Included', 'Barcelona • Marseille, France • Genoa, Italy • Naples, Italy • Messina, Sicily • Valletta, Malta'],
+Family • Value • Entertainment`, 'Includes luggage - Glasgow Included', 'Barcelona • Marseille, France • Genoa, Italy • Naples, Italy • Messina, Sicily • Valletta, Malta'],
     [`Princess Cruises | Regal Princess
 Italian Riviera & Spain
 12 Nights • 4th September 2027
@@ -656,7 +679,7 @@ You'll visit:
 Southampton • Rome, for Civitavecchia • Naples • Palma, Majorca • Barcelona • Gibraltar • Southampton
 
 Full Board
-Mini Suite • Med Fly-Cruise • Premium Ship`, 'Leeds Bradford Flights Included', 'Southampton • Rome, for Civitavecchia • Naples • Palma, Majorca • Barcelona • Gibraltar']
+Mini Suite • Med Fly-Cruise • Premium Ship`, 'Includes luggage - Leeds Bradford Flights Included', 'Southampton • Rome, for Civitavecchia • Naples • Palma, Majorca • Barcelona • Gibraltar']
   ];
 
   for (const [raw, expectedIncl, expectedPorts] of examples) {
@@ -672,8 +695,8 @@ test('Paste Offer preserves airport names on airport-specific inclusion lines', 
   const examples = [
     ['Leeds Bradford Flights, Luggage & Transfers Included', 'Leeds Bradford Flights, Luggage & Transfers Included'],
     ['Manchester Luggage Included', 'Manchester Luggage Included'],
-    ['Glasgow Transfers Included', 'Glasgow Transfers Included'],
-    ['Belfast Included', 'Belfast Included']
+    ['Includes luggage - Glasgow Transfers Included', 'Includes luggage - Glasgow Transfers Included'],
+    ['Belfast Included', 'Includes luggage - Belfast Included']
   ];
 
   for (const [raw, expected] of examples) {
@@ -1155,7 +1178,7 @@ test('real Load Offer runtime path does not create slots for clearly unparseable
 });
 
 test('Load Offer button reaches parseOffer and parseOffer applies directly when no preview modal exists', () => {
-  assert.match(html, /<button class="parse-btn" onclick="parseOffer\(\)">/);
+  assert.match(html, /<button class="parse-btn" onclick="loadOfferFromActiveMethod\(\)">/);
   assert.match(extractFunction('parseOffer'), /if\(!showParsePreview\(\)\) applyParsedOffer\(\);/);
 });
 
@@ -1560,7 +1583,7 @@ Itinerary
 Malaga, Spain - Gibraltar - Casablanca, Morocco - Las Palmas, Gran Canaria - Santa Cruz de Tenerife, Tenerife
 Luggage & Transfers included`, { renderIntelligence: false });
 
-  assert.equal(result.parsed.incl, 'Luggage & Transfers Included\nNewcastle Flights\nInside Cabin');
+  assert.equal(result.parsed.incl, 'Luggage & Transfers Included - Newcastle Flights - Inside Cabin');
   assert.equal(result.parsed.ports, [
     'Malaga, Spain',
     'Gibraltar',
@@ -1623,7 +1646,7 @@ Athens • Kusadasi, Turkey • Istanbul, Turkey • Mykonos • Athens
 Full Board
 Family • Entertainment • Value`, { renderIntelligence: false });
 
-  assert.equal(transfersResult.parsed.incl, 'Glasgow Transfers Included');
+  assert.equal(transfersResult.parsed.incl, 'Includes luggage - Glasgow Transfers Included');
   assert.equal(transfersResult.parsed.ports, 'Athens • Kusadasi, Turkey • Istanbul, Turkey • Mykonos');
 });
 
