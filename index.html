@@ -8236,7 +8236,57 @@ function applyAutoSailingFromToOffer(offer){
   return auto;
 }
 
+
+function getEnglishOrdinalSuffix(day){
+  const n=Number(day);
+  if(!Number.isInteger(n)||n<1||n>31) return "";
+  const mod100=n%100;
+  if(mod100>=11&&mod100<=13) return "th";
+  const mod10=n%10;
+  if(mod10===1) return "st";
+  if(mod10===2) return "nd";
+  if(mod10===3) return "rd";
+  return "th";
+}
+function repairMalformedOrdinalDates(text){
+  const source=String(text||"");
+  const pattern=/\b([1-9]|[12][0-9]|3[01])\s*([^\w\s]{1,2}|s(?!t\b)|n(?!d\b)|r(?!d\b)|t(?!h\b))\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\s+(\d{4})\b/gi;
+  let changed=false;
+  const repaired=source.replace(pattern,(match,day,_broken,month,year)=>{
+    const suffix=getEnglishOrdinalSuffix(day);
+    if(!suffix) return match;
+    changed=true;
+    return `${Number(day)}${suffix} ${month} ${year}`;
+  });
+  return {text:repaired,changed};
+}
+function isConfidentCruiseOffer(parsed,rawText,effectiveOperator){
+  const p=parsed||{};
+  const operator=String(effectiveOperator||p.operatorKey||"").toLowerCase();
+  const text=[rawText,p.name,p.ship,p.ports].filter(Boolean).join(" ");
+  if(["po","cunard","fred","celebrity","royal","marella","msc","ncl","princess","virgin","ambassador","amawaterways","riviera"].includes(operator)) return true;
+  if(p.ship&&typeof getOfferIntelligenceShipOperator==="function"&&getOfferIntelligenceShipOperator(p.ship)) return true;
+  return /\b(?:cruise|cruises|cruise line|sailing from|ship|cabin|stateroom|ports?|embarkation)\b/i.test(text)&&(/\b\d{1,2}\s*(?:nights?|nts?)\b/i.test(text)||String(p.ports||"").includes("•")||p.ship);
+}
+function hasLuggageIncludedWording(text){
+  return /\b(?:includes?\s+(?:checked\s+)?(?:luggage|baggage)|(?:all\s+)?luggage\s+included|(?:checked|hold)\s+(?:luggage|baggage)(?:\s+included)?|baggage\s+included|luggage\s*(?:&|and)\s*transfers?\s+included|includes?\s+luggage\s+and\s+transfers?)\b/i.test(String(text||""));
+}
+function hasLuggageExclusionWording(text){
+  return /\b(?:luggage\s+not\s+included|hand\s+luggage\s+only|cabin\s+baggage\s+only|baggage\s+extra|luggage\s+available\s+at\s+(?:a\s+)?supplement)\b/i.test(String(text||""));
+}
+function getCruiseDefaultLuggageSuggestion(parsed,rawText,effectiveOperator){
+  const p=parsed||{};
+  const text=[rawText,p.incl].filter(Boolean).join(" ");
+  if(!isConfidentCruiseOffer(p,rawText,effectiveOperator)) return null;
+  if(hasLuggageIncludedWording(text)||hasLuggageExclusionWording(text)) return null;
+  const current=String(p.incl||"").trim();
+  const value=current?`${current} - Includes luggage`:"Includes luggage";
+  return {id:"cruise-default-luggage",title:"Suggested inclusion",value,confidenceLabel:"Cruise default",targetLabel:"Card Inclusion Line",fieldKey:"incl",fieldId:"f-incl",reason:"Cruise offer with no luggage wording detected"};
+}
+
 function parseExactStructuredOfferText(raw,options){
+  const ordinalRepair=repairMalformedOrdinalDates(raw);
+  raw=ordinalRepair.text;
   const displayText=value=>(typeof normaliseKnownDisplayText==="function"?normaliseKnownDisplayText(value):String(value||"").replace(/\s*@\s*/g," at ").replace(/\bLaspezia\b/gi,"La Spezia").replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca").replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne").replace(/[ \t]{2,}/g," ").trim());
   const source=String(raw||"");
   const lines=source.split(/\n/).map(line=>displayText(line.trim())).filter(Boolean);
@@ -8258,7 +8308,7 @@ function parseExactStructuredOfferText(raw,options){
   const dateLine=before[2]||"";
   const months='january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec';
   const dm=dateLine.match(new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${months})\\s+(\\d{2,4})\\b`,'i'));
-  if(dm){ const y=dm[3].length===2?'20'+dm[3]:dm[3]; const mn=new Date(`${dm[2]} 1, ${y}`); parsed.day=dm[1]; parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+y; score+=16; }
+  if(dm){ const y=dm[3].length===2?'20'+dm[3]:dm[3]; const mn=new Date(`${dm[2]} 1, ${y}`); parsed.day=dm[1]; parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+y; if(ordinalRepair.changed) parsed._normalisationRules=["Malformed ordinal date repaired"]; score+=16; }
   const nights=before[nightIndex].match(/\b(\d{1,2})\s*[- ]\s*nights?\b/i); if(nights){ parsed.nights=nights[1]; score+=14; }
   parsed.ship=before[nightIndex+1]||""; if(parsed.ship) score+=8;
   const flyingLine=before.find(line=>/^flying\s+from\b/i.test(line)||/^flights?\s+(?:included\s+)?from\b/i.test(line));
@@ -8285,6 +8335,8 @@ function parseExactStructuredOfferText(raw,options){
 function parseOfferText(raw,options){
   const exactStructured=parseExactStructuredOfferText(raw,options); if(exactStructured) return exactStructured;
   raw=typeof removeSubjectToConditions==="function"?removeSubjectToConditions(raw):String(raw||"");
+  const ordinalRepair=repairMalformedOrdinalDates(raw);
+  raw=ordinalRepair.text;
   if(!raw.trim()) return null;
   const renderIntelligence=!!(options&&options.renderIntelligence);
   const displayText=value=>(typeof normaliseKnownDisplayText==="function"?normaliseKnownDisplayText(value):String(value||"").replace(/\s*@\s*/g," at ").replace(/\bLaspezia\b/gi,"La Spezia").replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca").replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne").replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing").replace(/[ \t]{2,}/g," ").trim());
@@ -8305,7 +8357,7 @@ function parseOfferText(raw,options){
   const detectedBoard=detectBoardBasis(txt); if(detectedBoard){parsed.board=detectedBoard[0];parsed.boardlbl=detectedBoard[1];score+=10;}
   const months='january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec';
   let dm=txt.match(new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${months})\\s+(\\d{2,4})\\b`,'i'))||txt.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);
-  if(dm){ if(dm[0].includes('/')){const y=dm[3].length===2?'20'+dm[3]:dm[3]; const date=new Date(`${y}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}`); parsed.day=String(date.getDate()); parsed.month=date.toLocaleString('en-GB',{month:'long'})+' '+date.getFullYear(); } else {const y=dm[3].length===2?'20'+dm[3]:dm[3]; const mn=new Date(`${dm[2]} 1, ${y}`); parsed.day=dm[1]; parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+y;} score+=16; }
+  if(dm){ if(dm[0].includes('/')){const y=dm[3].length===2?'20'+dm[3]:dm[3]; const date=new Date(`${y}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}`); parsed.day=String(date.getDate()); parsed.month=date.toLocaleString('en-GB',{month:'long'})+' '+date.getFullYear(); } else {const y=dm[3].length===2?'20'+dm[3]:dm[3]; const mn=new Date(`${dm[2]} 1, ${y}`); parsed.day=dm[1]; parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+y;} if(ordinalRepair.changed) parsed._normalisationRules=["Malformed ordinal date repaired"]; score+=16; }
   else { const mm=txt.match(new RegExp(`\\b(${months})\\s+(\\d{4})\\b`,'i')); if(mm){ const mn=new Date(`${mm[1]} 1, ${mm[2]}`); parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+mm[2]; score+=10; } }
   const itineraryLines=getItineraryLines(lines);
   let title=detectDirectCruiseTitle(lines,parsed,itineraryLines);
@@ -8653,6 +8705,8 @@ function getPoaAssistedApplySuggestions(parsed,rawText,inclusions,effectiveOpera
   const suggestions=[];
   const titleRecovery=typeof getCruiseTitleRecoverySuggestion==="function"?getCruiseTitleRecoverySuggestion(parsed,rawText):null;
   if(titleRecovery) suggestions.push(titleRecovery);
+  const luggageSuggestion=typeof getCruiseDefaultLuggageSuggestion==="function"?getCruiseDefaultLuggageSuggestion(parsed,rawText,effectiveOperator):null;
+  if(luggageSuggestion) suggestions.push(luggageSuggestion);
   const confidenceLabel=getPoaSuggestionConfidenceLabel(parsed,rawText);
   const card=getPoaCardInclusionSuggestion(inclusions);
   if(card) suggestions.push({id:"card-inclusion",title:"Card Inclusion",value:card,confidenceLabel,targetLabel:"Card Inclusion Line",fieldKey:"incl",fieldId:"f-incl"});
@@ -9097,6 +9151,7 @@ function renderOfferIntelligencePanel(parsed,rawText){
     if(!(p.boardlbl||p.board)) missing.push("Board Basis not detected");
     if(!p.nights) missing.push("Nights not detected");
     const suggestions=[];
+    const appliedRules=Array.isArray(p._normalisationRules)?p._normalisationRules:[];
     const shipOperator=getOfferIntelligenceShipOperator(p.ship);
     const effectiveOperator=p.operatorKey||(shipOperator&&shipOperator.operatorKey)||"";
     if(shipOperator&&!p.operatorKey){ const name=(OPERATOR_HEADERS[shipOperator.operatorKey]||{}).name; if(name) suggestions.push(`Operator inferred from ship: ${name}`); }
@@ -9122,6 +9177,7 @@ function renderOfferIntelligencePanel(parsed,rawText){
       section("Detected",detected.map(label=>item("detected","✓",label)).join(""),"No core fields detected yet.")+
       (typeof renderPortsIntelligenceSection==="function"?renderPortsIntelligenceSection(p,item,section):"")+
       (typeof renderOfferQualitySection==="function"?renderOfferQualitySection(p,rawText,effectiveOperator,item):"")+
+      (appliedRules.length?section("Rules Applied",appliedRules.map(label=>item("detected","✓",`Rule applied: ${label}`)).join("")):"")+
       (cruiseKnowledge.length?section("Cruise Knowledge",cruiseKnowledge.map(entry=>{ const row=typeof entry==="string"?{text:entry}:entry; return item(row.type==="warn"?"missing":"detected",row.type==="warn"?"⚠":"✓",row.text); }).join("")):"")+
       (typeof renderPoaCabinTypeSuggestion==="function"?renderPoaCabinTypeSuggestion(p,rawText,effectiveOperator):"")+
       (typeof renderPoaAssistedApplySuggestions==="function"?renderPoaAssistedApplySuggestions(poaSuggestions):"")+
