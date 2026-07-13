@@ -8316,8 +8316,8 @@ function parseExactStructuredOfferText(raw,options){
   parsed.name=stripOfferHeadingPrefix(before[1]||"").replace(/\s+Cruise$/i,""); if(parsed.name) score+=8;
   const dateLine=before[2]||"";
   const months='january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec';
-  const dm=dateLine.match(new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${months})\\s+(\\d{2,4})\\b`,'i'));
-  if(dm){ const y=dm[3].length===2?'20'+dm[3]:dm[3]; const mn=new Date(`${dm[2]} 1, ${y}`); parsed.day=dm[1]; parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+y; if(ordinalRepair.changed) parsed._normalisationRules=["Malformed ordinal date repaired"]; score+=16; }
+  const dm=dateLine.match(new RegExp(`\\b(\\d{1,2})(st|nd|rd|th)?\\s+(${months})\\s+(\\d{2,4})\\b`,'i'));
+  if(dm){ const y=dm[4].length===2?'20'+dm[4]:dm[4]; const mn=new Date(`${dm[3]} 1, ${y}`); parsed.day=dm[2]?`${Number(dm[1])}${dm[2].toLowerCase()}`:dm[1]; parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+y; if(ordinalRepair.changed) parsed._normalisationRules=["Malformed ordinal date repaired"]; score+=16; }
   const nights=before[nightIndex].match(/\b(\d{1,2})\s*[- ]\s*nights?\b/i); if(nights){ parsed.nights=nights[1]; score+=14; }
   parsed.ship=before[nightIndex+1]||""; if(parsed.ship) score+=8;
   const flyingLine=before.find(line=>/^flying\s+from\b/i.test(line)||/^flights?\s+(?:included\s+)?from\b/i.test(line));
@@ -8365,8 +8365,8 @@ function parseOfferText(raw,options){
   else if(shouldDefaultCruisePassengerBasis(parsed.operatorKey)){parsed.basis=DEFAULT_CRUISE_PASSENGER_BASIS;}
   const detectedBoard=detectBoardBasis(txt); if(detectedBoard){parsed.board=detectedBoard[0];parsed.boardlbl=detectedBoard[1];score+=10;}
   const months='january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec';
-  let dm=txt.match(new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${months})\\s+(\\d{2,4})\\b`,'i'))||txt.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);
-  if(dm){ if(dm[0].includes('/')){const y=dm[3].length===2?'20'+dm[3]:dm[3]; const date=new Date(`${y}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}`); parsed.day=String(date.getDate()); parsed.month=date.toLocaleString('en-GB',{month:'long'})+' '+date.getFullYear(); } else {const y=dm[3].length===2?'20'+dm[3]:dm[3]; const mn=new Date(`${dm[2]} 1, ${y}`); parsed.day=dm[1]; parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+y;} if(ordinalRepair.changed) parsed._normalisationRules=["Malformed ordinal date repaired"]; score+=16; }
+  let dm=txt.match(new RegExp(`\\b(\\d{1,2})(st|nd|rd|th)?\\s+(${months})\\s+(\\d{2,4})\\b`,'i'))||txt.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);
+  if(dm){ if(dm[0].includes('/')){const y=dm[3].length===2?'20'+dm[3]:dm[3]; const date=new Date(`${y}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}`); parsed.day=String(date.getDate()); parsed.month=date.toLocaleString('en-GB',{month:'long'})+' '+date.getFullYear(); } else {const y=dm[4].length===2?'20'+dm[4]:dm[4]; const mn=new Date(`${dm[3]} 1, ${y}`); parsed.day=dm[2]?`${Number(dm[1])}${dm[2].toLowerCase()}`:dm[1]; parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+y;} if(ordinalRepair.changed) parsed._normalisationRules=["Malformed ordinal date repaired"]; score+=16; }
   else { const mm=txt.match(new RegExp(`\\b(${months})\\s+(\\d{4})\\b`,'i')); if(mm){ const mn=new Date(`${mm[1]} 1, ${mm[2]}`); parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+mm[2]; score+=10; } }
   const itineraryLines=getItineraryLines(lines);
   let title=detectDirectCruiseTitle(lines,parsed,itineraryLines);
