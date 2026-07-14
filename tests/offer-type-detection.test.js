@@ -36,7 +36,10 @@ function createContext() {
     extractConst('CRUISE_OFFER_DETECTION_THRESHOLD'),
     extractConst('CRUISE_OFFER_DETECTION_MARGIN'),
     extractConst('CRUISE_OFFER_SIGNAL_WEIGHTS'),
+    extractConst('CRUISE_OFFER_OPERATOR_EXCLUSIONS'),
     extractConst('NON_CRUISE_OFFER_SIGNAL_WEIGHTS'),
+    extractConst('EMBARKATION_PORTS'),
+    extractConst('PORT_COUNTRIES'),
     extractFunction('detectCruiseOffer')
   ].join('\n'), context);
   return context;
@@ -46,16 +49,83 @@ const cruise1 = `Royal Caribbean\n\nSpain & France\n\n25th September 2026\n\n8 n
 const cruise2 = `Offer 3 - Norwegian Fjords\n\n28 May 2027\n\n8 Nights Sailing on Celebrity Apex - Full Board\n\nSailing from Southampton\n\nInside Cabin\n\nNo Transfers\n\n£1,499.00 per person\n\nSouthampton, England\nAt Sea\nHaugesund, Norway\nMolde, Norway\nTrondheim, Norway\nOlden, Norway\nBergen, Norway\nAt Sea\nSouthampton, England`;
 const cruise3 = `Ambassador Cruise Line\n\nCoastal Gems of Sweden & Denmark\n\n20th June 2028\n\n7 night cruise\n\nAmbition\n\nSailing from Port of Tyne\n\nInside Cabin\n\nFull Board\n\n£765 per person based on 2 sharing`;
 const packageHoliday = `Your holiday to...\n\nSunset Paradise Resort\n\nLassi, Kefalonia\n\nHoliday summary\n\n7 nights from 21st Jul 2026\n\nBed and Breakfast\n\n2 Adults\n\n1 x Studio\n\n2 x 10kg Hand Baggage\n\n2 x 22kg Bag Allowance\n\nCoach Transfers\n\nFlight details\n\nGoing out\n\nNewcastle NCL to Kefalonia EFL\n\nPayable to your travel agent\n\n£1,148`;
+const itineraryOnly = `Itinerary
+
+Malaga, Spain
+Gibraltar
+Casablanca, Morocco
+Las Palmas, Gran Canaria
+Santa Cruz de Tenerife`;
 const touring = `Japan Uncovered\n\nDay 1: Fly to Tokyo\n\nDay 2: Tokyo sightseeing\n\nDay 3: Travel to Mount Fuji\n\nTour highlights\n\nEscorted touring\n\nLocal guide\n\nMeals included\n\nHotels throughout the tour`;
 
 test('detectCruiseOffer returns high-confidence Cruise for exact cruise fixtures', () => {
   const { detectCruiseOffer } = createContext();
-  for (const fixture of [cruise1, cruise2, cruise3]) {
+  for (const fixture of [cruise1, cruise2, cruise3, itineraryOnly]) {
     const result = detectCruiseOffer(fixture);
     assert.equal(result.isCruise, true);
     assert.equal(result.confidence, 'high');
     assert.ok(result.cruiseScore >= result.threshold);
   }
+});
+
+
+
+test('detectCruiseOffer v2 trusted cruise signals independently meet the threshold', () => {
+  const { detectCruiseOffer } = createContext();
+  const sailingFromFixtures = [
+    'Sailing from Southampton',
+    'Sailing from Port of Tyne',
+    'SAILING FROM SOUTHAMPTON',
+    'Sailing From Southampton',
+    'sailing from southampton',
+    'Sailing  from Southampton',
+    'Sailing from:\nSouthampton',
+    'Sailing from Miami',
+    'Sailing from Vancouver',
+    'Sailing from Barcelona',
+    'Sailing from Malaga',
+    'Sailing from Sydney',
+    'Sailing from Newcastle'
+  ];
+  for (const fixture of sailingFromFixtures) {
+    const result = detectCruiseOffer(fixture);
+    assert.equal(result.isCruise, true, fixture);
+    assert.equal(result.confidence, 'high');
+    assert.ok(result.matchedSignals.includes('sailing from'));
+  }
+  for (const fixture of ['Celebrity Apex', 'MSC Virtuosa', 'Norwegian Viva', 'Ambition', 'Bolette', 'Liberty of the Seas', 'Legend of the Seas']) {
+    const result = detectCruiseOffer(fixture);
+    assert.equal(result.isCruise, true, fixture);
+    assert.ok(result.matchedSignals.includes('ship name'));
+  }
+  for (const fixture of ['Ambassador Cruise Line', 'Celebrity Cruises', 'Royal Caribbean', 'P&O Cruises', 'Marella Cruises', 'Cunard', 'Fred. Olsen Cruise Lines', 'Virgin Voyages', 'Norwegian Cruise Line', 'MSC Cruises', 'AmaWaterways', 'Riviera Travel']) {
+    const result = detectCruiseOffer(fixture);
+    assert.equal(result.isCruise, true, fixture);
+    assert.ok(result.matchedSignals.includes('recognised cruise operator'));
+  }
+  for (const fixture of ['7 night cruise', '10-night cruise', '14 nights cruise only']) {
+    const result = detectCruiseOffer(fixture);
+    assert.equal(result.isCruise, true, fixture);
+    assert.ok(result.matchedSignals.includes('number of nights combined with cruise'));
+  }
+});
+
+test('detectCruiseOffer v2 sailing on and supporting signal behaviour', () => {
+  const { detectCruiseOffer } = createContext();
+  for (const fixture of ['Sailing on Celebrity Apex', 'Sailing on Ambition', '8 nights sailing on Celebrity Solstice']) {
+    const result = detectCruiseOffer(fixture);
+    assert.equal(result.isCruise, true, fixture);
+    assert.ok(result.matchedSignals.includes('sailing on'));
+  }
+  for (const fixture of ['Balcony Cabin', 'Inside Cabin', 'Ocean View Cabin', 'Suite', 'At Sea', 'At Sea\nAmazing value\nBook today']) {
+    assert.equal(detectCruiseOffer(fixture).isCruise, false, fixture);
+  }
+  assert.equal(detectCruiseOffer('Celebrity Apex\nAt Sea').isCruise, true);
+  assert.equal(detectCruiseOffer('At Sea\nMolde\nOlden\nBergen').isCruise, true);
+  assert.equal(detectCruiseOffer('Southampton\nAt Sea\nHaugesund\nMolde\nOlden').isCruise, true);
+  assert.equal(detectCruiseOffer('Balcony Cabin\nSailing from Southampton').isCruise, true);
+  assert.equal(detectCruiseOffer('Inside Cabin\nCelebrity Apex').isCruise, true);
+  assert.equal(detectCruiseOffer('Ocean View Cabin\n7 night cruise').isCruise, true);
 });
 
 test('detectCruiseOffer recognises operator plus ship and cabin plus sailing wording', () => {
@@ -71,6 +141,9 @@ test('detectCruiseOffer blocks package holiday, touring, ambiguous, unknown and 
   const { detectCruiseOffer } = createContext();
   const blocked = [
     packageHoliday,
+    'Hotel Summary\nFlight Details',
+    'Room\nCoach Transfers\n22kg baggage',
+    'Summer Escape\n7 nights\nAmazing value\nBook today',
     touring,
     'Cruise and stay holiday\n\n7 nights\n\nHotel included\n\nTransfers included',
     'Summer Escape\n\nAmazing value\n\nBook today\n\nLimited availability',

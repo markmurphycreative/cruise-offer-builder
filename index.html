@@ -7300,7 +7300,7 @@ function exportJSON(){
 function getOrdinal(n){ const s=["th","st","nd","rd"],v=n%100; return s[(v-20)%10]||s[v]||s[0]; }
 let pendingParseResult=null;
 const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};
-const OPERATOR_ALIASES={po:[/\bp\s*&\s*o\b/i,/\bp\s*and\s*o\b/i,/\bp&o\s+cruises\b/i],royal:[/\broyal\b/i,/\brci\b/i,/\broyal\s+caribbean\b/i],marella:[/\bmarella\b/i,/\bmarella\s+cruises\b/i],celebrity:[/\bcelebrity\b/i,/\bcelebrity\s+cruises\b/i],fred:[/\bfred\s+olsen\b/i,/\bfred\.?\s*olsen\b/i],cunard:[/\bcunard\b/i],msc:[/\bmsc\b/i],ncl:[/\bnorwegian\s+cruise\s+line\b/i,/\bncl\b/i],princess:[/\bprincess\b/i],ambassador:[/\bambassador\b/i],virgin:[/\bvirgin\b/i]};
+const OPERATOR_ALIASES={po:[/\bp\s*&\s*o\b/i,/\bp\s*and\s*o\b/i,/\bp&o\s+cruises\b/i],royal:[/\broyal\b/i,/\brci\b/i,/\broyal\s+caribbean\b/i],marella:[/\bmarella\b/i,/\bmarella\s+cruises\b/i],celebrity:[/\bcelebrity\b/i,/\bcelebrity\s+cruises\b/i],fred:[/\bfred\s+olsen\b/i,/\bfred\.?\s*olsen\b/i],cunard:[/\bcunard\b/i],msc:[/\bmsc\b/i],ncl:[/\bnorwegian\s+cruise\s+line\b/i,/\bncl\b/i],princess:[/\bprincess\b/i],ambassador:[/\bambassador\b/i],virgin:[/\bvirgin\b/i],amawaterways:[/\bama\s*waterways\b/i,/\bamawaterways\b/i],riviera:[/\briviera\s+travel\b/i]};
 const AIRPORT_WORDS=["newcastle","manchester","edinburgh","leeds bradford","glasgow","birmingham","london","heathrow","gatwick","stansted","bristol","belfast"];
 const PASTE_OPERATOR_BOARD_DEFAULTS={po:["FB","Full Board"],celebrity:["FB","Full Board"],fred:["FB","Full Board"],amawaterways:["FB","Full Board"],ambassador:["FB","Full Board"],ncl:["FB","Full Board"],cunard:["FB","Full Board"],marella:["AI","All Inclusive"],princess:["AI","All Inclusive"],msc:["AI","All Inclusive"],virgin:["AI","All Inclusive"],riviera:["AI","All Inclusive"]};
 const CRUISE_PASSENGER_BASIS_DEFAULT_OPERATORS=new Set(["po","royal","marella","celebrity","fred","cunard","msc","ncl","princess","ambassador","virgin","amawaterways"]);
@@ -7598,22 +7598,24 @@ function findKnownOperatorShip(text,operatorKey){
 const CRUISE_OFFER_DETECTION_THRESHOLD=10;
 const CRUISE_OFFER_DETECTION_MARGIN=4;
 const CRUISE_OFFER_SIGNAL_WEIGHTS={
-  recognisedOperator:4,
-  recognisedShip:5,
+  recognisedOperator:10,
+  recognisedShip:10,
   operatorPlusShip:4,
-  sailingFrom:4,
-  sailingOn:3,
-  cabinType:4,
-  itineraryLabel:2,
+  sailingFrom:10,
+  sailingOn:10,
+  cabinType:3,
+  itineraryLabel:4,
   atSea:3,
-  embarkationWording:3,
-  nightsWithCruise:4,
+  embarkationWording:4,
+  nightsWithCruise:10,
   cruiseOnly:3,
   portDepartureWording:3,
-  repeatedPortItinerary:4,
+  repeatedPortItinerary:7,
+  recognisedPortLines:4,
   fullBoardWithCruiseSignals:2,
   weakCruiseWord:1
 };
+const CRUISE_OFFER_OPERATOR_EXCLUSIONS=new Set(["tui","jet2","wendy","custom"]);
 const NON_CRUISE_OFFER_SIGNAL_WEIGHTS={
   holidaySummary:5,
   flightDetails:4,
@@ -7642,23 +7644,28 @@ function detectCruiseOffer(text){
   const matchedNonCruiseSignals=[];
   const addCruise=(key,label)=>{ const weight=CRUISE_OFFER_SIGNAL_WEIGHTS[key]||0; cruiseScore+=weight; if(!matchedSignals.includes(label)) matchedSignals.push(label); };
   const addNon=(key,label)=>{ const weight=NON_CRUISE_OFFER_SIGNAL_WEIGHTS[key]||0; nonCruiseScore+=weight; if(!matchedNonCruiseSignals.includes(label)) matchedNonCruiseSignals.push(label); };
-  const operatorMatched=Object.values(OPERATOR_ALIASES||{}).flat().some(pattern=>pattern.test(source))||Object.values(OPERATOR_HEADERS||{}).some(op=>op&&op.name&&new RegExp('\\b'+escapeRegExp(op.name)+'\\b','i').test(source));
+  const cruiseOperatorAliasPatterns=Object.entries(OPERATOR_ALIASES||{}).filter(([key])=>!(typeof CRUISE_OFFER_OPERATOR_EXCLUSIONS!=="undefined"&&CRUISE_OFFER_OPERATOR_EXCLUSIONS.has(key))).flatMap(([,patterns])=>patterns);
+  const cruiseOperatorHeaders=Object.entries(OPERATOR_HEADERS||{}).filter(([key])=>!(typeof CRUISE_OFFER_OPERATOR_EXCLUSIONS!=="undefined"&&CRUISE_OFFER_OPERATOR_EXCLUSIONS.has(key))).map(([,op])=>op);
+  const operatorMatched=cruiseOperatorAliasPatterns.some(pattern=>pattern.test(source))||cruiseOperatorHeaders.some(op=>op&&op.name&&new RegExp('\\b'+escapeRegExp(op.name)+'\\b','i').test(source));
   const shipMatch=typeof findKnownOperatorShip==="function"?findKnownOperatorShip(source):null;
   if(operatorMatched) addCruise("recognisedOperator","recognised cruise operator");
   if(shipMatch) addCruise("recognisedShip","ship name");
   if(operatorMatched&&shipMatch) addCruise("operatorPlusShip","recognised cruise operator plus ship");
-  if(/\bsailing\s+from\b/i.test(source)) addCruise("sailingFrom","sailing from");
-  if(/\bsailing\s+on\b/i.test(source)) addCruise("sailingOn","sailing on");
+  if(/\bsailing\s+from\b\s*:?/i.test(source)) addCruise("sailingFrom","sailing from");
+  if(/\bsailing\s+on\b\s*:?\s*(?:[a-z][a-z0-9.'-]*(?:\s+[a-z][a-z0-9.'-]*){0,5}|.*\b(?:cruise|ship|vessel)\b)/i.test(source)) addCruise("sailingOn","sailing on");
   if(/\b(?:inside|outside|ocean\s*view|balcony|suite)\s+(?:cabin|stateroom)\b/i.test(source)) addCruise("cabinType","cabin type");
   if(/\bitinerary\b/i.test(source)) addCruise("itineraryLabel","itinerary or port list");
   if(/\bat\s+sea\b/i.test(source)) addCruise("atSea","At Sea");
   if(/\b(?:embark(?:ation)?|disembark(?:ation)?|departs?|departure)\b.*\b(?:port|southampton|tyne|dover|liverpool)\b/i.test(source)) addCruise("embarkationWording","embarkation wording");
-  if(/\b\d{1,2}\s*(?:night|nights|nts?)\s+cruise\b/i.test(source)) addCruise("nightsWithCruise","number of nights combined with cruise");
+  if(/\b\d{1,2}\s*-?\s*(?:night|nights|nts?)\s+cruise\b/i.test(source)) addCruise("nightsWithCruise","number of nights combined with cruise");
   else if(/\bcruise\b/i.test(source)) addCruise("weakCruiseWord","weak cruise word");
   if(/\bcruise\s+only\b/i.test(source)) addCruise("cruiseOnly","cruise only");
   if(/\b(?:sailing|departing|departure)\s+from\s+(?:port\s+of\s+)?[a-z]/i.test(source)) addCruise("portDepartureWording","port departure wording");
-  const portLikeLines=lines.filter(line=>/\bat\s+sea\b/i.test(line)||/,\s*[A-Z][A-Za-z .'-]+$/.test(line)||/\s[-–—]\s/.test(line));
+  const normaliseDetectionPortLine=line=>String(line||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\([^)]*\)/g," ").replace(/\b(?:port of|port|cruise terminal)\b/g," ").replace(/[^a-z0-9]+/g," ").replace(/\b(?:spain|france|italy|greece|norway|croatia|montenegro|portugal|malta|canary islands|england|denmark|sweden|morocco)\b/g," ").replace(/\s+/g," ").trim();
+  const recognisedPortLines=lines.filter(line=>{ const normalised=normaliseDetectionPortLine(line); return normalised&&((typeof EMBARKATION_PORTS!=="undefined"&&EMBARKATION_PORTS.has(normalised))||(typeof PORT_COUNTRIES!=="undefined"&&PORT_COUNTRIES[normalised])); });
+  const portLikeLines=lines.filter(line=>/\bat\s+sea\b/i.test(line)||/,\s*[A-Z][A-Za-z .'-]+$/.test(line)||/\s[-–—]\s/.test(line)||recognisedPortLines.includes(line));
   if(portLikeLines.length>=3) addCruise("repeatedPortItinerary","repeated port-style itinerary entries");
+  if(recognisedPortLines.length>=3) addCruise("recognisedPortLines","multiple recognised cruise ports");
   if(/\bfull\s+board\b/i.test(source)&&matchedSignals.length>=2) addCruise("fullBoardWithCruiseSignals","Full Board with multiple cruise signals");
 
   if(/\bholiday\s+summary\b/i.test(source)) addNon("holidaySummary","Holiday summary");
