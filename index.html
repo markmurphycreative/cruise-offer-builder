@@ -238,6 +238,9 @@ input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.58;
 .parse-result.high{color:var(--green);}
 .parse-result.partial{color:var(--gold);}
 .parse-result.low{color:var(--red);}
+.offer-type-detection{min-height:12px;font-size:9px;color:var(--muted);}
+.offer-type-detection.high{color:var(--green);}
+.offer-type-detection.low{color:var(--muted);}
 .vision-method-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px;}
 .vision-method-tab{min-height:24px;border:1px solid var(--border);border-radius:var(--ui-radius);background:var(--surface);color:var(--navy);font-size:9px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;}
 .vision-method-tab.active{background:var(--chrome);border-color:var(--chrome);color:var(--text-inverse);}
@@ -973,10 +976,11 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
           <div class="vision-progress" id="vision-offer-progress" aria-live="polite"></div>
           <div class="vision-review" id="vision-review-panel">
             <div class="vision-review-note" id="vision-review-note">Review extracted text before loading. The existing parser will process this text only after confirmation.</div>
-            <textarea id="vision-review-text" spellcheck="true" placeholder="Extracted offer text will appear here…"></textarea>
+            <textarea id="vision-review-text" spellcheck="true" oninput="handleVisionReviewTextInput(event)" placeholder="Extracted offer text will appear here…"></textarea>
           </div>
         </div>
         <button class="parse-btn" onclick="loadOfferFromActiveMethod()"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M12 18v-6"></path><path d="m9 15 3 3 3-3"></path></svg>Load Offer</button>
+        <div class="parse-result offer-type-detection" id="offer-type-detection"></div>
         <div class="parse-result" id="parse-result"></div>
         <div class="offer-intel-panel" id="offer-intel-panel" aria-live="polite"></div>
         <div class="spell-warn" id="spell-warn-raw"></div>
@@ -3012,6 +3016,7 @@ function setVisionReviewText(text,lowConfidence){
   const note=document.getElementById("vision-review-note");
   const cleaned=typeof normaliseVisionExtractedText==="function"?normaliseVisionExtractedText(text):String(text||"");
   if(review) review.value=cleaned;
+  if(typeof detectCruiseOffer==="function") setOfferTypeDetection(cleaned.trim()?detectCruiseOffer(cleaned):null);
   if(panel) panel.classList.add("active");
   if(note) note.textContent=lowConfidence?"Some text may need reviewing before loading.":"Review extracted text before loading. The existing parser will process this text only after confirmation.";
 }
@@ -3052,6 +3057,10 @@ async function extractOfferTextFromVisionFile(file){
     setVisionReviewText("",true);
     setVisionStatus("Vision extraction unavailable. You can paste or type the offer text for review.","low");
   }
+}
+function handleVisionReviewTextInput(event){
+  const value=(event&&event.target?event.target.value:((document.getElementById("vision-review-text")||{}).value||""));
+  if(typeof setOfferTypeDetection==="function") setOfferTypeDetection(String(value||"").trim()?detectCruiseOffer(value):null);
 }
 function loadOfferFromActiveMethod(){
   if(offerImportMethod==="vision"){
@@ -7585,6 +7594,101 @@ function findKnownOperatorShip(text,operatorKey){
   const operators=[...new Set(unique.map(match=>match.operatorKey))];
   return operators.length===1 ? unique.sort((a,b)=>b.ship.length-a.ship.length)[0] : null;
 }
+
+const CRUISE_OFFER_DETECTION_THRESHOLD=10;
+const CRUISE_OFFER_DETECTION_MARGIN=4;
+const CRUISE_OFFER_SIGNAL_WEIGHTS={
+  recognisedOperator:4,
+  recognisedShip:5,
+  operatorPlusShip:4,
+  sailingFrom:4,
+  sailingOn:3,
+  cabinType:4,
+  itineraryLabel:2,
+  atSea:3,
+  embarkationWording:3,
+  nightsWithCruise:4,
+  cruiseOnly:3,
+  portDepartureWording:3,
+  repeatedPortItinerary:4,
+  fullBoardWithCruiseSignals:2,
+  weakCruiseWord:1
+};
+const NON_CRUISE_OFFER_SIGNAL_WEIGHTS={
+  holidaySummary:5,
+  flightDetails:4,
+  payableToTravelAgent:5,
+  goingOutComingBack:4,
+  roomOrApartment:4,
+  adultsChildren:2,
+  handBaggage:4,
+  bagAllowance:4,
+  coachTransfers:4,
+  hotelResort:4,
+  touristTaxResortFee:4,
+  outboundReturnFlights:4,
+  packageSupplier:4,
+  escortedTouring:5,
+  dayByDayTour:5,
+  localGuide:4,
+  tourHotels:5
+};
+function detectCruiseOffer(text){
+  const source=String(text||"");
+  const lower=source.toLowerCase();
+  const lines=source.split(/\n+/).map(line=>line.trim()).filter(Boolean);
+  let cruiseScore=0, nonCruiseScore=0;
+  const matchedSignals=[];
+  const matchedNonCruiseSignals=[];
+  const addCruise=(key,label)=>{ const weight=CRUISE_OFFER_SIGNAL_WEIGHTS[key]||0; cruiseScore+=weight; if(!matchedSignals.includes(label)) matchedSignals.push(label); };
+  const addNon=(key,label)=>{ const weight=NON_CRUISE_OFFER_SIGNAL_WEIGHTS[key]||0; nonCruiseScore+=weight; if(!matchedNonCruiseSignals.includes(label)) matchedNonCruiseSignals.push(label); };
+  const operatorMatched=Object.values(OPERATOR_ALIASES||{}).flat().some(pattern=>pattern.test(source))||Object.values(OPERATOR_HEADERS||{}).some(op=>op&&op.name&&new RegExp('\\b'+escapeRegExp(op.name)+'\\b','i').test(source));
+  const shipMatch=typeof findKnownOperatorShip==="function"?findKnownOperatorShip(source):null;
+  if(operatorMatched) addCruise("recognisedOperator","recognised cruise operator");
+  if(shipMatch) addCruise("recognisedShip","ship name");
+  if(operatorMatched&&shipMatch) addCruise("operatorPlusShip","recognised cruise operator plus ship");
+  if(/\bsailing\s+from\b/i.test(source)) addCruise("sailingFrom","sailing from");
+  if(/\bsailing\s+on\b/i.test(source)) addCruise("sailingOn","sailing on");
+  if(/\b(?:inside|outside|ocean\s*view|balcony|suite)\s+(?:cabin|stateroom)\b/i.test(source)) addCruise("cabinType","cabin type");
+  if(/\bitinerary\b/i.test(source)) addCruise("itineraryLabel","itinerary or port list");
+  if(/\bat\s+sea\b/i.test(source)) addCruise("atSea","At Sea");
+  if(/\b(?:embark(?:ation)?|disembark(?:ation)?|departs?|departure)\b.*\b(?:port|southampton|tyne|dover|liverpool)\b/i.test(source)) addCruise("embarkationWording","embarkation wording");
+  if(/\b\d{1,2}\s*(?:night|nights|nts?)\s+cruise\b/i.test(source)) addCruise("nightsWithCruise","number of nights combined with cruise");
+  else if(/\bcruise\b/i.test(source)) addCruise("weakCruiseWord","weak cruise word");
+  if(/\bcruise\s+only\b/i.test(source)) addCruise("cruiseOnly","cruise only");
+  if(/\b(?:sailing|departing|departure)\s+from\s+(?:port\s+of\s+)?[a-z]/i.test(source)) addCruise("portDepartureWording","port departure wording");
+  const portLikeLines=lines.filter(line=>/\bat\s+sea\b/i.test(line)||/,\s*[A-Z][A-Za-z .'-]+$/.test(line)||/\s[-–—]\s/.test(line));
+  if(portLikeLines.length>=3) addCruise("repeatedPortItinerary","repeated port-style itinerary entries");
+  if(/\bfull\s+board\b/i.test(source)&&matchedSignals.length>=2) addCruise("fullBoardWithCruiseSignals","Full Board with multiple cruise signals");
+
+  if(/\bholiday\s+summary\b/i.test(source)) addNon("holidaySummary","Holiday summary");
+  if(/\bflight\s+details\b/i.test(source)) addNon("flightDetails","Flight details");
+  if(/\bpayable\s+to\s+your\s+travel\s+agent\b/i.test(source)) addNon("payableToTravelAgent","Payable to your travel agent");
+  if(/\bgoing\s+out\b/i.test(source)||/\bcoming\s+back\b/i.test(source)) addNon("goingOutComingBack","Going out / Coming back");
+  if(/\b(?:room|studio|apartment|villa)\b/i.test(source)) addNon("roomOrApartment","room or apartment type");
+  if(/\b\d+\s*x?\s*(?:adults?|children|child)\b/i.test(source)) addNon("adultsChildren","number of adults or children");
+  if(/\bhand\s+baggage\b/i.test(source)) addNon("handBaggage","hand baggage");
+  if(/\bbag\s+allowance\b/i.test(source)) addNon("bagAllowance","bag allowance");
+  if(/\bcoach\s+transfers?\b/i.test(source)) addNon("coachTransfers","coach transfers");
+  if(/\b(?:hotel|resort)\b/i.test(source)) addNon("hotelResort","hotel or resort wording");
+  if(/\b(?:tourist\s+tax|local\s+resort\s+fee|resort\s+fee)\b/i.test(source)) addNon("touristTaxResortFee","tourist tax or resort fee");
+  if(/\b(?:outbound|return)\s+flight/i.test(source)||/\b[A-Z]{3}\s+to\s+[A-Z][A-Za-z ]+\s+[A-Z]{3}\b/.test(source)) addNon("outboundReturnFlights","outbound and return flight details");
+  if(/\b(?:jet2holidays|tui|easyjet holidays|package holiday)\b/i.test(source)) addNon("packageSupplier","package holiday supplier wording");
+  if(/\bescorted\s+touring\b/i.test(source)) addNon("escortedTouring","escorted touring");
+  if(lines.filter(line=>/^day\s+\d+\s*:/i.test(line)).length>=2) addNon("dayByDayTour","Day 1 / Day 2 / Day 3 itinerary structure");
+  if(/\blocal\s+guide\b/i.test(source)) addNon("localGuide","local guide");
+  if(/\bhotels\s+throughout\s+the\s+tour\b/i.test(source)) addNon("tourHotels","hotels throughout the tour");
+  const isCruise=cruiseScore>=CRUISE_OFFER_DETECTION_THRESHOLD&&(cruiseScore-nonCruiseScore)>=CRUISE_OFFER_DETECTION_MARGIN;
+  return {isCruise,confidence:isCruise?"high":"low",cruiseScore,nonCruiseScore,matchedSignals,matchedNonCruiseSignals,threshold:CRUISE_OFFER_DETECTION_THRESHOLD};
+}
+function setOfferTypeDetection(result){
+  const el=document.getElementById("offer-type-detection");
+  if(!el) return;
+  if(!result){ el.textContent=""; el.className="parse-result offer-type-detection"; return; }
+  el.textContent="Detected: "+(result.isCruise?"Cruise":"Not Cruise");
+  el.className="parse-result offer-type-detection "+(result.isCruise?"high":"low");
+}
+
 function isKnownOperatorLine(line){
   const value=String(line||"").trim();
   if(!value) return false;
@@ -7643,6 +7747,7 @@ function restoreRawPasteForOffer(index){
 function resetPasteOfferState(options){
   const preserveRaw=!!(options&&options.preserveRaw);
   const raw=document.getElementById("raw-paste"); if(raw&&!preserveRaw) raw.value="";
+  if(!preserveRaw&&typeof setOfferTypeDetection==="function") setOfferTypeDetection(null);
   const status=document.getElementById("parse-result"); if(status){status.textContent="";status.className="parse-result";}
   if(typeof clearOfferIntelligencePanel==="function") clearOfferIntelligencePanel();
   cancelParsedOffer();
@@ -7681,8 +7786,10 @@ function handlePasteOfferInput(event){
   const isUndoRestore=!!(event && /historyUndo|historyRedo/i.test(event.inputType||""));
   if(!hasText){
     pasteOfferClearedByInput=resetActiveOfferFromEmptyPaste();
+    if(typeof setOfferTypeDetection==="function") setOfferTypeDetection(null);
     return;
   }
+  if(typeof detectCruiseOffer==="function") setOfferTypeDetection(detectCruiseOffer(raw));
   if(pasteOfferClearedByInput && isUndoRestore){
     pasteOfferClearedByInput=false;
     parseOffer();
@@ -8058,6 +8165,9 @@ function performMultiOfferImport(replaceConfirmed){
 function parseOffer(){
   if(typeof resetPoaSuggestionState==="function") resetPoaSuggestionState();
   const raw=(document.getElementById("raw-paste")||{}).value||""; if(!raw.trim()) return resetActiveOfferFromEmptyPaste();
+  const detection=typeof detectCruiseOffer==="function"?detectCruiseOffer(raw):{isCruise:true};
+  if(typeof setOfferTypeDetection==="function") setOfferTypeDetection(detection);
+  if(!detection.isCruise){ if(typeof clearOfferIntelligencePanel==="function") clearOfferIntelligencePanel(); cancelParsedOffer(); setParseStatus("Non-cruise offer detected. This offer will not be loaded into the Cruise parser.","low"); return false; }
   const result=parseOfferText(raw,{renderIntelligence:true}); if(!result) return;
   pendingParseResult=result; if(!showParsePreview()) applyParsedOffer();
 }
