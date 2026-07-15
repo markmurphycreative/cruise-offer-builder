@@ -189,9 +189,8 @@ test('Not Cruise routing stops before Cruise parser and preserves source text', 
   assert.equal(context.parseOffer(), false);
   assert.equal(context.parserCalled, undefined);
   assert.equal(context.fields['raw-paste'].value, packageHoliday);
-  assert.equal(context.fields['offer-type-detection'].textContent, 'Detected: Not Cruise');
-  assert.match(context.fields['parse-result'].textContent, /Non-cruise offer detected/);
-  assert.match(context.fields['parse-result'].textContent, /This offer will not be loaded into the Cruise parser/);
+  assert.equal(context.fields['offer-type-detection'].textContent, 'Offer type not recognised');
+  assert.match(context.fields['parse-result'].textContent, /Offer type not recognised/);
 });
 
 test('Vision review textarea is the source of truth and manual edits are respected', () => {
@@ -199,7 +198,7 @@ test('Vision review textarea is the source of truth and manual edits are respect
   context.handleVisionReviewTextInput({ target: { value: cruise2 } });
   assert.equal(context.fields['offer-type-detection'].textContent, 'Detected: Cruise');
   context.handleVisionReviewTextInput({ target: { value: touring } });
-  assert.equal(context.fields['offer-type-detection'].textContent, 'Detected: Not Cruise');
+  assert.equal(context.fields['offer-type-detection'].textContent, 'Offer type not recognised');
 });
 
 test('Paste Offer re-detects on input and clears detection when input is cleared', () => {
