@@ -268,6 +268,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('setParseStatus'),
     extractFunction('showParsePreview'),
     extractFunction('cancelParsedOffer'),
+    extractFunction('canApplyParsedCruiseOffer'),
     extractFunction('prepareOfferSlotForParsedOffer'),
     extractFunction('applyParsedOffer')
   ].join('\n'), context);
@@ -1115,6 +1116,113 @@ test('Trello hardening detects UK airports only from flight wording', () => {
   }
   const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
   assert.equal(vm.runInContext('detectFlightAirport(raw)', Object.assign(harness.context, { raw: 'Sailing from Southampton to Barcelona' })), '');
+});
+
+
+test('incomplete Cruise fragment with no existing offer preserves source and creates no card', () => {
+  const harness = createHarness([], 0, { hasParsePreviewModal: false });
+  const raw = `Marella Fly Cruise
+Manchester Flights
+Transfers Included
+All Inclusive
+Inside Cabin`;
+
+  harness.parse(raw);
+
+  assert.equal(harness.status.textContent, 'Not enough offer details to load this Cruise offer.');
+  assert.deepEqual(harness.context.offers, []);
+  assert.equal(harness.rawPaste.value, raw);
+  assert.equal(harness.calls.rv, 0);
+  const result = harness.context.parseOfferText(raw, { renderIntelligence: false });
+  assert.equal(harness.context.canApplyParsedCruiseOffer(result.parsed), false);
+  assert.equal(result.parsed.operatorKey, 'marella');
+});
+
+test('incomplete Marella fragment cannot mutate an existing Cunard offer', () => {
+  const existing = { operator: 'cunard', name: 'Transatlantic Crossing', ship: 'Queen Anne', board: 'FB', boardlbl: 'Full Board', incl: 'Balcony Cabin', price: '1299', ports: 'Southampton • New York', _img: 'hero' };
+  const harness = createHarness([structuredClone(existing)], 0, { hasParsePreviewModal: false });
+  const before = JSON.stringify(harness.context.offers[0]);
+
+  harness.parse(`Marella Fly Cruise
+Manchester Flights
+Transfers Included
+All Inclusive
+Inside Cabin`);
+
+  assert.equal(JSON.stringify(harness.context.offers[0]), before);
+  assert.deepEqual(harness.context.offers[0], existing);
+  assert.equal(harness.status.textContent, 'Not enough offer details to load this Cruise offer.');
+});
+
+test('incomplete Royal Caribbean fragment cannot mutate an existing Celebrity offer', () => {
+  const existing = { operator: 'celebrity', name: 'Alaska Dawes Glacier', ship: 'Celebrity Summit', board: 'FB', boardlbl: 'Full Board', price: '2199', ports: 'Vancouver • Juneau • Ketchikan' };
+  const harness = createHarness([structuredClone(existing)], 0, { hasParsePreviewModal: false });
+
+  harness.parse(`Royal Caribbean
+Southampton sailing
+OBC
+Cabin
+No airport`);
+
+  assert.deepEqual(harness.context.offers[0], existing);
+  assert.equal(harness.context.offers[0].operator, 'celebrity');
+});
+
+test('itinerary-only fragment cannot overwrite an existing Ambassador card', () => {
+  const existing = { operator: 'ambassador', name: 'Coastal Gems', ship: 'Ambition', price: '765', ports: 'Copenhagen • Skagen', day: '20th', month: 'June 2028' };
+  const harness = createHarness([structuredClone(existing)], 0, { hasParsePreviewModal: false });
+
+  harness.parse(`Stress:
+Ship alias
+One-way itinerary
+Ocean crossing`);
+
+  assert.deepEqual(harness.context.offers[0], existing);
+  assert.equal(harness.context.offers[0].ports, 'Copenhagen • Skagen');
+});
+
+test('complete Marella and Cunard Cruise offers remain apply eligible and load normally', () => {
+  const marella = createHarness([], 0, { hasParsePreviewModal: false });
+  marella.parse(`Marella Cruises
+Greek Island Gems
+12th May 2027
+7 night cruise
+Marella Discovery
+Manchester Flights
+Transfers Included
+Inside Cabin
+All Inclusive
+£1249 per person
+Itinerary
+Corfu - Rhodes - Patmos`);
+  assert.equal(marella.context.offers[0].operator, 'marella');
+  assert.equal(marella.context.offers[0].board, 'AI');
+  assert.equal(marella.context.offers[0].price, '1249');
+  assert.match(marella.context.offers[0].incl, /Manchester Flights/);
+  assert.match(marella.context.offers[0].incl, /Transfers Included/);
+  assert.match(marella.context.offers[0].incl, /Inside Cabin/);
+
+  const cunard = createHarness([], 0, { hasParsePreviewModal: false });
+  cunard.parse(`Cunard
+Transatlantic Crossing
+5th June 2027
+7 night cruise
+Queen Anne
+Full Board
+Balcony Cabin
+£1599 per person
+Itinerary
+Southampton - New York`);
+  assert.equal(cunard.context.offers[0].operator, 'cunard');
+  assert.equal(cunard.context.offers[0].ship, 'Queen Anne');
+});
+
+test('Santander regional display is cleaned without stripping normal country-labelled ports', () => {
+  const harness = createHarness([], 0);
+
+  assert.equal(harness.context.cleanParsedPorts(['Santander, Cantabria Spain']), 'Santander, Cantabria');
+  assert.equal(harness.context.cleanParsedPorts(['Santander, Cantabria, Spain']), 'Santander, Cantabria');
+  assert.equal(harness.context.cleanParsedPorts(['Gijon, Asturias, Spain']), 'Gijon, Asturias, Spain');
 });
 
 test('Paste Offer does not create a blank offer when parsing detected no fields', () => {
