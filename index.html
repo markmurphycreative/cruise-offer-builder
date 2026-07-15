@@ -781,6 +781,38 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 }
 
 /* ── CARD CSS ── */
+
+/* Package Holiday card renderer */
+.pc{--package-accent:#092a44;--package-footer:#092a44;width:1200px;min-width:1200px;max-width:1200px;height:885px;box-sizing:border-box;background:#fff;color:#000;font-family:'Montserrat',sans-serif;font-weight:300;position:relative;overflow:hidden;display:block;}
+.pc .pkg-head{height:135px;background:var(--package-accent);display:flex;align-items:center;justify-content:center;position:relative;}
+.pc.pkg-jet2 .pkg-head{height:214px;flex-direction:column;gap:28px;}
+.pc .pkg-head-logo{width:300px;max-height:84px;object-fit:contain;filter:brightness(0) invert(1);}
+.pc.pkg-jet2 .pkg-head-logo{width:300px;max-height:78px;}
+.pc .pkg-ribbon{font-size:34px;line-height:1;color:#fff;letter-spacing:.04em;}
+.pc .pkg-body{height:610px;position:relative;padding:62px 85px 0;box-sizing:border-box;}
+.pc.pkg-jet2 .pkg-body{height:559px;padding-top:95px;}
+.pc .pkg-destination{font-size:56px;line-height:1.08;font-weight:300;letter-spacing:.01em;color:#000;max-width:585px;white-space:nowrap;}
+.pc.pkg-jet2 .pkg-destination{font-size:64px;max-width:650px;}
+.pc .pkg-hotel{font-size:34px;line-height:1.2;color:#7b7b7b;margin-top:8px;max-width:650px;white-space:nowrap;}
+.pc.pkg-jet2 .pkg-hotel{font-size:38px;}
+.pc .pkg-details{position:absolute;left:85px;top:285px;font-size:36px;line-height:1.35;color:#797979;}
+.pc.pkg-tui .pkg-details{color:#000;}
+.pc.pkg-jet2 .pkg-details{top:368px;}
+.pc .pkg-operator-logo{position:absolute;left:85px;bottom:70px;max-width:275px;max-height:74px;object-fit:contain;}
+.pc .pkg-pricing{position:absolute;right:85px;top:250px;width:485px;text-align:right;color:#000;}
+.pc.pkg-jet2 .pkg-pricing{top:378px;}
+.pc .pkg-lead{margin-bottom:120px;}
+.pc .pkg-price{font-size:92px;line-height:.92;font-weight:300;letter-spacing:-.04em;}
+.pc.pkg-jet2 .pkg-price{font-size:106px;}
+.pc.pkg-tui .pkg-price{font-size:104px;}
+.pc .pkg-pp{font-size:36px;letter-spacing:-.03em;}
+.pc .pkg-fee{font-size:28px;line-height:1.15;color:#777;margin-top:8px;}
+.pc .pkg-price-label{font-size:25px;line-height:1.2;color:#000;margin-top:12px;letter-spacing:.06em;}
+.pc .pkg-basis{font-size:22px;line-height:1.25;color:#777;margin-top:4px;letter-spacing:.04em;white-space:nowrap;}
+.pc.pkg-jet2 .pkg-basis{font-size:27px;}
+.pc .pkg-footer{height:140px;background:var(--package-footer);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;}
+.pc .pkg-cta-main{font-size:40px;line-height:1.05;letter-spacing:.03em;}
+.pc .pkg-cta-sub{font-size:25px;line-height:1.1;opacity:.88;margin-top:6px;}
 .cc{width:1200px;min-width:1200px;max-width:1200px;box-sizing:border-box;font-family:'Montserrat',sans-serif;font-weight:300;background:var(--operator-bg,var(--navy));display:block;}
 .cc .header-block{width:1200px;display:block;line-height:0;background:var(--operator-bg,var(--navy));overflow:hidden;}
 .cc .header-block img{width:1200px;height:auto;display:block;}
@@ -1016,7 +1048,9 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
         <div class="field" id="field-incl"><label>Inclusions</label><textarea id="f-incl" spellcheck="true" placeholder="Newcastle Flights, Luggage &amp; Transfers Included" oninput="up()"></textarea></div>
         <div class="field" id="field-theme_tags"><label>Theme Tags</label><input id="f-theme_tags" spellcheck="true" placeholder="Luxury · Scenic Cruising · Norwegian Fjords" oninput="up()"></div>
         <div class="fg2">
-          <div class="field"><label>Price (£)</label><input id="f-price" placeholder="1669" oninput="up()"></div>
+          <div class="field"><label>Lead / Total Price (£)</label><input id="f-price" placeholder="799" oninput="up()"></div>
+          <div class="field"><label>Total Price (£, Package optional)</label><input id="f-totalPrice" placeholder="656" oninput="up()"></div>
+          <div class="field"><label>Resort Fee (£, Package optional)</label><input id="f-resortFee" placeholder="10pp" oninput="up()"></div>
           <div class="field"><label>Price Basis</label><input id="f-basis" placeholder="Based on 2 Adults Sharing" oninput="up()"></div>
           <div class="field"><label>Board</label><input id="f-board" placeholder="FB" oninput="autoBoardLabel(); up()"></div>
           <div class="field"><label>Board Basis</label><input id="f-boardlbl" placeholder="Full Board" oninput="up()"></div>
@@ -1127,6 +1161,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
             <option value="virgin">Virgin Voyages</option>
             <option value="tui">TUI</option>
             <option value="jet2">Jet2holidays</option>
+            <option value="easyjet">easyJet holidays</option>
             <option value="wendy">Wendy Wu Tours</option>
             <option value="custom">Custom / Other</option>
           </select>
@@ -1585,7 +1620,8 @@ const OPERATOR_USP_PRESETS = {
   royal: "Amenities · Family · Entertainment · Kids' Clubs",
   virgin: "All-inclusive · Cuisine · Overnight Port Stays · Adult Only Options",
   tui: "Family · Beach · Value · Summer",
-  jet2: "Family · Value · Beach · City Breaks",
+  jet2: "Free Child Place · Family · Beach Holiday",
+  easyjet: "City Break · Beach Holiday · Value",
   wendy: "Culture · Adventure · Asia · Discovery",
   custom: ""
 };
@@ -1823,8 +1859,9 @@ const OPERATOR_HEADERS = {
   ncl:      { name:"Norwegian Cruise Line", svgData:null, pngData:"assets/operator-logos/ncl-logo.png", color:"#e31837", defaultBoard:"SC", ships:[] },
   princess: { name:"Princess Cruises",      svgData:null, pngData:"assets/operator-logos/princess-cruises-logo.png", color:"#1a3a5c", defaultBoard:"FB", ships:[] },
   virgin:   { name:"Virgin Voyages",        svgData:null, pngData:"assets/operator-logos/virgin-voyages-logo.png", color:"#e31837", defaultBoard:"AI", ships:[] },
-  tui:      { name:"TUI",                   svgData:null, pngData:null, color:"#e3000f", defaultBoard:"AI", ships:[] },
-  jet2:     { name:"Jet2holidays",          svgData:null, pngData:null, color:"#e31837", defaultBoard:"SC", ships:[] },
+  tui:      { name:"TUI",                   svgData:null, pngData:"assets/operator-logos/tui-logo.png", color:"#092a44", defaultBoard:"AI", ships:[] },
+  jet2:     { name:"Jet2holidays",          svgData:null, pngData:"assets/operator-logos/jet2-holidays-logo.png", color:"#d71920", defaultBoard:"SC", ships:[] },
+  easyjet:  { name:"easyJet holidays",       svgData:null, pngData:"assets/operator-logos/easyjet-logo.png", color:"#ff6600", defaultBoard:"RO", ships:[] },
   wendy:    { name:"Wendy Wu Tours",        svgData:null, pngData:null, color:"#c41e3a", defaultBoard:"FB", ships:[] },
   custom:   { name:"Custom",               svgData:null, pngData:null, color:"#9e936c", defaultBoard:"", ships:[] }
 };
@@ -1944,7 +1981,10 @@ const OPERATOR_CONFIG = {
   princess:{displayName:"Princess Cruises",key:"princess",url:"https://www.dawsonandsanderson.co.uk/cruises",defaultBoard:"FB",utmSlug:"princess",logoAsset:"header",aliases:[/\bprincess\b/i,/\bprincess\s+cruises\b/i]},
   po:{displayName:"P&O Cruises",key:"po",url:"https://www.dawsonandsanderson.co.uk/p-and-o-cruises",defaultBoard:"FB",utmSlug:"pando",logoAsset:"header",aliases:[/\bp\s*&\s*o\b/i,/\bp\s*and\s*o\b/i,/\bp&o\s+cruises\b/i]},
   royal:{displayName:"Royal Caribbean",key:"royal",url:"https://www.dawsonandsanderson.co.uk/royal-caribbean-international",defaultBoard:"SC",utmSlug:"royal_caribbean",logoAsset:"header",aliases:[/\broyal\s+caribbean\b/i,/\brci\b/i,/\broyal\b/i]},
-  virgin:{displayName:"Virgin Voyages",key:"virgin",url:"https://www.dawsonandsanderson.co.uk/cruises",defaultBoard:"AI",utmSlug:"virgin",logoAsset:"header",aliases:[/\bvirgin\b/i,/\bvirgin\s+voyages\b/i]}
+  virgin:{displayName:"Virgin Voyages",key:"virgin",url:"https://www.dawsonandsanderson.co.uk/cruises",defaultBoard:"AI",utmSlug:"virgin",logoAsset:"header",aliases:[/\bvirgin\b/i,/\bvirgin\s+voyages\b/i]},
+  tui:{displayName:"TUI",key:"tui",url:"https://www.dawsonandsanderson.co.uk/holidays",defaultBoard:"AI",utmSlug:"tui",logoAsset:"header",aliases:[/\btui\b/i,/\btui\s+holidays\b/i]},
+  jet2:{displayName:"Jet2holidays",key:"jet2",url:"https://www.dawsonandsanderson.co.uk/holidays",defaultBoard:"SC",utmSlug:"jet2holidays",logoAsset:"header",aliases:[/\bjet2\s*holidays\b/i,/\bjet2holidays\b/i,/\bjet2\b/i]},
+  easyjet:{displayName:"easyJet holidays",key:"easyjet",url:"https://www.dawsonandsanderson.co.uk/holidays",defaultBoard:"RO",utmSlug:"easyjet_holidays",logoAsset:"header",aliases:[/\beasyjet\s+holidays\b/i,/\beasyjet\b/i]}
 };
 
 function getOperatorLandingUrl(operatorKey){
@@ -1999,7 +2039,8 @@ const OPERATOR_INTELLIGENCE = {
   wendywu:{name:"Wendy Wu Tours",aliases:["wendy wu","wendy wu tours"],officialUrl:"https://www.wendywutours.co.uk/",dawsonUrl:"",category:"Escorted touring",bookableStatus:"Enquiry-only",defaultCta:"Use the existing Dawson & Sanderson enquiry CTA behaviour.",tone:"expert-led, cultural, immersive",guidance:"Asia expertise, guided touring, cultural depth",avoid:"beach holiday language"},
   newmarket:{name:"Newmarket Holidays",aliases:["newmarket","newmarket holidays"],officialUrl:"https://www.newmarketholidays.co.uk/",dawsonUrl:"",category:"Escorted tours",bookableStatus:"Enquiry-only",defaultCta:"Use the existing Dawson & Sanderson enquiry CTA behaviour.",tone:"accessible, clear, value-conscious",guidance:"guided tours, practical itineraries, value, ease",avoid:"excessive luxury wording"},
   tui:{name:"TUI",aliases:["tui","tui holidays"],officialUrl:"https://www.tui.co.uk/",dawsonUrl:"",category:"Package holidays",bookableStatus:"Bookable",defaultCta:"Use the existing Dawson & Sanderson booking/enquiry CTA behaviour.",tone:"clear, accessible, mainstream",guidance:"ease, trusted holidays, broad appeal",avoid:"niche/luxury positioning unless offer supports it"},
-  jet2:{name:"Jet2holidays",aliases:["jet2","jet2holidays","jet2 holidays"],officialUrl:"https://www.jet2holidays.com/",dawsonUrl:"",category:"Package holidays",bookableStatus:"Bookable",defaultCta:"Use the existing Dawson & Sanderson booking/enquiry CTA behaviour.",tone:"clear, friendly, value-led, trusted",guidance:"flights, package ease, ATOL-style reassurance where appropriate",avoid:"overcomplicated editorial copy"}
+  jet2:{name:"Jet2holidays",aliases:["jet2","jet2holidays","jet2 holidays"],officialUrl:"https://www.jet2holidays.com/",dawsonUrl:"",category:"Package holidays",bookableStatus:"Bookable",defaultCta:"Start your booking",tone:"clear, friendly, value-led, trusted",guidance:"flights, package ease, family value, Free Child Place when stated",avoid:"overcomplicated editorial copy"},
+  easyjet:{name:"easyJet holidays",aliases:["easyjet","easyjet holidays","easyJet holidays"],officialUrl:"https://www.easyjet.com/en/holidays",dawsonUrl:"",category:"Package holidays",bookableStatus:"Enquiry-only",defaultCta:"Call us for more info",tone:"bright, direct, city-break friendly",guidance:"short breaks, city breaks, flights, simple package value",avoid:"cruise terminology"}
 };
 function normaliseAiOperatorText(value){
   return String(value || "").toLowerCase().replace(/&/g," and ").replace(/[^a-z0-9]+/g," ").replace(/\s+/g," ").trim();
@@ -2326,7 +2367,7 @@ let cur = 0, viewMode = "all", zoomPct = 32;
 let lockedOffers = [false,false,false,false];
 let lockedHeroImages = [false,false,false,false];
 let safeZoneOn = false, exportRunning = false;
-const FLDS = ["tags","theme_tags","name","ship","sailingFrom","incl","price","basis","board","boardlbl","day","month","nights","ports","url","utm_content"];
+const FLDS = ["tags","theme_tags","name","ship","sailingFrom","incl","price","totalPrice","resortFee","basis","board","boardlbl","day","month","nights","ports","url","utm_content","adults","children","freeChildPlace","offerType"];
 const CTA_DEFAULTS = {enabled:false,text:"Click To Call Us For More Info",phone:"01912229701"};
 let ctaSettings = {...CTA_DEFAULTS};
 let poaAppliedSuggestions = {};
@@ -4395,7 +4436,10 @@ const OFFER_TAB_OPERATOR_LABELS = {
   "Virgin Voyages": "Virgin",
   msc: "MSC",
   ncl: "Norwegian",
-  princess: "Princess"
+  princess: "Princess",
+  tui: "TUI",
+  jet2: "Jet2",
+  easyjet: "easyJet"
 };
 function getOfferTabOperatorLabel(o){
   const key=String((o&&o.operator)||"").trim();
@@ -9900,6 +9944,63 @@ function stripCardInclusionRenderMarkup(value){
 function escapeCardInclusionHtml(value){
   return String(value||"").replace(/[<>"']/g,char=>({"<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
 }
+
+const PACKAGE_OPERATORS = {
+  tui: {name:"TUI", logo:"assets/operator-logos/tui-logo.png", colours:{accent:"#082b46", footer:"#082b46"}, ctaText:"Call us for more info", pricingBehaviour:"lead-resort-total", options:{layout:"tui", defaultFeatures:["Beach Holiday"]}},
+  jet2: {name:"Jet2holidays", logo:"assets/operator-logos/jet2-holidays-logo.png", colours:{accent:"#c90000", footer:"#082b46"}, ctaText:"Start your booking", pricingBehaviour:"total-first", options:{layout:"jet2", defaultFeatures:["Free Child Place","Family"]}},
+  easyjet: {name:"easyJet holidays", logo:"assets/operator-logos/easyjet-logo.png", colours:{accent:"linear-gradient(90deg,#ff7a00,#ff2f1f)", footer:"linear-gradient(90deg,#ff7a00,#ff2f1f)"}, ctaText:"Call us for more info", pricingBehaviour:"lead-resort-total", options:{layout:"easyjet", defaultFeatures:["City Break"]}}
+};
+const PACKAGE_BOARD_BASES = ["Room Only","Bed & Breakfast","Half Board","Full Board","All Inclusive","All Inclusive Plus","Ultra All Inclusive","Self Catering"];
+const PACKAGE_FEATURES = ["Free Child Place","Adults Only","Family","Luxury","City Break","Beach Holiday"];
+const PACKAGE_AIRPORTS = ["Newcastle","Manchester","Birmingham","Glasgow","Edinburgh"];
+function isPackageOperator(key){ return !!(PACKAGE_OPERATORS[String(key||"").toLowerCase()]); }
+function isPackageOffer(d){ return String((d&&d.offerType)||"").toLowerCase()==="package" || isPackageOperator((d&&d.operator)||""); }
+function packageOfferFromData(d){
+  d=d||{};
+  const airport=String(d.sailingFrom||d.ports||d.flyingFrom||"").split(/[•,\n]/)[0].trim();
+  const adults=String(d.adults||"").trim() || ((String(d.basis||"").match(/(\d+)\s*Adults?/i)||[])[1]);
+  const children=String(d.children||"").trim() || ((String(d.basis||"").match(/(\d+)\s*Child(?:ren)?/i)||[])[1]);
+  return {
+    offerType:"package", operator:d.operator||"", destination:d.name||"", hotel:d.ship||"", nights:d.nights||"", boardBasis:d.boardlbl||d.board||"", departureDate:[d.day,d.month].filter(Boolean).join(" "), departureAirport:airport, leadPrice:d.price||"", resortFee:d.resortFee||"", totalPrice:d.totalPrice||d.price||"", adults:adults||"2", children:children||"", freeChildPlace:!!(d.freeChildPlace||/free child place/i.test([d.tags,d.theme_tags].join(" "))), priceLabel:d.priceLabel||"Total Price", basis:d.basis||"Based on 2 Adults Sharing", inclusions:d.incl||"Luggage & Transfers Included", features:String(d.theme_tags||d.tags||"").split(/\s*[•·,]\s*/).filter(Boolean)
+  };
+}
+function formatPackageMoney(value){
+  const raw=String(value||"").trim();
+  const digits=raw.replace(/[^0-9.]/g,"");
+  if(!digits) return "";
+  const num=Number(digits);
+  return Number.isFinite(num)?`£${num.toLocaleString("en-GB",{maximumFractionDigits:digits.includes(".")?2:0})}`:`£${digits}`;
+}
+function packageAirportLine(value){ const clean=String(value||"").replace(/\s+Flights?$/i,"").trim(); return clean?`${clean} Flights`:""; }
+function packageResortFeeText(value,operatorKey){
+  const money=formatPackageMoney(value);
+  if(!money) return "";
+  const pp=/pp|per person/i.test(String(value||""));
+  return `+${money}${pp?"pp":""} ${operatorKey==="easyjet"?"Total Local Resort Fee":"Local Resort Fee"}`;
+}
+function renderPackagePriceBlock(model,operatorKey){
+  const lead=formatPackageMoney(model.leadPrice);
+  const total=formatPackageMoney(model.totalPrice||model.leadPrice);
+  const fee=packageResortFeeText(model.resortFee,operatorKey);
+  const hasDistinctTotal=fee && total && lead && total!==lead;
+  const pp=/pp|per person/i.test(String(model.totalPrice||model.leadPrice||"")) || operatorKey!=="jet2";
+  const priceMarkup=(amount,extraClass="")=>`<div class="pkg-price ${extraClass}">${amount}<span class="pkg-pp">${pp?"pp":""}</span></div>`;
+  if(hasDistinctTotal){
+    return `<div class="pkg-lead">${priceMarkup(lead)}<div class="pkg-fee">${fee}</div></div><div class="pkg-total">${priceMarkup(total)}<div class="pkg-price-label">${escapeHtml(model.priceLabel||"Total Price")}</div><div class="pkg-basis">${escapeHtml(model.basis||"")}</div></div>`;
+  }
+  return `<div class="pkg-total">${priceMarkup(total||lead)}${fee?`<div class="pkg-fee">${fee}</div>`:""}<div class="pkg-price-label">${escapeHtml(model.priceLabel||"Total Price")}</div><div class="pkg-basis">${escapeHtml(model.basis||"")}</div></div>`;
+}
+function renderPackageCard(d){
+  const model=packageOfferFromData(d);
+  const cfg=PACKAGE_OPERATORS[model.operator]||PACKAGE_OPERATORS.tui;
+  const layout=(cfg.options&&cfg.options.layout)||model.operator;
+  const freeChild=model.freeChildPlace || model.features.some(f=>/free child place/i.test(f));
+  const ribbon=model.operator==="jet2"&&freeChild?"Offer Includes a Free Child Place":"";
+  const details=[model.nights?`${model.nights} Nights`:"",model.boardBasis,model.departureDate,packageAirportLine(model.departureAirport),model.inclusions].filter(Boolean);
+  return `<div class="pc pkg-${layout}" style="--package-accent:${cfg.colours.accent};--package-footer:${cfg.colours.footer};"><div class="pkg-head"><img class="pkg-head-logo" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo">${ribbon?`<div class="pkg-ribbon">${escapeHtml(ribbon)}</div>`:""}</div><div class="pkg-body"><div class="pkg-destination">${escapeHtml(model.destination)}</div><div class="pkg-hotel">${escapeHtml(model.hotel)}</div><div class="pkg-details">${details.map(escapeHtml).join("<br>")}</div><img class="pkg-operator-logo" src="${cfg.logo}" alt="${escapeHtml(cfg.name)} logo"><div class="pkg-pricing">${renderPackagePriceBlock(model,model.operator)}</div></div><div class="pkg-footer"><div class="pkg-cta-main">${escapeHtml(cfg.ctaText)}</div><div class="pkg-cta-sub">or visit us in store</div></div></div>`;
+}
+function renderCruiseCard(d){ return renderCruiseCardHTML(d); }
+
 function renderCruiseTitle(value){
   let title=typeof stripTrailingGenericCruiseTitleWord==="function"?stripTrailingGenericCruiseTitleWord(value):String(value||"").trim();
   title=title.replace(/-/g,"‑");
@@ -9911,7 +10012,7 @@ function renderCruiseTitle(value){
   }
   return title;
 }
-function renderCardHTML(d){
+function renderCruiseCardHTML(d){
   const displayText=value=>(typeof normaliseKnownDisplayText==="function"?normaliseKnownDisplayText(value):String(value||"").replace(/\s*@\s*/g," at ").replace(/\bLaspezia\b/gi,"La Spezia").replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca").replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne").replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing").replace(/[ \t]{2,}/g," ").trim());
   const name=typeof renderCruiseTitle==="function"?renderCruiseTitle(displayText(d.name)):String(displayText(d.name)||"").replace(/-/g,"‑");
   const incl=typeof renderCardInclusion==="function"?renderCardInclusion(d.incl):(typeof normaliseSubtitleSeparator==="function"?normaliseSubtitleSeparator(d.incl):String(d.incl||"").replace(/\s*•\s*/g," - ").replace(/\s{2,}/g," ").trim());
@@ -9941,6 +10042,7 @@ function renderCardHTML(d){
   const nightLabel=nights?"Nights":"";
   return `<div class="cc"${getOperatorSkinStyle(d)}>${getHeaderHTML(d)}${heroHTML}<div class="isec"><div class="isec-content"><div class="cname">${name}</div><div class="sname">${shipLine}</div><div class="incl">${incl}</div><div class="price-block">${priceHTML}<div class="pbasis">${basis}</div></div></div></div><div class="ibar"><div class="icell gold"><div class="ival">${board}</div><div class="ilbl">${boardlbl}</div></div><div class="icell blk"><div class="ival">${dateHTML}</div><div class="ilbl">${month}</div></div><div class="icell gold"><div class="ival">${nights}</div><div class="ilbl">${nightLabel}</div></div></div>${itineraryImageHTML}<div class="vsec"><div class="visit-inner">${preCruiseHTML}<div class="vtit">You'll Visit</div><div class="vpts">${portsHTML}</div></div></div><div class="tcbar">${terms}</div></div>`;
 }
+function renderCardHTML(d){ return isPackageOffer(d) ? renderPackageCard(d) : renderCruiseCard(d); }
 function bc(d){ return renderCardHTML(d); }
 
 // ═══════════════════════════════════════════════════════
