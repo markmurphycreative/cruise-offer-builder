@@ -8508,6 +8508,15 @@ function parseOfferText(raw,options){
   if(sourceInclusion){parsed.incl=sourceInclusion;score+=6;}
   const detectedCabin=detectCabinType(raw);
   const parsedAirport=typeof detectFlightAirport==="function"?detectFlightAirport(raw):"";
+  if(sourceInclusion&&parsedAirport&&!/\bflights?\b/i.test(sourceInclusion)){
+    parsed.incl=buildCabinCardInclusionSegments({
+      airport:parsedAirport,
+      luggageIncluded:false,
+      transfersIncluded:false,
+      cabin:"",
+      preCruiseInclusion:sourceInclusion
+    });
+  }
   if(detectedCabin){
     const transferStatus=detectTransferStatus(raw);
     const detectedPreCruiseStay=typeof detectPreCruiseStay==="function"?detectPreCruiseStay(raw):"";

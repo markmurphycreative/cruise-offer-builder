@@ -135,9 +135,9 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     },
     isOfferLoaded: offer => !!(offer && (offer.name || offer.ship || offer.price || offer._img)),
     BOARD_MAP: { FB: ['FB', 'Full Board'], 'FULL BOARD': ['FB', 'Full Board'], AI: ['AI', 'All Inclusive'], 'ALL INCLUSIVE': ['AI', 'All Inclusive'], HB: ['HB', 'Half Board'], 'HALF BOARD': ['HB', 'Half Board'] },
-    OPERATOR_HEADERS: { cunard: { name: 'Cunard' }, ncl: { name: 'Norwegian Cruise Line' }, po: { name: 'P&O Cruises' }, royal: { name: 'Royal Caribbean' }, marella: { name: 'Marella Cruises' }, celebrity: { name: 'Celebrity Cruises' }, fred: { name: 'Fred. Olsen Cruise Lines' } },
-    OPERATOR_SHIPS: { celebrity: ['Celebrity Apex', 'Celebrity Ascent'], amawaterways: ['AmaBella', 'AmaDouro', 'AmaMagna', 'Zambezi Queen'], cunard: ['Queen Anne'], ncl: ['Norwegian Prima', 'Pride of America'], po: ['Arvia'], royal: ['Oasis of the Seas', 'Legend of the Seas'], marella: ['Marella Discovery'], fred: ['Bolette'] },
-    OPERATOR_ALIASES: { celebrity: [/\bcelebrity\b/i, /\bcelebrity\s+cruises\b/i], cunard: [/\bcunard\b/i], ncl: [/\bnorwegian\s+cruise\s+line\b/i, /\bncl\b/i], po: [/\bp\s*&\s*o\b/i, /\bp&o\s+cruises\b/i], royal: [/\broyal\s+caribbean\b/i, /\broyal\s+caribbean\s+international\b/i], marella: [/\bmarella\b/i], fred: [/\bfred\.?\s*olsen\b/i] },
+    OPERATOR_HEADERS: { ambassador: { name: 'Ambassador Cruise Line' }, cunard: { name: 'Cunard' }, ncl: { name: 'Norwegian Cruise Line' }, po: { name: 'P&O Cruises' }, royal: { name: 'Royal Caribbean' }, marella: { name: 'Marella Cruises' }, celebrity: { name: 'Celebrity Cruises' }, fred: { name: 'Fred. Olsen Cruise Lines' }, virgin: { name: 'Virgin Voyages' } },
+    OPERATOR_SHIPS: { ambassador: ['Ambition', 'Ambience'], celebrity: ['Celebrity Apex', 'Celebrity Ascent', 'Celebrity Summit'], amawaterways: ['AmaBella', 'AmaDouro', 'AmaMagna', 'Zambezi Queen'], cunard: ['Queen Anne'], ncl: ['Norwegian Prima', 'Pride of America'], po: ['Arvia'], royal: ['Oasis of the Seas', 'Legend of the Seas', 'Liberty of the Seas'], marella: ['Marella Discovery'], fred: ['Bolette'], virgin: ['Valiant Lady'] },
+    OPERATOR_ALIASES: { ambassador: [/\bambassador\s+cruise\s+line\b/i, /\bambassador\b/i], celebrity: [/\bcelebrity\b/i, /\bcelebrity\s+cruises\b/i], cunard: [/\bcunard\b/i], ncl: [/\bnorwegian\s+cruise\s+line\b/i, /\bncl\b/i], po: [/\bp\s*&\s*o\b/i, /\bp&o\s+cruises\b/i], royal: [/\broyal\s+caribbean\b/i, /\broyal\s+caribbean\s+international\b/i], marella: [/\bmarella\b/i], fred: [/\bfred\.?\s*olsen\b/i], virgin: [/\bvirgin\s+voyages\b/i] },
     AIRPORT_WORDS: ['newcastle', 'manchester', 'edinburgh', 'leeds bradford', 'glasgow', 'birmingham', 'london', 'heathrow', 'gatwick', 'stansted', 'belfast'],
     getLikelyTypos() { return []; },
     setSpellWarn() {},
@@ -297,6 +297,195 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
 
 
 
+
+const REAL_WORLD_CRUISE_FIXTURES = {
+  ambassadorVisionOcr: `Cruises for under £1k per person
+Ambassador Cruise Line
+Coastal Gems of Sweden & Denmark
+20™ June 2028
+7 night cruise
+Ambition
+Sailing from Port of Tyne
+Inside Cabin
+Full Board
+£765 per person based on 2 sharing
+Itinerary
+Newcastle
+Lysekil
+Copenhagen
+Skagen
+Newcastle`,
+  royalCaribbean: `Royal Caribbean
+Spain & France
+25th September 2026
+8 night cruise
+Liberty Of The Seas
+Sailing from Southampton
+Ocean View Cabin
+Full Board
+£1689 for a family of two adults & 1 child
+Itinerary
+Southampton
+Paris (Le Havre), France
+Bilbao, Spain
+La Coruna, Spain
+Vigo, Spain
+Cherbourg, France
+Southampton`,
+  virginVoyages: `Virgin Voyages
+Greek Island Hues & Turkish Views
+15th May 2027
+7 night cruise
+Flights included from Edinburgh
+Full Board
+£1299 per person based on 2 sharing
+Itinerary
+Piraeus (Athens)
+Santorini
+Chania, Crete
+Ephesus (Kusadasi)
+Mykonos (overnight)
+Piraeus (Athens)
+Includes checked luggage & 1 night pre-cruise stay at 4* hotel Athens`,
+  marella: `Marella Cruises
+Iconic Islands
+10th July 2026
+7 night cruise
+Flights included from Newcastle
+All Inclusive
+£1249 per person based on 2 sharing
+Itinerary
+Corfu
+Souda (for Chania), Crete
+Rhodes
+Patmos
+Heraklion, Crete
+Katakolon (for Olympia)
+Corfu
+Includes checked luggage & transfers`,
+  celebrityAlaska: `Offer 4 - Alaska Explorer
+7 May 2027
+7 Nights Sailing on Celebrity Summit - Full Board
+Sailing from Vancouver
+Flying from Newcastle
+Inside Cabin
+Transfers Included
+2 Nights Pre-Cruise Stay in Vancouver
+£2,099.00 per person
+Vancouver, British Columbia
+Inside Passage (Cruising)
+Icy Strait Point, Alaska
+Skagway, Alaska
+Juneau, Alaska
+Ketchikan, Alaska
+Inside Passage (Cruising)
+Vancouver, British Columbia`,
+  celebrityFjords: `Offer 3 - Norwegian Fjords
+28 May 2027
+8 Nights Sailing on Celebrity Apex - Full Board
+Sailing from Southampton
+Inside Cabin
+No Transfers
+£1,499.00 per person
+Southampton, England
+At Sea
+Haugesund, Norway
+Molde, Norway
+Trondheim, Norway
+Olden, Norway
+Bergen, Norway
+At Sea
+Southampton, England`
+};
+
+test('PMU real-world Cruise fixtures parse without fabricating absent ship fields or regressing dates, inclusions and ports', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  const parse = raw => harness.context.parseOfferText(raw, { renderIntelligence: false }).parsed;
+
+  const ambassador = parse(REAL_WORLD_CRUISE_FIXTURES.ambassadorVisionOcr);
+  assert.equal(ambassador.operatorKey, 'ambassador');
+  assert.equal(ambassador.ship, 'Ambition');
+  assert.equal(ambassador.name, 'Coastal Gems of Sweden & Denmark');
+  assert.equal(ambassador.day, '20th');
+  assert.equal(ambassador.month, 'June 2028');
+  assert.equal(ambassador.nights, '7');
+  assert.equal(ambassador.price, '765');
+  assert.equal(ambassador.boardlbl, 'Full Board');
+  assert.equal(ambassador.incl, 'Includes luggage - Inside Cabin');
+  assert.doesNotMatch(ambassador.ports, /At Sea/i);
+
+  const royal = parse(REAL_WORLD_CRUISE_FIXTURES.royalCaribbean);
+  assert.equal(royal.operatorKey, 'royal');
+  assert.equal(royal.ship, 'Liberty of the Seas');
+  assert.equal(royal.name, 'Spain & France');
+  assert.equal(royal.day, '25th');
+  assert.equal(royal.month, 'September 2026');
+  assert.equal(royal.nights, '8');
+  assert.equal(royal.price, '1689');
+  assert.equal(royal.boardlbl, 'Full Board');
+  assert.equal(royal.incl, 'Includes luggage - Ocean View');
+  assert.match(royal.ports, /La Coruna/);
+  assert.match(royal.ports, /Vigo/);
+  assert.match(royal.ports, /Cherbourg/);
+  assert.doesNotMatch(royal.ports, /Liberty|Royal Caribbean|Ocean View|Full Board|1689/i);
+
+  const virgin = parse(REAL_WORLD_CRUISE_FIXTURES.virginVoyages);
+  assert.equal(virgin.operatorKey, 'virgin');
+  assert.equal(virgin.name, 'Greek Island Hues & Turkish Views');
+  assert.equal(virgin.ship || '', '');
+  assert.equal(virgin.day, '15th');
+  assert.equal(virgin.month, 'May 2027');
+  assert.equal(virgin.nights, '7');
+  assert.equal(virgin.price, '1299');
+  assert.equal(virgin.boardlbl, 'Full Board');
+  assert.match(virgin.incl, /Edinburgh Flights/);
+  assert.match(virgin.incl, /1 night pre-cruise/i);
+  assert.match(virgin.ports, /Santorini/);
+  assert.match(virgin.ports, /Mykonos/);
+
+  const marella = parse(REAL_WORLD_CRUISE_FIXTURES.marella);
+  assert.equal(marella.operatorKey, 'marella');
+  assert.equal(marella.name, 'Iconic Islands');
+  assert.equal(marella.ship || '', '');
+  assert.equal(marella.day, '10th');
+  assert.equal(marella.month, 'July 2026');
+  assert.equal(marella.nights, '7');
+  assert.equal(marella.boardlbl, 'All Inclusive');
+  assert.match(marella.incl, /luggage.*transfers/i);
+  assert.match(marella.incl, /Newcastle Flights/);
+  assert.match(marella.ports, /Rhodes/);
+  assert.doesNotMatch(marella.ports, /Includes|luggage|transfers/i);
+
+  const alaska = parse(REAL_WORLD_CRUISE_FIXTURES.celebrityAlaska);
+  assert.equal(alaska.operatorKey, 'celebrity');
+  assert.equal(alaska.ship, 'Celebrity Summit');
+  assert.equal(alaska.name, 'Alaska Explorer');
+  assert.equal(alaska.day, '7');
+  assert.equal(alaska.month, 'May 2027');
+  assert.equal(alaska.nights, '7');
+  assert.equal(alaska.boardlbl, 'Full Board');
+  assert.match(alaska.incl, /Transfers Included/);
+  assert.match(alaska.incl, /Newcastle Flights/);
+  assert.match(alaska.incl, /Inside Cabin/);
+  assert.match(alaska.incl, /2 Nights Pre-Cruise Stay in Vancouver/);
+  assert.equal(alaska.price, '2099');
+  assert.match(alaska.ports, /Icy Strait Point/);
+  assert.doesNotMatch(alaska.ports, /Inside Passage|Cruising/i);
+
+  const fjords = parse(REAL_WORLD_CRUISE_FIXTURES.celebrityFjords);
+  assert.equal(fjords.operatorKey, 'celebrity');
+  assert.equal(fjords.ship, 'Celebrity Apex');
+  assert.equal(fjords.name, 'Norwegian Fjords');
+  assert.equal(fjords.day, '28');
+  assert.equal(fjords.month, 'May 2027');
+  assert.equal(fjords.nights, '8');
+  assert.equal(fjords.boardlbl, 'Full Board');
+  assert.equal(fjords.incl, 'Includes luggage - Inside Cabin');
+  assert.equal(fjords.price, '1499');
+  assert.match(fjords.ports, /Haugesund, Norway/);
+  assert.match(fjords.ports, /Bergen, Norway/);
+  assert.doesNotMatch(fjords.ports, /At Sea|Norwegian Fjords/i);
+});
 
 test('PMU Vision Import normalises OCR ordinal artefacts before review text', () => {
   const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
