@@ -7559,15 +7559,16 @@ function buildCardInclusionFromComponents(components){
 }
 function buildCabinCardInclusionSegments(options){
   const components=[];
-  if(options&&options.luggageTransferIncluded) components.push("Luggage & Transfers Included");
+  if(options&&options.airport) components.push({type:"flight",text:`${options.airport} Flights`});
+  if(options&&options.luggageTransferIncluded) components.push({type:"luggage-transfer",text:"Luggage & Transfers Included"});
   else {
-    if(options&&options.luggageIncluded) components.push("Includes luggage");
-    if(options&&options.transfersIncluded) components.push("Transfers Included");
+    if(options&&options.luggageIncluded) components.push({type:"luggage",text:"Luggage Included"});
+    if(options&&options.transfersIncluded) components.push({type:"transfer",text:"Transfers Included"});
   }
-  if(options&&options.airport) components.push(`${options.airport} Flights`);
-  if(options&&options.cabin) components.push(options.cabin);
-  if(options&&options.preCruiseInclusion) components.push(options.preCruiseInclusion);
-  return components.filter(Boolean).join(" - ");
+  if(options&&options.cabin) components.push({type:"cabin",text:options.cabin});
+  if(options&&options.preCruiseInclusion) components.push(...buildCardInclusionComponents(options.preCruiseInclusion));
+  if(options&&options.postCruiseInclusion) components.push(...buildCardInclusionComponents(options.postCruiseInclusion));
+  return buildCardInclusionFromComponents(components);
 }
 function cleanParsedPorts(lines,options){
   const ignored=/^(?:at sea|(?:\d+\s+)?days?\s+at\s+sea|(?:\d+\s+)?sea\s+days?|overnight port stay|overnight stay|overnight|luggage\s*(?:&|and)\s*transfers?\s+included|flights?\s+included)[, .!]*$/i;
@@ -8230,7 +8231,7 @@ function normaliseInclusionEditorialText(value,options){
     .replace(/\s+([,.;:!?])/g,"$1")
     .replace(/[.]+$/,"")
     .trim();
-  if(/\b(?:pre|post)[-\s]*cruise\b/i.test(text)&&/\bstay\b/i.test(text)) text=text.replace(/^includes\s+/i,"").trim();
+  if(/\b(?:pre|post)[-\s]*cruise\b/i.test(text)&&/\bstay\b/i.test(text)) text=text.replace(/^includes\s+/i,"").replace(/^(\d+)\s+night(s?)\s+((?:pre|post)[-\s]*cruise\s+stay)/i,(m,n,suf,label)=>`${n} Night${suf?"s":""} ${label.replace(/(^|[-\s])([a-z])/g,(_,p,c)=>p+c.toUpperCase()).replace(/\s+/g," ")}`).replace(/\b(at|in)\s+(.+)$/i,(m,prep,place)=>`${prep} ${place.replace(/\b([a-z])/g,c=>c.toUpperCase())}`).trim();
   if(/^includes\b/i.test(text)) text=text.replace(/^includes\b/i,"Includes");
   if(/^luggage and one-way hotel transfer$/i.test(text)) text=`Includes ${text.replace(/^luggage/i,"luggage")}`;
   if(options&&options.sentence&&text&&!/[.!?]$/.test(text)) text+=".";
@@ -8408,7 +8409,7 @@ function applyCruiseDefaultLuggage(parsed,rawText,effectiveOperator){
   const p=parsed||{};
   if(!shouldApplyCruiseDefaultLuggage(p,rawText,effectiveOperator)) return p;
   const current=String(p.incl||"").trim();
-  p.incl=current?`Includes luggage - ${current}`:"Includes luggage";
+  p.incl=buildCardInclusionFromComponents(current?[{type:"luggage",text:"Luggage Included"},...buildCardInclusionComponents(current)]:[{type:"luggage",text:"Luggage Included"}]);
   return p;
 }
 
@@ -9230,7 +9231,7 @@ function applyPoaCabinType(value){
   if(input){
     const current=String(input.value||"").trim();
     const cabinPattern=/\b(?:inside|interior|outside|ocean\s*view|oceanview|balcony|suite|mini\s+suite|concierge(?:\s+class)?|aqua(?:class)?|yacht\s+club|haven|britannia\s+club|infinite\s+veranda)(?:\s+(?:cabin|stateroom|suite|class))?\b/i;
-    input.value=cabinPattern.test(current)?current.replace(cabinPattern,display):(current?`${current} - ${display}`:display);
+    input.value=buildCardInclusionFromComponents(cabinPattern.test(current)?buildCardInclusionComponents(current).map(component=>component.type==="cabin"?{type:"cabin",text:display}:component):[...buildCardInclusionComponents(current),{type:"cabin",text:display}]);
   }
   if(!offers[cur]) offers[cur]={};
   offers[cur].incl=input?input.value:display;
@@ -9660,19 +9661,28 @@ function normaliseCardInclusionComponent(value){
   const displayText=text=>(typeof normaliseKnownDisplayText==="function"?normaliseKnownDisplayText(text):String(text||"").replace(/\s*@\s*/g," at ").replace(/\bLaspezia\b/gi,"La Spezia").replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca").replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne").replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing").replace(/[ \t]{2,}/g," ").trim());
   let text=displayText(typeof removeSubjectToConditions==="function"?removeSubjectToConditions(value):String(value||""))
     .replace(/[\t ]+/g," ")
-    .replace(/^\s*(?:[-–—•·,]+\s*)+|(?:\s*[-–—•·,]+)+\s*$/g,"")
+    .replace(/^\s*(?:[-–—•·,&]+\s*)+|(?:\s*[-–—•·,&]+)+\s*$/g,"")
     .trim();
-  if(/\b(?:pre|post)[-\s]*cruise\b/i.test(text)&&/\bstay\b/i.test(text)) text=text.replace(/^includes\s+/i,"").trim();
-  if(/^includes\b/i.test(text)) text=text.replace(/^includes\b/i,"Includes");
+  if(!text || /^[-–—•·]+$/.test(text)) return "";
+  if(/\b(?:pre|post)[-\s]*cruise\b/i.test(text)&&/\bstay\b/i.test(text)) text=text.replace(/^includes\s+/i,"").replace(/^(\d+)\s+night(s?)\s+((?:pre|post)[-\s]*cruise\s+stay)/i,(m,n,suf,label)=>`${n} Night${suf?"s":""} ${label.replace(/(^|[-\s])([a-z])/g,(_,p,c)=>p+c.toUpperCase()).replace(/\s+/g," ")}`).replace(/\b(at|in)\s+(.+)$/i,(m,prep,place)=>`${prep} ${place.replace(/\b([a-z])/g,c=>c.toUpperCase())}`).trim();
+  const flightFrom=text.match(/^(?:direct\s+)?flights?\s+(?:included\s+)?(?:direct\s+)?from\s+(.+)$/i)||text.match(/^flying\s+from\s+(.+)$/i);
+  if(flightFrom&&flightFrom[1]) return `${normaliseCardInclusionComponent(flightFrom[1].replace(/\s+direct$/i,""))} Flights`;
+  const airportFlights=text.match(/^(.+?)\s+flights?(?:\s+included)?$/i);
+  if(airportFlights&&airportFlights[1]&&!/^(?:return|direct|regional)$/i.test(airportFlights[1].trim())) return `${normaliseCardInclusionComponent(airportFlights[1])} Flights`;
   if(/^luggage and one-way hotel transfer$/i.test(text)) text=`Includes ${text.replace(/^luggage/i,"luggage")}`;
-  return text.replace(/[.]+$/,"").trim();
+  if(!/one-way hotel transfer/i.test(text)&&/\bluggage\b|\bbaggage\b/i.test(text)&&/\btransfers?\b/i.test(text)) return "Luggage & Transfers Included";
+  if(/^(?:includes?\s+)?(?:checked|hold)?\s*(?:luggage|baggage)(?:\s+included)?$/i.test(text)||/^(?:luggage|baggage)\s+included$/i.test(text)) return "Luggage Included";
+  if(/^(?:includes?\s+)?transfers?\s+included$/i.test(text)||/^transfers?$/i.test(text)) return "Transfers Included";
+  if(/^includes\b/i.test(text)) text=text.replace(/^includes\b/i,"Includes");
+  return text.replace(/[.]+$/," ").trim();
 }
 function classifyCardInclusionComponent(value){
   const text=normaliseCardInclusionComponent(value);
   if(!text) return "";
   if(/\b(?:includes?\s+)?\d+\s*[- ]\s*night(?:s)?\s+pre[-\s]?cruise\b/i.test(text)) return "precruise";
+  if(/\b(?:includes?\s+)?\d+\s*[- ]\s*night(?:s)?\s+post[-\s]?cruise\b/i.test(text)) return "postcruise";
   if(CARD_INCLUSION_CABIN_PHRASES.some(phrase=>new RegExp(`^${escapeRegExp(phrase)}$`,"i").test(text))) return "cabin";
-  if(/\bluggage\b/i.test(text)&&/\btransfers?\b/i.test(text)) return "luggage-transfer";
+  if(!/one-way hotel transfer/i.test(text)&&/\bluggage\b/i.test(text)&&/\btransfers?\b/i.test(text)) return "luggage-transfer";
   if(/\bluggage\b/i.test(text)) return "luggage";
   if(/\btransfers?\s+included\b/i.test(text)) return "transfer";
   if(/\bflights?\b/i.test(text)) return "flight";
@@ -9689,18 +9699,20 @@ function splitCardInclusionLineComponents(line){
   const raw=String(line||"");
   const canonical=normaliseCardInclusionComponent(raw);
   if(/^(?:includes?\s+)?\d+\s*[- ]\s*night(?:s)?\s+pre[-\s]?cruise\b/i.test(canonical)) return [makeCardInclusionComponent(canonical,"precruise")].filter(Boolean);
+  if(/^(?:includes?\s+)?\d+\s*[- ]\s*night(?:s)?\s+post[-\s]?cruise\b/i.test(canonical)) return [makeCardInclusionComponent(canonical,"postcruise")].filter(Boolean);
   const separatorParts=raw.split(/\s*(?:[•·]|\s[-–—]\s)\s*/).map(normaliseCardInclusionComponent).filter(Boolean);
   const parts=[];
   separatorParts.forEach(part=>{
     let remaining=part;
-    const pre=remaining.match(/(?:includes?\s+)?\d+\s*[- ]\s*night(?:s)?\s+pre[-\s]?cruise(?:\s+stay)?(?:\s+(?:at|in)\s+[^•·\n]+)?/i);
+    const pre=remaining.match(/(?:includes?\s+)?\d+\s*[- ]\s*night(?:s)?\s+(?:pre|post)[-\s]?cruise(?:\s+stay)?(?:\s+(?:at|in)\s+[^•·\n]+)?/i);
     if(pre){ remaining=remaining.slice(0,pre.index).trim(); parts.push(pre[0]); }
+    if(/one-way hotel transfer/i.test(remaining)){ parts.push(remaining); return; }
     const tokens=[];
     CARD_INCLUSION_CABIN_PHRASES.forEach(phrase=>{
       const match=remaining.match(new RegExp(escapeRegExp(phrase),"i"));
       if(match) tokens.push({index:match.index,text:match[0]});
     });
-    const luggageMatch=remaining.match(/luggage\s+included|luggage\s*(?:&|and)\s*transfers?\s+included/i);
+    const luggageMatch=remaining.match(/(?:includes?\s+)?(?:checked|hold)?\s*(?:luggage|baggage)(?:\s+included)?|luggage\s*(?:&|and)\s*transfers?\s+included/i);
     if(luggageMatch) tokens.push({index:luggageMatch.index,text:luggageMatch[0]});
     const transferMatch=remaining.match(/transfers?\s+included/i);
     if(transferMatch&&!(luggageMatch&&transferMatch.index>=luggageMatch.index&&transferMatch.index<luggageMatch.index+luggageMatch[0].length)) tokens.push({index:transferMatch.index,text:"Transfers Included"});
@@ -9727,19 +9739,34 @@ function normaliseFlightInclusionDisplay(component){
   if(airportIncluded&&airportIncluded[1]) return {...component,text:`${normaliseCardInclusionComponent(airportIncluded[1])} Flights`};
   return component;
 }
-function buildCardInclusionComponents(value){
-  if(Array.isArray(value)) return value.map(component=>normaliseFlightInclusionDisplay(makeCardInclusionComponent(stripCardInclusionRenderMarkup(component&&component.text||component),component&&component.type))).filter(Boolean);
-  const ordered=[];
+function normaliseCruiseInclusionComponents(components){
+  const unique=[];
   const add=component=>{
     component=normaliseFlightInclusionDisplay(component);
-    if(component&&!ordered.some(existing=>existing.type===component.type&&existing.text.toLowerCase()===component.text.toLowerCase())) ordered.push(component);
+    if(!component) return;
+    component={...component,text:normaliseCardInclusionComponent(component.text)};
+    if(!component.text || /^[-–—•·]+$/.test(component.text)) return;
+    if(!unique.some(existing=>existing.type===component.type&&existing.text.toLowerCase()===component.text.toLowerCase())) unique.push(component);
   };
+  (components||[]).forEach(add);
+  const hasLuggage=unique.some(component=>component.type==="luggage"||component.type==="luggage-transfer");
+  const hasTransfers=unique.some(component=>component.type==="transfer"||component.type==="luggage-transfer");
+  let combined=unique.filter(component=>!["luggage","transfer","luggage-transfer"].includes(component.type));
+  if(hasLuggage&&hasTransfers) combined.push({type:"luggage-transfer",text:"Luggage & Transfers Included"});
+  else if(hasLuggage) combined.push({type:"luggage",text:"Luggage Included"});
+  else if(hasTransfers) combined.push({type:"transfer",text:"Transfers Included"});
+  return combined.filter((component,index,all)=>all.findIndex(existing=>existing.type===component.type&&String(existing.text||"").toLowerCase()===String(component.text||"").toLowerCase())===index);
+}
+function buildCardInclusionComponents(value){
+  if(Array.isArray(value)) return normaliseCruiseInclusionComponents(value.map(component=>makeCardInclusionComponent(stripCardInclusionRenderMarkup(component&&component.text||component),component&&component.type)));
+  const ordered=[];
+  const add=component=>{ if(component) ordered.push(component); };
   stripCardInclusionRenderMarkup(value).replace(/\r\n?/g,"\n").split("\n").forEach(line=>splitCardInclusionLineComponents(line).forEach(add));
-  return ordered;
+  return normaliseCruiseInclusionComponents(ordered);
 }
 function orderCardInclusionComponents(components){
-  const rank={"luggage-transfer":0,luggage:1,transfer:2,flight:3,cabin:4,other:5,precruise:6};
-  return (components||[]).filter(Boolean).filter((component,index,all)=>all.findIndex(existing=>existing.type===component.type&&String(existing.text||"").toLowerCase()===String(component.text||"").toLowerCase())===index).sort((a,b)=>(rank[a.type]??4)-(rank[b.type]??4));
+  const rank={flight:0,"luggage-transfer":1,luggage:1,transfer:1,cabin:2,precruise:3,postcruise:4,other:5};
+  return normaliseCruiseInclusionComponents(components).sort((a,b)=>(rank[a.type]??5)-(rank[b.type]??5));
 }
 function validateCardInclusionLines(lines){
   return (lines||[]).every(line=>{
@@ -9798,14 +9825,14 @@ function packCardInclusionComponents(components,options){
 }
 function groupCardInclusionRenderLines(components,options){
   const ordered=orderCardInclusionComponents(components);
-  const hasLuggage=ordered.some(component=>component&&/luggage/.test(component.type));
+  const hasJoinable=ordered.some(component=>component&&["luggage-transfer","luggage","transfer","flight"].includes(component.type));
   const hasCabin=ordered.some(component=>component&&component.type==="cabin");
-  if(!(hasLuggage&&hasCabin)) return ordered.map(component=>[component]);
+  if(!hasJoinable) return ordered.map(component=>[component]);
   const lines=[];
   let editorialLine=[];
   ordered.forEach(component=>{
     if(!component) return;
-    if(component.type==="precruise"){
+    if(component.type==="precruise"||component.type==="postcruise"){
       if(editorialLine.length){ lines.push(editorialLine); editorialLine=[]; }
       lines.push([component]);
       return;
