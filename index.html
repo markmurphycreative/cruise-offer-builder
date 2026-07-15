@@ -7521,6 +7521,7 @@ function normaliseParsedPortBracketText(label){
 }
 function removeParsedPortCountrySuffix(label){
   let value=normaliseParsedPortBracketText(label);
+  value=value.replace(/^Santander,\s*Cantabria(?:,?\s+Spain)?$/i,"Santander, Cantabria");
   if(/,\s*for\s+/i.test(value)){
     let changed=true;
     while(changed){
@@ -9329,6 +9330,19 @@ function renderOfferIntelligencePanel(parsed,rawText){
 function setParseStatus(msg,level){if(msg==="Paste offer details to continue."&&typeof clearOfferIntelligencePanel==="function") clearOfferIntelligencePanel(); const el=document.getElementById('parse-result'); if(!el) return; el.textContent=msg; el.className='parse-result '+(level||'');}
 function showParsePreview(){const modal=document.getElementById('parse-preview-modal'); const requiresConfirmation=!!(modal&&modal.dataset&&modal.dataset.parsePreviewMode==='confirm'&&modal.classList&&modal.classList.contains('active')); if(!modal||!pendingParseResult||!requiresConfirmation) return false; const {parsed,confidence,score}=pendingParseResult; const body=document.getElementById('parse-preview-body'); const conf=document.getElementById('parse-confidence-badge'); const label=confidence==='high'?'Strong match':confidence==='partial'?'Review suggested':'Review needed'; conf.className='parse-result '+confidence; conf.textContent=`${label} (${score})`; const keys=['operatorKey','tags','name','ship','day','month','nights','price','board','boardlbl','incl','ports']; body.innerHTML=keys.filter(k=>parsed[k]).map(k=>{const typos=getLikelyTypos(parsed[k]); return `<div class="parse-preview-item ${typos.length?'spell-flag':''}"><strong>${k}</strong>${parsed[k]}</div>`;}).join('')||'<div class="parse-preview-item">No fields confidently detected.</div>'; const parseTypos=Object.values(parsed).flatMap(v=>getLikelyTypos(v)); setSpellWarn("spell-warn-parse-preview",parseTypos.length?`Spelling QA: ${[...new Set(parseTypos)].slice(0,6).join(", ")}`:""); runSpellQA(); return true;}
 function cancelParsedOffer(){const m=document.getElementById('parse-preview-modal'); if(m) m.classList.remove('active'); pendingParseResult=null;}
+function canApplyParsedCruiseOffer(parsed){
+  const p=parsed||{};
+  const hasValue=key=>p[key]!==undefined&&p[key]!==null&&String(p[key]).trim()!=="";
+  const recognisedShip=hasValue("ship")&&!!(typeof getOfferIntelligenceShipOperator==="function"?getOfferIntelligenceShipOperator(p.ship):(typeof findKnownOperatorShip==="function"?findKnownOperatorShip(p.ship,p.operatorKey):null));
+  const hasCruiseApplySignal=hasValue("operatorKey")||hasValue("ship")||hasValue("departurePort")||hasValue("sailingFrom")||hasValue("nights")||hasValue("board")||hasValue("boardlbl");
+  if(!hasCruiseApplySignal) return true;
+  const hasIdentity=hasValue("name")||recognisedShip;
+  const hasCommercial=hasValue("price")||(hasValue("day")&&hasValue("month"))||hasValue("nights");
+  const supportingFields=["operatorKey","board","boardlbl","ports","departurePort","sailingFrom","_poaDepartureAirport","incl","basis","tags"].filter(hasValue).length;
+  const coreFields=["name","ship","price","day","month","nights","operatorKey","board","boardlbl","ports","departurePort","sailingFrom","_poaDepartureAirport","incl","basis","tags"].filter(hasValue).length;
+  return !!(hasIdentity&&hasCommercial&&coreFields>=4&&(supportingFields>=2||(hasValue("name")&&hasValue("ship"))));
+}
+
 function prepareOfferSlotForParsedOffer(parsed){
   const hasParsedFields=['price','day','month','nights','board','ports'].some(k=>parsed[k]!==undefined&&parsed[k]!=='');
   if(!hasParsedFields) return false;
@@ -9341,7 +9355,7 @@ function prepareOfferSlotForParsedOffer(parsed){
   if(!offers[cur]) offers[cur]={};
   return true;
 }
-function applyParsedOffer(){if(!pendingParseResult) return; if(typeof isOfferLocked==="function" && isOfferLocked(cur)){ setParseStatus(getLockedOfferMessage(cur),"low"); cancelParsedOffer(); return; } const {parsed,confidence,rawText}=pendingParseResult; if(!prepareOfferSlotForParsedOffer(parsed)){ setParseStatus('No offer fields detected','low'); cancelParsedOffer(); return; } const pasteSourceText=rawText||((document.getElementById("raw-paste")||{}).value||""); if(pasteSourceText) offers[cur]._rawPastedOfferText=pasteSourceText; if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(cur); const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offers[cur].operator)){ continue; } const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; offers[cur]._tagsManualOverride=false; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
+function applyParsedOffer(){if(!pendingParseResult) return; if(typeof isOfferLocked==="function" && isOfferLocked(cur)){ setParseStatus(getLockedOfferMessage(cur),"low"); cancelParsedOffer(); return; } const {parsed,confidence,rawText}=pendingParseResult; const hasParsedFields=['price','day','month','nights','board','ports'].some(k=>parsed[k]!==undefined&&parsed[k]!==''); if(!hasParsedFields){ setParseStatus('No offer fields detected','low'); cancelParsedOffer(); return; } if(typeof canApplyParsedCruiseOffer==="function"&&!canApplyParsedCruiseOffer(parsed)){ setParseStatus("Not enough offer details to load this Cruise offer.","partial"); cancelParsedOffer(); return; } if(!prepareOfferSlotForParsedOffer(parsed)){ setParseStatus('No offer fields detected','low'); cancelParsedOffer(); return; } const pasteSourceText=rawText||((document.getElementById("raw-paste")||{}).value||""); if(pasteSourceText) offers[cur]._rawPastedOfferText=pasteSourceText; if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(cur); const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offers[cur].operator)){ continue; } const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; offers[cur]._tagsManualOverride=false; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
   if(parsed.departurePort) offers[cur].departurePort=String(parsed.departurePort);
   if(parsed._poaDepartureAirport) offers[cur]._poaDepartureAirport=String(parsed._poaDepartureAirport);
   if(!offers[cur]._sailingFromManual && typeof applyAutoSailingFromToOffer==="function"){
