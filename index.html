@@ -419,6 +419,12 @@ input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.58;
 .splash-title{font-size:14.5px;font-weight:300;letter-spacing:.06em;color:rgba(255,255,255,.88);}
 .splash-line{margin-top:4px;font-size:10px;color:rgba(255,255,255,.6);}
 .splash-actions{margin-top:0;display:flex;align-items:center;justify-content:center;gap:0;width:100%;}
+.splash-new-wrap{position:relative;display:flex;align-items:center;justify-content:center;}
+.splash-new-wrap .splash-btn{border-left:0;}
+.splash-campaign-menu{position:absolute;top:100%;left:50%;transform:translateX(-50%);display:none;flex-direction:column;align-items:center;padding-top:8px;z-index:1;}
+.splash-campaign-menu.active{display:flex;}
+.splash-campaign-option{border:0;background:transparent;padding:3px 0;color:#fff;font:inherit;font-size:9.6px;font-weight:300;letter-spacing:3px;line-height:1.2;text-align:center;box-shadow:none;cursor:pointer;transition:color .14s ease;}
+.splash-campaign-option:hover,.splash-campaign-option:focus-visible{background:transparent;color:#9e936c;outline:none;text-decoration:none;}
 .splash-footer{width:100%;justify-self:stretch;text-align:center;display:none;place-items:center;animation:splashFadeIn .28s ease-out both;}
 .splash-footer.active{display:grid;}
 .splash-recent-content{width:min(320px,100%);max-width:100%;}
@@ -899,7 +905,15 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
       <div class="splash-lockup">
         <img class="splash-icon" src="assets/operator-logos/em-logo-builder.png" alt="em" width="236" height="236">
         <div class="splash-actions">
-          <button class="splash-btn gold" id="splash-open-builder-btn" type="button">New</button>
+          <div class="splash-new-wrap">
+            <button class="splash-btn gold" id="splash-open-builder-btn" type="button" aria-expanded="false" aria-controls="splash-campaign-menu">New</button>
+            <div class="splash-campaign-menu" id="splash-campaign-menu" role="menu" aria-label="Campaign type">
+              <button class="splash-campaign-option" type="button" role="menuitem" data-campaign-type="cruise">Cruise</button>
+              <button class="splash-campaign-option" type="button" role="menuitem" data-campaign-type="package">Package</button>
+              <button class="splash-campaign-option" type="button" role="menuitem" data-campaign-type="touring">Touring</button>
+              <button class="splash-campaign-option" type="button" role="menuitem" data-campaign-type="worldwide">Worldwide</button>
+            </div>
+          </div>
           <button class="splash-btn gold" id="splash-continue-session-btn" type="button" style="display:none;">Continue</button>
           <button class="splash-btn secondary" id="splash-load-campaign-btn" type="button">Load</button>
         </div>
@@ -2367,6 +2381,7 @@ let cur = 0, viewMode = "all", zoomPct = 32;
 let lockedOffers = [false,false,false,false];
 let lockedHeroImages = [false,false,false,false];
 let safeZoneOn = false, exportRunning = false;
+let currentCampaignType = "cruise";
 const FLDS = ["tags","theme_tags","name","ship","sailingFrom","incl","price","totalPrice","resortFee","basis","board","boardlbl","day","month","nights","ports","url","utm_content","adults","children","freeChildPlace","offerType"];
 const CTA_DEFAULTS = {enabled:false,text:"Click To Call Us For More Info",phone:"01912229701"};
 let ctaSettings = {...CTA_DEFAULTS};
@@ -6252,6 +6267,7 @@ function resetBuilderToBlankSession(){
   autosaveHydrating = true;
   try{
     offers = [{},{},{},{}];
+    currentCampaignType = "cruise";
     lockedOffers = [false,false,false,false];
     lockedHeroImages = [false,false,false,false];
     cur = 0;
@@ -12038,8 +12054,32 @@ window.loadCsvFromSplash = function(event){
   temp.onchange=(e)=>loadFromCSVFile(Object.assign(e,{_onSuccess:()=>dismissSplashAndShowBuilder("csv")}));
   temp.click();
 };
+function setSplashCampaignMenuOpen(isOpen){
+  const menu=document.getElementById("splash-campaign-menu");
+  const openBtn=document.getElementById("splash-open-builder-btn");
+  if(menu) menu.classList.toggle("active",!!isOpen);
+  if(openBtn) openBtn.setAttribute("aria-expanded",isOpen?"true":"false");
+}
+function initialiseSplashCampaignType(type){
+  const normalised=String(type||"cruise").toLowerCase();
+  currentCampaignType=["package","touring","worldwide"].includes(normalised)?normalised:"cruise";
+  if(offers&&offers[cur]){
+    if(currentCampaignType==="cruise") delete offers[cur].offerType;
+    else offers[cur].offerType=currentCampaignType;
+  }
+}
+window.openBuilderFromSplashCampaignType = function(type,event){
+  if(event) event.preventDefault();
+  setSplashCampaignMenuOpen(false);
+  autosaveAwaitingRestoreDecision = false;
+  pendingRestoreSession = null;
+  resetBuilderToBlankSession();
+  initialiseSplashCampaignType(type);
+  dismissSplashAndShowBuilder("fresh");
+};
 function initStartScreenActions(){
   const openBtn=document.getElementById("splash-open-builder-btn") || document.querySelector("#app-splash .splash-btn.gold");
+  const campaignTypeMenu=document.getElementById("splash-campaign-menu");
   const campaignBtn=document.getElementById("splash-load-campaign-btn");
   const continueBtn=document.getElementById("splash-continue-session-btn");
   const splash=document.getElementById("app-splash");
@@ -12061,7 +12101,24 @@ function initStartScreenActions(){
 
   if(openBtn){
     openBtn.addEventListener("click",(e)=>{
-      window.openBuilderFromSplash(e);
+      if(e) e.preventDefault();
+      setSplashCampaignMenuOpen(!campaignTypeMenu || !campaignTypeMenu.classList.contains("active"));
+    });
+  }
+  if(campaignTypeMenu){
+    campaignTypeMenu.addEventListener("click",(e)=>{
+      const item=e.target&&e.target.closest ? e.target.closest("[data-campaign-type]") : null;
+      if(!item) return;
+      window.openBuilderFromSplashCampaignType(item.dataset.campaignType,e);
+    });
+    document.addEventListener("click",(e)=>{
+      if(!campaignTypeMenu.classList.contains("active")) return;
+      const target=e.target;
+      if((openBtn&&openBtn.contains(target)) || campaignTypeMenu.contains(target)) return;
+      setSplashCampaignMenuOpen(false);
+    });
+    document.addEventListener("keydown",(e)=>{
+      if(e.key==="Escape") setSplashCampaignMenuOpen(false);
     });
   }
   if(campaignBtn){
