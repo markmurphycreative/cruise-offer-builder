@@ -69,10 +69,14 @@ test('splash logo, navigation, and saved-session copy are centred by one splash 
 test('splash New action expands into the minimalist campaign type menu', () => {
   assert.match(html, /<button class="splash-btn gold" id="splash-open-builder-btn" type="button" aria-expanded="false" aria-controls="splash-campaign-menu">New<\/button>/);
   assert.match(html, /<div class="splash-campaign-menu" id="splash-campaign-menu" role="menu" aria-label="Campaign type">[\s\S]*data-campaign-type="cruise">Cruise<\/button>[\s\S]*data-campaign-type="package">Package<\/button>[\s\S]*data-campaign-type="touring">Touring<\/button>[\s\S]*data-campaign-type="worldwide">Worldwide<\/button>/);
-  assert.match(html, /\.splash-campaign-menu\{[^}]*display:none;[^}]*flex-direction:column;[^}]*padding-top:8px;/);
-  assert.match(html, /\.splash-campaign-option\{[^}]*border:0;[^}]*background:transparent;[^}]*color:#fff;[^}]*letter-spacing:3px;[^}]*transition:color \.14s ease;/);
+  assert.match(html, /\.splash-campaign-menu\{[^}]*display:flex;[^}]*flex-direction:column;[^}]*padding-top:5px;/);
+  assert.match(html, /\.splash-campaign-option\{[^}]*border:0;[^}]*background:transparent;[^}]*padding:2px 0;[^}]*color:#fff;[^}]*letter-spacing:3px;[^}]*transition:color \.14s ease;/);
   assert.match(html, /\.splash-campaign-option:hover,\.splash-campaign-option:focus-visible\{[^}]*background:transparent;[^}]*color:#9e936c;[^}]*text-decoration:none;/);
   assert.match(html, /window\.openBuilderFromSplashCampaignType = function\(type,event\)/);
+  assert.match(html, /let splashCampaignMenuCloseTimer=null;/);
+  assert.match(html, /function scheduleSplashCampaignMenuClose\(\)\{[\s\S]*?setTimeout\(\(\)=>\{[\s\S]*?setSplashCampaignMenuOpen\(false\);[\s\S]*?\},130\);/);
+  assert.match(html, /newWrap\.addEventListener\("mouseenter",clearSplashCampaignMenuCloseTimer\);/);
+  assert.match(html, /newWrap\.addEventListener\("mouseleave",\(\)=>\{[\s\S]*?scheduleSplashCampaignMenuClose\(\);/);
   assert.match(html, /currentCampaignType=\["package","touring","worldwide"\]\.includes\(normalised\)\?normalised:"cruise";/);
 });
 
