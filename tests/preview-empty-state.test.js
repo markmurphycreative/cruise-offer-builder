@@ -80,7 +80,7 @@ test('fresh previews use the whole blank workspace as a subtle upload zone befor
   assert.match(html, /\.preview-empty-state p \+ p\{margin-top:7px;\}/);
   assert.doesNotMatch(html, /\.preview-empty-state(?: h2| p)?\{[^}]*background:var\(--(?:navy|gold)\)/);
   assert.doesNotMatch(html, /preview-empty-rule/);
-  assert.match(html, /<h2>Ready to build<\/h2><p>Connect a Google Sheet or open a campaign file to build your cruise cards\.<\/p><p>Click anywhere or drag a campaign file into this workspace\.<\/p>/);
+  assert.match(html, /CAMPAIGN_WORKSPACE_COPY = \{[\s\S]*cruise:"Connect a Google Sheet or open a campaign file to build your cruise cards\."[\s\S]*package:"Paste or import a package offer to begin building your campaign\."[\s\S]*touring:"Paste or import a touring offer to begin building your campaign\."[\s\S]*worldwide:"Paste or import a worldwide offer to begin building your campaign\."/);
 
   const renderPreviewMode = extractFunction('renderPreviewMode');
   assert.ok(renderPreviewMode.indexOf('if(renderEmptyPreviewIfNeeded()) return;') < renderPreviewMode.indexOf("if(viewMode === 'email')"));

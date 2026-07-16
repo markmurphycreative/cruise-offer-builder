@@ -77,7 +77,7 @@ test('splash New action expands into the minimalist campaign type menu', () => {
   assert.match(html, /function scheduleSplashCampaignMenuClose\(\)\{[\s\S]*?setTimeout\(\(\)=>\{[\s\S]*?setSplashCampaignMenuOpen\(false\);[\s\S]*?\},130\);/);
   assert.match(html, /newWrap\.addEventListener\("mouseenter",clearSplashCampaignMenuCloseTimer\);/);
   assert.match(html, /newWrap\.addEventListener\("mouseleave",\(\)=>\{[\s\S]*?scheduleSplashCampaignMenuClose\(\);/);
-  assert.match(html, /currentCampaignType=\["package","touring","worldwide"\]\.includes\(normalised\)\?normalised:"cruise";/);
+  assert.match(html, /currentCampaignType=normaliseCampaignType\(normalised\);/);
 });
 
 test('splash saved session copy uses saved work wording', () => {
