@@ -55,8 +55,10 @@ input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.58;
 
 /* ── SIDEBAR HEADER ── */
 .sb-top{background:var(--chrome);min-height:38px;padding:10px 14px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.sb-brand-lockup{display:flex;align-items:center;gap:13px;min-width:0;}
 .sb-brand{color:var(--text-inverse);font-size:14.3px;font-weight:500;letter-spacing:.08em;line-height:1;display:flex;align-items:center;min-height:18px;}
 .sb-brand-gold{color:var(--gold);} .sb-brand-white{color:var(--text-inverse);}
+.campaign-context-tag{color:var(--text-inverse);font-size:9px;font-weight:300;line-height:1;white-space:nowrap;}
 .version-tag{background:rgba(255,255,255,.08);color:rgba(255,255,255,.48);font-size:9px;font-weight:300;padding:2px 6px;border-radius:3px;white-space:nowrap;}
 
 /* ── CAMPAIGN BAR ── */
@@ -934,7 +936,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 <!-- ══════════════════════ SIDEBAR ══════════════════════ -->
 <div class="sidebar">
   <div class="sb-top">
-    <div class="sb-brand"><span class="sb-brand-white">e</span><span class="sb-brand-gold">m</span></div>
+    <div class="sb-brand-lockup"><div class="sb-brand"><span class="sb-brand-white">e</span><span class="sb-brand-gold">m</span></div><span class="campaign-context-tag" data-campaign-label></span></div>
     <span class="version-tag" data-app-version></span>
   </div>
 
@@ -2399,12 +2401,16 @@ function inferCampaignTypeFromOffers(list){
   const found=(Array.isArray(list)?list:[]).map(o=>normaliseCampaignType(o&&o.offerType)).find(type=>type!=="cruise");
   return found || "cruise";
 }
+function getCampaignContextTitle(type=currentCampaignType){ return `em | ${getCampaignTypeLabel(type)} ${APP_VERSION}`; }
 function applyCampaignContext(type=currentCampaignType){
   currentCampaignType=normaliseCampaignType(type);
   const label=getCampaignTypeLabel(currentCampaignType);
-  document.title=`em | ${label} ${APP_VERSION}`;
+  document.title=getCampaignContextTitle(currentCampaignType);
   const meta=document.querySelector('meta[name="application-name"]');
   if(meta) meta.setAttribute("content",document.title);
+  const appleTitle=document.querySelector('meta[name="apple-mobile-web-app-title"]');
+  if(appleTitle) appleTitle.setAttribute("content",`em ${label}`);
+  document.querySelectorAll("[data-campaign-label]").forEach(el=>{ el.textContent=label; });
   const field=document.getElementById("g-campaign-type");
   if(field) field.value=label;
   return currentCampaignType;
@@ -11258,7 +11264,8 @@ function renderEmptyPreviewIfNeeded(){
   const copyMap=typeof CAMPAIGN_WORKSPACE_COPY!=="undefined" ? CAMPAIGN_WORKSPACE_COPY : {cruise:"Connect a Google Sheet or open a campaign file to build your cruise cards.",package:"Paste or import a package offer to begin building your campaign.",touring:"Paste or import a touring offer to begin building your campaign.",worldwide:"Paste or import a worldwide offer to begin building your campaign."};
   const activeType=typeof normaliseCampaignType==="function" ? normaliseCampaignType(typeof currentCampaignType!=="undefined" ? currentCampaignType : "cruise") : (["package","touring","worldwide"].includes(String(typeof currentCampaignType!=="undefined" ? currentCampaignType : "").toLowerCase()) ? String(currentCampaignType||"").toLowerCase() : "cruise");
   const workspaceCopy=copyMap[activeType] || copyMap.cruise;
-  out.innerHTML = `<div class="preview-empty-state" role="status" aria-label="Campaign upload area"><h2>Ready to build</h2><p>${workspaceCopy}</p><p>Click anywhere or drag a campaign file into this workspace.</p></div>`;
+  const workspaceLabel=typeof getCampaignTypeLabel==="function" ? getCampaignTypeLabel(activeType) : ((typeof CAMPAIGN_TYPE_LABELS!=="undefined" && CAMPAIGN_TYPE_LABELS[activeType]) || "Cruise");
+  out.innerHTML = `<div class="preview-empty-state" role="status" aria-label="Campaign upload area"><h2>Ready to build ${workspaceLabel}</h2><p>${workspaceCopy}</p><p>Click anywhere or drag a campaign file into this workspace.</p></div>`;
   scaler.style.width = '100%';
   scaler.style.height = '100%';
   scaler.style.transform = 'none';
