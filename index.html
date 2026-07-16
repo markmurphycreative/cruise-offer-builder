@@ -1179,7 +1179,15 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
             <option value="tui">TUI</option>
             <option value="jet2">Jet2holidays</option>
             <option value="easyjet">easyJet holidays</option>
+            <option value="riviera">Riviera Travel</option>
             <option value="wendy">Wendy Wu Tours</option>
+            <option value="newmarket">Newmarket Holidays</option>
+            <option value="travelsphere">Travelsphere</option>
+            <option value="justyou">Just You</option>
+            <option value="titan">Titan Travel</option>
+            <option value="kuoni">Kuoni</option>
+            <option value="inspiring">Inspiring Travel</option>
+            <option value="goldmedal">Gold Medal</option>
             <option value="custom">Custom / Other</option>
           </select>
         </div>
@@ -1639,7 +1647,15 @@ const OPERATOR_USP_PRESETS = {
   tui: "Family · Beach · Value · Summer",
   jet2: "Free Child Place · Family · Beach Holiday",
   easyjet: "City Break · Beach Holiday · Value",
+  riviera: "Culture · River · Discovery · Escorted",
   wendy: "Culture · Adventure · Asia · Discovery",
+  newmarket: "Escorted · Culture · Discovery · Value",
+  travelsphere: "Escorted · Adventure · Culture · Discovery",
+  justyou: "Solo · Escorted · Culture · Discovery",
+  titan: "Escorted · Discovery · Value · Door-to-Door",
+  kuoni: "Luxury · Long-haul · Tailor-made · Beach",
+  inspiring: "Luxury · Tailor-made · Long-haul · Experiences",
+  goldmedal: "Long-haul · Tailor-made · Beach · City",
   custom: ""
 };
 
@@ -1879,7 +1895,15 @@ const OPERATOR_HEADERS = {
   tui:      { name:"TUI",                   svgData:null, pngData:"assets/operator-logos/tui-logo.png", color:"#092a44", defaultBoard:"AI", ships:[] },
   jet2:     { name:"Jet2holidays",          svgData:null, pngData:"assets/operator-logos/jet2-holidays-logo.png", color:"#d71920", defaultBoard:"SC", ships:[] },
   easyjet:  { name:"easyJet holidays",       svgData:null, pngData:"assets/operator-logos/easyjet-logo.png", color:"#ff6600", defaultBoard:"RO", ships:[] },
+  riviera:  { name:"Riviera Travel",        svgData:null, pngData:null, color:"#1d5d8f", defaultBoard:"FB", ships:[] },
   wendy:    { name:"Wendy Wu Tours",        svgData:null, pngData:null, color:"#c41e3a", defaultBoard:"FB", ships:[] },
+  newmarket:{ name:"Newmarket Holidays",    svgData:null, pngData:null, color:"#205b4f", defaultBoard:"HB", ships:[] },
+  travelsphere:{ name:"Travelsphere",       svgData:null, pngData:null, color:"#2f5f9f", defaultBoard:"HB", ships:[] },
+  justyou:  { name:"Just You",              svgData:null, pngData:null, color:"#7b3f98", defaultBoard:"HB", ships:[] },
+  titan:    { name:"Titan Travel",          svgData:null, pngData:null, color:"#0f4c81", defaultBoard:"HB", ships:[] },
+  kuoni:    { name:"Kuoni",                 svgData:null, pngData:null, color:"#6f1d46", defaultBoard:"BB", ships:[] },
+  inspiring:{ name:"Inspiring Travel",      svgData:null, pngData:null, color:"#8a6f3d", defaultBoard:"BB", ships:[] },
+  goldmedal:{ name:"Gold Medal",            svgData:null, pngData:null, color:"#b08d2b", defaultBoard:"BB", ships:[] },
   custom:   { name:"Custom",               svgData:null, pngData:null, color:"#9e936c", defaultBoard:"", ships:[] }
 };
 
@@ -2001,7 +2025,16 @@ const OPERATOR_CONFIG = {
   virgin:{displayName:"Virgin Voyages",key:"virgin",url:"https://www.dawsonandsanderson.co.uk/cruises",defaultBoard:"AI",utmSlug:"virgin",logoAsset:"header",aliases:[/\bvirgin\b/i,/\bvirgin\s+voyages\b/i]},
   tui:{displayName:"TUI",key:"tui",url:"https://www.dawsonandsanderson.co.uk/holidays",defaultBoard:"AI",utmSlug:"tui",logoAsset:"header",aliases:[/\btui\b/i,/\btui\s+holidays\b/i]},
   jet2:{displayName:"Jet2holidays",key:"jet2",url:"https://www.dawsonandsanderson.co.uk/holidays",defaultBoard:"SC",utmSlug:"jet2holidays",logoAsset:"header",aliases:[/\bjet2\s*holidays\b/i,/\bjet2holidays\b/i,/\bjet2\b/i]},
-  easyjet:{displayName:"easyJet holidays",key:"easyjet",url:"https://www.dawsonandsanderson.co.uk/holidays",defaultBoard:"RO",utmSlug:"easyjet_holidays",logoAsset:"header",aliases:[/\beasyjet\s+holidays\b/i,/\beasyjet\b/i]}
+  easyjet:{displayName:"easyJet holidays",key:"easyjet",url:"https://www.dawsonandsanderson.co.uk/holidays",defaultBoard:"RO",utmSlug:"easyjet_holidays",logoAsset:"header",aliases:[/\beasyjet\s+holidays\b/i,/\beasyjet\b/i]},
+  riviera:{displayName:"Riviera Travel",key:"riviera",url:"https://www.dawsonandsanderson.co.uk/holidays",defaultBoard:"FB",utmSlug:"riviera",logoAsset:"none",aliases:[/\briviera(?:\s+travel)?\b/i]},
+  wendy:{displayName:"Wendy Wu Tours",key:"wendy",url:"https://www.dawsonandsanderson.co.uk/holidays",defaultBoard:"FB",utmSlug:"wendy_wu",logoAsset:"none",aliases:[/\bwendy\s+wu(?:\s+tours)?\b/i]},
+  newmarket:{displayName:"Newmarket Holidays",key:"newmarket",url:"https://www.dawsonandsanderson.co.uk/holidays",defaultBoard:"HB",utmSlug:"newmarket",logoAsset:"none",aliases:[/\bnewmarket(?:\s+holidays)?\b/i]},
+  travelsphere:{displayName:"Travelsphere",key:"travelsphere",url:"https://www.dawsonandsanderson.co.uk/holidays",defaultBoard:"HB",utmSlug:"travelsphere",logoAsset:"none",aliases:[/\btravelsphere\b/i]},
+  justyou:{displayName:"Just You",key:"justyou",url:"https://www.dawsonandsanderson.co.uk/holidays",defaultBoard:"HB",utmSlug:"just_you",logoAsset:"none",aliases:[/\bjust\s+you\b/i]},
+  titan:{displayName:"Titan Travel",key:"titan",url:"https://www.dawsonandsanderson.co.uk/holidays",defaultBoard:"HB",utmSlug:"titan",logoAsset:"none",aliases:[/\btitan(?:\s+travel)?\b/i]},
+  kuoni:{displayName:"Kuoni",key:"kuoni",url:"https://www.dawsonandsanderson.co.uk/holidays",defaultBoard:"BB",utmSlug:"kuoni",logoAsset:"none",aliases:[/\bkuoni\b/i]},
+  inspiring:{displayName:"Inspiring Travel",key:"inspiring",url:"https://www.dawsonandsanderson.co.uk/holidays",defaultBoard:"BB",utmSlug:"inspiring_travel",logoAsset:"none",aliases:[/\binspiring(?:\s+travel)?\b/i]},
+  goldmedal:{displayName:"Gold Medal",key:"goldmedal",url:"https://www.dawsonandsanderson.co.uk/holidays",defaultBoard:"BB",utmSlug:"gold_medal",logoAsset:"none",aliases:[/\bgold\s+medal\b/i]}
 };
 
 function getOperatorLandingUrl(operatorKey){
@@ -2402,6 +2435,34 @@ function inferCampaignTypeFromOffers(list){
   return found || "cruise";
 }
 function getCampaignContextTitle(type=currentCampaignType){ return `em | ${getCampaignTypeLabel(type)} ${APP_VERSION}`; }
+const CAMPAIGN_OPERATOR_KEYS = {
+  cruise:["po","amawaterways","marella","royal","ambassador","celebrity","fred","msc","cunard","ncl","princess","virgin"],
+  package:["tui","jet2","easyjet"],
+  touring:["riviera","wendy","newmarket","travelsphere","justyou","titan"],
+  worldwide:["kuoni","inspiring","goldmedal"]
+};
+function getCampaignOperatorKeys(type=currentCampaignType){
+  return CAMPAIGN_OPERATOR_KEYS[normaliseCampaignType(type)] || CAMPAIGN_OPERATOR_KEYS.cruise;
+}
+function isOperatorValidForCampaign(operatorKey,type=currentCampaignType){
+  const key=String(operatorKey||"");
+  return !key || key==="custom" || getCampaignOperatorKeys(type).includes(key);
+}
+function syncOperatorDropdownForCampaign(type=currentCampaignType){
+  const select=document.getElementById("f-operator");
+  if(!select) return;
+  const activeType=normaliseCampaignType(type);
+  const allowed=new Set(["",...getCampaignOperatorKeys(activeType),"custom"]);
+  Array.from(select.options).forEach(option=>{
+    const visible=allowed.has(option.value);
+    option.hidden=!visible;
+    option.disabled=!visible;
+  });
+  if(!isOperatorValidForCampaign(select.value,activeType)){
+    select.value="";
+    if(offers&&offers[cur]) offers[cur].operator="";
+  }
+}
 function applyCampaignContext(type=currentCampaignType){
   currentCampaignType=normaliseCampaignType(type);
   const label=getCampaignTypeLabel(currentCampaignType);
@@ -2413,6 +2474,7 @@ function applyCampaignContext(type=currentCampaignType){
   document.querySelectorAll("[data-campaign-label]").forEach(el=>{ el.textContent=label; });
   const field=document.getElementById("g-campaign-type");
   if(field) field.value=label;
+  syncOperatorDropdownForCampaign(currentCampaignType);
   return currentCampaignType;
 }
 applyCampaignContext(currentCampaignType);
@@ -2737,7 +2799,7 @@ function save(){
   if(typeof isOfferLocked==="function" && isOfferLocked(cur)) return;
   FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e){ if(typeof removeSubjectToConditions==="function") e.value=removeSubjectToConditions(e.value); offers[cur][f]=f==="ship"&&typeof normaliseRoyalCaribbeanShipName==="function"?normaliseRoyalCaribbeanShipName(e.value):(f==="name"&&typeof normaliseTitleConnectors==="function"?normaliseTitleConnectors(e.value):e.value); } });
   const sf=document.getElementById("f-sailingFrom"); if(sf && offers[cur]._sailingFromManual===undefined) offers[cur]._sailingFromManual=String(sf.value||"").trim()!==(typeof getAutoSailingFromForOffer==="function"?getAutoSailingFromForOffer(offers[cur]):getAutoSailingFromForPorts(offers[cur].ports||""));
-  const op=document.getElementById("f-operator"); if(op) offers[cur].operator=op.value;
+  const op=document.getElementById("f-operator"); if(op) offers[cur].operator=isOperatorValidForCampaign(op.value,currentCampaignType)?op.value:"";
   const logoDisplay=document.getElementById("f-logo-display"); if(logoDisplay) offers[cur]._logoDisplay=logoDisplay.value||"operator";
 }
 function normalizeCropPositionForOffer(offer){
@@ -2760,7 +2822,12 @@ function normalizeCropPositionForOffer(offer){
 function load(i){
   normalizeCropPositionForOffer(offers[i]);
   FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e) e.value=offers[i][f]||""; });
+  syncOperatorDropdownForCampaign(currentCampaignType);
   const op=document.getElementById("f-operator"); if(op) op.value=offers[i].operator||"";
+  if(op && !isOperatorValidForCampaign(op.value,currentCampaignType)){
+    op.value="";
+    offers[i].operator="";
+  }
   if(!offers[i]._sailingFromManual && !offers[i].sailingFrom) syncSailingFromFieldFromPorts(true);
   const logoDisplay=document.getElementById("f-logo-display"); if(logoDisplay) logoDisplay.value=offers[i]._logoDisplay||"operator";
   setThumb("logo",offers[i]._logoCustom||"");
@@ -2804,7 +2871,13 @@ function up(){
 // OPERATOR
 // ═══════════════════════════════════════════════════════
 function operatorChanged(silent){
-  const key=(document.getElementById("f-operator")||{}).value||"";
+  const operatorSelect=document.getElementById("f-operator");
+  syncOperatorDropdownForCampaign(currentCampaignType);
+  let key=(operatorSelect||{}).value||"";
+  if(!isOperatorValidForCampaign(key,currentCampaignType)){
+    key="";
+    if(operatorSelect) operatorSelect.value="";
+  }
   if(!offers[cur]) offers[cur]={};
   const previousOperator=(offers[cur]||{}).operator||"";
   offers[cur].operator=key;
@@ -10136,7 +10209,12 @@ const PACKAGE_BOARD_BASES = ["Room Only","Bed & Breakfast","Half Board","Full Bo
 const PACKAGE_FEATURES = ["Free Child Place","Adults Only","Family","Luxury","City Break","Beach Holiday"];
 const PACKAGE_AIRPORTS = ["Newcastle","Manchester","Birmingham","Glasgow","Edinburgh"];
 function isPackageOperator(key){ return !!(PACKAGE_OPERATORS[String(key||"").toLowerCase()]); }
-function isPackageOffer(d){ return String((d&&d.offerType)||"").toLowerCase()==="package" || isPackageOperator((d&&d.operator)||""); }
+function getActiveRenderCampaignType(d){
+  const offerType=normaliseCampaignType(d&&d.offerType);
+  if((d&&d.offerType) && offerType!=="cruise") return offerType;
+  return normaliseCampaignType(typeof currentCampaignType!=="undefined" ? currentCampaignType : "cruise");
+}
+function isPackageOffer(d){ return getActiveRenderCampaignType(d)==="package"; }
 function packageOfferFromData(d){
   d=d||{};
   const airport=String(d.sailingFrom||d.ports||d.flyingFrom||"").split(/[•,\n]/)[0].trim();
@@ -10182,6 +10260,20 @@ function renderPackageCard(d){
   return `<div class="pc pkg-${layout}" style="--package-accent:${cfg.colours.accent};--package-footer:${cfg.colours.footer};"><div class="pkg-head"><img class="pkg-head-logo" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo">${ribbon?`<div class="pkg-ribbon">${escapeHtml(ribbon)}</div>`:""}</div><div class="pkg-body"><div class="pkg-destination">${escapeHtml(model.destination)}</div><div class="pkg-hotel">${escapeHtml(model.hotel)}</div><div class="pkg-details">${details.map(escapeHtml).join("<br>")}</div><img class="pkg-operator-logo" src="${cfg.logo}" alt="${escapeHtml(cfg.name)} logo"><div class="pkg-pricing">${renderPackagePriceBlock(model,model.operator)}</div></div><div class="pkg-footer"><div class="pkg-cta-main">${escapeHtml(cfg.ctaText)}</div><div class="pkg-cta-sub">or visit us in store</div></div></div>`;
 }
 function renderCruiseCard(d){ return renderCruiseCardHTML(d); }
+function renderGenericCampaignCard(d,type){
+  const activeType=normaliseCampaignType(type);
+  const cfg=OPERATOR_HEADERS[d&&d.operator]||{};
+  const label=getCampaignTypeLabel(activeType);
+  const accent=cfg.color||"#9e936c";
+  const operatorName=cfg.name||"Dawson & Sanderson";
+  const name=escapeHtml((d&&d.name)||`${label} Offer`);
+  const subtitle=escapeHtml((d&&d.ship)||"");
+  const details=[(d&&d.nights)?`${d.nights} Nights`:"",(d&&d.day||d&&d.month)?[d&&d.day,d&&d.month].filter(Boolean).join(" "):"",(d&&d.boardlbl)||(d&&d.board)||"", (d&&d.ports)||"", (d&&d.incl)||""].filter(Boolean).map(escapeHtml).join("<br>");
+  const price=formatPackageMoney(d&&d.price);
+  return `<div class="pc pkg-${activeType}" style="--package-accent:${accent};--package-footer:${accent};"><div class="pkg-head"><img class="pkg-head-logo" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo"></div><div class="pkg-body"><div class="pkg-destination">${name}</div><div class="pkg-hotel">${subtitle}</div><div class="pkg-details">${details}</div><div class="pkg-operator-logo" style="display:flex;align-items:center;justify-content:center;text-align:center;font-weight:900;color:${accent};font-size:34px;line-height:1.1;">${escapeHtml(operatorName)}</div><div class="pkg-pricing"><div class="pkg-total"><div class="pkg-price">${price||""}${price?'<span class="pkg-pp">pp</span>':""}</div><div class="pkg-price-label">${label}</div><div class="pkg-basis">${escapeHtml((d&&d.basis)||"Speak to our travel experts")}</div></div></div></div><div class="pkg-footer"><div class="pkg-cta-main">Call us for more info</div><div class="pkg-cta-sub">or visit us in store</div></div></div>`;
+}
+function renderTouringCard(d){ return renderGenericCampaignCard(d,"touring"); }
+function renderWorldwideCard(d){ return renderGenericCampaignCard(d,"worldwide"); }
 
 function renderCruiseTitle(value){
   let title=typeof stripTrailingGenericCruiseTitleWord==="function"?stripTrailingGenericCruiseTitleWord(value):String(value||"").trim();
@@ -10224,7 +10316,13 @@ function renderCruiseCardHTML(d){
   const nightLabel=nights?"Nights":"";
   return `<div class="cc"${getOperatorSkinStyle(d)}>${getHeaderHTML(d)}${heroHTML}<div class="isec"><div class="isec-content"><div class="cname">${name}</div><div class="sname">${shipLine}</div><div class="incl">${incl}</div><div class="price-block">${priceHTML}<div class="pbasis">${basis}</div></div></div></div><div class="ibar"><div class="icell gold"><div class="ival">${board}</div><div class="ilbl">${boardlbl}</div></div><div class="icell blk"><div class="ival">${dateHTML}</div><div class="ilbl">${month}</div></div><div class="icell gold"><div class="ival">${nights}</div><div class="ilbl">${nightLabel}</div></div></div>${itineraryImageHTML}<div class="vsec"><div class="visit-inner">${preCruiseHTML}<div class="vtit">You'll Visit</div><div class="vpts">${portsHTML}</div></div></div><div class="tcbar">${terms}</div></div>`;
 }
-function renderCardHTML(d){ return isPackageOffer(d) ? renderPackageCard(d) : renderCruiseCard(d); }
+function renderCardHTML(d){
+  const activeType=getActiveRenderCampaignType(d);
+  if(activeType==="package") return renderPackageCard(Object.assign({},d,{offerType:"package"}));
+  if(activeType==="touring") return renderTouringCard(Object.assign({},d,{offerType:"touring"}));
+  if(activeType==="worldwide") return renderWorldwideCard(Object.assign({},d,{offerType:"worldwide"}));
+  return renderCruiseCard(d);
+}
 function bc(d){ return renderCardHTML(d); }
 
 // ═══════════════════════════════════════════════════════
@@ -10820,7 +10918,7 @@ function visibleFieldsToData(){
   });
   const sf=document.getElementById('f-sailingFrom'); if(sf) base._sailingFromManual=!!((offers[cur]||{})._sailingFromManual);
   const op = document.getElementById('f-operator');
-  if(op) base.operator = op.value || '';
+  if(op) base.operator = isOperatorValidForCampaign(op.value,currentCampaignType) ? (op.value || '') : '';
   const logoDisplay = document.getElementById('f-logo-display');
   if(logoDisplay) base._logoDisplay = logoDisplay.value || 'operator';
   const z = document.getElementById('crop-zoom');
