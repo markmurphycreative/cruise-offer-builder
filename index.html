@@ -421,9 +421,9 @@ input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.58;
 .splash-actions{margin-top:0;display:flex;align-items:center;justify-content:center;gap:0;width:100%;}
 .splash-new-wrap{position:relative;display:flex;align-items:center;justify-content:center;}
 .splash-new-wrap .splash-btn{border-left:0;}
-.splash-campaign-menu{position:absolute;top:100%;left:18px;display:flex;flex-direction:column;align-items:flex-start;width:max-content;padding-top:2px;z-index:1;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-5px);transition:opacity .14s ease,transform .14s ease,visibility 0s linear .14s;}
+.splash-campaign-menu{position:absolute;top:100%;left:18px;display:flex;flex-direction:column;align-items:flex-start;width:max-content;padding-top:5px;z-index:1;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-5px);transition:opacity .14s ease,transform .14s ease,visibility 0s linear .14s;}
 .splash-campaign-menu.active{opacity:1;visibility:visible;pointer-events:auto;transform:translateY(0);transition-delay:0s;}
-.splash-campaign-option{border:0;background:transparent;padding:1px 0;min-height:12px;color:#fff;font:inherit;font-size:7.8px;font-weight:300;letter-spacing:3px;line-height:1.1;text-align:left;box-shadow:none;cursor:pointer;transition:color .14s ease;}
+.splash-campaign-option{border:0;background:transparent;padding:2px 0;min-height:12px;color:#fff;font:inherit;font-size:7.8px;font-weight:300;letter-spacing:3px;line-height:1.1;text-align:left;box-shadow:none;cursor:pointer;transition:color .14s ease;}
 .splash-campaign-option:hover,.splash-campaign-option:focus-visible{background:transparent;color:#9e936c;outline:none;text-decoration:none;}
 .splash-footer{width:100%;justify-self:stretch;text-align:center;display:none;place-items:center;animation:splashFadeIn .28s ease-out both;}
 .splash-footer.active{display:grid;}
@@ -12054,11 +12054,26 @@ window.loadCsvFromSplash = function(event){
   temp.onchange=(e)=>loadFromCSVFile(Object.assign(e,{_onSuccess:()=>dismissSplashAndShowBuilder("csv")}));
   temp.click();
 };
+let splashCampaignMenuCloseTimer=null;
+function clearSplashCampaignMenuCloseTimer(){
+  if(splashCampaignMenuCloseTimer){
+    clearTimeout(splashCampaignMenuCloseTimer);
+    splashCampaignMenuCloseTimer=null;
+  }
+}
 function setSplashCampaignMenuOpen(isOpen){
+  clearSplashCampaignMenuCloseTimer();
   const menu=document.getElementById("splash-campaign-menu");
   const openBtn=document.getElementById("splash-open-builder-btn");
   if(menu) menu.classList.toggle("active",!!isOpen);
   if(openBtn) openBtn.setAttribute("aria-expanded",isOpen?"true":"false");
+}
+function scheduleSplashCampaignMenuClose(){
+  clearSplashCampaignMenuCloseTimer();
+  splashCampaignMenuCloseTimer=setTimeout(()=>{
+    splashCampaignMenuCloseTimer=null;
+    setSplashCampaignMenuOpen(false);
+  },130);
 }
 function initialiseSplashCampaignType(type){
   const normalised=String(type||"cruise").toLowerCase();
@@ -12082,6 +12097,7 @@ function initStartScreenActions(){
   const campaignTypeMenu=document.getElementById("splash-campaign-menu");
   const campaignBtn=document.getElementById("splash-load-campaign-btn");
   const continueBtn=document.getElementById("splash-continue-session-btn");
+  const newWrap=openBtn&&openBtn.closest ? openBtn.closest(".splash-new-wrap") : null;
   const splash=document.getElementById("app-splash");
   if(!splash) console.warn("[splash] Missing #app-splash; start screen actions cannot be wired.");
   if(!openBtn) console.warn("[splash] Missing Open Builder button; action not bound.");
@@ -12103,6 +12119,12 @@ function initStartScreenActions(){
     openBtn.addEventListener("click",(e)=>{
       if(e) e.preventDefault();
       setSplashCampaignMenuOpen(!campaignTypeMenu || !campaignTypeMenu.classList.contains("active"));
+    });
+  }
+  if(newWrap){
+    newWrap.addEventListener("mouseenter",clearSplashCampaignMenuCloseTimer);
+    newWrap.addEventListener("mouseleave",()=>{
+      if(campaignTypeMenu&&campaignTypeMenu.classList.contains("active")) scheduleSplashCampaignMenuClose();
     });
   }
   if(campaignTypeMenu){
