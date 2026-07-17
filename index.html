@@ -51,7 +51,7 @@ input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.58;
 .app{display:grid;grid-template-columns:340px 1fr;height:100vh;overflow:hidden;}
 .app.start-hidden{opacity:0;visibility:hidden;pointer-events:none;}
 .sidebar{--sidebar-content-inset:9px;--sidebar-scrollbar-width:3px;--sidebar-content-right-inset:calc(var(--sidebar-content-inset) + var(--sidebar-scrollbar-width));background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;height:100vh;}
-.preview-pane{display:flex;flex-direction:column;overflow:hidden;height:100vh;}
+.preview-pane{display:flex;flex-direction:column;overflow:visible;height:100vh;position:relative;}
 
 /* ── SIDEBAR HEADER ── */
 .sb-top{background:var(--chrome);height:var(--app-header-height);padding:10px 14px;flex:0 0 var(--app-header-height);display:flex;align-items:center;justify-content:space-between;gap:8px;}
@@ -592,7 +592,7 @@ input,textarea,select{transition:border-color var(--ui-transition),background va
 .export-progress,.session-feedback,#sheets-status,.parse-result,.hero-preset-feedback,#ai-prompt-copy-status{transition:color var(--ui-transition),opacity var(--ui-transition);}
 
 /* ── PREVIEW ── */
-.preview-toolbar{background:var(--chrome);height:var(--app-header-height);padding:8px 14px;display:flex;align-items:center;gap:10px;flex:0 0 var(--app-header-height);flex-wrap:wrap;}
+.preview-toolbar{position:relative;z-index:8;background:var(--chrome);height:var(--app-header-height);padding:8px 14px;display:flex;align-items:center;gap:10px;flex:0 0 var(--app-header-height);flex-wrap:wrap;overflow:visible;}
 .preview-title{color:var(--text-inverse);font-size:9px;font-weight:300;text-transform:none;letter-spacing:.04em;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.25;}
 .autosave-status{font-size:9px;font-weight:400;color:rgba(255,255,255,.72);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:2px 7px;line-height:1.2;white-space:nowrap;}
 .autosave-status.warn{color:#ffe2b0;border-color:rgba(255,203,129,.45);background:rgba(255,166,0,.12);}
@@ -668,7 +668,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .zoom-input::-webkit-outer-spin-button,.zoom-input::-webkit-inner-spin-button{margin:0;appearance:none;}
 .zoom-input:focus{outline:none;}
 .zoom-input-suffix{display:none;}
-.zoom-reset{display:inline-flex;align-items:center;border:0;border-radius:0;background:transparent;color:var(--text-inverse);font-size:9px;font-weight:300;line-height:1.25;padding:4px 0 5px;cursor:default;letter-spacing:.04em;transition:color var(--ui-transition),opacity var(--ui-transition);}
+.zoom-reset{display:inline-flex;align-items:center;border:0;border-radius:0;background:transparent;color:#fff;font-size:9px;font-weight:300;line-height:1.25;padding:4px 0 5px;cursor:default;letter-spacing:.04em;transition:color var(--ui-transition),opacity var(--ui-transition);}
 .zoom-reset.visible{display:inline-flex;}
 .zoom-reset:hover{background:transparent;border-color:transparent;color:var(--gold);}
 .view-btns{position:relative;display:flex;flex:0 0 auto;align-items:center;gap:8px;border:0;border-radius:0;overflow:visible;isolation:isolate;background:var(--navy);}
@@ -676,7 +676,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .vbtn{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:max-content;box-sizing:border-box;padding:4px 0 5px;font-size:9px;font-weight:300;line-height:1.25;border:none;background:transparent;color:#fff;letter-spacing:.04em;white-space:nowrap;cursor:default;transition:color var(--ui-transition),opacity var(--ui-transition);}
 .vbtn::after{content:"";position:absolute;left:35%;right:35%;bottom:0;height:1px;background:var(--gold);opacity:0;transform:scaleX(.7);transform-origin:center;transition:opacity var(--ui-transition),transform var(--ui-transition);}
 .vbtn:hover:not(.active){color:var(--gold);}
-.vbtn.active{color:var(--text-inverse);font-weight:300;text-shadow:none;}
+.vbtn.active{color:#fff;font-weight:300;text-shadow:none;}
 .vbtn.active::after{opacity:1;transform:scaleX(1);}
 .utility-home{gap:4px;}
 .utility-home::after{display:none;}
@@ -685,6 +685,13 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .tbtn.on{background:rgba(255,255,255,.15);color:var(--text-inverse);}
 .shortcuts-trigger{position:relative;display:inline-flex;align-items:center;justify-content:center;padding:4px 0 5px;font-size:9px;font-weight:300;line-height:1.25;border:0;border-radius:0;background:transparent;color:var(--text-inverse);box-shadow:none;letter-spacing:.04em;}
 .toolbar-action{position:relative;display:inline-flex;align-items:center;justify-content:center;padding:4px 0 5px;font-size:9px;font-weight:300;line-height:1.25;border:0;border-radius:0;background:transparent;color:var(--text-inverse);box-shadow:none;letter-spacing:.04em;}
+.new-campaign-wrap{position:relative;display:inline-flex;}
+.new-campaign-menu{position:fixed;z-index:30;display:grid;gap:8px;padding:10px 0 12px;background:transparent;border:0;border-radius:0;box-shadow:none;opacity:0;visibility:hidden;pointer-events:none;transition:opacity var(--ui-transition),visibility var(--ui-transition);}
+.new-campaign-menu.open{opacity:1;visibility:visible;pointer-events:auto;}
+.new-campaign-menu-item{display:block;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;color:var(--new-campaign-item-color,var(--text));font-size:9px;font-weight:300;line-height:1.25;letter-spacing:.04em;text-align:left;cursor:default;transition:color var(--ui-transition);}
+.new-campaign-menu-item.over-header{--new-campaign-item-color:var(--text-inverse);}
+.new-campaign-menu-item.over-workspace{--new-campaign-item-color:var(--text);}
+.new-campaign-menu-item:hover,.new-campaign-menu-item:focus-visible{color:#9e936c;outline:0;}
 .shortcuts-trigger:hover,.toolbar-action:hover{color:var(--gold);transition:color var(--ui-transition);}
 .shortcuts-trigger.active::after,.toolbar-action.active::after{content:"";position:absolute;left:35%;right:35%;bottom:0;height:1px;background:var(--gold);}
 .shortcuts-trigger:hover,.toolbar-action:hover{color:var(--gold);background:transparent;}
@@ -1443,9 +1450,15 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
         <button class="vbtn active" id="vb-all" onclick="setView(&#39;all&#39;)">All 4</button>
       </div>
       <div class="toolbar-group toolbar-group-actions">
-        <button class="toolbar-action" type="button" onclick="newCampaign()">New Campaign</button>
+        <span class="new-campaign-wrap"><button class="toolbar-action new-campaign-trigger" id="new-campaign-trigger" type="button" onclick="toggleNewCampaignMenu(event)" aria-haspopup="menu" aria-expanded="false">New Campaign</button></span>
         <button class="shortcuts-trigger" type="button" onclick="openShortcutsModal()" aria-haspopup="dialog">Shortcuts</button>
       </div>
+    </div>
+    <div class="new-campaign-menu" id="new-campaign-menu" role="menu" aria-labelledby="new-campaign-trigger" onmouseleave="closeNewCampaignMenu()">
+      <button class="new-campaign-menu-item" type="button" role="menuitem" data-campaign-type="cruise" onclick="selectNewCampaignType(event)">Cruise</button>
+      <button class="new-campaign-menu-item" type="button" role="menuitem" data-campaign-type="package" onclick="selectNewCampaignType(event)">Package</button>
+      <button class="new-campaign-menu-item" type="button" role="menuitem" data-campaign-type="touring" onclick="selectNewCampaignType(event)">Touring</button>
+      <button class="new-campaign-menu-item" type="button" role="menuitem" data-campaign-type="worldwide" onclick="selectNewCampaignType(event)">Worldwide</button>
     </div>
   </div>
   <div class="preview-wrap">
@@ -3027,6 +3040,61 @@ function updateLockUI(){
   updateOfferLockTiles();
 }
 
+function positionNewCampaignMenu(){
+  const trigger=document.getElementById("new-campaign-trigger");
+  const menu=document.getElementById("new-campaign-menu");
+  if(!trigger||!menu) return;
+  const rect=trigger.getBoundingClientRect();
+  const toolbar=document.querySelector(".preview-toolbar");
+  const headerBottom=toolbar ? toolbar.getBoundingClientRect().bottom : rect.bottom;
+  menu.style.left=`${rect.left}px`;
+  menu.style.top=`${rect.bottom + 8}px`;
+  menu.querySelectorAll(".new-campaign-menu-item").forEach(item=>{
+    const itemRect=item.getBoundingClientRect();
+    const midpoint=itemRect.top + itemRect.height / 2;
+    item.classList.toggle("over-header",midpoint<headerBottom);
+    item.classList.toggle("over-workspace",midpoint>=headerBottom);
+  });
+}
+function openNewCampaignMenu(){
+  const trigger=document.getElementById("new-campaign-trigger");
+  const menu=document.getElementById("new-campaign-menu");
+  if(!trigger||!menu) return;
+  menu.classList.add("open");
+  trigger.classList.add("active");
+  trigger.setAttribute("aria-expanded","true");
+  requestAnimationFrame(positionNewCampaignMenu);
+}
+function closeNewCampaignMenu(){
+  const trigger=document.getElementById("new-campaign-trigger");
+  const menu=document.getElementById("new-campaign-menu");
+  if(menu) menu.classList.remove("open");
+  if(trigger){
+    trigger.classList.remove("active");
+    trigger.setAttribute("aria-expanded","false");
+  }
+}
+function toggleNewCampaignMenu(event){
+  if(event){ event.preventDefault(); event.stopPropagation(); }
+  const menu=document.getElementById("new-campaign-menu");
+  if(menu&&menu.classList.contains("open")) closeNewCampaignMenu(); else openNewCampaignMenu();
+}
+function selectNewCampaignType(event){
+  if(event){ event.preventDefault(); event.stopPropagation(); }
+  const type=event&&event.currentTarget&&event.currentTarget.dataset ? event.currentTarget.dataset.campaignType : currentCampaignType;
+  closeNewCampaignMenu();
+  newCampaign(type);
+}
+document.addEventListener("click",event=>{
+  const menu=document.getElementById("new-campaign-menu");
+  const trigger=document.getElementById("new-campaign-trigger");
+  if(!menu||!menu.classList.contains("open")) return;
+  if(menu.contains(event.target)||trigger&&trigger.contains(event.target)) return;
+  closeNewCampaignMenu();
+});
+document.addEventListener("keydown",event=>{ if(event.key==="Escape") closeNewCampaignMenu(); });
+window.addEventListener("resize",positionNewCampaignMenu);
+
 // ═══════════════════════════════════════════════════════
 // DUPLICATE / RESET
 // ═══════════════════════════════════════════════════════
@@ -3056,7 +3124,7 @@ function resetAll(){
     onConfirm:()=>{ offers=[{},{},{},{}]; lockedOffers=[false,false,false,false]; lockedHeroImages=[false,false,false,false]; load(cur); refreshOfferUi({utm:false,spell:false,autosave:false}); if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("All offers reset"); }
   });
 }
-function resetBuilderToFreshSession(){
+function resetBuilderToFreshSession(type=currentCampaignType){
   offers=[{},{},{},{}];
   cur=0;
   viewMode="all";
@@ -3066,7 +3134,7 @@ function resetBuilderToFreshSession(){
   ctaSettings={...CTA_DEFAULTS};
   poaAppliedSuggestions={};
   ["g-campaign","g-date","g-description","g-owner","g-airport"].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
-  applyCampaignContext(currentCampaignType);
+  applyCampaignContext(type);
   const terms=document.getElementById("g-terms"); if(terms) terms.value="";
   const auto=document.getElementById("g-auto-campaign"); if(auto) auto.checked=true;
   ["raw-paste","multi-offer-paste","sheets-url","f-utm-content"].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
@@ -3134,8 +3202,9 @@ function hasUnsavedBuilderChanges(){
   if(lastCleanBuilderStateSignature != null) return currentSignature !== lastCleanBuilderStateSignature && hasMeaningfulBuilderContent();
   return !!autosaveHasUnsavedChanges && hasMeaningfulBuilderContent();
 }
-function newCampaign(){
-  const startFresh=()=>resetBuilderToFreshSession();
+function newCampaign(type=currentCampaignType){
+  const campaignType=normaliseCampaignType(type);
+  const startFresh=()=>resetBuilderToFreshSession(campaignType);
   if(!hasUnsavedBuilderChanges()){ startFresh(); return; }
   openConfirmActionModal({
     title:"New Campaign?",
