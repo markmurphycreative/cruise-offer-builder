@@ -8283,23 +8283,24 @@ function getMultiOfferImportQualityResult(result,rawText){
 function applyParsedOfferToSlot(result,index,sourceText){
   if(!result||!result.parsed) return false;
   while(offers.length<4) offers.push({});
-  const parsed=result.parsed;
-  offers[index]={...(offers[index]||{})};
+  const parsed=Object.assign({},result.parsed);
+  const offer={};
+  offers[index]=offer;
   if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(index);
-  offers[index]={...(offers[index]||{})};
+  offers[index]=offer;
   for(const k of Object.keys(PARSE_FIELD_MAP)){
     if(parsed[k]===undefined||parsed[k]==='') continue;
-    if(k==='operatorKey') offers[index].operator=parsed[k];
-    else if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offers[index].operator)){ continue; }
-    else offers[index][k]=String(parsed[k]);
+    if(k==='operatorKey') offer.operator=parsed[k];
+    else if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offer.operator)){ continue; }
+    else offer[k]=String(parsed[k]);
   }
-  if(parsed.departurePort) offers[index].departurePort=String(parsed.departurePort);
-  if(parsed._poaDepartureAirport) offers[index]._poaDepartureAirport=String(parsed._poaDepartureAirport);
-  if(!offers[index]._sailingFromManual && typeof applyAutoSailingFromToOffer==="function") applyAutoSailingFromToOffer(offers[index]);
-  offers[index]._tagsManualOverride=false;
-  applyOperatorTopBarUspDefault(offers[index],offers[index].operator||parsed.operatorKey||"");
-  stripTransientPasteOfferFields(offers[index]);
-  offers[index][(typeof PERSISTED_PASTE_OFFER_KEY!=="undefined"?PERSISTED_PASTE_OFFER_KEY:"_rawPastedOfferText")]=String(sourceText||(result&&result.rawText)||"");
+  if(parsed.departurePort) offer.departurePort=String(parsed.departurePort);
+  if(parsed._poaDepartureAirport) offer._poaDepartureAirport=String(parsed._poaDepartureAirport);
+  if(!offer._sailingFromManual && typeof applyAutoSailingFromToOffer==="function") applyAutoSailingFromToOffer(offer);
+  offer._tagsManualOverride=false;
+  applyOperatorTopBarUspDefault(offer,offer.operator||parsed.operatorKey||"");
+  stripTransientPasteOfferFields(offer);
+  offer[(typeof PERSISTED_PASTE_OFFER_KEY!=="undefined"?PERSISTED_PASTE_OFFER_KEY:"_rawPastedOfferText")]=String(sourceText||(result&&result.rawText)||"");
   return Object.keys(parsed).some(key=>parsed[key]!==undefined&&parsed[key]!=="");
 }
 function loadAllOffers(){ return performMultiOfferImport(false); }
@@ -8421,7 +8422,20 @@ function performMultiOfferImport(replaceConfirmed){
   while(offers.length<4) offers.push({});
   if(existing&&!hasMarkedTargets){ for(let i=0;i<4;i+=1) offers[i]={}; }
   const selected=importBlocks.slice(0,4);
-  const parsedResults=selected.map((item,index)=>({result:parseOfferText(item.block,{renderIntelligence:false}),targetIndex:Number.isInteger(item.targetIndex)?item.targetIndex:index,block:item.block})).filter(item=>item.result);
+  const parsedResults=selected.map((item,index)=>{
+    const targetIndex=Number.isInteger(item.targetIndex)?item.targetIndex:index;
+    const result=parseOfferText(item.block,{renderIntelligence:false});
+    if(result&&result.parsed){
+      console.log({
+        block: targetIndex,
+        detectedOperator: result.parsed.operatorKey||"",
+        parsedTitle: result.parsed.name||"",
+        savingTo: targetIndex,
+        activeEditor: cur
+      });
+    }
+    return {result,targetIndex,block:item.block};
+  }).filter(item=>item.result);
   const results=parsedResults.map(item=>item.result);
   activeMultiOfferImportIndexes=parsedResults.map(item=>item.targetIndex);
   parsedResults.forEach(item=>applyParsedOfferToSlot(item.result,item.targetIndex,item.block));
