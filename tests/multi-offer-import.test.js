@@ -911,3 +911,57 @@ Luggage & transfers included`);
   assert.equal(blocks.length, 1);
   assert.match(blocks[0], /Luggage & transfers included$/);
 });
+
+test('Multi Offer Import overwrites each parsed slot without reusing active editor or stale slot state', () => {
+  const result = { innerHTML: '', className: '' };
+  const field = { value: `Offer 1
+Celebrity Cruises
+Fresh One
+
+Offer 2
+Marella Cruises
+Fresh Two
+
+Offer 3
+P&O Cruises
+Fresh Three
+
+Offer 4
+Virgin Voyages
+Fresh Four` };
+  const parsedBlocks = [];
+  const logs = [];
+  const context = createImportContext(field, result, parsedBlocks);
+  context.cur = 2;
+  context.console = { log(entry) { logs.push(entry); }, debug() {} };
+  context.offers = [
+    { operator: 'stale-a', name: 'Stale One', ship: 'Old Ship 1' },
+    { operator: 'stale-b', name: 'Stale Two', ship: 'Old Ship 2' },
+    { operator: 'stale-c', name: 'Stale Three', ship: 'Old Ship 3' },
+    { operator: 'stale-d', name: 'Stale Four', ship: 'Old Ship 4' }
+  ];
+  context.PARSE_FIELD_MAP = { operatorKey: 'f-operator', name: 'f-name' };
+  context.parseOfferText = (block) => {
+    parsedBlocks.push(block);
+    const [operator, title] = block.split('\n');
+    return {
+      parsed: { operatorKey: operator.toLowerCase().replace(/\W+/g, ''), name: title },
+      confidence: 'high',
+      score: 100
+    };
+  };
+  runImportFunctions(context);
+
+  context.performMultiOfferImport(true);
+
+  assert.equal(context.offers.length, 4);
+  assert.deepEqual(context.offers.map(offer => offer.name), ['Fresh One', 'Fresh Two', 'Fresh Three', 'Fresh Four']);
+  assert.deepEqual(context.offers.map(offer => offer.ship), [undefined, undefined, undefined, undefined]);
+  assert.deepEqual(context.offers.some(context.isOfferLoaded), true);
+  assert.deepEqual(logs.map(entry => ({ block: entry.block, savingTo: entry.savingTo, activeEditor: entry.activeEditor })), [
+    { block: 0, savingTo: 0, activeEditor: 2 },
+    { block: 1, savingTo: 1, activeEditor: 2 },
+    { block: 2, savingTo: 2, activeEditor: 2 },
+    { block: 3, savingTo: 3, activeEditor: 2 }
+  ]);
+});
