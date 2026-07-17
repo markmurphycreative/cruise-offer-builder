@@ -39,7 +39,7 @@ test('New Campaign uses a floating editorial type menu without panel chrome', ()
   assert.match(html, /\.new-campaign-menu-item\.over-header\{--new-campaign-item-color:var\(--text-inverse\);\}/);
   assert.match(html, /\.new-campaign-menu-item\.over-workspace\{--new-campaign-item-color:var\(--text\);\}/);
   assert.match(html, /\.new-campaign-menu-item:hover,\.new-campaign-menu-item:focus-visible\{color:#9e936c;outline:0;\}/);
-  assert.match(html, /function positionNewCampaignMenu\(\)\{[\s\S]*?item\.classList\.toggle\("over-header",midpoint<headerBottom\);[\s\S]*?item\.classList\.toggle\("over-workspace",midpoint>=headerBottom\);[\s\S]*?\}/);
+  assert.match(html, /function positionNewCampaignMenu\(\)\{[\s\S]*?menu\.style\.left=`\$\{rect\.left\}px`;[\s\S]*?menu\.style\.top=`\$\{rect\.bottom \+ 20\}px`;[\s\S]*?item\.classList\.toggle\("over-header",midpoint<headerBottom\);[\s\S]*?item\.classList\.toggle\("over-workspace",midpoint>=headerBottom\);[\s\S]*?\}/);
   assert.match(html, /function selectNewCampaignType\(event\)\{[\s\S]*?newCampaign\(type\);[\s\S]*?\}/);
   assert.match(html, /function newCampaign\(type=currentCampaignType\)\{\s*const campaignType=normaliseCampaignType\(type\);\s*const startFresh=\(\)=>resetBuilderToFreshSession\(campaignType\);/);
 });
