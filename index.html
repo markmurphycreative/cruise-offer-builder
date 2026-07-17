@@ -3048,7 +3048,7 @@ function positionNewCampaignMenu(){
   const toolbar=document.querySelector(".preview-toolbar");
   const headerBottom=toolbar ? toolbar.getBoundingClientRect().bottom : rect.bottom;
   menu.style.left=`${rect.left}px`;
-  menu.style.top=`${rect.bottom + 8}px`;
+  menu.style.top=`${rect.bottom + 20}px`;
   menu.querySelectorAll(".new-campaign-menu-item").forEach(item=>{
     const itemRect=item.getBoundingClientRect();
     const midpoint=itemRect.top + itemRect.height / 2;
