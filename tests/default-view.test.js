@@ -50,7 +50,7 @@ test('view selector uses restrained toolbar buttons with an active underline', (
 
 test('Offer 1–4 selector reuses the sliding segmented-control pill while retaining status accents and offer switching hooks', () => {
   assert.match(html, /<div class="offer-tabs empty-hidden">\s*<span class="offer-pill" id="offer-pill" aria-hidden="true"><\/span>/);
-  assert.match(html, /<div class="offer-empty-state active" id="offer-empty-state" role="button" tabindex="0" title="Open Campaign Import" aria-label="Open Campaign Import" onclick="openCampaignImportFromEmptyState\(\)" onkeydown="handleEmptyOfferStateKeydown\(event\)">[\s\S]*?No offers loaded[\s\S]*?Load a sheet, CSV, campaign or paste an offer\./);
+  assert.match(html, /<div class="offer-empty-state active" id="offer-empty-state" role="button" tabindex="0" title="Open import options" aria-label="Open import options" onclick="openCampaignImportFromEmptyState\(\)" onkeydown="handleEmptyOfferStateKeydown\(event\)">[\s\S]*?No offers yet[\s\S]*?Import a campaign, connect a sheet, or paste offer details\./);
   assert.match(html, /\.offer-tabs\{[^}]*border:1px solid var\(--border\);[^}]*border-radius:0;[^}]*overflow:hidden;[^}]*isolation:isolate;/);
   assert.match(html, /\.offer-tabs\.empty-hidden\{display:none;\}/);
   assert.match(html, /\.offer-empty-state\{[^}]*min-height:44px;[^}]*padding:5px 12px;[^}]*border:1px solid var\(--border\);[^}]*border-radius:var\(--radius\);[^}]*background:transparent;[^}]*text-align:left;[^}]*cursor:pointer;[^}]*justify-content:center;/);
@@ -62,7 +62,7 @@ test('Offer 1–4 selector reuses the sliding segmented-control pill while retai
   assert.doesNotMatch(html, /\.offer-empty-state\{[^}]*background:var\(--gold\)/);
   assert.doesNotMatch(html, /\.offer-empty-state-title\{[^}]*text-transform:uppercase/);
   assert.doesNotMatch(html, /\.offer-empty-state-copy\{[^}]*text-shadow:/);
-  assert.match(html, /\.offer-pill\{[^}]*border-radius:0;[^}]*background:#dedbd3;[^}]*transform:translateX\(0\);[^}]*transition:transform \.2s ease,width \.2s ease;/);
+  assert.match(html, /\.offer-pill\{[^}]*border-radius:0;[^}]*background:#dedbd3;[^}]*transform:translateX\(0\);[^}]*transition:transform var\(--ui-transition-slow\),width var\(--ui-transition-slow\);/);
   assert.match(html, /\.otab\.active\{color:var\(--navy\);border-radius:0;box-shadow:inset 0 -2px 0 rgba\(14,27,42,\.18\);\}/);
   assert.doesNotMatch(html, /\.otab\.active\{[^}]*border-bottom/);
   assert.match(html, /\.offer-tab-item\{[^}]*position:relative;[^}]*flex:1;[^}]*min-width:0;/);
@@ -87,10 +87,8 @@ test('Single, Email and All 4 previews share the same zoom scaling controls', ()
   assert.match(html, /const EMAIL_PREVIEW_SCALE = 0\.75;/);
   assert.match(html, /const scale = \(zoomPct \/ 100\) \* SINGLE_PREVIEW_SCALE;/);
   assert.match(html, /setScalerBox\(1200, out\.offsetHeight \|\| stackWrap\.offsetHeight, baseScale \* EMAIL_PREVIEW_SCALE\);/);
-  assert.match(html, /const ALL_PREVIEW_SCALE = 0\.68;/);
-  assert.match(html, /let allScale = baseScale \* ALL_PREVIEW_SCALE;/);
-  assert.match(html, /setAllPreviewCanvasBox\(gridW, fullH, allScale\);/);
-  assert.match(html, /if\(zoomPct === 32\)\{[\s\S]*?allScale = Math\.min\(allScale, pane\.w \/ gridW, pane\.h \/ fullH\);/);
+  assert.match(html, /const ALL_PREVIEW_MAX_SCALE = 0\.68;/);
+  assert.match(html, /calculateAllPreviewScale\(size\.w, size\.h, metrics\.canvasWidth, metrics\.canvasHeight, ALL_PREVIEW_MAX_SCALE\)/);
 });
 
 test('preview canvas uses a slightly darker warm neutral background across modes', () => {
@@ -109,16 +107,13 @@ test('preview layout retains the stable shared canvas treatment without Single-o
 test('shared preview scaler retains stable dimensions for Email and All 4 layouts', () => {
   assert.match(html, /function setScalerBox\(width, renderedHeight, scale\)\{[\s\S]*?scaler\.style\.width = width \+ 'px';[\s\S]*?scaler\.style\.transform = 'scale\(' \+ scale \+ '\)';[\s\S]*?scaler\.style\.transformOrigin = 'top center';[\s\S]*?scaler\.style\.height = Math\.ceil\(renderedHeight \* scale\) \+ 'px';/);
   assert.match(html, /setScalerBox\(1200, out\.offsetHeight \|\| stackWrap\.offsetHeight, baseScale \* EMAIL_PREVIEW_SCALE\);/);
-  assert.match(html, /const fullH = grid\.offsetHeight \|\| out\.offsetHeight \|\| 4600;[\s\S]*?setAllPreviewCanvasBox\(gridW, fullH, allScale\);/);
+  assert.match(html, /applyAllPreviewLayout\(stage, canvas, Object\.assign\(\{\}, metrics, \{canvasHeight:naturalHeight\}\)\);/);
 });
 
-
-
-test('All 4 preview treats the card grid as one zoomed canvas with scaled workspace dimensions', () => {
-  assert.match(html, /function setAllPreviewCanvasBox\(canvasWidth, canvasHeight, scale\)\{[\s\S]*?scaler\.style\.width = canvasWidth \+ 'px';[\s\S]*?scaler\.style\.transform = 'scale\(' \+ scale \+ '\)';[\s\S]*?scaler\.style\.height = Math\.ceil\(canvasHeight \* scale\) \+ 'px';/);
-  assert.match(html, /let allScale = baseScale \* ALL_PREVIEW_SCALE;/);
-  assert.match(html, /grid\.style\.cssText = 'display:grid;[\s\S]*?justify-content:center;';/);
-  assert.match(html, /setAllPreviewCanvasBox\(gridW, fullH, allScale\);/);
+test('All 4 preview treats the card grid as one top-left scaled canvas inside a visible stage', () => {
+  assert.match(html, /function applyAllPreviewLayout\(stage, canvas, metrics, pane\)\{[\s\S]*?stage\.style\.width = Math\.floor\(metrics\.canvasWidth \* scale\) \+ 'px';[\s\S]*?canvas\.style\.width = metrics\.canvasWidth \+ 'px';[\s\S]*?canvas\.style\.transform = 'scale\(' \+ scale \+ '\)';[\s\S]*?canvas\.style\.transformOrigin = 'top left';/);
+  assert.match(html, /className = 'all-preview-stage'/);
+  assert.match(html, /className = 'all-preview-canvas'/);
   assert.doesNotMatch(html, /all-preview-card[^\n]+transform:scale/);
 });
 
