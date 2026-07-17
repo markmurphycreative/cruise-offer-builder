@@ -8098,7 +8098,7 @@ function handlePasteOfferKeydown(event){
 
 function isDividerLine(line){ return /^\s*(?:(?:[#=\-–—_*\.])(?:\s*[#=\-–—_*\.]){2,})\s*$/.test(String(line||"")); }
 function getOfferLabelIndex(line){
-  const match=String(line||"").trim().match(/^offer\s*(1|2|3|4|one|two|three|four)\s*:?$/i);
+  const match=String(line||"").trim().match(/^offer\s*(1|2|3|4|one|two|three|four)(?:\b|\s*[-–—:])(?:\s+.*)?$/i);
   if(!match) return null;
   const value=match[1].toLowerCase();
   const words={one:1,two:2,three:3,four:4};
@@ -8146,7 +8146,7 @@ function isLikelyOfferStartLine(line){
 function getMultiOfferImportBlocks(raw){
   const text=String(raw||"").replace(/\r\n?/g,"\n").trim();
   if(!text) return [];
-  const cleanBlock=block=>String(block||"").split("\n").filter(line=>!isDividerLine(line)&&!isOfferLabelLine(line)).join("\n").trim();
+  const cleanBlock=block=>String(block||"").split("\n").filter(line=>!isDividerLine(line)).join("\n").trim().replace(/^(offer\s*(?:1|2|3|4|one|two|three|four)(?:\b|[ \t]*[-–—:])(?:[^\S\n]+.*?)?)\n+/i,"$1\n");
   const makeImportBlock=(block,targetIndex=null)=>({block,targetIndex:Number.isInteger(targetIndex)&&targetIndex>=0&&targetIndex<4?targetIndex:null});
   const lines=text.split("\n");
   if(hasExplicitOfferMarkers(lines)){
@@ -8164,7 +8164,7 @@ function getMultiOfferImportBlocks(raw){
         }
         seenOfferMarker=true;
         currentTargetIndex=markerIndex;
-        current=[];
+        current=[line];
         return;
       }
       if(!seenOfferMarker) return;
@@ -8422,24 +8422,29 @@ function performMultiOfferImport(replaceConfirmed){
   while(offers.length<4) offers.push({});
   if(existing&&!hasMarkedTargets){ for(let i=0;i<4;i+=1) offers[i]={}; }
   const selected=importBlocks.slice(0,4);
+  const activeEditorIndex=cur;
   const parsedResults=selected.map((item,index)=>{
     const targetIndex=Number.isInteger(item.targetIndex)?item.targetIndex:index;
-    const result=parseOfferText(item.block,{renderIntelligence:false});
-    if(result&&result.parsed){
-      console.log({
-        block: targetIndex,
-        detectedOperator: result.parsed.operatorKey||"",
-        parsedTitle: result.parsed.name||"",
-        savingTo: targetIndex,
-        activeEditor: cur
-      });
-    }
-    return {result,targetIndex,block:item.block};
+    const blockText=String(item.block||"");
+    const result=parseOfferText(blockText,{renderIntelligence:false});
+    console.log("MULTI OFFER IMPORT", {
+      sourceIndex: index,
+      targetIndex,
+      blockLength: blockText.length,
+      blockStart: blockText.slice(0, 100),
+      containsCelebrity: /celebrity/i.test(blockText),
+      containsMarella: /marella/i.test(blockText),
+      containsCunard: /cunard/i.test(blockText),
+      containsFredOlsen: /fred\s*\.?\s*olsen/i.test(blockText),
+      detectedOperator: result?.parsed?.operatorKey || "",
+      parsedTitle: result?.parsed?.name || ""
+    });
+    return {result,targetIndex,block:blockText};
   }).filter(item=>item.result);
   const results=parsedResults.map(item=>item.result);
   activeMultiOfferImportIndexes=parsedResults.map(item=>item.targetIndex);
   parsedResults.forEach(item=>applyParsedOfferToSlot(item.result,item.targetIndex,item.block));
-  cur=activeMultiOfferImportIndexes.length?activeMultiOfferImportIndexes[0]:0;
+  cur=Number.isInteger(activeEditorIndex)&&activeEditorIndex>=0&&activeEditorIndex<4?activeEditorIndex:0;
   try{ loadOfferToEditor(cur); }catch(e){ try{ load(cur); }catch(_e){} }
   try{ document.querySelectorAll(".otab").forEach((t,idx)=>t.classList.toggle("active",idx===cur)); }catch(e){}
   try{ rv(); }catch(e){}
@@ -8467,6 +8472,7 @@ function performMultiOfferImport(replaceConfirmed){
   if(blocks.length>4) rows.push(`<div>4 offers loaded. ${blocks.length-4} additional offers ignored.</div>`);
   setMultiOfferStatus(rows.join(""),parsedResults.some(item=>item.result.confidence!=='high'||getMultiOfferImportQualityResult(item.result,item.block).qaWarnings)?'partial':'high');
   try{ document.querySelectorAll(".multi-offer-status-row").forEach(row=>row.classList.toggle("active",Number(row.dataset.offerIndex)===cur)); }catch(e){}
+  try{ requestAnimationFrame(()=>{ renderPreviewMode(true); }); }catch(e){ try{ renderPreviewMode(true); }catch(_e){} }
 }
 
 function parseOffer(){
@@ -8481,7 +8487,7 @@ function parseOffer(){
 }
 
 function stripOfferHeadingPrefix(value){
-  return String(value||"").replace(/^\s*(?:(?:offer\s*)?\d{1,2})\s*(?:[-–—:]\s*)/i,"").trim();
+  return String(value||"").replace(/^\s*(?:offer\s*)?(?:\d{1,2}|one|two|three|four)\s*(?:[-–—:]\s*)?/i,"").trim();
 }
 function replaceAtSymbolsForDisplay(value){
   return String(value||"").replace(/\s*@\s*/g," at ");
@@ -8873,7 +8879,7 @@ function parseOfferText(raw,options){
   let title=detectDirectCruiseTitle(lines,parsed,itineraryLines);
   if(!title){
     const shipLineIndex=parsed.ship?lines.findIndex(line=>line===parsed.ship):-1;
-    title=lines.find((l,index)=>!Object.values(OPERATOR_ALIASES).flat().some(r=>r.test(l))&&!(itineraryLines||[]).includes(l)&&!(typeof isRecognisedPortTitleLine==="function"&&isRecognisedPortTitleLine(l))&&(shipLineIndex<0||index<shipLineIndex)&&!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b|\b(?:full board|half board|all inclusive|self catering|inside|outside|balcony|suite|based on|sharing|solo traveller|solo traveler|single occupancy|sole occupancy|single traveller|single traveler)\b/i.test(l))&&l.length>8&&l!==parsed.ship);
+    title=lines.find((l,index)=>!/^offer\s*(?:1|2|3|4|one|two|three|four)\b/i.test(l)&&!Object.values(OPERATOR_ALIASES).flat().some(r=>r.test(l))&&!(itineraryLines||[]).includes(l)&&!(typeof isRecognisedPortTitleLine==="function"&&isRecognisedPortTitleLine(l))&&(shipLineIndex<0||index<shipLineIndex)&&!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b|\b(?:full board|half board|all inclusive|self catering|inside|outside|balcony|suite|based on|sharing|solo traveller|solo traveler|single occupancy|sole occupancy|single traveller|single traveler)\b/i.test(l))&&l.length>8&&l!==parsed.ship);
   }
   if(title){parsed.name=stripOfferHeadingPrefix(title.replace(/^[-•\s]+/,'')).trim();score+=8;}
   const portExclusions=[parsed.name,parsed.ship,parsed.price,parsed.basis,parsed.boardlbl,parsed.incl].filter(Boolean);
