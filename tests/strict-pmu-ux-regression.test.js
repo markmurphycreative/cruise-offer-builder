@@ -34,7 +34,7 @@ test('keyboard shortcut guard blocks standard editable controls and contentedita
 test('New Campaign uses a floating editorial type menu without panel chrome', () => {
   assert.match(html, /<span class="new-campaign-wrap"><button class="toolbar-action new-campaign-trigger" id="new-campaign-trigger" type="button" onclick="toggleNewCampaignMenu\(event\)" aria-haspopup="menu" aria-expanded="false">New Campaign<\/button><\/span>/);
   assert.match(html, /<div class="new-campaign-menu" id="new-campaign-menu" role="menu" aria-labelledby="new-campaign-trigger" onmouseleave="closeNewCampaignMenu\(\)">\s*<button class="new-campaign-menu-item" type="button" role="menuitem" data-campaign-type="cruise" onclick="selectNewCampaignType\(event\)">Cruise<\/button>\s*<button class="new-campaign-menu-item" type="button" role="menuitem" data-campaign-type="package" onclick="selectNewCampaignType\(event\)">Package<\/button>\s*<button class="new-campaign-menu-item" type="button" role="menuitem" data-campaign-type="touring" onclick="selectNewCampaignType\(event\)">Touring<\/button>\s*<button class="new-campaign-menu-item" type="button" role="menuitem" data-campaign-type="worldwide" onclick="selectNewCampaignType\(event\)">Worldwide<\/button>/);
-  assert.match(html, /\.preview-toolbar\{[^}]*overflow:visible;/);
+  assert.match(html, /\.preview-toolbar\{[^}]*overflow:hidden;/);
   assert.match(html, /\.new-campaign-menu\{position:fixed;[^}]*background:transparent;[^}]*border:0;[^}]*border-radius:0;[^}]*box-shadow:none;/);
   assert.match(html, /\.new-campaign-menu-item\.over-header\{--new-campaign-item-color:var\(--text-inverse\);\}/);
   assert.match(html, /\.new-campaign-menu-item\.over-workspace\{--new-campaign-item-color:var\(--text\);\}/);
@@ -42,4 +42,37 @@ test('New Campaign uses a floating editorial type menu without panel chrome', ()
   assert.match(html, /function positionNewCampaignMenu\(\)\{[\s\S]*?menu\.style\.left=`\$\{rect\.left\}px`;[\s\S]*?menu\.style\.top=`\$\{rect\.bottom \+ 20\}px`;[\s\S]*?item\.classList\.toggle\("over-header",midpoint<headerBottom\);[\s\S]*?item\.classList\.toggle\("over-workspace",midpoint>=headerBottom\);[\s\S]*?\}/);
   assert.match(html, /function selectNewCampaignType\(event\)\{[\s\S]*?newCampaign\(type\);[\s\S]*?\}/);
   assert.match(html, /function newCampaign\(type=currentCampaignType\)\{\s*const campaignType=normaliseCampaignType\(type\);\s*const startFresh=\(\)=>resetBuilderToFreshSession\(campaignType\);/);
+});
+
+test('responsive toolbar constrains controls inside the preview header', () => {
+  assert.match(html, /\.preview-toolbar\{[^}]*flex-wrap:nowrap;[^}]*overflow:hidden;[^}]*max-width:100%;[^}]*box-sizing:border-box;/);
+  assert.match(html, /\.preview-title\{[^}]*flex:1 1 120px;[^}]*min-width:86px;/);
+  assert.match(html, /\.toolbar-groups\{[^}]*flex:0 1 auto;[^}]*min-width:0;[^}]*max-width:100%;/);
+  assert.match(html, /\.toolbar-group-zoom input\[type=range\]\{[^}]*width:clamp\(52px,7vw,86px\);/);
+});
+
+test('All 4 preview measures pane dimensions and fits centred grid after render and resize', () => {
+  assert.match(html, /const ALL_PREVIEW_MAX_SCALE = 0\.68;/);
+  assert.match(html, /function getPreviewPaneSize\(\)\{[\s\S]*?wrap\.clientWidth - 40[\s\S]*?wrap\.clientHeight - 40[\s\S]*?\}/);
+  assert.match(html, /const columnCount = loadedPreviewOffers\.length === 1 \? 1 : 2;/);
+  assert.match(html, /loadedPreviewOffers\.length === 3 && loadedIndex === 2 \? 'grid-column:1 \/ -1;justify-self:center;'/);
+  assert.match(html, /function updateAllPreviewLayout\(\)\{[\s\S]*?const pane = getPreviewPaneSize\(\);[\s\S]*?Math\.min\(pane\.w \/ gridW, pane\.h \/ fullH\)[\s\S]*?setAllPreviewCanvasBox\(gridW, fullH, finalScale\);[\s\S]*?grid\.dataset\.scale = String\(finalScale\);/);
+  assert.match(html, /requestAnimationFrame\(updateAllPreviewLayout\);/);
+  assert.match(html, /window\.addEventListener\("resize",rv\);/);
+});
+
+test('card-facing cleanup strips decorative emoji but preserves currency and punctuation', () => {
+  assert.match(html, /function cleanCardFieldValue\(value\)\{/);
+  assert.match(html, /\["name","subtitle","date","nights","ports","incl","sailingFrom","departurePort","ship","tags","board","boardlbl","basis","day","month","_poaDepartureAirport","flyingFrom"\]/);
+  assert.match(html, /function renderCardHTML\(d\)\{\n  d=cleanCardFacingOfferData\(d\);/);
+  assert.match(html, /[^\n]*£\$€/);
+  const script = html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>'));
+  const match = script.match(/function cleanCardFieldValue\(value\)\{[\s\S]*?\n\}/);
+  assert.ok(match);
+  const fn = new Function(`${match[0]}; return cleanCardFieldValue;`)();
+  assert.equal(fn('🚢 12-Night Cruise'), '12-Night Cruise');
+  assert.equal(fn('⚓ Departs Newcastle'), 'Departs Newcastle');
+  assert.equal(fn('🌟 From £1,355 per person'), 'From £1,355 per person');
+  assert.equal(fn('📍 Tromsø, Norway'), 'Tromsø, Norway');
+  assert.equal(fn('✨ Save 10% & more'), 'Save 10% & more');
 });

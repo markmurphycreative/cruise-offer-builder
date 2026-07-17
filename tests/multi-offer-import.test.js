@@ -1059,3 +1059,26 @@ Fresh Four` };
     { sourceIndex: 3, targetIndex: 3, activeEditor: 2 }
   ]);
 });
+
+test('Multi Offer Import retains full pasted textarea and defaults intelligence collapsed after import', () => {
+  const field = { value: mixedOperatorBatch };
+  const result = { innerHTML: '', className: '' };
+  const parseCalls = [];
+  const context = createImportContext(field, result, parseCalls);
+  context.PARSE_FIELD_MAP = { operatorKey: 'f-operator', name: 'f-name', ship: 'f-ship', incl: 'f-incl' };
+  context.console = { log() {}, debug() {} };
+  context.requestAnimationFrame = fn => fn();
+  context.renderPreviewMode = () => {};
+  context.parseOfferText = (block) => {
+    parseCalls.push(block);
+    return { parsed: { operatorKey: 'celebrity', name: `Offer ${parseCalls.length}`, ship: 'Ship', incl: block }, confidence: 'high', score: 100 };
+  };
+  runImportFunctions(context);
+  context.performMultiOfferImport(false);
+  assert.equal(field.value, mixedOperatorBatch);
+  assert.equal(parseCalls.length, 4);
+  assert.equal((result.innerHTML.match(/class="multi-offer-status-row"/g) || []).length, 4);
+  assert.match(html, /return `<details class="parser-intelligence-details">/);
+  assert.doesNotMatch(html, /<details class="parser-intelligence-details" open>/);
+  assert.ok(!field.value.trim().startsWith('Offer 4 Fred Olsen'));
+});
