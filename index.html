@@ -850,7 +850,10 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .pc .pkg-details{position:absolute;left:85px;top:285px;font-size:36px;line-height:1.35;color:#797979;}
 .pc.pkg-tui .pkg-details{color:#000;}
 .pc.pkg-jet2 .pkg-details{top:368px;}
-.pc .pkg-operator-logo{position:absolute;left:85px;bottom:70px;max-width:275px;max-height:74px;object-fit:contain;}
+.pc .pkg-operator-logo{position:absolute;width:auto;height:auto;object-fit:contain;object-position:left bottom;}
+.pc .pkg-operator-logo--tui{left:28px;bottom:14px;width:300px;}
+.pc .pkg-operator-logo--jet2{left:52px;bottom:-81px;width:560px;}
+.pc .pkg-operator-logo--easyjet{left:6px;bottom:-27px;width:430px;}
 .pc .pkg-pricing{position:absolute;right:85px;top:250px;width:485px;text-align:right;color:#000;}
 .pc.pkg-jet2 .pkg-pricing{top:378px;}
 .pc .pkg-lead{margin-bottom:120px;}
@@ -10585,7 +10588,7 @@ function renderPackageCard(d){
   const freeChild=model.freeChildPlace || model.features.some(f=>/free child place/i.test(f));
   const ribbon=model.operator==="jet2"&&freeChild?"Offer Includes a Free Child Place":"";
   const details=[model.nights?`${model.nights} Nights`:"",model.boardBasis,model.departureDate,packageAirportLine(model.departureAirport),model.inclusions].filter(Boolean);
-  return `<div class="pc pkg-${layout}" style="--package-accent:${cfg.colours.accent};--package-footer:${cfg.colours.footer};"><div class="pkg-head"><img class="pkg-head-logo" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo">${ribbon?`<div class="pkg-ribbon">${escapeHtml(ribbon)}</div>`:""}</div><div class="pkg-body"><div class="pkg-destination">${escapeHtml(model.destination)}</div><div class="pkg-hotel">${escapeHtml(model.hotel)}</div><div class="pkg-details">${details.map(escapeHtml).join("<br>")}</div><img class="pkg-operator-logo" src="${cfg.logo}" alt="${escapeHtml(cfg.name)} logo"><div class="pkg-pricing">${renderPackagePriceBlock(model,model.operator)}</div></div><div class="pkg-footer"><div class="pkg-cta-main">${escapeHtml(cfg.ctaText)}</div><div class="pkg-cta-sub">or visit us in store</div></div></div>`;
+  return `<div class="pc pkg-${layout}" style="--package-accent:${cfg.colours.accent};--package-footer:${cfg.colours.footer};"><div class="pkg-head"><img class="pkg-head-logo" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo">${ribbon?`<div class="pkg-ribbon">${escapeHtml(ribbon)}</div>`:""}</div><div class="pkg-body"><div class="pkg-destination">${escapeHtml(model.destination)}</div><div class="pkg-hotel">${escapeHtml(model.hotel)}</div><div class="pkg-details">${details.map(escapeHtml).join("<br>")}</div><img class="pkg-operator-logo pkg-operator-logo--${layout}" src="${cfg.logo}" alt="${escapeHtml(cfg.name)} logo"><div class="pkg-pricing">${renderPackagePriceBlock(model,model.operator)}</div></div><div class="pkg-footer"><div class="pkg-cta-main">${escapeHtml(cfg.ctaText)}</div><div class="pkg-cta-sub">or visit us in store</div></div></div>`;
 }
 function renderCruiseCard(d){ return renderCruiseCardHTML(d); }
 function renderGenericCampaignCard(d,type){

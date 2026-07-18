@@ -61,6 +61,18 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
   assert.equal(PACKAGE_OPERATORS.easyjet.ctaText, 'Call us for more info');
 });
 
+test('Package operator logos use operator-specific natural-aspect placement classes', () => {
+  assert.match(html, /\.pc \.pkg-operator-logo\{[^}]*width:auto;[^}]*height:auto;[^}]*object-fit:contain;/);
+  assert.match(html, /\.pc \.pkg-operator-logo--tui\{left:28px;bottom:14px;width:300px;\}/);
+  assert.match(html, /\.pc \.pkg-operator-logo--jet2\{left:52px;bottom:-81px;width:560px;\}/);
+  assert.match(html, /\.pc \.pkg-operator-logo--easyjet\{left:6px;bottom:-27px;width:430px;\}/);
+
+  const { renderPackageCard } = createContext();
+  assert.match(renderPackageCard({ operator: 'tui' }), /pkg-operator-logo pkg-operator-logo--tui/);
+  assert.match(renderPackageCard({ operator: 'jet2' }), /pkg-operator-logo pkg-operator-logo--jet2/);
+  assert.match(renderPackageCard({ operator: 'easyjet' }), /pkg-operator-logo pkg-operator-logo--easyjet/);
+});
+
 test('Package offer model maps existing builder fields without mutating Cruise fields', () => {
   const { packageOfferFromData } = createContext();
   const model = packageOfferFromData({
