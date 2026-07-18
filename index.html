@@ -265,7 +265,8 @@ input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.58;
 .vision-review-note{font-size:9px;color:var(--muted);line-height:1.35;margin-bottom:4px;}
 .screenshot-import-review{display:grid;gap:5px;margin-top:7px;}
 .screenshot-review-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);}
-.screenshot-review-item{display:grid;grid-template-columns:auto auto 1fr;gap:6px;align-items:center;padding:5px 6px;border:1px solid var(--border);border-radius:var(--ui-radius);background:var(--surface);font-size:9px;color:var(--text);}
+.screenshot-review-item{display:grid;grid-template-columns:auto auto 1fr;gap:6px;align-items:center;padding:5px 6px;border:1px solid var(--border);border-radius:var(--ui-radius);background:var(--surface);font-size:9px;color:var(--text);cursor:default;transition:border-color .18s ease,background-color .18s ease,box-shadow .18s ease;}
+.screenshot-review-item.active{border-color:rgba(158,147,108,.58);background:#fbfaf6;box-shadow:inset 3px 0 0 rgba(158,147,108,.72);}
 .screenshot-review-item.error{color:var(--red);background:#fff6f5;}
 .screenshot-review-item strong{display:block;font-size:10px;font-weight:600;color:inherit;}
 .screenshot-review-item em{display:block;font-style:normal;color:var(--muted);font-size:8px;margin-top:1px;}
@@ -3334,6 +3335,7 @@ function normaliseVisionExtractedText(text){
 }
 
 let pendingScreenshotImports=[];
+let activeScreenshotImportIndex=0;
 function parseScreenshotTextForActiveBuilder(text){
   const builder=normaliseCampaignType(typeof currentCampaignType!=="undefined"?currentCampaignType:"cruise");
   const raw=normaliseVisionExtractedText(text);
@@ -3349,6 +3351,27 @@ function getScreenshotImportTitle(item){
   const p=(item&&item.result&&item.result.parsed)||{};
   return p.ship||p.name||p.ports||p.operator||item.fileName||"Imported screenshot";
 }
+function getScreenshotImportReviewedText(item){ return item ? (item.reviewText!==undefined ? item.reviewText : item.text || "") : ""; }
+function hasScreenshotImportMissingOperatorWarning(item){
+  const parsed=(item&&item.result&&item.result.parsed)||{};
+  return item&&item.status!=="error"&&!String(parsed.operatorKey||parsed.operator||"").trim();
+}
+function syncActiveScreenshotReviewText(){
+  const review=document.getElementById("vision-review-text");
+  if(!review) return;
+  const item=pendingScreenshotImports[activeScreenshotImportIndex];
+  review.value=normaliseVisionExtractedText(getScreenshotImportReviewedText(item));
+  if(typeof setOfferTypeDetection==="function") setOfferTypeDetection(review.value.trim()?detectCruiseOffer(review.value):null);
+}
+function setActiveScreenshotImport(index){
+  const next=Number(index);
+  if(!Number.isInteger(next)||!pendingScreenshotImports[next]) return;
+  const review=document.getElementById("vision-review-text");
+  if(review&&pendingScreenshotImports[activeScreenshotImportIndex]) pendingScreenshotImports[activeScreenshotImportIndex].reviewText=String(review.value||"");
+  activeScreenshotImportIndex=next;
+  syncActiveScreenshotReviewText();
+  renderScreenshotImportReview();
+}
 function renderScreenshotImportReview(){
   const wrap=document.getElementById("screenshot-import-review");
   const loadBtn=document.getElementById("screenshot-load-selected");
@@ -3359,9 +3382,11 @@ function renderScreenshotImportReview(){
   wrap.innerHTML='<div class="screenshot-review-title">Import Review</div>'+pendingScreenshotImports.map((item,index)=>{
     const ok=item.status!=="error";
     const confidence=item.confidenceLabel||"Low confidence";
-    const checked=ok?' checked':'';
+    const checked=ok&&item.selected!==false?' checked':'';
     const disabled=ok?'':' disabled';
-    return `<label class="screenshot-review-item ${ok?'':'error'}"><input type="checkbox" data-screenshot-import-index="${index}"${checked}${disabled}><span class="screenshot-review-mark">${ok?'✓':'!'}</span><span><strong>${escapeHtml(getScreenshotImportTitle(item))}</strong><em>${escapeHtml(ok?confidence:"Couldn't read this screenshot")}</em></span></label>`;
+    const active=index===activeScreenshotImportIndex;
+    const warning=hasScreenshotImportMissingOperatorWarning(item)?" · Operator not detected":"";
+    return `<label class="screenshot-review-item ${ok?'':'error'}${active?' active':''}" onclick="setActiveScreenshotImport(${index})"><input type="checkbox" data-screenshot-import-index="${index}"${checked}${disabled} onclick="event.stopPropagation()" onchange="pendingScreenshotImports[${index}].selected=this.checked"><span class="screenshot-review-mark">${ok?'✓':'!'}</span><span><strong>${escapeHtml(getScreenshotImportTitle(item))}</strong><em>${escapeHtml((ok?confidence:"Couldn't read this screenshot")+warning)}</em></span></label>`;
   }).join("");
   if(loadBtn) loadBtn.hidden=false;
 }
@@ -3369,6 +3394,7 @@ async function extractOfferTextFromVisionFiles(files){
   const accepted=Array.from(files||[]).filter(isAcceptedVisionOfferFile);
   if(!accepted.length){ setVisionStatus("Use PNG, JPG, JPEG or WEBP screenshots.","low"); return; }
   pendingScreenshotImports=[];
+  activeScreenshotImportIndex=0;
   renderScreenshotImportReview();
   setOfferImportMethod("vision");
   setVisionStatus(`Analysing ${accepted.length} screenshot${accepted.length===1?"":"s"}…`,"");
@@ -3381,14 +3407,17 @@ async function extractOfferTextFromVisionFiles(files){
       const text=normaliseVisionExtractedText(result&&result.data&&result.data.text);
       if(!text.trim()) throw new Error("empty OCR");
       const parsedResult=parseScreenshotTextForActiveBuilder(text);
-      pendingScreenshotImports.push({fileName:file.name,text,result:parsedResult,confidence,confidenceLabel:confidence>=70?"High confidence":"Medium confidence",status:"ready"});
+      pendingScreenshotImports.push({fileName:file.name,sourceImage:file,text,reviewText:text,result:parsedResult,confidence,confidenceLabel:confidence>=70?"High confidence":"Medium confidence",status:"ready",selected:true});
     }catch(err){
-      pendingScreenshotImports.push({fileName:file.name,text:"",result:null,confidence:0,confidenceLabel:"Low confidence",status:"error"});
+      pendingScreenshotImports.push({fileName:file.name,sourceImage:file,text:"",reviewText:"",result:null,confidence:0,confidenceLabel:"Low confidence",status:"error",selected:false,error:String((err&&err.message)||err||"OCR failed")});
     }
     renderScreenshotImportReview();
   }
-  const first=pendingScreenshotImports.find(item=>item.text);
-  setVisionReviewText(first?first.text:"",pendingScreenshotImports.some(item=>item.confidence<70));
+  const firstIndex=pendingScreenshotImports.findIndex(item=>item.text);
+  activeScreenshotImportIndex=firstIndex>=0?firstIndex:0;
+  syncActiveScreenshotReviewText();
+  const note=document.getElementById("vision-review-note");
+  if(note) note.textContent=pendingScreenshotImports.some(item=>item.confidence<70)?"Some text may need reviewing before loading.":"Review extracted text before loading. Select an import to edit its own OCR text.";
   setVisionStatus("Screenshot import ready for review.",pendingScreenshotImports.some(item=>item.status==="error")?"partial":"high");
 }
 function getAvailableScreenshotImportSlots(){
@@ -3404,9 +3433,11 @@ function getScreenshotCampaignCapacityMessage(){
   return `Select up to ${capacity} offer${capacity===1?"":"s"} for this campaign`;
 }
 function loadSelectedScreenshotImports(){
-  const checks=Array.from(document.querySelectorAll('[data-screenshot-import-index]:checked'));
-  if(!checks.length){ setVisionStatus("Select at least one imported screenshot to load.","partial"); return; }
-  const selectedItems=checks.map(check=>pendingScreenshotImports[Number(check.dataset.screenshotImportIndex)]).filter(item=>item&&item.result&&item.result.parsed);
+  const review=document.getElementById("vision-review-text");
+  if(review&&pendingScreenshotImports[activeScreenshotImportIndex]) pendingScreenshotImports[activeScreenshotImportIndex].reviewText=normaliseVisionExtractedText(review.value||"");
+  const selectedItems=pendingScreenshotImports.filter(item=>item&&item.selected!==false&&item.result&&item.result.parsed);
+  if(!selectedItems.length){ setVisionStatus("Select at least one readable imported screenshot to load.","partial"); return; }
+  selectedItems.forEach(item=>{ item.reviewText=normaliseVisionExtractedText(getScreenshotImportReviewedText(item)); item.result=parseScreenshotTextForActiveBuilder(item.reviewText); });
   if(!selectedItems.length){ setVisionStatus("Select at least one readable imported screenshot to load.","partial"); return; }
   const slots=getAvailableScreenshotImportSlots();
   const capacity=Array.isArray(offers)?offers.length:4;
@@ -3417,7 +3448,7 @@ function loadSelectedScreenshotImports(){
   const loadCount=Math.min(selectedItems.length,slots.length);
   for(let i=0;i<loadCount;i++){
     const item=selectedItems[i];
-    applyParsedOfferToSlot(item.result,slots[i],item.text||(item.result&&item.result.rawText)||"");
+    applyParsedOfferToSlot(item.result,slots[i],getScreenshotImportReviewedText(item)||(item.result&&item.result.rawText)||"");
   }
   cur=0;
   document.querySelectorAll(".otab").forEach((tab,index)=>tab.classList.toggle("active",index===cur));
@@ -3448,6 +3479,7 @@ async function extractOfferTextFromVisionFile(file){
 }
 function handleVisionReviewTextInput(event){
   const value=(event&&event.target?event.target.value:((document.getElementById("vision-review-text")||{}).value||""));
+  if(pendingScreenshotImports[activeScreenshotImportIndex]) pendingScreenshotImports[activeScreenshotImportIndex].reviewText=String(value||"");
   if(typeof setOfferTypeDetection==="function") setOfferTypeDetection(String(value||"").trim()?detectCruiseOffer(value):null);
 }
 function loadOfferFromActiveMethod(){
@@ -9954,7 +9986,8 @@ function getHeaderHTML(d){
     return pngHeader(`<img class="${logoClass}" src="${op.pngData}" alt="${op.name} logo">`);
   }
   if(!skin&&op&&op.svgData) return `<div class="header-block" style="width:1200px;height:497px;overflow:hidden;display:block;line-height:0;background:#0e1b2a;"><img src="${op.svgData}" width="1200" height="497" style="width:1200px;height:497px;object-fit:cover;display:block;"></div>`;
-  const label=(skin?.logoLabel||(op?op.name:d.line||"CRUISE LINE")).replace(/\n/g,"<br>");
+  const rawLabel=skin?.logoLabel||(op?op.name:(d.line||""));
+  const label=String(rawLabel||"").replace(/\n/g,"<br>");
   return `<div class="header-block" style="width:1200px;height:497px;background:${background};overflow:hidden;display:block;line-height:0;"><div class="operator-png-usp" style="background:${accent};">${tags}</div><div style="height:390px;display:flex;align-items:center;justify-content:center;text-align:center;font-family:'Montserrat',sans-serif;font-size:72px;font-weight:300;letter-spacing:.14em;line-height:1.15;color:var(--text-inverse);">${label}</div></div>`;
 }
 function normaliseDestinationName(port){
@@ -10789,7 +10822,7 @@ function clearActiveEditorDomFields(){
 function clearCurrentPreviewOutputState(){
   const out=document.getElementById('card-output');
   const scaler=document.getElementById('preview-scaler');
-  if(out){ out.innerHTML=''; out.classList.remove('empty-preview-output'); }
+  if(out){ out.innerHTML=''; out.classList.remove('empty-preview-output'); out.style.width=''; out.style.transform=''; out.style.transformOrigin=''; }
   if(scaler){ scaler.classList.remove('empty-preview'); scaler.style.width='100%'; scaler.style.height='100%'; scaler.style.transform='none'; }
 }
 function prepareSplashCampaignHydration(){
@@ -11312,11 +11345,7 @@ function renderVisibleCard(){
   enhanceClickableHeroImagesAndPlaceholders(out, cur);
   enhanceHeroDropTarget(out, cur);
   scheduleHeroCropPositions(out);
-  scaler.style.width = '1200px';
-  scaler.style.marginInline = 'auto';
-  scaler.style.transform = 'scale(' + scale + ')';
-  scaler.style.transformOrigin = 'top center';
-  scaler.style.height = Math.ceil(out.offsetHeight * scale) + 'px';
+  setScalerBox(1200, out.offsetHeight, scale);
 }
 function moveOfferState(fromIdx, toIdx){
   fromIdx = Number(fromIdx);
@@ -11744,11 +11773,13 @@ function scheduleAllPreviewLayout(){
 function setScalerBox(width, renderedHeight, scale){
   const scaler = document.getElementById('preview-scaler');
   if(!scaler) return;
-  scaler.style.width = width + 'px';
+  scaler.style.width = Math.ceil(width * scale) + 'px';
   scaler.style.marginInline = 'auto';
-  scaler.style.transform = 'scale(' + scale + ')';
+  scaler.style.transform = 'none';
   scaler.style.transformOrigin = 'top center';
   scaler.style.height = Math.ceil(renderedHeight * scale) + 'px';
+  const out = document.getElementById('card-output');
+  if(out){ out.style.width = width + 'px'; out.style.transform = 'scale(' + scale + ')'; out.style.transformOrigin = 'top center'; }
 }
 
 
@@ -11772,6 +11803,7 @@ function renderEmptyPreviewIfNeeded(){
   const activeType=typeof normaliseCampaignType==="function" ? normaliseCampaignType(typeof currentCampaignType!=="undefined" ? currentCampaignType : "cruise") : (["package","touring","worldwide"].includes(String(typeof currentCampaignType!=="undefined" ? currentCampaignType : "").toLowerCase()) ? String(currentCampaignType||"").toLowerCase() : "cruise");
   const workspaceCopy=copyMap[activeType] || copyMap.cruise;
   const workspaceLabel=typeof getCampaignTypeLabel==="function" ? getCampaignTypeLabel(activeType) : ((typeof CAMPAIGN_TYPE_LABELS!=="undefined" && CAMPAIGN_TYPE_LABELS[activeType]) || "Cruise");
+  out.style.width=''; out.style.transform=''; out.style.transformOrigin='';
   out.innerHTML = `<div class="preview-empty-state" role="status" aria-label="Campaign upload area"><h2>Ready to build ${workspaceLabel}</h2><p>${workspaceCopy}</p><p>Click anywhere or drag a campaign file into this workspace.</p></div>`;
   scaler.style.width = '100%';
   scaler.style.height = '100%';
@@ -11869,6 +11901,7 @@ function renderPreviewMode(skipSave){
     canvas.appendChild(grid);
     stage.appendChild(canvas);
     out.innerHTML = '';
+    out.style.width=''; out.style.transform=''; out.style.transformOrigin='';
     out.appendChild(stage);
     scaler.style.width = '100%';
     scaler.style.height = '100%';
