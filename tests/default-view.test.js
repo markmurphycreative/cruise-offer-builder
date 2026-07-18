@@ -101,11 +101,11 @@ test('preview layout retains the stable shared canvas treatment without Single-o
   assert.doesNotMatch(html, /single-preview/);
   assert.doesNotMatch(html, /setSinglePreviewCanvasHeight/);
   assert.doesNotMatch(html, /setPreviewWrapMode/);
-  assert.match(html, /scaler\.style\.width = '1200px';[\s\S]*?scaler\.style\.transform = 'scale\(' \+ scale \+ '\)';[\s\S]*?scaler\.style\.transformOrigin = 'top center';[\s\S]*?scaler\.style\.height = Math\.ceil\(out\.offsetHeight \* scale\) \+ 'px';/);
+  assert.match(html, /setScalerBox\(1200, out\.offsetHeight, scale\);/);
 });
 
 test('shared preview scaler retains stable dimensions for Email and All 4 layouts', () => {
-  assert.match(html, /function setScalerBox\(width, renderedHeight, scale\)\{[\s\S]*?scaler\.style\.width = width \+ 'px';[\s\S]*?scaler\.style\.transform = 'scale\(' \+ scale \+ '\)';[\s\S]*?scaler\.style\.transformOrigin = 'top center';[\s\S]*?scaler\.style\.height = Math\.ceil\(renderedHeight \* scale\) \+ 'px';/);
+  assert.match(html, /function setScalerBox\(width, renderedHeight, scale\)\{[\s\S]*?scaler\.style\.width = Math\.ceil\(width \* scale\) \+ 'px';[\s\S]*?scaler\.style\.transform = 'none';[\s\S]*?out\.style\.width = width \+ 'px'; out\.style\.transform = 'scale\(' \+ scale \+ '\)';/);
   assert.match(html, /setScalerBox\(1200, out\.offsetHeight \|\| stackWrap\.offsetHeight, baseScale \* EMAIL_PREVIEW_SCALE\);/);
   assert.match(html, /applyAllPreviewLayout\(stage, canvas, Object\.assign\(\{\}, metrics, \{canvasHeight:naturalHeight\}\)\);/);
 });
