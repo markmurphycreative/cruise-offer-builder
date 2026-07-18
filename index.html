@@ -264,6 +264,13 @@ input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.58;
 .vision-review.active{display:block;}
 .vision-review-note{font-size:9px;color:var(--muted);line-height:1.35;margin-bottom:4px;}
 .screenshot-import-review{display:grid;gap:5px;margin-top:7px;}
+.screenshot-import-summary{display:grid;gap:4px;padding:6px;border:1px solid var(--border);border-radius:var(--ui-radius);background:var(--surface-subtle);}
+.screenshot-import-summary-title{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.screenshot-import-summary-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:4px;}
+.screenshot-import-summary-item{padding:5px 6px;border:1px solid rgba(15,35,58,.08);border-radius:6px;background:var(--surface);font-size:8px;line-height:1.25;color:var(--text);}
+.screenshot-import-summary-item strong{display:block;font-size:9px;color:var(--navy);font-weight:700;margin-bottom:2px;}
+.screenshot-import-summary-item span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.screenshot-import-summary-item em{display:block;font-style:normal;color:var(--gold);margin-top:2px;}
 .screenshot-review-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);}
 .screenshot-review-item{display:grid;grid-template-columns:auto auto 1fr;gap:6px;align-items:center;padding:5px 6px;border:1px solid var(--border);border-radius:var(--ui-radius);background:var(--surface);font-size:9px;color:var(--text);cursor:default;transition:border-color .18s ease,background-color .18s ease,box-shadow .18s ease;}
 .screenshot-review-item.active{border-color:rgba(158,147,108,.58);background:#fbfaf6;box-shadow:inset 3px 0 0 rgba(158,147,108,.72);}
@@ -713,7 +720,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .shortcuts-trigger:hover,.toolbar-action:hover{color:var(--gold);transition:color var(--ui-transition);}
 .shortcuts-trigger.active::after,.toolbar-action.active::after{content:"";position:absolute;left:35%;right:35%;bottom:0;height:1px;background:var(--gold);}
 .shortcuts-trigger:hover,.toolbar-action:hover{color:var(--gold);background:transparent;}
-.preview-wrap{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px;display:flex;justify-content:center;align-items:center;min-width:0;background:#dedad2;transition:background-color .18s ease,box-shadow .18s ease;overscroll-behavior-y:contain;overscroll-behavior-x:none;touch-action:pan-y;}
+.preview-wrap{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px;display:flex;justify-content:flex-start;align-items:center;min-width:0;background:#dedad2;transition:background-color .18s ease,box-shadow .18s ease;overscroll-behavior-y:contain;overscroll-behavior-x:none;touch-action:pan-y;}
 .preview-wrap.empty-upload-zone{cursor:pointer;}
 .preview-wrap.empty-upload-zone:hover,.preview-wrap.empty-upload-zone.drag-over{background:#d4d0c7;box-shadow:inset 0 0 0 2px rgba(158,147,108,.48),inset 0 0 0 5px rgba(255,255,255,.28);}
 .preview-scaler{margin-block:auto;transform-origin:top center;will-change:transform;}
@@ -3347,9 +3354,16 @@ function parseScreenshotTextForActiveBuilder(text){
   if(result&&result.parsed&&builder!=="cruise") result.parsed.offerType=builder;
   return result;
 }
+function getOrderedScreenshotImports(){
+  return pendingScreenshotImports.map((item,index)=>({item,index})).sort((a,b)=>((a.item&&Number.isFinite(a.item.uploadOrder))?a.item.uploadOrder:a.index)-((b.item&&Number.isFinite(b.item.uploadOrder))?b.item.uploadOrder:b.index));
+}
 function getScreenshotImportTitle(item){
   const p=(item&&item.result&&item.result.parsed)||{};
-  return p.ship||p.name||p.ports||p.operator||item.fileName||"Imported screenshot";
+  return p.name||p.ship||p.ports||p.operator||item.fileName||"Imported screenshot";
+}
+function getScreenshotImportSummaryLines(item){
+  const p=(item&&item.result&&item.result.parsed)||{};
+  return [p.name,p.ship,p.ports].map(v=>String(v||"").trim()).filter(Boolean).slice(0,2);
 }
 function getScreenshotImportReviewedText(item){ return item ? (item.reviewText!==undefined ? item.reviewText : item.text || "") : ""; }
 function hasScreenshotImportMissingOperatorWarning(item){
@@ -3379,7 +3393,13 @@ function renderScreenshotImportReview(){
   if(panel) panel.classList.add("active");
   if(!wrap) return;
   if(!pendingScreenshotImports.length){ wrap.innerHTML=""; if(loadBtn) loadBtn.hidden=true; return; }
-  wrap.innerHTML='<div class="screenshot-review-title">Import Review</div>'+pendingScreenshotImports.map((item,index)=>{
+  const orderedImports=getOrderedScreenshotImports();
+  const summaryHtml='<div class="screenshot-import-summary"><div class="screenshot-import-summary-title">Recognised screenshots</div><div class="screenshot-import-summary-list">'+orderedImports.map(({item,index})=>{
+    const lines=getScreenshotImportSummaryLines(item);
+    const warning=hasScreenshotImportMissingOperatorWarning(item)?'<em>Operator not detected</em>':'';
+    return `<div class="screenshot-import-summary-item"><strong>Offer ${index+1}</strong>${lines.map(line=>`<span>${escapeHtml(line)}</span>`).join("") || '<span>No readable summary yet</span>'}${warning}</div>`;
+  }).join("")+'</div></div>';
+  wrap.innerHTML=summaryHtml+'<div class="screenshot-review-title">Import Review</div>'+orderedImports.map(({item,index})=>{
     const ok=item.status!=="error";
     const confidence=item.confidenceLabel||"Low confidence";
     const checked=ok&&item.selected!==false?' checked':'';
@@ -3407,9 +3427,9 @@ async function extractOfferTextFromVisionFiles(files){
       const text=normaliseVisionExtractedText(result&&result.data&&result.data.text);
       if(!text.trim()) throw new Error("empty OCR");
       const parsedResult=parseScreenshotTextForActiveBuilder(text);
-      pendingScreenshotImports.push({fileName:file.name,sourceImage:file,text,reviewText:text,result:parsedResult,confidence,confidenceLabel:confidence>=70?"High confidence":"Medium confidence",status:"ready",selected:true});
+      pendingScreenshotImports.push({uploadOrder:i,fileName:file.name,sourceImage:file,text,reviewText:text,result:parsedResult,confidence,confidenceLabel:confidence>=70?"High confidence":"Medium confidence",status:"ready",selected:true});
     }catch(err){
-      pendingScreenshotImports.push({fileName:file.name,sourceImage:file,text:"",reviewText:"",result:null,confidence:0,confidenceLabel:"Low confidence",status:"error",selected:false,error:String((err&&err.message)||err||"OCR failed")});
+      pendingScreenshotImports.push({uploadOrder:i,fileName:file.name,sourceImage:file,text:"",reviewText:"",result:null,confidence:0,confidenceLabel:"Low confidence",status:"error",selected:false,error:String((err&&err.message)||err||"OCR failed")});
     }
     renderScreenshotImportReview();
   }
@@ -3436,6 +3456,7 @@ function loadSelectedScreenshotImports(){
   const review=document.getElementById("vision-review-text");
   if(review&&pendingScreenshotImports[activeScreenshotImportIndex]) pendingScreenshotImports[activeScreenshotImportIndex].reviewText=normaliseVisionExtractedText(review.value||"");
   const selectedItems=pendingScreenshotImports.filter(item=>item&&item.selected!==false&&item.result&&item.result.parsed);
+  selectedItems.sort((a,b)=>((Number.isFinite(a.uploadOrder)?a.uploadOrder:pendingScreenshotImports.indexOf(a))-(Number.isFinite(b.uploadOrder)?b.uploadOrder:pendingScreenshotImports.indexOf(b))));
   if(!selectedItems.length){ setVisionStatus("Select at least one readable imported screenshot to load.","partial"); return; }
   selectedItems.forEach(item=>{ item.reviewText=normaliseVisionExtractedText(getScreenshotImportReviewedText(item)); item.result=parseScreenshotTextForActiveBuilder(item.reviewText); });
   if(!selectedItems.length){ setVisionStatus("Select at least one readable imported screenshot to load.","partial"); return; }
@@ -11773,13 +11794,17 @@ function scheduleAllPreviewLayout(){
 function setScalerBox(width, renderedHeight, scale){
   const scaler = document.getElementById('preview-scaler');
   if(!scaler) return;
-  scaler.style.width = Math.ceil(width * scale) + 'px';
-  scaler.style.marginInline = 'auto';
+  const scaledWidth = Math.ceil(width * scale);
+  const pane = getPreviewPaneSize();
+  const left = Math.max(0, Math.floor((pane.w - scaledWidth) / 2));
+  scaler.style.width = scaledWidth + 'px';
+  scaler.style.marginLeft = left + 'px';
+  scaler.style.marginRight = '0';
   scaler.style.transform = 'none';
-  scaler.style.transformOrigin = 'top center';
+  scaler.style.transformOrigin = 'top left';
   scaler.style.height = Math.ceil(renderedHeight * scale) + 'px';
   const out = document.getElementById('card-output');
-  if(out){ out.style.width = width + 'px'; out.style.transform = 'scale(' + scale + ')'; out.style.transformOrigin = 'top center'; }
+  if(out){ out.style.width = width + 'px'; out.style.transform = 'scale(' + scale + ')'; out.style.transformOrigin = 'top left'; }
 }
 
 
@@ -11806,6 +11831,8 @@ function renderEmptyPreviewIfNeeded(){
   out.style.width=''; out.style.transform=''; out.style.transformOrigin='';
   out.innerHTML = `<div class="preview-empty-state" role="status" aria-label="Campaign upload area"><h2>Ready to build ${workspaceLabel}</h2><p>${workspaceCopy}</p><p>Click anywhere or drag a campaign file into this workspace.</p></div>`;
   scaler.style.width = '100%';
+  scaler.style.marginLeft = '';
+  scaler.style.marginRight = '';
   scaler.style.height = '100%';
   scaler.style.transform = 'none';
   scaler.style.transformOrigin = 'center center';
@@ -11904,6 +11931,8 @@ function renderPreviewMode(skipSave){
     out.style.width=''; out.style.transform=''; out.style.transformOrigin='';
     out.appendChild(stage);
     scaler.style.width = '100%';
+    scaler.style.marginLeft = '';
+    scaler.style.marginRight = '';
     scaler.style.height = '100%';
     scaler.style.transform = 'none';
     scaler.style.transformOrigin = 'center center';
