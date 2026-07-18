@@ -150,7 +150,7 @@ input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.58;
 .import-builder-menu{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;}
 .import-builder-item{min-height:22px;border:1px solid var(--border);border-radius:var(--ui-radius);background:var(--surface);color:var(--navy);font-size:8px;font-weight:500;letter-spacing:.03em;}
 .import-builder-item.active{background:var(--chrome);border-color:var(--chrome);color:var(--text-inverse);}
-.import-builder-item.coming-soon{opacity:.68;}
+.import-builder-item.coming-soon{opacity:.52;cursor:default;pointer-events:none;filter:saturate(.82);}
 .import-builder-item span{display:block;font-size:6.8px;font-weight:400;color:var(--muted);}
 .csv-import-actions{display:grid;grid-template-columns:1fr;gap:6px;}
 .csv-import-quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
@@ -443,7 +443,7 @@ input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.58;
 .splash-campaign-option:hover,.splash-campaign-option:focus-visible{background:transparent;color:#9e936c;outline:none;text-decoration:none;}
 .splash-campaign-option span,.new-campaign-menu-item span{display:block;font-size:7px;letter-spacing:.08em;color:var(--muted-inverse,rgba(255,255,255,.48));margin-top:1px;}
 .new-campaign-menu-item span{color:var(--muted);}
-.splash-campaign-option.coming-soon,.new-campaign-menu-item.coming-soon{opacity:.72;}
+.splash-campaign-option.coming-soon,.new-campaign-menu-item.coming-soon{opacity:.52;cursor:default;pointer-events:none;filter:saturate(.82);}
 .splash-footer{width:100%;justify-self:stretch;text-align:center;display:none;place-items:center;animation:splashFadeIn .28s ease-out both;}
 .splash-footer.active{display:grid;}
 .splash-recent-content{width:min(320px,100%);max-width:100%;}
@@ -950,8 +950,8 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
               <button class="splash-campaign-option" type="button" role="menuitem" data-campaign-type="cruise">Cruise</button>
               <button class="splash-campaign-option" type="button" role="menuitem" data-campaign-type="package">Package</button>
               <button class="splash-campaign-option" type="button" role="menuitem" data-campaign-type="touring">Touring</button>
-              <button class="splash-campaign-option coming-soon" type="button" role="menuitem" data-campaign-type="city" data-coming-soon="true">City <span>Coming Soon</span></button>
-              <button class="splash-campaign-option coming-soon" type="button" role="menuitem" data-campaign-type="luxury" data-coming-soon="true">Luxury <span>Coming Soon</span></button>
+              <button class="splash-campaign-option coming-soon" type="button" role="menuitem" data-campaign-type="city" data-coming-soon="true" aria-disabled="true">City</button>
+              <button class="splash-campaign-option coming-soon" type="button" role="menuitem" data-campaign-type="luxury" data-coming-soon="true" aria-disabled="true">Luxury</button>
             </div>
           </div>
           <button class="splash-btn gold" id="splash-continue-session-btn" type="button" style="display:none;">Continue</button>
@@ -1028,8 +1028,8 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
             <button class="import-builder-item active" type="button" data-import-builder="cruise">Cruise</button>
             <button class="import-builder-item" type="button" data-import-builder="package">Package</button>
             <button class="import-builder-item" type="button" data-import-builder="touring">Touring</button>
-            <button class="import-builder-item coming-soon" type="button" data-import-builder="city" aria-disabled="true">City <span>Coming Soon</span></button>
-            <button class="import-builder-item coming-soon" type="button" data-import-builder="luxury" aria-disabled="true">Luxury <span>Coming Soon</span></button>
+            <button class="import-builder-item coming-soon" type="button" data-import-builder="city" aria-disabled="true">City</button>
+            <button class="import-builder-item coming-soon" type="button" data-import-builder="luxury" aria-disabled="true">Luxury</button>
           </div>
           <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values,.json,application/json" style="display:none">
           <div class="field">
@@ -1502,8 +1502,8 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
       <button class="new-campaign-menu-item" type="button" role="menuitem" data-campaign-type="cruise" onclick="selectNewCampaignType(event)">Cruise</button>
       <button class="new-campaign-menu-item" type="button" role="menuitem" data-campaign-type="package" onclick="selectNewCampaignType(event)">Package</button>
       <button class="new-campaign-menu-item" type="button" role="menuitem" data-campaign-type="touring" onclick="selectNewCampaignType(event)">Touring</button>
-      <button class="new-campaign-menu-item coming-soon" type="button" role="menuitem" data-campaign-type="city" data-coming-soon="true" onclick="selectNewCampaignType(event)">City <span>Coming Soon</span></button>
-      <button class="new-campaign-menu-item coming-soon" type="button" role="menuitem" data-campaign-type="luxury" data-coming-soon="true" onclick="selectNewCampaignType(event)">Luxury <span>Coming Soon</span></button>
+      <button class="new-campaign-menu-item coming-soon" type="button" role="menuitem" data-campaign-type="city" data-coming-soon="true" aria-disabled="true" onclick="selectNewCampaignType(event)">City</button>
+      <button class="new-campaign-menu-item coming-soon" type="button" role="menuitem" data-campaign-type="luxury" data-coming-soon="true" aria-disabled="true" onclick="selectNewCampaignType(event)">Luxury</button>
     </div>
   </div>
   <div class="preview-wrap">
@@ -2482,8 +2482,8 @@ const CAMPAIGN_WORKSPACE_COPY = {
   package:"Paste or import a package offer to begin building your campaign.",
   touring:"Paste or import a touring offer to begin building your campaign.",
   worldwide:"Paste or import a worldwide offer to begin building your campaign.",
-  city:"City campaigns are coming soon.",
-  luxury:"Luxury campaigns are coming soon."
+  city:"City campaigns are currently unavailable.",
+  luxury:"Luxury campaigns are currently unavailable."
 };
 function normaliseCampaignType(type){
   const normalised=String(type||"cruise").toLowerCase().replace(/[^a-z]/g,"");
@@ -3391,19 +3391,43 @@ async function extractOfferTextFromVisionFiles(files){
   setVisionReviewText(first?first.text:"",pendingScreenshotImports.some(item=>item.confidence<70));
   setVisionStatus("Screenshot import ready for review.",pendingScreenshotImports.some(item=>item.status==="error")?"partial":"high");
 }
+function getAvailableScreenshotImportSlots(){
+  const capacity=Array.isArray(offers)?offers.length:4;
+  const slots=[];
+  for(let index=0;index<capacity;index++){
+    if(!isOfferLoaded(offers[index]) && !(typeof isOfferLocked==="function" && isOfferLocked(index))) slots.push(index);
+  }
+  return slots;
+}
+function getScreenshotCampaignCapacityMessage(){
+  const capacity=Array.isArray(offers)?offers.length:4;
+  return `Select up to ${capacity} offer${capacity===1?"":"s"} for this campaign`;
+}
 function loadSelectedScreenshotImports(){
   const checks=Array.from(document.querySelectorAll('[data-screenshot-import-index]:checked'));
   if(!checks.length){ setVisionStatus("Select at least one imported screenshot to load.","partial"); return; }
-  let loaded=0;
-  for(const check of checks){
-    const item=pendingScreenshotImports[Number(check.dataset.screenshotImportIndex)];
-    if(!item||!item.result) continue;
-    let slot=offers.findIndex((offer,index)=>!isOfferLoaded(offer)&&!isOfferLocked(index));
-    if(slot<0) break;
-    cur=slot; load(cur); pendingParseResult=item.result; applyParsedOffer(); loaded++;
+  const selectedItems=checks.map(check=>pendingScreenshotImports[Number(check.dataset.screenshotImportIndex)]).filter(item=>item&&item.result&&item.result.parsed);
+  if(!selectedItems.length){ setVisionStatus("Select at least one readable imported screenshot to load.","partial"); return; }
+  const slots=getAvailableScreenshotImportSlots();
+  const capacity=Array.isArray(offers)?offers.length:4;
+  if(!slots.length){
+    setVisionStatus("No empty campaign slots available. Remaining imports are still in review.","partial");
+    return;
   }
+  const loadCount=Math.min(selectedItems.length,slots.length);
+  for(let i=0;i<loadCount;i++){
+    const item=selectedItems[i];
+    applyParsedOfferToSlot(item.result,slots[i],item.text||(item.result&&item.result.rawText)||"");
+  }
+  cur=0;
+  document.querySelectorAll(".otab").forEach((tab,index)=>tab.classList.toggle("active",index===cur));
+  load(cur);
+  refreshOfferUi({utm:true,spell:true,autosave:true});
+  if(loadCount && typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Screenshot imports loaded");
   renderScreenshotImportReview();
-  setVisionStatus(loaded?`Loaded ${loaded} imported screenshot${loaded===1?"":"s"}.`:"No available campaign slots. Remaining imports are still in review.",loaded?"high":"partial");
+  const remaining=selectedItems.length-loadCount;
+  const capacityNote=selectedItems.length>capacity ? ` ${getScreenshotCampaignCapacityMessage()}.` : "";
+  setVisionStatus(remaining>0?`Loaded ${loadCount} imported screenshot${loadCount===1?"":"s"}. ${remaining} selected import${remaining===1?"":"s"} left in review because only ${slots.length} empty slot${slots.length===1?" was":"s were"} available.${capacityNote}`:`Loaded ${loadCount} imported screenshot${loadCount===1?"":"s"}.${capacityNote}`,loadCount?"high":"partial");
 }
 
 async function extractOfferTextFromVisionFile(file){
@@ -8424,8 +8448,10 @@ function applyParsedOfferToSlot(result,index,sourceText){
     else if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offer.operator)){ continue; }
     else offer[k]=String(parsed[k]);
   }
-  if(parsed.departurePort) offer.departurePort=String(parsed.departurePort);
-  if(parsed._poaDepartureAirport) offer._poaDepartureAirport=String(parsed._poaDepartureAirport);
+  ["offerType","operator","totalPrice","resortFee","adults","children","freeChildPlace","priceLabel","leadPrice","departurePort","_poaDepartureAirport","flyingFrom","cruiseType","itinerary"].forEach(k=>{
+    if(parsed[k]!==undefined&&parsed[k]!=="") offer[k]=String(parsed[k]);
+  });
+  if(parsed.operatorKey) offer.operator=String(parsed.operatorKey);
   if(!offer._sailingFromManual && typeof applyAutoSailingFromToOffer==="function") applyAutoSailingFromToOffer(offer);
   offer._tagsManualOverride=false;
   applyOperatorTopBarUspDefault(offer,offer.operator||parsed.operatorKey||"");
@@ -11741,8 +11767,8 @@ function renderEmptyPreviewIfNeeded(){
   if(!showEmptyState) return false;
   updatePreviewTitle();
   const copyMap=typeof CAMPAIGN_WORKSPACE_COPY!=="undefined" ? CAMPAIGN_WORKSPACE_COPY : {cruise:"Connect a Google Sheet or open a campaign file to build your cruise cards.",package:"Paste or import a package offer to begin building your campaign.",touring:"Paste or import a touring offer to begin building your campaign.",worldwide:"Paste or import a worldwide offer to begin building your campaign.",
-  city:"City campaigns are coming soon.",
-  luxury:"Luxury campaigns are coming soon."};
+  city:"City campaigns are currently unavailable.",
+  luxury:"Luxury campaigns are currently unavailable."};
   const activeType=typeof normaliseCampaignType==="function" ? normaliseCampaignType(typeof currentCampaignType!=="undefined" ? currentCampaignType : "cruise") : (["package","touring","worldwide"].includes(String(typeof currentCampaignType!=="undefined" ? currentCampaignType : "").toLowerCase()) ? String(currentCampaignType||"").toLowerCase() : "cruise");
   const workspaceCopy=copyMap[activeType] || copyMap.cruise;
   const workspaceLabel=typeof getCampaignTypeLabel==="function" ? getCampaignTypeLabel(activeType) : ((typeof CAMPAIGN_TYPE_LABELS!=="undefined" && CAMPAIGN_TYPE_LABELS[activeType]) || "Cruise");
