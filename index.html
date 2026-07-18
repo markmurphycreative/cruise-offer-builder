@@ -720,11 +720,10 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .shortcuts-trigger:hover,.toolbar-action:hover{color:var(--gold);transition:color var(--ui-transition);}
 .shortcuts-trigger.active::after,.toolbar-action.active::after{content:"";position:absolute;left:35%;right:35%;bottom:0;height:1px;background:var(--gold);}
 .shortcuts-trigger:hover,.toolbar-action:hover{color:var(--gold);background:transparent;}
-.preview-wrap{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px;display:flex;justify-content:flex-start;align-items:center;min-width:0;background:#dedad2;transition:background-color .18s ease,box-shadow .18s ease;overscroll-behavior-y:contain;overscroll-behavior-x:none;touch-action:pan-y;}
+.preview-wrap{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px;display:flex;justify-content:center;align-items:flex-start;min-width:0;background:#dedad2;transition:background-color .18s ease,box-shadow .18s ease;overscroll-behavior-y:contain;overscroll-behavior-x:none;touch-action:pan-y;}
 .preview-wrap.empty-upload-zone{cursor:pointer;}
 .preview-wrap.empty-upload-zone:hover,.preview-wrap.empty-upload-zone.drag-over{background:#d4d0c7;box-shadow:inset 0 0 0 2px rgba(158,147,108,.48),inset 0 0 0 5px rgba(255,255,255,.28);}
-.preview-scaler{margin-block:auto;transform-origin:top center;will-change:transform;}
-.preview-scaler{margin-inline:auto;}
+.preview-scaler{margin-block:auto;margin-inline:auto;transform-origin:top left;will-change:transform;flex:0 0 auto;}
 .preview-scaler.empty-preview{display:flex;align-items:center;justify-content:center;}
 .all-preview-stage{display:block;margin:auto;position:relative;flex:0 0 auto;overflow:visible;}
 .all-preview-canvas{display:block;transform-origin:top left;will-change:transform;}
@@ -3384,6 +3383,22 @@ function setActiveScreenshotImport(index){
   if(review&&pendingScreenshotImports[activeScreenshotImportIndex]) pendingScreenshotImports[activeScreenshotImportIndex].reviewText=String(review.value||"");
   activeScreenshotImportIndex=next;
   syncActiveScreenshotReviewText();
+  const linkedOfferIndex=Number(pendingScreenshotImports[next].loadedOfferIndex);
+  if(Number.isInteger(linkedOfferIndex)&&linkedOfferIndex>=0&&Array.isArray(offers)&&linkedOfferIndex<offers.length){
+    try { commitVisibleFields(); } catch(e){}
+    cur=linkedOfferIndex;
+    syncOfferSelector();
+    try { loadOfferToEditor(cur); } catch(e) { try { load(cur); } catch(_e){} }
+    try { updateLockUI(); } catch(e){}
+    try { genUtm(); } catch(e){}
+    try { genStandardUtms(); } catch(e){}
+    try { updateAllStatus(); } catch(e){}
+    try { updateExportFilenames(); } catch(e){}
+    try { updateMoveOfferButtons(); } catch(e){}
+    try { runSpellQA(); } catch(e){}
+    renderPreviewMode(true);
+    queueAutosave();
+  }
   renderScreenshotImportReview();
 }
 function renderScreenshotImportReview(){
@@ -3469,9 +3484,11 @@ function loadSelectedScreenshotImports(){
   const loadCount=Math.min(selectedItems.length,slots.length);
   for(let i=0;i<loadCount;i++){
     const item=selectedItems[i];
-    applyParsedOfferToSlot(item.result,slots[i],getScreenshotImportReviewedText(item)||(item.result&&item.result.rawText)||"");
+    const loaded=applyParsedOfferToSlot(item.result,slots[i],getScreenshotImportReviewedText(item)||(item.result&&item.result.rawText)||"");
+    if(loaded) item.loadedOfferIndex=slots[i];
   }
-  cur=0;
+  const firstLoaded=selectedItems.find(item=>Number.isInteger(Number(item.loadedOfferIndex)));
+  cur=firstLoaded?Number(firstLoaded.loadedOfferIndex):0;
   document.querySelectorAll(".otab").forEach((tab,index)=>tab.classList.toggle("active",index===cur));
   load(cur);
   refreshOfferUi({utm:true,spell:true,autosave:true});
@@ -11357,6 +11374,7 @@ function renderVisibleCard(){
   const scaler = document.getElementById('preview-scaler');
   const out = document.getElementById('card-output');
   if(!scaler || !out) return;
+  const renderGeneration = ++previewRenderGeneration;
   if(renderEmptyPreviewIfNeeded()) return;
   const scale = (zoomPct / 100) * SINGLE_PREVIEW_SCALE;
   updatePreviewTitle();
@@ -11366,7 +11384,8 @@ function renderVisibleCard(){
   enhanceClickableHeroImagesAndPlaceholders(out, cur);
   enhanceHeroDropTarget(out, cur);
   scheduleHeroCropPositions(out);
-  setScalerBox(1200, out.offsetHeight, scale);
+  setScalerBox(1200, 1, scale);
+  schedulePreviewBoundsLayout(renderGeneration, 1200, scale, out);
 }
 function moveOfferState(fromIdx, toIdx){
   fromIdx = Number(fromIdx);
@@ -11377,6 +11396,18 @@ function moveOfferState(fromIdx, toIdx){
 
   const movedOffer = offers.splice(fromIdx, 1)[0] || {};
   offers.splice(toIdx, 0, movedOffer);
+
+  if(Array.isArray(pendingScreenshotImports)){
+    pendingScreenshotImports.forEach(function(item){
+      if(!item) return;
+      const linked=Number(item.loadedOfferIndex);
+      if(!Number.isInteger(linked)) return;
+      if(linked === fromIdx) item.loadedOfferIndex = toIdx;
+      else if(fromIdx < linked && toIdx >= linked) item.loadedOfferIndex = linked - 1;
+      else if(fromIdx > linked && toIdx <= linked) item.loadedOfferIndex = linked + 1;
+    });
+    try { renderScreenshotImportReview(); } catch(e){}
+  }
 
   const movedLock = lockedOffers.splice(fromIdx, 1)[0] || false;
   lockedOffers.splice(toIdx, 0, movedLock);
@@ -11620,6 +11651,7 @@ const EMAIL_PREVIEW_SCALE = 0.75;
 const ALL_PREVIEW_MAX_SCALE = 0.68;
 let pendingPreviewFrame = null;
 let pendingAllPreviewLayoutFrame = null;
+let previewRenderGeneration = 0;
 let previewWrapResizeObserver = null;
 let toolbarResizeObserver = null;
 function normalisePreviewMode(v){
@@ -11794,17 +11826,27 @@ function scheduleAllPreviewLayout(){
 function setScalerBox(width, renderedHeight, scale){
   const scaler = document.getElementById('preview-scaler');
   if(!scaler) return;
-  const scaledWidth = Math.ceil(width * scale);
-  const pane = getPreviewPaneSize();
-  const left = Math.max(0, Math.floor((pane.w - scaledWidth) / 2));
-  scaler.style.width = scaledWidth + 'px';
-  scaler.style.marginLeft = left + 'px';
-  scaler.style.marginRight = '0';
+  scaler.style.width = Math.ceil(width * scale) + 'px';
+  scaler.style.marginLeft = '';
+  scaler.style.marginRight = '';
   scaler.style.transform = 'none';
   scaler.style.transformOrigin = 'top left';
   scaler.style.height = Math.ceil(renderedHeight * scale) + 'px';
   const out = document.getElementById('card-output');
-  if(out){ out.style.width = width + 'px'; out.style.transform = 'scale(' + scale + ')'; out.style.transformOrigin = 'top left'; }
+  if(out){
+    out.style.width = width + 'px';
+    out.style.transform = 'scale(' + scale + ')';
+    out.style.transformOrigin = 'top left';
+  }
+}
+function schedulePreviewBoundsLayout(generation, width, scale, measureTarget){
+  const frame = window.requestAnimationFrame || function(cb){ return setTimeout(cb,0); };
+  frame(function(){
+    if(generation !== previewRenderGeneration) return;
+    const target = measureTarget || document.getElementById('card-output');
+    const height = target ? Math.max(target.scrollHeight||0,target.offsetHeight||0,target.getBoundingClientRect ? target.getBoundingClientRect().height / Math.max(scale,0.001) : 0) : 0;
+    setScalerBox(width, height || 1, scale);
+  });
 }
 
 
@@ -11848,6 +11890,7 @@ function renderPreviewMode(skipSave){
   const scaler = document.getElementById('preview-scaler');
   const out = document.getElementById('card-output');
   if(!scaler || !out) return;
+  const renderGeneration = ++previewRenderGeneration;
 
   syncViewSelector();
   updatePreviewZoomControls();
@@ -11881,8 +11924,10 @@ function renderPreviewMode(skipSave){
     });
 
     out.innerHTML = '';
+    out.style.width=''; out.style.transform=''; out.style.transformOrigin='';
     out.appendChild(stackWrap);
-    setScalerBox(1200, out.offsetHeight || stackWrap.offsetHeight, baseScale * EMAIL_PREVIEW_SCALE);
+    setScalerBox(1200, 1, baseScale * EMAIL_PREVIEW_SCALE);
+    schedulePreviewBoundsLayout(renderGeneration, 1200, baseScale * EMAIL_PREVIEW_SCALE, stackWrap);
     if(typeof cobPerfRecord==="function") cobPerfRecord("preview rendering: email view", perfStart, {offers:getLoadedPreviewOffers().length});
     return;
   }
