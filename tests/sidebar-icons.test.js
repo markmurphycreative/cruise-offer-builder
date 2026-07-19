@@ -22,17 +22,17 @@ test('every sidebar section heading uses one inline monochrome SVG icon', () => 
 
 test('sidebar section names follow the primary workflow and use the requested display labels', () => {
   assert.deepEqual(headingLabels, [
-    'Campaign Import',
     'Paste Offer',
-    'Multi Offer Import',
+    'Import Offer',
     'Offer Details',
-    'UTM Link',
+    'Tracking Links',
     'Export Cards',
+    'Import Multiple Offers',
+    'AI Copy',
     'Operator Logo',
     'Hero Image',
     'Route Map',
     'CTA Assets',
-    'AI Copy',
     'Campaign Summary',
     'Manage Campaigns',
     'Campaign Presets',
@@ -51,7 +51,7 @@ test('completion indicators tint existing icons without standalone checkmarks', 
 
 test('required workflow headings expose the requested icon shapes', () => {
   const headingByLabel = Object.fromEntries(headingLabels.map((label, index) => [label, sectionHeaders[index]]));
-  assert.match(headingByLabel['Campaign Import'], /<polyline points="17 8 12 3 7 8"><\/polyline>/);
+  assert.match(headingByLabel['Import Offer'], /<polyline points="17 8 12 3 7 8"><\/polyline>/);
   assert.match(headingByLabel['Campaign Presets'], /<path d="M17 21v-8H7v8"><\/path>/);
   assert.match(headingByLabel['CTA Assets'], /<rect width="18" height="10" x="3" y="7" rx="2"><\/rect>/);
   assert.match(headingByLabel['Paste Offer'], /<path d="m17 10 4 4-4 4"><\/path>/);
@@ -70,8 +70,8 @@ test('hero drop zone reuses the Hero Image heading SVG instead of an emoji', () 
 });
 
 test('Load Offer button uses a document import SVG while preserving its handler and label', () => {
-  const loadOfferButton = html.match(/<button class="parse-btn" onclick="parseOffer\(\)">([\s\S]*?)<\/button>/)[0];
-  assert.match(loadOfferButton, /^<button class="parse-btn" onclick="parseOffer\(\)"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24">[\s\S]*<\/svg>Load Offer<\/button>$/);
+  const loadOfferButton = html.match(/<button class="parse-btn" onclick="loadOfferFromActiveMethod\(\)">([\s\S]*?)<\/button>/)[0];
+  assert.match(loadOfferButton, /^<button class="parse-btn" onclick="loadOfferFromActiveMethod\(\)"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24">[\s\S]*<\/svg>Load Offer<\/button>$/);
   assert.match(loadOfferButton, /<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"><\/path>/);
   assert.match(loadOfferButton, /<path d="m9 15 3 3 3-3"><\/path>/);
   assert.doesNotMatch(loadOfferButton, /⚡/);

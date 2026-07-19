@@ -54,6 +54,7 @@ function createHarness(keys = ['csv-import', 'campaign-presets', 'paste-raw-offe
     extract(/function getSectionCollapseState\(\)\{[\s\S]*?\n\}/, 'getSectionCollapseState'),
     extract(/function getOpenSectionKey\(\)\{[\s\S]*?\n\}/, 'getOpenSectionKey'),
     extract(/function applySectionCollapseState\(sectionState, preferredOpenKey\)\{[\s\S]*?\n\}/, 'applySectionCollapseState'),
+    extract(/function applyNewCampaignSidebarDefaults\(\)\{[\s\S]*?\n\}/, 'applyNewCampaignSidebarDefaults'),
     extract(/function openCsvImportWhenNoOffersLoaded\(\)\{[\s\S]*?\n\}/, 'openCsvImportWhenNoOffersLoaded'),
     extract(/function collapseCsvImportAfterCampaignLoaded\(\)\{[\s\S]*?\n\}/, 'collapseCsvImportAfterCampaignLoaded')
   ].join('\n');
@@ -66,24 +67,24 @@ function openKeys(sections) {
   return sections.filter(section => !section.hdr.classList.contains('collapsed')).map(section => section.dataset.sectionKey);
 }
 
-test('the default sidebar keeps CSV Import as the only expanded section', () => {
+test('the default sidebar keeps Paste Offer as the only expanded section', () => {
   const sections = [...html.matchAll(/<div class="section(?: [^"]*)?" data-section-key="([^"]+)">\s*<div class="section-hdr( collapsed)?"/g)];
   assert.equal(sections.length, 13);
-  assert.deepEqual(sections.filter(([, , collapsed]) => !collapsed).map(([, key]) => key), ['csv-import']);
+  assert.deepEqual(sections.filter(([, , collapsed]) => !collapsed).map(([, key]) => key), ['paste-raw-offer']);
 });
 
-test('fresh empty builders expand Campaign Import while loaded campaigns collapse it once', () => {
+test('fresh empty builders expand Paste Offer while Import Offer stays collapsed', () => {
   const { context, sections } = createHarness();
   sections.forEach(section => context.setSectionCollapsedByHeader(section.hdr, true));
   assert.equal(context.openCsvImportWhenNoOffersLoaded(), true);
-  assert.deepEqual(openKeys(sections), ['csv-import']);
+  assert.deepEqual(openKeys(sections), ['paste-raw-offer']);
 
   context.offers = [{ name: 'Loaded offer' }, {}, {}, {}];
   assert.equal(context.collapseCsvImportAfterCampaignLoaded(), true);
-  assert.deepEqual(openKeys(sections), []);
+  assert.deepEqual(openKeys(sections), ['paste-raw-offer']);
 });
 
-test('CSV Import uses the same quiet row treatment as the other accordion sections', () => {
+test('Import Offer uses the same quiet row treatment as the other accordion sections', () => {
   assert.match(html, /\.section-hdr\{min-height:27px;background:transparent;/);
   assert.match(html, /\.section-hdr h3\{[^}]*color:var\(--navy\);/);
   assert.match(html, /\.section-hdr:not\(\.collapsed\) \.section-toggle\{color:var\(--navy\);\}/);
@@ -94,7 +95,7 @@ test('CSV Import uses the same quiet row treatment as the other accordion sectio
 test('the expanded sidebar header receives a subtle gold accent and light tint', () => {
   const rule = extract(/\.section-hdr:not\(\.collapsed\)\{[^}]+\}/, 'expanded sidebar header highlight');
   assert.match(rule, /box-shadow:inset 2px 0 0 var\(--gold\)/);
-  assert.match(rule, /background:#fbfaf7/);
+  assert.match(rule, /background:var\(--surface-subtle\)/);
   assert.doesNotMatch(rule, /(?:padding|margin|border(?:-width)?|height):/);
 });
 
@@ -103,12 +104,12 @@ test('the expanded sidebar header keeps icon and chevron restrained in navy', ()
   assert.match(html, /\.section-hdr:not\(\.collapsed\) \.section-toggle\{color:var\(--navy\);\}/);
 });
 
-test('an empty builder opens CSV Import and collapses every other section without overriding loaded-offer state', () => {
+test('an empty builder opens Paste Offer and collapses every other section without overriding loaded-offer state', () => {
   const { context, sections } = createHarness();
   context.toggleSec(sections[4].hdr);
   assert.deepEqual(openKeys(sections), ['hero-image']);
   assert.equal(context.openCsvImportWhenNoOffersLoaded(), true);
-  assert.deepEqual(openKeys(sections), ['csv-import']);
+  assert.deepEqual(openKeys(sections), ['paste-raw-offer']);
 
   context.toggleSec(sections[4].hdr);
   context.offers = [{ name: 'Loaded cruise' }];
@@ -116,9 +117,9 @@ test('an empty builder opens CSV Import and collapses every other section withou
   assert.deepEqual(openKeys(sections), ['hero-image']);
 });
 
-test('session hydration forces Campaign Import open for empty restored sessions but first-run startup only opens without saved sessions', () => {
-  assert.match(html, /function applySessionPayload\(data\)\{[\s\S]*?autosaveHydrating = false;\s*openCsvImportWhenNoOffersLoaded\(\);\s*refreshAfterRestore\(\);/);
-  assert.match(html, /function initBuilderApp\(\)\{[\s\S]*?refreshOfferUi\(\{utm:true,spell:true,autosave:false\}\);\s*if\(!savedSessionAvailable\) openCsvImportWhenNoOffersLoaded\(\);/);
+test('session hydration preserves restored sidebar state while first-run startup opens Paste Offer without saved sessions', () => {
+  assert.doesNotMatch(extractFunction('applySessionPayload'), /openCsvImportWhenNoOffersLoaded|applyNewCampaignSidebarDefaults/);
+  assert.match(html, /function initBuilderApp\(\)\{[\s\S]*?refreshOfferUi\(\{utm:true,spell:true,autosave:false\}\);\s*if\(!savedSessionAvailable\) applyNewCampaignSidebarDefaults\(\);/);
 });
 
 test('every sidebar section opens normally and closes the previously expanded section', () => {
@@ -219,8 +220,7 @@ function extractFunction(name) {
 }
 
 test('sidebar polish adds subtle spacing, compact active-offer context and professional empty states', () => {
-  assert.match(html, /\.section\{margin-bottom:8px;border:0;border-bottom:1px solid rgba\(216,213,206,\.62\);/);
-  assert.match(html, /\.section\{margin-bottom:0;border:0;border-bottom:1px solid rgba\(216,213,206,\.82\);/);
+  assert.match(html, /\.section\{margin-bottom:0;border:0;border-bottom:1px solid rgba\(216,213,206,\.72\);/);
   assert.match(html, /<div class="sidebar-section-label">Import<\/div>/);
   assert.match(html, /<div class="sidebar-section-label">Assets<\/div>/);
   assert.match(html, /<div class="sidebar-section-label">Utilities<\/div>/);
@@ -229,7 +229,7 @@ test('sidebar polish adds subtle spacing, compact active-offer context and profe
   assert.match(html, /id="active-offer-label" aria-live="polite">Editing Offer 1 of 4/);
   assert.match(html, /function updateActiveOfferLabel\(\)\{[\s\S]*?label\.textContent=`Editing Offer \$\{cur\+1\} of 4`;/);
   assert.match(html, /<div id="sheets-status" aria-live="polite"><\/div>/);
-  assert.match(html, /<div id="utm-visible-output" class="generated-utm-empty empty-state" role="status"><strong>No UTMs generated yet\.<\/strong>Add offer details and a landing page to generate tracking links\.<\/div>/);
+  assert.match(html, /<div id="utm-visible-output" class="generated-utm-empty empty-state" role="status"><strong>No tracking links yet\.<\/strong>Add offer details and a landing page to create tracking links\.<\/div>/);
 });
 
 test('campaign library removes dashboard count badges while refresh keeps lists current', () => {

@@ -47,3 +47,17 @@ test('transient reset invalidates stale preview frames and import/parser review 
   assert.match(transient, /clearActiveEditorDomFields\(\);[\s\S]*?clearCurrentPreviewOutputState\(\);/);
   assert.match(transient, /resetPasteOfferState\(\);[\s\S]*?resetMultiOfferState\(\);[\s\S]*?resetPoaSuggestionState\(\);/);
 });
+
+test('new Cruise and Package campaigns initialise Paste Offer open and Import Offer collapsed from canonical blank session', () => {
+  assert.match(extractFunction('applyNewCampaignSidebarDefaults'), /sec\.dataset\.sectionKey !== "paste-raw-offer"/);
+  assert.match(html, /function resetBuilderToBlankSession[\s\S]*?applyNewCampaignSidebarDefaults\(\);[\s\S]*?refreshAfterRestore\(\);/);
+  assert.match(extractFunction('resetBuilderToFreshSession'), /resetBuilderToBlankSession\(type, \{feedback:"New campaign ready", clearSavedSession:true\}\)/);
+  assert.match(extractFunction('newCampaign'), /const campaignType=normaliseCampaignType\(type\);[\s\S]*?resetBuilderToFreshSession\(campaignType\)/);
+  assert.match(html, /window\.openBuilderFromSplashCampaignType = function\(type,event\)\{[\s\S]*?resetBuilderToBlankSession\(type\);/);
+});
+
+test('restored sessions do not receive new-campaign sidebar defaults', () => {
+  const restore = extractFunction('applySessionPayload');
+  assert.match(restore, /applySectionCollapseState\(data\.sectionState, data\.openSectionKey\);/);
+  assert.doesNotMatch(restore, /applyNewCampaignSidebarDefaults|openCsvImportWhenNoOffersLoaded/);
+});

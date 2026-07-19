@@ -1028,42 +1028,12 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
   <div class="sb-body">
     <div class="lock-ind" id="lock-ind">Card locked — unlock it to edit</div>
 
-    <div class="sidebar-section-label">Import</div>
-    <div class="section csv-core-section" data-section-key="csv-import">
-      <div class="section-hdr" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>Import Campaign</h3><span class="section-toggle">▾</span>
-      </div>
-      <div class="section-body csv-import-layout">
-          <div class="import-builder-menu" aria-label="Import builder type">
-            <button class="import-builder-item active" type="button" data-import-builder="cruise">Cruise</button>
-            <button class="import-builder-item" type="button" data-import-builder="package">Package</button>
-            <button class="import-builder-item" type="button" data-import-builder="touring">Touring</button>
-            <button class="import-builder-item coming-soon" type="button" data-import-builder="city" aria-disabled="true">City</button>
-            <button class="import-builder-item coming-soon" type="button" data-import-builder="luxury" aria-disabled="true">Luxury</button>
-          </div>
-          <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values,.json,application/json" style="display:none">
-          <div class="field">
-            <label for="sheets-url">Google Sheet URL</label>
-            <input id="sheets-url" type="url" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
-          </div>
-          <button class="abtn csv-sheet-btn" onclick="loadFromSheets()">Connect Google Sheet</button>
-          <div class="csv-import-separator">or</div>
-          <div class="csv-import-quick-actions">
-            <button class="abtn csv-file-btn" onclick="triggerCsvFilePicker()">Open Campaign…</button>
-            <button class="abtn csv-file-btn" onclick="openManageCampaignsModal()">Recent Campaigns</button>
-          </div>
-          <div id="sheets-status" aria-live="polite"></div>
-
-      </div>
-    </div>
-
-
     <!-- ── PASTE OFFER ── -->
     <div class="section" data-section-key="paste-raw-offer">
-      <div class="section-hdr collapsed" onclick="toggleSec(this)">
+      <div class="section-hdr" onclick="toggleSec(this)">
         <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M11 14h10"></path><path d="m17 10 4 4-4 4"></path><path d="M9 5V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"></path><path d="M17 5h1a2 2 0 0 1 2 2v3"></path><path d="M9 18H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1"></path><rect width="8" height="5" x="8" y="4" rx="1"></rect></svg>Paste Offer</h3><span class="section-toggle">▾</span>
       </div>
-      <div class="section-body parse-area hidden">
+      <div class="section-body parse-area">
         <div class="vision-method-tabs" role="tablist" aria-label="Load offer method">
           <button type="button" class="vision-method-tab active" id="paste-method-tab" onclick="setOfferImportMethod('paste')">Paste Offer</button>
           <button type="button" class="vision-method-tab" id="vision-method-tab" onclick="setOfferImportMethod('vision')">Screenshot Import</button>
@@ -1093,17 +1063,35 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
       </div>
     </div>
 
-    <!-- ── MULTI OFFER IMPORT ── -->
-    <div class="section" data-section-key="multi-offer-import">
+    <div class="sidebar-section-label">Import</div>
+    <div class="section csv-core-section" data-section-key="csv-import">
       <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M4 4h16"></path><path d="M4 10h16"></path><path d="M4 16h10"></path><path d="m16 17 2 2 4-4"></path></svg>Import Multiple Offers</h3><span class="section-toggle">▾</span>
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>Import Offer</h3><span class="section-toggle">▾</span>
       </div>
-      <div class="section-body parse-area hidden">
-        <textarea id="multi-offer-paste" spellcheck="true" oninput="handleMultiOfferInput(event)" onkeydown="handleMultiOfferKeydown(event)" placeholder="Paste up to four offers here…" aria-label="Multi Offer Import"></textarea>
-        <button class="parse-btn" onclick="loadAllOffers()"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h6"></path></svg>Load Offers<span hidden>Load All Offers</span></button>
-        <div class="parse-result" id="multi-offer-result"></div>
+      <div class="section-body csv-import-layout hidden">
+          <div class="import-builder-menu" aria-label="Import builder type">
+            <button class="import-builder-item active" type="button" data-import-builder="cruise">Cruise</button>
+            <button class="import-builder-item" type="button" data-import-builder="package">Package</button>
+            <button class="import-builder-item" type="button" data-import-builder="touring">Touring</button>
+            <button class="import-builder-item coming-soon" type="button" data-import-builder="city" aria-disabled="true">City</button>
+            <button class="import-builder-item coming-soon" type="button" data-import-builder="luxury" aria-disabled="true">Luxury</button>
+          </div>
+          <input type="file" id="sheets-file" accept=".csv,text/csv,.tsv,text/tab-separated-values,.json,application/json" style="display:none">
+          <div class="field">
+            <label for="sheets-url">Google Sheet URL</label>
+            <input id="sheets-url" type="url" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
+          </div>
+          <button class="abtn csv-sheet-btn" onclick="loadFromSheets()">Connect Google Sheet</button>
+          <div class="csv-import-separator">or</div>
+          <div class="csv-import-quick-actions">
+            <button class="abtn csv-file-btn" onclick="triggerCsvFilePicker()">Open Campaign…</button>
+            <button class="abtn csv-file-btn" onclick="openManageCampaignsModal()">Recent Campaigns</button>
+          </div>
+          <div id="sheets-status" aria-live="polite"></div>
+
       </div>
     </div>
+
 
     <!-- ── OFFER DETAILS ── -->
     <div class="section" data-section-key="offer-details">
@@ -1201,6 +1189,82 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
           <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px;">Export file names:</div>
           <div id="filename-list"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- ── MULTI OFFER IMPORT ── -->
+    <div class="section" data-section-key="multi-offer-import">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M4 4h16"></path><path d="M4 10h16"></path><path d="M4 16h10"></path><path d="m16 17 2 2 4-4"></path></svg>Import Multiple Offers</h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body parse-area hidden">
+        <textarea id="multi-offer-paste" spellcheck="true" oninput="handleMultiOfferInput(event)" onkeydown="handleMultiOfferKeydown(event)" placeholder="Paste up to four offers here…" aria-label="Multi Offer Import"></textarea>
+        <button class="parse-btn" onclick="loadAllOffers()"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h6"></path></svg>Load Offers<span hidden>Load All Offers</span></button>
+        <div class="parse-result" id="multi-offer-result"></div>
+      </div>
+    </div>
+
+    <!-- ── AI COPY ── -->
+
+    <div class="section" data-section-key="ai-copy">
+      <div class="section-hdr collapsed" onclick="toggleSec(this)">
+        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M12 3l1.7 5.1L19 10l-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9L12 3z"></path><path d="M5 15l.8 2.2L8 18l-2.2.8L5 21l-.8-2.2L2 18l2.2-.8L5 15z"></path><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8L19 14z"></path></svg>AI Copy</h3><span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body hidden">
+        <div class="field">
+          <label for="ai-prompt-type">Prompt Type</label>
+          <select id="ai-prompt-type">
+            <option value="subject-lines">Subject Lines</option>
+            <option value="preview-text">Preview Text</option>
+            <option value="subject-preview">Subject + Preview</option>
+            <option value="copy-pack-campaign">Copy Pack (Campaign)</option>
+            <option value="taglines">Taglines</option>
+            <option value="short-description">Short Description</option>
+            <option value="long-description">Long Description</option>
+            <option value="email-intro">Email Intro</option>
+            <option value="social-caption">Social Caption</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="ai-generate-scope">Generate For</label>
+          <select id="ai-generate-scope" onchange="updateAiCopyCampaignContextPreview()">
+            <option value="current-card" selected>Current Card</option>
+            <option value="all-loaded-cards">All Ready Cards</option>
+            <option value="campaign-summary">Campaign Summary</option>
+          </select>
+          <div id="ai-campaign-context-preview" class="ai-campaign-context-preview" aria-live="polite"></div>
+        </div>
+        <div class="field">
+          <label for="ai-prompt-tone">Tone</label>
+          <select id="ai-prompt-tone">
+            <option value="Direct" selected>Direct</option>
+            <option value="Premium">Premium</option>
+            <option value="Luxury">Luxury</option>
+            <option value="Editorial">Editorial</option>
+            <option value="Urgent">Urgent</option>
+            <option value="Friendly">Friendly</option>
+          </select>
+        </div>
+        <button class="abtn navy" type="button" style="width:100%;margin-bottom:6px;" onclick="generateAiCopyPrompt()">Generate Prompt</button>
+        <div class="field">
+          <label for="ai-prompt-output">Prompt Output</label>
+          <textarea id="ai-prompt-output" readonly rows="12" placeholder="Your writing prompt will appear here."></textarea>
+        </div>
+        <div class="utm-btn-row ai-prompt-actions">
+          <button class="abtn btn-compact" type="button" onclick="copyAiCopyPrompt()">
+            <svg class="ai-action-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="9" y="9" width="10" height="10" rx="1.5"></rect><path d="M6 15H5.5A1.5 1.5 0 0 1 4 13.5v-8A1.5 1.5 0 0 1 5.5 4h8A1.5 1.5 0 0 1 15 5.5V6"></path></svg>
+            <span>Copy Prompt</span>
+          </button>
+          <button class="abtn btn-compact" type="button" onclick="openAiCopyPromptInChatGPT()">
+            <svg class="ai-action-icon chatgpt-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8.1 4.7a5 5 0 0 1 7.8 1.4 5 5 0 0 1 2.6 7.3 5 5 0 0 1-5.2 5.8 5 5 0 0 1-7.8-1.4 5 5 0 0 1-2.6-7.3 5 5 0 0 1 5.2-5.8z"></path><path d="M8 14.9V8.7l5.4-3.1"></path><path d="M6.2 10.4l5.4 3.1 5.4-3.1"></path><path d="M16 9.1v6.2l-5.4 3.1"></path></svg>
+            <span>Open ChatGPT</span>
+          </button>
+          <button class="abtn btn-compact" type="button" onclick="clearAiCopyPrompt()">
+            <svg class="ai-action-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M18 6L6 18"></path><path d="M6 6l12 12"></path></svg>
+            <span>Clear</span>
+          </button>
+        </div>
+        <div id="ai-prompt-copy-status" style="font-size:9px;color:var(--green);margin-top:4px;min-height:12px;" aria-live="polite"></div>
       </div>
     </div>
 
@@ -1350,70 +1414,6 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
     </div>
 
 
-
-    <!-- ── AI COPY ── -->
-
-    <div class="section" data-section-key="ai-copy">
-      <div class="section-hdr collapsed" onclick="toggleSec(this)">
-        <h3><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M12 3l1.7 5.1L19 10l-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9L12 3z"></path><path d="M5 15l.8 2.2L8 18l-2.2.8L5 21l-.8-2.2L2 18l2.2-.8L5 15z"></path><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8L19 14z"></path></svg>AI Copy</h3><span class="section-toggle">▾</span>
-      </div>
-      <div class="section-body hidden">
-        <div class="field">
-          <label for="ai-prompt-type">Prompt Type</label>
-          <select id="ai-prompt-type">
-            <option value="subject-lines">Subject Lines</option>
-            <option value="preview-text">Preview Text</option>
-            <option value="subject-preview">Subject + Preview</option>
-            <option value="copy-pack-campaign">Copy Pack (Campaign)</option>
-            <option value="taglines">Taglines</option>
-            <option value="short-description">Short Description</option>
-            <option value="long-description">Long Description</option>
-            <option value="email-intro">Email Intro</option>
-            <option value="social-caption">Social Caption</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="ai-generate-scope">Generate For</label>
-          <select id="ai-generate-scope" onchange="updateAiCopyCampaignContextPreview()">
-            <option value="current-card" selected>Current Card</option>
-            <option value="all-loaded-cards">All Ready Cards</option>
-            <option value="campaign-summary">Campaign Summary</option>
-          </select>
-          <div id="ai-campaign-context-preview" class="ai-campaign-context-preview" aria-live="polite"></div>
-        </div>
-        <div class="field">
-          <label for="ai-prompt-tone">Tone</label>
-          <select id="ai-prompt-tone">
-            <option value="Direct" selected>Direct</option>
-            <option value="Premium">Premium</option>
-            <option value="Luxury">Luxury</option>
-            <option value="Editorial">Editorial</option>
-            <option value="Urgent">Urgent</option>
-            <option value="Friendly">Friendly</option>
-          </select>
-        </div>
-        <button class="abtn navy" type="button" style="width:100%;margin-bottom:6px;" onclick="generateAiCopyPrompt()">Generate Prompt</button>
-        <div class="field">
-          <label for="ai-prompt-output">Prompt Output</label>
-          <textarea id="ai-prompt-output" readonly rows="12" placeholder="Your writing prompt will appear here."></textarea>
-        </div>
-        <div class="utm-btn-row ai-prompt-actions">
-          <button class="abtn btn-compact" type="button" onclick="copyAiCopyPrompt()">
-            <svg class="ai-action-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="9" y="9" width="10" height="10" rx="1.5"></rect><path d="M6 15H5.5A1.5 1.5 0 0 1 4 13.5v-8A1.5 1.5 0 0 1 5.5 4h8A1.5 1.5 0 0 1 15 5.5V6"></path></svg>
-            <span>Copy Prompt</span>
-          </button>
-          <button class="abtn btn-compact" type="button" onclick="openAiCopyPromptInChatGPT()">
-            <svg class="ai-action-icon chatgpt-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8.1 4.7a5 5 0 0 1 7.8 1.4 5 5 0 0 1 2.6 7.3 5 5 0 0 1-5.2 5.8 5 5 0 0 1-7.8-1.4 5 5 0 0 1-2.6-7.3 5 5 0 0 1 5.2-5.8z"></path><path d="M8 14.9V8.7l5.4-3.1"></path><path d="M6.2 10.4l5.4 3.1 5.4-3.1"></path><path d="M16 9.1v6.2l-5.4 3.1"></path></svg>
-            <span>Open ChatGPT</span>
-          </button>
-          <button class="abtn btn-compact" type="button" onclick="clearAiCopyPrompt()">
-            <svg class="ai-action-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M18 6L6 18"></path><path d="M6 6l12 12"></path></svg>
-            <span>Clear</span>
-          </button>
-        </div>
-        <div id="ai-prompt-copy-status" style="font-size:9px;color:var(--green);margin-top:4px;min-height:12px;" aria-live="polite"></div>
-      </div>
-    </div>
 
     <div class="sidebar-section-label">Utilities</div>
     <div class="section" data-section-key="campaign-summary">
@@ -2643,13 +2643,16 @@ function handleEmptyOfferStateKeydown(event){
   event.preventDefault();
   openCampaignImportFromEmptyState();
 }
-function openCsvImportWhenNoOffersLoaded(){
-  if(offers.some(isOfferLoaded)) return false;
+function applyNewCampaignSidebarDefaults(){
   document.querySelectorAll(".section[data-section-key]").forEach(sec=>{
     const hdr = sec.querySelector(".section-hdr");
-    if(hdr) setSectionCollapsedByHeader(hdr, sec.dataset.sectionKey !== "csv-import");
+    if(hdr) setSectionCollapsedByHeader(hdr, sec.dataset.sectionKey !== "paste-raw-offer");
   });
   return true;
+}
+function openCsvImportWhenNoOffersLoaded(){
+  if(offers.some(isOfferLoaded)) return false;
+  return applyNewCampaignSidebarDefaults();
 }
 function collapseCsvImportAfterCampaignLoaded(){
   if(!offers.some(isOfferLoaded)) return false;
@@ -6382,7 +6385,6 @@ function applySessionPayload(data){
   document.querySelectorAll('.otab').forEach((t,idx)=>t.classList.toggle('active', idx===cur));
   updateOfferPill();
   autosaveHydrating = false;
-  openCsvImportWhenNoOffersLoaded();
   refreshAfterRestore();
 }
 function refreshAfterRestore(){
@@ -6694,7 +6696,7 @@ function resetBuilderToBlankSession(type=currentCampaignType, options={}){
     document.querySelectorAll('.otab').forEach((t,idx)=>t.classList.toggle('active', idx===0));
     if(typeof updateOfferPill === "function") updateOfferPill();
     collapseBuilderSections();
-    openCsvImportWhenNoOffersLoaded();
+    applyNewCampaignSidebarDefaults();
     refreshAfterRestore();
     showSessionFeedback(opts.feedback || "",false);
     if(opts.clearSavedSession && typeof confirmClearSavedSession==="function") confirmClearSavedSession();
@@ -12939,7 +12941,7 @@ async function initBuilderApp(){
     const restoredSession=shouldRestoreSession ? restoreSavedSessionOnStartup() : false;
     if(!restoredSession){
       refreshOfferUi({utm:true,spell:true,autosave:false});
-      if(!savedSessionAvailable) openCsvImportWhenNoOffersLoaded();
+      if(!savedSessionAvailable) applyNewCampaignSidebarDefaults();
     }
     window.addEventListener("resize",rv);
     ensureAutosaveInterval();
