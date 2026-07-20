@@ -836,7 +836,8 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 
 /* Package card renderer */
 .pc{--package-accent:#092a44;--package-footer:#092a44;width:1200px;min-width:1200px;max-width:1200px;height:885px;box-sizing:border-box;background:#fff;color:#000;font-family:'Montserrat',sans-serif;font-weight:300;position:relative;overflow:hidden;display:block;}
-.pc .pkg-head{height:135px;background:var(--package-accent);display:flex;align-items:center;justify-content:center;position:relative;}
+.pc .pkg-head{height:135px;background:var(--package-accent);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+.pc .pkg-skin-header,.pc .pkg-skin-footer{width:100%;height:100%;object-fit:cover;display:block;}
 .pc.pkg-jet2 .pkg-head{height:214px;flex-direction:column;gap:28px;}
 .pc .pkg-head-logo{width:300px;max-height:84px;object-fit:contain;filter:brightness(0) invert(1);}
 .pc.pkg-jet2 .pkg-head-logo{width:300px;max-height:78px;}
@@ -865,7 +866,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .pc .pkg-price-label{font-size:25px;line-height:1.2;color:#000;margin-top:12px;letter-spacing:.06em;}
 .pc .pkg-basis{font-size:22px;line-height:1.25;color:#777;margin-top:4px;letter-spacing:.04em;white-space:nowrap;}
 .pc.pkg-jet2 .pkg-basis{font-size:27px;}
-.pc .pkg-footer{height:140px;background:var(--package-footer);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;}
+.pc .pkg-footer{height:140px;background:var(--package-footer);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;overflow:hidden;}
 .pc .pkg-cta-main{font-size:40px;line-height:1.05;letter-spacing:.03em;}
 .pc .pkg-cta-sub{font-size:25px;line-height:1.1;opacity:.88;margin-top:6px;}
 .cc{width:1200px;min-width:1200px;max-width:1200px;box-sizing:border-box;font-family:'Montserrat',sans-serif;font-weight:300;background:var(--operator-bg,var(--navy));display:block;}
@@ -9089,21 +9090,21 @@ function parseJet2DawsonQuote(lines,txt,parsed){
   const date=txt.match(/\b(?:\d{1,2}\s*nights?\s+from\s+)?(\d{1,2})(st|nd|rd|th)?\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\s+(\d{4})\b/i);
   if(date){ const mn=new Date(`${date[3]} 1, ${date[4]}`); parsed.day=date[2]?`${Number(date[1])}${date[2].toLowerCase()}`:String(Number(date[1])); parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+date[4]; score+=8; }
   const pax=txt.match(/\b(\d+)\s*x?\s*Adults?(?:\s*(?:&|and)\s*(\d+)\s*x?\s*Child(?:ren)?)?/i);
-  if(pax){ parsed.adults=pax[1]; if(pax[2]) parsed.children=pax[2]; parsed.basis=`Based on ${pax[1]} Adult${Number(pax[1])===1?"":"s"}${pax[2]?` & ${pax[2]} Child${Number(pax[2])===1?"":"ren"}`:""} Sharing`; score+=8; }
+  if(pax){ parsed.adults=pax[1]; parsed.children=pax[2]||"0"; parsed.basis=`Based on ${pax[1]} Adult${Number(pax[1])===1?"":"s"}${pax[2]?` & ${pax[2]} Child${Number(pax[2])===1?"":"ren"}`:""} Sharing`; score+=8; }
   const flightLine=lines.find(line=>/\b(Newcastle|Leeds Bradford|Manchester|Birmingham|Glasgow|Edinburgh|London)\s+[A-Z]{3}\s+to\s+/i.test(line));
   if(flightLine){ parsed.sailingFrom=titleCasePackageValue((flightLine.match(/\b(Newcastle|Leeds Bradford|Manchester|Birmingham|Glasgow|Edinburgh|London)\b/i)||[])[1]); score+=6; }
   const incl=[];
-  if(/hand\s+baggage/i.test(txt)) incl.push(/\b\d+\s*x\s*10kg\s*Hand\s+Baggage/i.test(txt)?(txt.match(/\b\d+\s*x\s*10kg\s*Hand\s+Baggage/i)||[])[0]:"Hand Baggage Included");
-  if(/bag\s+allowance/i.test(txt)) incl.push(/\b\d+\s*x\s*22kg\s*Bag\s+Allowance/i.test(txt)?(txt.match(/\b\d+\s*x\s*22kg\s*Bag\s+Allowance/i)||[])[0]:"Hold Luggage Included");
-  if(/coach\s+transfers/i.test(txt)) incl.push("Coach Transfers");
+  if(/hand\s+baggage/i.test(txt)){ const m=(txt.match(/\b(\d+\s*x\s*10kg)\s*Hand\s+Baggage/i)||[])[1]; parsed.handLuggage=m?m.replace(/\s+/g," "):"Hand baggage included"; incl.push(parsed.handLuggage); }
+  if(/bag\s+allowance/i.test(txt)){ const m=(txt.match(/\b(\d+\s*x\s*22kg)\s*Bag\s+Allowance/i)||[])[1]; parsed.holdLuggage=m?m.replace(/\s+/g," "):"Hold luggage included"; incl.push(parsed.holdLuggage); }
+  if(/coach\s+transfers/i.test(txt)){ parsed.transfers="Coach transfers included"; incl.push(parsed.transfers); }
   if(incl.length){ parsed.incl=incl.join(" · "); score+=8; }
   const room=lines.find(line=>/^\d+\s*x\s+/i.test(line)&&/\b(?:room|studio|apartment|suite|villa)\b/i.test(line)); if(room) parsed.roomType=room.replace(/^\d+\s*x\s*/i,"").trim();
   const total=(txt.match(/payable\s+to\s+your\s+travel\s+agent[\s\S]{0,80}?£\s*([\d,]+)/i)||[])[1];
   const pp=(txt.match(/price\s+per\s+person[\s\S]{0,80}?£\s*([\d,]+)/i)||[])[1];
   if(total){ parsed.totalPrice=total.replace(/,/g,""); score+=10; }
   if(pp){ parsed.price=pp.replace(/,/g,"")+"pp"; parsed.leadPrice=parsed.price; score+=10; }
-  parsed.priceLabel="Total Price";
-  const tax=txt.match(/approximately\s+£\s*([\d,]+)\s+in\s+tourist\s+tax/i); if(tax) parsed.resortFee=tax[1].replace(/,/g,"");
+  parsed.priceLabel=Number(parsed.children||0)>0?"Total Price":"";
+  const tax=txt.match(/approximately\s+£\s*([\d,]+)\s+in\s+tourist\s+tax/i); if(tax){ parsed.resortFee=tax[1].replace(/,/g,""); parsed.localFeeAmount=parsed.resortFee; parsed.localFeeType="total"; parsed.localFeeApproximate="true"; }
   const revised=txt.match(/total\s+holiday\s+cost\s+is\s+£\s*([\d,]+)/i); if(revised) parsed.totalHolidayCostIncludingFee=revised[1].replace(/,/g,"");
   return score;
 }
@@ -9133,7 +9134,7 @@ function parsePackageOfferText(raw,options){
   const incl=[]; if(/luggage\s*(?:&|and)\s*transfers\s+included/i.test(txt)) incl.push("Luggage & Transfers Included"); else { if(/hand\s+luggage\s+included|hand\s+baggage/i.test(txt)) incl.push("Hand Luggage Included"); else if(/luggage\s+included/i.test(txt)) incl.push("Luggage Included"); if(/coach\s+transfers/i.test(txt)) incl.push("Coach Transfers"); else if(/transfers\s+included/i.test(txt)) incl.push("Transfers Included"); }
   if(incl.length&&!parsed.incl){ parsed.incl=incl.join(" · "); score+=6; }
   const sharing=extractPackageSharingBasis(txt); if(sharing&&!parsed.basis){ parsed.basis=sharing; const m=sharing.match(/(\d+) Adults?(?: & (\d+) Child(?:ren)?)?/); if(m){ parsed.adults=m[1]; if(m[2]) parsed.children=m[2]; } score+=6; }
-  const prices=extractPackagePrices(txt); if(prices.totalPrice&&!parsed.totalPrice){ parsed.totalPrice=prices.totalPrice; parsed.price=prices.leadPrice||prices.totalPrice; parsed.priceLabel="Total Price"; score+=10; } if(prices.leadPrice&&!parsed.leadPrice) parsed.leadPrice=prices.leadPrice; if(prices.resortFee&&!parsed.resortFee) parsed.resortFee=prices.resortFee;
+  const prices=extractPackagePrices(txt); if(prices.totalPrice&&!parsed.totalPrice){ parsed.totalPrice=prices.totalPrice; parsed.price=prices.leadPrice||prices.totalPrice; parsed.priceLabel=Number(parsed.children||0)>0?"Total Price":""; score+=10; } if(prices.leadPrice&&!parsed.leadPrice) parsed.leadPrice=prices.leadPrice; if(prices.resortFee&&!parsed.resortFee) parsed.resortFee=prices.resortFee;
   if(/free\s+child\s+place/i.test(txt)){ parsed.freeChildPlace="true"; parsed.tags="Free Child Place"; score+=4; }
   if(parsed.children && Number(parsed.children)>0){ parsed.templateVariant=parsed.freeChildPlace?"family-free-child":"family"; } else parsed.templateVariant="couples";
   const confidence=score>=62?'high':score>=35?'partial':'low';
@@ -9151,7 +9152,7 @@ function renderPackageIntelligencePanel(result,rawText){
   const el=document.getElementById("offer-intelligence"); if(!el) return;
   const p=(result&&result.parsed)||{}; const rows=[]; const add=(l,v)=>{ if(String(v||"").trim()) rows.push(`<div><strong>${escapeParserIntelligenceHtml(l)}:</strong> ${escapeParserIntelligenceHtml(v)}</div>`); };
   const op=(PACKAGE_OPERATORS[p.operatorKey]||{}).name||p.operatorKey;
-  add("Operator",op); add("Destination",p.name); add("Hotel",p.ship); add("Nights",p.nights); add("Board Basis",p.boardlbl||p.board); add("Departure Date",[p.day,p.month].filter(Boolean).join(" ")); add("Departure Airport",p.sailingFrom); add("Luggage & Transfers",p.incl); add("Total Price",formatPackageMoney(p.totalPrice||p.price)+(String(p.totalPrice||p.price).match(/pp/i)?"pp":"")); add("Sharing Basis",p.basis);
+  add("Operator",op); add("Destination",p.name); add("Hotel",p.ship); add("Nights",p.nights); add("Board Basis",p.boardlbl||p.board); add("Departure Date",[p.day,p.month].filter(Boolean).join(" ")); add("Departure Airport",p.sailingFrom); add("Room Type",p.roomType); add("Adults",p.adults); add("Children",p.children); add("Hand Luggage",p.handLuggage); add("Hold Luggage",p.holdLuggage); add("Transfers",p.transfers); add("Luggage & Transfers",p.incl); add("Price per person",formatPackageMoney(p.leadPrice||p.price)+(String(p.leadPrice||p.price).match(/pp/i)?"pp":"")); add("Total Price",formatPackageMoney(p.totalPrice)); add("Local fee",p.localFeeAmount?`${p.localFeeApproximate?"Approximately ":""}${formatPackageMoney(p.localFeeAmount)} ${p.localFeeType||""}`:formatPackageMoney(p.resortFee)); add("Free Child Place",p.freeChildPlace==="true"?"Yes":"No"); add("Sharing Basis",p.basis);
   const missing=["Operator","Destination or Hotel","Nights or Date","Price"].filter(label=>label==="Operator"?!p.operatorKey:label==="Destination or Hotel"?!(p.name||p.ship):label==="Nights or Date"?!(p.nights||(p.day&&p.month)):!(p.totalPrice||p.price));
   const score=clampParseConfidenceScore((result&&result.score)||0);
   el.innerHTML=`<div class="parser-intelligence-panel"><div class="parser-intelligence-heading">PACKAGE SUMMARY</div><div>Strong match</div><div>${rows.length} Fields Detected</div><div>${missing.length} Suggestions Available</div><div>Quality Score: ${score}</div><div class="parser-intelligence-heading">DETECTED</div>${rows.join("")}</div>`;
@@ -10052,7 +10053,7 @@ function prepareOfferSlotForParsedOffer(parsed){
   return true;
 }
 function applyParsedOffer(){if(!pendingParseResult) return; if(typeof isOfferLocked==="function" && isOfferLocked(cur)){ setParseStatus(getLockedOfferMessage(cur),"low"); cancelParsedOffer(); return; } const {parsed,confidence,rawText}=pendingParseResult; const isPackage=String((parsed&&parsed.offerType)||"").toLowerCase()==="package"; const hasParsedFields=isPackage ? canApplyParsedPackageOffer(parsed) : ['price','day','month','nights','board','ports'].some(k=>parsed[k]!==undefined&&parsed[k]!==''); if(!hasParsedFields){ setParseStatus(isPackage?"Not enough Package offer details to load this offer.":'No offer fields detected',isPackage?'partial':'low'); cancelParsedOffer(); return; } if(!isPackage&&typeof canApplyParsedCruiseOffer==="function"&&!canApplyParsedCruiseOffer(parsed)){ setParseStatus("Not enough offer details to load this Cruise offer.","partial"); cancelParsedOffer(); return; } if(!prepareOfferSlotForParsedOffer(parsed)){ setParseStatus('No offer fields detected','low'); cancelParsedOffer(); return; } const pasteSourceText=rawText||((document.getElementById("raw-paste")||{}).value||""); if(pasteSourceText) offers[cur]._rawPastedOfferText=pasteSourceText; if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(cur); if(isPackage){ offers[cur]={[typeof PERSISTED_PASTE_OFFER_KEY!=="undefined"?PERSISTED_PASTE_OFFER_KEY:"_rawPastedOfferText"]:pasteSourceText}; } const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offers[cur].operator)){ continue; } const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; offers[cur]._tagsManualOverride=false; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
-  if(isPackage){ offers[cur].offerType="package"; offers[cur].operator=parsed.operatorKey||parsed.operator||offers[cur].operator||""; ["totalPrice","resortFee","adults","children","freeChildPlace","priceLabel","leadPrice"].forEach(k=>{ if(parsed[k]!==undefined&&parsed[k]!=="") offers[cur][k]=String(parsed[k]); }); }
+  if(isPackage){ offers[cur].offerType="package"; offers[cur].operator=parsed.operatorKey||parsed.operator||""; ["totalPrice","resortFee","adults","children","freeChildPlace","priceLabel","leadPrice","roomType","handLuggage","holdLuggage","transfers","localFeeAmount","localFeeType","localFeeApproximate"].forEach(k=>{ if(parsed[k]!==undefined&&parsed[k]!=="") offers[cur][k]=String(parsed[k]); }); }
   if(parsed.departurePort) offers[cur].departurePort=String(parsed.departurePort);
   if(parsed._poaDepartureAirport) offers[cur]._poaDepartureAirport=String(parsed._poaDepartureAirport);
   if(!offers[cur]._sailingFromManual && typeof applyAutoSailingFromToOffer==="function"){
@@ -10600,9 +10601,9 @@ function escapeCardInclusionHtml(value){
 }
 
 const PACKAGE_OPERATORS = {
-  tui: {name:"TUI", aliases:["tui","tui holidays"], logo:"assets/operator-logos/tui-logo.png", colours:{accent:"#082b46", footer:"#082b46"}, ctaText:"Call us for more info", pricingBehaviour:"lead-resort-total", options:{layout:"tui", defaultFeatures:["Beach Holiday"]}},
-  jet2: {name:"Jet2holidays", aliases:["jet2holidays","jet2 holidays","jet2"], logo:"assets/operator-logos/jet2-holidays-logo.png", colours:{accent:"#c90000", footer:"#082b46"}, ctaText:"Start your booking", pricingBehaviour:"total-first", options:{layout:"jet2", defaultFeatures:["Free Child Place","Family"]}},
-  easyjet: {name:"easyJet holidays", aliases:["easyjet holidays","easyjet holidays","easyjet"], logo:"assets/operator-logos/easyjet-logo.png", colours:{accent:"linear-gradient(90deg,#ff7a00,#ff2f1f)", footer:"linear-gradient(90deg,#ff7a00,#ff2f1f)"}, ctaText:"Call us for more info", pricingBehaviour:"lead-resort-total", options:{layout:"easyjet", defaultFeatures:["City Break"]}}
+  tui: {name:"TUI", aliases:["tui","tui holidays"], logo:"assets/operator-logos/tui-logo.png", skin:{header:"assets/package-skins/tui/header.png", footer:"assets/package-skins/tui/footer.png"}, colours:{accent:"#082b46", footer:"#082b46"}, ctaText:"Call us for more info", pricingBehaviour:"lead-resort-total", options:{layout:"tui", defaultFeatures:["Beach Holiday"]}},
+  jet2: {name:"Jet2 Holidays", aliases:["jet2holidays","jet2 holidays","jet2"], logo:"assets/operator-logos/jet2-holidays-logo.png", skin:{headerCouples:"assets/package-skins/jet2/header-couples.png", headerFamily:"assets/package-skins/jet2/header-family.png", footer:"assets/package-skins/jet2/footer.png"}, colours:{accent:"#c90000", footer:"#082b46"}, ctaText:"Start your booking", pricingBehaviour:"couples-pp-family-total", options:{layout:"jet2", defaultFeatures:["Free Child Place","Family"]}},
+  easyjet: {name:"easyJet holidays", aliases:["easyjet holidays","easyjet holidays","easyjet"], logo:"assets/operator-logos/easyjet-logo.png", skin:{header:"assets/package-skins/easyjet/header.png", footer:"assets/package-skins/easyjet/footer.png"}, colours:{accent:"#ff7a00", footer:"#ff7a00"}, ctaText:"Call us for more info", pricingBehaviour:"lead-resort-total", options:{layout:"easyjet", defaultFeatures:["City Break"]}}
 };
 const PACKAGE_BOARD_BASES = ["Room Only","Bed & Breakfast","Half Board","Full Board","All Inclusive","All Inclusive Plus","Ultra All Inclusive","Self Catering"];
 const PACKAGE_FEATURES = ["Free Child Place","Adults Only","Family","Luxury","City Break","Beach Holiday"];
@@ -10620,7 +10621,7 @@ function packageOfferFromData(d){
   const adults=String(d.adults||"").trim() || ((String(d.basis||"").match(/(\d+)\s*Adults?/i)||[])[1]);
   const children=String(d.children||"").trim() || ((String(d.basis||"").match(/(\d+)\s*Child(?:ren)?/i)||[])[1]);
   return {
-    offerType:"package", operator:d.operator||"", destination:d.name||"", hotel:d.ship||"", nights:d.nights||"", boardBasis:d.boardlbl||d.board||"", departureDate:[d.day,d.month].filter(Boolean).join(" "), departureAirport:airport, leadPrice:d.price||"", resortFee:d.resortFee||"", totalPrice:d.totalPrice||d.price||"", adults:adults||"2", children:children||"", freeChildPlace:!!(d.freeChildPlace||/free child place/i.test([d.tags,d.theme_tags].join(" "))), priceLabel:d.priceLabel||"Total Price", basis:d.basis||"Based on 2 Adults Sharing", inclusions:d.incl||"Luggage & Transfers Included", features:String(d.theme_tags||d.tags||"").split(/\s*[•·,]\s*/).filter(Boolean)
+    offerType:"package", operator:d.operator||"", destination:d.name||"", hotel:d.ship||"", nights:d.nights||"", boardBasis:d.boardlbl||d.board||"", departureDate:[d.day,d.month].filter(Boolean).join(" "), departureAirport:airport, leadPrice:d.leadPrice||d.price||"", resortFee:d.resortFee||"", totalPrice:d.totalPrice||d.price||"", adults:adults||"2", children:children||"0", roomType:d.roomType||"", handLuggage:d.handLuggage||"", holdLuggage:d.holdLuggage||"", transfers:d.transfers||"", freeChildPlace:!!(d.freeChildPlace||/free child place/i.test([d.tags,d.theme_tags].join(" "))), priceLabel:d.priceLabel||"Total Price", basis:d.basis||`Based on ${adults||2} Adult${Number(adults||2)===1?"":"s"}${Number(children||0)>0?` & ${children} Child${Number(children)===1?"":"ren"}`:""} Sharing`, inclusions:d.incl||"Luggage & Transfers Included", features:String(d.theme_tags||d.tags||"").split(/\s*[•·,]\s*/).filter(Boolean)
   };
 }
 function formatPackageMoney(value){
@@ -10648,6 +10649,7 @@ function renderPackagePriceBlock(model,operatorKey){
   const fee=packageResortFeeText(model.resortFee,operatorKey);
   const hasDistinctTotal=fee && total && lead && total!==lead && !isFamily;
   const priceMarkup=(amount,showPp,extraClass="")=>`<div class="pkg-price ${extraClass}">${amount}<span class="pkg-pp">${showPp?"pp":""}</span></div>`;
+  if(operatorKey==="jet2" && !isFamily && lead){ return `<div class="pkg-total">${priceMarkup(lead,true)}${fee?`<div class="pkg-fee">${fee}</div>`:""}<div class="pkg-basis">${escapeHtml(model.basis||"")}</div></div>`; }
   if(hasDistinctTotal){
     return `<div class="pkg-lead">${priceMarkup(lead,true)}<div class="pkg-fee">${fee}</div></div><div class="pkg-total">${priceMarkup(total,/pp|per person/i.test(totalRaw))}<div class="pkg-price-label">${escapeHtml(model.priceLabel||"Total Price")}</div><div class="pkg-basis">${escapeHtml(model.basis||"")}</div></div>`;
   }
@@ -10655,12 +10657,17 @@ function renderPackagePriceBlock(model,operatorKey){
 }
 function renderPackageCard(d){
   const model=packageOfferFromData(d);
-  const cfg=PACKAGE_OPERATORS[model.operator]||PACKAGE_OPERATORS.tui;
+  const cfg=PACKAGE_OPERATORS[model.operator]||{name:"Operator not detected",aliases:[],logo:"",skin:{},colours:{accent:"#9e936c",footer:"#092a44"},ctaText:"Call us for more info",options:{layout:"neutral"}};
   const layout=(cfg.options&&cfg.options.layout)||model.operator;
   const freeChild=model.freeChildPlace || model.features.some(f=>/free child place/i.test(f));
   const ribbon=model.operator==="jet2"&&freeChild?"Offer Includes a Free Child Place":"";
-  const details=[model.nights?`${model.nights} Nights`:"",model.boardBasis,model.departureDate,packageAirportLine(model.departureAirport),model.inclusions].filter(Boolean);
-  return `<div class="pc pkg-${layout}" style="--package-accent:${cfg.colours.accent};--package-footer:${cfg.colours.footer};"><div class="pkg-head"><img class="pkg-head-logo" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo">${ribbon?`<div class="pkg-ribbon">${escapeHtml(ribbon)}</div>`:""}</div><div class="pkg-body"><div class="pkg-destination">${escapeHtml(model.destination)}</div><div class="pkg-hotel">${escapeHtml(model.hotel)}</div><div class="pkg-details">${details.map(escapeHtml).join("<br>")}</div><img class="pkg-operator-logo pkg-operator-logo--${layout}" src="${cfg.logo}" alt="${escapeHtml(cfg.name)} logo"><div class="pkg-pricing">${renderPackagePriceBlock(model,model.operator)}</div></div><div class="pkg-footer"><div class="pkg-cta-main">${escapeHtml(cfg.ctaText)}</div><div class="pkg-cta-sub">or visit us in store</div></div></div>`;
+  const details=[model.nights?`${model.nights} Nights`:"",model.boardBasis,model.departureDate,packageAirportLine(model.departureAirport),model.roomType,model.handLuggage,model.holdLuggage,model.transfers||model.inclusions].filter(Boolean);
+  const skin=cfg.skin||{};
+  const headerSrc=model.operator==="jet2"?(freeChild?skin.headerFamily:skin.headerCouples):skin.header;
+  const footerSrc=skin.footer;
+  const header=headerSrc?`<img class="pkg-skin-header" src="${headerSrc}" alt="" role="presentation">`:`<img class="pkg-head-logo" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo">${ribbon?`<div class="pkg-ribbon">${escapeHtml(ribbon)}</div>`:""}`;
+  const footer=footerSrc?`<img class="pkg-skin-footer" src="${footerSrc}" alt="" role="presentation">`:`<div class="pkg-cta-main">${escapeHtml(cfg.ctaText)}</div><div class="pkg-cta-sub">or visit us in store</div>`;
+  return `<div class="pc pkg-${layout}" style="--package-accent:${cfg.colours.accent};--package-footer:${cfg.colours.footer};"><div class="pkg-head">${header}</div><div class="pkg-body"><div class="pkg-destination">${escapeHtml(model.destination)}</div><div class="pkg-hotel">${escapeHtml(model.hotel)}</div><div class="pkg-details">${details.map(escapeHtml).join("<br>")}</div>${cfg.logo?`<img class="pkg-operator-logo pkg-operator-logo--${layout}" src="${cfg.logo}" alt="${escapeHtml(cfg.name)} logo">`:`<div class="pkg-operator-missing">Operator not detected</div>`}<div class="pkg-pricing">${renderPackagePriceBlock(model,model.operator)}</div></div><div class="pkg-footer">${footer}</div></div>`;
 }
 function renderCruiseCard(d){ return renderCruiseCardHTML(d); }
 function renderGenericCampaignCard(d,type){

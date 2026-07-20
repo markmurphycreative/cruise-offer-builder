@@ -9,7 +9,7 @@ function extractConst(name) { const match=html.match(new RegExp(`const\\s+${name
 function createContext(){ const context={console, document:{getElementById(){return null;}}, clampParseConfidenceScore:v=>Math.max(0,Math.min(100,Number(v)||0))}; vm.createContext(context); vm.runInContext([
   'function escapeRegExp(value){ return String(value||"").replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&"); }',
   extractConst('PACKAGE_OFFER_DETECTION_THRESHOLD'), extractConst('PACKAGE_OFFER_SIGNAL_WEIGHTS'), extractConst('PACKAGE_OPERATORS'), extractConst('PACKAGE_BOARD_BASES'),
-  extractFunction('getPackageOperatorMatch'), extractFunction('detectPackageOffer'), extractFunction('normalisePackageOcrText'), extractFunction('titleCasePackageValue'), extractFunction('detectPackageBoardBasis'), extractFunction('extractPackageSharingBasis'), extractFunction('extractPackagePrices'), extractFunction('parsePackageOfferText'), extractFunction('canApplyParsedPackageOffer')
+  extractFunction('isTrustedJet2DawsonQuote'), extractFunction('getPackageOperatorMatch'), extractFunction('detectPackageOffer'), extractFunction('normalisePackageOcrText'), extractFunction('titleCasePackageValue'), extractFunction('detectPackageBoardBasis'), extractFunction('extractPackageSharingBasis'), extractFunction('extractPackagePrices'), extractFunction('isUnsafePackageTitleLine'), extractFunction('cleanPackageParsedTitle'), extractFunction('parseJet2DawsonQuote'), extractFunction('parsePackageOfferText'), extractFunction('canApplyParsedPackageOffer')
 ].join('\n'), context); return context; }
 
 const tuiSanta = `Santa Eulalia, Ibiza\nHotel Tres Torres\n7 Nights\nBed & Breakfast\n25th July 2026\nNewcastle Flights\nLuggage & Transfers Included £7799\nN PP\notal Price\nAV TUI Based on 2 adults Sharir`;
@@ -50,6 +50,65 @@ test('Jet2 and easyJet variants detect operators and family/free-child evidence'
   assert.equal(parsedJet2.freeChildPlace, 'true');
   const easy = `Copenhagen, Denmark\nCity Hotel Nebo\n3 Nights\nRoom Only\nLondon Flights\nHand Luggage Included\n£299pp\nTotal Price\neasyJet holidays\nBased on 2 Adults Sharing`;
   assert.equal(detectPackageOffer(easy).operatorKey, 'easyjet');
+});
+
+
+const jet2DawsonSunset = `Dawson & Sanderson
+Your holiday to...
+Sunset Paradise Resort
+Lassi, Kefalonia
+Our Rating +++
+TripAdvisor Traveller Rating
+Based on 176 Reviews
+Holiday summary
+7 nights from 21 July 2026
+Bed & Breakfast
+2 x Adults
+0 x Children
+1 x Studio
+2 x 10kg Hand Baggage
+2 x 22kg Bag Allowance
+Coach transfers included
+Flight details
+Going out
+Newcastle NCL to Kefalonia EFL
+06:00 12:00
+Coming back
+Kefalonia EFL to Newcastle NCL
+Payable to your travel agent
+£1,148
+Price per person
+£574
+The total holiday cost is £1,172 including approximately £24 in tourist tax`;
+
+test('Dawson & Sanderson Jet2 Sunset quotation is recognised without Jet2 logo and extracted into strict fields', () => {
+  const { isTrustedJet2DawsonQuote, detectPackageOffer, parsePackageOfferText } = createContext();
+  assert.equal(isTrustedJet2DawsonQuote(jet2DawsonSunset), true);
+  const detection = detectPackageOffer(jet2DawsonSunset);
+  assert.equal(detection.isPackage, true);
+  assert.equal(detection.operatorKey, 'jet2');
+  const parsed = parsePackageOfferText(jet2DawsonSunset, { detection }).parsed;
+  assert.equal(parsed.operatorKey, 'jet2');
+  assert.equal(parsed.name, 'Lassi, Kefalonia');
+  assert.equal(parsed.ship, 'Sunset Paradise Resort');
+  assert.equal(parsed.nights, '7');
+  assert.equal(parsed.boardlbl, 'Bed & Breakfast');
+  assert.equal(`${parsed.day} ${parsed.month}`, '21 July 2026');
+  assert.equal(parsed.sailingFrom, 'Newcastle');
+  assert.equal(parsed.roomType, 'Studio');
+  assert.equal(parsed.adults, '2');
+  assert.equal(parsed.children, '0');
+  assert.equal(parsed.handLuggage, '2 x 10kg');
+  assert.equal(parsed.holdLuggage, '2 x 22kg');
+  assert.equal(parsed.transfers, 'Coach transfers included');
+  assert.equal(parsed.price, '574pp');
+  assert.equal(parsed.leadPrice, '574pp');
+  assert.equal(parsed.totalPrice, '1148');
+  assert.equal(parsed.localFeeAmount, '24');
+  assert.equal(parsed.localFeeType, 'total');
+  assert.equal(parsed.localFeeApproximate, 'true');
+  assert.equal(parsed.freeChildPlace || 'false', 'false');
+  assert.doesNotMatch([parsed.name, parsed.ship, parsed.incl, parsed.basis].join(' '), /Our Rating|TripAdvisor|176 Reviews|Holiday summary|Flight details|Payable to your travel agent|Going out|Coming back|06:00|12:00/i);
 });
 
 test('Weak package fragments are not loadable package payloads', () => {

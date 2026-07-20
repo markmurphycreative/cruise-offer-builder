@@ -57,6 +57,9 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
   assert.equal(PACKAGE_OPERATORS.tui.ctaText, 'Call us for more info');
   assert.equal(PACKAGE_OPERATORS.jet2.logo, 'assets/operator-logos/jet2-holidays-logo.png');
   assert.equal(PACKAGE_OPERATORS.jet2.ctaText, 'Start your booking');
+  assert.equal(PACKAGE_OPERATORS.jet2.skin.headerCouples, 'assets/package-skins/jet2/header-couples.png');
+  assert.equal(PACKAGE_OPERATORS.jet2.skin.headerFamily, 'assets/package-skins/jet2/header-family.png');
+  assert.equal(PACKAGE_OPERATORS.jet2.skin.footer, 'assets/package-skins/jet2/footer.png');
   assert.equal(PACKAGE_OPERATORS.easyjet.logo, 'assets/operator-logos/easyjet-logo.png');
   assert.equal(PACKAGE_OPERATORS.easyjet.ctaText, 'Call us for more info');
 });
@@ -115,7 +118,7 @@ test('Package renderer supports resort-fee and total-price layouts', () => {
   assert.match(htmlOutput, /class="pc pkg-easyjet"/);
   assert.match(htmlOutput, /\+£12pp Total Local Resort Fee/);
   assert.match(htmlOutput, /£335/);
-  assert.match(htmlOutput, /Call us for more info/);
+  assert.match(htmlOutput, /assets\/package-skins\/easyjet\/footer\.png/);
 });
 
 test('Jet2 package renderer reads the Free Child Place ribbon from package data', () => {
@@ -133,7 +136,36 @@ test('Jet2 package renderer reads the Free Child Place ribbon from package data'
     price: '2209',
     basis: 'Based on 2 Adults & 1 Child Sharing'
   });
-  assert.match(htmlOutput, /Offer Includes a Free Child Place/);
-  assert.match(htmlOutput, /Start your booking/);
+  assert.match(htmlOutput, /assets\/package-skins\/jet2\/header-family\.png/);
   assert.match(htmlOutput, /assets\/operator-logos\/jet2-holidays-logo\.png/);
+});
+
+
+test('Jet2 couples render per-person price without Total Price label and use couples skin assets', () => {
+  const { renderPackageCard } = createContext();
+  const out = renderPackageCard({ operator: 'jet2', name: 'Lassi, Kefalonia', ship: 'Sunset Paradise Resort', nights: '7', boardlbl: 'Bed & Breakfast', day: '21', month: 'July 2026', sailingFrom: 'Newcastle', price: '574pp', leadPrice: '574pp', totalPrice: '1148', adults: '2', children: '0' });
+  assert.match(out, /assets\/package-skins\/jet2\/header-couples\.png/);
+  assert.match(out, /assets\/package-skins\/jet2\/footer\.png/);
+  assert.match(out, /assets\/operator-logos\/jet2-holidays-logo\.png/);
+  assert.match(out, /£574<span class="pkg-pp">pp<\/span>/);
+  assert.match(out, /Based on 2 Adults Sharing/);
+  assert.doesNotMatch(out, /<div class="pkg-price-label">Total Price<\/div>/);
+});
+
+test('Jet2 family render total price only and free child place controls family header', () => {
+  const { renderPackageCard } = createContext();
+  const family = renderPackageCard({ operator: 'jet2', name: 'Majorca', ship: 'Family Resort', totalPrice: '2209', price: '699pp', adults: '2', children: '1', freeChildPlace: false });
+  assert.match(family, /£2,209<span class="pkg-pp"><\/span>/);
+  assert.match(family, /Total Price/);
+  assert.match(family, /Based on 2 Adults &amp; 1 Child Sharing/);
+  assert.doesNotMatch(family, /header-family\.png/);
+  const freeChild = renderPackageCard({ operator: 'jet2', name: 'Majorca', ship: 'Family Resort', totalPrice: '2209', adults: '2', children: '1', freeChildPlace: true });
+  assert.match(freeChild, /assets\/package-skins\/jet2\/header-family\.png/);
+});
+
+test('Unknown package operator renders neutral state instead of falling back to TUI', () => {
+  const { renderPackageCard } = createContext();
+  const out = renderPackageCard({ operator: '', name: 'Unknown', ship: 'Unknown Hotel', price: '100' });
+  assert.match(out, /Operator not detected/);
+  assert.doesNotMatch(out, /assets\/operator-logos\/tui-logo\.png/);
 });
