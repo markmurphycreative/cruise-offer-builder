@@ -41,6 +41,7 @@ function createContext() {
     extractConst('PACKAGE_AIRPORTS'),
     extractFunction('isPackageOperator'),
     extractFunction('isPackageOffer'),
+    extractFunction('formatPackageOrdinalDate'),
     extractFunction('packageOfferFromData'),
     extractFunction('formatPackageMoney'),
     extractFunction('packageAirportLine'),
@@ -67,7 +68,7 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
 test('Package operator logos use operator-specific natural-aspect placement classes', () => {
   assert.match(html, /\.pc \.pkg-operator-logo\{[^}]*width:auto;[^}]*height:auto;[^}]*object-fit:contain;/);
   assert.match(html, /\.pc \.pkg-operator-logo--tui\{left:28px;bottom:14px;width:300px;\}/);
-  assert.match(html, /\.pc \.pkg-operator-logo--jet2\{left:52px;bottom:-81px;width:560px;\}/);
+  assert.match(html, /\.pc \.pkg-operator-logo--jet2\{left:98px;bottom:78px;width:245px;\}/);
   assert.match(html, /\.pc \.pkg-operator-logo--easyjet\{left:6px;bottom:-27px;width:430px;\}/);
 
   const { renderPackageCard } = createContext();
@@ -141,15 +142,32 @@ test('Jet2 package renderer reads the Free Child Place ribbon from package data'
 });
 
 
-test('Jet2 couples render per-person price without Total Price label and use couples skin assets', () => {
+test('Jet2 couples render with fee uses canonical assets, compact inclusions and combined total label', () => {
   const { renderPackageCard } = createContext();
-  const out = renderPackageCard({ operator: 'jet2', name: 'Lassi, Kefalonia', ship: 'Sunset Paradise Resort', nights: '7', boardlbl: 'Bed & Breakfast', day: '21', month: 'July 2026', sailingFrom: 'Newcastle', price: '574pp', leadPrice: '574pp', totalPrice: '1148', adults: '2', children: '0' });
+  const out = renderPackageCard({ operator: 'jet2', name: 'Kefalonia, Greece', ship: 'Sunset Paradise Resort', nights: '7', boardlbl: 'Bed & Breakfast', day: '21', month: 'July 2026', sailingFrom: 'Newcastle', price: '574pp', leadPrice: '574pp', totalPrice: '1148', localFeeAmount: '24', localFeeType: 'total', localFeePerPerson: '12', displayTotalPerPerson: '586', adults: '2', children: '0', handLuggage: '2 x 10kg', holdLuggage: '2 x 22kg', transfers: 'Coach transfers included' });
   assert.match(out, /assets\/package-skins\/jet2\/header-couples\.png/);
   assert.match(out, /assets\/package-skins\/jet2\/footer\.png/);
   assert.match(out, /assets\/operator-logos\/jet2-holidays-logo\.png/);
+  assert.match(out, /Kefalonia, Greece/);
+  assert.match(out, /Sunset Paradise Resort/);
+  assert.match(out, /21st July 2026/);
+  assert.match(out, /Newcastle Flights/);
+  assert.match(out, /Luggage &amp; Transfers Included/);
   assert.match(out, /£574<span class="pkg-pp">pp<\/span>/);
+  assert.match(out, /\+£12pp Local Resort Fee/);
+  assert.match(out, /£586<span class="pkg-pp">pp<\/span>[\s\S]*<div class="pkg-price-label">Total Price<\/div>/);
   assert.match(out, /Based on 2 Adults Sharing/);
-  assert.doesNotMatch(out, /<div class="pkg-price-label">Total Price<\/div>/);
+  assert.doesNotMatch(out, /Our Rating|TripAdvisor|176 Reviews|Holiday Summary|Flight Details|Going out|Coming back|NCL|EFL|Hand Luggage Included|Hold Luggage Included|Coach Transfers/);
+});
+
+test('Jet2 couples render without fee has a single lower price block and no empty fee line', () => {
+  const { renderPackageCard } = createContext();
+  const out = renderPackageCard({ operator: 'jet2', name: 'Playa De Las Americas, Tenerife', ship: 'Servatur Caribe Apartments', nights: '7', boardlbl: 'Self Catering', day: '15', month: 'July 2026', sailingFrom: 'Leeds Bradford', price: '499pp', leadPrice: '499pp', adults: '2', children: '0' });
+  assert.match(out, /assets\/package-skins\/jet2\/header-couples\.png/);
+  assert.equal((out.match(/class="pkg-price /g) || []).length, 1);
+  assert.match(out, /£499<span class="pkg-pp">pp<\/span>[\s\S]*Total Price[\s\S]*Based on 2 Adults Sharing/);
+  assert.match(out, /Leeds Bradford Flights/);
+  assert.doesNotMatch(out, /pkg-fee|Local Resort Fee|£0/);
 });
 
 test('Jet2 family render total price only and free child place controls family header', () => {
