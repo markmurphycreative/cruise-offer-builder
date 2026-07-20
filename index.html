@@ -835,25 +835,27 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 /* ── CARD CSS ── */
 
 /* Package card renderer */
-.pc{--package-accent:#092a44;--package-footer:#092a44;width:1200px;min-width:1200px;max-width:1200px;height:885px;box-sizing:border-box;background:#fff;color:#000;font-family:'Montserrat',sans-serif;font-weight:300;position:relative;overflow:hidden;display:block;}
+.pc{--package-accent:#092a44;--package-footer:#092a44;--pkg-left:85px;width:1200px;min-width:1200px;max-width:1200px;height:885px;box-sizing:border-box;background:#fff;color:#000;font-family:'Montserrat',sans-serif;font-weight:300;position:relative;overflow:hidden;display:block;}
 .pc .pkg-head{height:135px;background:var(--package-accent);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
 .pc .pkg-skin-header,.pc .pkg-skin-footer{width:100%;height:100%;object-fit:cover;display:block;}
-.pc.pkg-jet2 .pkg-head{height:14px;flex-direction:column;gap:0;}
+.pc.pkg-jet2{--pkg-left:98px;}
+.pc.pkg-jet2 .pkg-head{height:154px;flex-direction:column;gap:0;background:#fff;border:0;}
+.pc.pkg-jet2 .pkg-skin-header{height:auto;object-fit:contain;object-position:top center;}
 .pc .pkg-head-logo{width:300px;max-height:84px;object-fit:contain;filter:brightness(0) invert(1);}
 .pc.pkg-jet2 .pkg-head-logo{width:300px;max-height:78px;}
 .pc .pkg-ribbon{font-size:34px;line-height:1;color:#fff;letter-spacing:.04em;}
-.pc .pkg-body{height:610px;position:relative;padding:62px 85px 0;box-sizing:border-box;}
-.pc.pkg-jet2 .pkg-body{height:731px;padding:96px 98px 0;}
+.pc .pkg-body{height:610px;position:relative;padding:62px var(--pkg-left) 0;box-sizing:border-box;}
+.pc.pkg-jet2 .pkg-body{height:579px;padding:96px var(--pkg-left) 0;}
 .pc .pkg-destination{font-size:56px;line-height:1.08;font-weight:300;letter-spacing:.01em;color:#000;max-width:585px;white-space:nowrap;}
 .pc.pkg-jet2 .pkg-destination{font-size:55px;max-width:760px;}
 .pc .pkg-hotel{font-size:34px;line-height:1.2;color:#7b7b7b;margin-top:8px;max-width:650px;white-space:nowrap;}
 .pc.pkg-jet2 .pkg-hotel{font-size:34px;}
-.pc .pkg-details{position:absolute;left:85px;top:285px;font-size:36px;line-height:1.35;color:#797979;}
+.pc .pkg-details{position:absolute;left:var(--pkg-left);top:285px;font-size:36px;line-height:1.35;color:#797979;}
 .pc.pkg-tui .pkg-details{color:#000;}
 .pc.pkg-jet2 .pkg-details{top:286px;font-size:35px;line-height:1.36;}
 .pc .pkg-operator-logo{position:absolute;width:auto;height:auto;object-fit:contain;object-position:left bottom;}
 .pc .pkg-operator-logo--tui{left:28px;bottom:14px;width:300px;}
-.pc .pkg-operator-logo--jet2{left:98px;bottom:78px;width:245px;}
+.pc .pkg-operator-logo--jet2{left:var(--pkg-left);bottom:8px;width:520px;}
 .pc .pkg-operator-logo--easyjet{left:6px;bottom:-27px;width:430px;}
 .pc .pkg-pricing{position:absolute;right:85px;top:250px;width:485px;text-align:right;color:#000;}
 .pc.pkg-jet2 .pkg-pricing{top:454px;right:98px;width:420px;}
@@ -864,10 +866,14 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .pc.pkg-tui .pkg-price{font-size:104px;}
 .pc .pkg-pp{font-size:36px;letter-spacing:-.03em;}
 .pc .pkg-fee{font-size:28px;line-height:1.15;color:#777;margin-top:8px;}
+.pc.pkg-jet2 .pkg-fee{color:#000;}
 .pc .pkg-price-label{font-size:25px;line-height:1.2;color:#000;margin-top:12px;letter-spacing:.06em;}
 .pc .pkg-basis{font-size:22px;line-height:1.25;color:#777;margin-top:4px;letter-spacing:.04em;white-space:nowrap;}
 .pc.pkg-jet2 .pkg-basis{font-size:25px;}
-.pc .pkg-footer{height:140px;background:var(--package-footer);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;overflow:hidden;}
+.pc .pkg-footer{height:140px;background:var(--package-footer);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;overflow:hidden;position:relative;}
+.pc.pkg-jet2 .pkg-footer{height:152px;}
+.pc .pkg-footer .pkg-skin-footer{position:absolute;inset:0;z-index:0;}
+.pc .pkg-footer-cta{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;transform:translateY(-2px);}
 .pc .pkg-cta-main{font-size:40px;line-height:1.05;letter-spacing:.03em;}
 .pc .pkg-cta-sub{font-size:25px;line-height:1.1;opacity:.88;margin-top:6px;}
 .cc{width:1200px;min-width:1200px;max-width:1200px;box-sizing:border-box;font-family:'Montserrat',sans-serif;font-weight:300;background:var(--operator-bg,var(--navy));display:block;}
@@ -1111,6 +1117,10 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
         <div class="spell-warn" id="spell-warn-tags"></div>
         <div class="field" id="field-incl"><label>Inclusions</label><textarea id="f-incl" spellcheck="true" placeholder="Newcastle Flights, Luggage &amp; Transfers Included" oninput="up()"></textarea></div>
         <div class="field" id="field-theme_tags"><label>Theme Tags</label><input id="f-theme_tags" spellcheck="true" placeholder="Luxury · Scenic Cruising · Norwegian Fjords" oninput="up()"></div>
+        <div class="fg2">
+          <div class="field"><label>Footer CTA Primary</label><input id="f-ctaPrimary" spellcheck="true" placeholder="Start your booking" oninput="up()"></div>
+          <div class="field"><label>Footer CTA Secondary</label><input id="f-ctaSecondary" spellcheck="true" placeholder="or visit us in store" oninput="up()"></div>
+        </div>
         <div class="fg2">
           <div class="field"><label>Lead / Total Price (£)</label><input id="f-price" placeholder="799" oninput="up()"></div>
           <div class="field"><label>Total Price (£, Package optional)</label><input id="f-totalPrice" placeholder="656" oninput="up()"></div>
@@ -2557,7 +2567,7 @@ function applyCampaignContext(type=currentCampaignType){
   return currentCampaignType;
 }
 applyCampaignContext(currentCampaignType);
-const FLDS = ["tags","theme_tags","name","ship","sailingFrom","incl","price","totalPrice","resortFee","basis","board","boardlbl","day","month","nights","ports","url","utm_content","adults","children","freeChildPlace","offerType","flightDisplay","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeePerPerson","displayTotalPerPerson","roomType","handLuggage","holdLuggage","transfers"];
+const FLDS = ["tags","theme_tags","ctaPrimary","ctaSecondary","name","ship","sailingFrom","incl","price","totalPrice","resortFee","basis","board","boardlbl","day","month","nights","ports","url","utm_content","adults","children","freeChildPlace","offerType","flightDisplay","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeePerPerson","displayTotalPerPerson","roomType","handLuggage","holdLuggage","transfers"];
 const CTA_DEFAULTS = {enabled:false,text:"Click To Call Us For More Info",phone:"01912229701"};
 let ctaSettings = {...CTA_DEFAULTS};
 let poaAppliedSuggestions = {};
@@ -10113,7 +10123,7 @@ function prepareOfferSlotForParsedOffer(parsed){
   return true;
 }
 function applyParsedOffer(){if(!pendingParseResult) return; if(typeof isOfferLocked==="function" && isOfferLocked(cur)){ setParseStatus(getLockedOfferMessage(cur),"low"); cancelParsedOffer(); return; } const {parsed,confidence,rawText}=pendingParseResult; const isPackage=String((parsed&&parsed.offerType)||"").toLowerCase()==="package"; const hasParsedFields=isPackage ? canApplyParsedPackageOffer(parsed) : ['price','day','month','nights','board','ports'].some(k=>parsed[k]!==undefined&&parsed[k]!==''); if(!hasParsedFields){ setParseStatus(isPackage?"Not enough Package offer details to load this offer.":'No offer fields detected',isPackage?'partial':'low'); cancelParsedOffer(); return; } if(!isPackage&&typeof canApplyParsedCruiseOffer==="function"&&!canApplyParsedCruiseOffer(parsed)){ setParseStatus("Not enough offer details to load this Cruise offer.","partial"); cancelParsedOffer(); return; } if(!prepareOfferSlotForParsedOffer(parsed)){ setParseStatus('No offer fields detected','low'); cancelParsedOffer(); return; } const pasteSourceText=rawText||((document.getElementById("raw-paste")||{}).value||""); if(pasteSourceText) offers[cur]._rawPastedOfferText=pasteSourceText; if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(cur); if(isPackage){ offers[cur]={[typeof PERSISTED_PASTE_OFFER_KEY!=="undefined"?PERSISTED_PASTE_OFFER_KEY:"_rawPastedOfferText"]:pasteSourceText}; } const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offers[cur].operator)){ continue; } const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; offers[cur]._tagsManualOverride=false; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
-  if(isPackage){ offers[cur].offerType="package"; offers[cur].operator=parsed.operatorKey||parsed.operator||""; ["totalPrice","resortFee","adults","children","freeChildPlace","priceLabel","leadPrice","roomType","handLuggage","holdLuggage","transfers","flightDisplay","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeePerPerson","displayTotalPerPerson","totalHolidayCostIncludingFee","sourceLocation"].forEach(k=>{ if(parsed[k]!==undefined&&parsed[k]!=="") offers[cur][k]=String(parsed[k]); }); }
+  if(isPackage){ offers[cur].offerType="package"; offers[cur].operator=parsed.operatorKey||parsed.operator||""; if(offers[cur].operator==="jet2"){ if(!Object.prototype.hasOwnProperty.call(offers[cur],"ctaPrimary")) offers[cur].ctaPrimary="Start your booking"; if(!Object.prototype.hasOwnProperty.call(offers[cur],"ctaSecondary")) offers[cur].ctaSecondary="or visit us in store"; } ["totalPrice","resortFee","adults","children","freeChildPlace","priceLabel","leadPrice","roomType","handLuggage","holdLuggage","transfers","flightDisplay","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeePerPerson","displayTotalPerPerson","totalHolidayCostIncludingFee","sourceLocation"].forEach(k=>{ if(parsed[k]!==undefined&&parsed[k]!=="") offers[cur][k]=String(parsed[k]); }); }
   if(parsed.departurePort) offers[cur].departurePort=String(parsed.departurePort);
   if(parsed._poaDepartureAirport) offers[cur]._poaDepartureAirport=String(parsed._poaDepartureAirport);
   if(!offers[cur]._sailingFromManual && typeof applyAutoSailingFromToOffer==="function"){
@@ -10662,7 +10672,7 @@ function escapeCardInclusionHtml(value){
 
 const PACKAGE_OPERATORS = {
   tui: {name:"TUI", aliases:["tui","tui holidays"], logo:"assets/operator-logos/tui-logo.png", skin:{header:"assets/package-skins/tui/header.png", footer:"assets/package-skins/tui/footer.png"}, colours:{accent:"#082b46", footer:"#082b46"}, ctaText:"Call us for more info", pricingBehaviour:"lead-resort-total", options:{layout:"tui", defaultFeatures:["Beach Holiday"]}},
-  jet2: {name:"Jet2 Holidays", aliases:["jet2holidays","jet2 holidays","jet2"], logo:"assets/operator-logos/jet2-holidays-logo.png", skin:{headerCouples:"assets/package-skins/jet2/header-couples.png", headerFamily:"assets/package-skins/jet2/header-family.png", footer:"assets/package-skins/jet2/footer.png"}, colours:{accent:"#c90000", footer:"#082b46"}, ctaText:"Start your booking", pricingBehaviour:"couples-pp-family-total", options:{layout:"jet2", defaultFeatures:["Free Child Place","Family"]}},
+  jet2: {name:"Jet2 Holidays", aliases:["jet2holidays","jet2 holidays","jet2"], logo:"assets/operator-logos/jet2-holidays-logo.png", skin:{headerCouples:"assets/package-skins/jet2/header-couples.png", headerFamily:"assets/package-skins/jet2/header-family.png", footer:"assets/package-skins/jet2/footer.png"}, colours:{accent:"#c90000", footer:"#082b46"}, ctaText:"Start your booking", ctaSecondary:"or visit us in store", pricingBehaviour:"couples-pp-family-total", options:{layout:"jet2", defaultFeatures:["Free Child Place","Family"]}},
   easyjet: {name:"easyJet holidays", aliases:["easyjet holidays","easyjet holidays","easyjet"], logo:"assets/operator-logos/easyjet-logo.png", skin:{header:"assets/package-skins/easyjet/header.png", footer:"assets/package-skins/easyjet/footer.png"}, colours:{accent:"#ff7a00", footer:"#ff7a00"}, ctaText:"Call us for more info", pricingBehaviour:"lead-resort-total", options:{layout:"easyjet", defaultFeatures:["City Break"]}}
 };
 const PACKAGE_BOARD_BASES = ["Room Only","Bed & Breakfast","Half Board","Full Board","All Inclusive","All Inclusive Plus","Ultra All Inclusive","Self Catering"];
@@ -10675,6 +10685,11 @@ function getActiveRenderCampaignType(d){
   return normaliseCampaignType(typeof currentCampaignType!=="undefined" ? currentCampaignType : "cruise");
 }
 function isPackageOffer(d){ return getActiveRenderCampaignType(d)==="package"; }
+function getPackageCtaLine(d,cfg,key){
+  if(d && Object.prototype.hasOwnProperty.call(d,key)) return String(d[key]||"");
+  if(key==="ctaSecondary") return String((cfg&&cfg.ctaSecondary)||"or visit us in store");
+  return String((cfg&&cfg.ctaText)||"Call us for more info");
+}
 function packageOfferFromData(d){
   d=d||{};
   const operator=String(d.operator||d.operatorKey||"").toLowerCase();
@@ -10684,8 +10699,11 @@ function packageOfferFromData(d){
   const localFeeAmount=String(d.localFeeAmount||"").trim();
   const localFeeType=String(d.localFeeType||"").trim()||(/pp|per person/i.test(String(d.resortFee||""))?"pp":"");
   const localFeePerPerson=String(d.localFeePerPerson||"").trim() || (localFeeAmount&&localFeeType==="total"&&Number(adults)>0 ? String(Math.round(Number(localFeeAmount.replace(/[^0-9.]/g,""))/Number(adults))) : "");
+  const cfgForCta=PACKAGE_OPERATORS[operator]||{};
+  const ctaPrimary=Object.prototype.hasOwnProperty.call(d,"ctaPrimary")?String(d.ctaPrimary||""):String(cfgForCta.ctaText||"Call us for more info");
+  const ctaSecondary=Object.prototype.hasOwnProperty.call(d,"ctaSecondary")?String(d.ctaSecondary||""):String(cfgForCta.ctaSecondary||"or visit us in store");
   return {
-    offerType:"package", operator, destination:d.name||"", hotel:d.ship||"", nights:d.nights||"", boardBasis:d.boardlbl||d.board||"", departureDate:formatPackageOrdinalDate([d.day,d.month].filter(Boolean).join(" ")), departureAirport:airport, leadPrice:d.leadPrice||d.price||"", resortFee:d.resortFee||(localFeePerPerson?localFeePerPerson+"pp":""), totalPrice:d.displayTotalPerPerson||d.totalPrice||d.price||"", adults:adults||"2", children:children||"0", roomType:d.roomType||"", handLuggage:d.handLuggage||"", holdLuggage:d.holdLuggage||"", transfers:d.transfers||"", freeChildPlace:!!(d.freeChildPlace&&String(d.freeChildPlace)!=="false"||/free child place/i.test([d.tags,d.theme_tags].join(" "))), priceLabel:d.priceLabel||"Total Price", basis:d.basis||`Based on ${adults||2} Adult${Number(adults||2)===1?"":"s"}${Number(children||0)>0?` & ${children} Child${Number(children)===1?"":"ren"}`:""} Sharing`, inclusions:d.inclusionsDisplay||d.incl||"Luggage & Transfers Included", features:String(d.theme_tags||d.tags||"").split(/\s*[•·,]\s*/).filter(Boolean)
+    offerType:"package", operator, ctaPrimary, ctaSecondary, destination:d.name||"", hotel:d.ship||"", nights:d.nights||"", boardBasis:d.boardlbl||d.board||"", departureDate:formatPackageOrdinalDate([d.day,d.month].filter(Boolean).join(" ")), departureAirport:airport, leadPrice:d.leadPrice||d.price||"", resortFee:d.resortFee||(localFeePerPerson?localFeePerPerson+"pp":""), totalPrice:d.displayTotalPerPerson||d.totalPrice||d.price||"", adults:adults||"2", children:children||"0", roomType:d.roomType||"", handLuggage:d.handLuggage||"", holdLuggage:d.holdLuggage||"", transfers:d.transfers||"", freeChildPlace:!!(d.freeChildPlace&&String(d.freeChildPlace)!=="false"||/free child place/i.test([d.tags,d.theme_tags].join(" "))), priceLabel:d.priceLabel||"Total Price", basis:d.basis||`Based on ${adults||2} Adult${Number(adults||2)===1?"":"s"}${Number(children||0)>0?` & ${children} Child${Number(children)===1?"":"ren"}`:""} Sharing`, inclusions:d.inclusionsDisplay||d.incl||"Luggage & Transfers Included", features:String(d.theme_tags||d.tags||"").split(/\s*[•·,]\s*/).filter(Boolean)
   };
 }
 function formatPackageMoney(value){
@@ -10746,7 +10764,8 @@ function renderPackageCard(d){
   const headerSrc=model.operator==="jet2"?(freeChild?skin.headerFamily:skin.headerCouples):skin.header;
   const footerSrc=skin.footer;
   const header=headerSrc?`<img class="pkg-skin-header" src="${headerSrc}" alt="" role="presentation">`:`<img class="pkg-head-logo" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo">${ribbon?`<div class="pkg-ribbon">${escapeHtml(ribbon)}</div>`:""}`;
-  const footer=footerSrc?`<img class="pkg-skin-footer" src="${footerSrc}" alt="" role="presentation">`:`<div class="pkg-cta-main">${escapeHtml(cfg.ctaText)}</div><div class="pkg-cta-sub">or visit us in store</div>`;
+  const footerCta=`<div class="pkg-footer-cta"><div class="pkg-cta-main">${escapeHtml(model.ctaPrimary)}</div><div class="pkg-cta-sub">${escapeHtml(model.ctaSecondary)}</div></div>`;
+  const footer=footerSrc?`<img class="pkg-skin-footer" src="${footerSrc}" alt="" role="presentation">${footerCta}`:footerCta;
   return `<div class="pc pkg-${layout}" style="--package-accent:${cfg.colours.accent};--package-footer:${cfg.colours.footer};"><div class="pkg-head">${header}</div><div class="pkg-body"><div class="pkg-destination">${escapeHtml(model.destination)}</div><div class="pkg-hotel">${escapeHtml(model.hotel)}</div><div class="pkg-details">${details.map(escapeHtml).join("<br>")}</div>${cfg.logo?`<img class="pkg-operator-logo pkg-operator-logo--${layout}" src="${cfg.logo}" alt="${escapeHtml(cfg.name)} logo">`:`<div class="pkg-operator-missing">Operator not detected</div>`}<div class="pkg-pricing ${model.operator==="jet2"&&Number(model.children||0)<=0&&packageResortFeeText(model.resortFee,model.operator)?"pkg-pricing--with-fee":""}">${renderPackagePriceBlock(model,model.operator)}</div></div><div class="pkg-footer">${footer}</div></div>`;
 }
 function renderCruiseCard(d){ return renderCruiseCardHTML(d); }

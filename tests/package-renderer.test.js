@@ -58,6 +58,7 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
   assert.equal(PACKAGE_OPERATORS.tui.ctaText, 'Call us for more info');
   assert.equal(PACKAGE_OPERATORS.jet2.logo, 'assets/operator-logos/jet2-holidays-logo.png');
   assert.equal(PACKAGE_OPERATORS.jet2.ctaText, 'Start your booking');
+  assert.equal(PACKAGE_OPERATORS.jet2.ctaSecondary, 'or visit us in store');
   assert.equal(PACKAGE_OPERATORS.jet2.skin.headerCouples, 'assets/package-skins/jet2/header-couples.png');
   assert.equal(PACKAGE_OPERATORS.jet2.skin.headerFamily, 'assets/package-skins/jet2/header-family.png');
   assert.equal(PACKAGE_OPERATORS.jet2.skin.footer, 'assets/package-skins/jet2/footer.png');
@@ -68,7 +69,11 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
 test('Package operator logos use operator-specific natural-aspect placement classes', () => {
   assert.match(html, /\.pc \.pkg-operator-logo\{[^}]*width:auto;[^}]*height:auto;[^}]*object-fit:contain;/);
   assert.match(html, /\.pc \.pkg-operator-logo--tui\{left:28px;bottom:14px;width:300px;\}/);
-  assert.match(html, /\.pc \.pkg-operator-logo--jet2\{left:98px;bottom:78px;width:245px;\}/);
+  assert.match(html, /\.pc\.pkg-jet2\{--pkg-left:98px;\}/);
+  assert.match(html, /\.pc\.pkg-jet2 \.pkg-head\{height:154px;[^}]*border:0;\}/);
+  assert.match(html, /\.pc\.pkg-jet2 \.pkg-skin-header\{height:auto;object-fit:contain;object-position:top center;\}/);
+  assert.match(html, /\.pc\.pkg-jet2 \.pkg-fee\{color:#000;\}/);
+  assert.match(html, /\.pc \.pkg-operator-logo--jet2\{left:var\(--pkg-left\);bottom:8px;width:520px;\}/);
   assert.match(html, /\.pc \.pkg-operator-logo--easyjet\{left:6px;bottom:-27px;width:430px;\}/);
 
   const { renderPackageCard } = createContext();
@@ -157,6 +162,9 @@ test('Jet2 couples render with fee uses canonical assets, compact inclusions and
   assert.match(out, /\+£12pp Local Resort Fee/);
   assert.match(out, /£586<span class="pkg-pp">pp<\/span>[\s\S]*<div class="pkg-price-label">Total Price<\/div>/);
   assert.match(out, /Based on 2 Adults Sharing/);
+  assert.match(out, /<div class="pkg-footer-cta"><div class="pkg-cta-main">Start your booking<\/div><div class="pkg-cta-sub">or visit us in store<\/div><\/div>/);
+  const edited = renderPackageCard({ operator: 'jet2', ctaPrimary: 'Book online', ctaSecondary: '', name: 'Kefalonia', ship: 'Hotel', price: '574pp', adults: '2', children: '0' });
+  assert.match(edited, /<div class="pkg-cta-main">Book online<\/div><div class="pkg-cta-sub"><\/div>/);
   assert.doesNotMatch(out, /Our Rating|TripAdvisor|176 Reviews|Holiday Summary|Flight Details|Going out|Coming back|NCL|EFL|Hand Luggage Included|Hold Luggage Included|Coach Transfers/);
 });
 
