@@ -89,7 +89,8 @@ test('Dawson & Sanderson Jet2 Sunset quotation is recognised without Jet2 logo a
   assert.equal(detection.operatorKey, 'jet2');
   const parsed = parsePackageOfferText(jet2DawsonSunset, { detection }).parsed;
   assert.equal(parsed.operatorKey, 'jet2');
-  assert.equal(parsed.name, 'Lassi, Kefalonia');
+  assert.equal(parsed.name, 'Kefalonia, Greece');
+  assert.equal(parsed.sourceLocation, 'Lassi, Kefalonia');
   assert.equal(parsed.ship, 'Sunset Paradise Resort');
   assert.equal(parsed.nights, '7');
   assert.equal(parsed.boardlbl, 'Bed & Breakfast');
@@ -107,6 +108,10 @@ test('Dawson & Sanderson Jet2 Sunset quotation is recognised without Jet2 logo a
   assert.equal(parsed.localFeeAmount, '24');
   assert.equal(parsed.localFeeType, 'total');
   assert.equal(parsed.localFeeApproximate, 'true');
+  assert.equal(parsed.localFeePerPerson, '12');
+  assert.equal(parsed.displayTotalPerPerson, '586');
+  assert.equal(parsed.incl, 'Luggage & Transfers Included');
+  assert.equal(parsed.flightDisplay, 'Newcastle Flights');
   assert.equal(parsed.freeChildPlace || 'false', 'false');
   assert.doesNotMatch([parsed.name, parsed.ship, parsed.incl, parsed.basis].join(' '), /Our Rating|TripAdvisor|176 Reviews|Holiday summary|Flight details|Payable to your travel agent|Going out|Coming back|06:00|12:00/i);
 });
