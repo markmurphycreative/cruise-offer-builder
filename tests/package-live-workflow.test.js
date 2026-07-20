@@ -81,6 +81,29 @@ Price per person
 £574
 The total holiday cost is £1,172 including approximately £24 in tourist tax`;
 
+const realTrelloJet2Ocr = `29/06/2026
+DAWSON 8 @
+ABTANo. Y1256 uc
+Your holiday to... *%
+. plus
+Sunset Paradise Resort Our rating
+Lassi, Kefalonia
+TripAdvisor Traveller Rating
+Based on 176 Reviews
+Holiday summary Flight details Payable to your travel
+agent
+& 7 nights from 21st Jul 2026 A Going out
+¥4 Bed and Breakfast Newcastle NCL to Kefalonia (EFL) £1 1 48
+J
+& 2 Adults Departs: Tue 21st Jul 2026 at 05:50
+Sunset Paradise Resort Arrives: Tue 21st Jul 2026 at 11:40 Price per person payable to your
+travel agent
+&, 1 x Studio
++ 2 x 10kg Hand Baggage ¥ Coming back £574
++ 2 x 22kg Bag Allowance Kefalonia (EFL) to Newcastle NCL
++ Coach Transfers Departs: Tue 28th Jul 2026 at 12:30 Approximately 2 n tourist fo : pavabe at
+Arrives: Tue 28th Jul 2026 at 14:20 | YOU "eh: Tol OIday CosLIS EL TE2.`;
+
 test('Dawson & Sanderson Jet2 Sunset quotation is recognised without Jet2 logo and extracted into strict fields', () => {
   const { isTrustedJet2DawsonQuote, detectPackageOffer, parsePackageOfferText } = createContext();
   assert.equal(isTrustedJet2DawsonQuote(jet2DawsonSunset), true);
@@ -122,6 +145,44 @@ test('Weak package fragments are not loadable package payloads', () => {
   assert.equal(canApplyParsedPackageOffer(parsePackageOfferText('Hotel\nFlights\n7 Nights', {}).parsed), false);
 });
 
+test('real Trello preview Jet2 OCR fixture is recognised and extracted without cleaned transcription', () => {
+  const { isTrustedJet2DawsonQuote, detectPackageOffer, parsePackageOfferText } = createContext();
+  assert.equal(isTrustedJet2DawsonQuote(realTrelloJet2Ocr), true);
+  const detection = detectPackageOffer(realTrelloJet2Ocr);
+  assert.equal(detection.isPackage, true);
+  assert.equal(detection.operatorKey, 'jet2');
+  const result = parsePackageOfferText(realTrelloJet2Ocr, { detection });
+  assert.equal(result.rawText, realTrelloJet2Ocr);
+  const parsed = result.parsed;
+  assert.equal(parsed.operatorKey, 'jet2');
+  assert.equal(parsed.name, 'Kefalonia, Greece');
+  assert.equal(parsed.sourceLocation, 'Lassi, Kefalonia');
+  assert.equal(parsed.ship, 'Sunset Paradise Resort');
+  assert.equal(parsed.nights, '7');
+  assert.equal(parsed.boardlbl, 'Bed & Breakfast');
+  assert.equal(`${parsed.day} ${parsed.month}`, '21st July 2026');
+  assert.equal(parsed.sailingFrom, 'Newcastle');
+  assert.equal(parsed.flightDisplay, 'Newcastle Flights');
+  assert.equal(parsed.roomType, 'Studio');
+  assert.equal(parsed.adults, '2');
+  assert.equal(parsed.children, '0');
+  assert.equal(parsed.handLuggage, '2 x 10kg');
+  assert.equal(parsed.holdLuggage, '2 x 22kg');
+  assert.equal(parsed.transfers, 'Coach transfers included');
+  assert.equal(parsed.incl, 'Luggage & Transfers Included');
+  assert.equal(parsed.inclusionsDisplay, 'Luggage & Transfers Included');
+  assert.equal(parsed.price, '574pp');
+  assert.equal(parsed.leadPrice, '574pp');
+  assert.equal(parsed.totalPrice, '1148');
+  assert.equal(parsed.localFeeAmount, '24');
+  assert.equal(parsed.localFeeType, 'total');
+  assert.equal(parsed.localFeeApproximate, 'true');
+  assert.equal(parsed.localFeePerPerson, '12');
+  assert.equal(parsed.displayTotalPerPerson, '586');
+  assert.equal(parsed.freeChildPlace || 'false', 'false');
+  assert.doesNotMatch([parsed.name, parsed.ship, parsed.incl, parsed.basis].join(' '), /Our Rating|TripAdvisor|176 Reviews|Hand Luggage Included|Coach Transfers/i);
+});
+
 test('real screenshot import state path carries Dawson Jet2 structure into active offer and final package render', () => {
   const context = {
     console,
@@ -148,11 +209,11 @@ test('real screenshot import state path carries Dawson Jet2 structure into activ
     extractFunction('formatPackageOrdinalDate'), extractFunction('packageOfferFromData'), extractFunction('formatPackageMoney'), extractFunction('packageAirportLine'), extractFunction('packageResortFeeText'), extractFunction('renderPackagePriceBlock'), extractFunction('renderPackageCard')
   ].join('\n'), context);
 
-  const result = vm.runInContext('parseScreenshotTextForActiveBuilder(raw)', Object.assign(context, { raw: jet2DawsonSunset }));
+  const result = vm.runInContext('parseScreenshotTextForActiveBuilder(raw)', Object.assign(context, { raw: realTrelloJet2Ocr }));
   assert.equal(result.parsed.operatorKey, 'jet2');
   assert.equal(result.parsed.ship, 'Sunset Paradise Resort');
 
-  const loaded = vm.runInContext('applyParsedOfferToSlot(result, 0, raw)', Object.assign(context, { result, raw: jet2DawsonSunset }));
+  const loaded = vm.runInContext('applyParsedOfferToSlot(result, 0, raw)', Object.assign(context, { result, raw: realTrelloJet2Ocr }));
   assert.equal(loaded, true);
   const active = context.offers[0];
   assert.equal(active.operator, 'jet2');

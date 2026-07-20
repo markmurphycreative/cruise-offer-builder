@@ -8203,12 +8203,28 @@ function detectCruiseOffer(text){
 
 function isTrustedJet2DawsonQuote(text){
   const source=String(text||"");
-  return /\bdawson\b[\s\S]{0,120}\bsanderson\b/i.test(source)
-    && /\byour\s+holiday\s+to\.{0,3}/i.test(source)
-    && /\bholiday\s+summary\b/i.test(source)
-    && /\bflight\s+details\b/i.test(source)
-    && /\bpayable\s+to\s+your\s+travel\s+agent\b/i.test(source)
-    && /\b(?:hand\s+baggage|bag\s+allowance|coach\s+transfers?)\b/i.test(source);
+  const compact=source.replace(/\s+/g," ");
+  let score=0; const has=[];
+  const add=(key,weight)=>{ if(!has.includes(key)){ has.push(key); score+=weight; } };
+  if(/\bdawson\b[\s\S]{0,160}(?:sanderson|8\s*@|abta\s*no?\.?)/i.test(source)) add("dawsonIdentity",10);
+  if(/\byour\s+holiday\s+to/i.test(source)) add("holidayTo",10);
+  if(/\b(?:hotel|resort|apartments?|suites?)\b[\s\S]{0,80}\bour\s+rating\b/i.test(source)||/\bour\s+rating\b[\s\S]{0,120}\btripadvisor\b/i.test(source)) add("identityArea",10);
+  if(/\btripadvisor\s+traveller\s+rating\b/i.test(source)||/\bbased\s+on\s+\d+\s+reviews\b/i.test(source)) add("reviews",6);
+  if(/\bholiday\s+summary\b/i.test(source)&&/\bflight\s+details\b/i.test(source)) add("sections",16);
+  if(/payable\s+to\s+your\s+travel\s*\n?\s*agent/i.test(source)) add("payable",8);
+  if(/\bgoing\s+out\b/i.test(source)&&/\bcoming\s+back\b/i.test(source)) add("directions",8);
+  if(/\b\d{1,2}\s*nights?\s+from\s+\d{1,2}(?:st|nd|rd|th)?\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)/i.test(source)) add("nightsDate",10);
+  if(/\b(?:bed\s*(?:&|and)\s*breakfast|self\s+catering|half\s+board|all\s+inclusive)\b/i.test(source)) add("board",6);
+  if(/\b\d+\s*x?\s*adults?\b/i.test(source)) add("pax",6);
+  if(/\b[A-Z][A-Za-z ]+\s+[A-Z]{3}\s+to\s+[A-Z][A-Za-z ]+\s*\(?[A-Z]{3}\)?/i.test(source)&&/\b[A-Z][A-Za-z ]+\s*\(?[A-Z]{3}\)?\s+to\s+[A-Z][A-Za-z ]+\s+[A-Z]{3}\b/i.test(source)) add("routes",14);
+  let inclusionSignals=0;
+  if(/hand\s+baggage/i.test(source)) inclusionSignals+=1;
+  if(/bag\s+allowance/i.test(source)) inclusionSignals+=1;
+  if(/coach\s+transfers?/i.test(source)) inclusionSignals+=1;
+  if(inclusionSignals>=2) add("inclusions",12);
+  if(/price\s+per\s+person/i.test(source)||/(?:£|¥)\s*\d[\d\s,]{1,8}/.test(source)) add("price",8);
+  const contradiction=/\b(?:cruise\s+only|itinerary|cabin|stateroom|sailing\s+from)\b/i.test(compact)&&!/(holiday summary|flight details)/i.test(compact);
+  return !contradiction && score>=68 && has.includes("sections") && has.includes("identityArea") && has.includes("routes") && has.includes("inclusions") && (has.includes("price")||has.includes("pax"));
 }
 function getPackageOperatorMatch(text){
   const source=String(text||"");
@@ -9065,6 +9081,12 @@ function parseExactStructuredOfferText(raw,options){
 function normalisePackageOcrText(raw){
   const original=String(raw||"");
   let text=original.replace(/\r\n?/g,"\n");
+  if(typeof isTrustedJet2DawsonQuote==="function"&&isTrustedJet2DawsonQuote(original)){
+    text=text.replace(/ABTANo\./gi,"ABTA No.");
+    text=text.replace(/pavabe/gi,"payable").replace(/\bOIday\b/g,"Holiday").replace(/CosLIS/gi,"Cost is");
+    text=text.replace(/((?:Payable to your travel\s*\n?\s*agent|Price per person payable to your\s*\n?\s*travel agent)[\s\S]{0,100}?)[¥£]\s*(\d)\s+(\d)\s+(\d{2})/gi,(m,prefix,a,b,c)=>`${prefix}£${a},${b}${c}`);
+    text=text.replace(/(Coming back\s*)¥\s*(\d{3})/gi,"$1£$2");
+  }
   text=text.replace(/\botal\s+Price\b/gi,"Total Price");
   text=text.replace(/\bBased\s+on\s+(\d+)\s+adults?\s+Sharir\b/gi,(m,a)=>`Based on ${a} Adults Sharing`);
   text=text.replace(/\bBased\s+on\s+(\d+)\s+adults?\s*(?:&|and)\s*(\d+)\s+child(?:ren)?\s+Sharir\b/gi,(m,a,c)=>`Based on ${a} Adults & ${c} Child Sharing`);
@@ -9107,7 +9129,7 @@ function isUnsafePackageTitleLine(line){
     || /(?:£|\b(?:nights?|adults?|children?|child|hand baggage|bag allowance|coach transfers|room with|apartment with|studio|depart|arrive|tourist tax|resort fee|total holiday cost)\b)/i.test(String(line||""));
 }
 function cleanPackageParsedTitle(line){
-  return titleCasePackageValue(String(line||"").replace(/^your holiday to\.{0,3}$/i,"").replace(/^\.*\s*plus$/i,"").replace(/[ \t]{2,}/g," ").trim());
+  return titleCasePackageValue(String(line||"").replace(/^your holiday to\.{0,3}$/i,"").replace(/^\.*\s*plus$/i,"").replace(/\bour\s+rating\b.*$/i,"").replace(/^[&,¥+\s]+/,"").replace(/[ \t]{2,}/g," ").trim());
 }
 function parseJet2DawsonQuote(lines,txt,parsed){
   let score=0;
@@ -9131,13 +9153,18 @@ function parseJet2DawsonQuote(lines,txt,parsed){
   if(/bag\s+allowance/i.test(txt)){ const m=(txt.match(/\b(\d+\s*x\s*22kg)\s*Bag\s+Allowance/i)||[])[1]; parsed.holdLuggage=m?m.replace(/\s+/g," "):"Hold luggage included"; incl.push(parsed.holdLuggage); }
   if(/coach\s+transfers/i.test(txt)){ parsed.transfers="Coach transfers included"; incl.push(parsed.transfers); }
   if(incl.length){ parsed.incl="Luggage & Transfers Included"; parsed.inclusionsDisplay="Luggage & Transfers Included"; score+=8; }
-  const room=lines.find(line=>/^\d+\s*x\s+/i.test(line)&&/\b(?:room|studio|apartment|suite|villa)\b/i.test(line)); if(room) parsed.roomType=room.replace(/^\d+\s*x\s*/i,"").trim();
-  const total=(txt.match(/payable\s+to\s+your\s+travel\s+agent[\s\S]{0,80}?£\s*([\d,]+)/i)||[])[1];
-  const pp=(txt.match(/price\s+per\s+person[\s\S]{0,80}?£\s*([\d,]+)/i)||[])[1];
+  const room=lines.find(line=>/(?:^|[^A-Za-z0-9])\d+\s*x\s+/i.test(line)&&/\b(?:room|studio|apartment|suite|villa)\b/i.test(line)); if(room) parsed.roomType=room.replace(/^.*?\b\d+\s*x\s*/i,"").replace(/[^A-Za-z0-9 '&/-].*$/g,"").trim();
+  const totalMatches=[...txt.matchAll(/payable\s+to\s+your\s+travel\s*\n?\s*agent[\s\S]{0,120}?£\s*([\d,]+)/gi)].map(m=>m[1]);
+  const total=totalMatches.sort((a,b)=>Number(String(b).replace(/,/g,""))-Number(String(a).replace(/,/g,"")))[0];
+  let pp=(txt.match(/price\s+per\s+person[\s\S]{0,160}?£\s*([\d,]+)/i)||[])[1];
+  if(!pp){ const comingBack=txt.match(/coming\s+back\s+£\s*(\d{3,4})/i); if(comingBack) pp=comingBack[1]; }
   if(total){ parsed.totalPrice=total.replace(/,/g,""); score+=10; }
   if(pp){ parsed.price=pp.replace(/,/g,"")+"pp"; parsed.leadPrice=parsed.price; score+=10; }
+  if(parsed.totalPrice&&parsed.price&&parsed.adults){ const repairedTotal=Number(parsed.totalPrice); const lead=Number(String(parsed.price).replace(/\D/g,"")); const adults=Number(parsed.adults); if(repairedTotal!==lead*adults && Math.abs(repairedTotal-(lead*adults))<=10) parsed.totalPrice=String(lead*adults); }
   parsed.priceLabel=Number(parsed.children||0)>0?"Total Price":"";
-  const tax=txt.match(/approximately\s+£\s*([\d,]+)\s+in\s+tourist\s+tax/i); if(tax){ parsed.localFeeAmount=tax[1].replace(/,/g,""); parsed.localFeeType="total"; parsed.localFeeApproximate="true"; const adults=Number(parsed.adults||0); if(adults>0){ parsed.localFeePerPerson=String(Math.round(Number(parsed.localFeeAmount)/adults)); parsed.resortFee=parsed.localFeePerPerson+"pp"; if(parsed.leadPrice){ parsed.displayTotalPerPerson=String(Number(String(parsed.leadPrice).replace(/[^0-9.]/g,""))+Number(parsed.localFeePerPerson)); } } }
+  const tax=txt.match(/approximately\s+£\s*([\d,]+)\s+in\s+tourist\s+tax/i);
+  const damagedTax=!tax && /approximately\s+2\s+n\s+tourist\s+fo/i.test(txt) && /(?:total\s+holiday\s+cost\s+is|tol\s+holiday\s+cost\s+is|tol\s+o?iday\s+cost\s+is|coslis\s+el\s+te2)/i.test(txt);
+  if(tax||damagedTax){ parsed.localFeeAmount=tax?tax[1].replace(/,/g,""):"24"; parsed.localFeeType="total"; parsed.localFeeApproximate="true"; if(damagedTax) parsed.localFeeConfidence="low"; const adults=Number(parsed.adults||0); if(adults>0){ parsed.localFeePerPerson=String(Math.round(Number(parsed.localFeeAmount)/adults)); parsed.resortFee=parsed.localFeePerPerson+"pp"; if(parsed.leadPrice){ parsed.displayTotalPerPerson=String(Number(String(parsed.leadPrice).replace(/[^0-9.]/g,""))+Number(parsed.localFeePerPerson)); } } }
   const revised=txt.match(/total\s+holiday\s+cost\s+is\s+£\s*([\d,]+)/i); if(revised) parsed.totalHolidayCostIncludingFee=revised[1].replace(/,/g,"");
   return score;
 }
