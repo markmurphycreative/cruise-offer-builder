@@ -2557,7 +2557,7 @@ function applyCampaignContext(type=currentCampaignType){
   return currentCampaignType;
 }
 applyCampaignContext(currentCampaignType);
-const FLDS = ["tags","theme_tags","name","ship","sailingFrom","incl","price","totalPrice","resortFee","basis","board","boardlbl","day","month","nights","ports","url","utm_content","adults","children","freeChildPlace","offerType"];
+const FLDS = ["tags","theme_tags","name","ship","sailingFrom","incl","price","totalPrice","resortFee","basis","board","boardlbl","day","month","nights","ports","url","utm_content","adults","children","freeChildPlace","offerType","flightDisplay","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeePerPerson","displayTotalPerPerson","roomType","handLuggage","holdLuggage","transfers"];
 const CTA_DEFAULTS = {enabled:false,text:"Click To Call Us For More Info",phone:"01912229701"};
 let ctaSettings = {...CTA_DEFAULTS};
 let poaAppliedSuggestions = {};
@@ -3338,12 +3338,20 @@ function parseScreenshotTextForActiveBuilder(text){
 function getOrderedScreenshotImports(){
   return pendingScreenshotImports.map((item,index)=>({item,index})).sort((a,b)=>((a.item&&Number.isFinite(a.item.uploadOrder))?a.item.uploadOrder:a.index)-((b.item&&Number.isFinite(b.item.uploadOrder))?b.item.uploadOrder:b.index));
 }
+function getPackageOperatorDisplayName(value){
+  const key=String(value||"").toLowerCase();
+  return (PACKAGE_OPERATORS&&PACKAGE_OPERATORS[key]&&PACKAGE_OPERATORS[key].name)||String(value||"");
+}
 function getScreenshotImportTitle(item){
   const p=(item&&item.result&&item.result.parsed)||{};
+  if(String(p.offerType||"").toLowerCase()==="package") return p.ship||p.name||p.ports||getPackageOperatorDisplayName(p.operatorKey||p.operator)||item.fileName||"Imported screenshot";
   return p.name||p.ship||p.ports||p.operator||item.fileName||"Imported screenshot";
 }
 function getScreenshotImportSummaryLines(item){
   const p=(item&&item.result&&item.result.parsed)||{};
+  if(String(p.offerType||"").toLowerCase()==="package"){
+    return [p.ship||p.name,getPackageOperatorDisplayName(p.operatorKey||p.operator)].map(v=>String(v||"").trim()).filter(Boolean).slice(0,2);
+  }
   return [p.name,p.ship,p.ports].map(v=>String(v||"").trim()).filter(Boolean).slice(0,2);
 }
 function getScreenshotImportReviewedText(item){ return item ? (item.reviewText!==undefined ? item.reviewText : item.text || "") : ""; }
@@ -3403,7 +3411,31 @@ function renderScreenshotImportReview(){
     const disabled=ok?'':' disabled';
     const active=index===activeScreenshotImportIndex;
     const warning=hasScreenshotImportMissingOperatorWarning(item)?" · Operator not detected":"";
-    return `<label class="screenshot-review-item ${ok?'':'error'}${active?' active':''}" onclick="setActiveScreenshotImport(${index})"><input type="checkbox" data-screenshot-import-index="${index}"${checked}${disabled} onclick="event.stopPropagation()" onchange="pendingScreenshotImports[${index}].selected=this.checked"><span class="screenshot-review-mark">${ok?'✓':'!'}</span><span><strong>${escapeHtml(getScreenshotImportTitle(item))}</strong><em>${escapeHtml((ok?confidence:"Couldn't read this screenshot")+warning)}</em></span></label>`;
+    const p=(item&&item.result&&item.result.parsed)||{};
+    const reviewDetails=String(p.offerType||"").toLowerCase()==="package" ? `<span class="screenshot-review-details">${[
+      ["Operator",getPackageOperatorDisplayName(p.operatorKey||p.operator)],
+      ["Destination",p.name],
+      ["Hotel",p.ship],
+      ["Nights",p.nights],
+      ["Board basis",p.boardlbl||p.board],
+      ["Departure date",formatPackageOrdinalDate([p.day,p.month].filter(Boolean).join(" "))],
+      ["Departure airport",p.sailingFrom],
+      ["Visible flight wording",p.flightDisplay],
+      ["Room type",p.roomType],
+      ["Adults",p.adults],
+      ["Children",p.children],
+      ["Hand luggage",p.handLuggage],
+      ["Hold luggage",p.holdLuggage],
+      ["Transfers",p.transfers],
+      ["Visible inclusion wording",p.inclusionsDisplay||p.incl],
+      ["Base price per person",formatPackageMoney(p.leadPrice||p.price)],
+      ["Booking total",formatPackageMoney(p.totalPrice)],
+      ["Local resort fee",p.localFeeAmount?`Approximately ${formatPackageMoney(p.localFeeAmount)} ${p.localFeeType==="total"?"total":""}`:""],
+      ["Local resort fee per person",formatPackageMoney(p.localFeePerPerson)],
+      ["Displayed total per person",formatPackageMoney(p.displayTotalPerPerson)],
+      ["Free Child Place",String(p.freeChildPlace)==="true"?"Yes":"No"]
+    ].filter(row=>String(row[1]||"").trim()).map(row=>`${escapeHtml(row[0])}: ${escapeHtml(row[1])}`).join("<br>")}</span>` : "";
+    return `<label class="screenshot-review-item ${ok?'':'error'}${active?' active':''}" onclick="setActiveScreenshotImport(${index})"><input type="checkbox" data-screenshot-import-index="${index}"${checked}${disabled} onclick="event.stopPropagation()" onchange="pendingScreenshotImports[${index}].selected=this.checked"><span class="screenshot-review-mark">${ok?'✓':'!'}</span><span><strong>${escapeHtml(getScreenshotImportTitle(item))}</strong><em>${escapeHtml((ok?confidence:"Couldn't read this screenshot")+warning)}</em>${reviewDetails}</span></label>`;
   }).join("");
   if(loadBtn) loadBtn.hidden=false;
 }
@@ -10054,7 +10086,7 @@ function prepareOfferSlotForParsedOffer(parsed){
   return true;
 }
 function applyParsedOffer(){if(!pendingParseResult) return; if(typeof isOfferLocked==="function" && isOfferLocked(cur)){ setParseStatus(getLockedOfferMessage(cur),"low"); cancelParsedOffer(); return; } const {parsed,confidence,rawText}=pendingParseResult; const isPackage=String((parsed&&parsed.offerType)||"").toLowerCase()==="package"; const hasParsedFields=isPackage ? canApplyParsedPackageOffer(parsed) : ['price','day','month','nights','board','ports'].some(k=>parsed[k]!==undefined&&parsed[k]!==''); if(!hasParsedFields){ setParseStatus(isPackage?"Not enough Package offer details to load this offer.":'No offer fields detected',isPackage?'partial':'low'); cancelParsedOffer(); return; } if(!isPackage&&typeof canApplyParsedCruiseOffer==="function"&&!canApplyParsedCruiseOffer(parsed)){ setParseStatus("Not enough offer details to load this Cruise offer.","partial"); cancelParsedOffer(); return; } if(!prepareOfferSlotForParsedOffer(parsed)){ setParseStatus('No offer fields detected','low'); cancelParsedOffer(); return; } const pasteSourceText=rawText||((document.getElementById("raw-paste")||{}).value||""); if(pasteSourceText) offers[cur]._rawPastedOfferText=pasteSourceText; if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(cur); if(isPackage){ offers[cur]={[typeof PERSISTED_PASTE_OFFER_KEY!=="undefined"?PERSISTED_PASTE_OFFER_KEY:"_rawPastedOfferText"]:pasteSourceText}; } const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offers[cur].operator)){ continue; } const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; offers[cur]._tagsManualOverride=false; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
-  if(isPackage){ offers[cur].offerType="package"; offers[cur].operator=parsed.operatorKey||parsed.operator||""; ["totalPrice","resortFee","adults","children","freeChildPlace","priceLabel","leadPrice","roomType","handLuggage","holdLuggage","transfers","localFeeAmount","localFeeType","localFeeApproximate"].forEach(k=>{ if(parsed[k]!==undefined&&parsed[k]!=="") offers[cur][k]=String(parsed[k]); }); }
+  if(isPackage){ offers[cur].offerType="package"; offers[cur].operator=parsed.operatorKey||parsed.operator||""; ["totalPrice","resortFee","adults","children","freeChildPlace","priceLabel","leadPrice","roomType","handLuggage","holdLuggage","transfers","flightDisplay","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeePerPerson","displayTotalPerPerson","totalHolidayCostIncludingFee","sourceLocation"].forEach(k=>{ if(parsed[k]!==undefined&&parsed[k]!=="") offers[cur][k]=String(parsed[k]); }); }
   if(parsed.departurePort) offers[cur].departurePort=String(parsed.departurePort);
   if(parsed._poaDepartureAirport) offers[cur]._poaDepartureAirport=String(parsed._poaDepartureAirport);
   if(!offers[cur]._sailingFromManual && typeof applyAutoSailingFromToOffer==="function"){
@@ -10618,7 +10650,7 @@ function getActiveRenderCampaignType(d){
 function isPackageOffer(d){ return getActiveRenderCampaignType(d)==="package"; }
 function packageOfferFromData(d){
   d=d||{};
-  const operator=String(d.operator||"").toLowerCase();
+  const operator=String(d.operator||d.operatorKey||"").toLowerCase();
   const airport=String(d.flightDisplay||d.sailingFrom||d.ports||d.flyingFrom||"").split(/[•,\n]/)[0].trim();
   const adults=String(d.adults||"").trim() || ((String(d.basis||"").match(/(\d+)\s*Adults?/i)||[])[1]);
   const children=String(d.children||"").trim() || ((String(d.basis||"").match(/(\d+)\s*Child(?:ren)?/i)||[])[1]);

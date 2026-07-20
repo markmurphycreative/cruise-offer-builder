@@ -121,3 +121,51 @@ test('Weak package fragments are not loadable package payloads', () => {
   assert.equal(detectPackageOffer('Hotel\nFlights\n7 Nights').isPackage, false);
   assert.equal(canApplyParsedPackageOffer(parsePackageOfferText('Hotel\nFlights\n7 Nights', {}).parsed), false);
 });
+
+test('real screenshot import state path carries Dawson Jet2 structure into active offer and final package render', () => {
+  const context = {
+    console,
+    currentCampaignType: 'package',
+    offers: [{}, {}, {}, {}],
+    document: { getElementById(id){ return id === 'g-airport' ? { value: 'Newcastle' } : null; } },
+    clearHeroImageDataFromOffer(){},
+    applyAutoSailingFromToOffer(){},
+    applyOperatorTopBarUspDefault(){},
+    stripTransientPasteOfferFields(){},
+    defaultTopBarUspForOperator(){ return ''; },
+    normaliseCampaignType(value){ return value || 'package'; },
+    clampParseConfidenceScore:v=>Math.max(0,Math.min(100,Number(v)||0))
+  };
+  vm.createContext(context);
+  vm.runInContext([
+    'function escapeRegExp(value){ return String(value||"").replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&"); }',
+    extractFunction('escapeHtml'),
+    extractConst('PACKAGE_OFFER_DETECTION_THRESHOLD'), extractConst('PACKAGE_OFFER_SIGNAL_WEIGHTS'),
+    extractConst('PACKAGE_OPERATORS'), extractConst('PACKAGE_BOARD_BASES'), extractConst('PACKAGE_FEATURES'), extractConst('PACKAGE_AIRPORTS'),
+    'const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};',
+    extractFunction('getActiveRenderCampaignType'), extractFunction('isPackageOperator'), extractFunction('isPackageOffer'),
+    extractFunction('isTrustedJet2DawsonQuote'), extractFunction('getPackageOperatorMatch'), extractFunction('detectPackageOffer'), extractFunction('normaliseVisionExtractedText'), extractFunction('normalisePackageOcrText'), extractFunction('titleCasePackageValue'), extractFunction('detectPackageBoardBasis'), extractFunction('extractPackageSharingBasis'), extractFunction('extractPackagePrices'), extractFunction('isUnsafePackageTitleLine'), extractFunction('cleanPackageParsedTitle'), extractFunction('parseJet2DawsonQuote'), extractFunction('parsePackageOfferText'), extractFunction('parseScreenshotTextForActiveBuilder'), extractFunction('applyParsedOfferToSlot'),
+    extractFunction('formatPackageOrdinalDate'), extractFunction('packageOfferFromData'), extractFunction('formatPackageMoney'), extractFunction('packageAirportLine'), extractFunction('packageResortFeeText'), extractFunction('renderPackagePriceBlock'), extractFunction('renderPackageCard')
+  ].join('\n'), context);
+
+  const result = vm.runInContext('parseScreenshotTextForActiveBuilder(raw)', Object.assign(context, { raw: jet2DawsonSunset }));
+  assert.equal(result.parsed.operatorKey, 'jet2');
+  assert.equal(result.parsed.ship, 'Sunset Paradise Resort');
+
+  const loaded = vm.runInContext('applyParsedOfferToSlot(result, 0, raw)', Object.assign(context, { result, raw: jet2DawsonSunset }));
+  assert.equal(loaded, true);
+  const active = context.offers[0];
+  assert.equal(active.operator, 'jet2');
+  assert.equal(active.name, 'Kefalonia, Greece');
+  assert.equal(active.ship, 'Sunset Paradise Resort');
+  assert.equal(active.flightDisplay, 'Newcastle Flights');
+  assert.equal(active.inclusionsDisplay, 'Luggage & Transfers Included');
+  assert.equal(active.localFeePerPerson, '12');
+  assert.equal(active.displayTotalPerPerson, '586');
+
+  const htmlOutput = vm.runInContext('renderPackageCard(offers[0])', context);
+  const visibleText = htmlOutput.replace(/<span class=\"pkg-pp\">pp<\/span>/g, 'pp').replace(/<[^>]+>/g, '');
+  ['Kefalonia, Greece','Sunset Paradise Resort','21st July 2026','Newcastle Flights','Luggage &amp; Transfers Included','+£12pp Local Resort Fee','Total Price','Based on 2 Adults Sharing','assets/package-skins/jet2/header-couples.png','assets/package-skins/jet2/footer.png','assets/operator-logos/jet2-holidays-logo.png'].forEach(expected => assert.match(htmlOutput, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))));
+  ['£574pp','£586pp'].forEach(expected => assert.match(visibleText, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))));
+  assert.doesNotMatch(htmlOutput, /Operator not detected|Our Rating|TripAdvisor|176 Reviews|Hand Luggage Included|Coach Transfers/);
+});
