@@ -1113,35 +1113,35 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
       </div>
       <div class="section-body hidden">
         <div class="fg2">
-          <div class="field"><label>Cruise Name</label><input id="f-name" spellcheck="true" placeholder="Eastern Caribbean..." oninput="up()"></div>
-          <div class="field"><label>Ship Name</label><input id="f-ship" spellcheck="true" placeholder="Arvia" oninput="up()"></div>
-          <div class="field"><label>Sailing From</label><input id="f-sailingFrom" spellcheck="true" placeholder="Rome" oninput="handleSailingFromInput()"></div>
+          <div class="field" data-field="name"><label>Cruise Name</label><input id="f-name" spellcheck="true" placeholder="Eastern Caribbean..." oninput="up()"></div>
+          <div class="field" data-field="ship"><label>Ship Name</label><input id="f-ship" spellcheck="true" placeholder="Arvia" oninput="up()"></div>
+          <div class="field" data-field="sailingFrom"><label>Sailing From</label><input id="f-sailingFrom" spellcheck="true" placeholder="Rome" oninput="handleSailingFromInput()"></div>
         </div>
         <div class="spell-warn" id="spell-warn-name"></div>
         <div class="field" id="field-tags"><label>Top Bar Highlights</label><input id="f-tags" spellcheck="true" placeholder="Adult Only Options · Cuisine · Entertainment · Family" oninput="up()"></div>
         <div class="spell-warn" id="spell-warn-tags"></div>
-        <div class="field" id="field-incl"><label>Inclusions</label><textarea id="f-incl" spellcheck="true" placeholder="Newcastle Flights, Luggage &amp; Transfers Included" oninput="up()"></textarea></div>
+        <div class="field" id="field-incl" data-field="incl"><label>Inclusions</label><textarea id="f-incl" spellcheck="true" placeholder="Newcastle Flights, Luggage &amp; Transfers Included" oninput="up()"></textarea></div>
         <div class="field" id="field-theme_tags"><label>Theme Tags</label><input id="f-theme_tags" spellcheck="true" placeholder="Luxury · Scenic Cruising · Norwegian Fjords" oninput="up()"></div>
         <div class="fg2">
-          <div class="field"><label>Footer CTA Primary</label><input id="f-ctaPrimary" spellcheck="true" placeholder="Start your booking" oninput="up()"></div>
-          <div class="field"><label>Footer CTA Secondary</label><input id="f-ctaSecondary" spellcheck="true" placeholder="or visit us in store" oninput="up()"></div>
+          <div class="field" data-field="ctaPrimary"><label>Footer CTA Primary</label><input id="f-ctaPrimary" spellcheck="true" placeholder="Start your booking" oninput="up()"></div>
+          <div class="field" data-field="ctaSecondary"><label>Footer CTA Secondary</label><input id="f-ctaSecondary" spellcheck="true" placeholder="or visit us in store" oninput="up()"></div>
         </div>
         <div class="fg2">
-          <div class="field"><label>Lead / Total Price (£)</label><input id="f-price" placeholder="799" oninput="up()"></div>
-          <div class="field"><label>Total Price (£, Package optional)</label><input id="f-totalPrice" placeholder="656" oninput="up()"></div>
-          <div class="field"><label>Resort Fee (£, Package optional)</label><input id="f-resortFee" placeholder="10pp" oninput="up()"></div>
-          <div class="field"><label>Price Label</label><input id="f-priceLabel" spellcheck="true" placeholder="Total Price" oninput="up()"></div>
-          <div class="field"><label>Price Basis</label><input id="f-basis" spellcheck="true" placeholder="Based on 2 Adults Sharing" oninput="up()"></div>
-          <div class="field"><label>Per Person Suffix</label><input id="f-packagePerPersonSuffix" spellcheck="true" placeholder="pp" oninput="up()"></div>
-          <div class="field"><label>Local Resort Fee Label</label><input id="f-packageResortFeeLabel" spellcheck="true" placeholder="Local Resort Fee" oninput="up()"></div>
-          <div class="field"><label>Nights Label</label><input id="f-packageNightsLabel" spellcheck="true" placeholder="Nights" oninput="up()"></div>
-          <div class="field"><label>Flights Label</label><input id="f-packageFlightsLabel" spellcheck="true" placeholder="Flights" oninput="up()"></div>
-          <div class="field"><label>Board</label><input id="f-board" placeholder="FB" oninput="autoBoardLabel(); up()"></div>
-          <div class="field"><label>Board Basis</label><input id="f-boardlbl" placeholder="Full Board" oninput="up()"></div>
-          <div class="field"><label>Date</label><input id="f-saildate" placeholder="20 November 2026" oninput="splitSailDate();up()"><input type="hidden" id="f-day" value=""><input type="hidden" id="f-month" value=""></div>
-          <div class="field"><label>Nights</label><input id="f-nights" placeholder="14" oninput="up()"></div>
+          <div class="field" data-field="price"><label>Lead / Total Price (£)</label><input id="f-price" placeholder="799" oninput="up()"></div>
+          <div class="field" data-field="totalPrice"><label>Total Price (£, Package optional)</label><input id="f-totalPrice" placeholder="656" oninput="up()"></div>
+          <div class="field" data-field="resortFee"><label>Resort Fee (£, Package optional)</label><input id="f-resortFee" placeholder="10pp" oninput="up()"></div>
+          <div class="field" data-field="priceLabel"><label>Price Label</label><input id="f-priceLabel" spellcheck="true" placeholder="Total Price" oninput="up()"></div>
+          <div class="field" data-field="basis"><label>Price Basis</label><input id="f-basis" spellcheck="true" placeholder="Based on 2 Adults Sharing" oninput="up()"></div>
+          <div class="field" data-field="packagePerPersonSuffix"><label>Per Person Suffix</label><input id="f-packagePerPersonSuffix" spellcheck="true" placeholder="pp" oninput="up()"></div>
+          <div class="field" data-field="packageResortFeeLabel"><label>Local Resort Fee Label</label><input id="f-packageResortFeeLabel" spellcheck="true" placeholder="Local Resort Fee" oninput="up()"></div>
+          <div class="field" data-field="packageNightsLabel"><label>Nights Label</label><input id="f-packageNightsLabel" spellcheck="true" placeholder="Nights" oninput="up()"></div>
+          <div class="field" data-field="packageFlightsLabel"><label>Flights Label</label><input id="f-packageFlightsLabel" spellcheck="true" placeholder="Flights" oninput="up()"></div>
+          <div class="field" data-field="board"><label>Board</label><input id="f-board" placeholder="FB" oninput="autoBoardLabel(); up()"></div>
+          <div class="field" data-field="boardlbl"><label>Board Basis</label><input id="f-boardlbl" placeholder="Full Board" oninput="up()"></div>
+          <div class="field" data-field="date"><label>Date</label><input id="f-saildate" placeholder="20 November 2026" oninput="splitSailDate();up()"><input type="hidden" id="f-day" value=""><input type="hidden" id="f-month" value=""></div>
+          <div class="field" data-field="nights"><label>Nights</label><input id="f-nights" placeholder="14" oninput="up()"></div>
         </div>
-        <div class="field"><label>Ports (separate with •)</label><textarea id="f-ports" spellcheck="true" placeholder="Barbados • Martinique • St Kitts • Tortola • St Maarten • Antigua • St Lucia • Grenada" oninput="handlePortsInput()"></textarea></div>
+        <div class="field" data-field="ports"><label>Ports (separate with •)</label><textarea id="f-ports" spellcheck="true" placeholder="Barbados • Martinique • St Kitts • Tortola • St Maarten • Antigua • St Lucia • Grenada" oninput="handlePortsInput()"></textarea></div>
         <div class="warn-box" id="ports-warn"></div>
         <div class="spell-warn" id="spell-warn-ports"></div>
       </div>
@@ -2561,6 +2561,18 @@ function syncOperatorDropdownForCampaign(type=currentCampaignType){
     if(offers&&offers[cur]) offers[cur].operator="";
   }
 }
+function syncPackageOfferDetailsFields(type=currentCampaignType){
+  const isPackage=normaliseCampaignType(type)==="package";
+  const labels={name:isPackage?"Destination":"Cruise Name",ship:isPackage?"Hotel / Accommodation":"Ship Name",sailingFrom:isPackage?"Departure Airport":"Sailing From",incl:isPackage?"Inclusion Text":"Inclusions",ctaPrimary:isPackage?"CTA Primary":"Footer CTA Primary",ctaSecondary:isPackage?"CTA Secondary":"Footer CTA Secondary",price:isPackage?"Lead Price (£)":"Lead / Total Price (£)",basis:isPackage?"Occupancy / Based On Copy":"Price Basis",boardlbl:isPackage?"Board Basis":"Board Basis",date:isPackage?"Departure Date":"Date",ports:"Ports (separate with •)"};
+  document.querySelectorAll('[data-field]').forEach(field=>{
+    const key=field.getAttribute('data-field');
+    const label=field.querySelector('label');
+    if(label && labels[key]) label.textContent=labels[key];
+    const cruiseOnly=["tags","theme_tags","ports","board"].includes(key) || (!isPackage && false);
+    field.style.display=isPackage && cruiseOnly ? "none" : "";
+  });
+  ["field-tags","field-theme_tags","ports-warn","spell-warn-ports","spell-warn-tags"].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=isPackage?"none":""; });
+}
 function applyCampaignContext(type=currentCampaignType){
   currentCampaignType=normaliseCampaignType(type);
   const label=getCampaignTypeLabel(currentCampaignType);
@@ -2573,6 +2585,7 @@ function applyCampaignContext(type=currentCampaignType){
   const field=document.getElementById("g-campaign-type");
   if(field) field.value=label;
   syncOperatorDropdownForCampaign(currentCampaignType);
+  if(typeof syncPackageOfferDetailsFields==="function") syncPackageOfferDetailsFields(currentCampaignType);
   if(typeof updateImportBuilderMenu==="function") updateImportBuilderMenu(currentCampaignType);
   return currentCampaignType;
 }
@@ -2902,6 +2915,11 @@ function save(){
   FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e){ if(typeof removeSubjectToConditions==="function") e.value=removeSubjectToConditions(e.value); offers[cur][f]=f==="ship"&&typeof normaliseRoyalCaribbeanShipName==="function"?normaliseRoyalCaribbeanShipName(e.value):(f==="name"&&typeof normaliseTitleConnectors==="function"?normaliseTitleConnectors(e.value):e.value); } });
   const sf=document.getElementById("f-sailingFrom"); if(sf && offers[cur]._sailingFromManual===undefined) offers[cur]._sailingFromManual=String(sf.value||"").trim()!==(typeof getAutoSailingFromForOffer==="function"?getAutoSailingFromForOffer(offers[cur]):getAutoSailingFromForPorts(offers[cur].ports||""));
   const op=document.getElementById("f-operator"); if(op) offers[cur].operator=isOperatorValidForCampaign(op.value,currentCampaignType)?op.value:"";
+  if(normaliseCampaignType(currentCampaignType)==="package"){
+    offers[cur].offerType="package";
+    applyPackageCopyInputOverrides(offers[cur],offers[cur]);
+    normalisePackagePricingFields(offers[cur]);
+  }
   const logoDisplay=document.getElementById("f-logo-display"); if(logoDisplay) offers[cur]._logoDisplay=logoDisplay.value||"operator";
 }
 function normalizeCropPositionForOffer(offer){
@@ -10807,12 +10825,16 @@ function normalisePackagePricingFields(data){
   return d;
 }
 
+function packageDateFromData(d){
+  if(d&&d.departureDate) return formatPackageOrdinalDate(d.departureDate);
+  return formatPackageOrdinalDate([d&&d.day,d&&d.month].filter(Boolean).join(" "));
+}
 function packageOfferFromData(d){
   const packageNumericValueLocal=value=>{ const raw=String(value==null?"":value).replace(/,/g,"").trim(); const match=raw.match(/-?\d+(?:\.\d+)?/); return match?Number(match[0]):0; };
   const packageCleanNumericStringLocal=value=>{ const n=packageNumericValueLocal(value); return n?String(n):""; };
   d=d||{};
   const operator=String(d.operator||d.operatorKey||"").toLowerCase();
-  const airport=String(d.flightDisplay||d.sailingFrom||d.ports||d.flyingFrom||"").split(/[•,\n]/)[0].trim();
+  const airport=String(d.departureAirport||d.flightDisplay||d.sailingFrom||d.flyingFrom||"").replace(/\s+Flights?$/i,"").split(/[•,\n]/)[0].trim();
   const adults=String(d.adults||"").trim() || ((String(d.basis||"").match(/(\d+)\s*Adults?/i)||[])[1]);
   const children=String(d.children||"").trim() || ((String(d.basis||"").match(/(\d+)\s*Child(?:ren)?/i)||[])[1]);
   const localFeeAmount=String(d.localFeeAmount||"").trim();
@@ -10826,7 +10848,7 @@ function packageOfferFromData(d){
   const feePerPerson=packageNumericValueLocal(localFeePerPerson||resortFee);
   const derivedJet2Total=operator==="jet2"&&Number(children||0)<=0&&leadPrice&&feePerPerson?String(packageNumericValueLocal(leadPrice)+feePerPerson):"";
   return {
-    offerType:"package", operator, ctaPrimary, ctaSecondary, destination:d.name||"", hotel:d.ship||"", nights:d.nights||"", boardBasis:d.boardlbl||d.board||"", departureDate:formatPackageOrdinalDate([d.day,d.month].filter(Boolean).join(" ")), departureAirport:airport, leadPrice:leadPrice||d.leadPrice||d.price||"", resortFee, totalPrice:derivedJet2Total||d.displayTotalPerPerson||d.totalPrice||d.price||"", adults:adults||"2", children:children||"0", roomType:d.roomType||"", handLuggage:d.handLuggage||"", holdLuggage:d.holdLuggage||"", transfers:d.transfers||"", freeChildPlace:!!(d.freeChildPlace&&String(d.freeChildPlace)!=="false"||/free child place/i.test([d.tags,d.theme_tags].join(" "))), priceLabel:packageCopyValue(d,"priceLabel",cfgForCta), perPersonSuffix:packageCopyValue(d,"perPersonSuffix",cfgForCta), resortFeeLabel:packageCopyValue(d,"resortFeeLabel",cfgForCta), nightsLabel:packageCopyValue(d,"nightsLabel",cfgForCta), flightsLabel:packageCopyValue(d,"flightsLabel",cfgForCta), basis:packageCopyValue(d,"basis",cfgForCta), inclusions:packageCopyValue(d,"inclusions",cfgForCta), features:String(d.theme_tags||d.tags||"").split(/\s*[•·,]\s*/).filter(Boolean)
+    offerType:"package", operator, ctaPrimary, ctaSecondary, destination:d.destination||d.name||"", hotel:d.accommodation||d.hotel||d.ship||"", nights:d.nights||"", boardBasis:d.boardBasis||d.boardlbl||d.board||"", departureDate:(d.departureDate?formatPackageOrdinalDate(d.departureDate):formatPackageOrdinalDate([d.day,d.month].filter(Boolean).join(" "))), departureAirport:airport, leadPrice:leadPrice||d.leadPrice||d.price||"", resortFee, totalPrice:derivedJet2Total||d.displayTotalPerPerson||d.totalPrice||"", adults:adults||"2", children:children||"0", roomType:d.roomType||"", handLuggage:d.handLuggage||"", holdLuggage:d.holdLuggage||"", transfers:d.transfers||"", freeChildPlace:!!(d.freeChildPlace&&String(d.freeChildPlace)!=="false"||/free child place/i.test([d.tags,d.theme_tags].join(" "))), priceLabel:packageCopyValue(d,"priceLabel",cfgForCta), perPersonSuffix:packageCopyValue(d,"perPersonSuffix",cfgForCta), resortFeeLabel:packageCopyValue(d,"resortFeeLabel",cfgForCta), nightsLabel:packageCopyValue(d,"nightsLabel",cfgForCta), flightsLabel:packageCopyValue(d,"flightsLabel",cfgForCta), basis:packageCopyValue(d,"basis",cfgForCta), inclusions:packageCopyValue(d,"inclusions",cfgForCta), features:String(d.theme_tags||d.tags||"").split(/\s*[•·,]\s*/).filter(Boolean)
   };
 }
 function formatPackageMoney(value){
@@ -10882,9 +10904,7 @@ function renderPackageCard(d){
   const freeChild=model.freeChildPlace || model.features.some(f=>/free child place/i.test(f));
   const ribbon=model.operator==="jet2"&&freeChild?"Offer Includes a Free Child Place":"";
   const jet2Couples=model.operator==="jet2" && Number(model.children||0)<=0;
-  const details=jet2Couples
-    ? [model.nights?[model.nights,model.nightsLabel].filter(Boolean).join(" "):"",model.boardBasis,model.departureDate,packageAirportLine(model.departureAirport,model.flightsLabel),model.inclusions].filter(Boolean)
-    : [model.nights?[model.nights,model.nightsLabel].filter(Boolean).join(" "):"",model.boardBasis,model.departureDate,packageAirportLine(model.departureAirport,model.flightsLabel),model.roomType,model.handLuggage,model.holdLuggage,model.transfers||model.inclusions].filter(Boolean);
+  const details=[model.nights?[model.nights,model.nightsLabel].filter(Boolean).join(" "):"",model.boardBasis,model.departureDate,packageAirportLine(model.departureAirport,model.flightsLabel),model.inclusions].filter(Boolean);
   const skin=cfg.skin||{};
   const headerSrc=model.operator==="jet2"?(freeChild?skin.headerFamily:skin.headerCouples):skin.header;
   const footerSrc=skin.footer;
@@ -11199,6 +11219,8 @@ function currentFormData(){
   FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e) d[f]=f==="ship"&&typeof normaliseRoyalCaribbeanShipName==="function"?normaliseRoyalCaribbeanShipName(e.value):e.value; });
   const op=document.getElementById("f-operator");
   if(op) d.operator=op.value;
+  if(normaliseCampaignType(typeof currentCampaignType!=="undefined"?currentCampaignType:"cruise")==="package") d.offerType="package";
+  applyPackageCopyInputOverrides(d,d);
   applyJet2PackageDefaults(d);
   normalisePackagePricingFields(d);
   cobTraceSourceTag(d, "currentFormData()");
@@ -11513,6 +11535,7 @@ function saveEditorToOffer(){
 }
 
 function loadOfferToEditor(i){
+  if(normaliseCampaignType(currentCampaignType)==="package" && (!offers[i] || Object.keys(offers[i]).length===0)) offers[i]={offerType:"package"};
   const o = applyJet2PackageDefaults(normalisePackagePricingFields(stripTransientPasteOfferFields(offers[i] || {})));
   restoreRawPasteForOffer(i);
   if(o.operator||o.name||o.ship||o.price||o.incl||o.ports) applyOperatorTopBarUspDefault(o,o.operator||"");
@@ -11655,6 +11678,7 @@ function visibleFieldsToData(){
     const e = document.getElementById('f-' + f);
     if(e) base[f] = e.value || '';
   });
+  if(normaliseCampaignType(currentCampaignType)==='package') base.offerType='package';
   if((base.offerType||currentCampaignType)==='package') applyPackageCopyInputOverrides(base,base);
   const sf=document.getElementById('f-sailingFrom'); if(sf) base._sailingFromManual=!!((offers[cur]||{})._sailingFromManual);
   const op = document.getElementById('f-operator');
