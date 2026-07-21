@@ -2577,7 +2577,7 @@ function applyCampaignContext(type=currentCampaignType){
   return currentCampaignType;
 }
 applyCampaignContext(currentCampaignType);
-const FLDS = ["tags","theme_tags","ctaPrimary","ctaSecondary","name","ship","sailingFrom","incl","price","totalPrice","resortFee","priceLabel","basis","board","boardlbl","day","month","nights","ports","url","utm_content","adults","children","freeChildPlace","offerType","flightDisplay","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeePerPerson","displayTotalPerPerson","roomType","handLuggage","holdLuggage","transfers","packagePerPersonSuffix","packageResortFeeLabel","packageNightsLabel","packageFlightsLabel"];
+const FLDS = ["tags","theme_tags","ctaPrimary","ctaSecondary","name","ship","sailingFrom","incl","price","totalPrice","resortFee","priceLabel","basis","board","boardlbl","day","month","nights","ports","url","utm_content","adults","children","freeChildPlace","offerType","flightDisplay","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeePerPerson","displayTotalPerPerson","roomType","handLuggage","holdLuggage","transfers","packagePerPersonSuffix","packageResortFeeLabel","packageNightsLabel","packageFlightsLabel","packageCopyOverrides"];
 const CTA_DEFAULTS = {enabled:false,text:"Click To Call Us For More Info",phone:"01912229701"};
 let ctaSettings = {...CTA_DEFAULTS};
 let poaAppliedSuggestions = {};
@@ -10142,7 +10142,7 @@ function prepareOfferSlotForParsedOffer(parsed){
   return true;
 }
 function applyParsedOffer(){if(!pendingParseResult) return; if(typeof isOfferLocked==="function" && isOfferLocked(cur)){ setParseStatus(getLockedOfferMessage(cur),"low"); cancelParsedOffer(); return; } const {parsed,confidence,rawText}=pendingParseResult; const isPackage=String((parsed&&parsed.offerType)||"").toLowerCase()==="package"; const hasParsedFields=isPackage ? canApplyParsedPackageOffer(parsed) : ['price','day','month','nights','board','ports'].some(k=>parsed[k]!==undefined&&parsed[k]!==''); if(!hasParsedFields){ setParseStatus(isPackage?"Not enough Package offer details to load this offer.":'No offer fields detected',isPackage?'partial':'low'); cancelParsedOffer(); return; } if(!isPackage&&typeof canApplyParsedCruiseOffer==="function"&&!canApplyParsedCruiseOffer(parsed)){ setParseStatus("Not enough offer details to load this Cruise offer.","partial"); cancelParsedOffer(); return; } if(!prepareOfferSlotForParsedOffer(parsed)){ setParseStatus('No offer fields detected','low'); cancelParsedOffer(); return; } const pasteSourceText=rawText||((document.getElementById("raw-paste")||{}).value||""); if(pasteSourceText) offers[cur]._rawPastedOfferText=pasteSourceText; if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(cur); if(isPackage){ offers[cur]={[typeof PERSISTED_PASTE_OFFER_KEY!=="undefined"?PERSISTED_PASTE_OFFER_KEY:"_rawPastedOfferText"]:pasteSourceText}; } const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offers[cur].operator)){ continue; } const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; offers[cur]._tagsManualOverride=false; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
-  if(isPackage){ offers[cur].offerType="package"; offers[cur].operator=parsed.operatorKey||parsed.operator||""; applyJet2PackageDefaults(offers[cur]); if(offers[cur].operator==="jet2"){ if(!Object.prototype.hasOwnProperty.call(offers[cur],"ctaPrimary")) offers[cur].ctaPrimary="Start your booking"; if(!Object.prototype.hasOwnProperty.call(offers[cur],"ctaSecondary")) offers[cur].ctaSecondary="or visit us in store"; } ["totalPrice","resortFee","adults","children","freeChildPlace","priceLabel","leadPrice","roomType","handLuggage","holdLuggage","transfers","flightDisplay","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeePerPerson","displayTotalPerPerson","totalHolidayCostIncludingFee","sourceLocation"].forEach(k=>{ if(parsed[k]!==undefined&&parsed[k]!=="") offers[cur][k]=String(parsed[k]); }); normalisePackagePricingFields(offers[cur]); }
+  if(isPackage){ offers[cur].offerType="package"; offers[cur].operator=parsed.operatorKey||parsed.operator||""; applyJet2PackageDefaults(offers[cur]); ["totalPrice","resortFee","adults","children","freeChildPlace","priceLabel","leadPrice","roomType","handLuggage","holdLuggage","transfers","flightDisplay","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeePerPerson","displayTotalPerPerson","totalHolidayCostIncludingFee","sourceLocation"].forEach(k=>{ if(parsed[k]!==undefined&&parsed[k]!=="") offers[cur][k]=String(parsed[k]); }); normalisePackagePricingFields(offers[cur]); }
   if(parsed.departurePort) offers[cur].departurePort=String(parsed.departurePort);
   if(parsed._poaDepartureAirport) offers[cur]._poaDepartureAirport=String(parsed._poaDepartureAirport);
   if(!offers[cur]._sailingFromManual && typeof applyAutoSailingFromToOffer==="function"){
@@ -10698,6 +10698,72 @@ const PACKAGE_BOARD_BASES = ["Room Only","Bed & Breakfast","Half Board","Full Bo
 const PACKAGE_FEATURES = ["Free Child Place","Adults Only","Family","Luxury","City Break","Beach Holiday"];
 const PACKAGE_AIRPORTS = ["Newcastle","Manchester","Birmingham","Glasgow","Edinburgh"];
 function isPackageOperator(key){ return !!(PACKAGE_OPERATORS[String(key||"").toLowerCase()]); }
+const PACKAGE_COPY_FIELDS = {
+  ctaPrimary:{field:"ctaPrimary",defaultValue:"Start your booking"},
+  ctaSecondary:{field:"ctaSecondary",defaultValue:"or visit us in store",optional:true},
+  priceLabel:{field:"priceLabel",defaultValue:"Total Price",optional:true},
+  basis:{field:"basis",defaultValue:null,optional:true},
+  inclusions:{field:"inclusionsDisplay",legacyField:"incl",defaultValue:"Luggage & Transfers Included",optional:true},
+  perPersonSuffix:{field:"packagePerPersonSuffix",defaultValue:"pp"},
+  resortFeeLabel:{field:"packageResortFeeLabel",defaultValue:null,optional:true},
+  nightsLabel:{field:"packageNightsLabel",defaultValue:"Nights"},
+  flightsLabel:{field:"packageFlightsLabel",defaultValue:"Flights"}
+};
+function packageDefaultCopyValue(key,d,cfg){
+  d=d||{}; cfg=cfg||{};
+  const adults=String(d.adults||"").trim() || ((String(d.basis||"").match(/(\d+)\s*Adults?/i)||[])[1]) || "2";
+  const children=String(d.children||"").trim() || ((String(d.basis||"").match(/(\d+)\s*Child(?:ren)?/i)||[])[1]) || "0";
+  if(key==="basis") return `Based on ${adults} Adult${Number(adults)===1?"":"s"}${Number(children)>0?` & ${children} Child${Number(children)===1?"":"ren"}`:""} Sharing`;
+  if(key==="resortFeeLabel") return String(d.operator||d.operatorKey||"").toLowerCase()==="easyjet"?"Total Local Resort Fee":"Local Resort Fee";
+  if(key==="ctaPrimary") return String((cfg&&cfg.ctaText)||"Start your booking");
+  if(key==="ctaSecondary") return String((cfg&&cfg.ctaSecondary)||"or visit us in store");
+  return PACKAGE_COPY_FIELDS[key]?String(PACKAGE_COPY_FIELDS[key].defaultValue||""):"";
+}
+function normalisePackageCopyOverrides(d){
+  if(!d) return {};
+  const raw=d.packageCopyOverrides;
+  if(raw&&typeof raw==="object"&&!Array.isArray(raw)) return raw;
+  if(typeof raw==="string"&&raw.trim()){ try{ const parsed=JSON.parse(raw); return parsed&&typeof parsed==="object"&&!Array.isArray(parsed)?parsed:{}; }catch(e){ return {}; } }
+  return {};
+}
+function packageCopyValue(d,key,cfg){
+  const meta=PACKAGE_COPY_FIELDS[key]||{};
+  const overrides=normalisePackageCopyOverrides(d);
+  if(Object.prototype.hasOwnProperty.call(overrides,key)) return String(overrides[key] == null ? "" : overrides[key]);
+  const fallback=packageDefaultCopyValue(key,d,cfg);
+  const legacyKeys=[meta.field,meta.legacyField].filter(Boolean);
+  for(const legacyKey of legacyKeys){
+    if(Object.prototype.hasOwnProperty.call(d,legacyKey)){
+      const legacy=String(d[legacyKey] == null ? "" : d[legacyKey]);
+      if(legacy.trim()) return legacy;
+    }
+  }
+  return fallback;
+}
+function applyPackageCopyInputOverrides(target,source){
+  if(!target) return target;
+  const cfg=PACKAGE_OPERATORS[String((target.operator||target.operatorKey||source&&source.operator)||"").toLowerCase()]||{};
+  const current=normalisePackageCopyOverrides(target);
+  const next={};
+  Object.keys(current).forEach(k=>{ next[k]=current[k]; });
+  Object.keys(PACKAGE_COPY_FIELDS).forEach(key=>{
+    const meta=PACKAGE_COPY_FIELDS[key];
+    if(!meta.field || !source || !Object.prototype.hasOwnProperty.call(source,meta.field)) return;
+    const value=String(source[meta.field] == null ? "" : source[meta.field]);
+    const def=packageDefaultCopyValue(key,target,cfg);
+    if(value==="" && meta.optional) next[key]="";
+    else if(value!=="" && value!==def) next[key]=value;
+    else delete next[key];
+  });
+  if(Object.keys(next).length) target.packageCopyOverrides=next; else delete target.packageCopyOverrides;
+  return target;
+}
+function packageCopyEditorValue(o,field){
+  const entry=Object.entries(PACKAGE_COPY_FIELDS).find(([,meta])=>meta.field===field);
+  if(!entry) return o[field]||"";
+  return packageCopyValue(o,entry[0],PACKAGE_OPERATORS[String(o.operator||o.operatorKey||"").toLowerCase()]||{});
+}
+
 function getActiveRenderCampaignType(d){
   const offerType=normaliseCampaignType(d&&d.offerType);
   if((d&&d.offerType) && offerType!=="cruise") return offerType;
@@ -10725,8 +10791,6 @@ function applyJet2PackageDefaults(offer){
   if(op!=="jet2") return offer;
   offer.offerType="package";
   offer.operator="jet2";
-  if(!Object.prototype.hasOwnProperty.call(offer,"ctaPrimary")) offer.ctaPrimary="Start your booking";
-  if(!Object.prototype.hasOwnProperty.call(offer,"ctaSecondary")) offer.ctaSecondary="or visit us in store";
   return offer;
 }
 function normalisePackagePricingFields(data){
@@ -10755,14 +10819,14 @@ function packageOfferFromData(d){
   const localFeeType=String(d.localFeeType||"").trim()||(/pp|per person/i.test(String(d.resortFee||""))?"pp":"");
   const localFeePerPerson=String(d.localFeePerPerson||"").trim() || (localFeeAmount&&localFeeType==="total"&&Number(adults)>0 ? String(Math.round(Number(localFeeAmount.replace(/[^0-9.]/g,""))/Number(adults))) : "");
   const cfgForCta=PACKAGE_OPERATORS[operator]||{};
-  const ctaPrimary=Object.prototype.hasOwnProperty.call(d,"ctaPrimary")?String(d.ctaPrimary||""):String(cfgForCta.ctaText||"Start your booking");
-  const ctaSecondary=Object.prototype.hasOwnProperty.call(d,"ctaSecondary")?String(d.ctaSecondary||""):String(cfgForCta.ctaSecondary||"or visit us in store");
+  const ctaPrimary=packageCopyValue(d,"ctaPrimary",cfgForCta);
+  const ctaSecondary=packageCopyValue(d,"ctaSecondary",cfgForCta);
   const leadPrice=packageCleanNumericStringLocal(d.leadPrice||d.price);
   const resortFee=(localFeePerPerson?packageCleanNumericStringLocal(localFeePerPerson)+"pp":(d.resortFee||""));
   const feePerPerson=packageNumericValueLocal(localFeePerPerson||resortFee);
   const derivedJet2Total=operator==="jet2"&&Number(children||0)<=0&&leadPrice&&feePerPerson?String(packageNumericValueLocal(leadPrice)+feePerPerson):"";
   return {
-    offerType:"package", operator, ctaPrimary, ctaSecondary, destination:d.name||"", hotel:d.ship||"", nights:d.nights||"", boardBasis:d.boardlbl||d.board||"", departureDate:formatPackageOrdinalDate([d.day,d.month].filter(Boolean).join(" ")), departureAirport:airport, leadPrice:leadPrice||d.leadPrice||d.price||"", resortFee, totalPrice:derivedJet2Total||d.displayTotalPerPerson||d.totalPrice||d.price||"", adults:adults||"2", children:children||"0", roomType:d.roomType||"", handLuggage:d.handLuggage||"", holdLuggage:d.holdLuggage||"", transfers:d.transfers||"", freeChildPlace:!!(d.freeChildPlace&&String(d.freeChildPlace)!=="false"||/free child place/i.test([d.tags,d.theme_tags].join(" "))), priceLabel:Object.prototype.hasOwnProperty.call(d,"priceLabel")?String(d.priceLabel||""):"Total Price", perPersonSuffix:Object.prototype.hasOwnProperty.call(d,"packagePerPersonSuffix")?String(d.packagePerPersonSuffix):"pp", resortFeeLabel:Object.prototype.hasOwnProperty.call(d,"packageResortFeeLabel")?String(d.packageResortFeeLabel):"", nightsLabel:Object.prototype.hasOwnProperty.call(d,"packageNightsLabel")?String(d.packageNightsLabel):"Nights", flightsLabel:Object.prototype.hasOwnProperty.call(d,"packageFlightsLabel")?String(d.packageFlightsLabel):"Flights", basis:Object.prototype.hasOwnProperty.call(d,"basis")?String(d.basis||""):`Based on ${adults||2} Adult${Number(adults||2)===1?"":"s"}${Number(children||0)>0?` & ${children} Child${Number(children)===1?"":"ren"}`:""} Sharing`, inclusions:Object.prototype.hasOwnProperty.call(d,"inclusionsDisplay")?String(d.inclusionsDisplay||""):(Object.prototype.hasOwnProperty.call(d,"incl")?String(d.incl||""):"Luggage & Transfers Included"), features:String(d.theme_tags||d.tags||"").split(/\s*[•·,]\s*/).filter(Boolean)
+    offerType:"package", operator, ctaPrimary, ctaSecondary, destination:d.name||"", hotel:d.ship||"", nights:d.nights||"", boardBasis:d.boardlbl||d.board||"", departureDate:formatPackageOrdinalDate([d.day,d.month].filter(Boolean).join(" ")), departureAirport:airport, leadPrice:leadPrice||d.leadPrice||d.price||"", resortFee, totalPrice:derivedJet2Total||d.displayTotalPerPerson||d.totalPrice||d.price||"", adults:adults||"2", children:children||"0", roomType:d.roomType||"", handLuggage:d.handLuggage||"", holdLuggage:d.holdLuggage||"", transfers:d.transfers||"", freeChildPlace:!!(d.freeChildPlace&&String(d.freeChildPlace)!=="false"||/free child place/i.test([d.tags,d.theme_tags].join(" "))), priceLabel:packageCopyValue(d,"priceLabel",cfgForCta), perPersonSuffix:packageCopyValue(d,"perPersonSuffix",cfgForCta), resortFeeLabel:packageCopyValue(d,"resortFeeLabel",cfgForCta), nightsLabel:packageCopyValue(d,"nightsLabel",cfgForCta), flightsLabel:packageCopyValue(d,"flightsLabel",cfgForCta), basis:packageCopyValue(d,"basis",cfgForCta), inclusions:packageCopyValue(d,"inclusions",cfgForCta), features:String(d.theme_tags||d.tags||"").split(/\s*[•·,]\s*/).filter(Boolean)
   };
 }
 function formatPackageMoney(value){
@@ -11423,6 +11487,7 @@ function saveEditorToOffer(){
     const e=document.getElementById('f-'+f);
     if(e) o[f]=e.value;
   });
+  if((o.offerType||currentCampaignType)==='package') applyPackageCopyInputOverrides(o,o);
   const sf=document.getElementById('f-sailingFrom'); if(sf && o._sailingFromManual===undefined) o._sailingFromManual=String(sf.value||"").trim()!==(typeof getAutoSailingFromForOffer==="function"?getAutoSailingFromForOffer(o):getAutoSailingFromForPorts(o.ports||""));
   const op=document.getElementById('f-operator');
   if(op) o.operator=op.value;
@@ -11432,6 +11497,7 @@ function saveEditorToOffer(){
   const z=document.getElementById('crop-zoom');
   const x=document.getElementById('crop-x');
   const y=document.getElementById('crop-y');
+  if((o.offerType||currentCampaignType)==='package') applyPackageCopyInputOverrides(o,o);
   if(z) o._cropZoom=parseInt(z.value||100,10);
   if(x) o._cropX=parseInt(x.value||50,10);
   if(y) o._cropY=parseInt(y.value||50,10);
@@ -11454,7 +11520,7 @@ function loadOfferToEditor(i){
   if(o.tags) o.tags=normalizeTopBarUspText(o.tags);
   FLDS.forEach(f=>{
     const e=document.getElementById('f-'+f);
-    if(e) e.value = o[f] || '';
+    if(e) e.value = ((o.offerType||currentCampaignType)==='package' && typeof packageCopyEditorValue==='function') ? packageCopyEditorValue(o,f) : (o[f] || '');
   });
   if(!o._sailingFromManual && typeof applyAutoSailingFromToOffer==="function"){
     applyAutoSailingFromToOffer(o);
@@ -11589,6 +11655,7 @@ function visibleFieldsToData(){
     const e = document.getElementById('f-' + f);
     if(e) base[f] = e.value || '';
   });
+  if((base.offerType||currentCampaignType)==='package') applyPackageCopyInputOverrides(base,base);
   const sf=document.getElementById('f-sailingFrom'); if(sf) base._sailingFromManual=!!((offers[cur]||{})._sailingFromManual);
   const op = document.getElementById('f-operator');
   if(op) base.operator = isOperatorValidForCampaign(op.value,currentCampaignType) ? (op.value || '') : '';

@@ -39,8 +39,14 @@ function createContext() {
     extractConst('PACKAGE_BOARD_BASES'),
     extractConst('PACKAGE_FEATURES'),
     extractConst('PACKAGE_AIRPORTS'),
+    extractConst('PACKAGE_COPY_FIELDS'),
     extractFunction('isPackageOperator'),
     extractFunction('isPackageOffer'),
+    extractFunction('packageDefaultCopyValue'),
+    extractFunction('normalisePackageCopyOverrides'),
+    extractFunction('packageCopyValue'),
+    extractFunction('applyPackageCopyInputOverrides'),
+    extractFunction('packageCopyEditorValue'),
     extractFunction('formatPackageOrdinalDate'),
     extractFunction('packageOfferFromData'),
     extractFunction('formatPackageMoney'),
@@ -48,7 +54,7 @@ function createContext() {
     extractFunction('packageResortFeeText'),
     extractFunction('renderPackagePriceBlock'),
     extractFunction('renderPackageCard')
-  ].join('\n') + '\nglobalThis.PACKAGE_OPERATORS = PACKAGE_OPERATORS; globalThis.PACKAGE_BOARD_BASES = PACKAGE_BOARD_BASES; globalThis.PACKAGE_FEATURES = PACKAGE_FEATURES; globalThis.PACKAGE_AIRPORTS = PACKAGE_AIRPORTS;', context);
+  ].join('\n') + '\nglobalThis.PACKAGE_OPERATORS = PACKAGE_OPERATORS; globalThis.PACKAGE_COPY_FIELDS = PACKAGE_COPY_FIELDS; globalThis.PACKAGE_BOARD_BASES = PACKAGE_BOARD_BASES; globalThis.PACKAGE_FEATURES = PACKAGE_FEATURES; globalThis.PACKAGE_AIRPORTS = PACKAGE_AIRPORTS;', context);
   return context;
 }
 
@@ -163,11 +169,16 @@ test('Jet2 couples render with fee uses canonical assets, compact inclusions and
   assert.match(out, /£586<span class="pkg-pp">pp<\/span>[\s\S]*<div class="pkg-price-label">Total Price<\/div>/);
   assert.match(out, /Based on 2 Adults Sharing/);
   assert.match(out, /<div class="pkg-footer-cta"><div class="pkg-cta-main">Start your booking<\/div><div class="pkg-cta-sub">or visit us in store<\/div><\/div>/);
-  const edited = renderPackageCard({ operator: 'jet2', ctaPrimary: 'Book online', ctaSecondary: '', name: 'Kefalonia', ship: 'Hotel', price: '574pp', adults: '2', children: '0' });
+  const edited = renderPackageCard({ operator: 'jet2', ctaPrimary: 'Book online', ctaSecondary: '', packageCopyOverrides: { ctaPrimary: 'Book online', ctaSecondary: '' }, name: 'Kefalonia', ship: 'Hotel', price: '574pp', adults: '2', children: '0' });
   assert.match(edited, /<div class="pkg-cta-main">Book online<\/div>/);
   assert.doesNotMatch(edited, /<div class="pkg-cta-sub">/);
   const blankPriceCopy = renderPackageCard({ operator: 'jet2', price: '574pp', priceLabel: '', basis: '', incl: '', ctaPrimary: '', ctaSecondary: '' });
-  assert.doesNotMatch(blankPriceCopy, /pkg-price-label|pkg-basis|pkg-footer-cta|Luggage &amp; Transfers Included/);
+  assert.match(blankPriceCopy, /Total Price/);
+  assert.match(blankPriceCopy, /Based on 2 Adults Sharing/);
+  assert.match(blankPriceCopy, /Start your booking/);
+  assert.match(blankPriceCopy, /Luggage &amp; Transfers Included/);
+  const deliberateBlankCopy = renderPackageCard({ operator: 'jet2', price: '574pp', packageCopyOverrides: { priceLabel: '', basis: '', inclusions: '', ctaSecondary: '' } });
+  assert.doesNotMatch(deliberateBlankCopy, /pkg-price-label|pkg-basis|pkg-cta-sub|Luggage &amp; Transfers Included/);
   assert.doesNotMatch(out, /Our Rating|TripAdvisor|176 Reviews|Holiday Summary|Flight Details|Going out|Coming back|NCL|EFL|Hand Luggage Included|Hold Luggage Included|Coach Transfers/);
 });
 
@@ -230,4 +241,44 @@ test('Package renderer uses editable labels for all non-parsed package copy', ()
   assert.match(out, /Based on two grown-ups/);
   assert.match(out, /Reserve today/);
   assert.match(out, /then pop in store/);
+});
+
+
+test('Package copy overrides distinguish absent, custom and deliberately blank values', () => {
+  const { renderPackageCard, packageOfferFromData } = createContext();
+  const base = { operator: 'jet2', offerType: 'package', name: 'Kefalonia, Greece', ship: 'Sunset Paradise Resort', nights: '7', sailingFrom: 'Newcastle', price: '574pp', adults: '2', children: '0' };
+  const defaultHtml = renderPackageCard(base);
+  assert.match(defaultHtml, /assets\/operator-logos\/jet2-holidays-logo\.png/);
+  assert.match(defaultHtml, /assets\/package-skins\/jet2\/header-couples\.png/);
+  assert.match(defaultHtml, /assets\/package-skins\/jet2\/footer\.png/);
+  assert.match(defaultHtml, /7 Nights/);
+  assert.match(defaultHtml, /Newcastle Flights/);
+  assert.match(defaultHtml, /Start your booking/);
+  assert.match(defaultHtml, /or visit us in store/);
+  assert.match(defaultHtml, /Total Price/);
+  assert.match(defaultHtml, /Based on 2 Adults Sharing/);
+  assert.match(defaultHtml, /Luggage &amp; Transfers Included/);
+
+  const oldCampaignHtml = renderPackageCard({ ...base, ctaPrimary: '', ctaSecondary: '', priceLabel: '', basis: '', incl: '', packageNightsLabel: '', packageFlightsLabel: '' });
+  assert.match(oldCampaignHtml, /7 Nights/);
+  assert.match(oldCampaignHtml, /Newcastle Flights/);
+  assert.match(oldCampaignHtml, /Start your booking/);
+  assert.match(oldCampaignHtml, /or visit us in store/);
+  assert.match(oldCampaignHtml, /Total Price/);
+  assert.match(oldCampaignHtml, /Based on 2 Adults Sharing/);
+  assert.match(oldCampaignHtml, /Luggage &amp; Transfers Included/);
+
+  const custom = { ...base, packageCopyOverrides: { ctaPrimary: 'Reserve now', ctaSecondary: 'call your local branch', nightsLabel: 'Evenings', flightsLabel: 'Departures', inclusions: 'Bags included', priceLabel: 'Holiday total', basis: 'Based on two adults' } };
+  const customHtml = renderPackageCard(custom);
+  assert.match(customHtml, /7 Evenings/);
+  assert.match(customHtml, /Newcastle Departures/);
+  assert.match(customHtml, /Reserve now/);
+  assert.match(customHtml, /call your local branch/);
+  assert.match(customHtml, /Bags included/);
+  assert.equal(packageOfferFromData(custom).nights, '7');
+  assert.equal(packageOfferFromData(custom).departureAirport, 'Newcastle');
+
+  const clearedHtml = renderPackageCard({ ...base, packageCopyOverrides: { ctaSecondary: '' } });
+  assert.match(clearedHtml, /Start your booking/);
+  assert.doesNotMatch(clearedHtml, /pkg-cta-sub/);
 });
