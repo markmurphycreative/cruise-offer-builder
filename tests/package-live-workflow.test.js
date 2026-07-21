@@ -230,3 +230,59 @@ test('real screenshot import state path carries Dawson Jet2 structure into activ
   ['£574pp','£586pp'].forEach(expected => assert.match(visibleText, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))));
   assert.doesNotMatch(htmlOutput, /Operator not detected|Our Rating|TripAdvisor|176 Reviews|Hand Luggage Included|Coach Transfers/);
 });
+
+test('live Package editor input IDs update authoritative offer and preview-rendered HTML', () => {
+  function extractLastFunction(name) { const start=html.lastIndexOf(`function ${name}(`); assert.notEqual(start,-1,`Could not find last ${name}`); const open=html.indexOf('{',start); let depth=0; for(let i=open;i<html.length;i++){ if(html[i]==='{') depth++; if(html[i]==='}') depth--; if(depth===0) return html.slice(start,i+1);} throw new Error(name); }
+  const fields = new Map();
+  const makeField = value => ({ value, classList:{ toggle(){}, add(){}, remove(){} }, style:{}, innerHTML:'', dataset:{}, offsetHeight:100, scrollHeight:100, getBoundingClientRect(){ return {height:100}; } });
+  ['offerType','operator','name','ship','sailingFrom','price','leadPrice','totalPrice','resortFee','ctaPrimary','ctaSecondary','adults','children','nights','boardlbl','day','month','incl','packagePerPersonSuffix'].forEach(id => fields.set(`f-${id}`, makeField('')));
+  fields.get('f-offerType').value = 'package';
+  fields.get('f-operator').value = 'jet2';
+  fields.get('f-name').value = 'Kefalonia, Greece';
+  fields.get('f-ship').value = 'Sunset Paradise Resort';
+  fields.get('f-sailingFrom').value = 'Newcastle';
+  fields.get('f-price').value = '574';
+  fields.get('f-totalPrice').value = '586';
+  fields.get('f-resortFee').value = '12';
+  fields.get('f-ctaPrimary').value = 'Start your booking';
+  fields.get('f-ctaSecondary').value = 'or visit us in store';
+  fields.get('f-adults').value = '2';
+  fields.get('f-children').value = '0';
+  fields.get('f-nights').value = '7';
+  fields.get('f-boardlbl').value = 'Bed & Breakfast';
+  fields.get('f-packagePerPersonSuffix').value = 'pp';
+  fields.set('card-output', makeField(''));
+  fields.set('preview-scaler', makeField(''));
+  const context = {
+    console, window:{}, currentCampaignType:'package', offers:[{offerType:'package'}, {offerType:'package'}], cur:0, viewMode:'single', zoomPct:100, SINGLE_PREVIEW_SCALE:1, previewRenderGeneration:0,
+    document:{ getElementById(id){ return fields.get(id) || null; }, querySelector(){ return null; }, querySelectorAll(){ return []; } },
+    normaliseCampaignType(value){ return String(value||'package').toLowerCase(); }, stripTransientPasteOfferFields(o){ return o; }, getCtaSettingsFromUI(){ return {enabled:false}; }, normaliseCtaSettings(s){ return s || {enabled:false}; },
+    renderEmptyPreviewIfNeeded(){ return false; }, updatePreviewTitle(){}, adjustVisitSectionHeights(){}, bindSinglePreviewHeroPickerTargets(){}, enhanceClickableHeroImagesAndPlaceholders(){}, enhanceHeroDropTarget(){}, scheduleHeroCropPositions(){}, setScalerBox(){}, schedulePreviewBoundsLayout(){},
+    syncTopBarUspManualState(){}, autoBoardLabel(){}, saveRawPasteForOffer(){}, applyAutoSailingFromToOffer(){}, getAutoSailingFromForOffer(){ return ''; }, getAutoSailingFromForPorts(){ return ''; }, isOperatorValidForCampaign(){ return true; }, cobTraceSourceTag(o){ return o; }, cobTraceOfferSnapshot(){}, cobTraceInferSource(){ return 'test'; }, cobRenderTraceEnabled(){ return false; }
+  };
+  vm.createContext(context);
+  vm.runInContext([
+    extractFunction('escapeHtml'), extractConst('FLDS'), extractConst('PACKAGE_OPERATORS'), extractConst('PACKAGE_COPY_FIELDS'), extractConst('PACKAGE_BOARD_BASES'), extractConst('PACKAGE_FEATURES'), extractConst('PACKAGE_AIRPORTS'),
+    extractFunction('getActiveRenderCampaignType'), extractFunction('normalisePackageOperatorKey'), extractFunction('isPackageOffer'), extractFunction('packageDefaultCopyValue'), extractFunction('normalisePackageCopyOverrides'), extractFunction('packageCopyValue'), extractFunction('applyPackageCopyInputOverrides'), extractFunction('packageCopyEditorValue'), extractFunction('packageNumericValue'), extractFunction('packageCleanNumericString'), extractFunction('applyJet2PackageDefaults'), extractFunction('normalisePackagePricingFields'), extractFunction('formatPackageOrdinalDate'), extractFunction('packageOfferFromData'), extractFunction('formatPackageMoney'), extractFunction('packageAirportLine'), extractFunction('packageResortFeeText'), extractFunction('renderPackagePriceBlock'), extractFunction('renderPackageCard'), extractFunction('cleanCardFieldValue'), extractFunction('cleanCardFieldLines'), extractFunction('cleanCardFacingOfferData'), extractFunction('renderCardHTML'), 'function bc(d){ return renderCardHTML(d); }', extractFunction('renderOfferWithOptionalCtaHTML'), extractFunction('visibleFieldsToData'), extractFunction('commitVisibleFields'), extractFunction('renderVisibleCard')
+  ].join('\n'), context);
+
+  vm.runInContext('commitVisibleFields(); renderVisibleCard();', context);
+  assert.equal(context.offers[0].operator, 'jet2');
+  assert.equal(context.offers[0].ctaSecondary, 'or visit us in store');
+  assert.match(fields.get('card-output').innerHTML, /assets\/operator-logos\/jet2-holidays-logo\.png/);
+  assert.match(fields.get('card-output').innerHTML.replace(/<span class="pkg-pp">pp<\/span>/g, 'pp').replace(/<[^>]+>/g, ''), /£574pp[\s\S]*\+£12pp Local Resort Fee[\s\S]*£586pp/);
+
+  fields.get('f-price').value = '499';
+  fields.get('f-totalPrice').value = '511';
+  fields.get('f-resortFee').value = '15';
+  fields.get('f-ctaSecondary').value = 'or call us in store';
+  vm.runInContext('commitVisibleFields(); renderVisibleCard();', context);
+  const text = fields.get('card-output').innerHTML.replace(/<span class="pkg-pp">pp<\/span>/g, 'pp').replace(/<[^>]+>/g, '');
+  assert.equal(context.offers[0].price, '499');
+  assert.equal(context.offers[0].leadPrice, '499');
+  assert.equal(context.offers[0].totalPrice, '511');
+  assert.equal(context.offers[0].resortFee, '15pp');
+  assert.equal(context.offers[0].ctaSecondary, 'or call us in store');
+  assert.match(text, /£499pp[\s\S]*\+£15pp Local Resort Fee[\s\S]*£511pp/);
+  assert.match(text, /or call us in store/);
+});

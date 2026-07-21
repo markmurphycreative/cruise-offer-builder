@@ -109,7 +109,7 @@ test('Package offer model maps existing builder fields without mutating Cruise f
   assert.equal(model.destination, 'Sidari, Corfu');
   assert.equal(model.hotel, 'Marianna Apartments');
   assert.equal(model.departureAirport, 'Newcastle');
-  assert.equal(model.totalPrice, '656pp');
+  assert.equal(model.totalPrice, '656');
 });
 
 test('Package renderer supports resort-fee and total-price layouts', () => {
