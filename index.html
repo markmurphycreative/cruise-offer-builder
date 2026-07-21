@@ -6812,8 +6812,8 @@ function resetBuilderToBlankSession(type=currentCampaignType, options={}){
   autosaveHydrating = true;
   try{
     resetTransientCampaignState();
-    offers = [{},{},{},{}];
     replaceCampaignModel(campaignType);
+    offers=getActiveOfferCollection(campaignType);
     currentCampaignType = campaignType;
     applyCampaignContext(currentCampaignType);
     lockedOffers = [false,false,false,false];
@@ -10810,8 +10810,13 @@ const PACKAGE_COPY_FIELDS = {
   nightsLabel:{field:"nightsLabel",legacyField:"packageNightsLabel",defaultValue:"Nights"},
   flightsLabel:{field:"flightsLabel",legacyField:"packageFlightsLabel",defaultValue:"Flights"}
 };
+function packageOfferHasGenuineData(d){
+  if(!d) return false;
+  return ["destination","name","hotel","ship","leadPrice","price","totalPrice","departureDate","day","month","departureAirport","sailingFrom","nights","boardBasis","boardlbl","roomType","handLuggage","holdLuggage","transfers","_img","operator"].some(function(key){ return String(d[key]||"").trim(); });
+}
 function packageDefaultCopyValue(key,d,cfg){
   d=d||{}; cfg=cfg||{};
+  if(!packageOfferHasGenuineData(d)) return "";
   const adults=String(d.adults||"").trim() || ((String(d.basis||"").match(/(\d+)\s*Adults?/i)||[])[1]) || "2";
   const children=String(d.children||"").trim() || ((String(d.basis||"").match(/(\d+)\s*Child(?:ren)?/i)||[])[1]) || "0";
   if(key==="basis") return `Based on ${adults} Adult${Number(adults)===1?"":"s"}${Number(children)>0?` & ${children} Child${Number(children)===1?"":"ren"}`:""} Sharing`;
@@ -10896,12 +10901,13 @@ function syncPackageCanonicalFields(offer){
   offer.offerType="package";
   const hadCanonical={};
   Object.keys(PACKAGE_EDITOR_FIELD_MAP).forEach(field=>{ hadCanonical[PACKAGE_EDITOR_FIELD_MAP[field]]=Object.prototype.hasOwnProperty.call(offer,PACKAGE_EDITOR_FIELD_MAP[field]); });
-  if(!Object.prototype.hasOwnProperty.call(offer,"ctaPrimary")) offer.ctaPrimary="Start your booking";
-  if(!Object.prototype.hasOwnProperty.call(offer,"ctaSecondary")) offer.ctaSecondary="or visit us in store";
-  if(!Object.prototype.hasOwnProperty.call(offer,"inclusions")) offer.inclusions="Luggage & Transfers Included";
-  if(!Object.prototype.hasOwnProperty.call(offer,"flightsLabel")) offer.flightsLabel="Flights";
-  if(!Object.prototype.hasOwnProperty.call(offer,"nightsLabel")) offer.nightsLabel="Nights";
-  if(!Object.prototype.hasOwnProperty.call(offer,"perPersonSuffix")) offer.perPersonSuffix="pp";
+  const hasPackageData=packageOfferHasGenuineData(offer);
+  if(hasPackageData && !Object.prototype.hasOwnProperty.call(offer,"ctaPrimary")) offer.ctaPrimary="Start your booking";
+  if(hasPackageData && !Object.prototype.hasOwnProperty.call(offer,"ctaSecondary")) offer.ctaSecondary="or visit us in store";
+  if(hasPackageData && !Object.prototype.hasOwnProperty.call(offer,"inclusions")) offer.inclusions="Luggage & Transfers Included";
+  if(hasPackageData && !Object.prototype.hasOwnProperty.call(offer,"flightsLabel")) offer.flightsLabel="Flights";
+  if(hasPackageData && !Object.prototype.hasOwnProperty.call(offer,"nightsLabel")) offer.nightsLabel="Nights";
+  if(hasPackageData && !Object.prototype.hasOwnProperty.call(offer,"perPersonSuffix")) offer.perPersonSuffix="pp";
   Object.keys(PACKAGE_EDITOR_FIELD_MAP).forEach(field=>{
     const canonical=PACKAGE_EDITOR_FIELD_MAP[field];
     if(Object.prototype.hasOwnProperty.call(offer,field) && !hadCanonical[canonical]) offer[canonical]=offer[field] == null ? "" : offer[field];
@@ -11055,6 +11061,7 @@ function renderPackagePriceBlock(model,operatorKey){
   return `<div class="pkg-total">${priceMarkup(display,!isFamily)}${fee?`<div class="pkg-fee">${fee}</div>`:""}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis">${escapeHtml(model.basis)}</div>`:""}</div>`;
 }
 function renderPackageCard(d){
+  if(!packageOfferHasGenuineData(d)) return `<div class="pc pkg-blank"><div class="pkg-head"><img class="pkg-head-logo" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo"></div><div class="pkg-body"></div><div class="pkg-footer"></div></div>`;
   const model=packageOfferFromData(d);
   const cfg=PACKAGE_OPERATORS[model.operator]||{name:"Operator not detected",aliases:[],logo:"",skin:{},colours:{accent:"#9e936c",footer:"#092a44"},ctaText:"Start your booking",ctaSecondary:"or visit us in store",options:{layout:"neutral"}};
   const layout=(cfg.options&&cfg.options.layout)||model.operator;
@@ -11758,6 +11765,7 @@ function renderOfferIndex(i){
   const scale=zoomPct/100;
   const d=offers[i] || {};
   if(!scaler || !out) return;
+  if(normaliseCampaignType(currentCampaignType)==='package'){ renderPreviewMode(true); return; }
   if(viewMode==='single'){
     updatePreviewTitle();
     out.innerHTML=renderCardHTML(d);
