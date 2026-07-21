@@ -30,6 +30,94 @@ function extractConst(name) {
   }
   throw new Error(`Could not extract ${name}`);
 }
+
+function parseAttributes(raw) {
+  const attrs = {};
+  raw.replace(/([\w:-]+)="([^"]*)"/g, (_, name, value) => { attrs[name] = value; return ''; });
+  return attrs;
+}
+function parsePackageCardDocument(cardHtml) {
+  class Element {
+    constructor(tagName, attrs, parentElement = null) {
+      this.tagName = tagName.toUpperCase();
+      this.attributes = attrs;
+      this.parentElement = parentElement;
+      this.children = [];
+      this.className = attrs.class || '';
+    }
+    get outerHTML() { return this._outerHTML || ''; }
+    get previousElementSibling() { const siblings = this.parentElement ? this.parentElement.children : []; return siblings[siblings.indexOf(this) - 1] || null; }
+    get nextElementSibling() { const siblings = this.parentElement ? this.parentElement.children : []; return siblings[siblings.indexOf(this) + 1] || null; }
+    getAttribute(name) { return this.attributes[name] || null; }
+    matches(selector) { return selector.split('.').filter(Boolean).every(cls => this.className.split(/\s+/).includes(cls)); }
+    querySelector(selector) { return this.querySelectorAll(selector)[0] || null; }
+    querySelectorAll(selector) {
+      const parts = selector.trim().split(/\s+/);
+      const out = [];
+      const walk = node => {
+        if (matchesSelectorPath(node, parts)) out.push(node);
+        node.children.forEach(walk);
+      };
+      walk(this);
+      return out;
+    }
+  }
+  function matchesSimple(node, simple) {
+    const attrMatch = simple.match(/^([\w-]+)?\[([^=]+)="([^"]+)"\]$/);
+    if (attrMatch) return (!attrMatch[1] || node.tagName.toLowerCase() === attrMatch[1]) && node.getAttribute(attrMatch[2]) === attrMatch[3];
+    const tag = simple.match(/^[\w-]+/);
+    if (tag && node.tagName.toLowerCase() !== tag[0]) return false;
+    return (simple.match(/\.[\w-]+/g) || []).every(cls => node.className.split(/\s+/).includes(cls.slice(1)));
+  }
+  function matchesSelectorPath(node, parts) {
+    let current = node;
+    for (let i = parts.length - 1; i >= 0; i -= 1) {
+      while (current && !matchesSimple(current, parts[i])) current = current.parentElement;
+      if (!current) return false;
+      current = current.parentElement;
+    }
+    return true;
+  }
+  const root = new Element('root', {});
+  const stack = [root];
+  const tokenRe = /<\/?[^>]+>/g;
+  let match;
+  while ((match = tokenRe.exec(cardHtml))) {
+    const token = match[0];
+    if (token.startsWith('</')) { stack.pop(); continue; }
+    const tag = token.match(/^<([\w-]+)/)[1];
+    const el = new Element(tag, parseAttributes(token), stack[stack.length - 1]);
+    el._outerHTML = token.endsWith('/>') || tag === 'img' ? token : cardHtml.slice(match.index, findClosingTagEnd(cardHtml, tag, match.index));
+    stack[stack.length - 1].children.push(el);
+    if (!['img', 'br'].includes(tag) && !token.endsWith('/>')) stack.push(el);
+  }
+  return root;
+}
+function findClosingTagEnd(htmlText, tag, start) {
+  const close = htmlText.indexOf(`</${tag}>`, start);
+  return close === -1 ? htmlText.indexOf('>', start) + 1 : close + tag.length + 3;
+}
+function computePackageLogoStyles(card, logo) {
+  const css = html.slice(html.indexOf('/* Package card renderer */'), html.indexOf('.cc .header-block img'));
+  const styles = {};
+  for (const block of css.matchAll(/([^{}]+)\{([^{}]+)\}/g)) {
+    const selector = block[1].trim();
+    if (!selector.split(',').some(part => selectorMatchesCardLogo(part.trim(), card, logo))) continue;
+    for (const decl of block[2].split(';')) {
+      const [prop, value] = decl.split(':').map(part => part && part.trim());
+      if (prop && value) styles[prop.replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = value;
+    }
+  }
+  return styles;
+}
+function selectorMatchesCardLogo(selector, card, logo) {
+  if (selector === '.pc .pkg-operator-logo') return card.matches('pc') && logo.matches('pkg-operator-logo');
+  if (selector === '.pc.pkg-jet2 .pkg-operator-logo--jet2') return card.matches('pc') && card.matches('pkg-jet2') && logo.matches('pkg-operator-logo--jet2');
+  if (selector === '.pc .pkg-operator-logo--tui') return card.matches('pc') && logo.matches('pkg-operator-logo--tui');
+  if (selector === '.pc .pkg-operator-logo--easyjet') return card.matches('pc') && logo.matches('pkg-operator-logo--easyjet');
+  return false;
+}
+
 function createContext() {
   const context = { console };
   vm.createContext(context);
@@ -79,8 +167,8 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
 test('Package operator logos use operator-specific natural-aspect placement classes', () => {
   assert.match(html, /\.pc \.pkg-operator-logo\{[^}]*display:block;[^}]*position:absolute;[^}]*width:auto;[^}]*height:auto;[^}]*object-fit:contain;[^}]*pointer-events:none;/);
   assert.match(html, /\.pc \.pkg-operator-logo--tui\{left:28px;bottom:14px;width:300px;\}/);
-  assert.match(html, /\.pc \.pkg-operator-logo--jet2\{left:226px;bottom:114px;width:240px;\}/);
-  assert.doesNotMatch(html, /\.pc\.pkg-jet2 \.pkg-operator-logo--jet2/);
+  assert.match(html, /\.pc\.pkg-jet2 \.pkg-operator-logo--jet2\{left:226px;bottom:114px;width:240px;\}/);
+  assert.doesNotMatch(html, /\.pc \.pkg-operator-logo--jet2\{left:226px;bottom:114px;width:240px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\{--pkg-left:98px;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-head\{height:154px;[^}]*border:0;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-skin-header\{height:auto;object-fit:contain;object-position:top center;\}/);
@@ -95,6 +183,66 @@ test('Package operator logos use operator-specific natural-aspect placement clas
   assert.equal((jet2Html.match(/assets\/operator-logos\/jet2-holidays-logo\.png/g) || []).length, 1);
   assert.doesNotMatch(jet2Html, /pkg-head-operator-logo|pkg-skin-header|header-couples\.png|header-family\.png/);
   assert.match(renderPackageCard({ operator: 'easyjet' }), /pkg-operator-logo pkg-operator-logo--easyjet/);
+});
+
+
+test('Jet2 operator logo renderer output and live package selector support absolute decorative placement', () => {
+  const { renderPackageCard, renderPackageOperatorLogo, PACKAGE_OPERATORS } = createContext();
+  const cardHtml = renderPackageCard({
+    operator: 'jet2',
+    name: 'Lassi, Kefalonia',
+    ship: 'Sunset Paradise Resort',
+    nights: '7',
+    boardlbl: 'Bed & Breakfast',
+    day: '21st',
+    month: 'July 2026',
+    sailingFrom: 'Newcastle',
+    incl: 'Luggage & Transfers Included',
+    price: '574pp',
+    totalPrice: '1148',
+    basis: 'Based on 2 Adults Sharing'
+  });
+  const document = parsePackageCardDocument(cardHtml);
+  const card = document.querySelector('.pc');
+  const logo = document.querySelector('.pkg-operator-logo--jet2');
+  assert.equal(card.className, 'pc pkg-jet2');
+  assert.ok(logo, 'Jet2 logo should be present');
+  assert.equal(document.querySelectorAll('img[src="assets/operator-logos/jet2-holidays-logo.png"]').length, 1);
+  assert.equal(logo.parentElement.className, 'pkg-body');
+  assert.equal(logo.previousElementSibling.className, 'pkg-details');
+  assert.match(logo.nextElementSibling.className, /pkg-pricing/);
+  assert.equal(logo.className, 'pkg-operator-logo pkg-operator-logo--jet2');
+  assert.equal(logo.getAttribute('src'), 'assets/operator-logos/jet2-holidays-logo.png');
+  assert.equal(document.querySelector('.pkg-details .pkg-operator-logo--jet2'), null);
+  assert.equal(document.querySelector('.pkg-head .pkg-operator-logo--jet2'), null);
+  assert.equal(document.querySelector('.pkg-head img[src="assets/operator-logos/jet2-holidays-logo.png"]'), null);
+  assert.equal(document.querySelector('.pkg-skin-header'), null);
+  assert.ok(document.querySelector('.pkg-head img[src="assets/operator-logos/dawson-and-sanderson-logo.png"]'));
+  assert.equal(renderPackageOperatorLogo(PACKAGE_OPERATORS.jet2, 'jet2'), logo.outerHTML);
+
+  const computed = computePackageLogoStyles(card, logo);
+  assert.equal(computed.position, 'absolute');
+  assert.equal(computed.display, 'block');
+  assert.equal(computed.left, '226px');
+  assert.equal(computed.bottom, '114px');
+  assert.equal(computed.width, '240px');
+  assert.equal(computed.height, 'auto');
+  assert.equal(computed.objectFit, 'contain');
+  assert.equal(computed.pointerEvents, 'none');
+});
+
+test('TUI and easyJet package logos continue through the shared operator logo renderer', () => {
+  const { renderPackageCard, renderPackageOperatorLogo, PACKAGE_OPERATORS } = createContext();
+  for (const operator of ['tui', 'easyjet']) {
+    const cardHtml = renderPackageCard({ operator, name: 'Destination', ship: 'Hotel', nights: '7', boardlbl: 'Self Catering', price: '499pp' });
+    const document = parsePackageCardDocument(cardHtml);
+    const logo = document.querySelector(`.pkg-operator-logo--${operator}`);
+    assert.ok(logo, `${operator} shared logo should be present`);
+    assert.equal(logo.outerHTML, renderPackageOperatorLogo(PACKAGE_OPERATORS[operator], operator));
+    assert.equal(document.querySelectorAll('.pkg-operator-logo').length, 1);
+    assert.equal(logo.parentElement.className, 'pkg-body');
+    assert.equal(document.querySelector(`.pkg-details .pkg-operator-logo--${operator}`), null);
+  }
 });
 
 test('Package offer model maps existing builder fields without mutating Cruise fields', () => {
