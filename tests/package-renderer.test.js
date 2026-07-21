@@ -40,6 +40,7 @@ function createContext() {
     extractConst('PACKAGE_FEATURES'),
     extractConst('PACKAGE_AIRPORTS'),
     extractConst('PACKAGE_COPY_FIELDS'),
+    extractFunction('normalisePackageOperatorKey'),
     extractFunction('isPackageOperator'),
     extractFunction('isPackageOffer'),
     extractFunction('packageDefaultCopyValue'),
@@ -295,6 +296,39 @@ test('Blank package and cruise-to-package state isolation do not render ghost cr
   const htmlOutput = renderPackageCard({ offerType: 'package', operator: 'jet2', ports: cruiseOffer.ports, tags: cruiseOffer.tags, handLuggage: '2 x 10kg', holdLuggage: '2 x 22kg', roomType: 'Studio' });
   ['Barbados', 'Martinique', '2 x 10kg', '2 x 22kg', 'Studio', 'Adult Only Options'].forEach(value => assert.doesNotMatch(htmlOutput, new RegExp(value)));
   assert.match(htmlOutput, /Luggage &amp; Transfers Included/);
+});
+
+
+test('Package editing regression: Jet2 defaults, editable text, prices and offer independence render from model', () => {
+  const { renderPackageCard, packageOfferFromData, normalisePackageOperatorKey } = createContext();
+  assert.equal(normalisePackageOperatorKey('Jet2 Holidays'), 'jet2');
+  const fresh = packageOfferFromData({ offerType: 'package', operator: 'Jet2 Holidays' });
+  assert.equal(fresh.operator, 'jet2');
+  assert.equal(fresh.ctaPrimary, 'Start your booking');
+  assert.equal(fresh.ctaSecondary, 'or visit us in store');
+  const freshHtml = renderPackageCard({ offerType: 'package', operator: 'Jet2 Holidays' });
+  assert.match(freshHtml, /assets\/operator-logos\/jet2-holidays-logo\.png/);
+  assert.match(freshHtml, /Start your booking/);
+  assert.match(freshHtml, /or visit us in store/);
+
+  const edited = { offerType: 'package', operator: 'jet2', name: 'Costa Adeje, Tenerife', ship: "O'Brien & Sons Hotel, South-Coast", sailingFrom: 'Leeds Bradford', price: '£574pp', totalPrice: '£586pp', resortFee: '+£12pp', ctaPrimary: 'Start your booking', ctaSecondary: 'or visit us in store', incl: 'Luggage, transfers & resort extras included.', adults: '2', children: '0' };
+  const model = packageOfferFromData(edited);
+  assert.equal(model.ctaSecondary, 'or visit us in store');
+  assert.equal(model.leadPrice, '574');
+  assert.equal(model.totalPrice, '586');
+  assert.equal(model.resortFee, '12pp');
+  const editedHtml = renderPackageCard(edited);
+  assert.match(editedHtml, /O&#39;Brien &amp; Sons Hotel, South-Coast/);
+  assert.match(editedHtml, /£574<span class="pkg-pp">pp<\/span>/);
+  assert.match(editedHtml, /\+£12pp Local Resort Fee/);
+  assert.match(editedHtml, /£586<span class="pkg-pp">pp<\/span>/);
+
+  const offerOne = renderPackageCard({ offerType: 'package', operator: 'jet2', name: 'Kefalonia', ctaSecondary: 'or visit us in store', price: '574', resortFee: '12' });
+  const offerTwo = renderPackageCard({ offerType: 'package', operator: 'jet2', name: 'Majorca', ctaSecondary: 'call into branch', price: '699', resortFee: '25' });
+  assert.match(offerOne, /Kefalonia/);
+  assert.doesNotMatch(offerOne, /Majorca|call into branch|£699|£25/);
+  assert.match(offerTwo, /Majorca/);
+  assert.doesNotMatch(offerTwo, /Kefalonia|or visit us in store|£574|£12/);
 });
 
 test('Package Offer Details exposes package labels and hides cruise-only controls', () => {
