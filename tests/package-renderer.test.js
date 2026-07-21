@@ -43,6 +43,7 @@ function createContext() {
     extractFunction('normalisePackageOperatorKey'),
     extractFunction('isPackageOperator'),
     extractFunction('isPackageOffer'),
+    extractFunction('packageOfferHasGenuineData'),
     extractFunction('packageDefaultCopyValue'),
     extractFunction('normalisePackageCopyOverrides'),
     extractFunction('packageCopyValue'),
@@ -290,7 +291,7 @@ test('Blank package and cruise-to-package state isolation do not render ghost cr
   const cruiseOffer = { offerType: 'cruise', operator: 'po', name: 'Eastern Caribbean Islands Fly-Cruise', ship: 'Arvia', ports: 'Barbados • Martinique', tags: 'Adult Only Options · Cuisine', sailingFrom: 'Port of Tyne', price: '1669', ctaSecondary: 'old cruise CTA' };
   const blankPackageHtml = renderPackageCard({ offerType: 'package' });
   ['Eastern Caribbean', 'Arvia', 'Barbados', 'Martinique', 'Port of Tyne', '1669', 'old cruise CTA'].forEach(value => assert.doesNotMatch(blankPackageHtml, new RegExp(value)));
-  assert.match(blankPackageHtml, /pkg-operator-missing/);
+  assert.doesNotMatch(blankPackageHtml, /pkg-operator-missing|Operator not detected/);
 
   const model = packageOfferFromData({ offerType: 'package', operator: 'jet2', ports: cruiseOffer.ports, tags: cruiseOffer.tags, handLuggage: '2 x 10kg', holdLuggage: '2 x 22kg', roomType: 'Studio' });
   assert.equal(model.departureAirport, '');
