@@ -10780,7 +10780,7 @@ function escapeCardInclusionHtml(value){
 
 const PACKAGE_OPERATORS = {
   tui: {name:"TUI", aliases:["tui","tui holidays"], logo:"assets/operator-logos/tui-logo.png", skin:{header:"assets/package-skins/tui/header.png", footer:"assets/package-skins/tui/footer.png"}, colours:{accent:"#082b46", footer:"#082b46"}, ctaText:"Start your booking", pricingBehaviour:"lead-resort-total", options:{layout:"tui", defaultFeatures:["Beach Holiday"]}},
-  jet2: {name:"Jet2 Holidays", aliases:["jet2holidays","jet2 holidays","jet2"], logo:"assets/operator-logos/jet2-holidays-logo.png", skin:{headerCouples:"assets/package-skins/jet2/header-couples.png", headerFamily:"assets/package-skins/jet2/header-family.png", footer:"assets/package-skins/jet2/footer.png"}, colours:{accent:"#c90000", footer:"#082b46"}, ctaText:"Start your booking", ctaSecondary:"or visit us in store", pricingBehaviour:"couples-pp-family-total", options:{layout:"jet2", defaultFeatures:["Free Child Place","Family"]}},
+  jet2: {name:"Jet2 Holidays", aliases:["jet2holidays","jet2 holidays","jet2"], logo:"assets/operator-logos/jet2-holidays-logo.png", skin:{footer:"assets/package-skins/jet2/footer.png"}, colours:{accent:"#c90000", footer:"#082b46"}, ctaText:"Start your booking", ctaSecondary:"or visit us in store", pricingBehaviour:"couples-pp-family-total", options:{layout:"jet2", defaultFeatures:["Free Child Place","Family"]}},
   easyjet: {name:"easyJet holidays", aliases:["easyjet holidays","easyjet holidays","easyjet"], logo:"assets/operator-logos/easyjet-logo.png", skin:{header:"assets/package-skins/easyjet/header.png", footer:"assets/package-skins/easyjet/footer.png"}, colours:{accent:"#ff7a00", footer:"#ff7a00"}, ctaText:"Start your booking", pricingBehaviour:"lead-resort-total", options:{layout:"easyjet", defaultFeatures:["City Break"]}}
 };
 const PACKAGE_BOARD_BASES = ["Room Only","Bed & Breakfast","Half Board","Full Board","All Inclusive","All Inclusive Plus","Ultra All Inclusive","Self Catering"];
@@ -11072,7 +11072,7 @@ function renderPackageCard(d){
   const jet2Couples=model.operator==="jet2" && Number(model.children||0)<=0;
   const details=[model.nights?[model.nights,model.nightsLabel].filter(Boolean).join(" "):"",model.boardBasis,model.departureDate,packageAirportLine(model.departureAirport,model.flightsLabel),model.inclusions].filter(Boolean);
   const skin=cfg.skin||{};
-  const headerSrc=model.operator==="jet2"?(freeChild?skin.headerFamily:skin.headerCouples):skin.header;
+  const headerSrc=skin.header;
   const footerSrc=skin.footer;
   const header=headerSrc?`<img class="pkg-skin-header" src="${headerSrc}" alt="" role="presentation"><img class="pkg-head-logo pkg-head-logo--dawson" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo">`:`<img class="pkg-head-logo" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo">${ribbon?`<div class="pkg-ribbon">${escapeHtml(ribbon)}</div>`:""}`;
   const footerLines=[model.ctaPrimary?`<div class="pkg-cta-main">${escapeHtml(model.ctaPrimary)}</div>`:"",model.ctaSecondary?`<div class="pkg-cta-sub">${escapeHtml(model.ctaSecondary)}</div>`:""].filter(Boolean).join("");
