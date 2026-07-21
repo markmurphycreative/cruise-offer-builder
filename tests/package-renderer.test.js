@@ -81,13 +81,14 @@ test('Package operator logos use operator-specific natural-aspect placement clas
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-head\{height:154px;[^}]*border:0;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-skin-header\{height:auto;object-fit:contain;object-position:top center;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-fee\{color:#000;\}/);
-  assert.match(html, /\.pc\.pkg-jet2 \.pkg-head-operator-logo--jet2\{position:absolute;left:54px;top:20px;width:312px;/);
+  assert.match(html, /\.pc \.pkg-operator-logo--jet2\{left:var\(--pkg-left\);bottom:8px;width:250px;\}/);
+  assert.match(html, /\.pc\.pkg-jet2 \.pkg-operator-logo--jet2\{left:var\(--pkg-left\);bottom:auto;top:548px;width:250px;\}/);
   assert.match(html, /\.pc \.pkg-operator-logo--easyjet\{left:6px;bottom:-27px;width:430px;\}/);
 
   const { renderPackageCard } = createContext();
   assert.match(renderPackageCard({ operator: 'tui' }), /pkg-operator-logo pkg-operator-logo--tui/);
-  assert.match(renderPackageCard({ operator: 'jet2' }), /pkg-head-operator-logo pkg-head-operator-logo--jet2/);
-  assert.doesNotMatch(renderPackageCard({ operator: 'jet2' }), /pkg-operator-logo pkg-operator-logo--jet2/);
+  assert.match(renderPackageCard({ operator: 'jet2' }), /pkg-operator-logo pkg-operator-logo--jet2/);
+  assert.doesNotMatch(renderPackageCard({ operator: 'jet2' }), /pkg-head-operator-logo pkg-head-operator-logo--jet2/);
   assert.match(renderPackageCard({ operator: 'easyjet' }), /pkg-operator-logo pkg-operator-logo--easyjet/);
 });
 
