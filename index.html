@@ -844,7 +844,6 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .pc .pkg-head-logo{width:300px;max-height:84px;object-fit:contain;filter:brightness(0) invert(1);}
 .pc.pkg-jet2 .pkg-head-logo{width:300px;max-height:78px;}
 .pc.pkg-jet2 .pkg-head-logo--dawson{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:475px;max-height:86px;z-index:1;pointer-events:none;}
-.pc.pkg-jet2 .pkg-head-operator-logo--jet2{position:absolute;left:54px;top:20px;width:312px;height:auto;max-height:94px;object-fit:contain;z-index:2;opacity:1;display:block;visibility:visible;}
 .pc .pkg-ribbon{font-size:34px;line-height:1;color:#fff;letter-spacing:.04em;}
 .pc .pkg-body{height:610px;position:relative;padding:62px var(--pkg-left) 0;box-sizing:border-box;}
 .pc.pkg-jet2 .pkg-body{height:626px;padding:96px var(--pkg-left) 0;}
@@ -857,8 +856,8 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .pc.pkg-jet2 .pkg-details{top:304px;font-size:35px;line-height:1.36;}
 .pc .pkg-operator-logo{position:absolute;width:auto;height:auto;object-fit:contain;object-position:left bottom;}
 .pc .pkg-operator-logo--tui{left:28px;bottom:14px;width:300px;}
-.pc .pkg-operator-logo--jet2{left:var(--pkg-left);bottom:8px;width:520px;}
-.pc.pkg-jet2 .pkg-operator-logo--jet2{bottom:auto;top:548px;width:520px;}
+.pc .pkg-operator-logo--jet2{left:var(--pkg-left);bottom:8px;width:250px;}
+.pc.pkg-jet2 .pkg-operator-logo--jet2{left:var(--pkg-left);bottom:auto;top:548px;width:250px;}
 .pc .pkg-operator-logo--easyjet{left:6px;bottom:-27px;width:430px;}
 .pc .pkg-pricing{position:absolute;right:85px;top:250px;width:485px;text-align:right;color:#000;}
 .pc.pkg-jet2 .pkg-pricing{top:454px;right:98px;width:420px;}
@@ -11072,11 +11071,11 @@ function renderPackageCard(d){
   const skin=cfg.skin||{};
   const headerSrc=model.operator==="jet2"?(freeChild?skin.headerFamily:skin.headerCouples):skin.header;
   const footerSrc=skin.footer;
-  const header=headerSrc?`<img class="pkg-skin-header" src="${headerSrc}" alt="" role="presentation">${model.operator==="jet2"&&cfg.logo?`<img class="pkg-head-operator-logo pkg-head-operator-logo--jet2" src="${cfg.logo}" alt="${escapeHtml(cfg.name)} logo">`:""}<img class="pkg-head-logo pkg-head-logo--dawson" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo">`:`<img class="pkg-head-logo" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo">${ribbon?`<div class="pkg-ribbon">${escapeHtml(ribbon)}</div>`:""}`;
+  const header=headerSrc?`<img class="pkg-skin-header" src="${headerSrc}" alt="" role="presentation"><img class="pkg-head-logo pkg-head-logo--dawson" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo">`:`<img class="pkg-head-logo" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo">${ribbon?`<div class="pkg-ribbon">${escapeHtml(ribbon)}</div>`:""}`;
   const footerLines=[model.ctaPrimary?`<div class="pkg-cta-main">${escapeHtml(model.ctaPrimary)}</div>`:"",model.ctaSecondary?`<div class="pkg-cta-sub">${escapeHtml(model.ctaSecondary)}</div>`:""].filter(Boolean).join("");
   const footerCta=footerLines?`<div class="pkg-footer-cta">${footerLines}</div>`:"";
   const footer=footerSrc?`<img class="pkg-skin-footer" src="${footerSrc}" alt="" role="presentation">${footerCta}`:footerCta;
-  return `<div class="pc pkg-${layout}" style="--package-accent:${cfg.colours.accent};--package-footer:${cfg.colours.footer};"><div class="pkg-head">${header}</div><div class="pkg-body"><div class="pkg-destination">${escapeHtml(model.destination)}</div><div class="pkg-hotel">${escapeHtml(model.hotel)}</div><div class="pkg-details">${details.map(escapeHtml).join("<br>")}</div>${cfg.logo&&model.operator!=="jet2"?`<img class="pkg-operator-logo pkg-operator-logo--${layout}" src="${cfg.logo}" alt="${escapeHtml(cfg.name)} logo">`:model.operator==="jet2"?"":`<div class="pkg-operator-missing">Operator not detected</div>`}<div class="pkg-pricing ${model.operator==="jet2"&&Number(model.children||0)<=0&&packageResortFeeText(model.resortFee,model.operator,model.resortFeeLabel,model.perPersonSuffix)?"pkg-pricing--with-fee":""}">${renderPackagePriceBlock(model,model.operator)}</div></div><div class="pkg-footer">${footer}</div></div>`;
+  return `<div class="pc pkg-${layout}" style="--package-accent:${cfg.colours.accent};--package-footer:${cfg.colours.footer};"><div class="pkg-head">${header}</div><div class="pkg-body"><div class="pkg-destination">${escapeHtml(model.destination)}</div><div class="pkg-hotel">${escapeHtml(model.hotel)}</div><div class="pkg-details">${details.map(escapeHtml).join("<br>")}</div>${cfg.logo?`<img class="pkg-operator-logo pkg-operator-logo--${layout}" src="${cfg.logo}" alt="${escapeHtml(cfg.name)} logo">`:`<div class="pkg-operator-missing">Operator not detected</div>`}<div class="pkg-pricing ${model.operator==="jet2"&&Number(model.children||0)<=0&&packageResortFeeText(model.resortFee,model.operator,model.resortFeeLabel,model.perPersonSuffix)?"pkg-pricing--with-fee":""}">${renderPackagePriceBlock(model,model.operator)}</div></div><div class="pkg-footer">${footer}</div></div>`;
 }
 function renderCruiseCard(d){ return renderCruiseCardHTML(d); }
 function renderGenericCampaignCard(d,type){
