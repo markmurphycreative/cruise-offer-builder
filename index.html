@@ -844,6 +844,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .pc .pkg-head-logo{width:300px;max-height:84px;object-fit:contain;filter:brightness(0) invert(1);}
 .pc.pkg-jet2 .pkg-head-logo{width:300px;max-height:78px;}
 .pc.pkg-jet2 .pkg-head-logo--dawson{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:396px;max-height:72px;z-index:1;pointer-events:none;}
+.pc.pkg-jet2 .pkg-head-operator-logo--jet2{position:absolute;left:54px;top:20px;width:260px;height:auto;max-height:78px;object-fit:contain;z-index:2;opacity:1;display:block;visibility:visible;}
 .pc .pkg-ribbon{font-size:34px;line-height:1;color:#fff;letter-spacing:.04em;}
 .pc .pkg-body{height:610px;position:relative;padding:62px var(--pkg-left) 0;box-sizing:border-box;}
 .pc.pkg-jet2 .pkg-body{height:626px;padding:96px var(--pkg-left) 0;}
@@ -10731,11 +10732,11 @@ const PACKAGE_COPY_FIELDS = {
   ctaSecondary:{field:"ctaSecondary",defaultValue:"or visit us in store",optional:true},
   priceLabel:{field:"priceLabel",defaultValue:"Total Price",optional:true},
   basis:{field:"basis",defaultValue:null,optional:true},
-  inclusions:{field:"inclusionsDisplay",legacyField:"incl",defaultValue:"Luggage & Transfers Included",optional:true},
-  perPersonSuffix:{field:"packagePerPersonSuffix",defaultValue:"pp"},
-  resortFeeLabel:{field:"packageResortFeeLabel",defaultValue:null,optional:true},
-  nightsLabel:{field:"packageNightsLabel",defaultValue:"Nights"},
-  flightsLabel:{field:"packageFlightsLabel",defaultValue:"Flights"}
+  inclusions:{field:"inclusions",legacyField:"incl",defaultValue:"Luggage & Transfers Included",optional:true},
+  perPersonSuffix:{field:"perPersonSuffix",legacyField:"packagePerPersonSuffix",defaultValue:"pp"},
+  resortFeeLabel:{field:"resortFeeLabel",legacyField:"packageResortFeeLabel",defaultValue:null,optional:true},
+  nightsLabel:{field:"nightsLabel",legacyField:"packageNightsLabel",defaultValue:"Nights"},
+  flightsLabel:{field:"flightsLabel",legacyField:"packageFlightsLabel",defaultValue:"Flights"}
 };
 function packageDefaultCopyValue(key,d,cfg){
   d=d||{}; cfg=cfg||{};
@@ -10759,12 +10760,13 @@ function packageCopyValue(d,key,cfg){
   const overrides=normalisePackageCopyOverrides(d);
   if(Object.prototype.hasOwnProperty.call(overrides,key)) return String(overrides[key] == null ? "" : overrides[key]);
   const fallback=packageDefaultCopyValue(key,d,cfg);
-  const legacyKeys=[meta.field,meta.legacyField].filter(Boolean);
-  for(const legacyKey of legacyKeys){
-    if(Object.prototype.hasOwnProperty.call(d,legacyKey)){
-      const legacy=String(d[legacyKey] == null ? "" : d[legacyKey]);
-      if(legacy.trim()) return legacy;
-    }
+  if(meta.field && Object.prototype.hasOwnProperty.call(d,meta.field)){
+    const direct=String(d[meta.field] == null ? "" : d[meta.field]);
+    if(direct.trim()) return direct;
+  }
+  if(meta.legacyField && Object.prototype.hasOwnProperty.call(d,meta.legacyField)){
+    const legacy=String(d[meta.legacyField] == null ? "" : d[meta.legacyField]);
+    if(legacy.trim()) return legacy;
   }
   return fallback;
 }
@@ -10787,9 +10789,71 @@ function applyPackageCopyInputOverrides(target,source){
   return target;
 }
 function packageCopyEditorValue(o,field){
-  const entry=Object.entries(PACKAGE_COPY_FIELDS).find(([,meta])=>meta.field===field);
+  const entry=Object.entries(PACKAGE_COPY_FIELDS).find(([,meta])=>meta.field===field || meta.legacyField===field);
   if(!entry) return o[field]||"";
   return packageCopyValue(o,entry[0],PACKAGE_OPERATORS[normalisePackageOperatorKey(o.operator||o.operatorKey||"")]||{});
+}
+
+const PACKAGE_EDITOR_FIELD_MAP = {
+  name:"destination",
+  ship:"hotel",
+  sailingFrom:"departureAirport",
+  incl:"inclusions",
+  price:"leadPrice",
+  boardlbl:"boardBasis",
+  packagePerPersonSuffix:"perPersonSuffix",
+  packageResortFeeLabel:"resortFeeLabel",
+  packageNightsLabel:"nightsLabel",
+  packageFlightsLabel:"flightsLabel"
+};
+function packageCanonicalEditorField(field){ return PACKAGE_EDITOR_FIELD_MAP[field] || field; }
+function packageEditorValueForField(offer,field){
+  offer=offer||{};
+  const canonical=packageCanonicalEditorField(field);
+  const cfg=PACKAGE_OPERATORS[normalisePackageOperatorKey(offer.operator||offer.operatorKey||"")]||{};
+  if(field==="ctaPrimary" || field==="ctaSecondary" || field==="priceLabel" || field==="basis" || field==="incl" || field==="packagePerPersonSuffix" || field==="packageResortFeeLabel" || field==="packageNightsLabel" || field==="packageFlightsLabel"){
+    const key=field==="incl"?"inclusions":(field==="packagePerPersonSuffix"?"perPersonSuffix":(field==="packageResortFeeLabel"?"resortFeeLabel":(field==="packageNightsLabel"?"nightsLabel":(field==="packageFlightsLabel"?"flightsLabel":field))));
+    return packageCopyValue(offer,key,cfg);
+  }
+  if(Object.prototype.hasOwnProperty.call(offer,canonical)) return offer[canonical]||"";
+  return offer[field]||"";
+}
+function syncPackageCanonicalFields(offer){
+  if(!offer) return offer;
+  if(normaliseCampaignType(offer.offerType||currentCampaignType)!=="package") return offer;
+  offer.offerType="package";
+  const hadCanonical={};
+  Object.keys(PACKAGE_EDITOR_FIELD_MAP).forEach(field=>{ hadCanonical[PACKAGE_EDITOR_FIELD_MAP[field]]=Object.prototype.hasOwnProperty.call(offer,PACKAGE_EDITOR_FIELD_MAP[field]); });
+  if(!Object.prototype.hasOwnProperty.call(offer,"ctaPrimary")) offer.ctaPrimary="Start your booking";
+  if(!Object.prototype.hasOwnProperty.call(offer,"ctaSecondary")) offer.ctaSecondary="or visit us in store";
+  if(!Object.prototype.hasOwnProperty.call(offer,"inclusions")) offer.inclusions="Luggage & Transfers Included";
+  if(!Object.prototype.hasOwnProperty.call(offer,"flightsLabel")) offer.flightsLabel="Flights";
+  if(!Object.prototype.hasOwnProperty.call(offer,"nightsLabel")) offer.nightsLabel="Nights";
+  if(!Object.prototype.hasOwnProperty.call(offer,"perPersonSuffix")) offer.perPersonSuffix="pp";
+  Object.keys(PACKAGE_EDITOR_FIELD_MAP).forEach(field=>{
+    const canonical=PACKAGE_EDITOR_FIELD_MAP[field];
+    if(Object.prototype.hasOwnProperty.call(offer,field) && !hadCanonical[canonical]) offer[canonical]=offer[field] == null ? "" : offer[field];
+  });
+  offer.name=offer.destination||"";
+  offer.ship=offer.hotel||"";
+  offer.sailingFrom=offer.departureAirport||"";
+  offer.incl=offer.inclusions||"";
+  offer.price=offer.leadPrice||offer.price||"";
+  offer.boardlbl=offer.boardBasis||offer.boardlbl||"";
+  offer.packagePerPersonSuffix=offer.perPersonSuffix||"";
+  offer.packageResortFeeLabel=offer.resortFeeLabel||"";
+  offer.packageNightsLabel=offer.nightsLabel||"";
+  offer.packageFlightsLabel=offer.flightsLabel||"";
+  return offer;
+}
+function applyPackageEditorFieldsToCanonical(offer){
+  if(!offer) return offer;
+  Object.keys(PACKAGE_EDITOR_FIELD_MAP).forEach(field=>{
+    if(Object.prototype.hasOwnProperty.call(offer,field)){
+      offer[PACKAGE_EDITOR_FIELD_MAP[field]]=offer[field] == null ? "" : offer[field];
+    }
+  });
+  return offer;
 }
 
 function getActiveRenderCampaignType(d){
@@ -10820,7 +10884,11 @@ function applyJet2PackageDefaults(offer){
   offer.offerType="package";
   offer.operator="jet2";
   if(!Object.prototype.hasOwnProperty.call(offer,"ctaPrimary") || !String(offer.ctaPrimary||"").trim()) offer.ctaPrimary="Start your booking";
-  if(!Object.prototype.hasOwnProperty.call(offer,"ctaSecondary") || !String(offer.ctaSecondary||"").trim()) offer.ctaSecondary="or visit us in store";
+  if(!Object.prototype.hasOwnProperty.call(offer,"ctaSecondary")) offer.ctaSecondary="or visit us in store";
+  if(!Object.prototype.hasOwnProperty.call(offer,"inclusions")) offer.inclusions="Luggage & Transfers Included";
+  if(!Object.prototype.hasOwnProperty.call(offer,"flightsLabel")) offer.flightsLabel="Flights";
+  if(!Object.prototype.hasOwnProperty.call(offer,"nightsLabel")) offer.nightsLabel="Nights";
+  if(!Object.prototype.hasOwnProperty.call(offer,"perPersonSuffix")) offer.perPersonSuffix="pp";
   return offer;
 }
 function normalisePackagePricingFields(data){
@@ -10846,7 +10914,8 @@ function packageOfferFromData(d){
   const packageCleanNumericStringLocal=value=>{ const n=packageNumericValueLocal(value); return n?String(n):""; };
   d=d||{};
   const operator=normalisePackageOperatorKey(d.operator||d.operatorKey||"");
-  const airport=String(d.departureAirport||d.flightDisplay||d.sailingFrom||d.flyingFrom||"").replace(/\s+Flights?$/i,"").split(/[•,\n]/)[0].trim();
+  const hasCanonicalAirport=Object.prototype.hasOwnProperty.call(d,"departureAirport");
+  const airport=String(hasCanonicalAirport?d.departureAirport:(d.flightDisplay||d.sailingFrom||d.flyingFrom||"")).replace(/\s+Flights?$/i,"").split(/[•,\n]/)[0].trim();
   const adults=String(d.adults||"").trim() || ((String(d.basis||"").match(/(\d+)\s*Adults?/i)||[])[1]);
   const children=String(d.children||"").trim() || ((String(d.basis||"").match(/(\d+)\s*Child(?:ren)?/i)||[])[1]);
   const localFeeAmount=String(d.localFeeAmount||"").trim();
@@ -10924,7 +10993,7 @@ function renderPackageCard(d){
   const skin=cfg.skin||{};
   const headerSrc=model.operator==="jet2"?(freeChild?skin.headerFamily:skin.headerCouples):skin.header;
   const footerSrc=skin.footer;
-  const header=headerSrc?`<img class="pkg-skin-header" src="${headerSrc}" alt="" role="presentation"><img class="pkg-head-logo pkg-head-logo--dawson" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo">`:`<img class="pkg-head-logo" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo">${ribbon?`<div class="pkg-ribbon">${escapeHtml(ribbon)}</div>`:""}`;
+  const header=headerSrc?`<img class="pkg-skin-header" src="${headerSrc}" alt="" role="presentation">${model.operator==="jet2"&&cfg.logo?`<img class="pkg-head-operator-logo pkg-head-operator-logo--jet2" src="${cfg.logo}" alt="${escapeHtml(cfg.name)} logo">`:""}<img class="pkg-head-logo pkg-head-logo--dawson" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo">`:`<img class="pkg-head-logo" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo">${ribbon?`<div class="pkg-ribbon">${escapeHtml(ribbon)}</div>`:""}`;
   const footerLines=[model.ctaPrimary?`<div class="pkg-cta-main">${escapeHtml(model.ctaPrimary)}</div>`:"",model.ctaSecondary?`<div class="pkg-cta-sub">${escapeHtml(model.ctaSecondary)}</div>`:""].filter(Boolean).join("");
   const footerCta=footerLines?`<div class="pkg-footer-cta">${footerLines}</div>`:"";
   const footer=footerSrc?`<img class="pkg-skin-footer" src="${footerSrc}" alt="" role="presentation">${footerCta}`:footerCta;
@@ -11525,7 +11594,12 @@ function saveEditorToOffer(){
     const e=document.getElementById('f-'+f);
     if(e) o[f]=e.value;
   });
-  if((o.offerType||currentCampaignType)==='package') applyPackageCopyInputOverrides(o,o);
+  if((o.offerType||currentCampaignType)==='package'){
+    o.offerType='package';
+    applyPackageEditorFieldsToCanonical(o);
+    syncPackageCanonicalFields(o);
+    applyPackageCopyInputOverrides(o,o);
+  }
   const sf=document.getElementById('f-sailingFrom'); if(sf && o._sailingFromManual===undefined) o._sailingFromManual=String(sf.value||"").trim()!==(typeof getAutoSailingFromForOffer==="function"?getAutoSailingFromForOffer(o):getAutoSailingFromForPorts(o.ports||""));
   const op=document.getElementById('f-operator');
   if(op) o.operator=op.value;
@@ -11535,7 +11609,13 @@ function saveEditorToOffer(){
   const z=document.getElementById('crop-zoom');
   const x=document.getElementById('crop-x');
   const y=document.getElementById('crop-y');
-  if((o.offerType||currentCampaignType)==='package') applyPackageCopyInputOverrides(o,o);
+  if((o.offerType||currentCampaignType)==='package'){
+    applyPackageEditorFieldsToCanonical(o);
+    syncPackageCanonicalFields(o);
+    applyPackageCopyInputOverrides(o,o);
+    normalisePackagePricingFields(o);
+    applyJet2PackageDefaults(o);
+  }
   if(z) o._cropZoom=parseInt(z.value||100,10);
   if(x) o._cropX=parseInt(x.value||50,10);
   if(y) o._cropY=parseInt(y.value||50,10);
@@ -11553,15 +11633,16 @@ function saveEditorToOffer(){
 function loadOfferToEditor(i){
   if(normaliseCampaignType(currentCampaignType)==="package" && (!offers[i] || Object.keys(offers[i]).length===0)) offers[i]={offerType:"package"};
   const o = applyJet2PackageDefaults(normalisePackagePricingFields(stripTransientPasteOfferFields(offers[i] || {})));
+  if((o.offerType||currentCampaignType)==='package') syncPackageCanonicalFields(o);
   restoreRawPasteForOffer(i);
   if(o.operator||o.name||o.ship||o.price||o.incl||o.ports) applyOperatorTopBarUspDefault(o,o.operator||"");
   normalizeCropPositionForOffer(o);
   if(o.tags) o.tags=normalizeTopBarUspText(o.tags);
   FLDS.forEach(f=>{
     const e=document.getElementById('f-'+f);
-    if(e) e.value = ((o.offerType||currentCampaignType)==='package' && typeof packageCopyEditorValue==='function') ? packageCopyEditorValue(o,f) : (o[f] || '');
+    if(e) e.value = ((o.offerType||currentCampaignType)==='package' && typeof packageEditorValueForField==='function') ? packageEditorValueForField(o,f) : (o[f] || '');
   });
-  if(!o._sailingFromManual && typeof applyAutoSailingFromToOffer==="function"){
+  if((o.offerType||currentCampaignType)!=='package' && !o._sailingFromManual && typeof applyAutoSailingFromToOffer==="function"){
     applyAutoSailingFromToOffer(o);
     const sf=document.getElementById('f-sailingFrom');
     if(sf) sf.value=o.sailingFrom||'';
@@ -11695,6 +11776,7 @@ function visibleFieldsToData(){
     if(e) base[f] = e.value || '';
   });
   if(normaliseCampaignType(currentCampaignType)==='package') base.offerType='package';
+  if((base.offerType||currentCampaignType)==='package'){ applyPackageEditorFieldsToCanonical(base); syncPackageCanonicalFields(base); }
   if((base.offerType||currentCampaignType)==='package') applyPackageCopyInputOverrides(base,base);
   const sf=document.getElementById('f-sailingFrom'); if(sf) base._sailingFromManual=!!((offers[cur]||{})._sailingFromManual);
   const op = document.getElementById('f-operator');
@@ -11717,6 +11799,8 @@ function visibleFieldsToData(){
   base._itineraryFitMode = base._itineraryFitMode === 'fill' ? 'fill' : 'fit';
   if((base.offerType||currentCampaignType)==='package'){
     base.operator=normalisePackageOperatorKey(base.operator||base.operatorKey||"");
+    applyPackageEditorFieldsToCanonical(base);
+    syncPackageCanonicalFields(base);
     normalisePackagePricingFields(base);
   }
   applyJet2PackageDefaults(base);

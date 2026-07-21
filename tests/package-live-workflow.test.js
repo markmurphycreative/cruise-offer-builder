@@ -250,6 +250,7 @@ test('live Package editor input IDs update authoritative offer and preview-rende
   fields.get('f-children').value = '0';
   fields.get('f-nights').value = '7';
   fields.get('f-boardlbl').value = 'Bed & Breakfast';
+  fields.get('f-incl').value = 'Luggage & Transfers Included';
   fields.get('f-packagePerPersonSuffix').value = 'pp';
   fields.set('card-output', makeField(''));
   fields.set('preview-scaler', makeField(''));
@@ -263,12 +264,14 @@ test('live Package editor input IDs update authoritative offer and preview-rende
   vm.createContext(context);
   vm.runInContext([
     extractFunction('escapeHtml'), extractConst('FLDS'), extractConst('PACKAGE_OPERATORS'), extractConst('PACKAGE_COPY_FIELDS'), extractConst('PACKAGE_BOARD_BASES'), extractConst('PACKAGE_FEATURES'), extractConst('PACKAGE_AIRPORTS'),
-    extractFunction('getActiveRenderCampaignType'), extractFunction('normalisePackageOperatorKey'), extractFunction('isPackageOffer'), extractFunction('packageDefaultCopyValue'), extractFunction('normalisePackageCopyOverrides'), extractFunction('packageCopyValue'), extractFunction('applyPackageCopyInputOverrides'), extractFunction('packageCopyEditorValue'), extractFunction('packageNumericValue'), extractFunction('packageCleanNumericString'), extractFunction('applyJet2PackageDefaults'), extractFunction('normalisePackagePricingFields'), extractFunction('formatPackageOrdinalDate'), extractFunction('packageOfferFromData'), extractFunction('formatPackageMoney'), extractFunction('packageAirportLine'), extractFunction('packageResortFeeText'), extractFunction('renderPackagePriceBlock'), extractFunction('renderPackageCard'), extractFunction('cleanCardFieldValue'), extractFunction('cleanCardFieldLines'), extractFunction('cleanCardFacingOfferData'), extractFunction('renderCardHTML'), 'function bc(d){ return renderCardHTML(d); }', extractFunction('renderOfferWithOptionalCtaHTML'), extractFunction('visibleFieldsToData'), extractFunction('commitVisibleFields'), extractFunction('renderVisibleCard')
+    extractFunction('getActiveRenderCampaignType'), extractFunction('normalisePackageOperatorKey'), extractFunction('isPackageOffer'), extractFunction('packageDefaultCopyValue'), extractFunction('normalisePackageCopyOverrides'), extractFunction('packageCopyValue'), extractFunction('applyPackageCopyInputOverrides'), extractFunction('packageCopyEditorValue'), extractConst('PACKAGE_EDITOR_FIELD_MAP'), extractFunction('packageCanonicalEditorField'), extractFunction('packageEditorValueForField'), extractFunction('syncPackageCanonicalFields'), extractFunction('applyPackageEditorFieldsToCanonical'), extractFunction('packageNumericValue'), extractFunction('packageCleanNumericString'), extractFunction('applyJet2PackageDefaults'), extractFunction('normalisePackagePricingFields'), extractFunction('formatPackageOrdinalDate'), extractFunction('packageOfferFromData'), extractFunction('formatPackageMoney'), extractFunction('packageAirportLine'), extractFunction('packageResortFeeText'), extractFunction('renderPackagePriceBlock'), extractFunction('renderPackageCard'), extractFunction('cleanCardFieldValue'), extractFunction('cleanCardFieldLines'), extractFunction('cleanCardFacingOfferData'), extractFunction('renderCardHTML'), 'function bc(d){ return renderCardHTML(d); }', extractFunction('renderOfferWithOptionalCtaHTML'), extractFunction('visibleFieldsToData'), extractFunction('commitVisibleFields'), extractFunction('renderVisibleCard')
   ].join('\n'), context);
 
   vm.runInContext('commitVisibleFields(); renderVisibleCard();', context);
   assert.equal(context.offers[0].operator, 'jet2');
   assert.equal(context.offers[0].ctaSecondary, 'or visit us in store');
+  assert.equal(context.offers[0].inclusions, 'Luggage & Transfers Included');
+  assert.equal(context.offers[0].departureAirport, 'Newcastle');
   assert.match(fields.get('card-output').innerHTML, /assets\/operator-logos\/jet2-holidays-logo\.png/);
   assert.match(fields.get('card-output').innerHTML.replace(/<span class="pkg-pp">pp<\/span>/g, 'pp').replace(/<[^>]+>/g, ''), /£574pp[\s\S]*\+£12pp Local Resort Fee[\s\S]*£586pp/);
 
@@ -276,6 +279,8 @@ test('live Package editor input IDs update authoritative offer and preview-rende
   fields.get('f-totalPrice').value = '511';
   fields.get('f-resortFee').value = '15';
   fields.get('f-ctaSecondary').value = 'or call us in store';
+  fields.get('f-sailingFrom').value = 'Manchester';
+  fields.get('f-incl').value = 'Luggage, transfers and meals included';
   vm.runInContext('commitVisibleFields(); renderVisibleCard();', context);
   const text = fields.get('card-output').innerHTML.replace(/<span class="pkg-pp">pp<\/span>/g, 'pp').replace(/<[^>]+>/g, '');
   assert.equal(context.offers[0].price, '499');
@@ -283,6 +288,10 @@ test('live Package editor input IDs update authoritative offer and preview-rende
   assert.equal(context.offers[0].totalPrice, '511');
   assert.equal(context.offers[0].resortFee, '15pp');
   assert.equal(context.offers[0].ctaSecondary, 'or call us in store');
+  assert.equal(context.offers[0].departureAirport, 'Manchester');
+  assert.equal(context.offers[0].inclusions, 'Luggage, transfers and meals included');
   assert.match(text, /£499pp[\s\S]*\+£15pp Local Resort Fee[\s\S]*£511pp/);
   assert.match(text, /or call us in store/);
+  assert.match(text, /Manchester Flights/);
+  assert.match(text, /Luggage, transfers and meals included/);
 });
