@@ -10715,7 +10715,17 @@ const PACKAGE_OPERATORS = {
 const PACKAGE_BOARD_BASES = ["Room Only","Bed & Breakfast","Half Board","Full Board","All Inclusive","All Inclusive Plus","Ultra All Inclusive","Self Catering"];
 const PACKAGE_FEATURES = ["Free Child Place","Adults Only","Family","Luxury","City Break","Beach Holiday"];
 const PACKAGE_AIRPORTS = ["Newcastle","Manchester","Birmingham","Glasgow","Edinburgh"];
-function isPackageOperator(key){ return !!(PACKAGE_OPERATORS[String(key||"").toLowerCase()]); }
+
+function normalisePackageOperatorKey(value){
+  const raw=String(value||"").trim().toLowerCase();
+  if(!raw) return "";
+  if(PACKAGE_OPERATORS[raw]) return raw;
+  for(const [key,cfg] of Object.entries(PACKAGE_OPERATORS)){
+    if((cfg.aliases||[]).some(alias=>String(alias||"").trim().toLowerCase()===raw)) return key;
+  }
+  return raw;
+}
+function isPackageOperator(key){ return !!(PACKAGE_OPERATORS[normalisePackageOperatorKey(key)]); }
 const PACKAGE_COPY_FIELDS = {
   ctaPrimary:{field:"ctaPrimary",defaultValue:"Start your booking"},
   ctaSecondary:{field:"ctaSecondary",defaultValue:"or visit us in store",optional:true},
@@ -10760,7 +10770,7 @@ function packageCopyValue(d,key,cfg){
 }
 function applyPackageCopyInputOverrides(target,source){
   if(!target) return target;
-  const cfg=PACKAGE_OPERATORS[String((target.operator||target.operatorKey||source&&source.operator)||"").toLowerCase()]||{};
+  const cfg=PACKAGE_OPERATORS[normalisePackageOperatorKey((target.operator||target.operatorKey||(source&&source.operator)||""))]||{};
   const current=normalisePackageCopyOverrides(target);
   const next={};
   Object.keys(current).forEach(k=>{ next[k]=current[k]; });
@@ -10779,7 +10789,7 @@ function applyPackageCopyInputOverrides(target,source){
 function packageCopyEditorValue(o,field){
   const entry=Object.entries(PACKAGE_COPY_FIELDS).find(([,meta])=>meta.field===field);
   if(!entry) return o[field]||"";
-  return packageCopyValue(o,entry[0],PACKAGE_OPERATORS[String(o.operator||o.operatorKey||"").toLowerCase()]||{});
+  return packageCopyValue(o,entry[0],PACKAGE_OPERATORS[normalisePackageOperatorKey(o.operator||o.operatorKey||"")]||{});
 }
 
 function getActiveRenderCampaignType(d){
@@ -10805,7 +10815,7 @@ function packageCleanNumericString(value){
 }
 function applyJet2PackageDefaults(offer){
   if(!offer) return offer;
-  const op=String(offer.operator||offer.operatorKey||"").toLowerCase();
+  const op=normalisePackageOperatorKey(offer.operator||offer.operatorKey||"");
   if(op!=="jet2") return offer;
   offer.offerType="package";
   offer.operator="jet2";
@@ -10833,7 +10843,7 @@ function packageOfferFromData(d){
   const packageNumericValueLocal=value=>{ const raw=String(value==null?"":value).replace(/,/g,"").trim(); const match=raw.match(/-?\d+(?:\.\d+)?/); return match?Number(match[0]):0; };
   const packageCleanNumericStringLocal=value=>{ const n=packageNumericValueLocal(value); return n?String(n):""; };
   d=d||{};
-  const operator=String(d.operator||d.operatorKey||"").toLowerCase();
+  const operator=normalisePackageOperatorKey(d.operator||d.operatorKey||"");
   const airport=String(d.departureAirport||d.flightDisplay||d.sailingFrom||d.flyingFrom||"").replace(/\s+Flights?$/i,"").split(/[•,\n]/)[0].trim();
   const adults=String(d.adults||"").trim() || ((String(d.basis||"").match(/(\d+)\s*Adults?/i)||[])[1]);
   const children=String(d.children||"").trim() || ((String(d.basis||"").match(/(\d+)\s*Child(?:ren)?/i)||[])[1]);
@@ -10844,7 +10854,7 @@ function packageOfferFromData(d){
   const ctaPrimary=packageCopyValue(d,"ctaPrimary",cfgForCta);
   const ctaSecondary=packageCopyValue(d,"ctaSecondary",cfgForCta);
   const leadPrice=packageCleanNumericStringLocal(d.leadPrice||d.price);
-  const resortFee=(localFeePerPerson?packageCleanNumericStringLocal(localFeePerPerson)+"pp":(d.resortFee||""));
+  const resortFee=(localFeePerPerson?packageCleanNumericStringLocal(localFeePerPerson)+"pp":(d.resortFee?packageCleanNumericStringLocal(d.resortFee)+( /pp|per person/i.test(String(d.resortFee)) ? "pp" : "" ):""));
   const feePerPerson=packageNumericValueLocal(localFeePerPerson||resortFee);
   const derivedJet2Total=operator==="jet2"&&Number(children||0)<=0&&leadPrice&&feePerPerson?String(packageNumericValueLocal(leadPrice)+feePerPerson):"";
   return {
@@ -11700,7 +11710,6 @@ function visibleFieldsToData(){
   if(iy) base._itineraryCropY = parseInt(iy.value || base._itineraryCropY || 50, 10);
   base._itineraryFitMode = base._itineraryFitMode === 'fill' ? 'fill' : 'fit';
   applyJet2PackageDefaults(base);
-  normalisePackagePricingFields(base);
   cobTraceSourceTag(base, "visibleFieldsToData()");
   cobTraceOfferSnapshot("visibleFieldsToData", base, "visibleFieldsToData()");
   return base;
