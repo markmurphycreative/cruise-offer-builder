@@ -2503,7 +2503,50 @@ async function openAiCopyPromptInChatGPT(){
 // ═══════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════
-let offers = [{},{},{},{}];
+function createBlankCruiseOffer(){ return {}; }
+function createBlankPackageOffer(){ return {offerType:"package",packageCopyOverrides:{}}; }
+function createBlankOfferForCampaign(type){ return normaliseCampaignType(type)==="package" ? createBlankPackageOffer() : createBlankCruiseOffer(); }
+function createBlankOfferSlotsForCampaign(type){ return [0,1,2,3].map(()=>createBlankOfferForCampaign(type)); }
+function createCampaignModel(type="cruise", metadata={}){
+  const campaignType=normaliseCampaignType(type);
+  const model={
+    id:`${campaignType}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    campaignType,
+    metadata:Object.assign({name:"",date:"",airport:"",terms:""}, metadata||{}),
+    cruiseOffers:createBlankOfferSlotsForCampaign("cruise"),
+    packageOffers:createBlankOfferSlotsForCampaign("package"),
+    activeOfferIndex:0,
+    packageFields:{},
+    packageOperatorState:{operator:"",operatorKey:""},
+    packageAssetState:{},
+    packageCopyOverrides:{}
+  };
+  return model;
+}
+let campaignModel = createCampaignModel("cruise");
+let cruiseOffers = campaignModel.cruiseOffers;
+let packageOffers = campaignModel.packageOffers;
+let offers = cruiseOffers;
+function getActiveOfferCollection(type=currentCampaignType){ return normaliseCampaignType(type)==="package" ? packageOffers : cruiseOffers; }
+function syncOffersAliasForCampaign(type=currentCampaignType){
+  currentCampaignType=normaliseCampaignType(type);
+  if(!campaignModel) campaignModel=createCampaignModel(currentCampaignType);
+  if(!Array.isArray(cruiseOffers)) cruiseOffers=createBlankOfferSlotsForCampaign("cruise");
+  if(!Array.isArray(packageOffers)) packageOffers=createBlankOfferSlotsForCampaign("package");
+  campaignModel.cruiseOffers=cruiseOffers;
+  campaignModel.packageOffers=packageOffers;
+  offers=getActiveOfferCollection(currentCampaignType);
+  campaignModel.activeOfferIndex=cur||0;
+  return offers;
+}
+function replaceCampaignModel(type=currentCampaignType, metadata={}){
+  campaignModel=createCampaignModel(type, metadata);
+  cruiseOffers=campaignModel.cruiseOffers;
+  packageOffers=campaignModel.packageOffers;
+  offers=getActiveOfferCollection(campaignModel.campaignType);
+  cur=0;
+  return campaignModel;
+}
 let cur = 0, viewMode = "all", zoomPct = 32;
 let lockedOffers = [false,false,false,false];
 let lockedHeroImages = [false,false,false,false];
@@ -2576,6 +2619,7 @@ function syncPackageOfferDetailsFields(type=currentCampaignType){
 }
 function applyCampaignContext(type=currentCampaignType){
   currentCampaignType=normaliseCampaignType(type);
+  if(typeof syncOffersAliasForCampaign === "function") syncOffersAliasForCampaign(currentCampaignType);
   const label=getCampaignTypeLabel(currentCampaignType);
   document.title=getCampaignContextTitle(currentCampaignType);
   const meta=document.querySelector('meta[name="application-name"]');
@@ -5071,6 +5115,7 @@ function updateSectionCompletionIndicators(){
   Object.keys(state).forEach(key=>setSectionCompletionIndicator(key,state[key]));
 }
 function getLoadedOfferCount(){
+  if(typeof syncOffersAliasForCampaign === "function") syncOffersAliasForCampaign(currentCampaignType);
   return offers.filter(isOfferLoaded).length;
 }
 function updateEmptyOfferState(){
@@ -5113,6 +5158,9 @@ function updateAllStatus(){
 }
 function isOfferLoaded(o){
   if(!o) return false;
+  const normaliseType = (typeof normaliseCampaignType === "function") ? normaliseCampaignType : (value=>String(value||"cruise").toLowerCase()==="package"?"package":"cruise");
+  if(typeof currentCampaignType !== "undefined" && normaliseType(currentCampaignType)==="package" && normaliseType(o.offerType)!=="package") return false;
+  if(typeof currentCampaignType !== "undefined" && normaliseType(currentCampaignType)!=="package" && normaliseType(o.offerType)==="package") return false;
   const meaningfulFields=[
     o.name,
     o.ship,
@@ -6353,9 +6401,11 @@ async function migrateLegacyEmbeddedHeroAssets(payload){
   return payload;
 }
 function buildAutosavePayload(){
+  syncOffersAliasForCampaign(currentCampaignType);
   save();
   if(typeof syncHeroLockMetadata==="function") syncHeroLockMetadata();
-  const clonedOffers = JSON.parse(JSON.stringify(offers || [{},{},{},{}]));
+  const activeCampaignType=(typeof currentCampaignType !== 'undefined' ? currentCampaignType : 'cruise');
+  const clonedOffers = JSON.parse(JSON.stringify(getActiveOfferCollection(activeCampaignType) || createBlankOfferSlotsForCampaign(activeCampaignType)));
   // Autosave flow: keep hero data URLs for restore; logo data URLs still require reupload.
   clonedOffers.forEach((o,index)=>{
     if(o) o.heroLocked=!!((typeof lockedHeroImages!=="undefined" && Array.isArray(lockedHeroImages)) ? lockedHeroImages[index] : o.heroLocked);
@@ -6363,7 +6413,6 @@ function buildAutosavePayload(){
   });
   const sectionState = {};
   getSectionCollapseState().forEach((collapsed,key)=>{ sectionState[key]=!!collapsed; });
-  const activeCampaignType=(typeof currentCampaignType !== 'undefined' ? currentCampaignType : 'cruise');
   return {version:'1.0',savedAt:new Date().toISOString(),cur,viewMode,campaignType:activeCampaignType,sessionId:'latest',ctaSettings:(typeof ctaSettings !== 'undefined' ? ctaSettings : {enabled:false,text:'Click To Call Us For More Info',phone:'01912229701'}),lockedOffers,lockedHeroImages:(typeof lockedHeroImages!=="undefined" && Array.isArray(lockedHeroImages) ? lockedHeroImages.slice(0,4) : [false,false,false,false]),sectionState,openSectionKey:getOpenSectionKey(),campaign:{name:document.getElementById('g-campaign').value||'',date:document.getElementById('g-date').value||'',airport:document.getElementById('g-airport').value||'',terms:document.getElementById('g-terms').value||'',campaignType:activeCampaignType,...(typeof getCampaignNamingSnapshot==="function" ? getCampaignNamingSnapshot() : {})},offers:clonedOffers};
 }
 function describeStorageSaveError(error){
@@ -6435,6 +6484,8 @@ function applySessionPayload(data){
   if(!data || !Array.isArray(data.offers)) return;
   // Restore bugfix: avoid calling save()/commit during hydration; hydrate UI first, then refresh once.
   autosaveHydrating = true;
+  const restoreType=normaliseCampaignType((data.campaign&&data.campaign.campaignType) || data.campaignType || inferCampaignTypeFromOffers(data.offers));
+  replaceCampaignModel(restoreType);
   offers = data.offers.slice(0,4).map((o={})=>{
     if(!allowLargeEmbeddedImagesDuringRestore && o._img && typeof o._img === "string" && o._img.startsWith("data:") && o._img.length > 6_000_000){
       delete o._img;
@@ -6448,7 +6499,9 @@ function applySessionPayload(data){
     }
     if(typeof normalizeCropPositionForOffer === "function") normalizeCropPositionForOffer(o);
     return o;
-  }); while(offers.length<4) offers.push({});
+  }); while(offers.length<4) offers.push(createBlankOfferForCampaign(restoreType));
+  if(restoreType==="package") packageOffers=offers; else cruiseOffers=offers;
+  syncOffersAliasForCampaign(restoreType);
   lockedOffers = Array.isArray(data.lockedOffers) ? data.lockedOffers.slice(0,4) : [false,false,false,false];
   lockedHeroImages = typeof normaliseHeroLockArray==="function" ? normaliseHeroLockArray(data.lockedHeroImages, offers) : (Array.isArray(data.lockedHeroImages) ? data.lockedHeroImages.slice(0,4) : offers.slice(0,4).map(o=>!!(o&&o.heroLocked)));
   if(typeof syncHeroLockMetadata==="function") syncHeroLockMetadata();
@@ -6760,6 +6813,7 @@ function resetBuilderToBlankSession(type=currentCampaignType, options={}){
   try{
     resetTransientCampaignState();
     offers = [{},{},{},{}];
+    replaceCampaignModel(campaignType);
     currentCampaignType = campaignType;
     applyCampaignContext(currentCampaignType);
     lockedOffers = [false,false,false,false];
@@ -6931,6 +6985,7 @@ function getCampaignQaSnapshot(){
   return {copyQaStatus:qa ? qa.textContent || "" : "", capturedForReferenceOnly:true};
 }
 function buildCampaignFilePayload(){
+  syncOffersAliasForCampaign(currentCampaignType);
   save();
   const exportedAt=new Date().toISOString();
   const sectionState={};
@@ -6944,7 +6999,7 @@ function buildCampaignFilePayload(){
     ...(typeof getCampaignNamingSnapshot==="function" ? getCampaignNamingSnapshot() : {})
   };
   if(typeof syncHeroLockMetadata==="function") syncHeroLockMetadata();
-  const portableOffers=makePortableCampaignOffers(offers);
+  const portableOffers=makePortableCampaignOffers(getActiveOfferCollection(currentCampaignType));
   const googleSheetSource=getSavedGoogleSheetSource();
   const currentCtaSettings=getCtaSettingsFromUI();
   ctaSettings=currentCtaSettings;
@@ -11316,6 +11371,7 @@ function abortSplashCampaignHydration(){
   autosaveHydrating = false;
 }
 function currentFormData(){
+  if(normaliseCampaignType(currentCampaignType)==="package") return cobTraceSourceTag(Object.assign({}, ((typeof packageOffers!=="undefined" ? packageOffers : offers)[cur]) || createBlankPackageOffer()), "packageOffers[cur]");
   if((typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) || (typeof autosaveHydrating !== "undefined" && autosaveHydrating)){ const hydratingData=cobTraceSourceTag({...(offers[cur]||{})}, "offers[cur]"); cobTraceOfferSnapshot("currentFormData", hydratingData, "offers[cur]"); return hydratingData; }
   const d={...(offers[cur]||{})};
   FLDS.forEach(f=>{ const e=document.getElementById("f-"+f); if(e) d[f]=f==="ship"&&typeof normaliseRoyalCaribbeanShipName==="function"?normaliseRoyalCaribbeanShipName(e.value):e.value; });
@@ -11601,7 +11657,13 @@ function fillEx(){
 // This intentionally bypasses stale cached preview state.
 // The preview is rendered from offers[cur], and the sidebar fields are only the editor.
 // ═══════════════════════════════════════════════════════
+
+function isPackageOfferMaterializedFromEditor(){
+  const meaningful=["f-name","f-ship","f-sailingFrom","f-incl","f-price","f-totalPrice","f-resortFee","f-basis","f-boardlbl","f-day","f-month","f-nights","f-flightDisplay","f-inclusionsDisplay","f-roomType","f-handLuggage","f-holdLuggage","f-transfers"];
+  return meaningful.some(id=>{ const el=document.getElementById(id); return !!(el&&String(el.value||"").trim()); });
+}
 function saveEditorToOffer(){
+  if(normaliseCampaignType(currentCampaignType)==="package" && typeof isPackageOfferMaterializedFromEditor==="function" && !isPackageOfferMaterializedFromEditor()) return;
   if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
   if(typeof isOfferLocked==="function" && isOfferLocked(cur)) return;
   try { autoBoardLabel(); } catch(e){}
@@ -11783,6 +11845,7 @@ processSheetCSV = function(csv,status){
 // offer data after CSV imports.
 // ═══════════════════════════════════════════════════════
 function visibleFieldsToData(){
+  if(normaliseCampaignType(currentCampaignType)==="package" && typeof isPackageOfferMaterializedFromEditor==="function" && !isPackageOfferMaterializedFromEditor()) return cobTraceSourceTag(stripTransientPasteOfferFields(Object.assign({}, ((typeof packageOffers!=="undefined" ? packageOffers : offers)[cur]) || createBlankPackageOffer())), "packageOffers[cur]");
   if((typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) || (typeof autosaveHydrating !== "undefined" && autosaveHydrating)){ const hydratingData=cobTraceSourceTag(stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {})), "offers[cur]"); cobTraceOfferSnapshot("visibleFieldsToData", hydratingData, "offers[cur]"); return hydratingData; }
   const base = stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}));
   const rawPaste=document.getElementById("raw-paste");
@@ -11825,12 +11888,14 @@ function visibleFieldsToData(){
   return base;
 }
 function commitVisibleFields(){
+  if(normaliseCampaignType(currentCampaignType)==="package" && typeof isPackageOfferMaterializedFromEditor==="function" && !isPackageOfferMaterializedFromEditor()) return;
   if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
   try { autoBoardLabel(); } catch(e){}
   offers[cur] = stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}, visibleFieldsToData()));
   syncTopBarUspManualState(offers[cur]);
 }
 function renderVisibleCard(){
+  if(typeof syncOffersAliasForCampaign==="function") syncOffersAliasForCampaign(currentCampaignType);
   cobTraceOfferSnapshot("renderVisibleCard", (offers && offers[cur]) || {}, "unknown");
   if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
   const scaler = document.getElementById('preview-scaler');
@@ -12332,8 +12397,10 @@ function renderEmptyPreviewIfNeeded(){
   const activeType=typeof normaliseCampaignType==="function" ? normaliseCampaignType(typeof currentCampaignType!=="undefined" ? currentCampaignType : "cruise") : (["package","touring","worldwide"].includes(String(typeof currentCampaignType!=="undefined" ? currentCampaignType : "").toLowerCase()) ? String(currentCampaignType||"").toLowerCase() : "cruise");
   const workspaceCopy=copyMap[activeType] || copyMap.cruise;
   const workspaceLabel=typeof getCampaignTypeLabel==="function" ? getCampaignTypeLabel(activeType) : ((typeof CAMPAIGN_TYPE_LABELS!=="undefined" && CAMPAIGN_TYPE_LABELS[activeType]) || "Cruise");
+  if(!out.style) out.style={};
   out.style.width=''; out.style.transform=''; out.style.transformOrigin='';
   out.innerHTML = `<div class="preview-empty-state" role="status" aria-label="Campaign upload area"><h2>Ready to build ${workspaceLabel}</h2><p>${workspaceCopy}</p><p>Click anywhere or drag a campaign file into this workspace.</p></div>`;
+  if(!scaler.style) scaler.style={};
   scaler.style.width = '100%';
   scaler.style.marginLeft = '';
   scaler.style.marginRight = '';
@@ -12344,6 +12411,7 @@ function renderEmptyPreviewIfNeeded(){
 }
 
 function renderPreviewMode(skipSave){
+  if(typeof syncOffersAliasForCampaign==="function") syncOffersAliasForCampaign(currentCampaignType);
   const perfStart=(typeof cobPerfNow==="function"?cobPerfNow():Date.now());
   cobTraceOfferSnapshot("renderPreviewMode", (offers && offers[cur]) || {}, "unknown");
   if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
@@ -12424,7 +12492,8 @@ function renderPreviewMode(skipSave){
       c.setAttribute('aria-label', (typeof isOfferLocked==='function' && isOfferLocked(index) ? 'Locked offer. ' : '') + 'Edit Offer ' + (index + 1));
       c.addEventListener('click', function(){ editOfferFromAllPreview(index); });
       c.addEventListener('keydown', function(event){ handleAllPreviewCardKeydown(event, index); });
-      c.innerHTML = currentCtaSettings.enabled ? renderOfferWithOptionalCtaHTML(d || {}, currentCtaSettings) : bc(d || {});
+      if(currentCtaSettings.enabled) c.innerHTML = renderOfferWithOptionalCtaHTML(d || {}, currentCtaSettings);
+      else c.innerHTML = bc(d || {});
       adjustVisitSectionHeights(c);
       enhanceClickableHeroImagesAndPlaceholders(c, index);
       enhanceHeroDropTarget(c, index);
