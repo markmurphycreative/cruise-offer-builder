@@ -55,6 +55,7 @@ function createContext() {
     extractFunction('packageAirportLine'),
     extractFunction('packageResortFeeText'),
     extractFunction('renderPackagePriceBlock'),
+    extractFunction('renderPackageOperatorLogo'),
     extractFunction('renderPackageCard')
   ].join('\n') + '\nglobalThis.PACKAGE_OPERATORS = PACKAGE_OPERATORS; globalThis.PACKAGE_COPY_FIELDS = PACKAGE_COPY_FIELDS; globalThis.PACKAGE_BOARD_BASES = PACKAGE_BOARD_BASES; globalThis.PACKAGE_FEATURES = PACKAGE_FEATURES; globalThis.PACKAGE_AIRPORTS = PACKAGE_AIRPORTS;', context);
   return context;
@@ -75,8 +76,10 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
 });
 
 test('Package operator logos use operator-specific natural-aspect placement classes', () => {
-  assert.match(html, /\.pc \.pkg-operator-logo\{[^}]*width:auto;[^}]*height:auto;[^}]*object-fit:contain;/);
+  assert.match(html, /\.pc \.pkg-operator-logo\{[^}]*display:block;[^}]*position:absolute;[^}]*width:auto;[^}]*height:auto;[^}]*object-fit:contain;[^}]*pointer-events:none;/);
   assert.match(html, /\.pc \.pkg-operator-logo--tui\{left:28px;bottom:14px;width:300px;\}/);
+  assert.match(html, /\.pc \.pkg-operator-logo--jet2\{left:226px;bottom:114px;width:240px;\}/);
+  assert.doesNotMatch(html, /\.pc\.pkg-jet2 \.pkg-operator-logo--jet2/);
   assert.match(html, /\.pc\.pkg-jet2\{--pkg-left:98px;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-head\{height:154px;[^}]*border:0;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-skin-header\{height:auto;object-fit:contain;object-position:top center;\}/);
