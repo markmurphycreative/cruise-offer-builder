@@ -198,3 +198,36 @@ test('Unknown package operator renders neutral state instead of falling back to 
   assert.match(out, /Operator not detected/);
   assert.doesNotMatch(out, /assets\/operator-logos\/tui-logo\.png/);
 });
+
+test('Package renderer uses editable labels for all non-parsed package copy', () => {
+  const { renderPackageCard } = createContext();
+  const out = renderPackageCard({
+    operator: 'jet2',
+    name: 'Kefalonia',
+    ship: 'Hotel',
+    nights: '7',
+    packageNightsLabel: 'Evenings',
+    sailingFrom: 'Newcastle',
+    packageFlightsLabel: 'Departures',
+    price: '574pp',
+    leadPrice: '574pp',
+    totalPrice: '586',
+    resortFee: '12pp',
+    packagePerPersonSuffix: 'per adult',
+    packageResortFeeLabel: 'Pay locally charge',
+    priceLabel: 'Holiday Total',
+    basis: 'Based on two grown-ups',
+    incl: 'Bags and coaches sorted',
+    ctaPrimary: 'Reserve today',
+    ctaSecondary: 'then pop in store'
+  });
+  assert.match(out, /7 Evenings/);
+  assert.match(out, /Newcastle Departures/);
+  assert.match(out, /Bags and coaches sorted/);
+  assert.match(out, /£574<span class="pkg-pp">per adult<\/span>/);
+  assert.match(out, /\+£12per adult Pay locally charge/);
+  assert.match(out, /Holiday Total/);
+  assert.match(out, /Based on two grown-ups/);
+  assert.match(out, /Reserve today/);
+  assert.match(out, /then pop in store/);
+});
