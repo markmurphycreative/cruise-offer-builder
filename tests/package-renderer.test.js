@@ -90,7 +90,8 @@ test('Package operator logos use operator-specific natural-aspect placement clas
   const { renderPackageCard } = createContext();
   assert.match(renderPackageCard({ operator: 'tui' }), /pkg-operator-logo pkg-operator-logo--tui/);
   const jet2Html = renderPackageCard({ operator: 'jet2' });
-  assert.match(jet2Html, /<img class="pkg-operator-logo pkg-operator-logo--jet2" src="assets\/operator-logos\/jet2-holidays-logo\.png" alt="Jet2 Holidays logo">/);
+  assert.match(jet2Html, /<img class="pkg-operator-logo pkg-operator-logo--jet2" src="assets\/operator-logos\/jet2-holidays-logo\.png" alt="" role="presentation" aria-hidden="true">/);
+  assert.match(jet2Html, /<div class="pkg-head"><img class="pkg-head-logo" src="assets\/operator-logos\/dawson-and-sanderson-logo\.png" alt="Dawson &amp; Sanderson logo">/);
   assert.equal((jet2Html.match(/assets\/operator-logos\/jet2-holidays-logo\.png/g) || []).length, 1);
   assert.doesNotMatch(jet2Html, /pkg-head-operator-logo|pkg-skin-header|header-couples\.png|header-family\.png/);
   assert.match(renderPackageCard({ operator: 'easyjet' }), /pkg-operator-logo pkg-operator-logo--easyjet/);
