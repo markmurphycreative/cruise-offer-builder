@@ -282,3 +282,25 @@ test('Package copy overrides distinguish absent, custom and deliberately blank v
   assert.match(clearedHtml, /Start your booking/);
   assert.doesNotMatch(clearedHtml, /pkg-cta-sub/);
 });
+
+test('Blank package and cruise-to-package state isolation do not render ghost cruise fields', () => {
+  const { renderPackageCard, packageOfferFromData } = createContext();
+  const cruiseOffer = { offerType: 'cruise', operator: 'po', name: 'Eastern Caribbean Islands Fly-Cruise', ship: 'Arvia', ports: 'Barbados • Martinique', tags: 'Adult Only Options · Cuisine', sailingFrom: 'Port of Tyne', price: '1669', ctaSecondary: 'old cruise CTA' };
+  const blankPackageHtml = renderPackageCard({ offerType: 'package' });
+  ['Eastern Caribbean', 'Arvia', 'Barbados', 'Martinique', 'Port of Tyne', '1669', 'old cruise CTA'].forEach(value => assert.doesNotMatch(blankPackageHtml, new RegExp(value)));
+  assert.match(blankPackageHtml, /pkg-operator-missing/);
+
+  const model = packageOfferFromData({ offerType: 'package', operator: 'jet2', ports: cruiseOffer.ports, tags: cruiseOffer.tags, handLuggage: '2 x 10kg', holdLuggage: '2 x 22kg', roomType: 'Studio' });
+  assert.equal(model.departureAirport, '');
+  const htmlOutput = renderPackageCard({ offerType: 'package', operator: 'jet2', ports: cruiseOffer.ports, tags: cruiseOffer.tags, handLuggage: '2 x 10kg', holdLuggage: '2 x 22kg', roomType: 'Studio' });
+  ['Barbados', 'Martinique', '2 x 10kg', '2 x 22kg', 'Studio', 'Adult Only Options'].forEach(value => assert.doesNotMatch(htmlOutput, new RegExp(value)));
+  assert.match(htmlOutput, /Luggage &amp; Transfers Included/);
+});
+
+test('Package Offer Details exposes package labels and hides cruise-only controls', () => {
+  assert.match(html, /CTA Primary/);
+  assert.match(html, /CTA Secondary/);
+  assert.match(html, /Hotel \/ Accommodation/);
+  assert.match(html, /Departure Airport/);
+  assert.match(html, /const cruiseOnly=\["tags","theme_tags","ports","board"\]/);
+});
