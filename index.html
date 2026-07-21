@@ -11060,7 +11060,7 @@ function renderPackagePriceBlock(model,operatorKey){
 }
 function renderPackageOperatorLogo(cfg,layout){
   if(!cfg||!cfg.logo) return `<div class="pkg-operator-missing">Operator not detected</div>`;
-  return `<img class="pkg-operator-logo pkg-operator-logo--${layout}" src="${cfg.logo}" alt="${escapeHtml(cfg.name)} logo">`;
+  return `<img class="pkg-operator-logo pkg-operator-logo--${layout}" src="${cfg.logo}" alt="" role="presentation" aria-hidden="true">`;
 }
 function renderPackageCard(d){
   if(!packageOfferHasGenuineData(d)) return `<div class="pc pkg-blank"><div class="pkg-head"><img class="pkg-head-logo" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo"></div><div class="pkg-body"></div><div class="pkg-footer"></div></div>`;
