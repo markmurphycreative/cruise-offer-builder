@@ -208,11 +208,12 @@ test('Jet2 operator logo renderer output and live package selector support absol
   assert.equal(card.className, 'pc pkg-jet2');
   assert.ok(logo, 'Jet2 logo should be present');
   assert.equal(document.querySelectorAll('img[src="assets/operator-logos/jet2-holidays-logo.png"]').length, 1);
-  assert.equal(logo.parentElement.className, 'pkg-body');
-  assert.equal(logo.previousElementSibling.className, 'pkg-details');
-  assert.match(logo.nextElementSibling.className, /pkg-pricing/);
+  assert.equal(logo.parentElement.className, 'pc pkg-jet2');
+  assert.equal(logo.previousElementSibling.className, 'pkg-body');
+  assert.equal(logo.nextElementSibling.className, 'pkg-footer');
   assert.equal(logo.className, 'pkg-operator-logo pkg-operator-logo--jet2');
   assert.equal(logo.getAttribute('src'), 'assets/operator-logos/jet2-holidays-logo.png');
+  assert.equal(document.querySelector('.pkg-body .pkg-operator-logo--jet2'), null);
   assert.equal(document.querySelector('.pkg-details .pkg-operator-logo--jet2'), null);
   assert.equal(document.querySelector('.pkg-head .pkg-operator-logo--jet2'), null);
   assert.equal(document.querySelector('.pkg-head img[src="assets/operator-logos/jet2-holidays-logo.png"]'), null);
@@ -231,17 +232,24 @@ test('Jet2 operator logo renderer output and live package selector support absol
   assert.equal(computed.pointerEvents, 'none');
 });
 
-test('TUI and easyJet package logos continue through the shared operator logo renderer', () => {
+test('Jet2, TUI and easyJet package logos share direct-card DOM placement from the shared operator logo renderer', () => {
   const { renderPackageCard, renderPackageOperatorLogo, PACKAGE_OPERATORS } = createContext();
-  for (const operator of ['tui', 'easyjet']) {
+  assert.match(html, /\.pc\{[^}]*position:relative;/, '.pc should remain the positioned containing block');
+  assert.match(html, /\.pc \.pkg-body\{[^}]*position:relative;/, '.pkg-body should keep its positioning for existing layout');
+  for (const operator of ['jet2', 'tui', 'easyjet']) {
     const cardHtml = renderPackageCard({ operator, name: 'Destination', ship: 'Hotel', nights: '7', boardlbl: 'Self Catering', price: '499pp' });
     const document = parsePackageCardDocument(cardHtml);
     const logo = document.querySelector(`.pkg-operator-logo--${operator}`);
     assert.ok(logo, `${operator} shared logo should be present`);
     assert.equal(logo.outerHTML, renderPackageOperatorLogo(PACKAGE_OPERATORS[operator], operator));
     assert.equal(document.querySelectorAll('.pkg-operator-logo').length, 1);
-    assert.equal(logo.parentElement.className, 'pkg-body');
+    assert.equal(logo.parentElement.className, `pc pkg-${operator}`);
+    assert.equal(logo.previousElementSibling.className, 'pkg-body');
+    assert.equal(logo.nextElementSibling.className, 'pkg-footer');
+    assert.equal(document.querySelector(`.pkg-body .pkg-operator-logo--${operator}`), null);
     assert.equal(document.querySelector(`.pkg-details .pkg-operator-logo--${operator}`), null);
+    assert.equal(document.querySelector(`.pkg-head .pkg-operator-logo--${operator}`), null);
+    assert.match(cardHtml, /<\/div><img class="pkg-operator-logo pkg-operator-logo--(jet2|tui|easyjet)"[^>]*><div class="pkg-footer">/);
   }
 });
 
