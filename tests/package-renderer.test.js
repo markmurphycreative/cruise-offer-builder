@@ -55,7 +55,7 @@ function createContext() {
 test('Package operator configuration defines Phase 1 logos and CTA text', () => {
   const { PACKAGE_OPERATORS } = createContext();
   assert.equal(PACKAGE_OPERATORS.tui.logo, 'assets/operator-logos/tui-logo.png');
-  assert.equal(PACKAGE_OPERATORS.tui.ctaText, 'Call us for more info');
+  assert.equal(PACKAGE_OPERATORS.tui.ctaText, 'Start your booking');
   assert.equal(PACKAGE_OPERATORS.jet2.logo, 'assets/operator-logos/jet2-holidays-logo.png');
   assert.equal(PACKAGE_OPERATORS.jet2.ctaText, 'Start your booking');
   assert.equal(PACKAGE_OPERATORS.jet2.ctaSecondary, 'or visit us in store');
@@ -63,7 +63,7 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
   assert.equal(PACKAGE_OPERATORS.jet2.skin.headerFamily, 'assets/package-skins/jet2/header-family.png');
   assert.equal(PACKAGE_OPERATORS.jet2.skin.footer, 'assets/package-skins/jet2/footer.png');
   assert.equal(PACKAGE_OPERATORS.easyjet.logo, 'assets/operator-logos/easyjet-logo.png');
-  assert.equal(PACKAGE_OPERATORS.easyjet.ctaText, 'Call us for more info');
+  assert.equal(PACKAGE_OPERATORS.easyjet.ctaText, 'Start your booking');
 });
 
 test('Package operator logos use operator-specific natural-aspect placement classes', () => {
@@ -164,7 +164,10 @@ test('Jet2 couples render with fee uses canonical assets, compact inclusions and
   assert.match(out, /Based on 2 Adults Sharing/);
   assert.match(out, /<div class="pkg-footer-cta"><div class="pkg-cta-main">Start your booking<\/div><div class="pkg-cta-sub">or visit us in store<\/div><\/div>/);
   const edited = renderPackageCard({ operator: 'jet2', ctaPrimary: 'Book online', ctaSecondary: '', name: 'Kefalonia', ship: 'Hotel', price: '574pp', adults: '2', children: '0' });
-  assert.match(edited, /<div class="pkg-cta-main">Book online<\/div><div class="pkg-cta-sub"><\/div>/);
+  assert.match(edited, /<div class="pkg-cta-main">Book online<\/div>/);
+  assert.doesNotMatch(edited, /<div class="pkg-cta-sub">/);
+  const blankPriceCopy = renderPackageCard({ operator: 'jet2', price: '574pp', priceLabel: '', basis: '', incl: '', ctaPrimary: '', ctaSecondary: '' });
+  assert.doesNotMatch(blankPriceCopy, /pkg-price-label|pkg-basis|pkg-footer-cta|Luggage &amp; Transfers Included/);
   assert.doesNotMatch(out, /Our Rating|TripAdvisor|176 Reviews|Holiday Summary|Flight Details|Going out|Coming back|NCL|EFL|Hand Luggage Included|Hold Luggage Included|Coach Transfers/);
 });
 
