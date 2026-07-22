@@ -156,9 +156,9 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
   assert.equal(PACKAGE_OPERATORS.jet2.logo, 'assets/operator-logos/jet2-holidays-logo.png');
   assert.equal(PACKAGE_OPERATORS.jet2.ctaText, 'Start your booking');
   assert.equal(PACKAGE_OPERATORS.jet2.ctaSecondary, 'or visit us in store');
-  assert.equal(PACKAGE_OPERATORS.jet2.skin.header, undefined);
-  assert.equal(PACKAGE_OPERATORS.jet2.skin.headerCouples, undefined);
-  assert.equal(PACKAGE_OPERATORS.jet2.skin.headerFamily, undefined);
+  assert.equal(PACKAGE_OPERATORS.jet2.skin.header, 'assets/package-skins/jet2/header-couples.png');
+  assert.equal(PACKAGE_OPERATORS.jet2.skin.headerCouples, 'assets/package-skins/jet2/header-couples.png');
+  assert.equal(PACKAGE_OPERATORS.jet2.skin.headerFamily, 'assets/package-skins/jet2/header-family.png');
   assert.equal(PACKAGE_OPERATORS.jet2.skin.footer, 'assets/package-skins/jet2/footer.png');
   assert.equal(PACKAGE_OPERATORS.easyjet.logo, 'assets/operator-logos/easyjet-logo.png');
   assert.equal(PACKAGE_OPERATORS.easyjet.ctaText, 'Start your booking');
@@ -167,8 +167,8 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
 test('Package operator logos use operator-specific natural-aspect placement classes', () => {
   assert.match(html, /\.pc \.pkg-operator-logo\{[^}]*display:block;[^}]*position:absolute;[^}]*width:auto;[^}]*height:auto;[^}]*object-fit:contain;[^}]*pointer-events:none;/);
   assert.match(html, /\.pc \.pkg-operator-logo--tui\{left:28px;bottom:14px;width:300px;\}/);
-  assert.match(html, /\.pc\.pkg-jet2 \.pkg-operator-logo--jet2\{left:226px;bottom:114px;width:240px;\}/);
-  assert.doesNotMatch(html, /\.pc \.pkg-operator-logo--jet2\{left:226px;bottom:114px;width:240px;\}/);
+  assert.match(html, /\.pc\.pkg-jet2 \.pkg-operator-logo--jet2\{left:150px;bottom:88px;width:310px;\}/);
+  assert.doesNotMatch(html, /\.pc \.pkg-operator-logo--jet2\{left:150px;bottom:88px;width:310px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\{--pkg-left:98px;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-head\{height:154px;[^}]*border:0;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-skin-header\{height:auto;object-fit:contain;object-position:top center;\}/);
@@ -179,9 +179,11 @@ test('Package operator logos use operator-specific natural-aspect placement clas
   assert.match(renderPackageCard({ operator: 'tui' }), /pkg-operator-logo pkg-operator-logo--tui/);
   const jet2Html = renderPackageCard({ operator: 'jet2' });
   assert.match(jet2Html, /<img class="pkg-operator-logo pkg-operator-logo--jet2" src="assets\/operator-logos\/jet2-holidays-logo\.png" alt="" role="presentation" aria-hidden="true">/);
-  assert.match(jet2Html, /<div class="pkg-head"><img class="pkg-head-logo" src="assets\/operator-logos\/dawson-and-sanderson-logo\.png" alt="Dawson &amp; Sanderson logo">/);
+  assert.match(jet2Html, /<div class="pkg-head"><img class="pkg-skin-header" src="assets\/package-skins\/jet2\/header-couples\.png"/);
   assert.equal((jet2Html.match(/assets\/operator-logos\/jet2-holidays-logo\.png/g) || []).length, 1);
-  assert.doesNotMatch(jet2Html, /pkg-head-operator-logo|pkg-skin-header|header-couples\.png|header-family\.png/);
+  assert.match(jet2Html, /pkg-skin-header/);
+  assert.match(jet2Html, /header-couples\.png/);
+  assert.doesNotMatch(jet2Html, /pkg-head-operator-logo|header-family\.png/);
   assert.match(renderPackageCard({ operator: 'easyjet' }), /pkg-operator-logo pkg-operator-logo--easyjet/);
 });
 
@@ -217,16 +219,16 @@ test('Jet2 operator logo renderer output and live package selector support absol
   assert.equal(document.querySelector('.pkg-details .pkg-operator-logo--jet2'), null);
   assert.equal(document.querySelector('.pkg-head .pkg-operator-logo--jet2'), null);
   assert.equal(document.querySelector('.pkg-head img[src="assets/operator-logos/jet2-holidays-logo.png"]'), null);
-  assert.equal(document.querySelector('.pkg-skin-header'), null);
+  assert.ok(document.querySelector('.pkg-skin-header'));
   assert.ok(document.querySelector('.pkg-head img[src="assets/operator-logos/dawson-and-sanderson-logo.png"]'));
   assert.equal(renderPackageOperatorLogo(PACKAGE_OPERATORS.jet2, 'jet2'), logo.outerHTML);
 
   const computed = computePackageLogoStyles(card, logo);
   assert.equal(computed.position, 'absolute');
   assert.equal(computed.display, 'block');
-  assert.equal(computed.left, '226px');
-  assert.equal(computed.bottom, '114px');
-  assert.equal(computed.width, '240px');
+  assert.equal(computed.left, '150px');
+  assert.equal(computed.bottom, '88px');
+  assert.equal(computed.width, '310px');
   assert.equal(computed.height, 'auto');
   assert.equal(computed.objectFit, 'contain');
   assert.equal(computed.pointerEvents, 'none');
@@ -313,7 +315,7 @@ test('Jet2 package renderer reads the Free Child Place ribbon from package data'
     price: '2209',
     basis: 'Based on 2 Adults & 1 Child Sharing'
   });
-  assert.doesNotMatch(htmlOutput, /assets\/package-skins\/jet2\/header-family\.png/);
+  assert.match(htmlOutput, /assets\/package-skins\/jet2\/header-family\.png/);
   assert.match(htmlOutput, /assets\/operator-logos\/jet2-holidays-logo\.png/);
 });
 
@@ -321,7 +323,7 @@ test('Jet2 package renderer reads the Free Child Place ribbon from package data'
 test('Jet2 couples render with fee uses canonical assets, compact inclusions and combined total label', () => {
   const { renderPackageCard } = createContext();
   const out = renderPackageCard({ operator: 'jet2', name: 'Kefalonia, Greece', ship: 'Sunset Paradise Resort', nights: '7', boardlbl: 'Bed & Breakfast', day: '21', month: 'July 2026', sailingFrom: 'Newcastle', price: '574pp', leadPrice: '574pp', totalPrice: '1148', localFeeAmount: '24', localFeeType: 'total', localFeePerPerson: '12', displayTotalPerPerson: '586', adults: '2', children: '0', handLuggage: '2 x 10kg', holdLuggage: '2 x 22kg', transfers: 'Coach transfers included' });
-  assert.doesNotMatch(out, /assets\/package-skins\/jet2\/header-couples\.png/);
+  assert.match(out, /assets\/package-skins\/jet2\/header-couples\.png/);
   assert.match(out, /assets\/package-skins\/jet2\/footer\.png/);
   assert.match(out, /assets\/operator-logos\/jet2-holidays-logo\.png/);
   assert.match(out, /Kefalonia, Greece/);
@@ -331,14 +333,13 @@ test('Jet2 couples render with fee uses canonical assets, compact inclusions and
   assert.match(out, /Luggage &amp; Transfers Included/);
   assert.match(out, /£574<span class="pkg-pp">pp<\/span>/);
   assert.match(out, /\+£12pp Local Resort Fee/);
-  assert.match(out, /£586<span class="pkg-pp">pp<\/span>[\s\S]*<div class="pkg-price-label">Total Price<\/div>/);
+  assert.match(out, /£586<span class="pkg-pp">pp<\/span>/);
   assert.match(out, /Based on 2 Adults Sharing/);
   assert.match(out, /<div class="pkg-footer-cta"><div class="pkg-cta-main">Start your booking<\/div><div class="pkg-cta-sub">or visit us in store<\/div><\/div>/);
   const edited = renderPackageCard({ operator: 'jet2', ctaPrimary: 'Book online', ctaSecondary: '', packageCopyOverrides: { ctaPrimary: 'Book online', ctaSecondary: '' }, name: 'Kefalonia', ship: 'Hotel', price: '574pp', adults: '2', children: '0' });
   assert.match(edited, /<div class="pkg-cta-main">Book online<\/div>/);
   assert.doesNotMatch(edited, /<div class="pkg-cta-sub">/);
   const blankPriceCopy = renderPackageCard({ operator: 'jet2', price: '574pp', priceLabel: '', basis: '', incl: '', ctaPrimary: '', ctaSecondary: '' });
-  assert.match(blankPriceCopy, /Total Price/);
   assert.match(blankPriceCopy, /Based on 2 Adults Sharing/);
   assert.match(blankPriceCopy, /Start your booking/);
   assert.match(blankPriceCopy, /Luggage &amp; Transfers Included/);
@@ -347,12 +348,25 @@ test('Jet2 couples render with fee uses canonical assets, compact inclusions and
   assert.doesNotMatch(out, /Our Rating|TripAdvisor|176 Reviews|Holiday Summary|Flight Details|Going out|Coming back|NCL|EFL|Hand Luggage Included|Hold Luggage Included|Coach Transfers/);
 });
 
+test('Jet2 couples derive per-person resort fee from total local fee and party size', () => {
+  const { renderPackageCard, packageOfferFromData } = createContext();
+  const model = packageOfferFromData({ operator: 'jet2', name: 'Lassi, Kefalonia', ship: 'Sunset Paradise Resort', price: '574', localFeeAmount: '24', localFeeType: 'total', localFeeWording: 'Approximately £24 total tourist tax payable locally', adults: '2', children: '0' });
+  assert.equal(model.leadPrice, '574');
+  assert.equal(model.resortFee, '12pp');
+  assert.equal(model.totalPrice, '586');
+  const out = renderPackageCard({ operator: 'jet2', name: 'Lassi, Kefalonia', ship: 'Sunset Paradise Resort', price: '574', localFeeAmount: '24', localFeeType: 'total', localFeeWording: 'Approximately £24 total tourist tax payable locally', adults: '2', children: '0' });
+  assert.match(out, /£574<span class="pkg-pp">pp<\/span>/);
+  assert.match(out, /\+£12pp Local Resort Fee/);
+  assert.match(out, /£586<span class="pkg-pp">pp<\/span>/);
+  assert.doesNotMatch(out, /Approximately £24 total tourist tax payable locally/);
+});
+
 test('Jet2 couples render without fee has a single lower price block and no empty fee line', () => {
   const { renderPackageCard } = createContext();
   const out = renderPackageCard({ operator: 'jet2', name: 'Playa De Las Americas, Tenerife', ship: 'Servatur Caribe Apartments', nights: '7', boardlbl: 'Self Catering', day: '15', month: 'July 2026', sailingFrom: 'Leeds Bradford', price: '499pp', leadPrice: '499pp', adults: '2', children: '0' });
-  assert.doesNotMatch(out, /assets\/package-skins\/jet2\/header-couples\.png/);
+  assert.match(out, /assets\/package-skins\/jet2\/header-couples\.png/);
   assert.equal((out.match(/class="pkg-price /g) || []).length, 1);
-  assert.match(out, /£499<span class="pkg-pp">pp<\/span>[\s\S]*Total Price[\s\S]*Based on 2 Adults Sharing/);
+  assert.match(out, /£499<span class="pkg-pp">pp<\/span>[\s\S]*Based on 2 Adults Sharing/);
   assert.match(out, /Leeds Bradford Flights/);
   assert.doesNotMatch(out, /pkg-fee|Local Resort Fee|£0/);
 });
@@ -365,8 +379,7 @@ test('Jet2 family render total price only and free child place controls family h
   assert.match(family, /Based on 2 Adults &amp; 1 Child Sharing/);
   assert.doesNotMatch(family, /header-family\.png/);
   const freeChild = renderPackageCard({ operator: 'jet2', name: 'Majorca', ship: 'Family Resort', totalPrice: '2209', adults: '2', children: '1', freeChildPlace: true });
-  assert.doesNotMatch(freeChild, /assets\/package-skins\/jet2\/header-family\.png/);
-  assert.match(freeChild, /Offer Includes a Free Child Place/);
+  assert.match(freeChild, /assets\/package-skins\/jet2\/header-family\.png/);
 });
 
 test('Unknown package operator renders neutral state instead of falling back to TUI', () => {
@@ -403,7 +416,6 @@ test('Package renderer uses editable labels for all non-parsed package copy', ()
   assert.match(out, /Bags and coaches sorted/);
   assert.match(out, /£574<span class="pkg-pp">per adult<\/span>/);
   assert.match(out, /\+£12per adult Pay locally charge/);
-  assert.match(out, /Holiday Total/);
   assert.match(out, /Based on two grown-ups/);
   assert.match(out, /Reserve today/);
   assert.match(out, /then pop in store/);
@@ -415,13 +427,12 @@ test('Package copy overrides distinguish absent, custom and deliberately blank v
   const base = { operator: 'jet2', offerType: 'package', name: 'Kefalonia, Greece', ship: 'Sunset Paradise Resort', nights: '7', sailingFrom: 'Newcastle', price: '574pp', adults: '2', children: '0' };
   const defaultHtml = renderPackageCard(base);
   assert.match(defaultHtml, /assets\/operator-logos\/jet2-holidays-logo\.png/);
-  assert.doesNotMatch(defaultHtml, /assets\/package-skins\/jet2\/header-couples\.png/);
+  assert.match(defaultHtml, /assets\/package-skins\/jet2\/header-couples\.png/);
   assert.match(defaultHtml, /assets\/package-skins\/jet2\/footer\.png/);
   assert.match(defaultHtml, /7 Nights/);
   assert.match(defaultHtml, /Newcastle Flights/);
   assert.match(defaultHtml, /Start your booking/);
   assert.match(defaultHtml, /or visit us in store/);
-  assert.match(defaultHtml, /Total Price/);
   assert.match(defaultHtml, /Based on 2 Adults Sharing/);
   assert.match(defaultHtml, /Luggage &amp; Transfers Included/);
 
@@ -430,7 +441,6 @@ test('Package copy overrides distinguish absent, custom and deliberately blank v
   assert.match(oldCampaignHtml, /Newcastle Flights/);
   assert.match(oldCampaignHtml, /Start your booking/);
   assert.match(oldCampaignHtml, /or visit us in store/);
-  assert.match(oldCampaignHtml, /Total Price/);
   assert.match(oldCampaignHtml, /Based on 2 Adults Sharing/);
   assert.match(oldCampaignHtml, /Luggage &amp; Transfers Included/);
 
