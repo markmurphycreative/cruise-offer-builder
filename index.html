@@ -859,7 +859,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .pc .pkg-inclusion,.pc .pkg-basis-bottom{display:block;}
 .pc .pkg-operator-logo{display:block;position:absolute;width:auto;height:auto;object-fit:contain;object-position:left bottom;pointer-events:none;}
 .pc .pkg-operator-logo--tui{left:28px;bottom:14px;width:300px;}
-.pc.pkg-jet2 .pkg-details .pkg-operator-logo--jet2{position:static;width:388px;margin-top:34px;object-position:left top;}
+.pc.pkg-jet2 .pkg-details .pkg-operator-logo--jet2{position:static;width:250px;margin-top:26px;object-position:left top;}
 .pc.pkg-jet2 .pkg-details .pkg-operator-logo--jet2{flex:0 0 auto;}
 .pc .pkg-operator-logo--easyjet{left:6px;bottom:-27px;width:430px;}
 .pc .pkg-pricing{position:absolute;right:85px;top:250px;width:485px;text-align:right;color:#000;}
@@ -11714,7 +11714,7 @@ function saveEditorToOffer(){
   if(normaliseCampaignType(currentCampaignType)==="package" && typeof isPackageOfferMaterializedFromEditor==="function" && !isPackageOfferMaterializedFromEditor()) return;
   if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
   if(typeof isOfferLocked==="function" && isOfferLocked(cur)) return;
-  try { autoBoardLabel(); } catch(e){}
+  if(normaliseCampaignType(currentCampaignType)!=="package") { try { autoBoardLabel(); } catch(e){} }
   const o = stripTransientPasteOfferFields(offers[cur] || (offers[cur] = {}));
   saveRawPasteForOffer(cur);
   FLDS.forEach(f=>{
@@ -11939,7 +11939,7 @@ function visibleFieldsToData(){
 function commitVisibleFields(){
   if(normaliseCampaignType(currentCampaignType)==="package" && typeof isPackageOfferMaterializedFromEditor==="function" && !isPackageOfferMaterializedFromEditor()) return;
   if(typeof splashCampaignHydrating !== "undefined" && splashCampaignHydrating) return;
-  try { autoBoardLabel(); } catch(e){}
+  if(normaliseCampaignType(currentCampaignType)!=="package") { try { autoBoardLabel(); } catch(e){} }
   offers[cur] = stripTransientPasteOfferFields(Object.assign({}, offers[cur] || {}, visibleFieldsToData()));
   syncTopBarUspManualState(offers[cur]);
 }
