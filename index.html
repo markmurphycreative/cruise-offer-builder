@@ -10834,8 +10834,15 @@ function packageOfferHasGenuineData(d){
   if(!d) return false;
   return ["destination","name","hotel","ship","leadPrice","price","totalPrice","departureDate","day","month","departureAirport","sailingFrom","nights","boardBasis","boardlbl","roomType","handLuggage","holdLuggage","transfers","_img","operator"].some(function(key){ return String(d[key]||"").trim(); });
 }
+function isLivePackagePlainTextInput(key){
+  if(key!=="ctaSecondary") return false;
+  if(typeof document === "undefined") return false;
+  const active=document.activeElement;
+  return !!(active && active.id === "f-ctaSecondary");
+}
 function normalisePackagePlainTextField(key,value){
   const text=String(value == null ? "" : value);
+  if(isLivePackagePlainTextInput(key)) return text;
   if(key==="ctaSecondary" && !/[\s]/.test(text)&&text.toLowerCase()==="orvisitusinstore") return "or visit us in store";
   if(key==="ctaPrimary" && text.replace(/\s+/g,"").toLowerCase()==="startyourbooking") return "Start your booking";
   return text;
@@ -13648,6 +13655,13 @@ function closeShortcutsModal(){
   if(shortcutsPreviousFocus && typeof shortcutsPreviousFocus.focus === 'function') shortcutsPreviousFocus.focus();
   shortcutsPreviousFocus=null;
 }
+function isEditableShortcutNode(node,editableSelector){
+  if(!node || (typeof window !== "undefined" && node === window) || (typeof document !== "undefined" && node === document)) return false;
+  if(node.isContentEditable) return true;
+  if(node.matches && node.matches(editableSelector)) return true;
+  if(node.closest && node.closest('input,textarea,select,[contenteditable]')) return true;
+  return !!(node.closest && node.closest(editableSelector));
+}
 function isShortcutBlockedTarget(target,event){
   const editableSelector='input,textarea,select,[contenteditable],[contenteditable=""],[contenteditable="true"],[contenteditable="plaintext-only"]';
   const nodes=[];
@@ -13656,13 +13670,7 @@ function isShortcutBlockedTarget(target,event){
   }
   if(target) nodes.push(target);
   if(typeof document !== "undefined" && document.activeElement) nodes.push(document.activeElement);
-  return nodes.some(function(node){
-    if(!node || (typeof window !== "undefined" && node === window) || (typeof document !== "undefined" && node === document)) return false;
-    if(node.isContentEditable) return true;
-    if(node.matches && node.matches(editableSelector)) return true;
-    if(node.closest && node.closest('input,textarea,select,[contenteditable]')) return true;
-    return !!(node.closest && node.closest(editableSelector));
-  });
+  return nodes.some(function(node){ return isEditableShortcutNode(node,editableSelector); });
 }
 function releaseSelectShortcutFocus(event){
   const target=event && event.target;
