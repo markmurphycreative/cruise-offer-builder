@@ -853,15 +853,19 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .pc.pkg-jet2 .pkg-hotel{font-size:34px;}
 .pc .pkg-details{position:absolute;left:var(--pkg-left);top:285px;font-size:36px;line-height:1.35;color:#797979;}
 .pc.pkg-tui .pkg-details{color:#000;}
-.pc.pkg-jet2 .pkg-details{top:304px;font-size:35px;line-height:1.36;}
+.pc.pkg-jet2 .pkg-details{top:280px;font-size:35px;line-height:1.36;width:560px;height:364px;display:flex;flex-direction:column;align-items:flex-start;}
+.pc.pkg-jet2 .pkg-detail-text{height:272px;display:flex;flex-direction:column;justify-content:space-between;}
+.pc.pkg-jet2 .pkg-detail-line{display:block;}
 .pc .pkg-inclusion,.pc .pkg-basis-bottom{display:block;}
 .pc .pkg-operator-logo{display:block;position:absolute;width:auto;height:auto;object-fit:contain;object-position:left bottom;pointer-events:none;}
 .pc .pkg-operator-logo--tui{left:28px;bottom:14px;width:300px;}
 .pc.pkg-jet2 .pkg-details .pkg-operator-logo--jet2{position:static;width:388px;margin-top:34px;object-position:left top;}
+.pc.pkg-jet2 .pkg-details .pkg-operator-logo--jet2{flex:0 0 auto;}
 .pc .pkg-operator-logo--easyjet{left:6px;bottom:-27px;width:430px;}
 .pc .pkg-pricing{position:absolute;right:85px;top:250px;width:485px;text-align:right;color:#000;}
-.pc.pkg-jet2 .pkg-pricing{top:454px;right:98px;width:420px;}
-.pc.pkg-jet2 .pkg-pricing--with-fee{top:95px;}
+.pc.pkg-jet2 .pkg-pricing{top:280px;right:98px;width:420px;}
+.pc.pkg-jet2 .pkg-pricing--with-fee{top:280px;height:272px;display:flex;flex-direction:column;justify-content:space-between;}
+.pc.pkg-jet2 .pkg-pricing--with-fee .pkg-lead{margin-bottom:0;}
 .pc .pkg-lead{margin-bottom:120px;}
 .pc .pkg-price{font-size:92px;line-height:.92;font-weight:300;letter-spacing:-.04em;}
 .pc.pkg-jet2 .pkg-price{font-size:112px;}
@@ -10918,6 +10922,7 @@ function syncPackageCanonicalFields(offer){
   if(hasPackageData && !Object.prototype.hasOwnProperty.call(offer,"flightsLabel")) offer.flightsLabel="Flights";
   if(hasPackageData && !Object.prototype.hasOwnProperty.call(offer,"nightsLabel")) offer.nightsLabel="Nights";
   if(hasPackageData && !Object.prototype.hasOwnProperty.call(offer,"perPersonSuffix")) offer.perPersonSuffix="pp";
+  if(hasPackageData && !Object.prototype.hasOwnProperty.call(offer,"priceLabel")) offer.priceLabel="Total Price";
   Object.keys(PACKAGE_EDITOR_FIELD_MAP).forEach(field=>{
     const canonical=PACKAGE_EDITOR_FIELD_MAP[field];
     if(Object.prototype.hasOwnProperty.call(offer,field) && !hadCanonical[canonical]) offer[canonical]=offer[field] == null ? "" : offer[field];
@@ -10977,6 +10982,7 @@ function applyJet2PackageDefaults(offer){
   if(!Object.prototype.hasOwnProperty.call(offer,"flightsLabel")) offer.flightsLabel="Flights";
   if(!Object.prototype.hasOwnProperty.call(offer,"nightsLabel")) offer.nightsLabel="Nights";
   if(!Object.prototype.hasOwnProperty.call(offer,"perPersonSuffix")) offer.perPersonSuffix="pp";
+  if(!Object.prototype.hasOwnProperty.call(offer,"priceLabel")) offer.priceLabel="Total Price";
   return offer;
 }
 function normalisePackagePricingFields(data){
@@ -11100,7 +11106,10 @@ function renderPackageCard(d){
   const detailTopLines=[model.nights?[model.nights,model.nightsLabel].filter(Boolean).join(" "):"",model.boardBasis,model.departureDate,packageAirportLine(model.departureAirport,model.flightsLabel)].filter(Boolean);
   const inclusionLine=model.inclusions||"";
   const operatorLogo=renderPackageOperatorLogo(cfg,layout);
-  const detailsMarkup=[detailTopLines.map(escapeHtml).join("<br>"), inclusionLine?`<span class="pkg-inclusion">${escapeHtml(inclusionLine)}</span>`:"", model.operator==="jet2"?operatorLogo:""].filter(Boolean).join("");
+  const jet2DetailLines=detailTopLines.concat(inclusionLine?[inclusionLine]:[]);
+  const detailsMarkup=model.operator==="jet2"
+    ? [`<div class="pkg-detail-text">${jet2DetailLines.map(line=>`<span class="pkg-detail-line${line===inclusionLine?" pkg-inclusion":""}">${escapeHtml(line)}</span>`).join("")}</div>`, operatorLogo].filter(Boolean).join("")
+    : [detailTopLines.map(escapeHtml).join("<br>"), inclusionLine?`<span class="pkg-inclusion">${escapeHtml(inclusionLine)}</span>`:""].filter(Boolean).join("");
   const skin=cfg.skin||{};
   const headerSrc=(model.operator==="jet2"?(freeChild?skin.headerFamily:skin.headerCouples):skin.header);
   const footerSrc=skin.footer;
@@ -13615,10 +13624,21 @@ function closeShortcutsModal(){
   if(shortcutsPreviousFocus && typeof shortcutsPreviousFocus.focus === 'function') shortcutsPreviousFocus.focus();
   shortcutsPreviousFocus=null;
 }
-function isShortcutBlockedTarget(target){
-  if(!target) return false;
-  if(target.isContentEditable) return true;
-  return !!(target.closest && (target.closest('input,textarea,select,[contenteditable]') || target.closest('input,textarea,select,[contenteditable=""],[contenteditable="true"],[contenteditable="plaintext-only"]')));
+function isShortcutBlockedTarget(target,event){
+  const editableSelector='input,textarea,select,[contenteditable],[contenteditable=""],[contenteditable="true"],[contenteditable="plaintext-only"]';
+  const nodes=[];
+  if(event && typeof event.composedPath === "function"){
+    try{ nodes.push.apply(nodes,event.composedPath()); }catch(e){}
+  }
+  if(target) nodes.push(target);
+  if(typeof document !== "undefined" && document.activeElement) nodes.push(document.activeElement);
+  return nodes.some(function(node){
+    if(!node || (typeof window !== "undefined" && node === window) || (typeof document !== "undefined" && node === document)) return false;
+    if(node.isContentEditable) return true;
+    if(node.matches && node.matches(editableSelector)) return true;
+    if(node.closest && node.closest('input,textarea,select,[contenteditable]')) return true;
+    return !!(node.closest && node.closest(editableSelector));
+  });
 }
 function releaseSelectShortcutFocus(event){
   const target=event && event.target;
@@ -13702,7 +13722,7 @@ function handleKeyboardShortcut(event){
     event.preventDefault();
     return;
   }
-  if(isShortcutBlockedTarget(event.target)) return;
+  if(isShortcutBlockedTarget(event.target,event)) return;
   const shortcutsModal=document.getElementById('shortcuts-modal');
   if(shortcutsModal && shortcutsModal.classList.contains('active')){
     if(event.key === 'Escape' || isQuestionMarkShortcut(event)){

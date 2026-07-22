@@ -211,7 +211,8 @@ test('Jet2 operator logo renderer output and live package selector support absol
   assert.ok(logo, 'Jet2 logo should be present');
   assert.equal(document.querySelectorAll('img[src="assets/operator-logos/jet2-holidays-logo.png"]').length, 1);
   assert.equal(logo.parentElement.className, 'pkg-details');
-  assert.match(logo.previousElementSibling.outerHTML, /pkg-inclusion/);
+  assert.match(logo.previousElementSibling.outerHTML, /pkg-detail-text/);
+  assert.ok(logo.previousElementSibling.querySelector('.pkg-inclusion'));
   assert.equal(logo.parentElement.parentElement.className, 'pkg-body');
   assert.equal(logo.className, 'pkg-operator-logo pkg-operator-logo--jet2');
   assert.equal(logo.getAttribute('src'), 'assets/operator-logos/jet2-holidays-logo.png');
@@ -254,7 +255,7 @@ test('Jet2 logo belongs to the left details column while TUI and easyJet keep di
   const jet2Logo = jet2Doc.querySelector('.pkg-operator-logo--jet2');
   assert.equal(jet2Logo.parentElement.className, 'pkg-details');
   assert.equal(jet2Doc.querySelectorAll('.pkg-operator-logo').length, 1);
-  assert.match(jet2Html, /<span class="pkg-inclusion">Luggage &amp; Transfers Included<\/span><img class="pkg-operator-logo pkg-operator-logo--jet2"/);
+  assert.match(jet2Html, /<div class="pkg-detail-text">[\s\S]*<span class="pkg-detail-line pkg-inclusion">Luggage &amp; Transfers Included<\/span>[\s\S]*<\/div><img class="pkg-operator-logo pkg-operator-logo--jet2"/);
 });
 
 test('Package offer model maps existing builder fields without mutating Cruise fields', () => {
