@@ -232,7 +232,7 @@ test('real screenshot import state path carries Dawson Jet2 structure into activ
   assert.match(visibleText, /£574pp/);
   assert.match(visibleText, /\+£12pp Local Resort Fee/);
   assert.match(visibleText, /£586pp/);
-  assert.doesNotMatch(visibleText, /Total Price/);
+  assert.match(visibleText, /Total Price/);
   assert.doesNotMatch(htmlOutput, /Operator not detected|Our Rating|TripAdvisor|176 Reviews|Hand Luggage Included|Coach Transfers/);
 });
 
@@ -292,13 +292,13 @@ test('live Package editor input IDs update authoritative offer and preview-rende
   const text = fields.get('card-output').innerHTML.replace(/<span class="pkg-pp">pp<\/span>/g, 'pp').replace(/<[^>]+>/g, '');
   assert.equal(context.offers[0].price, '499');
   assert.equal(context.offers[0].leadPrice, '499');
-  assert.equal(context.offers[0].totalPrice, '511');
+  assert.equal(context.offers[0].totalPrice, '514');
   assert.equal(context.offers[0].resortFee, '15pp');
   assert.equal(context.offers[0].ctaSecondary, 'or call into your local store');
   assert.equal(context.offers[0].boardBasis, 'Half Board');
   assert.equal(context.offers[0].departureAirport, 'Manchester');
   assert.equal(context.offers[0].inclusions, 'Luggage, transfers and meals included');
-  assert.match(text, /£499pp[\s\S]*\+£15pp Local Resort Fee[\s\S]*£511pp/);
+  assert.match(text, /£499pp[\s\S]*\+£15pp Local Resort Fee[\s\S]*£514pp[\s\S]*Total Price/);
   assert.match(text, /or call into your local store/);
   assert.match(text, /Half Board/);
   fields.get('f-boardlbl').value = 'All Inclusive';

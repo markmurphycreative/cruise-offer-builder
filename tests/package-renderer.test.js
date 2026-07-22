@@ -112,7 +112,7 @@ function computePackageLogoStyles(card, logo) {
 }
 function selectorMatchesCardLogo(selector, card, logo) {
   if (selector === '.pc .pkg-operator-logo') return card.matches('pc') && logo.matches('pkg-operator-logo');
-  if (selector === '.pc.pkg-jet2 .pkg-operator-logo--jet2') return card.matches('pc') && card.matches('pkg-jet2') && logo.matches('pkg-operator-logo--jet2');
+  if (selector === '.pc.pkg-jet2 .pkg-operator-logo--jet2' || selector === '.pc.pkg-jet2 .pkg-details .pkg-operator-logo--jet2') return card.matches('pc') && card.matches('pkg-jet2') && logo.matches('pkg-operator-logo--jet2');
   if (selector === '.pc .pkg-operator-logo--tui') return card.matches('pc') && logo.matches('pkg-operator-logo--tui');
   if (selector === '.pc .pkg-operator-logo--easyjet') return card.matches('pc') && logo.matches('pkg-operator-logo--easyjet');
   return false;
@@ -167,7 +167,7 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
 test('Package operator logos use operator-specific natural-aspect placement classes', () => {
   assert.match(html, /\.pc \.pkg-operator-logo\{[^}]*display:block;[^}]*position:absolute;[^}]*width:auto;[^}]*height:auto;[^}]*object-fit:contain;[^}]*pointer-events:none;/);
   assert.match(html, /\.pc \.pkg-operator-logo--tui\{left:28px;bottom:14px;width:300px;\}/);
-  assert.match(html, /\.pc\.pkg-jet2 \.pkg-operator-logo--jet2\{left:150px;bottom:88px;width:310px;\}/);
+  assert.match(html, /\.pc\.pkg-jet2 \.pkg-details \.pkg-operator-logo--jet2\{position:static;width:388px;margin-top:34px;object-position:left top;\}/);
   assert.doesNotMatch(html, /\.pc \.pkg-operator-logo--jet2\{left:150px;bottom:88px;width:310px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\{--pkg-left:98px;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-head\{height:154px;[^}]*border:0;\}/);
@@ -210,13 +210,13 @@ test('Jet2 operator logo renderer output and live package selector support absol
   assert.equal(card.className, 'pc pkg-jet2');
   assert.ok(logo, 'Jet2 logo should be present');
   assert.equal(document.querySelectorAll('img[src="assets/operator-logos/jet2-holidays-logo.png"]').length, 1);
-  assert.equal(logo.parentElement.className, 'pc pkg-jet2');
-  assert.equal(logo.previousElementSibling.className, 'pkg-body');
-  assert.equal(logo.nextElementSibling.className, 'pkg-footer');
+  assert.equal(logo.parentElement.className, 'pkg-details');
+  assert.match(logo.previousElementSibling.outerHTML, /pkg-inclusion/);
+  assert.equal(logo.parentElement.parentElement.className, 'pkg-body');
   assert.equal(logo.className, 'pkg-operator-logo pkg-operator-logo--jet2');
   assert.equal(logo.getAttribute('src'), 'assets/operator-logos/jet2-holidays-logo.png');
-  assert.equal(document.querySelector('.pkg-body .pkg-operator-logo--jet2'), null);
-  assert.equal(document.querySelector('.pkg-details .pkg-operator-logo--jet2'), null);
+  assert.ok(document.querySelector('.pkg-body .pkg-operator-logo--jet2'));
+  assert.ok(document.querySelector('.pkg-details .pkg-operator-logo--jet2'));
   assert.equal(document.querySelector('.pkg-head .pkg-operator-logo--jet2'), null);
   assert.equal(document.querySelector('.pkg-head img[src="assets/operator-logos/jet2-holidays-logo.png"]'), null);
   assert.ok(document.querySelector('.pkg-skin-header'));
@@ -224,21 +224,19 @@ test('Jet2 operator logo renderer output and live package selector support absol
   assert.equal(renderPackageOperatorLogo(PACKAGE_OPERATORS.jet2, 'jet2'), logo.outerHTML);
 
   const computed = computePackageLogoStyles(card, logo);
-  assert.equal(computed.position, 'absolute');
+  assert.equal(computed.position, 'static');
   assert.equal(computed.display, 'block');
-  assert.equal(computed.left, '150px');
-  assert.equal(computed.bottom, '88px');
-  assert.equal(computed.width, '310px');
+  assert.equal(computed.width, '388px');
   assert.equal(computed.height, 'auto');
   assert.equal(computed.objectFit, 'contain');
   assert.equal(computed.pointerEvents, 'none');
 });
 
-test('Jet2, TUI and easyJet package logos share direct-card DOM placement from the shared operator logo renderer', () => {
+test('Jet2 logo belongs to the left details column while TUI and easyJet keep direct-card logo placement', () => {
   const { renderPackageCard, renderPackageOperatorLogo, PACKAGE_OPERATORS } = createContext();
   assert.match(html, /\.pc\{[^}]*position:relative;/, '.pc should remain the positioned containing block');
   assert.match(html, /\.pc \.pkg-body\{[^}]*position:relative;/, '.pkg-body should keep its positioning for existing layout');
-  for (const operator of ['jet2', 'tui', 'easyjet']) {
+  for (const operator of ['tui', 'easyjet']) {
     const cardHtml = renderPackageCard({ operator, name: 'Destination', ship: 'Hotel', nights: '7', boardlbl: 'Self Catering', price: '499pp' });
     const document = parsePackageCardDocument(cardHtml);
     const logo = document.querySelector(`.pkg-operator-logo--${operator}`);
@@ -250,9 +248,13 @@ test('Jet2, TUI and easyJet package logos share direct-card DOM placement from t
     assert.equal(logo.nextElementSibling.className, 'pkg-footer');
     assert.equal(document.querySelector(`.pkg-body .pkg-operator-logo--${operator}`), null);
     assert.equal(document.querySelector(`.pkg-details .pkg-operator-logo--${operator}`), null);
-    assert.equal(document.querySelector(`.pkg-head .pkg-operator-logo--${operator}`), null);
-    assert.match(cardHtml, /<\/div><img class="pkg-operator-logo pkg-operator-logo--(jet2|tui|easyjet)"[^>]*><div class="pkg-footer">/);
   }
+  const jet2Html = renderPackageCard({ operator: 'jet2', name: 'Destination', ship: 'Hotel', nights: '7', boardlbl: 'Self Catering', price: '499pp' });
+  const jet2Doc = parsePackageCardDocument(jet2Html);
+  const jet2Logo = jet2Doc.querySelector('.pkg-operator-logo--jet2');
+  assert.equal(jet2Logo.parentElement.className, 'pkg-details');
+  assert.equal(jet2Doc.querySelectorAll('.pkg-operator-logo').length, 1);
+  assert.match(jet2Html, /<span class="pkg-inclusion">Luggage &amp; Transfers Included<\/span><img class="pkg-operator-logo pkg-operator-logo--jet2"/);
 });
 
 test('Package offer model maps existing builder fields without mutating Cruise fields', () => {
@@ -507,18 +509,16 @@ test('Package editing regression: Jet2 defaults, editable text, prices and offer
 });
 
 
-test('Jet2 package renderer uses flexible bottom-row alignment wrappers', () => {
+test('Jet2 package renderer uses independent vertical columns without shared bottom-row alignment', () => {
   const { renderPackageCard } = createContext();
   const css = html.slice(html.indexOf('/* Package card renderer */'), html.indexOf('.cc .header-block img'));
-  assert.match(css, /\.pc \.pkg-details\{[^}]*bottom:70px;[^}]*display:flex;[^}]*flex-direction:column;/);
-  assert.match(css, /\.pc \.pkg-detail-spacer\{flex:1 1 auto;\}/);
-  assert.match(css, /\.pc \.pkg-pricing\{[^}]*bottom:70px;[^}]*display:flex;[^}]*flex-direction:column;/);
-  assert.match(css, /\.pc \.pkg-pricing > \.pkg-total:last-child\{margin-top:auto;\}/);
+  assert.doesNotMatch(css, /\.pc \.pkg-detail-spacer/);
+  assert.doesNotMatch(css, /\.pc \.pkg-pricing > \.pkg-total:last-child\{margin-top:auto;\}/);
   ['Bed & Breakfast', 'Half Board', 'All Inclusive'].forEach(boardBasis => {
     const card = renderPackageCard({ offerType: 'package', operator: 'jet2', name: 'Lassi, Kefalonia', ship: 'Sunset Paradise Resort', nights: '7', boardBasis, day: '21', month: 'July 2026', sailingFrom: 'Newcastle', price: '574', resortFee: '12', totalPrice: '586', basis: 'Based on 2 Adults Sharing', incl: 'Luggage & Transfers Included' });
-    assert.match(card.replace(/&amp;/g, '&'), new RegExp(boardBasis.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-    assert.match(card, /<span class="pkg-detail-spacer"><\/span><span class="pkg-inclusion">Luggage &amp; Transfers Included<\/span>/);
-    assert.match(card, /<div class="pkg-basis pkg-basis-bottom">Based on 2 Adults Sharing<\/div>/);
+    assert.match(card.replace(/&amp;/g, '&'), new RegExp('7 Nights[\\s\\S]*' + boardBasis.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[\\s\\S]*21st July 2026[\\s\\S]*Newcastle Flights[\\s\\S]*Luggage & Transfers Included[\\s\\S]*assets/operator-logos/jet2-holidays-logo.png'));
+    assert.doesNotMatch(card, /pkg-detail-spacer/);
+    assert.match(card, /£574<span class="pkg-pp">pp<\/span>[\s\S]*\+£12pp Local Resort Fee[\s\S]*£586<span class="pkg-pp">pp<\/span>[\s\S]*Total Price[\s\S]*Based on 2 Adults Sharing/);
   });
 });
 
