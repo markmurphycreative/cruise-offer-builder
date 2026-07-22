@@ -506,6 +506,22 @@ test('Package editing regression: Jet2 defaults, editable text, prices and offer
   assert.doesNotMatch(offerTwo, /Kefalonia|or visit us in store|£574|£12/);
 });
 
+
+test('Jet2 package renderer uses flexible bottom-row alignment wrappers', () => {
+  const { renderPackageCard } = createContext();
+  const css = html.slice(html.indexOf('/* Package card renderer */'), html.indexOf('.cc .header-block img'));
+  assert.match(css, /\.pc \.pkg-details\{[^}]*bottom:70px;[^}]*display:flex;[^}]*flex-direction:column;/);
+  assert.match(css, /\.pc \.pkg-detail-spacer\{flex:1 1 auto;\}/);
+  assert.match(css, /\.pc \.pkg-pricing\{[^}]*bottom:70px;[^}]*display:flex;[^}]*flex-direction:column;/);
+  assert.match(css, /\.pc \.pkg-pricing > \.pkg-total:last-child\{margin-top:auto;\}/);
+  ['Bed & Breakfast', 'Half Board', 'All Inclusive'].forEach(boardBasis => {
+    const card = renderPackageCard({ offerType: 'package', operator: 'jet2', name: 'Lassi, Kefalonia', ship: 'Sunset Paradise Resort', nights: '7', boardBasis, day: '21', month: 'July 2026', sailingFrom: 'Newcastle', price: '574', resortFee: '12', totalPrice: '586', basis: 'Based on 2 Adults Sharing', incl: 'Luggage & Transfers Included' });
+    assert.match(card.replace(/&amp;/g, '&'), new RegExp(boardBasis.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.match(card, /<span class="pkg-detail-spacer"><\/span><span class="pkg-inclusion">Luggage &amp; Transfers Included<\/span>/);
+    assert.match(card, /<div class="pkg-basis pkg-basis-bottom">Based on 2 Adults Sharing<\/div>/);
+  });
+});
+
 test('Package Offer Details exposes package labels and hides cruise-only controls', () => {
   assert.match(html, /CTA Primary/);
   assert.match(html, /CTA Secondary/);

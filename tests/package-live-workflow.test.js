@@ -275,6 +275,7 @@ test('live Package editor input IDs update authoritative offer and preview-rende
   vm.runInContext('commitVisibleFields(); renderVisibleCard();', context);
   assert.equal(context.offers[0].operator, 'jet2');
   assert.equal(context.offers[0].ctaSecondary, 'or visit us in store');
+  assert.match(fields.get('card-output').innerHTML, /or visit us in store/);
   assert.equal(context.offers[0].inclusions, 'Luggage & Transfers Included');
   assert.equal(context.offers[0].departureAirport, 'Newcastle');
   assert.match(fields.get('card-output').innerHTML, /assets\/operator-logos\/jet2-holidays-logo\.png/);
@@ -283,7 +284,8 @@ test('live Package editor input IDs update authoritative offer and preview-rende
   fields.get('f-price').value = '499';
   fields.get('f-totalPrice').value = '511';
   fields.get('f-resortFee').value = '15';
-  fields.get('f-ctaSecondary').value = 'or call us in store';
+  fields.get('f-ctaSecondary').value = 'or call into your local store';
+  fields.get('f-boardlbl').value = 'Half Board';
   fields.get('f-sailingFrom').value = 'Manchester';
   fields.get('f-incl').value = 'Luggage, transfers and meals included';
   vm.runInContext('commitVisibleFields(); renderVisibleCard();', context);
@@ -292,11 +294,17 @@ test('live Package editor input IDs update authoritative offer and preview-rende
   assert.equal(context.offers[0].leadPrice, '499');
   assert.equal(context.offers[0].totalPrice, '511');
   assert.equal(context.offers[0].resortFee, '15pp');
-  assert.equal(context.offers[0].ctaSecondary, 'or call us in store');
+  assert.equal(context.offers[0].ctaSecondary, 'or call into your local store');
+  assert.equal(context.offers[0].boardBasis, 'Half Board');
   assert.equal(context.offers[0].departureAirport, 'Manchester');
   assert.equal(context.offers[0].inclusions, 'Luggage, transfers and meals included');
   assert.match(text, /£499pp[\s\S]*\+£15pp Local Resort Fee[\s\S]*£511pp/);
-  assert.match(text, /or call us in store/);
+  assert.match(text, /or call into your local store/);
+  assert.match(text, /Half Board/);
+  fields.get('f-boardlbl').value = 'All Inclusive';
+  vm.runInContext('commitVisibleFields(); renderVisibleCard();', context);
+  assert.equal(context.offers[0].boardBasis, 'All Inclusive');
+  assert.match(fields.get('card-output').innerHTML.replace(/<[^>]+>/g, ''), /All Inclusive/);
   assert.match(text, /Manchester Flights/);
   assert.match(text, /Luggage, transfers and meals included/);
 });

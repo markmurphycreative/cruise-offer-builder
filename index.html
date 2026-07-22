@@ -851,16 +851,19 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .pc.pkg-jet2 .pkg-destination{font-size:55px;max-width:760px;}
 .pc .pkg-hotel{font-size:34px;line-height:1.2;color:#7b7b7b;margin-top:8px;max-width:650px;white-space:nowrap;}
 .pc.pkg-jet2 .pkg-hotel{font-size:34px;}
-.pc .pkg-details{position:absolute;left:var(--pkg-left);top:285px;font-size:36px;line-height:1.35;color:#797979;}
+.pc .pkg-details{position:absolute;left:var(--pkg-left);top:285px;bottom:70px;font-size:36px;line-height:1.35;color:#797979;display:flex;flex-direction:column;}
 .pc.pkg-tui .pkg-details{color:#000;}
-.pc.pkg-jet2 .pkg-details{top:304px;font-size:35px;line-height:1.36;}
+.pc.pkg-jet2 .pkg-details{top:304px;bottom:78px;font-size:35px;line-height:1.36;}
+.pc .pkg-detail-spacer{flex:1 1 auto;}
+.pc .pkg-inclusion,.pc .pkg-basis-bottom{display:block;}
 .pc .pkg-operator-logo{display:block;position:absolute;width:auto;height:auto;object-fit:contain;object-position:left bottom;pointer-events:none;}
 .pc .pkg-operator-logo--tui{left:28px;bottom:14px;width:300px;}
 .pc.pkg-jet2 .pkg-operator-logo--jet2{left:150px;bottom:88px;width:310px;}
 .pc .pkg-operator-logo--easyjet{left:6px;bottom:-27px;width:430px;}
-.pc .pkg-pricing{position:absolute;right:85px;top:250px;width:485px;text-align:right;color:#000;}
-.pc.pkg-jet2 .pkg-pricing{top:454px;right:98px;width:420px;}
+.pc .pkg-pricing{position:absolute;right:85px;top:250px;bottom:70px;width:485px;text-align:right;color:#000;display:flex;flex-direction:column;}
+.pc.pkg-jet2 .pkg-pricing{top:454px;right:98px;bottom:78px;width:420px;}
 .pc.pkg-jet2 .pkg-pricing--with-fee{top:95px;}
+.pc .pkg-pricing > .pkg-total:last-child{margin-top:auto;}
 .pc .pkg-lead{margin-bottom:120px;}
 .pc .pkg-price{font-size:92px;line-height:.92;font-weight:300;letter-spacing:-.04em;}
 .pc.pkg-jet2 .pkg-price{font-size:112px;}
@@ -11074,14 +11077,14 @@ function renderPackagePriceBlock(model,operatorKey){
   const priceMarkup=(amount,showPp,extraClass="")=>`<div class="pkg-price ${extraClass}">${amount}<span class="pkg-pp">${showPp?escapeHtml(model.perPersonSuffix):""}</span></div>`;
   if(operatorKey==="jet2" && !isFamily && lead){
     if(fee && total && total!==lead){
-      return `<div class="pkg-lead">${priceMarkup(lead,true)}<div class="pkg-fee">${fee}</div></div><div class="pkg-total">${priceMarkup(total,true)}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis">${escapeHtml(model.basis)}</div>`:""}</div>`;
+      return `<div class="pkg-lead">${priceMarkup(lead,true)}<div class="pkg-fee">${fee}</div></div><div class="pkg-total">${priceMarkup(total,true)}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
     }
-    return `<div class="pkg-total">${priceMarkup(lead,true)}${fee?`<div class="pkg-fee">${fee}</div>`:""}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis">${escapeHtml(model.basis)}</div>`:""}</div>`;
+    return `<div class="pkg-total">${priceMarkup(lead,true)}${fee?`<div class="pkg-fee">${fee}</div>`:""}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
   }
   if(hasDistinctTotal){
-    return `<div class="pkg-lead">${priceMarkup(lead,true)}<div class="pkg-fee">${fee}</div></div><div class="pkg-total">${priceMarkup(total,/pp|per person/i.test(totalRaw))}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis">${escapeHtml(model.basis)}</div>`:""}</div>`;
+    return `<div class="pkg-lead">${priceMarkup(lead,true)}<div class="pkg-fee">${fee}</div></div><div class="pkg-total">${priceMarkup(total,/pp|per person/i.test(totalRaw))}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
   }
-  return `<div class="pkg-total">${priceMarkup(display,!isFamily)}${fee?`<div class="pkg-fee">${fee}</div>`:""}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis">${escapeHtml(model.basis)}</div>`:""}</div>`;
+  return `<div class="pkg-total">${priceMarkup(display,!isFamily)}${fee?`<div class="pkg-fee">${fee}</div>`:""}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
 }
 function renderPackageOperatorLogo(cfg,layout){
   if(!cfg||!cfg.logo) return `<div class="pkg-operator-missing">Operator not detected</div>`;
@@ -11095,7 +11098,9 @@ function renderPackageCard(d){
   const freeChild=!!model.freeChildPlace;
   const ribbon=model.operator==="jet2"&&freeChild?"Offer Includes a Free Child Place":"";
   const jet2Couples=model.operator==="jet2" && Number(model.children||0)<=0;
-  const details=[model.nights?[model.nights,model.nightsLabel].filter(Boolean).join(" "):"",model.boardBasis,model.departureDate,packageAirportLine(model.departureAirport,model.flightsLabel),model.inclusions].filter(Boolean);
+  const detailTopLines=[model.nights?[model.nights,model.nightsLabel].filter(Boolean).join(" "):"",model.boardBasis,model.departureDate,packageAirportLine(model.departureAirport,model.flightsLabel)].filter(Boolean);
+  const inclusionLine=model.inclusions||"";
+  const detailsMarkup=[detailTopLines.map(escapeHtml).join("<br>"), inclusionLine?`<span class="pkg-detail-spacer"></span><span class="pkg-inclusion">${escapeHtml(inclusionLine)}</span>`:""].filter(Boolean).join("");
   const skin=cfg.skin||{};
   const headerSrc=(model.operator==="jet2"?(freeChild?skin.headerFamily:skin.headerCouples):skin.header);
   const footerSrc=skin.footer;
@@ -11103,7 +11108,7 @@ function renderPackageCard(d){
   const footerLines=[model.ctaPrimary?`<div class="pkg-cta-main">${escapeHtml(model.ctaPrimary)}</div>`:"",model.ctaSecondary?`<div class="pkg-cta-sub">${escapeHtml(model.ctaSecondary)}</div>`:""].filter(Boolean).join("");
   const footerCta=footerLines?`<div class="pkg-footer-cta">${footerLines}</div>`:"";
   const footer=footerSrc?`<img class="pkg-skin-footer" src="${footerSrc}" alt="" role="presentation">${footerCta}`:footerCta;
-  return `<div class="pc pkg-${layout}" style="--package-accent:${cfg.colours.accent};--package-footer:${cfg.colours.footer};"><div class="pkg-head">${header}</div><div class="pkg-body"><div class="pkg-destination">${escapeHtml(model.destination)}</div><div class="pkg-hotel">${escapeHtml(model.hotel)}</div><div class="pkg-details">${details.map(escapeHtml).join("<br>")}</div><div class="pkg-pricing ${model.operator==="jet2"&&Number(model.children||0)<=0&&packageResortFeeText(model.resortFee,model.operator,model.resortFeeLabel,model.perPersonSuffix,model)?"pkg-pricing--with-fee":""}">${renderPackagePriceBlock(model,model.operator)}</div></div>${renderPackageOperatorLogo(cfg,layout)}<div class="pkg-footer">${footer}</div></div>`;
+  return `<div class="pc pkg-${layout}" style="--package-accent:${cfg.colours.accent};--package-footer:${cfg.colours.footer};"><div class="pkg-head">${header}</div><div class="pkg-body"><div class="pkg-destination">${escapeHtml(model.destination)}</div><div class="pkg-hotel">${escapeHtml(model.hotel)}</div><div class="pkg-details">${detailsMarkup}</div><div class="pkg-pricing ${model.operator==="jet2"&&Number(model.children||0)<=0&&packageResortFeeText(model.resortFee,model.operator,model.resortFeeLabel,model.perPersonSuffix,model)?"pkg-pricing--with-fee":""}">${renderPackagePriceBlock(model,model.operator)}</div></div>${renderPackageOperatorLogo(cfg,layout)}<div class="pkg-footer">${footer}</div></div>`;
 }
 function renderCruiseCard(d){ return renderCruiseCardHTML(d); }
 function renderGenericCampaignCard(d,type){
