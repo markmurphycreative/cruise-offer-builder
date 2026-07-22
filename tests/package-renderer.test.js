@@ -167,7 +167,7 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
 test('Package operator logos use operator-specific natural-aspect placement classes', () => {
   assert.match(html, /\.pc \.pkg-operator-logo\{[^}]*display:block;[^}]*position:absolute;[^}]*width:auto;[^}]*height:auto;[^}]*object-fit:contain;[^}]*pointer-events:none;/);
   assert.match(html, /\.pc \.pkg-operator-logo--tui\{left:28px;bottom:14px;width:300px;\}/);
-  assert.match(html, /\.pc\.pkg-jet2 \.pkg-details \.pkg-operator-logo--jet2\{position:static;width:250px;margin-top:26px;object-position:left top;\}/);
+  assert.match(html, /\.pc\.pkg-jet2 \.pkg-details \.pkg-operator-logo--jet2\{position:static;width:750px;margin-top:26px;object-position:left top;\}/);
   assert.doesNotMatch(html, /\.pc \.pkg-operator-logo--jet2\{left:150px;bottom:88px;width:310px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\{--pkg-left:98px;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-head\{height:154px;[^}]*border:0;\}/);
@@ -227,7 +227,7 @@ test('Jet2 operator logo renderer output and live package selector support absol
   const computed = computePackageLogoStyles(card, logo);
   assert.equal(computed.position, 'static');
   assert.equal(computed.display, 'block');
-  assert.equal(computed.width, '250px');
+  assert.equal(computed.width, '750px');
   assert.equal(computed.height, 'auto');
   assert.equal(computed.objectFit, 'contain');
   assert.equal(computed.pointerEvents, 'none');
@@ -337,6 +337,8 @@ test('Jet2 couples render with fee uses canonical assets, compact inclusions and
   assert.match(out, /£574<span class="pkg-pp">pp<\/span>/);
   assert.match(out, /\+£12pp Local Resort Fee/);
   assert.match(out, /£586<span class="pkg-pp">pp<\/span>/);
+  assert.match(out, /Total Price/);
+  assert.match(out, /£574<span class="pkg-pp">pp<\/span>[\s\S]*\+£12pp Local Resort Fee[\s\S]*£586<span class="pkg-pp">pp<\/span>[\s\S]*Total Price[\s\S]*Based on 2 Adults Sharing/);
   assert.match(out, /Based on 2 Adults Sharing/);
   assert.match(out, /<div class="pkg-footer-cta"><div class="pkg-cta-main">Start your booking<\/div><div class="pkg-cta-sub">or visit us in store<\/div><\/div>/);
   const edited = renderPackageCard({ operator: 'jet2', ctaPrimary: 'Book online', ctaSecondary: '', packageCopyOverrides: { ctaPrimary: 'Book online', ctaSecondary: '' }, name: 'Kefalonia', ship: 'Hotel', price: '574pp', adults: '2', children: '0' });
@@ -500,6 +502,7 @@ test('Package editing regression: Jet2 defaults, editable text, prices and offer
   assert.match(editedHtml, /£574<span class="pkg-pp">pp<\/span>/);
   assert.match(editedHtml, /\+£12pp Local Resort Fee/);
   assert.match(editedHtml, /£586<span class="pkg-pp">pp<\/span>/);
+  assert.match(editedHtml, /Total Price/);
 
   const offerOne = renderPackageCard({ offerType: 'package', operator: 'jet2', name: 'Kefalonia', ctaSecondary: 'or visit us in store', price: '574', resortFee: '12' });
   const offerTwo = renderPackageCard({ offerType: 'package', operator: 'jet2', name: 'Majorca', ctaSecondary: 'call into branch', price: '699', resortFee: '25' });
