@@ -853,19 +853,18 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .pc.pkg-jet2 .pkg-hotel{font-size:34px;}
 .pc .pkg-details{position:absolute;left:var(--pkg-left);top:285px;font-size:36px;line-height:1.35;color:#797979;}
 .pc.pkg-tui .pkg-details{color:#000;}
-.pc.pkg-jet2 .pkg-details{top:278px;font-size:35px;line-height:1.36;width:560px;height:auto;display:flex;flex-direction:column;align-items:flex-start;}
-.pc.pkg-jet2 .pkg-detail-text{display:flex;flex-direction:column;justify-content:flex-start;}
+.pc.pkg-jet2 .pkg-details{top:278px;font-size:35px;line-height:1.36;width:560px;height:auto;display:block;}
+.pc.pkg-jet2 .pkg-detail-text{display:block;}
 .pc.pkg-jet2 .pkg-detail-line{display:block;}
 .pc .pkg-inclusion,.pc .pkg-basis-bottom{display:block;}
 .pc .pkg-operator-logo{display:block;position:absolute;width:auto;height:auto;object-fit:contain;object-position:left bottom;pointer-events:none;}
 .pc .pkg-operator-logo--tui{left:28px;bottom:14px;width:300px;}
-.pc.pkg-jet2 .pkg-details .pkg-operator-logo--jet2{position:static;width:270px;margin-top:50px;object-position:left top;}
-.pc.pkg-jet2 .pkg-details .pkg-operator-logo--jet2{flex:0 0 auto;}
+.pc.pkg-jet2 .pkg-details .pkg-operator-logo--jet2{position:static;width:540px;margin-top:24px;object-position:left top;display:block;}
 .pc .pkg-operator-logo--easyjet{left:6px;bottom:-27px;width:430px;}
 .pc .pkg-pricing{position:absolute;right:85px;top:250px;width:485px;text-align:right;color:#000;}
 .pc.pkg-jet2 .pkg-pricing{top:280px;right:98px;width:420px;}
-.pc.pkg-jet2 .pkg-pricing--with-fee{top:280px;height:384px;display:flex;flex-direction:column;justify-content:flex-start;gap:48px;}
-.pc.pkg-jet2 .pkg-pricing--with-fee .pkg-lead{margin-bottom:0;}
+.pc.pkg-jet2 .pkg-pricing--with-fee{top:280px;height:auto;display:block;}
+.pc.pkg-jet2 .pkg-pricing--with-fee .pkg-lead{margin-bottom:30px;}
 .pc.pkg-jet2 .pkg-pricing--with-fee .pkg-fee{margin-top:12px;}
 .pc.pkg-jet2 .pkg-pricing--with-fee .pkg-price-label{margin-top:14px;}
 .pc.pkg-jet2 .pkg-pricing--with-fee .pkg-basis{margin-top:10px;}
@@ -10837,7 +10836,7 @@ function packageOfferHasGenuineData(d){
 }
 function normalisePackagePlainTextField(key,value){
   const text=String(value == null ? "" : value);
-  if(key==="ctaSecondary" && text.replace(/\s+/g,"").toLowerCase()==="orvisitusinstore") return "or visit us in store";
+  if(key==="ctaSecondary" && !/[\s]/.test(text)&&text.toLowerCase()==="orvisitusinstore") return "or visit us in store";
   if(key==="ctaPrimary" && text.replace(/\s+/g,"").toLowerCase()==="startyourbooking") return "Start your booking";
   return text;
 }
@@ -10860,7 +10859,7 @@ function normalisePackageCopyOverrides(d){
   return {};
 }
 function packageCopyValue(d,key,cfg){
-  const normalisePlain=(typeof normalisePackagePlainTextField==="function")?normalisePackagePlainTextField:function(k,value){ const text=String(value == null ? "" : value); if(k==="ctaSecondary" && text.replace(/\s+/g,"").toLowerCase()==="orvisitusinstore") return "or visit us in store"; if(k==="ctaPrimary" && text.replace(/\s+/g,"").toLowerCase()==="startyourbooking") return "Start your booking"; return text; };
+  const normalisePlain=(typeof normalisePackagePlainTextField==="function")?normalisePackagePlainTextField:function(k,value){ const text=String(value == null ? "" : value); if(k==="ctaSecondary" && !/[\s]/.test(text)&&text.toLowerCase()==="orvisitusinstore") return "or visit us in store"; if(k==="ctaPrimary" && text.replace(/\s+/g,"").toLowerCase()==="startyourbooking") return "Start your booking"; return text; };
   const meta=PACKAGE_COPY_FIELDS[key]||{};
   const overrides=normalisePackageCopyOverrides(d);
   if(Object.prototype.hasOwnProperty.call(overrides,key)) return String(overrides[key] == null ? "" : overrides[key]);
@@ -10876,7 +10875,7 @@ function packageCopyValue(d,key,cfg){
   return fallback;
 }
 function applyPackageCopyInputOverrides(target,source){
-  const normalisePlain=(typeof normalisePackagePlainTextField==="function")?normalisePackagePlainTextField:function(k,value){ const text=String(value == null ? "" : value); if(k==="ctaSecondary" && text.replace(/\s+/g,"").toLowerCase()==="orvisitusinstore") return "or visit us in store"; if(k==="ctaPrimary" && text.replace(/\s+/g,"").toLowerCase()==="startyourbooking") return "Start your booking"; return text; };
+  const normalisePlain=(typeof normalisePackagePlainTextField==="function")?normalisePackagePlainTextField:function(k,value){ const text=String(value == null ? "" : value); if(k==="ctaSecondary" && !/[\s]/.test(text)&&text.toLowerCase()==="orvisitusinstore") return "or visit us in store"; if(k==="ctaPrimary" && text.replace(/\s+/g,"").toLowerCase()==="startyourbooking") return "Start your booking"; return text; };
   if(!target) return target;
   const cfg=PACKAGE_OPERATORS[normalisePackageOperatorKey((target.operator||target.operatorKey||(source&&source.operator)||""))]||{};
   const current=normalisePackageCopyOverrides(target);
@@ -10927,7 +10926,7 @@ function packageEditorValueForField(offer,field){
   return offer[field]||"";
 }
 function syncPackageCanonicalFields(offer){
-  const normalisePlain=(typeof normalisePackagePlainTextField==="function")?normalisePackagePlainTextField:function(k,value){ const text=String(value == null ? "" : value); if(k==="ctaSecondary" && text.replace(/\s+/g,"").toLowerCase()==="orvisitusinstore") return "or visit us in store"; if(k==="ctaPrimary" && text.replace(/\s+/g,"").toLowerCase()==="startyourbooking") return "Start your booking"; return text; };
+  const normalisePlain=(typeof normalisePackagePlainTextField==="function")?normalisePackagePlainTextField:function(k,value){ const text=String(value == null ? "" : value); if(k==="ctaSecondary" && !/[\s]/.test(text)&&text.toLowerCase()==="orvisitusinstore") return "or visit us in store"; if(k==="ctaPrimary" && text.replace(/\s+/g,"").toLowerCase()==="startyourbooking") return "Start your booking"; return text; };
   if(!offer) return offer;
   if(normaliseCampaignType(offer.offerType||currentCampaignType)!=="package") return offer;
   offer.offerType="package";
@@ -10992,7 +10991,7 @@ function packageCleanNumericString(value){
   return n?String(n):"";
 }
 function applyJet2PackageDefaults(offer){
-  const normalisePlain=(typeof normalisePackagePlainTextField==="function")?normalisePackagePlainTextField:function(k,value){ const text=String(value == null ? "" : value); if(k==="ctaSecondary" && text.replace(/\s+/g,"").toLowerCase()==="orvisitusinstore") return "or visit us in store"; if(k==="ctaPrimary" && text.replace(/\s+/g,"").toLowerCase()==="startyourbooking") return "Start your booking"; return text; };
+  const normalisePlain=(typeof normalisePackagePlainTextField==="function")?normalisePackagePlainTextField:function(k,value){ const text=String(value == null ? "" : value); if(k==="ctaSecondary" && !/[\s]/.test(text)&&text.toLowerCase()==="orvisitusinstore") return "or visit us in store"; if(k==="ctaPrimary" && text.replace(/\s+/g,"").toLowerCase()==="startyourbooking") return "Start your booking"; return text; };
   if(!offer) return offer;
   const op=normalisePackageOperatorKey(offer.operator||offer.operatorKey||"");
   if(op!=="jet2") return offer;
@@ -11106,7 +11105,8 @@ function renderPackagePriceBlock(model,operatorKey){
   const priceMarkup=(amount,showPp,extraClass="")=>`<div class="pkg-price ${extraClass}">${amount}<span class="pkg-pp">${showPp?escapeHtml(model.perPersonSuffix):""}</span></div>`;
   if(operatorKey==="jet2" && !isFamily && lead){
     if(fee && total && total!==lead){
-      return `<div class="pkg-lead">${priceMarkup(lead,true)}<div class="pkg-fee">${fee}</div></div><div class="pkg-total">${priceMarkup(total,true)}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
+      const jet2Label=model.priceLabel || "Total Price";
+      return `<div class="pkg-lead">${priceMarkup(lead,true)}<div class="pkg-fee">${fee}</div></div><div class="pkg-total">${priceMarkup(total,true)}<div class="pkg-price-label">${escapeHtml(jet2Label)}</div>${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
     }
     return `<div class="pkg-total">${priceMarkup(lead,true)}${fee?`<div class="pkg-fee">${fee}</div>`:""}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
   }
