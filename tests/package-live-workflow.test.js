@@ -226,11 +226,13 @@ test('real screenshot import state path carries Dawson Jet2 structure into activ
 
   const htmlOutput = vm.runInContext('renderPackageCard(offers[0])', context);
   const visibleText = htmlOutput.replace(/<span class=\"pkg-pp\">pp<\/span>/g, 'pp').replace(/<[^>]+>/g, '');
-  ['Lassi, Kefalonia','Sunset Paradise Resort','21st July 2026','Newcastle Flights','Luggage &amp; Transfers Included','Approximately £24 total tourist tax payable locally','Based on 2 Adults Sharing','assets/package-skins/jet2/header-couples.png','assets/package-skins/jet2/footer.png','assets/operator-logos/jet2-holidays-logo.png'].forEach(expected => assert.match(htmlOutput, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))));
+  ['Lassi, Kefalonia','Sunset Paradise Resort','21st July 2026','Newcastle Flights','Luggage &amp; Transfers Included','+£12pp Local Resort Fee','£586','Based on 2 Adults Sharing','assets/package-skins/jet2/header-couples.png','assets/package-skins/jet2/footer.png','assets/operator-logos/jet2-holidays-logo.png'].forEach(expected => assert.match(htmlOutput, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))));
   assert.match(htmlOutput, /pkg-skin-header/);
   assert.equal((htmlOutput.match(/assets\/operator-logos\/jet2-holidays-logo\.png/g) || []).length, 1);
   assert.match(visibleText, /£574pp/);
-  assert.doesNotMatch(visibleText, /£586pp|Total Price/);
+  assert.match(visibleText, /\+£12pp Local Resort Fee/);
+  assert.match(visibleText, /£586pp/);
+  assert.doesNotMatch(visibleText, /Total Price/);
   assert.doesNotMatch(htmlOutput, /Operator not detected|Our Rating|TripAdvisor|176 Reviews|Hand Luggage Included|Coach Transfers/);
 });
 
