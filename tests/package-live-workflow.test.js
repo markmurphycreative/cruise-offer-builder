@@ -240,7 +240,7 @@ test('live Package editor input IDs update authoritative offer and preview-rende
   function extractLastFunction(name) { const start=html.lastIndexOf(`function ${name}(`); assert.notEqual(start,-1,`Could not find last ${name}`); const open=html.indexOf('{',start); let depth=0; for(let i=open;i<html.length;i++){ if(html[i]==='{') depth++; if(html[i]==='}') depth--; if(depth===0) return html.slice(start,i+1);} throw new Error(name); }
   const fields = new Map();
   const makeField = value => ({ value, classList:{ toggle(){}, add(){}, remove(){} }, style:{}, innerHTML:'', dataset:{}, offsetHeight:100, scrollHeight:100, getBoundingClientRect(){ return {height:100}; } });
-  ['offerType','operator','name','ship','sailingFrom','price','leadPrice','totalPrice','resortFee','ctaPrimary','ctaSecondary','adults','children','nights','boardlbl','day','month','incl','packagePerPersonSuffix'].forEach(id => fields.set(`f-${id}`, makeField('')));
+  ['offerType','operator','name','ship','sailingFrom','price','leadPrice','totalPrice','resortFee','ctaPrimary','ctaSecondary','adults','children','nights','board','boardlbl','day','month','incl','packagePerPersonSuffix'].forEach(id => fields.set(`f-${id}`, makeField('')));
   fields.get('f-offerType').value = 'package';
   fields.get('f-operator').value = 'jet2';
   fields.get('f-name').value = 'Kefalonia, Greece';
@@ -254,6 +254,7 @@ test('live Package editor input IDs update authoritative offer and preview-rende
   fields.get('f-adults').value = '2';
   fields.get('f-children').value = '0';
   fields.get('f-nights').value = '7';
+  fields.get('f-board').value = 'BB';
   fields.get('f-boardlbl').value = 'Bed & Breakfast';
   fields.get('f-incl').value = 'Luggage & Transfers Included';
   fields.get('f-packagePerPersonSuffix').value = 'pp';
@@ -314,10 +315,10 @@ test('real Jet2 Package live input and keyboard paths update model and rendered 
   const fields = new Map();
   const listeners = {};
   const makeField = (value, id) => ({ id, value, style:{}, innerHTML:'', dataset:{}, classList:{ toggle(){}, add(){}, remove(){} }, offsetHeight:885, getBoundingClientRect(){ return {height:885}; }, matches(sel){ return /input/.test(sel); }, closest(sel){ return /input/.test(sel) ? this : null; }, addEventListener(type, fn){ listeners[id+':'+type]=fn; }, focus(){ context.document.activeElement=this; }, select(){ this.selectionStart=0; this.selectionEnd=this.value.length; } });
-  ['offerType','operator','name','ship','sailingFrom','price','leadPrice','totalPrice','resortFee','priceLabel','basis','ctaPrimary','ctaSecondary','adults','children','nights','boardlbl','day','month','incl','packagePerPersonSuffix','packageResortFeeLabel','packageNightsLabel','packageFlightsLabel'].forEach(id => fields.set(`f-${id}`, makeField('', `f-${id}`)));
+  ['offerType','operator','name','ship','sailingFrom','price','leadPrice','totalPrice','resortFee','priceLabel','basis','ctaPrimary','ctaSecondary','adults','children','nights','board','boardlbl','day','month','incl','packagePerPersonSuffix','packageResortFeeLabel','packageNightsLabel','packageFlightsLabel'].forEach(id => fields.set(`f-${id}`, makeField('', `f-${id}`)));
   Object.assign(fields.get('f-offerType'), {value:'package'});
   Object.assign(fields.get('f-operator'), {value:'jet2'});
-  fields.get('f-name').value='Kefalonia, Greece'; fields.get('f-ship').value='Sunset Paradise Resort'; fields.get('f-sailingFrom').value='Newcastle'; fields.get('f-price').value='574'; fields.get('f-totalPrice').value='586'; fields.get('f-resortFee').value='12'; fields.get('f-adults').value='2'; fields.get('f-children').value='0'; fields.get('f-nights').value='7'; fields.get('f-boardlbl').value='Bed & Breakfast'; fields.get('f-incl').value='Luggage & Transfers Included'; fields.get('f-ctaPrimary').value='Start your booking'; fields.get('f-ctaSecondary').value='or visit us in store'; fields.get('f-priceLabel').value='Total Price'; fields.get('f-basis').value='Based on 2 Adults Sharing';
+  fields.get('f-name').value='Kefalonia, Greece'; fields.get('f-ship').value='Sunset Paradise Resort'; fields.get('f-sailingFrom').value='Newcastle'; fields.get('f-price').value='574'; fields.get('f-totalPrice').value='586'; fields.get('f-resortFee').value='12'; fields.get('f-adults').value='2'; fields.get('f-children').value='0'; fields.get('f-nights').value='7'; fields.get('f-board').value='BB'; fields.get('f-boardlbl').value='Bed & Breakfast'; fields.get('f-incl').value='Luggage & Transfers Included'; fields.get('f-ctaPrimary').value='Start your booking'; fields.get('f-ctaSecondary').value='or visit us in store'; fields.get('f-priceLabel').value='Total Price'; fields.get('f-basis').value='Based on 2 Adults Sharing';
   fields.set('card-output', makeField('', 'card-output')); fields.set('preview-scaler', makeField('', 'preview-scaler'));
   const context = { console, window:{}, currentCampaignType:'package', offers:[{offerType:'package', operator:'jet2'}], cur:0, viewMode:'single', zoomPct:100, SINGLE_PREVIEW_SCALE:1, previewRenderGeneration:0,
     document:{ activeElement:null, getElementById(id){ return fields.get(id) || null; }, querySelector(){ return null; }, querySelectorAll(){ return []; }, addEventListener(type, fn){ listeners['document:'+type]=fn; } },
