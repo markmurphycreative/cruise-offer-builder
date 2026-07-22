@@ -167,7 +167,7 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
 test('Package operator logos use operator-specific natural-aspect placement classes', () => {
   assert.match(html, /\.pc \.pkg-operator-logo\{[^}]*display:block;[^}]*position:absolute;[^}]*width:auto;[^}]*height:auto;[^}]*object-fit:contain;[^}]*pointer-events:none;/);
   assert.match(html, /\.pc \.pkg-operator-logo--tui\{left:28px;bottom:14px;width:300px;\}/);
-  assert.match(html, /\.pc\.pkg-jet2 \.pkg-details \.pkg-operator-logo--jet2\{position:static;width:750px;margin-top:26px;object-position:left top;\}/);
+  assert.match(html, /\.pc\.pkg-jet2 \.pkg-details \.pkg-operator-logo--jet2\{position:static;width:270px;margin-top:50px;object-position:left top;\}/);
   assert.doesNotMatch(html, /\.pc \.pkg-operator-logo--jet2\{left:150px;bottom:88px;width:310px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\{--pkg-left:98px;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-head\{height:154px;[^}]*border:0;\}/);
@@ -227,7 +227,7 @@ test('Jet2 operator logo renderer output and live package selector support absol
   const computed = computePackageLogoStyles(card, logo);
   assert.equal(computed.position, 'static');
   assert.equal(computed.display, 'block');
-  assert.equal(computed.width, '750px');
+  assert.equal(computed.width, '270px');
   assert.equal(computed.height, 'auto');
   assert.equal(computed.objectFit, 'contain');
   assert.equal(computed.pointerEvents, 'none');
@@ -494,6 +494,8 @@ test('Package editing regression: Jet2 defaults, editable text, prices and offer
   const edited = { offerType: 'package', operator: 'jet2', name: 'Costa Adeje, Tenerife', ship: "O'Brien & Sons Hotel, South-Coast", sailingFrom: 'Leeds Bradford', price: '£574pp', totalPrice: '£586pp', resortFee: '+£12pp', ctaPrimary: 'Start your booking', ctaSecondary: 'or visit us in store', incl: 'Luggage, transfers & resort extras included.', adults: '2', children: '0' };
   const model = packageOfferFromData(edited);
   assert.equal(model.ctaSecondary, 'or visit us in store');
+  const repairedCtaModel = packageOfferFromData({ ...edited, ctaSecondary: 'orvisitusinstore' });
+  assert.equal(repairedCtaModel.ctaSecondary, 'or visit us in store');
   assert.equal(model.leadPrice, '574');
   assert.equal(model.totalPrice, '586');
   assert.equal(model.resortFee, '12pp');
