@@ -2633,7 +2633,7 @@ function applyCampaignContext(type=currentCampaignType){
   return currentCampaignType;
 }
 applyCampaignContext(currentCampaignType);
-const FLDS = ["tags","theme_tags","ctaPrimary","ctaSecondary","name","ship","sailingFrom","incl","price","totalPrice","resortFee","priceLabel","basis","board","boardlbl","day","month","nights","ports","url","utm_content","adults","children","freeChildPlace","offerType","flightDisplay","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeePerPerson","displayTotalPerPerson","roomType","handLuggage","holdLuggage","transfers","packagePerPersonSuffix","packageResortFeeLabel","packageNightsLabel","packageFlightsLabel","packageCopyOverrides"];
+const FLDS = ["tags","theme_tags","ctaPrimary","ctaSecondary","name","ship","sailingFrom","incl","price","totalPrice","resortFee","priceLabel","basis","board","boardlbl","day","month","nights","ports","url","utm_content","adults","children","freeChildPlace","offerType","flightDisplay","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeeWording","localFeePerPerson","displayTotalPerPerson","roomType","handLuggage","holdLuggage","transfers","packagePerPersonSuffix","packageResortFeeLabel","packageNightsLabel","packageFlightsLabel","packageCopyOverrides"];
 const CTA_DEFAULTS = {enabled:false,text:"Click To Call Us For More Info",phone:"01912229701"};
 let ctaSettings = {...CTA_DEFAULTS};
 let poaAppliedSuggestions = {};
@@ -8696,7 +8696,7 @@ function applyParsedOfferToSlot(result,index,sourceText){
     else if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offer.operator)){ continue; }
     else offer[k]=String(parsed[k]);
   }
-  ["offerType","operator","totalPrice","resortFee","adults","children","freeChildPlace","priceLabel","leadPrice","departurePort","_poaDepartureAirport","flyingFrom","cruiseType","itinerary","flightDisplay","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeePerPerson","displayTotalPerPerson","roomType","handLuggage","holdLuggage","transfers"].forEach(k=>{
+  ["offerType","operator","totalPrice","resortFee","adults","children","freeChildPlace","priceLabel","leadPrice","departurePort","_poaDepartureAirport","flyingFrom","cruiseType","itinerary","flightDisplay","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeeWording","localFeePerPerson","displayTotalPerPerson","roomType","handLuggage","holdLuggage","transfers"].forEach(k=>{
     if(parsed[k]!==undefined&&parsed[k]!=="") offer[k]=String(parsed[k]);
   });
   if(parsed.operatorKey) offer.operator=String(parsed.operatorKey);
@@ -8713,7 +8713,6 @@ function applyParsedOfferToSlot(result,index,sourceText){
     const base=clean(offer.leadPrice||offer.price); const fee=clean(offer.localFeePerPerson||offer.resortFee);
     if(base){ offer.leadPrice=base; offer.price=base; }
     if(fee){ offer.localFeePerPerson=fee; offer.resortFee=fee+"pp"; }
-    if(base&&fee&&String(offer.operator||"").toLowerCase()==="jet2"&&Number(offer.children||0)<=0) offer.displayTotalPerPerson=String(Number(base)+Number(fee));
   }
   stripTransientPasteOfferFields(offer);
   offer[(typeof PERSISTED_PASTE_OFFER_KEY!=="undefined"?PERSISTED_PASTE_OFFER_KEY:"_rawPastedOfferText")]=String(sourceText||(result&&result.rawText)||"");
@@ -9256,7 +9255,7 @@ function parseJet2DawsonQuote(lines,txt,parsed){
   if(holidayIdx>=0){
     const candidates=lines.slice(holidayIdx+1, holidayIdx+8).filter(line=>!isUnsafePackageTitleLine(line));
     if(candidates[0]){ parsed.ship=cleanPackageParsedTitle(candidates[0]); score+=12; }
-    if(candidates[1]){ parsed.sourceLocation=cleanPackageParsedTitle(candidates[1]); parsed.name=/kefalonia/i.test(parsed.sourceLocation)?"Kefalonia, Greece":parsed.sourceLocation; score+=12; }
+    if(candidates[1]){ parsed.sourceLocation=cleanPackageParsedTitle(candidates[1]); parsed.name=parsed.sourceLocation; parsed.destination=parsed.sourceLocation; score+=12; }
   }
   const nights=(txt.match(/\b(\d{1,2})\s*nights?\s+from\s+\d{1,2}/i)||txt.match(/\b(\d{1,2})\s*nights?\b/i)||[])[1]; if(nights){ parsed.nights=nights; score+=8; }
   const board=detectPackageBoardBasis(txt); if(board){ parsed.boardlbl=board; parsed.board=board; score+=8; }
@@ -9277,12 +9276,12 @@ function parseJet2DawsonQuote(lines,txt,parsed){
   let pp=(txt.match(/price\s+per\s+person[\s\S]{0,160}?£\s*([\d,]+)/i)||[])[1];
   if(!pp){ const comingBack=txt.match(/coming\s+back\s+£\s*(\d{3,4})/i); if(comingBack) pp=comingBack[1]; }
   if(total){ parsed.totalPrice=total.replace(/,/g,""); score+=10; }
-  if(pp){ parsed.price=pp.replace(/,/g,"")+"pp"; parsed.leadPrice=parsed.price; score+=10; }
+  if(pp){ parsed.price=pp.replace(/,/g,""); parsed.leadPrice=parsed.price; parsed.pricePerPerson=parsed.price; score+=10; }
   if(parsed.totalPrice&&parsed.price&&parsed.adults){ const repairedTotal=Number(parsed.totalPrice); const lead=Number(String(parsed.price).replace(/\D/g,"")); const adults=Number(parsed.adults); if(repairedTotal!==lead*adults && Math.abs(repairedTotal-(lead*adults))<=10) parsed.totalPrice=String(lead*adults); }
   parsed.priceLabel=Number(parsed.children||0)>0?"Total Price":"";
   const tax=txt.match(/approximately\s+£\s*([\d,]+)\s+in\s+tourist\s+tax/i);
   const damagedTax=!tax && /approximately\s+2\s+n\s+tourist\s+fo/i.test(txt) && /(?:total\s+holiday\s+cost\s+is|tol\s+holiday\s+cost\s+is|tol\s+o?iday\s+cost\s+is|coslis\s+el\s+te2)/i.test(txt);
-  if(tax||damagedTax){ parsed.localFeeAmount=tax?tax[1].replace(/,/g,""):"24"; parsed.localFeeType="total"; parsed.localFeeApproximate="true"; if(damagedTax) parsed.localFeeConfidence="low"; const adults=Number(parsed.adults||0); if(adults>0){ parsed.localFeePerPerson=String(Math.round(Number(parsed.localFeeAmount)/adults)); parsed.resortFee=parsed.localFeePerPerson+"pp"; if(parsed.leadPrice){ parsed.displayTotalPerPerson=String(Number(String(parsed.leadPrice).replace(/[^0-9.]/g,""))+Number(parsed.localFeePerPerson)); } } }
+  if(tax||damagedTax){ parsed.localFeeAmount=tax?tax[1].replace(/,/g,""):"24"; parsed.localFeeType="total"; parsed.localFeeApproximate="true"; parsed.localFeeWording=`Approximately £${parsed.localFeeAmount} total tourist tax payable locally`; if(damagedTax) parsed.localFeeConfidence="low"; }
   const revised=txt.match(/total\s+holiday\s+cost\s+is\s+£\s*([\d,]+)/i); if(revised) parsed.totalHolidayCostIncludingFee=revised[1].replace(/,/g,"");
   return score;
 }
@@ -10231,7 +10230,7 @@ function prepareOfferSlotForParsedOffer(parsed){
   return true;
 }
 function applyParsedOffer(){if(!pendingParseResult) return; if(typeof isOfferLocked==="function" && isOfferLocked(cur)){ setParseStatus(getLockedOfferMessage(cur),"low"); cancelParsedOffer(); return; } const {parsed,confidence,rawText}=pendingParseResult; const isPackage=String((parsed&&parsed.offerType)||"").toLowerCase()==="package"; const hasParsedFields=isPackage ? canApplyParsedPackageOffer(parsed) : ['price','day','month','nights','board','ports'].some(k=>parsed[k]!==undefined&&parsed[k]!==''); if(!hasParsedFields){ setParseStatus(isPackage?"Not enough Package offer details to load this offer.":'No offer fields detected',isPackage?'partial':'low'); cancelParsedOffer(); return; } if(!isPackage&&typeof canApplyParsedCruiseOffer==="function"&&!canApplyParsedCruiseOffer(parsed)){ setParseStatus("Not enough offer details to load this Cruise offer.","partial"); cancelParsedOffer(); return; } if(!prepareOfferSlotForParsedOffer(parsed)){ setParseStatus('No offer fields detected','low'); cancelParsedOffer(); return; } const pasteSourceText=rawText||((document.getElementById("raw-paste")||{}).value||""); if(pasteSourceText) offers[cur]._rawPastedOfferText=pasteSourceText; if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(cur); if(isPackage){ offers[cur]={[typeof PERSISTED_PASTE_OFFER_KEY!=="undefined"?PERSISTED_PASTE_OFFER_KEY:"_rawPastedOfferText"]:pasteSourceText}; } const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offers[cur].operator)){ continue; } const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; offers[cur]._tagsManualOverride=false; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
-  if(isPackage){ offers[cur].offerType="package"; offers[cur].operator=parsed.operatorKey||parsed.operator||""; applyJet2PackageDefaults(offers[cur]); ["totalPrice","resortFee","adults","children","freeChildPlace","priceLabel","leadPrice","roomType","handLuggage","holdLuggage","transfers","flightDisplay","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeePerPerson","displayTotalPerPerson","totalHolidayCostIncludingFee","sourceLocation"].forEach(k=>{ if(parsed[k]!==undefined&&parsed[k]!=="") offers[cur][k]=String(parsed[k]); }); normalisePackagePricingFields(offers[cur]); }
+  if(isPackage){ offers[cur].offerType="package"; offers[cur].operator=parsed.operatorKey||parsed.operator||""; applyJet2PackageDefaults(offers[cur]); ["totalPrice","resortFee","adults","children","freeChildPlace","priceLabel","leadPrice","roomType","handLuggage","holdLuggage","transfers","flightDisplay","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeeWording","localFeePerPerson","displayTotalPerPerson","totalHolidayCostIncludingFee","sourceLocation"].forEach(k=>{ if(parsed[k]!==undefined&&parsed[k]!=="") offers[cur][k]=String(parsed[k]); }); normalisePackagePricingFields(offers[cur]); }
   if(parsed.departurePort) offers[cur].departurePort=String(parsed.departurePort);
   if(parsed._poaDepartureAirport) offers[cur]._poaDepartureAirport=String(parsed._poaDepartureAirport);
   if(!offers[cur]._sailingFromManual && typeof applyAutoSailingFromToOffer==="function"){
@@ -10780,7 +10779,7 @@ function escapeCardInclusionHtml(value){
 
 const PACKAGE_OPERATORS = {
   tui: {name:"TUI", aliases:["tui","tui holidays"], logo:"assets/operator-logos/tui-logo.png", skin:{header:"assets/package-skins/tui/header.png", footer:"assets/package-skins/tui/footer.png"}, colours:{accent:"#082b46", footer:"#082b46"}, ctaText:"Start your booking", pricingBehaviour:"lead-resort-total", options:{layout:"tui", defaultFeatures:["Beach Holiday"]}},
-  jet2: {name:"Jet2 Holidays", aliases:["jet2holidays","jet2 holidays","jet2"], logo:"assets/operator-logos/jet2-holidays-logo.png", skin:{footer:"assets/package-skins/jet2/footer.png"}, colours:{accent:"#c90000", footer:"#082b46"}, ctaText:"Start your booking", ctaSecondary:"or visit us in store", pricingBehaviour:"couples-pp-family-total", options:{layout:"jet2", defaultFeatures:["Free Child Place","Family"]}},
+  jet2: {name:"Jet2 Holidays", aliases:["jet2holidays","jet2 holidays","jet2"], logo:"assets/operator-logos/jet2-holidays-logo.png", skin:{header:"assets/package-skins/jet2/header-couples.png", headerCouples:"assets/package-skins/jet2/header-couples.png", headerFamily:"assets/package-skins/jet2/header-family.png", footer:"assets/package-skins/jet2/footer.png"}, colours:{accent:"#c90000", footer:"#082b46"}, ctaText:"Start your booking", ctaSecondary:"or visit us in store", pricingBehaviour:"couples-pp-family-total", options:{layout:"jet2", defaultFeatures:["Free Child Place","Family"]}},
   easyjet: {name:"easyJet holidays", aliases:["easyjet holidays","easyjet holidays","easyjet"], logo:"assets/operator-logos/easyjet-logo.png", skin:{header:"assets/package-skins/easyjet/header.png", footer:"assets/package-skins/easyjet/footer.png"}, colours:{accent:"#ff7a00", footer:"#ff7a00"}, ctaText:"Start your booking", pricingBehaviour:"lead-resort-total", options:{layout:"easyjet", defaultFeatures:["City Break"]}}
 };
 const PACKAGE_BOARD_BASES = ["Room Only","Bed & Breakfast","Half Board","Full Board","All Inclusive","All Inclusive Plus","Ultra All Inclusive","Self Catering"];
@@ -10978,6 +10977,7 @@ function normalisePackagePricingFields(data){
     d.displayTotalPerPerson=String(packageNumericValue(base)+packageNumericValue(fee));
   }
   if(d.totalPrice!==undefined) d.bookingTotal=packageCleanNumericString(d.totalPrice)||String(d.totalPrice||"");
+  if(d.localFeeType==="total" && d.localFeeAmount){ d.resortFee=packageCleanNumericString(d.localFeeAmount); delete d.localFeePerPerson; delete d.displayTotalPerPerson; }
   return d;
 }
 
@@ -10996,20 +10996,22 @@ function packageOfferFromData(d){
   const children=String(d.children||"").trim() || ((String(d.basis||"").match(/(\d+)\s*Child(?:ren)?/i)||[])[1]);
   const localFeeAmount=String(d.localFeeAmount||"").trim();
   const localFeeType=String(d.localFeeType||"").trim()||(/pp|per person/i.test(String(d.resortFee||""))?"pp":"");
-  const localFeePerPerson=String(d.localFeePerPerson||"").trim() || (localFeeAmount&&localFeeType==="total"&&Number(adults)>0 ? String(Math.round(Number(localFeeAmount.replace(/[^0-9.]/g,""))/Number(adults))) : "");
+  const localFeeApproximate=!!(d.localFeeApproximate===true||String(d.localFeeApproximate||"").toLowerCase()==="true");
+  const localFeeWording=String(d.localFeeWording||"").trim();
+  const localFeePerPerson=String(d.localFeePerPerson||"").trim();
   const cfgForCta=PACKAGE_OPERATORS[operator]||{};
   const ctaPrimary=packageCopyValue(d,"ctaPrimary",cfgForCta);
   const ctaSecondary=packageCopyValue(d,"ctaSecondary",cfgForCta);
   const leadPrice=packageCleanNumericStringLocal(d.price||d.leadPrice);
-  const resortFeeNumber=packageCleanNumericStringLocal(d.resortFee)||packageCleanNumericStringLocal(localFeePerPerson);
-  const resortFee=resortFeeNumber?resortFeeNumber+"pp":"";
+  const resortFeeNumber=packageCleanNumericStringLocal(d.resortFee)||packageCleanNumericStringLocal(localFeePerPerson)||packageCleanNumericStringLocal(localFeeAmount);
+  const resortFee=resortFeeNumber?(localFeeType==="total"?resortFeeNumber:resortFeeNumber+"pp"):"";
   const feePerPerson=packageNumericValueLocal(localFeePerPerson||resortFee);
   const derivedJet2Total=operator==="jet2"&&Number(children||0)<=0&&leadPrice&&feePerPerson?String(packageNumericValueLocal(leadPrice)+feePerPerson):"";
   const explicitTotal=packageCleanNumericStringLocal(d.totalPrice);
   const displayTotal=packageCleanNumericStringLocal(d.displayTotalPerPerson);
   const totalPrice=(displayTotal && explicitTotal && packageNumericValueLocal(explicitTotal)>999 && packageNumericValueLocal(leadPrice)<1000) ? displayTotal : (explicitTotal||displayTotal||derivedJet2Total);
   return {
-    offerType:"package", operator, ctaPrimary, ctaSecondary, destination:d.destination||d.name||"", hotel:d.accommodation||d.hotel||d.ship||"", nights:d.nights||"", boardBasis:d.boardBasis||d.boardlbl||d.board||"", departureDate:(d.departureDate?formatPackageOrdinalDate(d.departureDate):formatPackageOrdinalDate([d.day,d.month].filter(Boolean).join(" "))), departureAirport:airport, leadPrice:leadPrice||packageCleanNumericStringLocal(d.price)||packageCleanNumericStringLocal(d.leadPrice)||"", resortFee, totalPrice, adults:adults||"2", children:children||"0", roomType:d.roomType||"", handLuggage:d.handLuggage||"", holdLuggage:d.holdLuggage||"", transfers:d.transfers||"", freeChildPlace:!!(d.freeChildPlace&&String(d.freeChildPlace)!=="false"||/free child place/i.test([d.tags,d.theme_tags].join(" "))), priceLabel:packageCopyValue(d,"priceLabel",cfgForCta), perPersonSuffix:packageCopyValue(d,"perPersonSuffix",cfgForCta), resortFeeLabel:packageCopyValue(d,"resortFeeLabel",cfgForCta), nightsLabel:packageCopyValue(d,"nightsLabel",cfgForCta), flightsLabel:packageCopyValue(d,"flightsLabel",cfgForCta), basis:packageCopyValue(d,"basis",cfgForCta), inclusions:packageCopyValue(d,"inclusions",cfgForCta), features:String(d.theme_tags||d.tags||"").split(/\s*[•·,]\s*/).filter(Boolean)
+    offerType:"package", operator, ctaPrimary, ctaSecondary, destination:d.destination||d.name||"", hotel:d.accommodation||d.hotel||d.ship||"", nights:d.nights||"", boardBasis:d.boardBasis||d.boardlbl||d.board||"", departureDate:(d.departureDate?formatPackageOrdinalDate(d.departureDate):formatPackageOrdinalDate([d.day,d.month].filter(Boolean).join(" "))), departureAirport:airport, leadPrice:leadPrice||packageCleanNumericStringLocal(d.price)||packageCleanNumericStringLocal(d.leadPrice)||"", resortFee, totalPrice, adults:adults||"2", children:children||"0", roomType:d.roomType||"", handLuggage:d.handLuggage||"", holdLuggage:d.holdLuggage||"", transfers:d.transfers||"", freeChildPlace:!!(d.freeChildPlace&&String(d.freeChildPlace)!=="false"||/free child place/i.test([d.tags,d.theme_tags].join(" "))), localFeeAmount, localFeeType, localFeeApproximate, localFeeWording, pricePerPerson:d.pricePerPerson||leadPrice, priceLabel:(operator==="jet2"&&Number(children||0)<=0?"":packageCopyValue(d,"priceLabel",cfgForCta)), perPersonSuffix:packageCopyValue(d,"perPersonSuffix",cfgForCta), resortFeeLabel:packageCopyValue(d,"resortFeeLabel",cfgForCta), nightsLabel:packageCopyValue(d,"nightsLabel",cfgForCta), flightsLabel:packageCopyValue(d,"flightsLabel",cfgForCta), basis:packageCopyValue(d,"basis",cfgForCta), inclusions:packageCopyValue(d,"inclusions",cfgForCta), features:String(d.theme_tags||d.tags||"").split(/\s*[•·,]\s*/).filter(Boolean)
   };
 }
 function formatPackageMoney(value){
@@ -11028,11 +11030,15 @@ function formatPackageOrdinalDate(value){
   return `${day}${suffix} ${m[2]}`;
 }
 function packageAirportLine(value,label="Flights"){ const clean=String(value||"").replace(/\s+Flights?$/i,"").trim(); const suffix=String(label||"").trim(); return clean?(suffix?`${clean} ${suffix}`:clean):""; }
-function packageResortFeeText(value,operatorKey,label,perPersonSuffix){
+function packageResortFeeText(value,operatorKey,label,perPersonSuffix,model){
+  if(model&&model.localFeeWording) return escapeHtml(model.localFeeWording);
   const money=formatPackageMoney(value);
   if(!money) return "";
-  const pp=/pp|per person/i.test(String(value||""));
+  const total=model&&model.localFeeType==="total";
+  const approximate=!!(model&&model.localFeeApproximate);
+  const pp=!total && /pp|per person/i.test(String(value||""));
   const suffix=pp?String(perPersonSuffix==null?"pp":perPersonSuffix):"";
+  if(total) return `${approximate?"Approximately ":"+"}${money} total local resort fee`;
   const feeLabel=String(label==null||label===""?(operatorKey==="easyjet"?"Total Local Resort Fee":"Local Resort Fee"):label);
   return `+${money}${escapeHtml(suffix)} ${escapeHtml(feeLabel)}`.trim();
 }
@@ -11044,14 +11050,14 @@ function renderPackagePriceBlock(model,operatorKey){
   const lead=formatPackageMoney(leadRaw);
   const total=formatPackageMoney(totalRaw);
   const display=formatPackageMoney(displayRaw);
-  const fee=packageResortFeeText(model.resortFee,operatorKey,model.resortFeeLabel,model.perPersonSuffix);
-  const hasDistinctTotal=fee && total && lead && total!==lead && !isFamily;
+  const fee=packageResortFeeText(model.resortFee,operatorKey,model.resortFeeLabel,model.perPersonSuffix,model);
+  const hasDistinctTotal=fee && total && lead && total!==lead && !isFamily && !(model.localFeeType==="total");
   const priceMarkup=(amount,showPp,extraClass="")=>`<div class="pkg-price ${extraClass}">${amount}<span class="pkg-pp">${showPp?escapeHtml(model.perPersonSuffix):""}</span></div>`;
   if(operatorKey==="jet2" && !isFamily && lead){
-    if(fee && total && total!==lead){
+    if(fee && total && total!==lead && model.localFeeType!=="total"){
       return `<div class="pkg-lead">${priceMarkup(lead,true)}<div class="pkg-fee">${fee}</div></div><div class="pkg-total">${priceMarkup(total,true)}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis">${escapeHtml(model.basis)}</div>`:""}</div>`;
     }
-    return `<div class="pkg-total">${priceMarkup(lead,true)}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis">${escapeHtml(model.basis)}</div>`:""}</div>`;
+    return `<div class="pkg-total">${priceMarkup(lead,true)}${fee?`<div class="pkg-fee">${fee}</div>`:""}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis">${escapeHtml(model.basis)}</div>`:""}</div>`;
   }
   if(hasDistinctTotal){
     return `<div class="pkg-lead">${priceMarkup(lead,true)}<div class="pkg-fee">${fee}</div></div><div class="pkg-total">${priceMarkup(total,/pp|per person/i.test(totalRaw))}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis">${escapeHtml(model.basis)}</div>`:""}</div>`;
@@ -11067,18 +11073,18 @@ function renderPackageCard(d){
   const model=packageOfferFromData(d);
   const cfg=PACKAGE_OPERATORS[model.operator]||{name:"Operator not detected",aliases:[],logo:"",skin:{},colours:{accent:"#9e936c",footer:"#092a44"},ctaText:"Start your booking",ctaSecondary:"or visit us in store",options:{layout:"neutral"}};
   const layout=(cfg.options&&cfg.options.layout)||model.operator;
-  const freeChild=model.freeChildPlace || model.features.some(f=>/free child place/i.test(f));
+  const freeChild=!!model.freeChildPlace;
   const ribbon=model.operator==="jet2"&&freeChild?"Offer Includes a Free Child Place":"";
   const jet2Couples=model.operator==="jet2" && Number(model.children||0)<=0;
   const details=[model.nights?[model.nights,model.nightsLabel].filter(Boolean).join(" "):"",model.boardBasis,model.departureDate,packageAirportLine(model.departureAirport,model.flightsLabel),model.inclusions].filter(Boolean);
   const skin=cfg.skin||{};
-  const headerSrc=skin.header;
+  const headerSrc=(model.operator==="jet2"?(freeChild?skin.headerFamily:skin.headerCouples):skin.header);
   const footerSrc=skin.footer;
   const header=headerSrc?`<img class="pkg-skin-header" src="${headerSrc}" alt="" role="presentation"><img class="pkg-head-logo pkg-head-logo--dawson" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo">`:`<img class="pkg-head-logo" src="assets/operator-logos/dawson-and-sanderson-logo.png" alt="Dawson &amp; Sanderson logo">${ribbon?`<div class="pkg-ribbon">${escapeHtml(ribbon)}</div>`:""}`;
   const footerLines=[model.ctaPrimary?`<div class="pkg-cta-main">${escapeHtml(model.ctaPrimary)}</div>`:"",model.ctaSecondary?`<div class="pkg-cta-sub">${escapeHtml(model.ctaSecondary)}</div>`:""].filter(Boolean).join("");
   const footerCta=footerLines?`<div class="pkg-footer-cta">${footerLines}</div>`:"";
   const footer=footerSrc?`<img class="pkg-skin-footer" src="${footerSrc}" alt="" role="presentation">${footerCta}`:footerCta;
-  return `<div class="pc pkg-${layout}" style="--package-accent:${cfg.colours.accent};--package-footer:${cfg.colours.footer};"><div class="pkg-head">${header}</div><div class="pkg-body"><div class="pkg-destination">${escapeHtml(model.destination)}</div><div class="pkg-hotel">${escapeHtml(model.hotel)}</div><div class="pkg-details">${details.map(escapeHtml).join("<br>")}</div><div class="pkg-pricing ${model.operator==="jet2"&&Number(model.children||0)<=0&&packageResortFeeText(model.resortFee,model.operator,model.resortFeeLabel,model.perPersonSuffix)?"pkg-pricing--with-fee":""}">${renderPackagePriceBlock(model,model.operator)}</div></div>${renderPackageOperatorLogo(cfg,layout)}<div class="pkg-footer">${footer}</div></div>`;
+  return `<div class="pc pkg-${layout}" style="--package-accent:${cfg.colours.accent};--package-footer:${cfg.colours.footer};"><div class="pkg-head">${header}</div><div class="pkg-body"><div class="pkg-destination">${escapeHtml(model.destination)}</div><div class="pkg-hotel">${escapeHtml(model.hotel)}</div><div class="pkg-details">${details.map(escapeHtml).join("<br>")}</div><div class="pkg-pricing ${model.operator==="jet2"&&Number(model.children||0)<=0&&packageResortFeeText(model.resortFee,model.operator,model.resortFeeLabel,model.perPersonSuffix,model)?"pkg-pricing--with-fee":""}">${renderPackagePriceBlock(model,model.operator)}</div></div>${renderPackageOperatorLogo(cfg,layout)}<div class="pkg-footer">${footer}</div></div>`;
 }
 function renderCruiseCard(d){ return renderCruiseCardHTML(d); }
 function renderGenericCampaignCard(d,type){
