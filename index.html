@@ -859,13 +859,16 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .pc .pkg-inclusion,.pc .pkg-basis-bottom{display:block;}
 .pc .pkg-operator-logo{display:block;position:absolute;width:auto;height:auto;object-fit:contain;object-position:left bottom;pointer-events:none;}
 .pc .pkg-operator-logo--tui{left:28px;bottom:14px;width:300px;}
-.pc.pkg-jet2 .pkg-details .pkg-operator-logo--jet2{position:static;width:250px;margin-top:26px;object-position:left top;}
+.pc.pkg-jet2 .pkg-details .pkg-operator-logo--jet2{position:static;width:750px;margin-top:26px;object-position:left top;}
 .pc.pkg-jet2 .pkg-details .pkg-operator-logo--jet2{flex:0 0 auto;}
 .pc .pkg-operator-logo--easyjet{left:6px;bottom:-27px;width:430px;}
 .pc .pkg-pricing{position:absolute;right:85px;top:250px;width:485px;text-align:right;color:#000;}
 .pc.pkg-jet2 .pkg-pricing{top:280px;right:98px;width:420px;}
-.pc.pkg-jet2 .pkg-pricing--with-fee{top:280px;height:272px;display:flex;flex-direction:column;justify-content:space-between;}
+.pc.pkg-jet2 .pkg-pricing--with-fee{top:280px;height:384px;display:flex;flex-direction:column;justify-content:flex-start;gap:42px;}
 .pc.pkg-jet2 .pkg-pricing--with-fee .pkg-lead{margin-bottom:0;}
+.pc.pkg-jet2 .pkg-pricing--with-fee .pkg-fee{margin-top:12px;}
+.pc.pkg-jet2 .pkg-pricing--with-fee .pkg-price-label{margin-top:14px;}
+.pc.pkg-jet2 .pkg-pricing--with-fee .pkg-basis{margin-top:10px;}
 .pc .pkg-lead{margin-bottom:120px;}
 .pc .pkg-price{font-size:92px;line-height:.92;font-weight:300;letter-spacing:-.04em;}
 .pc.pkg-jet2 .pkg-price{font-size:112px;}
@@ -8710,8 +8713,12 @@ function applyParsedOfferToSlot(result,index,sourceText){
   applyOperatorTopBarUspDefault(offer,offer.operator||parsed.operatorKey||"");
   if(String(offer.operator||offer.operatorKey||"").toLowerCase()==="jet2"){
     offer.offerType="package"; offer.operator="jet2";
-    if(!Object.prototype.hasOwnProperty.call(offer,"ctaPrimary")) offer.ctaPrimary="Start your booking";
-    if(!Object.prototype.hasOwnProperty.call(offer,"ctaSecondary")) offer.ctaSecondary="or visit us in store";
+    if(typeof applyJet2PackageDefaults==="function") applyJet2PackageDefaults(offer);
+    else {
+      if(!Object.prototype.hasOwnProperty.call(offer,"ctaPrimary") || String(offer.ctaPrimary||"")==="") offer.ctaPrimary="Start your booking";
+      if(!Object.prototype.hasOwnProperty.call(offer,"ctaSecondary") || String(offer.ctaSecondary||"")==="") offer.ctaSecondary="or visit us in store";
+      if(!Object.prototype.hasOwnProperty.call(offer,"priceLabel") || String(offer.priceLabel||"")==="") offer.priceLabel="Total Price";
+    }
   }
   if(String(offer.offerType||"").toLowerCase()==="package"){
     if(offer.sailingFrom && !offer.departureAirport) offer.departureAirport=offer.sailingFrom;
@@ -10982,7 +10989,7 @@ function applyJet2PackageDefaults(offer){
   if(!Object.prototype.hasOwnProperty.call(offer,"flightsLabel")) offer.flightsLabel="Flights";
   if(!Object.prototype.hasOwnProperty.call(offer,"nightsLabel")) offer.nightsLabel="Nights";
   if(!Object.prototype.hasOwnProperty.call(offer,"perPersonSuffix")) offer.perPersonSuffix="pp";
-  if(!Object.prototype.hasOwnProperty.call(offer,"priceLabel")) offer.priceLabel="Total Price";
+  if(!Object.prototype.hasOwnProperty.call(offer,"priceLabel") || String(offer.priceLabel||"")==="") offer.priceLabel="Total Price";
   return offer;
 }
 function normalisePackagePricingFields(data){
