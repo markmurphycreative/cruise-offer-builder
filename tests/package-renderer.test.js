@@ -167,13 +167,14 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
 test('Package operator logos use operator-specific natural-aspect placement classes', () => {
   assert.match(html, /\.pc \.pkg-operator-logo\{[^}]*display:block;[^}]*position:absolute;[^}]*width:auto;[^}]*height:auto;[^}]*object-fit:contain;[^}]*pointer-events:none;/);
   assert.match(html, /\.pc \.pkg-operator-logo--tui\{left:28px;bottom:14px;width:300px;\}/);
-  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-details \.pkg-operator-logo--jet2\{[^}]*position:absolute;[^}]*left:0;[^}]*top:320px;[^}]*width:379px;[^}]*margin-top:0;[^}]*\}/);
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-details \.pkg-operator-logo--jet2\{[^}]*position:static;[^}]*width:270px;[^}]*margin-top:24px;[^}]*\}/);
   assert.doesNotMatch(html, /\.pc \.pkg-operator-logo--jet2\{left:150px;bottom:88px;width:310px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\{--pkg-left:98px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples\{--pkg-left:153px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-body\{[^}]*height:626px;[^}]*padding:0;[^}]*position:relative;[^}]*display:block;/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-details\{[^}]*position:absolute;[^}]*left:var\(--pkg-left\);[^}]*top:299px;/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing\{[^}]*position:absolute;[^}]*right:153px;[^}]*top:96px;[^}]*width:500px;/);
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing--with-fee \.pkg-lead\{margin-bottom:230px;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-head\{height:154px;[^}]*border:0;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-skin-header\{height:auto;object-fit:contain;object-position:top center;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-fee\{color:#000;\}/);
@@ -192,7 +193,7 @@ test('Package operator logos use operator-specific natural-aspect placement clas
 });
 
 
-test('Jet2 operator logo renderer output and live package selector support absolute decorative placement', () => {
+test('Jet2 operator logo renderer output and live package selector support visible details placement', () => {
   const { renderPackageCard, renderPackageOperatorLogo, PACKAGE_OPERATORS } = createContext();
   const cardHtml = renderPackageCard({
     operator: 'jet2',
@@ -229,9 +230,9 @@ test('Jet2 operator logo renderer output and live package selector support absol
   assert.equal(renderPackageOperatorLogo(PACKAGE_OPERATORS.jet2, 'jet2'), logo.outerHTML);
 
   const computed = computePackageLogoStyles(card, logo);
-  assert.equal(computed.position, 'absolute');
+  assert.equal(computed.position, 'static');
   assert.equal(computed.display, 'block');
-  assert.equal(computed.width, '379px');
+  assert.equal(computed.width, '270px');
   assert.equal(computed.height, 'auto');
   assert.equal(computed.objectFit, 'contain');
   assert.equal(computed.pointerEvents, 'none');
