@@ -8348,8 +8348,9 @@ function isTrustedJet2DawsonQuote(text){
   if(/coach\s+transfers?/i.test(source)) inclusionSignals+=1;
   if(inclusionSignals>=2) add("inclusions",12);
   if(/price\s+per\s+person/i.test(source)||/(?:£|¥)\s*\d[\d\s,]{1,8}/.test(source)) add("price",8);
+  if(score>=58 && has.includes("dawsonIdentity") && has.includes("holidayTo") && has.includes("sections") && has.includes("payable") && (has.includes("routes")||has.includes("directions")) && (has.includes("price")||has.includes("pax"))) add("dawsonStructure",12);
   const contradiction=/\b(?:cruise\s+only|itinerary|cabin|stateroom|sailing\s+from)\b/i.test(compact)&&!/(holiday summary|flight details)/i.test(compact);
-  return !contradiction && score>=68 && has.includes("sections") && has.includes("identityArea") && has.includes("routes") && has.includes("inclusions") && (has.includes("price")||has.includes("pax"));
+  return !contradiction && ((score>=68 && has.includes("sections") && has.includes("identityArea") && has.includes("routes") && has.includes("inclusions") && (has.includes("price")||has.includes("pax"))) || has.includes("dawsonStructure"));
 }
 function getPackageOperatorMatch(text){
   const source=String(text||"");
@@ -9283,15 +9284,36 @@ function isUnsafePackageTitleLine(line){
 function cleanPackageParsedTitle(line){
   return titleCasePackageValue(String(line||"").replace(/^your holiday to\.{0,3}$/i,"").replace(/^\.*\s*plus$/i,"").replace(/\bour\s+rating\b.*$/i,"").replace(/^[&,¥+\s]+/,"").replace(/[ \t]{2,}/g," ").trim());
 }
+
+function extractJet2DawsonHotelDestination(lines){
+  const result={hotel:"",destination:""};
+  const start=lines.findIndex(line=>/your\s+holiday\s+to/i.test(line));
+  const stopPattern=/^(?:our\s+rating|tripadvisor|based\s+on\s+\d+\s+reviews|holiday\s+summary|flight\s+details|payable\s+to\s+your\s+travel|going\s+out|coming\s+back)\b/i;
+  const block=(start>=0?lines.slice(start+1):lines).map(line=>String(line||"").trim()).filter(Boolean);
+  const candidates=[];
+  for(const line of block){
+    if(stopPattern.test(line)) break;
+    if(isUnsafePackageTitleLine(line)) continue;
+    const cleaned=cleanPackageParsedTitle(line);
+    if(cleaned && !isUnsafePackageTitleLine(cleaned) && !/\.(?:pdf|png|jpe?g)$/i.test(cleaned)) candidates.push(cleaned);
+  }
+  if(candidates.length>=2){ result.hotel=candidates[0]; result.destination=candidates[1]; return result; }
+  const accom=/\b(?:hotel|resort|apartments?|aparthotel|village|suites|club|spa|villas?|castillo)\b/i;
+  const hotelIndex=lines.findIndex(line=>accom.test(line)&&!isUnsafePackageTitleLine(line)&&!/(?:resort\s+fee|coach\s+transfers|all inclusive|holiday summary|flight details)/i.test(line));
+  if(hotelIndex>=0){
+    result.hotel=cleanPackageParsedTitle(lines[hotelIndex]);
+    for(let i=hotelIndex+1;i<Math.min(lines.length,hotelIndex+5);i+=1){
+      if(!isUnsafePackageTitleLine(lines[i]) && /,/.test(lines[i])){ result.destination=cleanPackageParsedTitle(lines[i]); break; }
+    }
+  }
+  return result;
+}
 function parseJet2DawsonQuote(lines,txt,parsed){
   let score=0;
   parsed.operatorKey="jet2"; score+=24;
-  const holidayIdx=lines.findIndex(line=>/your\s+holiday\s+to/i.test(line));
-  if(holidayIdx>=0){
-    const candidates=lines.slice(holidayIdx+1, holidayIdx+8).filter(line=>!isUnsafePackageTitleLine(line));
-    if(candidates[0]){ parsed.ship=cleanPackageParsedTitle(candidates[0]); score+=12; }
-    if(candidates[1]){ parsed.sourceLocation=cleanPackageParsedTitle(candidates[1]); parsed.name=parsed.sourceLocation; parsed.destination=parsed.sourceLocation; score+=12; }
-  }
+  const title=extractJet2DawsonHotelDestination(lines);
+  if(title.hotel){ parsed.ship=title.hotel; score+=12; }
+  if(title.destination){ parsed.sourceLocation=title.destination; parsed.name=title.destination; parsed.destination=title.destination; score+=12; }
   const nights=(txt.match(/\b(\d{1,2})\s*nights?\s+from\s+\d{1,2}/i)||txt.match(/\b(\d{1,2})\s*nights?\b/i)||[])[1]; if(nights){ parsed.nights=nights; score+=8; }
   const board=detectPackageBoardBasis(txt); if(board){ parsed.boardlbl=board; parsed.board=board; score+=8; }
   const date=txt.match(/\b(?:\d{1,2}\s*nights?\s+from\s+)?(\d{1,2})(st|nd|rd|th)?\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\s+(\d{4})\b/i);
@@ -9307,9 +9329,11 @@ function parseJet2DawsonQuote(lines,txt,parsed){
   if(incl.length){ parsed.incl="Luggage & Transfers Included"; parsed.inclusionsDisplay="Luggage & Transfers Included"; score+=8; }
   const room=lines.find(line=>/(?:^|[^A-Za-z0-9])\d+\s*x\s+/i.test(line)&&/\b(?:room|studio|apartment|suite|villa)\b/i.test(line)); if(room) parsed.roomType=room.replace(/^.*?\b\d+\s*x\s*/i,"").replace(/[^A-Za-z0-9 '&/-].*$/g,"").trim();
   const totalMatches=[...txt.matchAll(/payable\s+to\s+your\s+travel\s*\n?\s*agent[\s\S]{0,120}?£\s*([\d,]+)/gi)].map(m=>m[1]);
-  const total=totalMatches.sort((a,b)=>Number(String(b).replace(/,/g,""))-Number(String(a).replace(/,/g,"")))[0];
+  let total=totalMatches.sort((a,b)=>Number(String(b).replace(/,/g,""))-Number(String(a).replace(/,/g,"")))[0];
   let pp=(txt.match(/price\s+per\s+person[\s\S]{0,160}?£\s*([\d,]+)/i)||[])[1];
   if(!pp){ const comingBack=txt.match(/coming\s+back\s+£\s*(\d{3,4})/i); if(comingBack) pp=comingBack[1]; }
+  const allMoney=[...txt.matchAll(/£\s*([\d,]+)/g)].map(m=>m[1]).sort((a,b)=>Number(String(b).replace(/,/g,""))-Number(String(a).replace(/,/g,"")));
+  if((!total || (pp && Number(String(total).replace(/,/g,""))===Number(String(pp).replace(/,/g,"")))) && allMoney.length) total=allMoney[0];
   if(total){ parsed.totalPrice=total.replace(/,/g,""); score+=10; }
   if(pp){ parsed.price=pp.replace(/,/g,""); parsed.leadPrice=parsed.price; parsed.pricePerPerson=parsed.price; score+=10; }
   if(parsed.totalPrice&&parsed.price&&parsed.adults){ const repairedTotal=Number(parsed.totalPrice); const lead=Number(String(parsed.price).replace(/\D/g,"")); const adults=Number(parsed.adults); if(repairedTotal!==lead*adults && Math.abs(repairedTotal-(lead*adults))<=10) parsed.totalPrice=String(lead*adults); }
@@ -10813,9 +10837,9 @@ function escapeCardInclusionHtml(value){
 }
 
 const PACKAGE_OPERATORS = {
-  tui: {name:"TUI", aliases:["tui","tui holidays"], logo:"assets/operator-logos/tui-logo.png", skin:{header:"assets/package-skins/tui/header.png", footer:"assets/package-skins/tui/footer.png"}, colours:{accent:"#082b46", footer:"#082b46"}, ctaText:"Start your booking", pricingBehaviour:"lead-resort-total", options:{layout:"tui", defaultFeatures:["Beach Holiday"]}},
+  tui: {name:"TUI", aliases:["tui","tui holidays"], logo:"assets/operator-logos/tui-logo.png", skin:{header:"assets/package-skins/tui/header.png", footer:"assets/package-skins/tui/footer.png"}, colours:{accent:"#082b46", footer:"#082b46"}, ctaText:"Start your booking", pricingBehaviour:"couples-pp-family-total", options:{layout:"tui", defaultFeatures:["Beach Holiday"]}},
   jet2: {name:"Jet2 Holidays", aliases:["jet2holidays","jet2 holidays","jet2"], logo:"assets/operator-logos/jet2-holidays-logo.png", skin:{header:"assets/package-skins/jet2/header-couples.png", headerCouples:"assets/package-skins/jet2/header-couples.png", headerFamily:"assets/package-skins/jet2/header-family.png", footer:"assets/package-skins/jet2/footer.png"}, colours:{accent:"#c90000", footer:"#082b46"}, ctaText:"Start your booking", ctaSecondary:"or visit us in store", pricingBehaviour:"couples-pp-family-total", options:{layout:"jet2", defaultFeatures:["Free Child Place","Family"]}},
-  easyjet: {name:"easyJet holidays", aliases:["easyjet holidays","easyjet holidays","easyjet"], logo:"assets/operator-logos/easyjet-logo.png", skin:{header:"assets/package-skins/easyjet/header.png", footer:"assets/package-skins/easyjet/footer.png"}, colours:{accent:"#ff7a00", footer:"#ff7a00"}, ctaText:"Start your booking", pricingBehaviour:"lead-resort-total", options:{layout:"easyjet", defaultFeatures:["City Break"]}}
+  easyjet: {name:"easyJet holidays", aliases:["easyjet holidays","easyjet holidays","easyjet"], logo:"assets/operator-logos/easyjet-logo.png", skin:{header:"assets/package-skins/easyjet/header.png", footer:"assets/package-skins/easyjet/footer.png"}, colours:{accent:"#ff7a00", footer:"#ff7a00"}, ctaText:"Start your booking", pricingBehaviour:"couples-pp-family-total", options:{layout:"easyjet", defaultFeatures:["City Break"]}}
 };
 const PACKAGE_BOARD_BASES = ["Room Only","Bed & Breakfast","Half Board","Full Board","All Inclusive","All Inclusive Plus","Ultra All Inclusive","Self Catering"];
 const PACKAGE_FEATURES = ["Free Child Place","Adults Only","Family","Luxury","City Break","Beach Holiday"];
@@ -11039,7 +11063,7 @@ function normalisePackagePricingFields(data){
   }
   if(base){ d.leadPrice=base; d.price=base; }
   if(fee){ d.localFeePerPerson=fee; d.resortFee=fee+"pp"; }
-  if(base && fee && String(d.operator||d.operatorKey||"").toLowerCase()==="jet2" && Number(d.children||0)<=0){
+  if(base && fee && ["jet2","tui","easyjet"].includes(normalisePackageOperatorKey(d.operator||d.operatorKey||"")) && Number(d.children||0)<=0){
     d.displayTotalPerPerson=String(packageNumericValue(base)+packageNumericValue(fee));
     d.totalPrice=d.displayTotalPerPerson;
   }
@@ -11074,12 +11098,14 @@ function packageOfferFromData(d){
   const resortFeeNumber=packageCleanNumericStringLocal(localFeePerPerson)||packageCleanNumericStringLocal(d.resortFee)||packageCleanNumericStringLocal(localFeeAmount);
   const resortFee=resortFeeNumber?(resortFeeNumber+"pp"):"";
   const feePerPerson=packageNumericValueLocal(localFeePerPerson||resortFee);
-  const derivedJet2Total=operator==="jet2"&&Number(children||0)<=0&&leadPrice&&feePerPerson?String(packageNumericValueLocal(leadPrice)+feePerPerson):"";
+  const usesSharedPackagePricing=["jet2","tui","easyjet"].includes(operator);
+  const derivedCouplesDisplayTotal=usesSharedPackagePricing&&Number(children||0)<=0&&leadPrice&&feePerPerson?String(packageNumericValueLocal(leadPrice)+feePerPerson):"";
   const explicitTotal=packageCleanNumericStringLocal(d.totalPrice);
   const displayTotal=packageCleanNumericStringLocal(d.displayTotalPerPerson);
-  const totalPrice=derivedJet2Total || ((displayTotal && explicitTotal && packageNumericValueLocal(explicitTotal)>999 && packageNumericValueLocal(leadPrice)<1000) ? displayTotal : (explicitTotal||displayTotal));
+  const bookingTotal=packageCleanNumericStringLocal(d.bookingTotal)||((explicitTotal && packageNumericValueLocal(explicitTotal)>999 && packageNumericValueLocal(leadPrice)<1000)?explicitTotal:"");
+  const totalPrice=Number(children||0)>0 ? (explicitTotal||displayTotal||leadPrice) : (derivedCouplesDisplayTotal || displayTotal || "");
   return {
-    offerType:"package", operator, ctaPrimary, ctaSecondary, destination:d.destination||d.name||"", hotel:d.accommodation||d.hotel||d.ship||"", nights:d.nights||"", boardBasis:d.boardBasis||d.boardlbl||d.board||"", departureDate:(d.departureDate?formatPackageOrdinalDate(d.departureDate):formatPackageOrdinalDate([d.day,d.month].filter(Boolean).join(" "))), departureAirport:airport, leadPrice:leadPrice||packageCleanNumericStringLocal(d.price)||packageCleanNumericStringLocal(d.leadPrice)||"", resortFee, totalPrice, adults:adults||"2", children:children||"0", roomType:d.roomType||"", handLuggage:d.handLuggage||"", holdLuggage:d.holdLuggage||"", transfers:d.transfers||"", freeChildPlace:!!(d.freeChildPlace&&String(d.freeChildPlace)!=="false"||/free child place/i.test([d.tags,d.theme_tags].join(" "))), localFeeAmount, localFeeType, localFeeApproximate, localFeeWording, pricePerPerson:d.pricePerPerson||leadPrice, priceLabel:packageCopyValue(d,"priceLabel",cfgForCta), perPersonSuffix:packageCopyValue(d,"perPersonSuffix",cfgForCta), resortFeeLabel:packageCopyValue(d,"resortFeeLabel",cfgForCta), nightsLabel:packageCopyValue(d,"nightsLabel",cfgForCta), flightsLabel:packageCopyValue(d,"flightsLabel",cfgForCta), basis:packageCopyValue(d,"basis",cfgForCta), inclusions:packageCopyValue(d,"inclusions",cfgForCta), features:String(d.theme_tags||d.tags||"").split(/\s*[•·,]\s*/).filter(Boolean)
+    offerType:"package", operator, ctaPrimary, ctaSecondary, destination:d.destination||d.name||"", hotel:d.accommodation||d.hotel||d.ship||"", nights:d.nights||"", boardBasis:d.boardBasis||d.boardlbl||d.board||"", departureDate:(d.departureDate?formatPackageOrdinalDate(d.departureDate):formatPackageOrdinalDate([d.day,d.month].filter(Boolean).join(" "))), departureAirport:airport, leadPrice:leadPrice||packageCleanNumericStringLocal(d.price)||packageCleanNumericStringLocal(d.leadPrice)||"", resortFee, totalPrice, adults:adults||"2", children:children||"0", roomType:d.roomType||"", handLuggage:d.handLuggage||"", holdLuggage:d.holdLuggage||"", transfers:d.transfers||"", freeChildPlace:!!(d.freeChildPlace&&String(d.freeChildPlace)!=="false"||/free child place/i.test([d.tags,d.theme_tags].join(" "))), localFeeAmount, localFeeType, localFeeApproximate, localFeeWording, bookingTotal, pricePerPerson:d.pricePerPerson||leadPrice, priceLabel:packageCopyValue(d,"priceLabel",cfgForCta), perPersonSuffix:packageCopyValue(d,"perPersonSuffix",cfgForCta), resortFeeLabel:packageCopyValue(d,"resortFeeLabel",cfgForCta), nightsLabel:packageCopyValue(d,"nightsLabel",cfgForCta), flightsLabel:packageCopyValue(d,"flightsLabel",cfgForCta), basis:packageCopyValue(d,"basis",cfgForCta), inclusions:packageCopyValue(d,"inclusions",cfgForCta), features:String(d.theme_tags||d.tags||"").split(/\s*[•·,]\s*/).filter(Boolean)
   };
 }
 function formatPackageMoney(value){
@@ -11113,26 +11139,19 @@ function packageResortFeeText(value,operatorKey,label,perPersonSuffix,model){
 }
 function renderPackagePriceBlock(model,operatorKey){
   const isFamily=Number(model.children||0)>0;
-  const leadRaw=String(model.leadPrice||model.totalPrice||"");
+  const sharedCouples=["jet2","tui","easyjet"].includes(operatorKey) && !isFamily;
+  const leadRaw=String(model.leadPrice||model.pricePerPerson||model.totalPrice||"");
   const totalRaw=String(model.totalPrice||model.leadPrice||"");
-  const displayRaw=isFamily ? totalRaw : (leadRaw || totalRaw);
   const lead=formatPackageMoney(leadRaw);
   const total=formatPackageMoney(totalRaw);
-  const display=formatPackageMoney(displayRaw);
   const fee=packageResortFeeText(model.resortFee,operatorKey,model.resortFeeLabel,model.perPersonSuffix,model);
-  const hasDistinctTotal=fee && total && lead && total!==lead && !isFamily;
   const priceMarkup=(amount,showPp,extraClass="")=>`<div class="pkg-price ${extraClass}">${amount}<span class="pkg-pp">${showPp?escapeHtml(model.perPersonSuffix):""}</span></div>`;
-  if(operatorKey==="jet2" && !isFamily && lead){
-    if(fee && total && total!==lead){
-      const jet2Label=model.priceLabel || "Total Price";
-      return `<div class="pkg-lead">${priceMarkup(lead,true)}<div class="pkg-fee">${fee}</div></div><div class="pkg-total">${priceMarkup(total,true)}<div class="pkg-price-label">${escapeHtml(jet2Label)}</div>${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
-    }
-    return `<div class="pkg-total">${priceMarkup(lead,true)}${fee?`<div class="pkg-fee">${fee}</div>`:""}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
+  if(sharedCouples && lead){
+    if(fee && total && total!==lead) return `<div class="pkg-lead">${priceMarkup(lead,true)}<div class="pkg-fee">${fee}</div></div><div class="pkg-total">${priceMarkup(total,true)}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
+    return `<div class="pkg-total">${priceMarkup(lead,true)}${fee?`<div class="pkg-fee">${fee}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
   }
-  if(hasDistinctTotal){
-    return `<div class="pkg-lead">${priceMarkup(lead,true)}<div class="pkg-fee">${fee}</div></div><div class="pkg-total">${priceMarkup(total,/pp|per person/i.test(totalRaw))}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
-  }
-  return `<div class="pkg-total">${priceMarkup(display,!isFamily)}${fee?`<div class="pkg-fee">${fee}</div>`:""}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
+  const display=formatPackageMoney(isFamily?totalRaw:(leadRaw||totalRaw));
+  return `<div class="pkg-total">${priceMarkup(display,!isFamily)}${fee?`<div class="pkg-fee">${fee}</div>`:""}${!sharedCouples&&model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
 }
 function renderPackageOperatorLogo(cfg,layout){
   if(!cfg||!cfg.logo) return `<div class="pkg-operator-missing">Operator not detected</div>`;
