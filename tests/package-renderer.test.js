@@ -167,9 +167,12 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
 test('Package operator logos use operator-specific natural-aspect placement classes', () => {
   assert.match(html, /\.pc \.pkg-operator-logo\{[^}]*display:block;[^}]*position:absolute;[^}]*width:auto;[^}]*height:auto;[^}]*object-fit:contain;[^}]*pointer-events:none;/);
   assert.match(html, /\.pc \.pkg-operator-logo--tui\{left:28px;bottom:14px;width:300px;\}/);
-  assert.match(html, /\.pc\.pkg-jet2 \.pkg-details \.pkg-operator-logo--jet2\{position:static;width:270px;margin-top:50px;object-position:left top;\}/);
+  assert.match(html, /\.pc\.pkg-jet2 \.pkg-details \.pkg-operator-logo--jet2\{[^}]*position:static;[^}]*width:270px;[^}]*margin-top:24px;[^}]*object-position:left top;[^}]*display:block;[^}]*\}/);
   assert.doesNotMatch(html, /\.pc \.pkg-operator-logo--jet2\{left:150px;bottom:88px;width:310px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\{--pkg-left:98px;\}/);
+  assert.match(html, /\.pc\.pkg-jet2 \.pkg-body\{[^}]*height:626px;[^}]*display:grid;[^}]*grid-template-columns:minmax\(0,560px\) minmax\(0,420px\);[^}]*grid-template-rows:auto auto minmax\(0,1fr\);/);
+  assert.match(html, /\.pc\.pkg-jet2 \.pkg-details\{[^}]*position:static;[^}]*grid-column:1;[^}]*grid-row:3;[^}]*align-self:end;/);
+  assert.match(html, /\.pc\.pkg-jet2 \.pkg-pricing\{[^}]*position:static;[^}]*grid-column:2;[^}]*grid-row:3;[^}]*align-self:end;[^}]*justify-self:end;/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-head\{height:154px;[^}]*border:0;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-skin-header\{height:auto;object-fit:contain;object-position:top center;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-fee\{color:#000;\}/);
@@ -515,7 +518,7 @@ test('Package editing regression: Jet2 defaults, editable text, prices and offer
 });
 
 
-test('Jet2 package renderer uses independent vertical columns without shared bottom-row alignment', () => {
+test('Jet2 package renderer contains Jet2 body columns in a fixed grid content area', () => {
   const { renderPackageCard } = createContext();
   const css = html.slice(html.indexOf('/* Package card renderer */'), html.indexOf('.cc .header-block img'));
   assert.doesNotMatch(css, /\.pc \.pkg-detail-spacer/);
