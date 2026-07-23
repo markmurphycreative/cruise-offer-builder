@@ -167,7 +167,7 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
 test('Package operator logos use operator-specific natural-aspect placement classes', () => {
   assert.match(html, /\.pc \.pkg-operator-logo\{[^}]*display:block;[^}]*position:absolute;[^}]*width:auto;[^}]*height:auto;[^}]*object-fit:contain;[^}]*pointer-events:none;/);
   assert.match(html, /\.pc \.pkg-operator-logo--tui\{left:28px;bottom:14px;width:300px;\}/);
-  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-operator-logo--jet2\{[^}]*left:5px;[^}]*bottom:-94px;[^}]*width:405px;[^}]*\}/);
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-operator-logo--jet2\{[^}]*left:var\(--pkg-left\);[^}]*top:378px;[^}]*width:506px;[^}]*\}/);
   assert.doesNotMatch(html, /\.pc \.pkg-operator-logo--jet2\{left:150px;bottom:88px;width:310px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\{--pkg-left:98px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples\{--pkg-left:76px;\}/);
@@ -232,7 +232,9 @@ test('Jet2 operator logo renderer output and live package selector support visib
   const computed = computePackageLogoStyles(card, logo);
   assert.equal(computed.position, 'absolute');
   assert.equal(computed.display, 'block');
-  assert.equal(computed.width, '405px');
+  assert.equal(computed.left, 'var(--pkg-left)');
+  assert.equal(computed.top, '378px');
+  assert.equal(computed.width, '506px');
   assert.equal(computed.height, 'auto');
   assert.equal(computed.objectFit, 'contain');
   assert.equal(computed.pointerEvents, 'none');
