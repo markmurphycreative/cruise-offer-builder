@@ -839,6 +839,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .pc .pkg-head{height:135px;background:var(--package-accent);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
 .pc .pkg-skin-header,.pc .pkg-skin-footer{width:100%;height:100%;object-fit:cover;display:block;}
 .pc.pkg-jet2{--pkg-left:98px;}
+.pc.pkg-jet2.pkg-jet2-couples{--pkg-left:153px;}
 .pc.pkg-jet2 .pkg-head{height:154px;flex-direction:column;gap:0;background:#fff;border:0;}
 .pc.pkg-jet2 .pkg-skin-header{height:auto;object-fit:contain;object-position:top center;}
 .pc .pkg-head-logo{width:300px;max-height:84px;object-fit:contain;filter:brightness(0) invert(1);}
@@ -847,24 +848,31 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .pc .pkg-ribbon{font-size:34px;line-height:1;color:#fff;letter-spacing:.04em;}
 .pc .pkg-body{height:610px;position:relative;padding:62px var(--pkg-left) 0;box-sizing:border-box;}
 .pc.pkg-jet2 .pkg-body{height:626px;padding:104px var(--pkg-left) 28px;display:grid;grid-template-columns:minmax(0,560px) minmax(0,420px);grid-template-rows:auto auto minmax(0,1fr);column-gap:124px;row-gap:0;}
+.pc.pkg-jet2.pkg-jet2-couples .pkg-body{height:626px;padding:0;position:relative;display:block;}
 .pc .pkg-destination{font-size:56px;line-height:1.08;font-weight:300;letter-spacing:.01em;color:#000;max-width:585px;white-space:nowrap;}
 .pc.pkg-jet2 .pkg-destination{font-size:54px;line-height:1.08;font-weight:300;letter-spacing:.005em;max-width:760px;grid-column:1 / -1;grid-row:1;}
+.pc.pkg-jet2.pkg-jet2-couples .pkg-destination{position:absolute;left:var(--pkg-left);top:104px;max-width:760px;grid-column:auto;grid-row:auto;}
 .pc .pkg-hotel{font-size:34px;line-height:1.2;color:#7b7b7b;margin-top:8px;max-width:650px;white-space:nowrap;}
 .pc.pkg-jet2 .pkg-hotel{font-size:34px;line-height:1.2;color:#858589;margin-top:7px;grid-column:1 / -1;grid-row:2;}
+.pc.pkg-jet2.pkg-jet2-couples .pkg-hotel{position:absolute;left:var(--pkg-left);top:164px;margin-top:0;max-width:760px;grid-column:auto;grid-row:auto;}
 .pc .pkg-details{position:absolute;left:var(--pkg-left);top:285px;font-size:36px;line-height:1.35;color:#797979;}
 .pc.pkg-tui .pkg-details{color:#000;}
 .pc.pkg-jet2 .pkg-details{position:static;grid-column:1;grid-row:3;align-self:end;font-size:35px;line-height:1.36;color:#858589;width:560px;height:auto;display:block;}
+.pc.pkg-jet2.pkg-jet2-couples .pkg-details{position:absolute;left:var(--pkg-left);top:299px;grid-column:auto;grid-row:auto;align-self:auto;}
 .pc.pkg-jet2 .pkg-detail-text{display:block;}
 .pc.pkg-jet2 .pkg-detail-line{display:block;}
 .pc .pkg-inclusion,.pc .pkg-basis-bottom{display:block;}
 .pc .pkg-operator-logo{display:block;position:absolute;width:auto;height:auto;object-fit:contain;object-position:left bottom;pointer-events:none;}
 .pc .pkg-operator-logo--tui{left:28px;bottom:14px;width:300px;}
 .pc.pkg-jet2 .pkg-details .pkg-operator-logo--jet2{position:static;width:270px;margin-top:24px;object-position:left top;display:block;}
+.pc.pkg-jet2.pkg-jet2-couples .pkg-details .pkg-operator-logo--jet2{position:absolute;left:0;top:320px;width:379px;margin-top:0;}
 .pc .pkg-operator-logo--easyjet{left:6px;bottom:-27px;width:430px;}
 .pc .pkg-pricing{position:absolute;right:85px;top:250px;width:485px;text-align:right;color:#000;}
 .pc.pkg-jet2 .pkg-pricing{position:static;grid-column:2;grid-row:3;align-self:end;justify-self:end;width:420px;}
+.pc.pkg-jet2.pkg-jet2-couples .pkg-pricing{position:absolute;right:153px;top:96px;width:500px;text-align:right;grid-column:auto;grid-row:auto;align-self:auto;justify-self:auto;}
 .pc.pkg-jet2 .pkg-pricing--with-fee{height:auto;display:block;}
 .pc.pkg-jet2 .pkg-pricing--with-fee .pkg-lead{margin-bottom:30px;}
+.pc.pkg-jet2.pkg-jet2-couples .pkg-pricing--with-fee .pkg-lead{margin-bottom:305px;}
 .pc.pkg-jet2 .pkg-pricing--with-fee .pkg-fee{margin-top:12px;}
 .pc.pkg-jet2 .pkg-pricing--with-fee .pkg-price-label{margin-top:14px;}
 .pc.pkg-jet2 .pkg-pricing--with-fee .pkg-basis{margin-top:10px;}
@@ -11148,7 +11156,8 @@ function renderPackageCard(d){
   const footerLines=[model.ctaPrimary?`<div class="pkg-cta-main">${escapeHtml(model.ctaPrimary)}</div>`:"",model.ctaSecondary?`<div class="pkg-cta-sub">${escapeHtml(model.ctaSecondary)}</div>`:""].filter(Boolean).join("");
   const footerCta=footerLines?`<div class="pkg-footer-cta">${footerLines}</div>`:"";
   const footer=footerSrc?`<img class="pkg-skin-footer" src="${footerSrc}" alt="" role="presentation">${footerCta}`:footerCta;
-  return `<div class="pc pkg-${layout}" style="--package-accent:${cfg.colours.accent};--package-footer:${cfg.colours.footer};"><div class="pkg-head">${header}</div><div class="pkg-body"><div class="pkg-destination">${escapeHtml(model.destination)}</div><div class="pkg-hotel">${escapeHtml(model.hotel)}</div><div class="pkg-details">${detailsMarkup}</div><div class="pkg-pricing ${model.operator==="jet2"&&Number(model.children||0)<=0&&packageResortFeeText(model.resortFee,model.operator,model.resortFeeLabel,model.perPersonSuffix,model)?"pkg-pricing--with-fee":""}">${renderPackagePriceBlock(model,model.operator)}</div></div>${model.operator==="jet2"?"":operatorLogo}<div class="pkg-footer">${footer}</div></div>`;
+  const jet2VariantClass=model.operator==="jet2"?(jet2Couples?" pkg-jet2-couples":" pkg-jet2-family"):"";
+  return `<div class="pc pkg-${layout}${jet2VariantClass}" style="--package-accent:${cfg.colours.accent};--package-footer:${cfg.colours.footer};"><div class="pkg-head">${header}</div><div class="pkg-body"><div class="pkg-destination">${escapeHtml(model.destination)}</div><div class="pkg-hotel">${escapeHtml(model.hotel)}</div><div class="pkg-details">${detailsMarkup}</div><div class="pkg-pricing ${model.operator==="jet2"&&Number(model.children||0)<=0&&packageResortFeeText(model.resortFee,model.operator,model.resortFeeLabel,model.perPersonSuffix,model)?"pkg-pricing--with-fee":""}">${renderPackagePriceBlock(model,model.operator)}</div></div>${model.operator==="jet2"?"":operatorLogo}<div class="pkg-footer">${footer}</div></div>`;
 }
 function renderCruiseCard(d){ return renderCruiseCardHTML(d); }
 function renderGenericCampaignCard(d,type){
