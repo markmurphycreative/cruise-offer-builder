@@ -858,21 +858,23 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .pc .pkg-details{position:absolute;left:var(--pkg-left);top:285px;font-size:36px;line-height:1.35;color:#797979;}
 .pc.pkg-tui .pkg-details{color:#000;}
 .pc.pkg-jet2 .pkg-details{position:static;grid-column:1;grid-row:3;align-self:end;font-size:35px;line-height:1.36;color:#858589;width:560px;height:auto;display:block;}
-.pc.pkg-jet2.pkg-jet2-couples .pkg-details{position:absolute;left:var(--pkg-left);top:299px;grid-column:auto;grid-row:auto;align-self:auto;}
+.pc.pkg-jet2.pkg-jet2-couples .pkg-details{position:absolute;left:var(--pkg-left);top:299px;width:620px;grid-column:auto;grid-row:auto;align-self:auto;}
 .pc.pkg-jet2 .pkg-detail-text{display:block;}
 .pc.pkg-jet2 .pkg-detail-line{display:block;}
 .pc .pkg-inclusion,.pc .pkg-basis-bottom{display:block;}
 .pc .pkg-operator-logo{display:block;position:absolute;width:auto;height:auto;object-fit:contain;object-position:left bottom;pointer-events:none;}
 .pc .pkg-operator-logo--tui{left:28px;bottom:14px;width:300px;}
 .pc.pkg-jet2 .pkg-details .pkg-operator-logo--jet2{position:static;width:270px;margin-top:24px;object-position:left top;display:block;}
-.pc.pkg-jet2.pkg-jet2-couples .pkg-details .pkg-operator-logo--jet2{position:absolute;left:0;top:320px;width:379px;margin-top:0;}
+.pc.pkg-jet2.pkg-jet2-couples .pkg-body>.pkg-operator-logo--jet2{position:absolute;left:153px;bottom:149px;width:369px;margin-top:0;object-position:left bottom;}
 .pc .pkg-operator-logo--easyjet{left:6px;bottom:-27px;width:430px;}
 .pc .pkg-pricing{position:absolute;right:85px;top:250px;width:485px;text-align:right;color:#000;}
 .pc.pkg-jet2 .pkg-pricing{position:static;grid-column:2;grid-row:3;align-self:end;justify-self:end;width:420px;}
-.pc.pkg-jet2.pkg-jet2-couples .pkg-pricing{position:absolute;right:153px;top:96px;width:500px;text-align:right;grid-column:auto;grid-row:auto;align-self:auto;justify-self:auto;}
+.pc.pkg-jet2.pkg-jet2-couples .pkg-pricing{position:absolute;inset:0;text-align:right;grid-column:auto;grid-row:auto;align-self:auto;justify-self:auto;}
 .pc.pkg-jet2 .pkg-pricing--with-fee{height:auto;display:block;}
 .pc.pkg-jet2 .pkg-pricing--with-fee .pkg-lead{margin-bottom:30px;}
-.pc.pkg-jet2.pkg-jet2-couples .pkg-pricing--with-fee .pkg-lead{margin-bottom:305px;}
+.pc.pkg-jet2.pkg-jet2-couples .pkg-lead{position:absolute;right:153px;top:96px;width:500px;margin-bottom:0;}
+.pc.pkg-jet2.pkg-jet2-couples .pkg-total{position:absolute;right:153px;top:452px;width:500px;}
+.pc.pkg-jet2.pkg-jet2-couples .pkg-pricing--with-fee .pkg-lead{margin-bottom:0;}
 .pc.pkg-jet2 .pkg-pricing--with-fee .pkg-fee{margin-top:12px;}
 .pc.pkg-jet2 .pkg-pricing--with-fee .pkg-price-label{margin-top:14px;}
 .pc.pkg-jet2 .pkg-pricing--with-fee .pkg-basis{margin-top:10px;}
@@ -11147,7 +11149,7 @@ function renderPackageCard(d){
   const operatorLogo=renderPackageOperatorLogo(cfg,layout);
   const jet2DetailLines=detailTopLines.concat(inclusionLine?[inclusionLine]:[]);
   const detailsMarkup=model.operator==="jet2"
-    ? [`<div class="pkg-detail-text">${jet2DetailLines.map(line=>`<span class="pkg-detail-line${line===inclusionLine?" pkg-inclusion":""}">${escapeHtml(line)}</span>`).join("")}</div>`, operatorLogo].filter(Boolean).join("")
+    ? [`<div class="pkg-detail-text">${jet2DetailLines.map(line=>`<span class="pkg-detail-line${line===inclusionLine?" pkg-inclusion":""}">${escapeHtml(line)}</span>`).join("")}</div>`, jet2Couples?"":operatorLogo].filter(Boolean).join("")
     : [detailTopLines.map(escapeHtml).join("<br>"), inclusionLine?`<span class="pkg-inclusion">${escapeHtml(inclusionLine)}</span>`:""].filter(Boolean).join("");
   const skin=cfg.skin||{};
   const headerSrc=(model.operator==="jet2"?(freeChild?skin.headerFamily:skin.headerCouples):skin.header);
@@ -11157,7 +11159,7 @@ function renderPackageCard(d){
   const footerCta=footerLines?`<div class="pkg-footer-cta">${footerLines}</div>`:"";
   const footer=footerSrc?`<img class="pkg-skin-footer" src="${footerSrc}" alt="" role="presentation">${footerCta}`:footerCta;
   const jet2VariantClass=model.operator==="jet2"?(jet2Couples?" pkg-jet2-couples":" pkg-jet2-family"):"";
-  return `<div class="pc pkg-${layout}${jet2VariantClass}" style="--package-accent:${cfg.colours.accent};--package-footer:${cfg.colours.footer};"><div class="pkg-head">${header}</div><div class="pkg-body"><div class="pkg-destination">${escapeHtml(model.destination)}</div><div class="pkg-hotel">${escapeHtml(model.hotel)}</div><div class="pkg-details">${detailsMarkup}</div><div class="pkg-pricing ${model.operator==="jet2"&&Number(model.children||0)<=0&&packageResortFeeText(model.resortFee,model.operator,model.resortFeeLabel,model.perPersonSuffix,model)?"pkg-pricing--with-fee":""}">${renderPackagePriceBlock(model,model.operator)}</div></div>${model.operator==="jet2"?"":operatorLogo}<div class="pkg-footer">${footer}</div></div>`;
+  return `<div class="pc pkg-${layout}${jet2VariantClass}" style="--package-accent:${cfg.colours.accent};--package-footer:${cfg.colours.footer};"><div class="pkg-head">${header}</div><div class="pkg-body"><div class="pkg-destination">${escapeHtml(model.destination)}</div><div class="pkg-hotel">${escapeHtml(model.hotel)}</div><div class="pkg-details">${detailsMarkup}</div>${model.operator==="jet2"&&jet2Couples?operatorLogo:""}<div class="pkg-pricing ${model.operator==="jet2"&&Number(model.children||0)<=0&&packageResortFeeText(model.resortFee,model.operator,model.resortFeeLabel,model.perPersonSuffix,model)?"pkg-pricing--with-fee":""}">${renderPackagePriceBlock(model,model.operator)}</div></div>${model.operator==="jet2"?"":operatorLogo}<div class="pkg-footer">${footer}</div></div>`;
 }
 function renderCruiseCard(d){ return renderCruiseCardHTML(d); }
 function renderGenericCampaignCard(d,type){
