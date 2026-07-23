@@ -167,13 +167,13 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
 test('Package operator logos use operator-specific natural-aspect placement classes', () => {
   assert.match(html, /\.pc \.pkg-operator-logo\{[^}]*display:block;[^}]*position:absolute;[^}]*width:auto;[^}]*height:auto;[^}]*object-fit:contain;[^}]*pointer-events:none;/);
   assert.match(html, /\.pc \.pkg-operator-logo--tui\{left:28px;bottom:14px;width:300px;\}/);
-  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-operator-logo--jet2\{[^}]*left:var\(--pkg-left\);[^}]*top:514px;[^}]*width:270px;[^}]*\}/);
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-operator-logo--jet2\{[^}]*left:var\(--pkg-left\);[^}]*bottom:20px;[^}]*width:405px;[^}]*\}/);
   assert.doesNotMatch(html, /\.pc \.pkg-operator-logo--jet2\{left:150px;bottom:88px;width:310px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\{--pkg-left:98px;\}/);
-  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples\{--pkg-left:153px;\}/);
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples\{--pkg-left:76px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-body\{[^}]*height:626px;[^}]*padding:0;[^}]*position:relative;[^}]*display:block;/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-details\{[^}]*position:absolute;[^}]*left:var\(--pkg-left\);[^}]*top:299px;/);
-  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing\{[^}]*position:absolute;[^}]*right:153px;[^}]*top:0;[^}]*width:500px;[^}]*height:626px;/);
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing\{[^}]*position:absolute;[^}]*right:76px;[^}]*top:0;[^}]*width:500px;[^}]*height:626px;/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing \.pkg-lead\{[^}]*position:absolute;[^}]*right:0;[^}]*top:96px;[^}]*margin:0;[^}]*width:500px;[^}]*\}/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing \.pkg-total\{[^}]*position:absolute;[^}]*right:0;[^}]*top:418px;[^}]*margin:0;[^}]*width:500px;[^}]*\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-head\{height:154px;[^}]*border:0;\}/);
@@ -232,7 +232,7 @@ test('Jet2 operator logo renderer output and live package selector support visib
   const computed = computePackageLogoStyles(card, logo);
   assert.equal(computed.position, 'absolute');
   assert.equal(computed.display, 'block');
-  assert.equal(computed.width, '270px');
+  assert.equal(computed.width, '405px');
   assert.equal(computed.height, 'auto');
   assert.equal(computed.objectFit, 'contain');
   assert.equal(computed.pointerEvents, 'none');
