@@ -139,6 +139,109 @@ test('Dawson & Sanderson Jet2 Sunset quotation is recognised without Jet2 logo a
   assert.doesNotMatch([parsed.name, parsed.ship, parsed.incl, parsed.basis].join(' '), /Our Rating|TripAdvisor|176 Reviews|Holiday summary|Flight details|Payable to your travel agent|Going out|Coming back|06:00|12:00/i);
 });
 
+
+
+const jet2DawsonWhiteCity = `Dawson & Sanderson
+Your holiday to...
+White City Beach Hotel
+Antalya, Turkey
+Our Rating ++++
+Holiday Summary
+7 Nights from 7th July 2026
+All Inclusive
+2 x Adults
+0 x Children
+1 x Standard Room with Side Sea View
+2 x 10kg Hand Baggage
+2 x 22kg Bag Allowance
+Coach transfers included
+Flight Details
+Going out
+Leeds Bradford LBA to Antalya AYT
+Coming back
+Antalya AYT to Leeds Bradford LBA
+Payable to your travel agent
+£1,406
+Price per person
+£703`;
+
+const jet2DawsonCastillo = `Dawson & Sanderson
+Your holiday to...
+Servatur Castillo De Sol
+Puerto Rico, Gran Canaria
+Holiday Summary
+7 Nights from 9th July 2026
+Self Catering
+2 x Adults
+0 x Children
+1 x Classic One Bedroom Apartment with Balcony
+2 x 10kg Hand Baggage
+2 x 22kg Bag Allowance
+Coach transfers included
+Flight Details
+Going out
+Leeds Bradford LBA to Gran Canaria LPA
+Coming back
+Gran Canaria LPA to Leeds Bradford LBA
+Payable to your travel agent
+£1,026
+Price per person
+£513
+The total holiday cost is £1,028 including approximately £2 in tourist tax`;
+
+const jet2DawsonCaribe = `Dawson & Sanderson
+Your holiday to...
+Servatur Caribe Apartments
+Playa De Las Americas, Tenerife
+Holiday Summary
+7 Nights from 15th July 2026
+Self Catering
+2 x Adults
+0 x Children
+1 x Classic One Bedroom Apartment with Sea View
+2 x 10kg Hand Baggage
+2 x 22kg Bag Allowance
+Coach transfers included
+Flight Details
+Going out
+Leeds Bradford LBA to Tenerife TFS
+Coming back
+Tenerife TFS to Leeds Bradford LBA
+Payable to your travel agent
+£1,140
+Price per person
+£570`;
+
+test('Dawson & Sanderson package quotation variants are forced Jet2 and parsed without filenames or plus noise', () => {
+  const { isTrustedJet2DawsonQuote, detectPackageOffer, parsePackageOfferText } = createContext();
+  const cases = [
+    [jet2DawsonWhiteCity, 'White City Beach Hotel', 'Antalya, Turkey', '7', 'All Inclusive', '7th July 2026', 'Standard Room with Side Sea View', '703', '1406', ''],
+    [jet2DawsonCastillo, 'Servatur Castillo De Sol', 'Puerto Rico, Gran Canaria', '7', 'Self Catering', '9th July 2026', 'Classic One Bedroom Apartment with Balcony', '513', '1026', '2'],
+    [jet2DawsonCaribe, 'Servatur Caribe Apartments', 'Playa De Las Americas, Tenerife', '7', 'Self Catering', '15th July 2026', 'Classic One Bedroom Apartment with Sea View', '570', '1140', '']
+  ];
+  for (const [raw, hotel, destination, nights, board, date, room, pp, total, fee] of cases) {
+    assert.equal(isTrustedJet2DawsonQuote(raw), true, hotel);
+    const detection = detectPackageOffer(raw);
+    assert.equal(detection.operatorKey, 'jet2', hotel);
+    const parsed = parsePackageOfferText(`${raw}\n/source/screenshots/${hotel}.png`, { detection }).parsed;
+    assert.equal(parsed.operatorKey, 'jet2');
+    assert.equal(parsed.ship, hotel);
+    assert.equal(parsed.name, destination);
+    assert.equal(parsed.nights, nights);
+    assert.equal(parsed.boardlbl, board);
+    assert.equal(`${parsed.day} ${parsed.month}`, date);
+    assert.equal(parsed.sailingFrom, 'Leeds Bradford');
+    assert.equal(parsed.flightDisplay, 'Leeds Bradford Flights');
+    assert.equal(parsed.roomType, room);
+    assert.equal(parsed.price, pp);
+    assert.equal(parsed.leadPrice, pp);
+    assert.equal(parsed.totalPrice, total);
+    assert.equal(parsed.incl, 'Luggage & Transfers Included');
+    if (fee) assert.equal(parsed.localFeeAmount, fee); else assert.equal(parsed.localFeeAmount || '', '');
+    assert.doesNotMatch([parsed.name, parsed.ship].join(' '), /Your holiday to|\.png|Plus|Our Rating/i);
+  }
+});
+
 test('Weak package fragments are not loadable package payloads', () => {
   const { detectPackageOffer, parsePackageOfferText, canApplyParsedPackageOffer } = createContext();
   assert.equal(detectPackageOffer('Hotel\nFlights\n7 Nights').isPackage, false);
@@ -232,7 +335,7 @@ test('real screenshot import state path carries Dawson Jet2 structure into activ
   assert.match(visibleText, /£574pp/);
   assert.match(visibleText, /\+£12pp Local Resort Fee/);
   assert.match(visibleText, /£586pp/);
-  assert.match(visibleText, /Total Price/);
+  assert.doesNotMatch(visibleText, /Total Price|£1,148|£1148/);
   assert.doesNotMatch(htmlOutput, /Operator not detected|Our Rating|TripAdvisor|176 Reviews|Hand Luggage Included|Coach Transfers/);
 });
 
@@ -299,7 +402,8 @@ test('live Package editor input IDs update authoritative offer and preview-rende
   assert.equal(context.offers[0].boardBasis, 'Half Board');
   assert.equal(context.offers[0].departureAirport, 'Manchester');
   assert.equal(context.offers[0].inclusions, 'Luggage, transfers and meals included');
-  assert.match(text, /£499pp[\s\S]*\+£15pp Local Resort Fee[\s\S]*£514pp[\s\S]*Total Price/);
+  assert.match(text, /£499pp[\s\S]*\+£15pp Local Resort Fee[\s\S]*£514pp[\s\S]*Based on 2 Adults Sharing/);
+  assert.doesNotMatch(text, /Total Price/);
   assert.match(text, /or call into your local store/);
   assert.match(text, /Half Board/);
   fields.get('f-boardlbl').value = 'All Inclusive';
