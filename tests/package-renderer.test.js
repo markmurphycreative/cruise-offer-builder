@@ -167,7 +167,7 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
 test('Package operator logos use operator-specific natural-aspect placement classes', () => {
   assert.match(html, /\.pc \.pkg-operator-logo\{[^}]*display:block;[^}]*position:absolute;[^}]*width:auto;[^}]*height:auto;[^}]*object-fit:contain;[^}]*pointer-events:none;/);
   assert.match(html, /\.pc \.pkg-operator-logo--tui\{left:28px;bottom:14px;width:300px;\}/);
-  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-operator-logo--jet2\{[^}]*left:calc\(var\(--pkg-left\) - 89px\);[^}]*top:557\.5px;[^}]*width:506px;[^}]*transform:translateY\(-50%\);[^}]*\}/);
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-operator-logo--jet2\{[^}]*left:calc\(var\(--pkg-left\) - 89px\);[^}]*top:567\.5px;[^}]*width:506px;[^}]*transform:translateY\(-50%\);[^}]*\}/);
   assert.doesNotMatch(html, /\.pc \.pkg-operator-logo--jet2\{left:150px;bottom:88px;width:310px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\{--pkg-left:98px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples\{--pkg-left:76px;\}/);
@@ -234,7 +234,7 @@ test('Jet2 operator logo renderer output and live package selector support visib
   assert.equal(computed.position, 'absolute');
   assert.equal(computed.display, 'block');
   assert.equal(computed.left, 'calc(var(--pkg-left) - 89px)');
-  assert.equal(computed.top, '557.5px');
+  assert.equal(computed.top, '567.5px');
   assert.equal(computed.transform, 'translateY(-50%)');
   assert.equal(computed.width, '506px');
   assert.equal(computed.height, 'auto');
@@ -246,7 +246,7 @@ test('Jet2 logo belongs to the left details column while TUI and easyJet keep di
   const { renderPackageCard, renderPackageOperatorLogo, PACKAGE_OPERATORS } = createContext();
   assert.match(html, /\.pc\{[^}]*position:relative;/, '.pc should remain the positioned containing block');
   assert.match(html, /\.pc \.pkg-body\{[^}]*position:relative;/, '.pkg-body should keep its positioning for existing layout');
-  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-jet2-couples-content\{[^}]*transform:translateY\(-18px\);/, 'Jet2 couples content should move as one grouped translation');
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-jet2-couples-content\{[^}]*transform:translateY\(-38px\);/, 'Jet2 couples content should move as one grouped translation');
   for (const operator of ['tui', 'easyjet']) {
     const cardHtml = renderPackageCard({ operator, name: 'Destination', ship: 'Hotel', nights: '7', boardlbl: 'Self Catering', price: '499pp' });
     const document = parsePackageCardDocument(cardHtml);
