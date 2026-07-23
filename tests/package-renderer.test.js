@@ -112,7 +112,7 @@ function computePackageLogoStyles(card, logo) {
 }
 function selectorMatchesCardLogo(selector, card, logo) {
   if (selector === '.pc .pkg-operator-logo') return card.matches('pc') && logo.matches('pkg-operator-logo');
-  if (selector === '.pc.pkg-jet2 .pkg-operator-logo--jet2' || selector === '.pc.pkg-jet2 .pkg-details .pkg-operator-logo--jet2' || selector === '.pc.pkg-jet2.pkg-jet2-couples .pkg-details .pkg-operator-logo--jet2') return card.matches('pc') && card.matches('pkg-jet2') && logo.matches('pkg-operator-logo--jet2');
+  if (selector === '.pc.pkg-jet2 .pkg-operator-logo--jet2' || selector === '.pc.pkg-jet2 .pkg-details .pkg-operator-logo--jet2' || selector === '.pc.pkg-jet2.pkg-jet2-couples .pkg-body>.pkg-operator-logo--jet2') return card.matches('pc') && card.matches('pkg-jet2') && logo.matches('pkg-operator-logo--jet2');
   if (selector === '.pc .pkg-operator-logo--tui') return card.matches('pc') && logo.matches('pkg-operator-logo--tui');
   if (selector === '.pc .pkg-operator-logo--easyjet') return card.matches('pc') && logo.matches('pkg-operator-logo--easyjet');
   return false;
@@ -167,13 +167,15 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
 test('Package operator logos use operator-specific natural-aspect placement classes', () => {
   assert.match(html, /\.pc \.pkg-operator-logo\{[^}]*display:block;[^}]*position:absolute;[^}]*width:auto;[^}]*height:auto;[^}]*object-fit:contain;[^}]*pointer-events:none;/);
   assert.match(html, /\.pc \.pkg-operator-logo--tui\{left:28px;bottom:14px;width:300px;\}/);
-  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-details \.pkg-operator-logo--jet2\{[^}]*position:absolute;[^}]*left:0;[^}]*top:320px;[^}]*width:379px;[^}]*margin-top:0;[^}]*\}/);
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-body>\.pkg-operator-logo--jet2\{[^}]*position:absolute;[^}]*left:153px;[^}]*bottom:149px;[^}]*width:369px;[^}]*margin-top:0;[^}]*\}/);
   assert.doesNotMatch(html, /\.pc \.pkg-operator-logo--jet2\{left:150px;bottom:88px;width:310px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\{--pkg-left:98px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples\{--pkg-left:153px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-body\{[^}]*height:626px;[^}]*padding:0;[^}]*position:relative;[^}]*display:block;/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-details\{[^}]*position:absolute;[^}]*left:var\(--pkg-left\);[^}]*top:299px;/);
-  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing\{[^}]*position:absolute;[^}]*right:153px;[^}]*top:96px;[^}]*width:500px;/);
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing\{[^}]*position:absolute;[^}]*inset:0;/);
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-lead\{[^}]*position:absolute;[^}]*right:153px;[^}]*top:96px;[^}]*width:500px;/);
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-total\{[^}]*position:absolute;[^}]*right:153px;[^}]*top:452px;[^}]*width:500px;/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-head\{height:154px;[^}]*border:0;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-skin-header\{height:auto;object-fit:contain;object-position:top center;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-fee\{color:#000;\}/);
@@ -214,14 +216,13 @@ test('Jet2 operator logo renderer output and live package selector support absol
   assert.equal(card.className, 'pc pkg-jet2 pkg-jet2-couples');
   assert.ok(logo, 'Jet2 logo should be present');
   assert.equal(document.querySelectorAll('img[src="assets/operator-logos/jet2-holidays-logo.png"]').length, 1);
-  assert.equal(logo.parentElement.className, 'pkg-details');
-  assert.match(logo.previousElementSibling.outerHTML, /pkg-detail-text/);
-  assert.ok(logo.previousElementSibling.querySelector('.pkg-inclusion'));
-  assert.equal(logo.parentElement.parentElement.className, 'pkg-body');
+  assert.equal(logo.parentElement.className, 'pkg-body');
+  assert.ok(document.querySelector('.pkg-details .pkg-inclusion'));
+  assert.equal(logo.previousElementSibling.className, 'pkg-details');
   assert.equal(logo.className, 'pkg-operator-logo pkg-operator-logo--jet2');
   assert.equal(logo.getAttribute('src'), 'assets/operator-logos/jet2-holidays-logo.png');
   assert.ok(document.querySelector('.pkg-body .pkg-operator-logo--jet2'));
-  assert.ok(document.querySelector('.pkg-details .pkg-operator-logo--jet2'));
+  assert.equal(document.querySelector('.pkg-details .pkg-operator-logo--jet2'), null);
   assert.equal(document.querySelector('.pkg-head .pkg-operator-logo--jet2'), null);
   assert.equal(document.querySelector('.pkg-head img[src="assets/operator-logos/jet2-holidays-logo.png"]'), null);
   assert.ok(document.querySelector('.pkg-skin-header'));
@@ -231,13 +232,13 @@ test('Jet2 operator logo renderer output and live package selector support absol
   const computed = computePackageLogoStyles(card, logo);
   assert.equal(computed.position, 'absolute');
   assert.equal(computed.display, 'block');
-  assert.equal(computed.width, '379px');
+  assert.equal(computed.width, '369px');
   assert.equal(computed.height, 'auto');
   assert.equal(computed.objectFit, 'contain');
   assert.equal(computed.pointerEvents, 'none');
 });
 
-test('Jet2 logo belongs to the left details column while TUI and easyJet keep direct-card logo placement', () => {
+test('Jet2 couples logo is an independent body block while TUI and easyJet keep direct-card logo placement', () => {
   const { renderPackageCard, renderPackageOperatorLogo, PACKAGE_OPERATORS } = createContext();
   assert.match(html, /\.pc\{[^}]*position:relative;/, '.pc should remain the positioned containing block');
   assert.match(html, /\.pc \.pkg-body\{[^}]*position:relative;/, '.pkg-body should keep its positioning for existing layout');
@@ -257,9 +258,9 @@ test('Jet2 logo belongs to the left details column while TUI and easyJet keep di
   const jet2Html = renderPackageCard({ operator: 'jet2', name: 'Destination', ship: 'Hotel', nights: '7', boardlbl: 'Self Catering', price: '499pp' });
   const jet2Doc = parsePackageCardDocument(jet2Html);
   const jet2Logo = jet2Doc.querySelector('.pkg-operator-logo--jet2');
-  assert.equal(jet2Logo.parentElement.className, 'pkg-details');
+  assert.equal(jet2Logo.parentElement.className, 'pkg-body');
   assert.equal(jet2Doc.querySelectorAll('.pkg-operator-logo').length, 1);
-  assert.match(jet2Html, /<div class="pkg-detail-text">[\s\S]*<span class="pkg-detail-line pkg-inclusion">Luggage &amp; Transfers Included<\/span>[\s\S]*<\/div><img class="pkg-operator-logo pkg-operator-logo--jet2"/);
+  assert.match(jet2Html, /<div class="pkg-details"><div class="pkg-detail-text">[\s\S]*<span class="pkg-detail-line pkg-inclusion">Luggage &amp; Transfers Included<\/span>[\s\S]*<\/div><\/div><img class="pkg-operator-logo pkg-operator-logo--jet2"/);
 });
 
 test('Package offer model maps existing builder fields without mutating Cruise fields', () => {
