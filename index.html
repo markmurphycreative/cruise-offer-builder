@@ -8349,7 +8349,7 @@ function isTrustedJet2DawsonQuote(text){
   if(inclusionSignals>=2) add("inclusions",12);
   if(/price\s+per\s+person/i.test(source)||/(?:£|¥)\s*\d[\d\s,]{1,8}/.test(source)) add("price",8);
   const contradiction=/\b(?:cruise\s+only|itinerary|cabin|stateroom|sailing\s+from)\b/i.test(compact)&&!/(holiday summary|flight details)/i.test(compact);
-  return !contradiction && score>=68 && has.includes("sections") && has.includes("identityArea") && has.includes("routes") && has.includes("inclusions") && (has.includes("price")||has.includes("pax"));
+  return !contradiction && score>=68 && has.includes("sections") && has.includes("routes") && has.includes("inclusions") && (has.includes("price")||has.includes("pax"));
 }
 function getPackageOperatorMatch(text){
   const source=String(text||"");
@@ -9237,6 +9237,7 @@ function normalisePackageOcrText(raw){
     text=text.replace(/ABTANo\./gi,"ABTA No.");
     text=text.replace(/pavabe/gi,"payable").replace(/\bOIday\b/g,"Holiday").replace(/CosLIS/gi,"Cost is");
     text=text.replace(/((?:Payable to your travel\s*\n?\s*agent|Price per person payable to your\s*\n?\s*travel agent)[\s\S]{0,100}?)[¥£]\s*(\d)\s+(\d)\s+(\d{2})/gi,(m,prefix,a,b,c)=>`${prefix}£${a},${b}${c}`);
+    text=text.replace(/((?:Payable to your travel\s*\n?\s*agent|Price per person payable to your\s*\n?\s*travel agent)[\s\S]{0,100}?)£\s*(\d)\s+(\d{3})/gi,(m,prefix,a,b)=>`${prefix}£${a},${b}`);
     text=text.replace(/(Coming back\s*)¥\s*(\d{3})/gi,"$1£$2");
   }
   text=text.replace(/\botal\s+Price\b/gi,"Total Price");
@@ -9283,14 +9284,21 @@ function isUnsafePackageTitleLine(line){
 function cleanPackageParsedTitle(line){
   return titleCasePackageValue(String(line||"").replace(/^your holiday to\.{0,3}$/i,"").replace(/^\.*\s*plus$/i,"").replace(/\bour\s+rating\b.*$/i,"").replace(/^[&,¥+\s]+/,"").replace(/[ \t]{2,}/g," ").trim());
 }
+function normaliseJet2DawsonDestination(value){
+  const destination=cleanPackageParsedTitle(value);
+  if(/\bantalya\b/i.test(destination)) return "Antalya, Turkey";
+  return destination;
+}
 function parseJet2DawsonQuote(lines,txt,parsed){
   let score=0;
   parsed.operatorKey="jet2"; score+=24;
   const holidayIdx=lines.findIndex(line=>/your\s+holiday\s+to/i.test(line));
   if(holidayIdx>=0){
-    const candidates=lines.slice(holidayIdx+1, holidayIdx+8).filter(line=>!isUnsafePackageTitleLine(line));
-    if(candidates[0]){ parsed.ship=cleanPackageParsedTitle(candidates[0]); score+=12; }
-    if(candidates[1]){ parsed.sourceLocation=cleanPackageParsedTitle(candidates[1]); parsed.name=parsed.sourceLocation; parsed.destination=parsed.sourceLocation; score+=12; }
+    const sectionEnd=lines.findIndex((line,index)=>index>holidayIdx&&/holiday\s+summary/i.test(line));
+    const titleLines=lines.slice(holidayIdx+1, sectionEnd>holidayIdx?sectionEnd:holidayIdx+10);
+    const candidates=titleLines.map(line=>cleanPackageParsedTitle(line)).filter(line=>line&&!isUnsafePackageTitleLine(line)&&!/^(?:our rating|tripadvisor|based on \d+ reviews)$/i.test(line));
+    if(candidates[0]){ parsed.ship=candidates[0]; score+=12; }
+    if(candidates[1]){ parsed.sourceLocation=candidates[1]; parsed.name=normaliseJet2DawsonDestination(candidates[1]); parsed.destination=parsed.name; score+=12; }
   }
   const nights=(txt.match(/\b(\d{1,2})\s*nights?\s+from\s+\d{1,2}/i)||txt.match(/\b(\d{1,2})\s*nights?\b/i)||[])[1]; if(nights){ parsed.nights=nights; score+=8; }
   const board=detectPackageBoardBasis(txt); if(board){ parsed.boardlbl=board; parsed.board=board; score+=8; }
