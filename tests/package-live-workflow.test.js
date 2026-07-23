@@ -9,7 +9,7 @@ function extractConst(name) { const match=html.match(new RegExp(`const\\s+${name
 function createContext(){ const context={console, document:{getElementById(){return null;}}, clampParseConfidenceScore:v=>Math.max(0,Math.min(100,Number(v)||0))}; vm.createContext(context); vm.runInContext([
   'function escapeRegExp(value){ return String(value||"").replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&"); }',
   extractConst('PACKAGE_OFFER_DETECTION_THRESHOLD'), extractConst('PACKAGE_OFFER_SIGNAL_WEIGHTS'), extractConst('PACKAGE_OPERATORS'), extractConst('PACKAGE_COPY_FIELDS'), extractConst('PACKAGE_BOARD_BASES'),
-  extractFunction('isTrustedJet2DawsonQuote'), extractFunction('getPackageOperatorMatch'), extractFunction('detectPackageOffer'), extractFunction('normalisePackageOcrText'), extractFunction('titleCasePackageValue'), extractFunction('detectPackageBoardBasis'), extractFunction('extractPackageSharingBasis'), extractFunction('extractPackagePrices'), extractFunction('isUnsafePackageTitleLine'), extractFunction('cleanPackageParsedTitle'), extractFunction('parseJet2DawsonQuote'), extractFunction('parsePackageOfferText'), extractFunction('canApplyParsedPackageOffer')
+  extractFunction('isTrustedJet2DawsonQuote'), extractFunction('getPackageOperatorMatch'), extractFunction('detectPackageOffer'), extractFunction('normalisePackageOcrText'), extractFunction('titleCasePackageValue'), extractFunction('detectPackageBoardBasis'), extractFunction('extractPackageSharingBasis'), extractFunction('extractPackagePrices'), extractFunction('isUnsafePackageTitleLine'), extractFunction('cleanPackageParsedTitle'), extractFunction('extractJet2DawsonHotelDestination'), extractFunction('parseJet2DawsonQuote'), extractFunction('parsePackageOfferText'), extractFunction('canApplyParsedPackageOffer')
 ].join('\n'), context); return context; }
 
 const tuiSanta = `Santa Eulalia, Ibiza\nHotel Tres Torres\n7 Nights\nBed & Breakfast\n25th July 2026\nNewcastle Flights\nLuggage & Transfers Included £7799\nN PP\notal Price\nAV TUI Based on 2 adults Sharir`;
@@ -103,6 +103,105 @@ travel agent
 + 2 x 22kg Bag Allowance Kefalonia (EFL) to Newcastle NCL
 + Coach Transfers Departs: Tue 28th Jul 2026 at 12:30 Approximately 2 n tourist fo : pavabe at
 Arrives: Tue 28th Jul 2026 at 14:20 | YOU "eh: Tol OIday CosLIS EL TE2.`;
+
+
+const jet2DawsonWhiteCity = `Dawson & Sanderson
+Your holiday to...
+White City Beach Hotel
+Antalya, Turkey
+Our Rating ++++
+TripAdvisor Traveller Rating
+Based on 1234 Reviews
+Holiday summary
+7 nights from 04 August 2026
+All Inclusive
+2 x Adults
+1 x Double Room
+2 x 10kg Hand Baggage
+2 x 22kg Bag Allowance
+Coach Transfers Included
+Flight details
+Going out
+Leeds Bradford LBA to Antalya AYT
+Coming back
+Antalya AYT to Leeds Bradford LBA
+Payable to your travel agent
+£1,406
+Price per person
+£703`;
+
+const jet2DawsonCastillo = `Dawson & Sanderson
+Your holiday to...
+Servatur Castillo De Sol
+Puerto Rico, Gran Canaria
+Our Rating +++
+Holiday summary Flight details Payable to your travel agent
+7 nights from 12 September 2026
+Self Catering
+2 Adults
+1 x Apartment with Balcony
+2 x 10kg Hand Baggage
+2 x 22kg Bag Allowance
+Coach transfers included
+Going out
+Leeds Bradford LBA to Gran Canaria LPA
+Coming back
+Gran Canaria LPA to Leeds Bradford LBA
+Price per person payable to your travel agent
+£658
+£1,316`;
+
+const jet2DawsonCaribe = `Screenshot_2026-07-23.png
+Dawson & Sanderson
+Your holiday to...
+... Plus
+Servatur Caribe Apartments
+Playa De Las Americas, Tenerife
+Our Rating +++
+TripAdvisor Traveller Rating
+Based on 815 Reviews
+Holiday summary
+7 nights from 15 July 2026
+Self Catering
+2 x Adults
+1 x Apartment
+2 x 10kg Hand Baggage
+2 x 22kg Bag Allowance
+Coach Transfers
+Flight details
+Going out
+Leeds Bradford LBA to Tenerife TFS
+Coming back
+Tenerife TFS to Leeds Bradford LBA
+Payable to your travel agent
+£998
+Price per person
+£499`;
+
+test('expanded Dawson & Sanderson Jet2 quotations extract large hotel name and destination line', () => {
+  const { isTrustedJet2DawsonQuote, detectPackageOffer, parsePackageOfferText } = createContext();
+  [
+    [jet2DawsonWhiteCity, 'White City Beach Hotel', 'Antalya, Turkey', 'Leeds Bradford', '703', '1406'],
+    [jet2DawsonCastillo, 'Servatur Castillo De Sol', 'Puerto Rico, Gran Canaria', 'Leeds Bradford', '658', '1316'],
+    [jet2DawsonCaribe, 'Servatur Caribe Apartments', 'Playa De Las Americas, Tenerife', 'Leeds Bradford', '499', '998']
+  ].forEach(([fixture, hotel, destination, airport, pp, bookingTotal]) => {
+    assert.equal(isTrustedJet2DawsonQuote(fixture), true);
+    const detection = detectPackageOffer(fixture);
+    assert.equal(detection.isPackage, true);
+    assert.equal(detection.operatorKey, 'jet2');
+    const parsed = parsePackageOfferText(fixture, { detection }).parsed;
+    assert.equal(parsed.operatorKey, 'jet2');
+    assert.equal(parsed.ship, hotel);
+    assert.equal(parsed.name, destination);
+    assert.equal(parsed.destination, destination);
+    assert.equal(parsed.sailingFrom, airport);
+    assert.equal(parsed.flightDisplay, `${airport} Flights`);
+    assert.equal(parsed.leadPrice, pp);
+    assert.equal(parsed.totalPrice, bookingTotal);
+    assert.equal(parsed.incl, 'Luggage & Transfers Included');
+    assert.doesNotMatch([parsed.ship, parsed.name, parsed.destination].join(' '), /Your holiday to|\.\. Plus|Screenshot|\.png|Our Rating|TripAdvisor/i);
+  });
+});
 
 test('Dawson & Sanderson Jet2 Sunset quotation is recognised without Jet2 logo and extracted into strict fields', () => {
   const { isTrustedJet2DawsonQuote, detectPackageOffer, parsePackageOfferText } = createContext();
@@ -205,7 +304,7 @@ test('real screenshot import state path carries Dawson Jet2 structure into activ
     extractConst('PACKAGE_OPERATORS'), extractConst('PACKAGE_COPY_FIELDS'), extractConst('PACKAGE_BOARD_BASES'), extractConst('PACKAGE_FEATURES'), extractConst('PACKAGE_AIRPORTS'),
     'const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};',
     extractFunction('getActiveRenderCampaignType'), extractFunction('normalisePackageOperatorKey'), extractFunction('isPackageOperator'), extractFunction('isPackageOffer'), extractFunction('packageOfferHasGenuineData'), extractFunction('packageDefaultCopyValue'), extractFunction('normalisePackageCopyOverrides'), extractFunction('packageCopyValue'), extractFunction('applyPackageCopyInputOverrides'), extractFunction('packageCopyEditorValue'),
-    extractFunction('isTrustedJet2DawsonQuote'), extractFunction('getPackageOperatorMatch'), extractFunction('detectPackageOffer'), extractFunction('normaliseVisionExtractedText'), extractFunction('normalisePackageOcrText'), extractFunction('titleCasePackageValue'), extractFunction('detectPackageBoardBasis'), extractFunction('extractPackageSharingBasis'), extractFunction('extractPackagePrices'), extractFunction('isUnsafePackageTitleLine'), extractFunction('cleanPackageParsedTitle'), extractFunction('parseJet2DawsonQuote'), extractFunction('parsePackageOfferText'), extractFunction('parseScreenshotTextForActiveBuilder'), extractFunction('applyParsedOfferToSlot'),
+    extractFunction('isTrustedJet2DawsonQuote'), extractFunction('getPackageOperatorMatch'), extractFunction('detectPackageOffer'), extractFunction('normaliseVisionExtractedText'), extractFunction('normalisePackageOcrText'), extractFunction('titleCasePackageValue'), extractFunction('detectPackageBoardBasis'), extractFunction('extractPackageSharingBasis'), extractFunction('extractPackagePrices'), extractFunction('isUnsafePackageTitleLine'), extractFunction('cleanPackageParsedTitle'), extractFunction('extractJet2DawsonHotelDestination'), extractFunction('parseJet2DawsonQuote'), extractFunction('parsePackageOfferText'), extractFunction('parseScreenshotTextForActiveBuilder'), extractFunction('applyParsedOfferToSlot'),
     extractFunction('formatPackageOrdinalDate'), extractFunction('packageOfferFromData'), extractFunction('formatPackageMoney'), extractFunction('packageAirportLine'), extractFunction('packageResortFeeText'), extractFunction('renderPackagePriceBlock'), extractFunction('renderPackageOperatorLogo'), extractFunction('renderPackageCard')
   ].join('\n'), context);
 
@@ -232,7 +331,7 @@ test('real screenshot import state path carries Dawson Jet2 structure into activ
   assert.match(visibleText, /£574pp/);
   assert.match(visibleText, /\+£12pp Local Resort Fee/);
   assert.match(visibleText, /£586pp/);
-  assert.match(visibleText, /Total Price/);
+  assert.doesNotMatch(visibleText, /Total Price/);
   assert.doesNotMatch(htmlOutput, /Operator not detected|Our Rating|TripAdvisor|176 Reviews|Hand Luggage Included|Coach Transfers/);
 });
 
@@ -299,7 +398,7 @@ test('live Package editor input IDs update authoritative offer and preview-rende
   assert.equal(context.offers[0].boardBasis, 'Half Board');
   assert.equal(context.offers[0].departureAirport, 'Manchester');
   assert.equal(context.offers[0].inclusions, 'Luggage, transfers and meals included');
-  assert.match(text, /£499pp[\s\S]*\+£15pp Local Resort Fee[\s\S]*£514pp[\s\S]*Total Price/);
+  assert.match(text, /£499pp[\s\S]*\+£15pp Local Resort Fee[\s\S]*£514pp[\s\S]*Based on 2 Adults Sharing/);
   assert.match(text, /or call into your local store/);
   assert.match(text, /Half Board/);
   fields.get('f-boardlbl').value = 'All Inclusive';

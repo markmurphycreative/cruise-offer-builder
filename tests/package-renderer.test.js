@@ -290,6 +290,8 @@ test('Package offer model maps existing builder fields without mutating Cruise f
   assert.equal(model.hotel, 'Marianna Apartments');
   assert.equal(model.departureAirport, 'Newcastle');
   assert.equal(model.totalPrice, '656');
+  const storedBookingTotal = packageOfferFromData({ operator: 'jet2', name: 'Lassi, Kefalonia', ship: 'Sunset Paradise Resort', price: '574pp', totalPrice: '1148', adults: '2', children: '0' });
+  assert.equal(storedBookingTotal.bookingTotal, '1148');
 });
 
 test('Package renderer supports resort-fee and total-price layouts', () => {
@@ -310,8 +312,14 @@ test('Package renderer supports resort-fee and total-price layouts', () => {
   });
   assert.match(htmlOutput, /class="pc pkg-easyjet"/);
   assert.match(htmlOutput, /\+£12pp Total Local Resort Fee/);
-  assert.match(htmlOutput, /£335/);
+  assert.match(htmlOutput, /£323<span class="pkg-pp">pp<\/span>/);
+  assert.match(htmlOutput, /£335<span class="pkg-pp">pp<\/span>/);
+  assert.doesNotMatch(htmlOutput, /Total Price/);
   assert.match(htmlOutput, /assets\/package-skins\/easyjet\/footer\.png/);
+  const tuiOutput = renderPackageCard({ operator: 'tui', name: 'Sidari, Corfu', ship: 'Hotel Mimosa', nights: '7', boardlbl: 'All Inclusive', sailingFrom: 'Manchester', price: '646pp', resortFee: '10pp', totalPrice: '656pp', adults: '2', children: '0' });
+  assert.match(tuiOutput, /£646<span class="pkg-pp">pp<\/span>/);
+  assert.match(tuiOutput, /£656<span class="pkg-pp">pp<\/span>/);
+  assert.doesNotMatch(tuiOutput, /Total Price/);
 });
 
 test('Jet2 package renderer reads the Free Child Place ribbon from package data', () => {
@@ -348,8 +356,8 @@ test('Jet2 couples render with fee uses canonical assets, compact inclusions and
   assert.match(out, /£574<span class="pkg-pp">pp<\/span>/);
   assert.match(out, /\+£12pp Local Resort Fee/);
   assert.match(out, /£586<span class="pkg-pp">pp<\/span>/);
-  assert.match(out, /Total Price/);
-  assert.match(out, /£574<span class="pkg-pp">pp<\/span>[\s\S]*\+£12pp Local Resort Fee[\s\S]*£586<span class="pkg-pp">pp<\/span>[\s\S]*Total Price[\s\S]*Based on 2 Adults Sharing/);
+  assert.doesNotMatch(out, /Total Price/);
+  assert.match(out, /£574<span class="pkg-pp">pp<\/span>[\s\S]*\+£12pp Local Resort Fee[\s\S]*£586<span class="pkg-pp">pp<\/span>[\s\S]*Based on 2 Adults Sharing/);
   assert.match(out, /Based on 2 Adults Sharing/);
   assert.match(out, /<div class="pkg-footer-cta"><div class="pkg-cta-main">Start your booking<\/div><div class="pkg-cta-sub">or visit us in store<\/div><\/div>/);
   const edited = renderPackageCard({ operator: 'jet2', ctaPrimary: 'Book online', ctaSecondary: '', packageCopyOverrides: { ctaPrimary: 'Book online', ctaSecondary: '' }, name: 'Kefalonia', ship: 'Hotel', price: '574pp', adults: '2', children: '0' });
@@ -515,7 +523,7 @@ test('Package editing regression: Jet2 defaults, editable text, prices and offer
   assert.match(editedHtml, /£574<span class="pkg-pp">pp<\/span>/);
   assert.match(editedHtml, /\+£12pp Local Resort Fee/);
   assert.match(editedHtml, /£586<span class="pkg-pp">pp<\/span>/);
-  assert.match(editedHtml, /Total Price/);
+  assert.doesNotMatch(editedHtml, /Total Price/);
 
   const offerOne = renderPackageCard({ offerType: 'package', operator: 'jet2', name: 'Kefalonia', ctaSecondary: 'or visit us in store', price: '574', resortFee: '12' });
   const offerTwo = renderPackageCard({ offerType: 'package', operator: 'jet2', name: 'Majorca', ctaSecondary: 'call into branch', price: '699', resortFee: '25' });
@@ -535,7 +543,7 @@ test('Jet2 package renderer contains Jet2 body columns in a fixed grid content a
     const card = renderPackageCard({ offerType: 'package', operator: 'jet2', name: 'Lassi, Kefalonia', ship: 'Sunset Paradise Resort', nights: '7', boardBasis, day: '21', month: 'July 2026', sailingFrom: 'Newcastle', price: '574', resortFee: '12', totalPrice: '586', basis: 'Based on 2 Adults Sharing', incl: 'Luggage & Transfers Included' });
     assert.match(card.replace(/&amp;/g, '&'), new RegExp('7 Nights[\\s\\S]*' + boardBasis.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[\\s\\S]*21st July 2026[\\s\\S]*Newcastle Flights[\\s\\S]*Luggage & Transfers Included[\\s\\S]*assets/operator-logos/jet2-holidays-logo.png'));
     assert.doesNotMatch(card, /pkg-detail-spacer/);
-    assert.match(card, /£574<span class="pkg-pp">pp<\/span>[\s\S]*\+£12pp Local Resort Fee[\s\S]*£586<span class="pkg-pp">pp<\/span>[\s\S]*Total Price[\s\S]*Based on 2 Adults Sharing/);
+    assert.match(card, /£574<span class="pkg-pp">pp<\/span>[\s\S]*\+£12pp Local Resort Fee[\s\S]*£586<span class="pkg-pp">pp<\/span>[\s\S]*Based on 2 Adults Sharing/);
   });
 });
 
