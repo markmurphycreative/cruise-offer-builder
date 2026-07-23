@@ -216,7 +216,8 @@ test('Jet2 operator logo renderer output and live package selector support visib
   assert.equal(card.className, 'pc pkg-jet2 pkg-jet2-couples');
   assert.ok(logo, 'Jet2 logo should be present');
   assert.equal(document.querySelectorAll('img[src="assets/operator-logos/jet2-holidays-logo.png"]').length, 1);
-  assert.equal(logo.parentElement.className, 'pkg-body');
+  assert.equal(logo.parentElement.className, 'pkg-jet2-couples-content');
+  assert.equal(logo.parentElement.parentElement.className, 'pkg-body');
   assert.match(logo.previousElementSibling.outerHTML, /pkg-detail-text/);
   assert.ok(logo.previousElementSibling.querySelector('.pkg-inclusion'));
   assert.equal(logo.className, 'pkg-operator-logo pkg-operator-logo--jet2');
@@ -245,6 +246,7 @@ test('Jet2 logo belongs to the left details column while TUI and easyJet keep di
   const { renderPackageCard, renderPackageOperatorLogo, PACKAGE_OPERATORS } = createContext();
   assert.match(html, /\.pc\{[^}]*position:relative;/, '.pc should remain the positioned containing block');
   assert.match(html, /\.pc \.pkg-body\{[^}]*position:relative;/, '.pkg-body should keep its positioning for existing layout');
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-jet2-couples-content\{[^}]*transform:translateY\(-18px\);/, 'Jet2 couples content should move as one grouped translation');
   for (const operator of ['tui', 'easyjet']) {
     const cardHtml = renderPackageCard({ operator, name: 'Destination', ship: 'Hotel', nights: '7', boardlbl: 'Self Catering', price: '499pp' });
     const document = parsePackageCardDocument(cardHtml);
@@ -261,9 +263,10 @@ test('Jet2 logo belongs to the left details column while TUI and easyJet keep di
   const jet2Html = renderPackageCard({ operator: 'jet2', name: 'Destination', ship: 'Hotel', nights: '7', boardlbl: 'Self Catering', price: '499pp' });
   const jet2Doc = parsePackageCardDocument(jet2Html);
   const jet2Logo = jet2Doc.querySelector('.pkg-operator-logo--jet2');
-  assert.equal(jet2Logo.parentElement.className, 'pkg-body');
+  assert.equal(jet2Logo.parentElement.className, 'pkg-jet2-couples-content');
+  assert.equal(jet2Logo.parentElement.parentElement.className, 'pkg-body');
   assert.equal(jet2Doc.querySelectorAll('.pkg-operator-logo').length, 1);
-  assert.match(jet2Html, /<div class="pkg-details"><div class="pkg-detail-text">[\s\S]*<span class="pkg-detail-line pkg-inclusion">Luggage &amp; Transfers Included<\/span>[\s\S]*<\/div><\/div><img class="pkg-operator-logo pkg-operator-logo--jet2"/);
+  assert.match(jet2Html, /<div class="pkg-jet2-couples-content"><div class="pkg-destination">[\s\S]*<div class="pkg-details"><div class="pkg-detail-text">[\s\S]*<span class="pkg-detail-line pkg-inclusion">Luggage &amp; Transfers Included<\/span>[\s\S]*<\/div><\/div><img class="pkg-operator-logo pkg-operator-logo--jet2"/);
 });
 
 test('Package offer model maps existing builder fields without mutating Cruise fields', () => {
