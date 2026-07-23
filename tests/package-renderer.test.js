@@ -334,7 +334,7 @@ test('Jet2 package renderer reads the Free Child Place ribbon from package data'
 });
 
 
-test('Jet2 couples render with fee uses canonical assets, compact inclusions and combined total label', () => {
+test('Jet2 couples render with fee uses canonical assets, compact inclusions and per-person pricing', () => {
   const { renderPackageCard } = createContext();
   const out = renderPackageCard({ operator: 'jet2', name: 'Kefalonia, Greece', ship: 'Sunset Paradise Resort', nights: '7', boardlbl: 'Bed & Breakfast', day: '21', month: 'July 2026', sailingFrom: 'Newcastle', price: '574pp', leadPrice: '574pp', totalPrice: '1148', localFeeAmount: '24', localFeeType: 'total', localFeePerPerson: '12', displayTotalPerPerson: '586', adults: '2', children: '0', handLuggage: '2 x 10kg', holdLuggage: '2 x 22kg', transfers: 'Coach transfers included' });
   assert.match(out, /assets\/package-skins\/jet2\/header-couples\.png/);
@@ -348,8 +348,8 @@ test('Jet2 couples render with fee uses canonical assets, compact inclusions and
   assert.match(out, /£574<span class="pkg-pp">pp<\/span>/);
   assert.match(out, /\+£12pp Local Resort Fee/);
   assert.match(out, /£586<span class="pkg-pp">pp<\/span>/);
-  assert.match(out, /Total Price/);
-  assert.match(out, /£574<span class="pkg-pp">pp<\/span>[\s\S]*\+£12pp Local Resort Fee[\s\S]*£586<span class="pkg-pp">pp<\/span>[\s\S]*Total Price[\s\S]*Based on 2 Adults Sharing/);
+  assert.doesNotMatch(out, /Total Price|£1,148|£1148/);
+  assert.match(out, /£574<span class="pkg-pp">pp<\/span>[\s\S]*\+£12pp Local Resort Fee[\s\S]*£586<span class="pkg-pp">pp<\/span>[\s\S]*Based on 2 Adults Sharing/);
   assert.match(out, /Based on 2 Adults Sharing/);
   assert.match(out, /<div class="pkg-footer-cta"><div class="pkg-cta-main">Start your booking<\/div><div class="pkg-cta-sub">or visit us in store<\/div><\/div>/);
   const edited = renderPackageCard({ operator: 'jet2', ctaPrimary: 'Book online', ctaSecondary: '', packageCopyOverrides: { ctaPrimary: 'Book online', ctaSecondary: '' }, name: 'Kefalonia', ship: 'Hotel', price: '574pp', adults: '2', children: '0' });
@@ -384,7 +384,7 @@ test('Jet2 couples render without fee has a single lower price block and no empt
   assert.equal((out.match(/class="pkg-price /g) || []).length, 1);
   assert.match(out, /£499<span class="pkg-pp">pp<\/span>[\s\S]*Based on 2 Adults Sharing/);
   assert.match(out, /Leeds Bradford Flights/);
-  assert.doesNotMatch(out, /pkg-fee|Local Resort Fee|£0/);
+  assert.doesNotMatch(out, /pkg-fee|Local Resort Fee|£0|Total Price|£1,140|£1140/);
 });
 
 test('Jet2 family render total price only and free child place controls family header', () => {
@@ -515,7 +515,7 @@ test('Package editing regression: Jet2 defaults, editable text, prices and offer
   assert.match(editedHtml, /£574<span class="pkg-pp">pp<\/span>/);
   assert.match(editedHtml, /\+£12pp Local Resort Fee/);
   assert.match(editedHtml, /£586<span class="pkg-pp">pp<\/span>/);
-  assert.match(editedHtml, /Total Price/);
+  assert.doesNotMatch(editedHtml, /Total Price/);
 
   const offerOne = renderPackageCard({ offerType: 'package', operator: 'jet2', name: 'Kefalonia', ctaSecondary: 'or visit us in store', price: '574', resortFee: '12' });
   const offerTwo = renderPackageCard({ offerType: 'package', operator: 'jet2', name: 'Majorca', ctaSecondary: 'call into branch', price: '699', resortFee: '25' });
@@ -535,7 +535,8 @@ test('Jet2 package renderer contains Jet2 body columns in a fixed grid content a
     const card = renderPackageCard({ offerType: 'package', operator: 'jet2', name: 'Lassi, Kefalonia', ship: 'Sunset Paradise Resort', nights: '7', boardBasis, day: '21', month: 'July 2026', sailingFrom: 'Newcastle', price: '574', resortFee: '12', totalPrice: '586', basis: 'Based on 2 Adults Sharing', incl: 'Luggage & Transfers Included' });
     assert.match(card.replace(/&amp;/g, '&'), new RegExp('7 Nights[\\s\\S]*' + boardBasis.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[\\s\\S]*21st July 2026[\\s\\S]*Newcastle Flights[\\s\\S]*Luggage & Transfers Included[\\s\\S]*assets/operator-logos/jet2-holidays-logo.png'));
     assert.doesNotMatch(card, /pkg-detail-spacer/);
-    assert.match(card, /£574<span class="pkg-pp">pp<\/span>[\s\S]*\+£12pp Local Resort Fee[\s\S]*£586<span class="pkg-pp">pp<\/span>[\s\S]*Total Price[\s\S]*Based on 2 Adults Sharing/);
+    assert.match(card, /£574<span class="pkg-pp">pp<\/span>[\s\S]*\+£12pp Local Resort Fee[\s\S]*£586<span class="pkg-pp">pp<\/span>[\s\S]*Based on 2 Adults Sharing/);
+    assert.doesNotMatch(card, /Total Price/);
   });
 });
 
