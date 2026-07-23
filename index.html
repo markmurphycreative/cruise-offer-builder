@@ -849,6 +849,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .pc .pkg-body{height:610px;position:relative;padding:62px var(--pkg-left) 0;box-sizing:border-box;}
 .pc.pkg-jet2 .pkg-body{height:626px;padding:104px var(--pkg-left) 28px;display:grid;grid-template-columns:minmax(0,560px) minmax(0,420px);grid-template-rows:auto auto minmax(0,1fr);column-gap:124px;row-gap:0;}
 .pc.pkg-jet2.pkg-jet2-couples .pkg-body{height:626px;padding:0;position:relative;display:block;}
+.pc.pkg-jet2.pkg-jet2-couples .pkg-jet2-couples-content{position:absolute;inset:0;transform:translateY(-18px);}
 .pc .pkg-destination{font-size:56px;line-height:1.08;font-weight:300;letter-spacing:.01em;color:#000;max-width:585px;white-space:nowrap;}
 .pc.pkg-jet2 .pkg-destination{font-size:54px;line-height:1.08;font-weight:300;letter-spacing:.005em;max-width:760px;grid-column:1 / -1;grid-row:1;}
 .pc.pkg-jet2.pkg-jet2-couples .pkg-destination{position:absolute;left:var(--pkg-left);top:104px;max-width:760px;grid-column:auto;grid-row:auto;}
@@ -11161,7 +11162,9 @@ function renderPackageCard(d){
   const footerCta=footerLines?`<div class="pkg-footer-cta">${footerLines}</div>`:"";
   const footer=footerSrc?`<img class="pkg-skin-footer" src="${footerSrc}" alt="" role="presentation">${footerCta}`:footerCta;
   const jet2VariantClass=model.operator==="jet2"?(jet2Couples?" pkg-jet2-couples":" pkg-jet2-family"):"";
-  return `<div class="pc pkg-${layout}${jet2VariantClass}" style="--package-accent:${cfg.colours.accent};--package-footer:${cfg.colours.footer};"><div class="pkg-head">${header}</div><div class="pkg-body"><div class="pkg-destination">${escapeHtml(model.destination)}</div><div class="pkg-hotel">${escapeHtml(model.hotel)}</div><div class="pkg-details">${detailsMarkup}</div>${jet2LogoInBody}<div class="pkg-pricing ${model.operator==="jet2"&&Number(model.children||0)<=0&&packageResortFeeText(model.resortFee,model.operator,model.resortFeeLabel,model.perPersonSuffix,model)?"pkg-pricing--with-fee":""}">${renderPackagePriceBlock(model,model.operator)}</div></div>${model.operator==="jet2"?"":operatorLogo}<div class="pkg-footer">${footer}</div></div>`;
+  const bodyContent=`<div class="pkg-destination">${escapeHtml(model.destination)}</div><div class="pkg-hotel">${escapeHtml(model.hotel)}</div><div class="pkg-details">${detailsMarkup}</div>${jet2LogoInBody}<div class="pkg-pricing ${model.operator==="jet2"&&Number(model.children||0)<=0&&packageResortFeeText(model.resortFee,model.operator,model.resortFeeLabel,model.perPersonSuffix,model)?"pkg-pricing--with-fee":""}">${renderPackagePriceBlock(model,model.operator)}</div>`;
+  const bodyInner=jet2Couples?`<div class="pkg-jet2-couples-content">${bodyContent}</div>`:bodyContent;
+  return `<div class="pc pkg-${layout}${jet2VariantClass}" style="--package-accent:${cfg.colours.accent};--package-footer:${cfg.colours.footer};"><div class="pkg-head">${header}</div><div class="pkg-body">${bodyInner}</div>${model.operator==="jet2"?"":operatorLogo}<div class="pkg-footer">${footer}</div></div>`;
 }
 function renderCruiseCard(d){ return renderCruiseCardHTML(d); }
 function renderGenericCampaignCard(d,type){
