@@ -167,7 +167,7 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
 test('Package operator logos use operator-specific natural-aspect placement classes', () => {
   assert.match(html, /\.pc \.pkg-operator-logo\{[^}]*display:block;[^}]*position:absolute;[^}]*width:auto;[^}]*height:auto;[^}]*object-fit:contain;[^}]*pointer-events:none;/);
   assert.match(html, /\.pc \.pkg-operator-logo--tui\{left:28px;bottom:14px;width:300px;\}/);
-  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-operator-logo--jet2\{[^}]*left:calc\(var\(--pkg-left\) - 89px\);[^}]*top:567\.5px;[^}]*width:506px;[^}]*transform:translateY\(-50%\);[^}]*\}/);
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-operator-logo--jet2\{[^}]*left:calc\(var\(--pkg-left\) - 89px\);[^}]*top:570\.5px;[^}]*width:506px;[^}]*transform:translateY\(-50%\);[^}]*\}/);
   assert.doesNotMatch(html, /\.pc \.pkg-operator-logo--jet2\{left:150px;bottom:88px;width:310px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\{--pkg-left:98px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples\{--pkg-left:76px;\}/);
@@ -234,7 +234,7 @@ test('Jet2 operator logo renderer output and live package selector support visib
   assert.equal(computed.position, 'absolute');
   assert.equal(computed.display, 'block');
   assert.equal(computed.left, 'calc(var(--pkg-left) - 89px)');
-  assert.equal(computed.top, '567.5px');
+  assert.equal(computed.top, '570.5px');
   assert.equal(computed.transform, 'translateY(-50%)');
   assert.equal(computed.width, '506px');
   assert.equal(computed.height, 'auto');
