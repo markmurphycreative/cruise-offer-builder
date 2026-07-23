@@ -167,10 +167,10 @@ test('Package operator configuration defines Phase 1 logos and CTA text', () => 
 test('Package operator logos use operator-specific natural-aspect placement classes', () => {
   assert.match(html, /\.pc \.pkg-operator-logo\{[^}]*display:block;[^}]*position:absolute;[^}]*width:auto;[^}]*height:auto;[^}]*object-fit:contain;[^}]*pointer-events:none;/);
   assert.match(html, /\.pc \.pkg-operator-logo--tui\{left:28px;bottom:14px;width:300px;\}/);
-  assert.match(html, /\.pc\.pkg-jet2 \.pkg-details \.pkg-operator-logo--jet2\{[^}]*position:static;[^}]*width:250px;[^}]*margin-top:52px;[^}]*object-position:left top;[^}]*display:block;[^}]*\}/);
+  assert.match(html, /\.pc\.pkg-jet2 \.pkg-details \.pkg-operator-logo--jet2\{[^}]*position:static;[^}]*width:250px;[^}]*margin-top:76px;[^}]*object-position:left top;[^}]*display:block;[^}]*\}/);
   assert.doesNotMatch(html, /\.pc \.pkg-operator-logo--jet2\{left:150px;bottom:88px;width:310px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\{--pkg-left:98px;\}/);
-  assert.match(html, /\.pc\.pkg-jet2 \.pkg-body\{[^}]*height:555px;[^}]*display:grid;[^}]*grid-template-columns:minmax\(0,560px\) minmax\(0,420px\);[^}]*grid-template-rows:auto auto minmax\(0,1fr\);/);
+  assert.match(html, /\.pc\.pkg-jet2 \.pkg-body\{[^}]*height:676px;[^}]*display:grid;[^}]*grid-template-columns:minmax\(0,560px\) minmax\(0,420px\);[^}]*grid-template-rows:auto auto minmax\(0,1fr\);/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-details\{[^}]*position:static;[^}]*grid-column:1;[^}]*grid-row:3;[^}]*align-self:end;/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-pricing\{[^}]*position:static;[^}]*grid-column:2;[^}]*grid-row:1 \/ 4;[^}]*align-self:start;[^}]*justify-self:end;/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-head\{height:190px;[^}]*border:0;\}/);
