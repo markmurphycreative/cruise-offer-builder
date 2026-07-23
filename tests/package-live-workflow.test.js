@@ -81,6 +81,78 @@ Price per person
 £574
 The total holiday cost is £1,172 including approximately £24 in tourist tax`;
 
+
+const jet2WhiteCity = `Dawson & Sanderson
+Your holiday to...
+White City Beach Hotel
+Konakli, Antalya Area
+Our rating ++++
+TripAdvisor Traveller Rating
+Based on 1234 Reviews
+Holiday summary
+7 nights from 10 Sep 2026
+All Inclusive
+2 Adults
+1 x Double room
+2 x 10kg Hand Baggage
+2 x 22kg Bag Allowance
+Coach Transfers
+Flight details
+Going out
+Newcastle NCL to Antalya AYT
+Coming back
+Antalya AYT to Newcastle NCL
+Payable to your travel agent
+£1,398
+Price per person payable to your travel agent
+£699`;
+
+const jet2Castillo = `DAWSON 8 @
+Your holiday to... *%
+. plus
+Servatur Castillo De Sol Our rating
+Puerto Rico, Gran Canaria
+TripAdvisor Traveller Rating
+Based on 631 Reviews
+Holiday summary Flight details Payable to your travel agent
+7 nights from 15th Jul 2026 Going out
+Self Catering Leeds Bradford LBA to Gran Canaria LPA £998
+2 Adults
+1 x Apartment
+2 x 10kg Hand Baggage
+2 x 22kg Bag Allowance
+Coach Transfers
+Coming back
+Gran Canaria LPA to Leeds Bradford LBA
+Price per person
+£499`;
+
+const jet2Caribe = `Dawson & Sanderson
+Your holiday to...
+Servatur Caribe Apartments
+Playa De Las Americas, Tenerife
+Our rating +++
+TripAdvisor Traveller Rating
+Based on 812 Reviews
+Holiday summary
+7 nights from 15 July 2026
+Self Catering
+2 x Adults
+0 x Children
+1 x Apartment
+2 x 10kg Hand Baggage
+2 x 22kg Bag Allowance
+Coach transfers included
+Flight details
+Going out
+Leeds Bradford LBA to Tenerife TFS
+Coming back
+Tenerife TFS to Leeds Bradford LBA
+Payable to your travel agent
+£998
+Price per person
+£499`;
+
 const realTrelloJet2Ocr = `29/06/2026
 DAWSON 8 @
 ABTANo. Y1256 uc
@@ -137,6 +209,27 @@ test('Dawson & Sanderson Jet2 Sunset quotation is recognised without Jet2 logo a
   assert.equal(parsed.flightDisplay, 'Newcastle Flights');
   assert.equal(parsed.freeChildPlace || 'false', 'false');
   assert.doesNotMatch([parsed.name, parsed.ship, parsed.incl, parsed.basis].join(' '), /Our Rating|TripAdvisor|176 Reviews|Holiday summary|Flight details|Payable to your travel agent|Going out|Coming back|06:00|12:00/i);
+});
+
+
+test('additional Dawson Jet2 quotations parse hotel and destination without OCR noise', () => {
+  const { isTrustedJet2DawsonQuote, detectPackageOffer, parsePackageOfferText } = createContext();
+  [
+    [jet2WhiteCity, 'White City Beach Hotel', 'Konakli, Antalya Area', 'Newcastle', '699'],
+    [jet2Castillo, 'Servatur Castillo De Sol', 'Puerto Rico, Gran Canaria', 'Leeds Bradford', '499'],
+    [jet2Caribe, 'Servatur Caribe Apartments', 'Playa De Las Americas, Tenerife', 'Leeds Bradford', '499']
+  ].forEach(([fixture, hotel, destination, airport, price]) => {
+    assert.equal(isTrustedJet2DawsonQuote(fixture), true, hotel);
+    assert.equal(detectPackageOffer(fixture).operatorKey, 'jet2', hotel);
+    const parsed = parsePackageOfferText(fixture, {}).parsed;
+    assert.equal(parsed.operatorKey, 'jet2');
+    assert.equal(parsed.ship, hotel);
+    assert.equal(parsed.name, destination);
+    assert.equal(parsed.destination, destination);
+    assert.equal(parsed.sailingFrom, airport);
+    assert.equal(parsed.price, price);
+    assert.doesNotMatch([parsed.ship, parsed.name, parsed.destination].join(' '), /Plus|Your holiday to|Our rating|TripAdvisor|Reviews|Holiday summary|Flight details|Payable|\. plus/i);
+  });
 });
 
 test('Weak package fragments are not loadable package payloads', () => {
@@ -226,13 +319,12 @@ test('real screenshot import state path carries Dawson Jet2 structure into activ
 
   const htmlOutput = vm.runInContext('renderPackageCard(offers[0])', context);
   const visibleText = htmlOutput.replace(/<span class=\"pkg-pp\">pp<\/span>/g, 'pp').replace(/<[^>]+>/g, '');
-  ['Lassi, Kefalonia','Sunset Paradise Resort','21st July 2026','Newcastle Flights','Luggage &amp; Transfers Included','+£12pp Local Resort Fee','£586','Based on 2 Adults Sharing','assets/package-skins/jet2/header-couples.png','assets/package-skins/jet2/footer.png','assets/operator-logos/jet2-holidays-logo.png'].forEach(expected => assert.match(htmlOutput, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))));
+  ['Lassi, Kefalonia','Sunset Paradise Resort','21st July 2026','Newcastle Flights','Luggage &amp; Transfers Included','+£12pp Local Resort Fee','Based on 2 Adults Sharing','assets/package-skins/jet2/header-couples.png','assets/package-skins/jet2/footer.png','assets/operator-logos/jet2-holidays-logo.png'].forEach(expected => assert.match(htmlOutput, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))));
   assert.match(htmlOutput, /pkg-skin-header/);
   assert.equal((htmlOutput.match(/assets\/operator-logos\/jet2-holidays-logo\.png/g) || []).length, 1);
   assert.match(visibleText, /£574pp/);
   assert.match(visibleText, /\+£12pp Local Resort Fee/);
-  assert.match(visibleText, /£586pp/);
-  assert.match(visibleText, /Total Price/);
+  assert.doesNotMatch(visibleText, /£586pp|Total Price/);
   assert.doesNotMatch(htmlOutput, /Operator not detected|Our Rating|TripAdvisor|176 Reviews|Hand Luggage Included|Coach Transfers/);
 });
 
@@ -280,7 +372,8 @@ test('live Package editor input IDs update authoritative offer and preview-rende
   assert.equal(context.offers[0].inclusions, 'Luggage & Transfers Included');
   assert.equal(context.offers[0].departureAirport, 'Newcastle');
   assert.match(fields.get('card-output').innerHTML, /assets\/operator-logos\/jet2-holidays-logo\.png/);
-  assert.match(fields.get('card-output').innerHTML.replace(/<span class="pkg-pp">pp<\/span>/g, 'pp').replace(/<[^>]+>/g, ''), /£574pp[\s\S]*\+£12pp Local Resort Fee[\s\S]*£586pp/);
+  assert.match(fields.get('card-output').innerHTML.replace(/<span class="pkg-pp">pp<\/span>/g, 'pp').replace(/<[^>]+>/g, ''), /£574pp[\s\S]*\+£12pp Local Resort Fee/);
+  assert.doesNotMatch(fields.get('card-output').innerHTML.replace(/<span class="pkg-pp">pp<\/span>/g, 'pp').replace(/<[^>]+>/g, ''), /£586pp/);
 
   fields.get('f-price').value = '499';
   fields.get('f-totalPrice').value = '511';
@@ -293,13 +386,15 @@ test('live Package editor input IDs update authoritative offer and preview-rende
   const text = fields.get('card-output').innerHTML.replace(/<span class="pkg-pp">pp<\/span>/g, 'pp').replace(/<[^>]+>/g, '');
   assert.equal(context.offers[0].price, '499');
   assert.equal(context.offers[0].leadPrice, '499');
-  assert.equal(context.offers[0].totalPrice, '514');
+  assert.equal(context.offers[0].totalPrice, '499');
+  assert.equal(context.offers[0].bookingTotal, '511');
   assert.equal(context.offers[0].resortFee, '15pp');
   assert.equal(context.offers[0].ctaSecondary, 'or call into your local store');
   assert.equal(context.offers[0].boardBasis, 'Half Board');
   assert.equal(context.offers[0].departureAirport, 'Manchester');
   assert.equal(context.offers[0].inclusions, 'Luggage, transfers and meals included');
-  assert.match(text, /£499pp[\s\S]*\+£15pp Local Resort Fee[\s\S]*£514pp[\s\S]*Total Price/);
+  assert.match(text, /£499pp[\s\S]*\+£15pp Local Resort Fee/);
+  assert.doesNotMatch(text, /£514pp|Total Price/);
   assert.match(text, /or call into your local store/);
   assert.match(text, /Half Board/);
   fields.get('f-boardlbl').value = 'All Inclusive';
