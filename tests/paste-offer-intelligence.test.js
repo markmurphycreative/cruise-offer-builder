@@ -107,6 +107,7 @@ function createHarness() {
     extractFunction('getOfferIntelligenceActionSuggestions'),
     extractConst('EMBARKATION_PORTS'),
     extractConst('PORT_COUNTRIES'),
+    extractConst('ROUTE_PROFILES'),
     extractConst('PORT_REGIONS'),
     extractFunction('normalisePortIntelligenceName'),
     extractFunction('removeDuplicateReturnEmbarkationPortsString'),
@@ -339,7 +340,7 @@ test('Ports Intelligence covers Italy Malta Greek Islands Norwegian Fjords Adria
     ['Civitavecchia • Naples • Valletta', { Italy: 2, Malta: 1 }, 'Mediterranean', 'Italy & Malta'],
     ['Athens • Santorini • Mykonos • Rhodes', { Greece: 3 }, 'Greek Islands', 'Greek Islands'],
     ['Southampton • Bergen • Olden • Geiranger • Stavanger • Southampton', { Norway: 4 }, 'Norwegian Fjords', 'Norwegian Fjords'],
-    ['Dubrovnik • Split • Kotor • Budva', { Croatia: 2, Montenegro: 2 }, 'Adriatic', 'Adriatic Coastlines'],
+    ['Dubrovnik • Split • Kotor • Budva', { Croatia: 2, Montenegro: 2 }, 'Adriatic', 'Adriatic'],
     ['Bilbao • Bilbao • Mystery Port', { Spain: 2 }, 'Western Europe', 'Spain'],
     ['Southampton • Mystery Port • Southampton', {}, '', ''],
     ['', {}, '', '']
@@ -349,6 +350,30 @@ test('Ports Intelligence covers Italy Malta Greek Islands Norwegian Fjords Adria
     assert.deepEqual(JSON.parse(JSON.stringify(result.countries)), countries);
     assert.equal(result.region, region);
     assert.equal(result.suggestedRoute, route);
+  }
+});
+
+
+
+test('Ports Intelligence recognises expanded v3.3.0 route library profiles', () => {
+  const { context } = createHarness();
+  const cases = [
+    ['Barbados • Martinique • St Kitts • Tortola', { Barbados: 1, Martinique: 1, 'St Kitts and Nevis': 1, 'British Virgin Islands': 1 }, 'Caribbean', 'Caribbean'],
+    ['Las Palmas • Tenerife • La Palma • Arrecife • Funchal', { Spain: 4, Portugal: 1 }, 'Canary Islands', 'Canary Islands'],
+    ['Reykjavik • Isafjordur • Akureyri • Seydisfjordur', { Iceland: 4 }, 'Iceland', 'Iceland'],
+    ['Tokyo • Osaka • Kochi • Nagasaki', { Japan: 4 }, 'Japan', 'Japan'],
+    ['Dubrovnik • Split • Kotor • Corfu • Bar', { Croatia: 2, Montenegro: 2, Greece: 1 }, 'Adriatic', 'Adriatic'],
+    ['Barcelona • Marseille • Naples • Rome', { France: 1, Italy: 2 }, 'Mediterranean', 'Western Mediterranean'],
+    ['Athens • Santorini • Mykonos • Rhodes • Kusadasi • Istanbul', { Greece: 3, Turkey: 2 }, 'Eastern Mediterranean', 'Eastern Mediterranean'],
+    ['Copenhagen • Aarhus • Kristiansand • Gdynia • Hamburg • Oslo', { Denmark: 2, Norway: 2, Poland: 1, Germany: 1 }, 'Northern Europe & Scandinavia', 'Northern Europe & Scandinavia']
+  ];
+
+  for (const [ports, countries, region, route] of cases) {
+    const result = vm.runInContext('getPortIntelligence(ports);', Object.assign(context, { ports }));
+    assert.deepEqual(JSON.parse(JSON.stringify(result.countries)), countries);
+    assert.equal(result.region, region);
+    assert.equal(result.suggestedRoute, route);
+    assert.equal(result.confidence, 'High');
   }
 });
 
@@ -367,7 +392,9 @@ test('Cruise Title recovery uses high-confidence Ports Intelligence for port-onl
     { raw: 'Southampton\nLe Havre\nBilbao\nLa Coruna\nVigo\nCherbourg', expected: 'Spain & France' },
     { raw: 'Athens\nSantorini\nMykonos\nRhodes', expected: 'Greek Islands' },
     { raw: 'Civitavecchia\nNaples\nMessina\nValletta', expected: 'Italy & Malta' },
-    { raw: 'Southampton\nBergen\nOlden\nGeiranger\nStavanger', expected: 'Norwegian Fjords' }
+    { raw: 'Southampton\nBergen\nOlden\nGeiranger\nStavanger', expected: 'Norwegian Fjords' },
+    { raw: 'Barcelona\nMarseille\nNaples\nRome', expected: 'Western Mediterranean' },
+    { raw: 'Tokyo\nOsaka\nKochi\nNagasaki', expected: 'Japan' }
   ];
 
   for (const example of examples) {
