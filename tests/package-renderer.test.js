@@ -174,9 +174,12 @@ test('Package operator logos use operator-specific natural-aspect placement clas
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-body\{[^}]*height:626px;[^}]*padding:0;[^}]*position:relative;[^}]*display:block;/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-details\{[^}]*position:absolute;[^}]*left:var\(--pkg-left\);[^}]*top:299px;/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing\{[^}]*position:absolute;[^}]*right:76px;[^}]*top:0;[^}]*width:500px;[^}]*height:626px;/);
-  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing \.pkg-lead\{[^}]*position:absolute;[^}]*right:0;[^}]*top:96px;[^}]*margin:0;[^}]*width:500px;[^}]*\}/);
-  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing \.pkg-total\{[^}]*position:absolute;[^}]*right:0;[^}]*top:418px;[^}]*margin:0;[^}]*width:500px;[^}]*\}/);
-  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing:not\(\.pkg-pricing--with-fee\) \.pkg-total\{top:456px;\}/);
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing \.pkg-lead\{[^}]*position:absolute;[^}]*right:0;[^}]*top:106px;[^}]*margin:0;[^}]*width:500px;[^}]*\}/);
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing \.pkg-total\{[^}]*position:absolute;[^}]*right:0;[^}]*top:428px;[^}]*margin:0;[^}]*width:500px;[^}]*\}/);
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing:not\(\.pkg-pricing--with-fee\) \.pkg-total\{top:461px;\}/);
+  assert.doesNotMatch(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing \.pkg-lead\{[^}]*top:96px;/, 'Jet2 resort-fee lead price should be moved down 10px from the previous top');
+  assert.doesNotMatch(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing \.pkg-total\{[^}]*top:418px;/, 'Jet2 resort-fee total price should be moved down 10px from the previous top');
+  assert.doesNotMatch(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing:not\(\.pkg-pricing--with-fee\) \.pkg-total\{top:456px;\}/, 'Jet2 standard price block should be moved down 5px from the previous top');
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-head\{height:154px;[^}]*border:0;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-skin-header\{height:auto;object-fit:contain;object-position:top center;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-fee\{color:#000;\}/);
