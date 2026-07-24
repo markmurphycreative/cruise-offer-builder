@@ -9405,6 +9405,28 @@ function extractHolidaySummaryAccommodation(lines){
   }
   return "";
 }
+function extractStructuredPackageAccommodation(lines,options){
+  const opts=options||{};
+  const holidaySummaryIndex=lines.findIndex(line=>/\bholiday\s+summary\b/i.test(line));
+  const holidaySummaryEnd=holidaySummaryIndex>=0?Math.min(lines.length,holidaySummaryIndex+18):-1;
+  for(let i=0;i<lines.length;i+=1){
+    if(opts.excludeHolidaySummary && holidaySummaryIndex>=0 && i>=holidaySummaryIndex && i<holidaySummaryEnd) continue;
+    const line=String(lines[i]||"");
+    if(/\byour\s+holiday\s+to\b/i.test(line)) continue;
+    const inline=line.match(/^\s*(?:accommodation|hotel|property)\s*:?\s+(.+)$/i);
+    if(inline){
+      const cleaned=sanitisePackageHotelCandidate(inline[1]);
+      if(cleaned) return cleaned;
+    }
+    if(/^\s*(?:accommodation|hotel|property)\s*:?\s*$/i.test(line)){
+      for(const next of lines.slice(i+1,i+4)){
+        const cleaned=sanitisePackageHotelCandidate(next);
+        if(cleaned) return cleaned;
+      }
+    }
+  }
+  return "";
+}
 function extractHolidayToAccommodation(lines){
   const idx=lines.findIndex(line=>/your\s+holiday\s+to/i.test(line));
   if(idx<0) return "";
@@ -9442,9 +9464,11 @@ function parseJet2DawsonQuote(lines,txt,parsed){
     const hotelCandidates=destinationIndex>0?titleLines.slice(0,destinationIndex).filter(line=>!/,/.test(line)):[];
     const accommodationTitle=hotelCandidates.find(line=>/\b(?:hotel|resort|apartments?|aparthotel|suites?|villas?)\b/i.test(line));
     const summaryAccommodation=extractHolidaySummaryAccommodation(lines);
+    const structuredAccommodation=extractStructuredPackageAccommodation(lines,{excludeHolidaySummary:true});
     const holidayToAccommodation=extractHolidayToAccommodation(lines);
-    const hotel=summaryAccommodation||((holidayToAccommodation&&(!accommodationTitle||holidayToAccommodation===accommodationTitle))?holidayToAccommodation:"")||accommodationTitle||hotelCandidates[0]||"";
+    const hotel=summaryAccommodation||structuredAccommodation||((holidayToAccommodation&&(!accommodationTitle||holidayToAccommodation===accommodationTitle))?holidayToAccommodation:"")||accommodationTitle||hotelCandidates[0]||"";
     if(summaryAccommodation) parsed._holidaySummaryAccommodation=summaryAccommodation;
+    if(structuredAccommodation) parsed._structuredAccommodation=structuredAccommodation;
     if(holidayToAccommodation) parsed._holidayToAccommodation=holidayToAccommodation;
     if(hotel){ parsed.ship=hotel; score+=summaryAccommodation?16:12; }
     if(destination){
