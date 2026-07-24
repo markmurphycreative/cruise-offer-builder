@@ -175,11 +175,10 @@ test('Package operator logos use operator-specific natural-aspect placement clas
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-details\{[^}]*position:absolute;[^}]*left:var\(--pkg-left\);[^}]*top:299px;/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing\{[^}]*position:absolute;[^}]*right:76px;[^}]*top:0;[^}]*width:500px;[^}]*height:626px;/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing \.pkg-lead\{[^}]*position:absolute;[^}]*right:0;[^}]*top:116px;[^}]*margin:0;[^}]*width:500px;[^}]*\}/);
-  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing \.pkg-total\{[^}]*position:absolute;[^}]*right:0;[^}]*top:450px;[^}]*margin:0;[^}]*width:500px;[^}]*\}/);
-  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing:not\(\.pkg-pricing--with-fee\) \.pkg-total\{top:466px;\}/);
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing \.pkg-total\{[^}]*position:absolute;[^}]*right:0;[^}]*top:0;[^}]*bottom:22px;[^}]*margin:0;[^}]*width:500px;[^}]*display:flex;[^}]*flex-direction:column;[^}]*align-items:flex-end;[^}]*justify-content:flex-end;[^}]*\}/);
   assert.doesNotMatch(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing \.pkg-lead\{[^}]*top:106px;/, 'Jet2 resort-fee lead price should be moved down another 10px from the previous top');
-  assert.doesNotMatch(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing \.pkg-total\{[^}]*top:438px;/, 'Jet2 resort-fee total price should be moved down another 10px from the previous top');
-  assert.doesNotMatch(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing:not\(\.pkg-pricing--with-fee\) \.pkg-total\{top:461px;\}/, 'Jet2 standard price block should be moved down another 5px from the previous top');
+  assert.doesNotMatch(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing \.pkg-total\{[^}]*top:438px;/, 'Jet2 resort-fee total price should not use a down-growing top anchor');
+  assert.doesNotMatch(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing:not\(\.pkg-pricing--with-fee\) \.pkg-total\{top:/, 'Jet2 standard price block should share the bottom-anchored total stack');
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-head\{height:154px;[^}]*border:0;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-skin-header\{height:auto;object-fit:contain;object-position:top center;\}/);
   assert.match(html, /\.pc\.pkg-jet2 \.pkg-fee\{color:#000;\}/);
