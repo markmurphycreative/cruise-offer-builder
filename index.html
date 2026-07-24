@@ -859,8 +859,9 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .pc .pkg-details{position:absolute;left:var(--pkg-left);top:285px;font-size:36px;line-height:1.35;color:#797979;}
 .pc.pkg-tui .pkg-details{color:#000;}
 .pc.pkg-jet2 .pkg-details{position:static;grid-column:1;grid-row:3;align-self:end;font-size:35px;line-height:1.36;color:#858589;width:560px;height:auto;display:block;}
-.pc.pkg-jet2.pkg-jet2-couples .pkg-details{position:absolute;left:var(--pkg-left);top:299px;width:560px;height:238px;grid-column:auto;grid-row:auto;align-self:auto;overflow:visible;}
+.pc.pkg-jet2.pkg-jet2-couples .pkg-details{position:absolute;left:var(--pkg-left);top:299px;width:560px;height:190px;grid-column:auto;grid-row:auto;align-self:auto;overflow:visible;}
 .pc.pkg-jet2 .pkg-detail-text{display:block;}
+.pc.pkg-jet2.pkg-jet2-couples .pkg-detail-text{position:absolute;left:0;right:0;bottom:0;}
 .pc.pkg-jet2 .pkg-detail-line{display:block;}
 .pc .pkg-inclusion,.pc .pkg-basis-bottom{display:block;}
 .pc .pkg-operator-logo{display:block;position:absolute;width:auto;height:auto;object-fit:contain;object-position:left bottom;pointer-events:none;}
@@ -8004,7 +8005,7 @@ function normaliseAirportInclusionPhrase(phrase){
 }
 function detectAirportInclusion(text){
   const value=String(text||"").replace(/\u00a0/g," ");
-  const airports=[...(Array.isArray(AIRPORT_WORDS)?AIRPORT_WORDS:[])].sort((a,b)=>String(b).length-String(a).length);
+  const airports=[...(typeof AIRPORT_WORDS!=="undefined"&&Array.isArray(AIRPORT_WORDS)?AIRPORT_WORDS:["newcastle","manchester","edinburgh","glasgow","birmingham","leeds bradford","london","heathrow","gatwick","stansted","bristol","belfast"])].sort((a,b)=>String(b).length-String(a).length);
   for(const airport of airports){
     const escaped=escapeRegExp(airport);
     const match=value.match(new RegExp(`(?:^|[\\n\\r])\\s*(${escaped})\\s+([^\\n\\r]*?included)\\s*(?=$|[\\n\\r])`,"i"));
@@ -8025,7 +8026,25 @@ function detectFlightAirport(text){
       new RegExp(`\\bfly(?:ing)?\\s+from\\s+${escaped}(?:\\s+direct)?\\b`,"i"),
       new RegExp(`\\b${escaped}\\s+flights?\\b`,"i")
     ];
-    if(patterns.some(pattern=>pattern.test(value))) return formatAirportName(airport);
+    if(patterns.some(pattern=>pattern.test(value))) return (typeof formatAirportName==="function"?formatAirportName(airport):String(airport||"").split(/\s+/).map(part=>part.charAt(0).toUpperCase()+part.slice(1).toLowerCase()).join(" "));
+  }
+  return "";
+}
+
+function extractPackageDepartureAirport(text){
+  const value=String(text||"").replace(/\u00a0/g," ");
+  const airports=[...(typeof AIRPORT_WORDS!=="undefined"&&Array.isArray(AIRPORT_WORDS)?AIRPORT_WORDS:["newcastle","manchester","edinburgh","glasgow","birmingham","leeds bradford","london","heathrow","gatwick","stansted","bristol","belfast"])].sort((a,b)=>String(b).length-String(a).length);
+  for(const airport of airports){
+    const escaped=escapeRegExp(airport);
+    const patterns=[
+      new RegExp(`\\b(?:departure\\s+airport|airport|flying\\s+from|flights?\\s+from|departure\\s+location)\\s*[:\\-]?\\s*(?:from\\s+)?${escaped}\\b`,"i"),
+      new RegExp(`\\b(?:going\\s+out|outbound|flight\\s+details)[^\\n\\r]{0,120}?${escaped}\\s*(?:\\([A-Z]{3}\\)|[A-Z]{3})?\\s+to\\s+`,"i"),
+      new RegExp(`(?:^|[\\n\\r])[^\\n\\r]{0,80}\\b${escaped}\\s*(?:\\([A-Z]{3}\\)|[A-Z]{3})?\\s+to\\s+[A-Za-z]`,"i"),
+      new RegExp(`\\b${escaped}\\s+flights?\\b`,"i"),
+      new RegExp(`\\bflights?\\s+(?:included\\s+)?from\\s+${escaped}\\b`,"i"),
+      new RegExp(`\\bfly(?:ing)?\\s+from\\s+${escaped}\\b`,"i")
+    ];
+    if(patterns.some(pattern=>pattern.test(value))) return (typeof formatAirportName==="function"?formatAirportName(airport):String(airport||"").split(/\s+/).map(part=>part.charAt(0).toUpperCase()+part.slice(1).toLowerCase()).join(" "));
   }
   return "";
 }
@@ -8751,7 +8770,7 @@ function normaliseBulkImportedPackageOffer(offer,parsed,sourceText){
   if(offer.name && !offer.destination) offer.destination=offer.name;
   if(offer.ship && !offer.hotel) offer.hotel=offer.ship;
   if(!offer.sailingFrom && !offer.departureAirport){
-    const airportFromSource=(String(sourceText||"").match(/\b(Newcastle|Manchester|Edinburgh|Glasgow|Birmingham|Leeds Bradford|London)\s+Flights?\b/i)||[])[1];
+    const airportFromSource=typeof extractPackageDepartureAirport==="function"?extractPackageDepartureAirport(sourceText):((String(sourceText||"").match(/\b(Newcastle|Manchester|Edinburgh|Glasgow|Birmingham|Leeds Bradford|London)\s+Flights?\b/i)||[])[1]);
     if(airportFromSource) offer.sailingFrom=titleCasePackageValue(airportFromSource);
   }
   if(offer.sailingFrom && !offer.departureAirport) offer.departureAirport=offer.sailingFrom;
@@ -9352,7 +9371,7 @@ function isUnsafePackageTitleLine(line){
   return !value
     || /^(?:your holiday to|holiday summary|flight details|payable to your travel agent|our rating|tripadvisor|tripadvisor traveller rating|based on \d+ reviews|going out|coming back|departs|arrives|price per person|abta|protected|plus|\.+\s*plus)$/i.test(value)
     || /^your\s+holiday\s+to\b/i.test(value)
-    || /(?:£|¥|\b(?:nights?|adults?|children?|child|hand baggage|bag allowance|coach transfers|room with|apartment with|studio|depart|arrive|tourist tax|resort fee|total holiday cost|flight details|holiday summary|traveller rating|our rating|reviews?)\b)/i.test(value);
+    || /(?:£|¥|\b\d+\s*x\b|\b(?:nights?|adults?|children?|child|hand baggage|bag allowance|coach transfers|room with|apartment with|studio|depart|arrive|tourist tax|resort fee|total holiday cost|flight details|holiday summary|traveller rating|our rating|reviews?)\b)/i.test(value);
 }
 function cleanPackageParsedTitle(line){
   return titleCasePackageValue(String(line||"").replace(/^your holiday to\.{0,3}$/i,"").replace(/^\.*\s*plus$/i,"").replace(/\b(?:departs?|arrives?)\s*:?\b.*$/i,"").replace(/\b(?:price|payable\s+to\s+your|price\s+ort\s+payable)\b.*$/i,"").replace(/\b\d{1,2}:\d{2}\b.*$/i,"").replace(/\bour\s+rating\b.*$/i,"").replace(/\btripadvisor\b.*$/i,"").replace(/\bbased\s+on\s+\d+\s+reviews?\b.*$/i,"").replace(/^[&,¥+*%\s]+/,"").replace(/[ \t]{2,}/g," ").trim());
@@ -9368,7 +9387,7 @@ function parseJet2DawsonQuote(lines,txt,parsed){
         || /^[^A-Za-z0-9]*plus$/i.test(value)
         || /^(?:our rating|tripadvisor|tripadvisor traveller rating|based on \d+ reviews?|reviews?|holiday summary|flight details|payable to your travel agent|going out|coming back)$/i.test(value)
         || /\b(?:our rating|tripadvisor|traveller rating|reviews?|flight details|holiday summary|payable|departs?|arrives?|price per person|hand baggage|bag allowance|coach transfers)\b/i.test(value)
-        || /(?:£|¥|\b(?:\d{1,2}\s*nights?|adults?|children?|child|room with|apartment with|studio|tourist tax|resort fee|total holiday cost)\b)/i.test(value)
+        || /(?:£|¥|\b\d+\s*x\b|\b(?:\d{1,2}\s*nights?|adults?|children?|child|room with|apartment with|studio|apartment|tourist tax|resort fee|total holiday cost)\b)/i.test(value)
         || !/[A-Za-z]/.test(value);
     };
     const titleLines=[];
@@ -9396,8 +9415,8 @@ function parseJet2DawsonQuote(lines,txt,parsed){
   if(date){ const mn=new Date(`${date[3]} 1, ${date[4]}`); parsed.day=date[2]?`${Number(date[1])}${date[2].toLowerCase()}`:String(Number(date[1])); parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+date[4]; score+=8; }
   const pax=txt.match(/\b(\d+)\s*x?\s*Adults?(?:\s*(?:&|and)\s*(\d+)\s*x?\s*Child(?:ren)?)?/i);
   if(pax){ parsed.adults=pax[1]; parsed.children=pax[2]||"0"; parsed.basis=`Based on ${pax[1]} Adult${Number(pax[1])===1?"":"s"}${pax[2]?` & ${pax[2]} Child${Number(pax[2])===1?"":"ren"}`:""} Sharing`; score+=8; }
-  const flightLine=lines.find(line=>/\b(Newcastle|Leeds Bradford|Manchester|Birmingham|Glasgow|Edinburgh|London)\s+[A-Z]{3}\s+to\s+/i.test(line));
-  if(flightLine){ parsed.sailingFrom=titleCasePackageValue((flightLine.match(/\b(Newcastle|Leeds Bradford|Manchester|Birmingham|Glasgow|Edinburgh|London)\b/i)||[])[1]); parsed.flightDisplay=parsed.sailingFrom?`${parsed.sailingFrom} Flights`:""; score+=6; }
+  const flightAirport=typeof extractPackageDepartureAirport==="function"?extractPackageDepartureAirport(txt):"";
+  if(flightAirport){ parsed.sailingFrom=titleCasePackageValue(flightAirport); parsed.departureAirport=parsed.sailingFrom; parsed.flightDisplay=parsed.sailingFrom?`${parsed.sailingFrom} Flights`:""; score+=6; }
   const incl=[];
   if(/hand\s+baggage/i.test(txt)){ const m=(txt.match(/\b(\d+\s*x\s*10kg)\s*Hand\s+Baggage/i)||[])[1]; parsed.handLuggage=m?m.replace(/\s+/g," "):"Hand baggage included"; incl.push(parsed.handLuggage); }
   if(/bag\s+allowance/i.test(txt)){ const m=(txt.match(/\b(\d+\s*x\s*22kg)\s*Bag\s+Allowance/i)||[])[1]; parsed.holdLuggage=m?m.replace(/\s+/g," "):"Hold luggage included"; incl.push(parsed.holdLuggage); }
@@ -9439,7 +9458,7 @@ function parsePackageOfferText(raw,options){
     if(selectedOperator==="jet2"){ parsed.operatorKey="jet2"; parsed._operatorAssignedFromCampaign="true"; }
   }
   if(!parsed.ship){
-    const safeHotelCandidate=line=>{ const cleaned=cleanTitle(line); return accom.test(cleaned)&&cleaned&&!/^(?:your holiday to|holiday summary|flight details|payable to your travel agent)$/i.test(cleaned)&&!/(?:£|\b(?:departs?|arrives?|price\s+ort|payable|\d{1,2}:\d{2}|\d{1,2}\s*nights?|adults?|children?|child|coach transfers|hand luggage|hand baggage|bag allowance|resort fee|tourist tax|free child place)\b)/i.test(cleaned)&&!/[¢�]/.test(cleaned); };
+    const safeHotelCandidate=line=>{ const cleaned=cleanTitle(line); return accom.test(cleaned)&&cleaned&&!/^(?:your holiday to|holiday summary|flight details|payable to your travel agent)$/i.test(cleaned)&&!/(?:£|\b\d+\s*x\b|\b(?:departs?|arrives?|price\s+ort|payable|\d{1,2}:\d{2}|\d{1,2}\s*nights?|adults?|children?|child|coach transfers|hand luggage|hand baggage|bag allowance|resort fee|tourist tax|free child place)\b)/i.test(cleaned)&&!/[¢�]/.test(cleaned); };
     const hotelIndex=lines.findIndex(line=>safeHotelCandidate(line));
     if(hotelIndex>=0){
       const rawHotel=cleanTitle(lines[hotelIndex]);
@@ -9458,7 +9477,7 @@ function parsePackageOfferText(raw,options){
   const board=detectPackageBoardBasis(txt); if(board&&!parsed.board){ parsed.boardlbl=board; parsed.board=board; score+=8; }
   const date=txt.match(/\b(\d{1,2})(st|nd|rd|th)?\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\s+(\d{4})\b/i);
   if(date&&!parsed.month){ parsed.day=date[2]?`${Number(date[1])}${date[2].toLowerCase()}`:date[1]; const mn=new Date(`${date[3]} 1, ${date[4]}`); parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+date[4]; score+=8; }
-  const airport=(txt.match(/\b(Newcastle|Manchester|Edinburgh|Glasgow|Birmingham|Leeds Bradford|London)\s+(?:[A-Z]{3}\s+to|Flights?\b)/i)||[])[1] || ((lines.find(line=>/\b(?:Newcastle|Manchester|Edinburgh|Glasgow|Birmingham|Leeds Bradford|London)\s+Flights?\b/i.test(line))||"").match(/\b(Newcastle|Manchester|Edinburgh|Glasgow|Birmingham|Leeds Bradford|London)\b/i)||[])[1]; if(airport&&!parsed.sailingFrom){ parsed.sailingFrom=titleCasePackageValue(airport); score+=6; }
+  const airport=typeof extractPackageDepartureAirport==="function"?extractPackageDepartureAirport(txt):((txt.match(/\b(Newcastle|Manchester|Edinburgh|Glasgow|Birmingham|Leeds Bradford|London)\s+(?:[A-Z]{3}\s+to|Flights?\b)/i)||[])[1] || ((lines.find(line=>/\b(?:Newcastle|Manchester|Edinburgh|Glasgow|Birmingham|Leeds Bradford|London)\s+Flights?\b/i.test(line))||"").match(/\b(Newcastle|Manchester|Edinburgh|Glasgow|Birmingham|Leeds Bradford|London)\b/i)||[])[1]); if(airport&&!parsed.sailingFrom){ parsed.sailingFrom=titleCasePackageValue(airport); parsed.departureAirport=parsed.sailingFrom; score+=6; }
   const incl=[]; if(/luggage\s*(?:&|and)\s*transfers\s+included/i.test(txt)) incl.push("Luggage & Transfers Included"); else { if(/hand\s+luggage(?:\s+included)?|cabin\s+luggage|hold\s+luggage|hand\s+baggage|baggage\s+included|luggage\s+included/i.test(txt)){ if(!parsed.handLuggage) parsed.handLuggage=(/hold\s+luggage/i.test(txt)?"Hold Luggage":"Hand Luggage Included"); incl.push((/baggage\s+included|luggage\s+included/i.test(txt)&&!/hand\s+luggage/i.test(txt))?"Luggage Included":"Hand Luggage Included"); } if(/coach\s+transfers?|transfers?\s+included|\btransfers?\b/i.test(txt)){ if(!parsed.transfers) parsed.transfers=/coach\s+transfers?/i.test(txt)?"Coach Transfers":"Transfers Included"; incl.push(parsed.transfers); } }
   if(incl.length&&!parsed.incl){ parsed.incl=incl.join(" · "); parsed.inclusions=parsed.incl; parsed.inclusionsDisplay=parsed.incl; score+=6; }
   const parsedPackageOperatorKey=(typeof normalisePackageOperatorKey==="function"?normalisePackageOperatorKey(parsed.operatorKey||parsed.operator||""):String(parsed.operatorKey||parsed.operator||"").toLowerCase()); if(parsedPackageOperatorKey==="jet2" && typeof normaliseJet2PackageInclusionCopy==="function") normaliseJet2PackageInclusionCopy(parsed,true);

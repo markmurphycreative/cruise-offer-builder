@@ -172,7 +172,8 @@ test('Package operator logos use operator-specific natural-aspect placement clas
   assert.match(html, /\.pc\.pkg-jet2\{--pkg-left:98px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples\{--pkg-left:76px;\}/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-body\{[^}]*height:626px;[^}]*padding:0;[^}]*position:relative;[^}]*display:block;/);
-  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-details\{[^}]*position:absolute;[^}]*left:var\(--pkg-left\);[^}]*top:299px;/);
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-details\{[^}]*position:absolute;[^}]*left:var\(--pkg-left\);[^}]*top:299px;[^}]*height:190px;/);
+  assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-detail-text\{[^}]*position:absolute;[^}]*left:0;[^}]*right:0;[^}]*bottom:0;/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing\{[^}]*position:absolute;[^}]*right:76px;[^}]*top:0;[^}]*width:500px;[^}]*height:626px;/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing \.pkg-lead\{[^}]*position:absolute;[^}]*right:0;[^}]*top:116px;[^}]*margin:0;[^}]*width:500px;[^}]*\}/);
   assert.match(html, /\.pc\.pkg-jet2\.pkg-jet2-couples \.pkg-pricing \.pkg-total\{[^}]*position:absolute;[^}]*right:0;[^}]*top:0;[^}]*bottom:22px;[^}]*margin:0;[^}]*width:500px;[^}]*display:flex;[^}]*flex-direction:column;[^}]*align-items:flex-end;[^}]*justify-content:flex-end;[^}]*\}/);
