@@ -8706,10 +8706,62 @@ function getMultiOfferImportQualityResult(result,rawText){
   const confidence=qaWarnings?Math.min(parserScore,qualityScore):parserScore;
   return {missing,qaWarnings,score:confidence};
 }
+function getBulkPackageImportFallbackOperator(){
+  if(typeof currentCampaignType==="undefined" || normaliseCampaignType(currentCampaignType)!=="package") return "";
+  const selected=normalisePackageOperatorKey(((document.getElementById("f-operator")||{}).value)||"");
+  if(isPackageOperator(selected)) return selected;
+  const pool=Array.isArray(offers)?offers:[];
+  const existing=pool.map(o=>normalisePackageOperatorKey(o&&o.operator||o&&o.operatorKey||"")).find(isPackageOperator);
+  return existing||"";
+}
+function isUnsafeImportedPackageVisibleValue(value){
+  const text=String(value||"").trim();
+  if(!text) return false;
+  if(/(?:your\s+holiday\s+to|payable\s+to\s+your|departs?\s*:|arrives?\s*:|price\s+ort\s+payable|price\s+per\s+person|holiday\s+summary|flight\s+details)/i.test(text)) return true;
+  if(/\b\d{1,2}:\d{2}\b/.test(text)) return true;
+  if(/\b200\s*[¢c]\b/i.test(text)) return true;
+  if(/[¢�]/.test(text)) return true;
+  return false;
+}
+function normaliseBulkImportedPackageOffer(offer,parsed,sourceText){
+  if(!offer||String(offer.offerType||parsed&&parsed.offerType||"").toLowerCase()!=="package") return offer;
+  offer.offerType="package";
+  const fallback=getBulkPackageImportFallbackOperator();
+  offer.operator=normalisePackageOperatorKey(offer.operator||offer.operatorKey||parsed&&parsed.operatorKey||parsed&&parsed.operator||fallback||"");
+  if(!offer.operator && fallback) offer.operator=fallback;
+  ["name","ship","destination","hotel","accommodation","departureAirport","sailingFrom","flightDisplay","inclusions","inclusionsDisplay","incl","board","boardlbl","boardBasis","day","month","nights","price","leadPrice","basis","roomType"].forEach(key=>{
+    if(offer[key]!==undefined && isUnsafeImportedPackageVisibleValue(offer[key])) offer[key]="";
+  });
+  if(offer.destination && !offer.name) offer.name=offer.destination;
+  if(offer.hotel && !offer.ship) offer.ship=offer.hotel;
+  if(offer.name && !offer.destination) offer.destination=offer.name;
+  if(offer.ship && !offer.hotel) offer.hotel=offer.ship;
+  if(!offer.sailingFrom && !offer.departureAirport){
+    const airportFromSource=(String(sourceText||"").match(/\b(Newcastle|Manchester|Edinburgh|Glasgow|Birmingham|Leeds Bradford|London)\s+Flights?\b/i)||[])[1];
+    if(airportFromSource) offer.sailingFrom=titleCasePackageValue(airportFromSource);
+  }
+  if(offer.sailingFrom && !offer.departureAirport) offer.departureAirport=offer.sailingFrom;
+  if(offer.departureAirport) offer.sailingFrom=offer.departureAirport;
+  if(offer.boardlbl && !offer.boardBasis) offer.boardBasis=offer.boardlbl;
+  if(offer.boardBasis) offer.boardlbl=offer.boardBasis;
+  if(offer.incl && !offer.inclusions) offer.inclusions=offer.incl;
+  if(offer.inclusionsDisplay) offer.inclusions=offer.inclusionsDisplay;
+  if(offer.inclusions) offer.incl=offer.inclusions;
+  delete offer.destinationRaw;
+  delete offer.sourceLocation;
+  if(offer.operator==="jet2" && typeof applyJet2PackageDefaults==="function") applyJet2PackageDefaults(offer);
+  if(typeof normalisePackagePricingFields==="function") normalisePackagePricingFields(offer);
+  if(typeof syncPackageCanonicalFields==="function") syncPackageCanonicalFields(offer);
+  return offer;
+}
 function applyParsedOfferToSlot(result,index,sourceText){
   if(!result||!result.parsed) return false;
   while(offers.length<4) offers.push({});
   const parsed=Object.assign({},result.parsed);
+  if(String(parsed.offerType||"").toLowerCase()==="package" && !parsed.operatorKey && !parsed.operator){
+    const fallback=getBulkPackageImportFallbackOperator();
+    if(fallback) parsed.operatorKey=fallback;
+  }
   const offer={};
   offers[index]=offer;
   if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(index);
@@ -8737,6 +8789,7 @@ function applyParsedOfferToSlot(result,index,sourceText){
     }
   }
   if(String(offer.offerType||"").toLowerCase()==="package"){
+    normaliseBulkImportedPackageOffer(offer,parsed,sourceText);
     if(offer.sailingFrom && !offer.departureAirport) offer.departureAirport=offer.sailingFrom;
     if(offer.boardlbl && !offer.boardBasis) offer.boardBasis=offer.boardlbl;
     if(offer.departureAirport) offer.sailingFrom=offer.departureAirport;
@@ -9382,7 +9435,7 @@ function parsePackageOfferText(raw,options){
   const board=detectPackageBoardBasis(txt); if(board&&!parsed.board){ parsed.boardlbl=board; parsed.board=board; score+=8; }
   const date=txt.match(/\b(\d{1,2})(st|nd|rd|th)?\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\s+(\d{4})\b/i);
   if(date&&!parsed.month){ parsed.day=date[2]?`${Number(date[1])}${date[2].toLowerCase()}`:date[1]; const mn=new Date(`${date[3]} 1, ${date[4]}`); parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+date[4]; score+=8; }
-  const airport=(txt.match(/\b(Newcastle|Manchester|Edinburgh|Glasgow|Birmingham|Leeds Bradford|London)\s+(?:[A-Z]{3}\s+to|Flights?\b)/i)||[])[1]; if(airport&&!parsed.sailingFrom){ parsed.sailingFrom=titleCasePackageValue(airport); score+=6; }
+  const airport=(txt.match(/\b(Newcastle|Manchester|Edinburgh|Glasgow|Birmingham|Leeds Bradford|London)\s+(?:[A-Z]{3}\s+to|Flights?\b)/i)||[])[1] || ((lines.find(line=>/\b(?:Newcastle|Manchester|Edinburgh|Glasgow|Birmingham|Leeds Bradford|London)\s+Flights?\b/i.test(line))||"").match(/\b(Newcastle|Manchester|Edinburgh|Glasgow|Birmingham|Leeds Bradford|London)\b/i)||[])[1]; if(airport&&!parsed.sailingFrom){ parsed.sailingFrom=titleCasePackageValue(airport); score+=6; }
   const incl=[]; if(/luggage\s*(?:&|and)\s*transfers\s+included/i.test(txt)) incl.push("Luggage & Transfers Included"); else { if(/hand\s+luggage\s+included|hand\s+baggage/i.test(txt)){ if(!parsed.handLuggage) parsed.handLuggage="Hand Luggage Included"; incl.push("Hand Luggage Included"); } else if(/luggage\s+included/i.test(txt)) incl.push("Luggage Included"); if(/coach\s+transfers/i.test(txt)){ if(!parsed.transfers) parsed.transfers="Coach Transfers"; incl.push("Coach Transfers"); } else if(/transfers\s+included/i.test(txt)) incl.push("Transfers Included"); }
   if(incl.length&&!parsed.incl){ parsed.incl=incl.join(" · "); parsed.inclusions=parsed.incl; parsed.inclusionsDisplay=parsed.incl; score+=6; }
   const sharing=extractPackageSharingBasis(txt); if(sharing&&!parsed.basis){ parsed.basis=sharing; const m=sharing.match(/(\d+) Adults?(?: & (\d+) Child(?:ren)?)?/); if(m){ parsed.adults=m[1]; if(m[2]) parsed.children=m[2]; } score+=6; }

@@ -346,7 +346,7 @@ test('real screenshot import state path carries Dawson Jet2 structure into activ
     extractConst('PACKAGE_OPERATORS'), extractConst('PACKAGE_COPY_FIELDS'), extractConst('PACKAGE_BOARD_BASES'), extractConst('PACKAGE_FEATURES'), extractConst('PACKAGE_AIRPORTS'),
     'const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};',
     extractFunction('getActiveRenderCampaignType'), extractFunction('normalisePackageOperatorKey'), extractFunction('isPackageOperator'), extractFunction('isPackageOffer'), extractFunction('packageOfferHasGenuineData'), extractFunction('packageDefaultCopyValue'), extractFunction('normalisePackageCopyOverrides'), extractFunction('packageCopyValue'), extractFunction('applyPackageCopyInputOverrides'), extractFunction('packageCopyEditorValue'),
-    extractFunction('isTrustedJet2DawsonQuote'), extractFunction('getPackageOperatorMatch'), extractFunction('detectPackageOffer'), extractFunction('normaliseVisionExtractedText'), extractFunction('normalisePackageOcrText'), extractFunction('titleCasePackageValue'), extractFunction('detectPackageBoardBasis'), extractFunction('extractPackageSharingBasis'), extractFunction('extractPackagePrices'), extractFunction('isUnsafePackageTitleLine'), extractFunction('cleanPackageParsedTitle'), extractFunction('parseJet2DawsonQuote'), extractFunction('parsePackageOfferText'), extractFunction('parseScreenshotTextForActiveBuilder'), extractFunction('applyParsedOfferToSlot'),
+    extractFunction('isTrustedJet2DawsonQuote'), extractFunction('getPackageOperatorMatch'), extractFunction('detectPackageOffer'), extractFunction('normaliseVisionExtractedText'), extractFunction('normalisePackageOcrText'), extractFunction('titleCasePackageValue'), extractFunction('detectPackageBoardBasis'), extractFunction('extractPackageSharingBasis'), extractFunction('extractPackagePrices'), extractFunction('isUnsafePackageTitleLine'), extractFunction('cleanPackageParsedTitle'), extractFunction('parseJet2DawsonQuote'), extractFunction('parsePackageOfferText'), extractFunction('parseScreenshotTextForActiveBuilder'), extractFunction('getBulkPackageImportFallbackOperator'), extractFunction('isUnsafeImportedPackageVisibleValue'), extractFunction('normaliseBulkImportedPackageOffer'), extractFunction('applyParsedOfferToSlot'),
     extractFunction('formatPackageOrdinalDate'), extractFunction('packageOfferFromData'), extractFunction('formatPackageMoney'), extractFunction('packageAirportLine'), extractFunction('packageResortFeeText'), extractFunction('renderPackagePriceBlock'), extractFunction('renderPackageOperatorLogo'), extractFunction('renderPackageCard')
   ].join('\n'), context);
 
@@ -503,4 +503,66 @@ test('real Jet2 Package live input and keyboard paths update model and rendered 
   typeLiveCtaSecondary('or visit us in store');
   typeLiveCtaSecondary('or call into your local store');
   typeLiveCtaSecondary('book online or visit us in store');
+});
+
+
+test('Load Selected Imports route persists Jet2 package classification for operatorless package screenshots', () => {
+  const fields = new Map();
+  const makeField = value => ({ value, hidden:false, classList:{ toggle(){}, add(){}, remove(){} }, style:{}, innerHTML:'', textContent:'', dataset:{} });
+  fields.set('f-operator', makeField(''));
+  fields.set('vision-review-text', makeField(''));
+  fields.set('screenshot-load-selected', makeField(''));
+  fields.set('screenshot-import-review', makeField(''));
+  fields.set('vision-review-panel', makeField(''));
+  fields.set('card-output', makeField(''));
+  const context = {
+    console, window:{}, currentCampaignType:'package', cur:0, offers:[
+      {offerType:'package', operator:'jet2', name:'Approved Destination 1', ship:'Approved Hotel 1', price:'111', nights:'7'},
+      {offerType:'package', operator:'jet2', name:'Approved Destination 2', ship:'Approved Hotel 2', price:'222', nights:'7'},
+      {}, {}
+    ], pendingScreenshotImports:[], activeScreenshotImportIndex:0,
+    document:{ getElementById(id){ return fields.get(id) || null; }, querySelectorAll(){ return []; } },
+    normaliseCampaignType(v){ return String(v||'package').toLowerCase(); }, isOfferLocked(){ return false; }, isOfferLoaded(o){ return !!(o && (o.offerType==='package' || o.name || o.ship || o.price)); },
+    clearHeroImageDataFromOffer(){}, defaultTopBarUspForOperator(){ return ''; }, applyOperatorTopBarUspDefault(){},
+    setVisionStatus(message,type){ context.lastVisionStatus={message,type}; }, load(i){ context.loadedIndex=i; }, refreshOfferUi(){}, recordCampaignHistoryAfterAsyncChange(){},
+    formatPackageOrdinalDate(value){ return value; }, escapeHtml(value){ return String(value||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  };
+  vm.createContext(context);
+  vm.runInContext([
+    'function escapeRegExp(value){ return String(value||"").replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }',
+    extractConst('PACKAGE_OFFER_DETECTION_THRESHOLD'), extractConst('PACKAGE_OFFER_SIGNAL_WEIGHTS'), extractConst('PACKAGE_OPERATORS'), extractConst('PACKAGE_COPY_FIELDS'), extractConst('PACKAGE_BOARD_BASES'), extractConst('PACKAGE_FEATURES'), extractConst('PACKAGE_AIRPORTS'),
+    'const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"}; const PERSISTED_PASTE_OFFER_KEY="_rawPastedOfferText"; const TRANSIENT_PASTE_OFFER_KEYS=["rawPaste","pasteText","parsedRaw"];',
+    extractFunction('getOrderedScreenshotImports'), extractFunction('getPackageOperatorDisplayName'), extractFunction('getScreenshotImportTitle'), extractFunction('getScreenshotImportSummaryLines'), extractFunction('getScreenshotImportReviewedText'), extractFunction('hasScreenshotImportMissingOperatorWarning'), extractFunction('renderScreenshotImportReview'), extractFunction('getAvailableScreenshotImportSlots'), extractFunction('getScreenshotCampaignCapacityMessage'),
+    extractFunction('isTrustedJet2DawsonQuote'), extractFunction('getPackageOperatorMatch'), extractFunction('detectPackageOffer'), extractFunction('detectOfferType'), extractFunction('normaliseVisionExtractedText'), extractFunction('normalisePackageOcrText'), extractFunction('titleCasePackageValue'), extractFunction('detectPackageBoardBasis'), extractFunction('extractPackageSharingBasis'), extractFunction('extractPackagePrices'), extractFunction('isUnsafePackageTitleLine'), extractFunction('cleanPackageParsedTitle'), extractFunction('parseJet2DawsonQuote'), extractFunction('parsePackageOfferText'), extractFunction('parseScreenshotTextForActiveBuilder'),
+    extractFunction('normalisePackageOperatorKey'), extractFunction('isPackageOperator'), extractFunction('packageOfferHasGenuineData'), extractFunction('packageDefaultCopyValue'), extractFunction('normalisePackageCopyOverrides'), extractFunction('packageCopyValue'), extractFunction('applyPackageCopyInputOverrides'), extractConst('PACKAGE_EDITOR_FIELD_MAP'), extractFunction('syncPackageCanonicalFields'), extractFunction('applyJet2PackageDefaults'), extractFunction('packageNumericValue'), extractFunction('packageCleanNumericString'), extractFunction('normalisePackagePricingFields'),
+    extractFunction('getBulkPackageImportFallbackOperator'), extractFunction('isUnsafeImportedPackageVisibleValue'), extractFunction('normaliseBulkImportedPackageOffer'), extractFunction('stripTransientPasteOfferFields'), extractFunction('applyParsedOfferToSlot'), extractFunction('loadSelectedScreenshotImports'),
+    extractFunction('formatPackageMoney'), extractFunction('packageAirportLine'), extractFunction('packageResortFeeText'), extractFunction('renderPackagePriceBlock'), extractFunction('renderPackageOperatorLogo'), extractFunction('formatPackageOrdinalDate'), extractFunction('packageOfferFromData'), extractFunction('renderPackageCard')
+  ].join('\n'), context);
+
+  const offer3 = `Puerto Rico, Gran Canaria\n7 Nights\nSelf Catering\n9th July 2026\nLeeds Bradford Flights\nHand Luggage Included\nCoach Transfers\n£1,030pp\nBased on 2 Adults Sharing`;
+  const offer4 = `Your Holiday To... 2 0 0 ¢\nServatur Caribe Apartments Departs: Wed 15th Jul 2026 At 16:45 Price Ort Payable To Your Travel Agent\n7 Nights\nSelf Catering\n15th July 2026\nHand Luggage Included\nCoach Transfers\n£570pp\nBased on 2 Adults Sharing`;
+  fields.get('vision-review-text').value = offer3;
+  context.pendingScreenshotImports = [offer3, offer4].map((text, uploadOrder) => ({ uploadOrder, text, reviewText:text, result: context.parseScreenshotTextForActiveBuilder(text), status:'ready', selected:true }));
+  vm.runInContext('loadSelectedScreenshotImports()', context);
+
+  assert.equal(context.offers[0].name, 'Approved Destination 1');
+  assert.equal(context.offers[1].ship, 'Approved Hotel 2');
+  for (const idx of [2, 3]) {
+    assert.equal(context.offers[idx].offerType, 'package');
+    assert.equal(context.offers[idx].operator, 'jet2');
+    const card = context.renderPackageCard(context.offers[idx]);
+    assert.match(card, /pc pkg-jet2 pkg-jet2-couples/);
+    assert.match(card, /assets\/operator-logos\/jet2-holidays-logo\.png/);
+    assert.doesNotMatch(card, /Operator not detected|Your Holiday To|Payable To|16:45|200¢|200 ¢|_rawPastedOfferText/);
+  }
+  assert.equal(context.offers[2].name, 'Puerto Rico, Gran Canaria');
+  assert.equal(context.offers[2].ship, '');
+  assert.equal(context.offers[2].sailingFrom, 'Leeds Bradford');
+  assert.equal(context.offers[2].incl, 'Hand Luggage Included · Coach Transfers');
+  assert.equal(context.offers[2].price, '1030');
+  assert.equal(context.offers[3].ship, 'Servatur Caribe Apartments');
+  assert.equal(context.offers[3].name, '');
+  const restored = JSON.parse(JSON.stringify({campaignType:context.currentCampaignType, offers:context.offers}));
+  assert.equal(restored.offers[2].operator, 'jet2');
+  assert.equal(restored.offers[3].offerType, 'package');
 });
