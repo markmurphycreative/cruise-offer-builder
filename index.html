@@ -8251,7 +8251,7 @@ const CRUISE_OFFER_SIGNAL_WEIGHTS={
 };
 const CRUISE_OFFER_OPERATOR_EXCLUSIONS=new Set(["tui","jet2","wendy","custom"]);
 const PACKAGE_OFFER_DETECTION_THRESHOLD=14;
-const PACKAGE_OFFER_SIGNAL_WEIGHTS={operator:8,hotel:4,destinationHotel:4,nights:3,board:4,flightAirport:4,luggageTransfer:3,sharing:3,totalPrice:4,resortFee:4,freeChild:3,room:2};
+const PACKAGE_OFFER_SIGNAL_WEIGHTS={operator:8,hotel:4,destinationHotel:4,nights:3,board:4,departureDate:4,flightAirport:4,flightInfo:4,luggage:3,transfer:3,luggageTransfer:3,sharing:3,totalPrice:4,bookingTotal:4,resortFee:4,localPayable:3,freeChild:3,room:2};
 const NON_CRUISE_OFFER_SIGNAL_WEIGHTS={
   holidaySummary:5,
   flightDetails:4,
@@ -8376,11 +8376,17 @@ function detectPackageOffer(text){
   if(lines.some((line,index)=>index<lines.length-1 && /,\s*[A-Za-z][A-Za-z .'-]+/.test(line) && accom.test(lines[index+1]))) add("destinationHotel","destination before hotel");
   if(/\b\d{1,2}\s*(?:nights?|nts?)\b/i.test(source)) add("nights","nights");
   if(/\b(?:room only|self catering|bed\s*(?:&|and)\s*breakfast|half board|full board|(?:ultra\s+|all\s+inclusive\s+plus|all\s+)inclusive)\b/i.test(source)) add("board","board basis");
+  if(/\b\d{1,2}(?:st|nd|rd|th)?\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|january|february|march|april|june|july|august|september|october|november|december)\s+\d{4}\b/i.test(source)) add("departureDate","departure date");
   if(/\b(?:newcastle|manchester|edinburgh|glasgow|birmingham|leeds bradford|london)\s+flights?\b/i.test(source)) add("flightAirport","UK departure airport flights");
+  if(/\b(?:flights?|flight\s+details|flying\s+from|departs?\s*:)\b/i.test(source)) add("flightInfo","flight information");
+  if(/\b(?:hand\s+)?luggage\s+included|hand\s+baggage|bag\s+allowance|hold\s+luggage/i.test(source)) add("luggage","luggage");
+  if(/\b(?:transfers?\s+included|coach\s+transfers?)\b/i.test(source)) add("transfer","transfers");
   if(/\b(?:hand\s+)?luggage\s*(?:&|and)?\s*(?:transfers?)?\s+included|transfers?\s+included|coach\s+transfers?\b/i.test(source)) add("luggageTransfer","luggage or transfers");
   if(/\bbased\s+on\s+\d+\s+adults?(?:\s*(?:&|and)\s*\d+\s+child(?:ren)?)?\s+shar(?:ing|ir)\b/i.test(source)||/\b\d+\s*x?\s*(?:adults?|children|child)\b/i.test(source)) add("sharing","adults or sharing basis");
   if(/(?:£|gbp)\s*\d[\d,]*(?:\s*pp|\s*per person)?/i.test(source)) add("totalPrice","price");
+  if(/\b(?:total\s+holiday\s+cost|booking\s+total|total\s+price)\b/i.test(source)) add("bookingTotal","booking total");
   if(/\b(?:local\s+)?resort\s+fee\b/i.test(source)) add("resortFee","resort fee");
+  if(/\b(?:payable\s+locally|payable\s+to\s+your\s+travel\s+agent|price\s+ort\s+payable)\b/i.test(source)) add("localPayable","locally payable or agent payable charge");
   if(/\bfree\s+child\s+place\b/i.test(source)) add("freeChild","free child place");
   if(/\b(?:room|studio|apartment|villa)\b/i.test(source)) add("room","room or apartment type");
   const isPackage=score>=PACKAGE_OFFER_DETECTION_THRESHOLD && matchedSignals.length>=4;
@@ -9281,7 +9287,7 @@ function isUnsafePackageTitleLine(line){
     || /(?:£|¥|\b(?:nights?|adults?|children?|child|hand baggage|bag allowance|coach transfers|room with|apartment with|studio|depart|arrive|tourist tax|resort fee|total holiday cost|flight details|holiday summary|traveller rating|our rating|reviews?)\b)/i.test(value);
 }
 function cleanPackageParsedTitle(line){
-  return titleCasePackageValue(String(line||"").replace(/^your holiday to\.{0,3}$/i,"").replace(/^\.*\s*plus$/i,"").replace(/\bour\s+rating\b.*$/i,"").replace(/\btripadvisor\b.*$/i,"").replace(/\bbased\s+on\s+\d+\s+reviews?\b.*$/i,"").replace(/^[&,¥+*%\s]+/,"").replace(/[ \t]{2,}/g," ").trim());
+  return titleCasePackageValue(String(line||"").replace(/^your holiday to\.{0,3}$/i,"").replace(/^\.*\s*plus$/i,"").replace(/\b(?:departs?|arrives?)\s*:?\b.*$/i,"").replace(/\b(?:price|payable\s+to\s+your|price\s+ort\s+payable)\b.*$/i,"").replace(/\b\d{1,2}:\d{2}\b.*$/i,"").replace(/\bour\s+rating\b.*$/i,"").replace(/\btripadvisor\b.*$/i,"").replace(/\bbased\s+on\s+\d+\s+reviews?\b.*$/i,"").replace(/^[&,¥+*%\s]+/,"").replace(/[ \t]{2,}/g," ").trim());
 }
 function parseJet2DawsonQuote(lines,txt,parsed){
   let score=0;
@@ -9359,17 +9365,26 @@ function parsePackageOfferText(raw,options){
   else if(trustedJet2){ parsed.operatorKey="jet2"; score+=24; }
   if(explicitOperator){ parsed.operatorKey=explicitOperator; score+=12; }
   const accom=/\b(?:hotel|resort|apartments?|aparthotel|village|suites|club|spa|villas?)\b/i;
+  if(!parsed.operatorKey && options && options.detection && options.detection.operatorKey) parsed.operatorKey=options.detection.operatorKey;
+  if(!parsed.operatorKey && typeof currentCampaignType!=="undefined" && normaliseCampaignType(currentCampaignType)==="package"){
+    const selectedOperator=normalisePackageOperatorKey(((document.getElementById("f-operator")||{}).value)||((offers&&offers[cur])||{}).operator||"");
+    if(selectedOperator==="jet2") parsed.operatorKey="jet2";
+  }
   if(!parsed.ship){
-    const hotelIndex=lines.findIndex(line=>accom.test(line)&&!unsafeLine(line)&&!/resort\s+fee|coach\s+transfers|all inclusive|free child place/i.test(line));
-    if(hotelIndex>=0){ parsed.ship=cleanTitle(lines[hotelIndex]); score+=10; if(hotelIndex>0 && !unsafeLine(lines[hotelIndex-1])){ parsed.name=cleanTitle(lines[hotelIndex-1]); score+=10; } }
+    const hotelIndex=lines.findIndex(line=>{ const cleaned=cleanTitle(line); return accom.test(cleaned)&&!unsafeLine(cleaned)&&!/resort\s+fee|coach\s+transfers|all inclusive|free child place/i.test(cleaned); });
+    if(hotelIndex>=0){ parsed.ship=cleanTitle(lines[hotelIndex]); score+=10; if(hotelIndex>0){ const previous=cleanTitle(lines[hotelIndex-1]); if(previous && !unsafeLine(previous) && !accom.test(previous)){ parsed.name=previous; score+=10; } } }
+  }
+  if(!parsed.name){
+    const destinationLine=lines.map(line=>cleanTitle(line)).find(line=>line && /,\s*[A-Za-z][A-Za-z .'-]+/.test(line) && !accom.test(line) && !unsafeLine(line));
+    if(destinationLine){ parsed.name=destinationLine; score+=8; }
   }
   const nights=(txt.match(/\b(\d{1,2})\s*(?:nights?|nts?)\b/i)||[])[1]; if(nights&&!parsed.nights){ parsed.nights=nights; score+=8; }
   const board=detectPackageBoardBasis(txt); if(board&&!parsed.board){ parsed.boardlbl=board; parsed.board=board; score+=8; }
   const date=txt.match(/\b(\d{1,2})(st|nd|rd|th)?\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\s+(\d{4})\b/i);
   if(date&&!parsed.month){ parsed.day=date[2]?`${Number(date[1])}${date[2].toLowerCase()}`:date[1]; const mn=new Date(`${date[3]} 1, ${date[4]}`); parsed.month=mn.toLocaleString('en-GB',{month:'long'})+' '+date[4]; score+=8; }
   const airport=(txt.match(/\b(Newcastle|Manchester|Edinburgh|Glasgow|Birmingham|Leeds Bradford|London)\s+(?:[A-Z]{3}\s+to|Flights?\b)/i)||[])[1]; if(airport&&!parsed.sailingFrom){ parsed.sailingFrom=titleCasePackageValue(airport); score+=6; }
-  const incl=[]; if(/luggage\s*(?:&|and)\s*transfers\s+included/i.test(txt)) incl.push("Luggage & Transfers Included"); else { if(/hand\s+luggage\s+included|hand\s+baggage/i.test(txt)) incl.push("Hand Luggage Included"); else if(/luggage\s+included/i.test(txt)) incl.push("Luggage Included"); if(/coach\s+transfers/i.test(txt)) incl.push("Coach Transfers"); else if(/transfers\s+included/i.test(txt)) incl.push("Transfers Included"); }
-  if(incl.length&&!parsed.incl){ parsed.incl=incl.join(" · "); score+=6; }
+  const incl=[]; if(/luggage\s*(?:&|and)\s*transfers\s+included/i.test(txt)) incl.push("Luggage & Transfers Included"); else { if(/hand\s+luggage\s+included|hand\s+baggage/i.test(txt)){ if(!parsed.handLuggage) parsed.handLuggage="Hand Luggage Included"; incl.push("Hand Luggage Included"); } else if(/luggage\s+included/i.test(txt)) incl.push("Luggage Included"); if(/coach\s+transfers/i.test(txt)){ if(!parsed.transfers) parsed.transfers="Coach Transfers"; incl.push("Coach Transfers"); } else if(/transfers\s+included/i.test(txt)) incl.push("Transfers Included"); }
+  if(incl.length&&!parsed.incl){ parsed.incl=incl.join(" · "); parsed.inclusions=parsed.incl; parsed.inclusionsDisplay=parsed.incl; score+=6; }
   const sharing=extractPackageSharingBasis(txt); if(sharing&&!parsed.basis){ parsed.basis=sharing; const m=sharing.match(/(\d+) Adults?(?: & (\d+) Child(?:ren)?)?/); if(m){ parsed.adults=m[1]; if(m[2]) parsed.children=m[2]; } score+=6; }
   const prices=extractPackagePrices(txt); if(prices.totalPrice&&!parsed.totalPrice){ parsed.totalPrice=prices.totalPrice; parsed.price=prices.leadPrice||prices.totalPrice; parsed.priceLabel="Total Price"; score+=10; } if(prices.leadPrice&&!parsed.leadPrice) parsed.leadPrice=prices.leadPrice; if(prices.resortFee&&!parsed.resortFee) parsed.resortFee=prices.resortFee;
   if(/free\s+child\s+place/i.test(txt)){ parsed.freeChildPlace="true"; parsed.tags="Free Child Place"; score+=4; }
@@ -10290,7 +10305,7 @@ function prepareOfferSlotForParsedOffer(parsed){
   return true;
 }
 function applyParsedOffer(){if(!pendingParseResult) return; if(typeof isOfferLocked==="function" && isOfferLocked(cur)){ setParseStatus(getLockedOfferMessage(cur),"low"); cancelParsedOffer(); return; } const {parsed,confidence,rawText}=pendingParseResult; const isPackage=String((parsed&&parsed.offerType)||"").toLowerCase()==="package"; const hasParsedFields=isPackage ? canApplyParsedPackageOffer(parsed) : ['price','day','month','nights','board','ports'].some(k=>parsed[k]!==undefined&&parsed[k]!==''); if(!hasParsedFields){ setParseStatus(isPackage?"Not enough Package offer details to load this offer.":'No offer fields detected',isPackage?'partial':'low'); cancelParsedOffer(); return; } if(!isPackage&&typeof canApplyParsedCruiseOffer==="function"&&!canApplyParsedCruiseOffer(parsed)){ setParseStatus("Not enough offer details to load this Cruise offer.","partial"); cancelParsedOffer(); return; } if(!prepareOfferSlotForParsedOffer(parsed)){ setParseStatus('No offer fields detected','low'); cancelParsedOffer(); return; } const pasteSourceText=rawText||((document.getElementById("raw-paste")||{}).value||""); if(pasteSourceText) offers[cur]._rawPastedOfferText=pasteSourceText; if(typeof clearHeroImageDataFromOffer==="function") clearHeroImageDataFromOffer(cur); if(isPackage){ offers[cur]={[typeof PERSISTED_PASTE_OFFER_KEY!=="undefined"?PERSISTED_PASTE_OFFER_KEY:"_rawPastedOfferText"]:pasteSourceText}; } const touched=[]; for(const [k,id] of Object.entries(PARSE_FIELD_MAP)){ if(parsed[k]===undefined||parsed[k]==='') continue; if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offers[cur].operator)){ continue; } const el=document.getElementById(id); if(!el) continue; const current=(el.value||'').trim(); const shouldWrite=!current || confidence==='high'; if(!shouldWrite) continue; el.value=String(parsed[k]); touched.push(el); if(k==='operatorKey'){offers[cur].operator=parsed[k]; offers[cur]._tagsManualOverride=false; operatorChanged(false);} else {offers[cur][k]=String(parsed[k]);}}
-  if(isPackage){ offers[cur].offerType="package"; offers[cur].operator=parsed.operatorKey||parsed.operator||""; applyJet2PackageDefaults(offers[cur]); ["totalPrice","resortFee","adults","children","freeChildPlace","priceLabel","leadPrice","departureAirport","boardBasis","roomType","handLuggage","holdLuggage","transfers","flightDisplay","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeeWording","localFeePerPerson","displayTotalPerPerson","totalHolidayCostIncludingFee","sourceLocation"].forEach(k=>{ if(parsed[k]!==undefined&&parsed[k]!=="") offers[cur][k]=String(parsed[k]); }); normalisePackagePricingFields(offers[cur]); }
+  if(isPackage){ const selectedPackageOperator=normalisePackageOperatorKey(((document.getElementById("f-operator")||{}).value)||((offers&&offers[cur])||{}).operator||""); offers[cur].offerType="package"; offers[cur].operator=parsed.operatorKey||parsed.operator||(selectedPackageOperator==="jet2"?"jet2":""); applyJet2PackageDefaults(offers[cur]); ["totalPrice","resortFee","adults","children","freeChildPlace","priceLabel","leadPrice","departureAirport","boardBasis","roomType","handLuggage","holdLuggage","transfers","flightDisplay","inclusions","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeeWording","localFeePerPerson","displayTotalPerPerson","totalHolidayCostIncludingFee","sourceLocation"].forEach(k=>{ if(parsed[k]!==undefined&&parsed[k]!=="") offers[cur][k]=String(parsed[k]); }); normalisePackagePricingFields(offers[cur]); }
   if(parsed.departurePort) offers[cur].departurePort=String(parsed.departurePort);
   if(parsed._poaDepartureAirport) offers[cur]._poaDepartureAirport=String(parsed._poaDepartureAirport);
   if(!offers[cur]._sailingFromManual && typeof applyAutoSailingFromToOffer==="function"){

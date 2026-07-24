@@ -53,6 +53,35 @@ test('Jet2 and easyJet variants detect operators and family/free-child evidence'
 });
 
 
+test('package detector recognises imported Jet2-style package fields without explicit operator and strips booking-system title text', () => {
+  const { detectPackageOffer, parsePackageOfferText } = createContext();
+  const raw = `Servatur Caribe Apartments Departs: Wed 15th Jul 2026 At 16:45 Price Ort Payable To Your Travel Agent
+Costa Adeje, Tenerife
+7 Nights
+Self Catering
+15th July 2026
+Hand Luggage Included
+Coach Transfers
+£570pp
+Based on 2 Adults Sharing`;
+  const detection = detectPackageOffer(raw);
+  assert.equal(detection.isPackage, true);
+  assert.equal(detection.operatorKey, '');
+  const parsed = parsePackageOfferText(raw, { detection: { ...detection, operatorKey: 'jet2' } }).parsed;
+  assert.equal(parsed.offerType, 'package');
+  assert.equal(parsed.operatorKey, 'jet2');
+  assert.equal(parsed.ship, 'Servatur Caribe Apartments');
+  assert.equal(parsed.name, 'Costa Adeje, Tenerife');
+  assert.equal(parsed.nights, '7');
+  assert.equal(parsed.boardlbl, 'Self Catering');
+  assert.equal(parsed.day, '15th');
+  assert.equal(parsed.month, 'July 2026');
+  assert.equal(parsed.incl, 'Hand Luggage Included · Coach Transfers');
+  assert.equal(parsed.price, '570pp');
+  assert.equal(parsed.basis, 'Based on 2 Adults Sharing');
+  assert.doesNotMatch(parsed.ship, /Departs|Payable|Price/i);
+});
+
 const jet2DawsonSunset = `Dawson & Sanderson
 Your holiday to...
 Sunset Paradise Resort
