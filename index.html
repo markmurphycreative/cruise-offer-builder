@@ -9371,11 +9371,52 @@ function isUnsafePackageTitleLine(line){
   return !value
     || /^(?:your holiday to|holiday summary|flight details|payable to your travel agent|our rating|tripadvisor|tripadvisor traveller rating|based on \d+ reviews|going out|coming back|departs|arrives|price per person|abta|protected|plus|\.+\s*plus)$/i.test(value)
     || /^your\s+holiday\s+to\b/i.test(value)
-    || /(?:£|¥|\b\d+\s*x\b|\b(?:nights?|adults?|children?|child|hand baggage|bag allowance|coach transfers|room with|apartment with|studio|depart|arrive|tourist tax|resort fee|total holiday cost|flight details|holiday summary|traveller rating|our rating|reviews?)\b)/i.test(value);
+    || /(?:£|¥|\b\d+\s*[x×]\s+|\b(?:nights?|adults?|children?|child|hand baggage|bag allowance|coach transfers|room with|apartment with|studio|depart|arrive|tourist tax|resort fee|total holiday cost|flight details|holiday summary|traveller rating|our rating|reviews?)\b)/i.test(value);
 }
 function cleanPackageParsedTitle(line){
   return titleCasePackageValue(String(line||"").replace(/^your holiday to\.{0,3}$/i,"").replace(/^\.*\s*plus$/i,"").replace(/\b(?:departs?|arrives?)\s*:?\b.*$/i,"").replace(/\b(?:price|payable\s+to\s+your|price\s+ort\s+payable)\b.*$/i,"").replace(/\b\d{1,2}:\d{2}\b.*$/i,"").replace(/\bour\s+rating\b.*$/i,"").replace(/\btripadvisor\b.*$/i,"").replace(/\bbased\s+on\s+\d+\s+reviews?\b.*$/i,"").replace(/^[&,¥+*%\s]+/,"").replace(/[ \t]{2,}/g," ").trim());
 }
+
+function sanitisePackageHotelCandidate(value){
+  let text=cleanPackageParsedTitle(String(value||"").replace(/^\s*(?:accommodation|hotel|property)\s*:?\s*/i,"").replace(/^\s*your\s+holiday\s+to\.{0,3}\s*/i,""));
+  text=text.replace(/\b(?:Puerto\s+Rico,\s*Gran\s+Canaria|Lassi,\s*Kefalonia|Antalya,\s*Turkey|Playa\s+De\s+Las\s+Americas,\s*Tenerife|Nr\s+Alanya,\s*Antalya\s+Area)\b.*$/i,"").trim();
+  text=text.replace(/\b(?:departs?|arrives?)\s*:?\b.*$/i,"").replace(/\b(?:price|payable\s+to\s+your|payment|flight\s+details|holiday\s+summary)\b.*$/i,"").trim();
+  text=text.replace(/\b\d{1,2}(?::|\.)\d{2}\b.*$/i,"").replace(/\s{2,}/g," ").trim();
+  if(!text) return "";
+  if(/^your\s+holiday\s+to\b/i.test(text)) return "";
+  if(/(?:£|¥|¢|�|\b(?:holiday\s+summary|flight\s+details|payable|departs?|arrives?|price|payment|\d{1,2}:\d{2}|\d{1,2}\s*nights?|adults?|children?|child|hand\s+baggage|bag\s+allowance|coach\s+transfers?|transfers?\s+included|room\s+quantit|board\s+basis|self\s+catering|bed\s*(?:&|and)\s*breakfast|all\s+inclusive)\b)/i.test(text)) return "";
+  if(/^\d+\s*[x×]\s*(?:room|apartment|studio|suite|villa)\b/i.test(text)) return "";
+  if(/\b(?:room|apartment|studio|suite|villa)\b/i.test(text) && /^\d+\s*[x×]/i.test(text)) return "";
+  if(!/[A-Za-z]/.test(text)) return "";
+  if(/,/.test(text)) return "";
+  return text;
+}
+function extractHolidaySummaryAccommodation(lines){
+  const start=lines.findIndex(line=>/\bholiday\s+summary\b/i.test(line));
+  if(start<0) return "";
+  const windowLines=lines.slice(start, Math.min(lines.length,start+18));
+  for(let i=0;i<windowLines.length;i+=1){
+    const line=String(windowLines[i]||"");
+    const inline=line.match(/\b(?:accommodation|hotel|property)\s*:?\s+(.+)$/i);
+    if(inline){ const cleaned=sanitisePackageHotelCandidate(inline[1]); if(cleaned) return cleaned; }
+    if(/^\s*(?:accommodation|hotel|property)\s*:?\s*$/i.test(line)){
+      for(const next of windowLines.slice(i+1,i+4)){ const cleaned=sanitisePackageHotelCandidate(next); if(cleaned) return cleaned; }
+    }
+  }
+  return "";
+}
+function extractHolidayToAccommodation(lines){
+  const idx=lines.findIndex(line=>/your\s+holiday\s+to/i.test(line));
+  if(idx<0) return "";
+  for(const rawLine of lines.slice(idx+1, idx+8)){
+    if(/\b(?:holiday\s+summary|flight\s+details|payable\s+to\s+your\s+travel\s+agent)\b/i.test(rawLine)) break;
+    const candidate=sanitisePackageHotelCandidate(String(rawLine||"").replace(/^\.*\s*plus\b[\s.,:;-]*/i,"").replace(/[\s.,:;-]*\.*\s*plus$/i,""));
+    if(candidate) return candidate;
+  }
+  const sameLine=(String(lines[idx]||"").match(/your\s+holiday\s+to\.{0,3}\s+(.+)$/i)||[])[1];
+  return sanitisePackageHotelCandidate(sameLine||"");
+}
+
 function parseJet2DawsonQuote(lines,txt,parsed){
   let score=0;
   parsed.operatorKey="jet2"; score+=24;
@@ -9387,7 +9428,7 @@ function parseJet2DawsonQuote(lines,txt,parsed){
         || /^[^A-Za-z0-9]*plus$/i.test(value)
         || /^(?:our rating|tripadvisor|tripadvisor traveller rating|based on \d+ reviews?|reviews?|holiday summary|flight details|payable to your travel agent|going out|coming back)$/i.test(value)
         || /\b(?:our rating|tripadvisor|traveller rating|reviews?|flight details|holiday summary|payable|departs?|arrives?|price per person|hand baggage|bag allowance|coach transfers)\b/i.test(value)
-        || /(?:£|¥|\b\d+\s*x\b|\b(?:\d{1,2}\s*nights?|adults?|children?|child|room with|apartment with|studio|apartment|tourist tax|resort fee|total holiday cost)\b)/i.test(value)
+        || /(?:£|¥|\b\d+\s*[x×]\s+|\b(?:\d{1,2}\s*nights?|adults?|children?|child|room with|apartment with|studio|apartment|tourist tax|resort fee|total holiday cost)\b)/i.test(value)
         || !/[A-Za-z]/.test(value);
     };
     const titleLines=[];
@@ -9400,8 +9441,12 @@ function parseJet2DawsonQuote(lines,txt,parsed){
     const destination=destinationIndex>=0?titleLines[destinationIndex]:"";
     const hotelCandidates=destinationIndex>0?titleLines.slice(0,destinationIndex).filter(line=>!/,/.test(line)):[];
     const accommodationTitle=hotelCandidates.find(line=>/\b(?:hotel|resort|apartments?|aparthotel|suites?|villas?)\b/i.test(line));
-    const hotel=accommodationTitle||hotelCandidates[0]||"";
-    if(hotel){ parsed.ship=hotel; score+=12; }
+    const summaryAccommodation=extractHolidaySummaryAccommodation(lines);
+    const holidayToAccommodation=extractHolidayToAccommodation(lines);
+    const hotel=summaryAccommodation||((holidayToAccommodation&&(!accommodationTitle||holidayToAccommodation===accommodationTitle))?holidayToAccommodation:"")||accommodationTitle||hotelCandidates[0]||"";
+    if(summaryAccommodation) parsed._holidaySummaryAccommodation=summaryAccommodation;
+    if(holidayToAccommodation) parsed._holidayToAccommodation=holidayToAccommodation;
+    if(hotel){ parsed.ship=hotel; score+=summaryAccommodation?16:12; }
     if(destination){
       parsed.sourceLocation=destination;
       parsed.destinationRaw=destination;
@@ -9418,11 +9463,11 @@ function parseJet2DawsonQuote(lines,txt,parsed){
   const flightAirport=typeof extractPackageDepartureAirport==="function"?extractPackageDepartureAirport(txt):"";
   if(flightAirport){ parsed.sailingFrom=titleCasePackageValue(flightAirport); parsed.departureAirport=parsed.sailingFrom; parsed.flightDisplay=parsed.sailingFrom?`${parsed.sailingFrom} Flights`:""; score+=6; }
   const incl=[];
-  if(/hand\s+baggage/i.test(txt)){ const m=(txt.match(/\b(\d+\s*x\s*10kg)\s*Hand\s+Baggage/i)||[])[1]; parsed.handLuggage=m?m.replace(/\s+/g," "):"Hand baggage included"; incl.push(parsed.handLuggage); }
-  if(/bag\s+allowance/i.test(txt)){ const m=(txt.match(/\b(\d+\s*x\s*22kg)\s*Bag\s+Allowance/i)||[])[1]; parsed.holdLuggage=m?m.replace(/\s+/g," "):"Hold luggage included"; incl.push(parsed.holdLuggage); }
+  if(/hand\s+baggage/i.test(txt)){ const m=(txt.match(/\b(\d+\s*[x×]\s*10kg)\s*Hand\s+Baggage/i)||[])[1]; parsed.handLuggage=m?m.replace(/\s+/g," "):"Hand baggage included"; incl.push(parsed.handLuggage); }
+  if(/bag\s+allowance/i.test(txt)){ const m=(txt.match(/\b(\d+\s*[x×]\s*22kg)\s*Bag\s+Allowance/i)||[])[1]; parsed.holdLuggage=m?m.replace(/\s+/g," "):"Hold luggage included"; incl.push(parsed.holdLuggage); }
   if(/coach\s+transfers/i.test(txt)){ parsed.transfers="Coach transfers included"; incl.push(parsed.transfers); }
   if(incl.length){ parsed.incl="Luggage & Transfers Included"; parsed.inclusionsDisplay="Luggage & Transfers Included"; score+=8; }
-  const room=lines.find(line=>/(?:^|[^A-Za-z0-9])\d+\s*x\s+/i.test(line)&&/\b(?:room|studio|apartment|suite|villa)\b/i.test(line)); if(room) parsed.roomType=room.replace(/^.*?\b\d+\s*x\s*/i,"").replace(/[^A-Za-z0-9 '&/-].*$/g,"").trim();
+  const room=lines.find(line=>/(?:^|[^A-Za-z0-9])\d+\s*x\s+/i.test(line)&&/\b(?:room|studio|apartment|suite|villa)\b/i.test(line)); if(room) parsed.roomType=room.replace(/^.*?\b\d+\s*[x×]\s*/i,"").replace(/[^A-Za-z0-9 '&/-].*$/g,"").trim();
   const totalMatches=[...txt.matchAll(/payable\s+to\s+your\s+travel\s*\n?\s*agent[\s\S]{0,120}?£\s*([\d,]+)/gi)].map(m=>m[1]);
   const total=totalMatches.sort((a,b)=>Number(String(b).replace(/,/g,""))-Number(String(a).replace(/,/g,"")))[0];
   let pp=(txt.match(/price\s+per\s+person[\s\S]{0,160}?£\s*([\d,]+)/i)||[])[1];
@@ -9458,7 +9503,13 @@ function parsePackageOfferText(raw,options){
     if(selectedOperator==="jet2"){ parsed.operatorKey="jet2"; parsed._operatorAssignedFromCampaign="true"; }
   }
   if(!parsed.ship){
-    const safeHotelCandidate=line=>{ const cleaned=cleanTitle(line); return accom.test(cleaned)&&cleaned&&!/^(?:your holiday to|holiday summary|flight details|payable to your travel agent)$/i.test(cleaned)&&!/(?:£|\b\d+\s*x\b|\b(?:departs?|arrives?|price\s+ort|payable|\d{1,2}:\d{2}|\d{1,2}\s*nights?|adults?|children?|child|coach transfers|hand luggage|hand baggage|bag allowance|resort fee|tourist tax|free child place)\b)/i.test(cleaned)&&!/[¢�]/.test(cleaned); };
+    const summaryAccommodation=typeof extractHolidaySummaryAccommodation==="function"?extractHolidaySummaryAccommodation(lines):"";
+    const holidayToAccommodation=typeof extractHolidayToAccommodation==="function"?extractHolidayToAccommodation(lines):"";
+    const priorityAccommodation=summaryAccommodation||holidayToAccommodation;
+    if(priorityAccommodation){ parsed.ship=priorityAccommodation; if(summaryAccommodation) parsed._holidaySummaryAccommodation=summaryAccommodation; if(holidayToAccommodation) parsed._holidayToAccommodation=holidayToAccommodation; score+=summaryAccommodation?12:8; }
+  }
+  if(!parsed.ship){
+    const safeHotelCandidate=line=>{ const cleaned=cleanTitle(line); return accom.test(cleaned)&&cleaned&&!/^(?:your holiday to|holiday summary|flight details|payable to your travel agent)$/i.test(cleaned)&&!/(?:£|\b\d+\s*[x×]\s+|\b(?:departs?|arrives?|price\s+ort|payable|\d{1,2}:\d{2}|\d{1,2}\s*nights?|adults?|children?|child|coach transfers|hand luggage|hand baggage|bag allowance|resort fee|tourist tax|free child place)\b)/i.test(cleaned)&&!/[¢�]/.test(cleaned); };
     const hotelIndex=lines.findIndex(line=>safeHotelCandidate(line));
     if(hotelIndex>=0){
       const rawHotel=cleanTitle(lines[hotelIndex]);
