@@ -9438,6 +9438,16 @@ function extractHolidayToAccommodation(lines){
   const sameLine=(String(lines[idx]||"").match(/your\s+holiday\s+to\.{0,3}\s+(.+)$/i)||[])[1];
   return sanitisePackageHotelCandidate(sameLine||"");
 }
+function extractPriorityPackageHotel(lines,fallbackCandidates){
+  const candidates=(fallbackCandidates||[]).map(sanitisePackageHotelCandidate).filter(Boolean);
+  const summaryAccommodation=extractHolidaySummaryAccommodation(lines);
+  const structuredAccommodation=extractStructuredPackageAccommodation(lines,{excludeHolidaySummary:true});
+  const holidayToAccommodation=extractHolidayToAccommodation(lines);
+  const fallbackAccommodation=candidates.find(candidate=>/\b(?:hotel|resort|apartments?|aparthotel|suites?|villas?)\b/i.test(candidate))||candidates[0]||"";
+  const hotel=summaryAccommodation||structuredAccommodation||holidayToAccommodation||fallbackAccommodation||"";
+  const confirmed=!!(summaryAccommodation&&holidayToAccommodation&&summaryAccommodation.toLowerCase()===holidayToAccommodation.toLowerCase());
+  return {hotel,summaryAccommodation,structuredAccommodation,holidayToAccommodation,fallbackAccommodation,confirmed};
+}
 
 function parseJet2DawsonQuote(lines,txt,parsed){
   let score=0;
@@ -9462,15 +9472,13 @@ function parseJet2DawsonQuote(lines,txt,parsed){
     const destinationIndex=titleLines.findIndex(line=>/,/.test(line));
     const destination=destinationIndex>=0?titleLines[destinationIndex]:"";
     const hotelCandidates=destinationIndex>0?titleLines.slice(0,destinationIndex).filter(line=>!/,/.test(line)):[];
-    const accommodationTitle=hotelCandidates.find(line=>/\b(?:hotel|resort|apartments?|aparthotel|suites?|villas?)\b/i.test(line));
-    const summaryAccommodation=extractHolidaySummaryAccommodation(lines);
-    const structuredAccommodation=extractStructuredPackageAccommodation(lines,{excludeHolidaySummary:true});
-    const holidayToAccommodation=extractHolidayToAccommodation(lines);
-    const hotel=summaryAccommodation||structuredAccommodation||((holidayToAccommodation&&(!accommodationTitle||holidayToAccommodation===accommodationTitle))?holidayToAccommodation:"")||accommodationTitle||hotelCandidates[0]||"";
-    if(summaryAccommodation) parsed._holidaySummaryAccommodation=summaryAccommodation;
-    if(structuredAccommodation) parsed._structuredAccommodation=structuredAccommodation;
-    if(holidayToAccommodation) parsed._holidayToAccommodation=holidayToAccommodation;
-    if(hotel){ parsed.ship=hotel; score+=summaryAccommodation?16:12; }
+    const hotelSelection=extractPriorityPackageHotel(lines,hotelCandidates);
+    const hotel=hotelSelection.hotel;
+    if(hotelSelection.summaryAccommodation) parsed._holidaySummaryAccommodation=hotelSelection.summaryAccommodation;
+    if(hotelSelection.structuredAccommodation) parsed._structuredAccommodation=hotelSelection.structuredAccommodation;
+    if(hotelSelection.holidayToAccommodation) parsed._holidayToAccommodation=hotelSelection.holidayToAccommodation;
+    if(hotelSelection.confirmed) parsed._holidayAccommodationConfirmed=true;
+    if(hotel){ parsed.ship=hotel; score+=hotelSelection.summaryAccommodation?16:12; }
     if(destination){
       parsed.sourceLocation=destination;
       parsed.destinationRaw=destination;
