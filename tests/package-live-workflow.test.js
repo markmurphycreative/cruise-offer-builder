@@ -532,15 +532,15 @@ test('Load Selected Imports route persists Jet2 package classification for opera
     'function escapeRegExp(value){ return String(value||"").replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }',
     extractConst('PACKAGE_OFFER_DETECTION_THRESHOLD'), extractConst('PACKAGE_OFFER_SIGNAL_WEIGHTS'), extractConst('PACKAGE_OPERATORS'), extractConst('PACKAGE_COPY_FIELDS'), extractConst('PACKAGE_BOARD_BASES'), extractConst('PACKAGE_FEATURES'), extractConst('PACKAGE_AIRPORTS'),
     'const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"}; const PERSISTED_PASTE_OFFER_KEY="_rawPastedOfferText"; const TRANSIENT_PASTE_OFFER_KEYS=["rawPaste","pasteText","parsedRaw"];',
-    extractFunction('getOrderedScreenshotImports'), extractFunction('getPackageOperatorDisplayName'), extractFunction('getScreenshotImportTitle'), extractFunction('getScreenshotImportSummaryLines'), extractFunction('getScreenshotImportReviewedText'), extractFunction('hasScreenshotImportMissingOperatorWarning'), extractFunction('renderScreenshotImportReview'), extractFunction('getAvailableScreenshotImportSlots'), extractFunction('getScreenshotCampaignCapacityMessage'),
+    extractFunction('getOrderedScreenshotImports'), extractFunction('getPackageOperatorDisplayName'), extractFunction('getScreenshotImportTitle'), extractFunction('getScreenshotImportSummaryLines'), extractFunction('getScreenshotImportReviewedText'), extractFunction('getScreenshotImportOperatorStatus'), extractFunction('hasScreenshotImportMissingOperatorWarning'), extractFunction('renderScreenshotImportReview'), extractFunction('getAvailableScreenshotImportSlots'), extractFunction('getScreenshotCampaignCapacityMessage'),
     extractFunction('isTrustedJet2DawsonQuote'), extractFunction('getPackageOperatorMatch'), extractFunction('detectPackageOffer'), extractFunction('detectOfferType'), extractFunction('normaliseVisionExtractedText'), extractFunction('normalisePackageOcrText'), extractFunction('titleCasePackageValue'), extractFunction('detectPackageBoardBasis'), extractFunction('extractPackageSharingBasis'), extractFunction('extractPackagePrices'), extractFunction('isUnsafePackageTitleLine'), extractFunction('cleanPackageParsedTitle'), extractFunction('parseJet2DawsonQuote'), extractFunction('parsePackageOfferText'), extractFunction('parseScreenshotTextForActiveBuilder'),
     extractFunction('normalisePackageOperatorKey'), extractFunction('isPackageOperator'), extractFunction('packageOfferHasGenuineData'), extractFunction('packageDefaultCopyValue'), extractFunction('normalisePackageCopyOverrides'), extractFunction('packageCopyValue'), extractFunction('applyPackageCopyInputOverrides'), extractConst('PACKAGE_EDITOR_FIELD_MAP'), extractFunction('syncPackageCanonicalFields'), extractFunction('applyJet2PackageDefaults'), extractFunction('packageNumericValue'), extractFunction('packageCleanNumericString'), extractFunction('normalisePackagePricingFields'),
     extractFunction('getBulkPackageImportFallbackOperator'), extractFunction('isUnsafeImportedPackageVisibleValue'), extractFunction('normaliseBulkImportedPackageOffer'), extractFunction('stripTransientPasteOfferFields'), extractFunction('applyParsedOfferToSlot'), extractFunction('loadSelectedScreenshotImports'),
     extractFunction('formatPackageMoney'), extractFunction('packageAirportLine'), extractFunction('packageResortFeeText'), extractFunction('renderPackagePriceBlock'), extractFunction('renderPackageOperatorLogo'), extractFunction('formatPackageOrdinalDate'), extractFunction('packageOfferFromData'), extractFunction('renderPackageCard')
   ].join('\n'), context);
 
-  const offer3 = `Puerto Rico, Gran Canaria\n7 Nights\nSelf Catering\n9th July 2026\nLeeds Bradford Flights\nHand Luggage Included\nCoach Transfers\n£1,030pp\nBased on 2 Adults Sharing`;
-  const offer4 = `Your Holiday To... 2 0 0 ¢\nServatur Caribe Apartments Departs: Wed 15th Jul 2026 At 16:45 Price Ort Payable To Your Travel Agent\n7 Nights\nSelf Catering\n15th July 2026\nHand Luggage Included\nCoach Transfers\n£570pp\nBased on 2 Adults Sharing`;
+  const offer3 = `Puerto Rico, Gran Canaria\nMorasol Suites\n7 Nights\nSelf Catering\n9th July 2026\nLeeds Bradford Flights\nHand Luggage Included\nCoach Transfers\n£1,030pp\nBased on 2 Adults Sharing`;
+  const offer4 = `Your Holiday To... 2 0 0 ¢\nServatur Caribe Apartments, Playa De Las Americas, Tenerife Departs: Wed 15th Jul 2026 At 16:45 Price Ort Payable To Your Travel Agent\n7 Nights\nSelf Catering\n15th July 2026\nHand Luggage Included\nCoach Transfers\n£570pp\nBased on 2 Adults Sharing`;
   fields.get('vision-review-text').value = offer3;
   context.pendingScreenshotImports = [offer3, offer4].map((text, uploadOrder) => ({ uploadOrder, text, reviewText:text, result: context.parseScreenshotTextForActiveBuilder(text), status:'ready', selected:true }));
   vm.runInContext('loadSelectedScreenshotImports()', context);
@@ -556,12 +556,26 @@ test('Load Selected Imports route persists Jet2 package classification for opera
     assert.doesNotMatch(card, /Operator not detected|Your Holiday To|Payable To|16:45|200¢|200 ¢|_rawPastedOfferText/);
   }
   assert.equal(context.offers[2].name, 'Puerto Rico, Gran Canaria');
-  assert.equal(context.offers[2].ship, '');
+  assert.equal(context.offers[2].ship, 'Morasol Suites');
   assert.equal(context.offers[2].sailingFrom, 'Leeds Bradford');
   assert.equal(context.offers[2].incl, 'Hand Luggage Included · Coach Transfers');
   assert.equal(context.offers[2].price, '1030');
   assert.equal(context.offers[3].ship, 'Servatur Caribe Apartments');
-  assert.equal(context.offers[3].name, '');
+  assert.equal(context.offers[3].name, 'Playa De Las Americas, Tenerife');
+  assert.equal(context.offers[3].sailingFrom || '', '');
+  assert.equal(context.getScreenshotImportOperatorStatus(context.pendingScreenshotImports[0]), 'Jet2 assigned from campaign');
+  assert.equal(context.getScreenshotImportOperatorStatus(context.pendingScreenshotImports[1]), 'Jet2 assigned from campaign');
+  assert.match(context.renderPackageCard(context.offers[2]), /Hand Luggage Included · Coach Transfers/);
+  assert.match(context.renderPackageCard(context.offers[3]), /Hand Luggage Included · Coach Transfers/);
+
+  const missing3 = context.parsePackageOfferText(`Puerto Rico, Gran Canaria\n7 Nights\nSelf Catering\n9th July 2026\nLeeds Bradford Flights\nHand Luggage Included\nCoach Transfers\n£1,030pp\nBased on 2 Adults Sharing`, {}).parsed;
+  assert.equal(missing3.name, 'Puerto Rico, Gran Canaria');
+  assert.equal(missing3.ship || '', '');
+  const missing4 = context.parsePackageOfferText(`Your Holiday To... 2 0 0 ¢\nServatur Caribe Apartments Departs: Wed 15th Jul 2026 At 16:45 Price Ort Payable To Your Travel Agent\n7 Nights\nSelf Catering\n15th July 2026\nHand Luggage Included\nCoach Transfers\n£570pp\nBased on 2 Adults Sharing`, {}).parsed;
+  assert.equal(missing4.ship, 'Servatur Caribe Apartments');
+  assert.equal(missing4.name || '', '');
+  assert.equal(missing4.sailingFrom || '', '');
+  assert.doesNotMatch([missing4.name, missing4.ship].join(' '), /Your Holiday To|Payable To|16:45|£570|Departs|Price Ort|200/);
   const restored = JSON.parse(JSON.stringify({campaignType:context.currentCampaignType, offers:context.offers}));
   assert.equal(restored.offers[2].operator, 'jet2');
   assert.equal(restored.offers[3].offerType, 'package');
