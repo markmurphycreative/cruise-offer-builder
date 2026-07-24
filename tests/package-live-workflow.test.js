@@ -201,8 +201,11 @@ test('Dawson & Sanderson Jet2 Sunset quotation is recognised without Jet2 logo a
   assert.equal(parsed.leadPrice, '574');
   assert.equal(parsed.pricePerPerson, '574');
   assert.equal(parsed.totalPrice, '1148');
+  assert.equal(parsed.bookingTotal, '1148');
   assert.equal(parsed.localFeeAmount, '24');
   assert.equal(parsed.localFeeType, 'total');
+  assert.equal(parsed.localFeePerPerson, '12');
+  assert.equal(parsed.resortFee, '12pp');
   assert.equal(parsed.localFeeApproximate, 'true');
   assert.equal(parsed.localFeeWording, 'Approximately £24 total tourist tax payable locally');
   assert.equal(parsed.incl, 'Luggage & Transfers Included');
@@ -268,8 +271,11 @@ test('real Trello preview Jet2 OCR fixture is recognised and extracted without c
   assert.equal(parsed.leadPrice, '574');
   assert.equal(parsed.pricePerPerson, '574');
   assert.equal(parsed.totalPrice, '1148');
+  assert.equal(parsed.bookingTotal, '1148');
   assert.equal(parsed.localFeeAmount, '24');
   assert.equal(parsed.localFeeType, 'total');
+  assert.equal(parsed.localFeePerPerson, '12');
+  assert.equal(parsed.resortFee, '12pp');
   assert.equal(parsed.localFeeApproximate, 'true');
   assert.equal(parsed.localFeeWording, 'Approximately £24 total tourist tax payable locally');
   assert.equal(parsed.freeChildPlace || 'false', 'false');

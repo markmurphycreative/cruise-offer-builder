@@ -289,7 +289,11 @@ test('Package offer model maps existing builder fields without mutating Cruise f
   assert.equal(model.destination, 'Sidari, Corfu');
   assert.equal(model.hotel, 'Marianna Apartments');
   assert.equal(model.departureAirport, 'Newcastle');
-  assert.equal(model.totalPrice, '656');
+  assert.equal(model.leadPrice, '646');
+  assert.equal(model.totalPrice, '646');
+  assert.equal(model.bookingTotal, '');
+  assert.equal(model.localFeePerPerson, '10');
+  assert.equal(model.resortFee, '10pp');
 });
 
 test('Package renderer supports resort-fee and total-price layouts', () => {
@@ -310,8 +314,31 @@ test('Package renderer supports resort-fee and total-price layouts', () => {
   });
   assert.match(htmlOutput, /class="pc pkg-easyjet"/);
   assert.match(htmlOutput, /\+£12pp Total Local Resort Fee/);
-  assert.match(htmlOutput, /£335/);
+  assert.match(htmlOutput, /£323<span class="pkg-pp">pp<\/span>/);
+  assert.doesNotMatch(htmlOutput, /£335|Total Price/);
   assert.match(htmlOutput, /assets\/package-skins\/easyjet\/footer\.png/);
+});
+
+
+
+test('Package couples renderer contract is shared by Jet2, TUI and easyJet', () => {
+  const { renderPackageCard, packageOfferFromData } = createContext();
+  ['jet2', 'tui', 'easyjet'].forEach(operator => {
+    const standard = renderPackageCard({ operator, name: 'Destination', ship: 'Hotel', price: '699pp', totalPrice: '1398', adults: '2', children: '0' });
+    assert.match(standard, /£699<span class="pkg-pp">pp<\/span>/, operator);
+    assert.doesNotMatch(standard, /£1,398|Total Price|pkg-fee/, operator);
+
+    const feeModel = packageOfferFromData({ operator, name: 'Lassi, Kefalonia', ship: 'Sunset Paradise Resort', price: '574', totalPrice: '1148', localFeeAmount: '24', localFeeType: 'total', adults: '2', children: '0' });
+    assert.equal(feeModel.bookingTotal, '1148', operator);
+    assert.equal(feeModel.leadPrice, '574', operator);
+    assert.equal(feeModel.localFeeAmount, '24', operator);
+    assert.equal(feeModel.localFeeType, 'total', operator);
+    assert.equal(feeModel.localFeePerPerson, '12', operator);
+    const fee = renderPackageCard(feeModel);
+    assert.match(fee, /£574<span class="pkg-pp">pp<\/span>/, operator);
+    assert.match(fee, /\+£12pp (?:Local Resort Fee|Total Local Resort Fee)/, operator);
+    assert.doesNotMatch(fee, /£1,148|Total Price/, operator);
+  });
 });
 
 test('Jet2 package renderer reads the Free Child Place ribbon from package data', () => {
