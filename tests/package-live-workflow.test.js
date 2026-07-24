@@ -535,7 +535,7 @@ test('Load Selected Imports route persists Jet2 package classification for opera
     'const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"}; const PERSISTED_PASTE_OFFER_KEY="_rawPastedOfferText"; const TRANSIENT_PASTE_OFFER_KEYS=["rawPaste","pasteText","parsedRaw"];',
     extractFunction('getOrderedScreenshotImports'), extractFunction('getPackageOperatorDisplayName'), extractFunction('getScreenshotImportTitle'), extractFunction('getScreenshotImportSummaryLines'), extractFunction('getScreenshotImportReviewedText'), extractFunction('getScreenshotImportOperatorStatus'), extractFunction('hasScreenshotImportMissingOperatorWarning'), extractFunction('renderScreenshotImportReview'), extractFunction('getAvailableScreenshotImportSlots'), extractFunction('getScreenshotCampaignCapacityMessage'),
     extractFunction('isTrustedJet2DawsonQuote'), extractFunction('getPackageOperatorMatch'), extractFunction('detectPackageOffer'), extractFunction('detectOfferType'), extractFunction('normaliseVisionExtractedText'), extractFunction('normalisePackageOcrText'), extractFunction('titleCasePackageValue'), extractFunction('detectPackageBoardBasis'), extractFunction('extractPackageSharingBasis'), extractFunction('extractPackagePrices'), extractFunction('isUnsafePackageTitleLine'), extractFunction('cleanPackageParsedTitle'), extractFunction('parseJet2DawsonQuote'), extractFunction('parsePackageOfferText'), extractFunction('parseScreenshotTextForActiveBuilder'),
-    extractFunction('normalisePackageOperatorKey'), extractFunction('isPackageOperator'), extractFunction('packageOfferHasGenuineData'), extractFunction('packageDefaultCopyValue'), extractFunction('normalisePackageCopyOverrides'), extractFunction('packageCopyValue'), extractFunction('applyPackageCopyInputOverrides'), extractConst('PACKAGE_EDITOR_FIELD_MAP'), extractFunction('syncPackageCanonicalFields'), extractFunction('applyJet2PackageDefaults'), extractFunction('packageNumericValue'), extractFunction('packageCleanNumericString'), extractFunction('normalisePackagePricingFields'),
+    extractFunction('normalisePackageOperatorKey'), extractFunction('isPackageOperator'), extractFunction('packageOfferHasGenuineData'), extractFunction('packageDefaultCopyValue'), extractFunction('normalisePackageCopyOverrides'), extractFunction('packageCopyValue'), extractFunction('applyPackageCopyInputOverrides'), extractConst('PACKAGE_EDITOR_FIELD_MAP'), extractFunction('syncPackageCanonicalFields'), extractConst('JET2_APPROVED_INCLUSION_COPY'), extractFunction('isJet2SourceInclusionCopy'), extractFunction('normaliseJet2PackageInclusionCopy'), extractFunction('applyJet2PackageDefaults'), extractFunction('packageNumericValue'), extractFunction('packageCleanNumericString'), extractFunction('normalisePackagePricingFields'),
     extractFunction('getBulkPackageImportFallbackOperator'), extractFunction('isUnsafeImportedPackageVisibleValue'), extractFunction('normaliseBulkImportedPackageOffer'), extractFunction('stripTransientPasteOfferFields'), extractFunction('applyParsedOfferToSlot'), extractFunction('loadSelectedScreenshotImports'),
     extractFunction('formatPackageMoney'), extractFunction('packageAirportLine'), extractFunction('packageResortFeeText'), extractFunction('renderPackagePriceBlock'), extractFunction('renderPackageOperatorLogo'), extractFunction('formatPackageOrdinalDate'), extractFunction('packageOfferFromData'), extractFunction('renderPackageCard'), extractFunction('setOfferTypeDetection')
   ].join('\n'), context);
@@ -559,7 +559,11 @@ test('Load Selected Imports route persists Jet2 package classification for opera
   assert.equal(context.offers[2].name, 'Puerto Rico, Gran Canaria');
   assert.equal(context.offers[2].ship, 'Morasol Suites');
   assert.equal(context.offers[2].sailingFrom, 'Leeds Bradford');
-  assert.equal(context.offers[2].incl, 'Hand Luggage Included · Coach Transfers');
+  assert.equal(context.offers[2].incl, 'Luggage & Transfers Included');
+  assert.equal(context.offers[2].inclusions, 'Luggage & Transfers Included');
+  assert.equal(context.offers[2].inclusionsDisplay, 'Luggage & Transfers Included');
+  assert.equal(context.offers[2].handLuggage || '', '');
+  assert.equal(context.offers[2].transfers || '', '');
   assert.equal(context.offers[2].price, '1030');
   assert.equal(context.offers[3].ship, 'Servatur Caribe Apartments');
   assert.equal(context.offers[3].name, 'Playa De Las Americas, Tenerife');
@@ -571,8 +575,23 @@ test('Load Selected Imports route persists Jet2 package classification for opera
   assert.match(fields.get('screenshot-import-review').innerHTML, /High confidence · Jet2 assigned from campaign/);
   assert.equal(fields.get('offer-type-detection').textContent, 'Detected: Package');
   assert.doesNotMatch(fields.get('offer-type-detection').textContent, /Offer type not recognised/);
-  assert.match(context.renderPackageCard(context.offers[2]), /Hand Luggage Included ·<wbr> Coach&nbsp;Transfers/);
-  assert.match(context.renderPackageCard(context.offers[3]), /Hand Luggage Included ·<wbr> Coach&nbsp;Transfers/);
+  assert.match(context.renderPackageCard(context.offers[2]), /Luggage &amp; Transfers Included/);
+  assert.match(context.renderPackageCard(context.offers[3]), /Luggage &amp; Transfers Included/);
+  assert.doesNotMatch(context.renderPackageCard(context.offers[2]), /Hand Luggage|Coach Transfers/);
+  assert.doesNotMatch(context.renderPackageCard(context.offers[3]), /Hand Luggage|Coach Transfers/);
+
+
+  const separateJet2 = {offerType:'package', operator:'jet2', handLuggage:'Cabin Luggage', transfers:'Transfers Included'};
+  context.applyJet2PackageDefaults(separateJet2);
+  assert.equal(separateJet2.incl, 'Luggage & Transfers Included');
+  assert.equal(separateJet2.inclusions, 'Luggage & Transfers Included');
+  assert.doesNotMatch([separateJet2.incl, separateJet2.handLuggage, separateJet2.transfers].join(' '), /Hand Luggage|Coach Transfers/);
+  const manualJet2 = {offerType:'package', operator:'jet2', inclusions:'VIP lounge included', incl:'VIP lounge included'};
+  context.applyJet2PackageDefaults(manualJet2);
+  assert.equal(manualJet2.incl, 'VIP lounge included');
+  const tuiOffer = {offerType:'package', operator:'tui', inclusions:'Hand Luggage Included · Coach Transfers', incl:'Hand Luggage Included · Coach Transfers'};
+  context.syncPackageCanonicalFields(tuiOffer);
+  assert.equal(tuiOffer.incl, 'Hand Luggage Included · Coach Transfers');
 
   const missing3 = context.parsePackageOfferText(`Puerto Rico, Gran Canaria\n7 Nights\nSelf Catering\n9th July 2026\nLeeds Bradford Flights\nHand Luggage Included\nCoach Transfers\n£1,030pp\nBased on 2 Adults Sharing`, {}).parsed;
   assert.equal(missing3.name, 'Puerto Rico, Gran Canaria');
@@ -586,6 +605,7 @@ test('Load Selected Imports route persists Jet2 package classification for opera
   assert.equal(restored.offers[2].operator, 'jet2');
   assert.equal(restored.offers[2].ship, 'Morasol Suites');
   assert.equal(restored.offers[2].sailingFrom, 'Leeds Bradford');
+  assert.equal(restored.offers[2].incl, 'Luggage & Transfers Included');
   assert.equal(restored.offers[3].offerType, 'package');
   assert.equal(restored.offers[3].operator, 'jet2');
   assert.equal(restored.offers[3].name, 'Playa De Las Americas, Tenerife');
