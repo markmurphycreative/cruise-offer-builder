@@ -9314,13 +9314,13 @@ function parseJet2DawsonQuote(lines,txt,parsed){
   const total=totalMatches.sort((a,b)=>Number(String(b).replace(/,/g,""))-Number(String(a).replace(/,/g,"")))[0];
   let pp=(txt.match(/price\s+per\s+person[\s\S]{0,160}?£\s*([\d,]+)/i)||[])[1];
   if(!pp){ const comingBack=txt.match(/coming\s+back\s+£\s*(\d{3,4})/i); if(comingBack) pp=comingBack[1]; }
-  if(total){ parsed.totalPrice=total.replace(/,/g,""); score+=10; }
+  if(total){ parsed.totalPrice=total.replace(/,/g,""); parsed.bookingTotal=parsed.totalPrice; score+=10; }
   if(pp){ parsed.price=pp.replace(/,/g,""); parsed.leadPrice=parsed.price; parsed.pricePerPerson=parsed.price; score+=10; }
   if(parsed.totalPrice&&parsed.price&&parsed.adults){ const repairedTotal=Number(parsed.totalPrice); const lead=Number(String(parsed.price).replace(/\D/g,"")); const adults=Number(parsed.adults); if(repairedTotal!==lead*adults && Math.abs(repairedTotal-(lead*adults))<=10) parsed.totalPrice=String(lead*adults); }
   parsed.priceLabel=Number(parsed.children||0)>0?"Total Price":"";
   const tax=txt.match(/approximately\s+£\s*([\d,]+)\s+in\s+tourist\s+tax/i);
   const damagedTax=!tax && /approximately\s+2\s+n\s+tourist\s+fo/i.test(txt) && /(?:total\s+holiday\s+cost\s+is|tol\s+holiday\s+cost\s+is|tol\s+o?iday\s+cost\s+is|coslis\s+el\s+te2)/i.test(txt);
-  if(tax||damagedTax){ parsed.localFeeAmount=tax?tax[1].replace(/,/g,""):"24"; parsed.localFeeType="total"; parsed.localFeeApproximate="true"; parsed.localFeeWording=`Approximately £${parsed.localFeeAmount} total tourist tax payable locally`; if(damagedTax) parsed.localFeeConfidence="low"; }
+  if(tax||damagedTax){ parsed.localFeeAmount=tax?tax[1].replace(/,/g,""):"24"; parsed.localFeeType="total"; if(parsed.adults||parsed.children){ const partySize=Math.max(1,Number(parsed.adults||0)+Number(parsed.children||0)); parsed.localFeePerPerson=String(Number(parsed.localFeeAmount)/partySize); parsed.resortFee=parsed.localFeePerPerson+"pp"; } parsed.localFeeApproximate="true"; parsed.localFeeWording=`Approximately £${parsed.localFeeAmount} total tourist tax payable locally`; if(damagedTax) parsed.localFeeConfidence="low"; }
   const revised=txt.match(/total\s+holiday\s+cost\s+is\s+£\s*([\d,]+)/i); if(revised) parsed.totalHolidayCostIncludingFee=revised[1].replace(/,/g,"");
   return score;
 }
@@ -11044,7 +11044,7 @@ function normalisePackagePricingFields(data){
   if(base){ d.leadPrice=base; d.price=base; }
   if(fee){ d.localFeePerPerson=fee; d.resortFee=fee+"pp"; }
   const operatorKey=normalisePackageOperatorKey(d.operator||d.operatorKey||"");
-  const isCouplesSharedPricing=operatorKey==="jet2" && Number(d.children||0)<=0;
+  const isCouplesSharedPricing=["jet2","tui","easyjet"].includes(operatorKey) && Number(d.children||0)<=0;
   if(d.totalPrice!==undefined) d.bookingTotal=packageCleanNumericString(d.totalPrice)||String(d.totalPrice||"");
   if(base && fee && isCouplesSharedPricing){
     d.displayTotalPerPerson=String(packageNumericValue(base)+packageNumericValue(fee));
@@ -11074,6 +11074,7 @@ function packageOfferFromData(d){
   let localFeePerPerson=String(d.localFeePerPerson||"").trim();
   const partyForFee=Math.max(1,packageNumericValueLocal(adults||0)+packageNumericValueLocal(children||0));
   if(!localFeePerPerson && localFeeType==="total" && localFeeAmount) localFeePerPerson=String(packageNumericValueLocal(localFeeAmount)/partyForFee);
+  if(!localFeePerPerson && /pp|per person/i.test(String(d.resortFee||""))) localFeePerPerson=packageCleanNumericStringLocal(d.resortFee);
   const cfgForCta=PACKAGE_OPERATORS[operator]||{};
   const ctaPrimary=packageCopyValue(d,"ctaPrimary",cfgForCta);
   const ctaSecondary=packageCopyValue(d,"ctaSecondary",cfgForCta);
@@ -11081,13 +11082,13 @@ function packageOfferFromData(d){
   const resortFeeNumber=packageCleanNumericStringLocal(localFeePerPerson)||packageCleanNumericStringLocal(d.resortFee)||packageCleanNumericStringLocal(localFeeAmount);
   const resortFee=resortFeeNumber?(resortFeeNumber+"pp"):"";
   const feePerPerson=packageNumericValueLocal(localFeePerPerson||resortFee);
-  const isCouplesSharedPricing=operator==="jet2"&&Number(children||0)<=0;
+  const isCouplesSharedPricing=["jet2","tui","easyjet"].includes(operator)&&Number(children||0)<=0;
   const explicitTotal=packageCleanNumericStringLocal(d.totalPrice);
   const displayTotal=packageCleanNumericStringLocal(d.displayTotalPerPerson);
   const bookingTotal=packageCleanNumericStringLocal(d.bookingTotal)||((explicitTotal && packageNumericValueLocal(explicitTotal)>999)?explicitTotal:"");
   const totalPrice=isCouplesSharedPricing ? (leadPrice||explicitTotal||displayTotal) : (explicitTotal||displayTotal);
   return {
-    offerType:"package", operator, ctaPrimary, ctaSecondary, destination:d.destination||d.name||"", hotel:d.accommodation||d.hotel||d.ship||"", nights:d.nights||"", boardBasis:d.boardBasis||d.boardlbl||d.board||"", departureDate:(d.departureDate?formatPackageOrdinalDate(d.departureDate):formatPackageOrdinalDate([d.day,d.month].filter(Boolean).join(" "))), departureAirport:airport, leadPrice:leadPrice||packageCleanNumericStringLocal(d.price)||packageCleanNumericStringLocal(d.leadPrice)||"", resortFee, totalPrice, bookingTotal, adults:adults||"2", children:children||"0", roomType:d.roomType||"", handLuggage:d.handLuggage||"", holdLuggage:d.holdLuggage||"", transfers:d.transfers||"", freeChildPlace:!!(d.freeChildPlace&&String(d.freeChildPlace)!=="false"||/free child place/i.test([d.tags,d.theme_tags].join(" "))), localFeeAmount, localFeeType, localFeeApproximate, localFeeWording, pricePerPerson:d.pricePerPerson||leadPrice, priceLabel:(isCouplesSharedPricing?( /^Total Price$/i.test(String(d.priceLabel||""))?"":String(d.priceLabel||"") ):packageCopyValue(d,"priceLabel",cfgForCta)), perPersonSuffix:packageCopyValue(d,"perPersonSuffix",cfgForCta), resortFeeLabel:packageCopyValue(d,"resortFeeLabel",cfgForCta), nightsLabel:packageCopyValue(d,"nightsLabel",cfgForCta), flightsLabel:packageCopyValue(d,"flightsLabel",cfgForCta), basis:packageCopyValue(d,"basis",cfgForCta), inclusions:packageCopyValue(d,"inclusions",cfgForCta), features:String(d.theme_tags||d.tags||"").split(/\s*[•·,]\s*/).filter(Boolean)
+    offerType:"package", operator, ctaPrimary, ctaSecondary, destination:d.destination||d.name||"", hotel:d.accommodation||d.hotel||d.ship||"", nights:d.nights||"", boardBasis:d.boardBasis||d.boardlbl||d.board||"", departureDate:(d.departureDate?formatPackageOrdinalDate(d.departureDate):formatPackageOrdinalDate([d.day,d.month].filter(Boolean).join(" "))), departureAirport:airport, leadPrice:leadPrice||packageCleanNumericStringLocal(d.price)||packageCleanNumericStringLocal(d.leadPrice)||"", resortFee, totalPrice, bookingTotal, adults:adults||"2", children:children||"0", roomType:d.roomType||"", handLuggage:d.handLuggage||"", holdLuggage:d.holdLuggage||"", transfers:d.transfers||"", freeChildPlace:!!(d.freeChildPlace&&String(d.freeChildPlace)!=="false"||/free child place/i.test([d.tags,d.theme_tags].join(" "))), localFeeAmount, localFeeType, localFeePerPerson, localFeeApproximate, localFeeWording, pricePerPerson:d.pricePerPerson||leadPrice, priceLabel:(isCouplesSharedPricing?( /^Total Price$/i.test(String(d.priceLabel||""))?"":String(d.priceLabel||"") ):packageCopyValue(d,"priceLabel",cfgForCta)), perPersonSuffix:packageCopyValue(d,"perPersonSuffix",cfgForCta), resortFeeLabel:packageCopyValue(d,"resortFeeLabel",cfgForCta), nightsLabel:packageCopyValue(d,"nightsLabel",cfgForCta), flightsLabel:packageCopyValue(d,"flightsLabel",cfgForCta), basis:packageCopyValue(d,"basis",cfgForCta), inclusions:packageCopyValue(d,"inclusions",cfgForCta), features:String(d.theme_tags||d.tags||"").split(/\s*[•·,]\s*/).filter(Boolean)
   };
 }
 function formatPackageMoney(value){
@@ -11107,13 +11108,13 @@ function formatPackageOrdinalDate(value){
 }
 function packageAirportLine(value,label="Flights"){ const clean=String(value||"").replace(/\s+Flights?$/i,"").trim(); const suffix=String(label||"").trim(); return clean?(suffix?`${clean} ${suffix}`:clean):""; }
 function packageResortFeeText(value,operatorKey,label,perPersonSuffix,model){
-  if(model&&model.localFeeWording && !(operatorKey==="jet2" && Number((model&&model.children)||0)<=0)) return escapeHtml(model.localFeeWording);
+  if(model&&model.localFeeWording && !(["jet2","tui","easyjet"].includes(operatorKey) && Number((model&&model.children)||0)<=0)) return escapeHtml(model.localFeeWording);
   const money=formatPackageMoney(value);
   if(!money) return "";
-  const jet2Couples=operatorKey==="jet2" && Number((model&&model.children)||0)<=0;
-  const total=model&&model.localFeeType==="total" && !jet2Couples;
+  const packageCouples=["jet2","tui","easyjet"].includes(operatorKey) && Number((model&&model.children)||0)<=0;
+  const total=model&&model.localFeeType==="total" && !packageCouples;
   const approximate=!!(model&&model.localFeeApproximate);
-  const pp=(!total && (/pp|per person/i.test(String(value||"")) || jet2Couples));
+  const pp=(!total && (/pp|per person/i.test(String(value||"")) || packageCouples));
   const suffix=pp?String(perPersonSuffix==null?"pp":perPersonSuffix):"";
   if(total) return `${approximate?"Approximately ":"+"}${money} total local resort fee`;
   const feeLabel=String(label==null||label===""?(operatorKey==="easyjet"?"Total Local Resort Fee":"Local Resort Fee"):label);
@@ -11130,11 +11131,7 @@ function renderPackagePriceBlock(model,operatorKey){
   const fee=packageResortFeeText(model.resortFee,operatorKey,model.resortFeeLabel,model.perPersonSuffix,model);
   const hasDistinctTotal=fee && total && lead && total!==lead && !isFamily;
   const priceMarkup=(amount,showPp,extraClass="")=>`<div class="pkg-price ${extraClass}">${amount}<span class="pkg-pp">${showPp?escapeHtml(model.perPersonSuffix):""}</span></div>`;
-  if(operatorKey==="jet2" && !isFamily && lead){
-    if(fee && total && total!==lead){
-      const jet2Label=model.priceLabel || "Total Price";
-      return `<div class="pkg-lead">${priceMarkup(lead,true)}<div class="pkg-fee">${fee}</div></div><div class="pkg-total">${priceMarkup(total,true)}<div class="pkg-price-label">${escapeHtml(jet2Label)}</div>${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
-    }
+  if(["jet2","tui","easyjet"].includes(operatorKey) && !isFamily && lead){
     return `<div class="pkg-total">${priceMarkup(lead,true)}${fee?`<div class="pkg-fee">${fee}</div>`:""}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
   }
   if(hasDistinctTotal){
