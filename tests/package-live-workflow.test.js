@@ -84,6 +84,7 @@ The total holiday cost is £1,172 including approximately £24 in tourist tax`;
 
 const jet2WhiteCity = `Dawson & Sanderson
 Your holiday to...
+.. Plus
 White City Beach Hotel
 Nr Alanya, Antalya Area
 Our rating ++++
@@ -232,6 +233,16 @@ test('additional Dawson Jet2 quotations parse hotel and destination without OCR 
     if(hotel === 'White City Beach Hotel') assert.equal(parsed.sourceLocation, 'Nr Alanya, Antalya Area');
     assert.equal(parsed.sailingFrom, airport);
     assert.equal(parsed.price, price);
+    if(hotel === 'White City Beach Hotel'){
+      assert.equal(parsed.boardlbl, 'All Inclusive');
+      assert.equal(parsed.day, '7th');
+      assert.equal(parsed.month, 'July 2026');
+      assert.equal(parsed.flightDisplay, 'Leeds Bradford Flights');
+      assert.equal(parsed.priceLabel, '');
+      assert.equal(parsed.bookingTotal, '1406');
+      assert.notEqual(parsed.ship, 'Plus');
+      assert.notEqual(parsed.ship, '.. Plus');
+    }
     assert.notEqual(parsed.price, parsed.bookingTotal || parsed.totalPrice, hotel);
     assert.doesNotMatch([parsed.ship, parsed.name, parsed.destination].join(' '), /Plus|Your holiday to|Our rating|TripAdvisor|Reviews|Holiday summary|Flight details|Payable|\. plus/i);
   });
