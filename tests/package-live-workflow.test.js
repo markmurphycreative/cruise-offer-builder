@@ -8,8 +8,8 @@ function extractFunction(name) { const start=html.indexOf(`function ${name}(`); 
 function extractConst(name) { const match=html.match(new RegExp(`const\\s+${name}\\s*=`)); assert.ok(match,`Could not find ${name}`); const start=match.index; const end=html.indexOf(';',start); return html.slice(start,end+1); }
 function createContext(){ const context={console, document:{getElementById(){return null;}}, clampParseConfidenceScore:v=>Math.max(0,Math.min(100,Number(v)||0))}; vm.createContext(context); vm.runInContext([
   'function escapeRegExp(value){ return String(value||"").replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&"); }',
-  extractConst('PACKAGE_OFFER_DETECTION_THRESHOLD'), extractConst('PACKAGE_OFFER_SIGNAL_WEIGHTS'), extractConst('PACKAGE_OPERATORS'), extractConst('PACKAGE_COPY_FIELDS'), extractConst('PACKAGE_BOARD_BASES'),
-  extractFunction('isTrustedJet2DawsonQuote'), extractFunction('getPackageOperatorMatch'), extractFunction('detectPackageOffer'), extractFunction('normalisePackageOcrText'), extractFunction('titleCasePackageValue'), extractFunction('detectPackageBoardBasis'), extractFunction('extractPackageSharingBasis'), extractFunction('extractPackagePrices'), extractFunction('isUnsafePackageTitleLine'), extractFunction('cleanPackageParsedTitle'), extractFunction('parseJet2DawsonQuote'), extractFunction('parsePackageOfferText'), extractFunction('canApplyParsedPackageOffer')
+  extractConst('PACKAGE_OFFER_DETECTION_THRESHOLD'), extractConst('PACKAGE_OFFER_SIGNAL_WEIGHTS'), extractConst('PACKAGE_OPERATORS'), extractConst('PACKAGE_COPY_FIELDS'), extractConst('PACKAGE_BOARD_BASES'), extractConst('JET2_APPROVED_INCLUSION_COPY'),
+  extractFunction('isTrustedJet2DawsonQuote'), extractFunction('getPackageOperatorMatch'), extractFunction('detectPackageOffer'), extractFunction('normalisePackageOcrText'), extractFunction('titleCasePackageValue'), extractFunction('detectPackageBoardBasis'), extractFunction('extractPackageDepartureAirport'), extractFunction('extractPackageSharingBasis'), extractFunction('extractPackagePrices'), extractFunction('isUnsafePackageTitleLine'), extractFunction('cleanPackageParsedTitle'), extractFunction('parseJet2DawsonQuote'), extractFunction('isJet2SourceInclusionCopy'), extractFunction('normaliseJet2PackageInclusionCopy'), extractFunction('parsePackageOfferText'), extractFunction('canApplyParsedPackageOffer')
 ].join('\n'), context); return context; }
 
 const tuiSanta = `Santa Eulalia, Ibiza\nHotel Tres Torres\n7 Nights\nBed & Breakfast\n25th July 2026\nNewcastle Flights\nLuggage & Transfers Included £7799\nN PP\notal Price\nAV TUI Based on 2 adults Sharir`;
@@ -76,7 +76,7 @@ Based on 2 Adults Sharing`;
   assert.equal(parsed.boardlbl, 'Self Catering');
   assert.equal(parsed.day, '15th');
   assert.equal(parsed.month, 'July 2026');
-  assert.equal(parsed.incl, 'Hand Luggage Included · Coach Transfers');
+  assert.equal(parsed.incl, 'Luggage & Transfers Included');
   assert.equal(parsed.price, '570pp');
   assert.equal(parsed.basis, 'Based on 2 Adults Sharing');
   assert.doesNotMatch(parsed.ship, /Departs|Payable|Price/i);
@@ -225,9 +225,9 @@ test('Dawson & Sanderson Jet2 Sunset quotation is recognised without Jet2 logo a
   assert.equal(parsed.roomType, 'Studio');
   assert.equal(parsed.adults, '2');
   assert.equal(parsed.children, '0');
-  assert.equal(parsed.handLuggage, '2 x 10kg');
-  assert.equal(parsed.holdLuggage, '2 x 22kg');
-  assert.equal(parsed.transfers, 'Coach transfers included');
+  assert.equal(parsed.handLuggage, '');
+  assert.equal(parsed.holdLuggage, '');
+  assert.equal(parsed.transfers, '');
   assert.equal(parsed.price, '574');
   assert.equal(parsed.leadPrice, '574');
   assert.equal(parsed.pricePerPerson, '574');
@@ -304,9 +304,9 @@ test('real Trello preview Jet2 OCR fixture is recognised and extracted without c
   assert.equal(parsed.roomType, 'Studio');
   assert.equal(parsed.adults, '2');
   assert.equal(parsed.children, '0');
-  assert.equal(parsed.handLuggage, '2 x 10kg');
-  assert.equal(parsed.holdLuggage, '2 x 22kg');
-  assert.equal(parsed.transfers, 'Coach transfers included');
+  assert.equal(parsed.handLuggage, '');
+  assert.equal(parsed.holdLuggage, '');
+  assert.equal(parsed.transfers, '');
   assert.equal(parsed.incl, 'Luggage & Transfers Included');
   assert.equal(parsed.inclusionsDisplay, 'Luggage & Transfers Included');
   assert.equal(parsed.price, '574');
@@ -343,10 +343,10 @@ test('real screenshot import state path carries Dawson Jet2 structure into activ
     'function escapeRegExp(value){ return String(value||"").replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&"); }',
     extractFunction('escapeHtml'),
     extractConst('PACKAGE_OFFER_DETECTION_THRESHOLD'), extractConst('PACKAGE_OFFER_SIGNAL_WEIGHTS'),
-    extractConst('PACKAGE_OPERATORS'), extractConst('PACKAGE_COPY_FIELDS'), extractConst('PACKAGE_BOARD_BASES'), extractConst('PACKAGE_FEATURES'), extractConst('PACKAGE_AIRPORTS'),
+    extractConst('PACKAGE_OPERATORS'), extractConst('PACKAGE_COPY_FIELDS'), extractConst('PACKAGE_BOARD_BASES'), extractConst('PACKAGE_FEATURES'), extractConst('PACKAGE_AIRPORTS'), extractConst('JET2_APPROVED_INCLUSION_COPY'),
     'const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};',
     extractFunction('getActiveRenderCampaignType'), extractFunction('normalisePackageOperatorKey'), extractFunction('isPackageOperator'), extractFunction('isPackageOffer'), extractFunction('packageOfferHasGenuineData'), extractFunction('packageDefaultCopyValue'), extractFunction('normalisePackageCopyOverrides'), extractFunction('packageCopyValue'), extractFunction('applyPackageCopyInputOverrides'), extractFunction('packageCopyEditorValue'),
-    extractFunction('isTrustedJet2DawsonQuote'), extractFunction('getPackageOperatorMatch'), extractFunction('detectPackageOffer'), extractFunction('normaliseVisionExtractedText'), extractFunction('normalisePackageOcrText'), extractFunction('titleCasePackageValue'), extractFunction('detectPackageBoardBasis'), extractFunction('extractPackageSharingBasis'), extractFunction('extractPackagePrices'), extractFunction('isUnsafePackageTitleLine'), extractFunction('cleanPackageParsedTitle'), extractFunction('parseJet2DawsonQuote'), extractFunction('parsePackageOfferText'), extractFunction('parseScreenshotTextForActiveBuilder'), extractFunction('getBulkPackageImportFallbackOperator'), extractFunction('isUnsafeImportedPackageVisibleValue'), extractFunction('normaliseBulkImportedPackageOffer'), extractFunction('applyParsedOfferToSlot'),
+    extractFunction('isTrustedJet2DawsonQuote'), extractFunction('getPackageOperatorMatch'), extractFunction('detectPackageOffer'), extractFunction('normaliseVisionExtractedText'), extractFunction('normalisePackageOcrText'), extractFunction('titleCasePackageValue'), extractFunction('detectPackageBoardBasis'), extractFunction('extractPackageDepartureAirport'), extractFunction('extractPackageSharingBasis'), extractFunction('extractPackagePrices'), extractFunction('isUnsafePackageTitleLine'), extractFunction('cleanPackageParsedTitle'), extractFunction('parseJet2DawsonQuote'), extractFunction('isJet2SourceInclusionCopy'), extractFunction('normaliseJet2PackageInclusionCopy'), extractFunction('parsePackageOfferText'), extractFunction('parseScreenshotTextForActiveBuilder'), extractFunction('getBulkPackageImportFallbackOperator'), extractFunction('isUnsafeImportedPackageVisibleValue'), extractFunction('normaliseBulkImportedPackageOffer'), extractFunction('applyParsedOfferToSlot'),
     extractFunction('formatPackageOrdinalDate'), extractFunction('packageOfferFromData'), extractFunction('formatPackageMoney'), extractFunction('packageAirportLine'), extractFunction('packageResortFeeText'), extractFunction('renderPackagePriceBlock'), extractFunction('renderPackageOperatorLogo'), extractFunction('renderPackageCard')
   ].join('\n'), context);
 
@@ -410,7 +410,7 @@ test('live Package editor input IDs update authoritative offer and preview-rende
   };
   vm.createContext(context);
   vm.runInContext([
-    extractFunction('escapeHtml'), extractFunction('isLivePackagePlainTextInput'), extractConst('FLDS'), extractConst('PACKAGE_OPERATORS'), extractConst('PACKAGE_COPY_FIELDS'), extractConst('PACKAGE_BOARD_BASES'), extractConst('PACKAGE_FEATURES'), extractConst('PACKAGE_AIRPORTS'),
+    extractFunction('escapeHtml'), extractFunction('isLivePackagePlainTextInput'), extractConst('FLDS'), extractConst('PACKAGE_OPERATORS'), extractConst('PACKAGE_COPY_FIELDS'), extractConst('PACKAGE_BOARD_BASES'), extractConst('PACKAGE_FEATURES'), extractConst('PACKAGE_AIRPORTS'), extractConst('JET2_APPROVED_INCLUSION_COPY'),
     extractFunction('getActiveRenderCampaignType'), extractFunction('normalisePackageOperatorKey'), extractFunction('isPackageOffer'), extractFunction('packageOfferHasGenuineData'), extractFunction('packageDefaultCopyValue'), extractFunction('normalisePackageCopyOverrides'), extractFunction('packageCopyValue'), extractFunction('applyPackageCopyInputOverrides'), extractFunction('packageCopyEditorValue'), extractConst('PACKAGE_EDITOR_FIELD_MAP'), extractFunction('packageCanonicalEditorField'), extractFunction('packageEditorValueForField'), extractFunction('syncPackageCanonicalFields'), extractFunction('applyPackageEditorFieldsToCanonical'), extractFunction('packageNumericValue'), extractFunction('packageCleanNumericString'), extractFunction('applyJet2PackageDefaults'), extractFunction('normalisePackagePricingFields'), extractFunction('formatPackageOrdinalDate'), extractFunction('packageOfferFromData'), extractFunction('formatPackageMoney'), extractFunction('packageAirportLine'), extractFunction('packageResortFeeText'), extractFunction('renderPackagePriceBlock'), extractFunction('renderPackageOperatorLogo'), extractFunction('renderPackageCard'), extractFunction('cleanCardFieldValue'), extractFunction('cleanCardFieldLines'), extractFunction('cleanCardFacingOfferData'), extractFunction('renderCardHTML'), 'function bc(d){ return renderCardHTML(d); }', extractFunction('renderOfferWithOptionalCtaHTML'), extractFunction('visibleFieldsToData'), extractFunction('commitVisibleFields'), extractFunction('renderVisibleCard')
   ].join('\n'), context);
 
@@ -531,11 +531,11 @@ test('Load Selected Imports route persists Jet2 package classification for opera
   vm.createContext(context);
   vm.runInContext([
     'function escapeRegExp(value){ return String(value||"").replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }',
-    extractConst('PACKAGE_OFFER_DETECTION_THRESHOLD'), extractConst('PACKAGE_OFFER_SIGNAL_WEIGHTS'), extractConst('PACKAGE_OPERATORS'), extractConst('PACKAGE_COPY_FIELDS'), extractConst('PACKAGE_BOARD_BASES'), extractConst('PACKAGE_FEATURES'), extractConst('PACKAGE_AIRPORTS'),
+    extractConst('PACKAGE_OFFER_DETECTION_THRESHOLD'), extractConst('PACKAGE_OFFER_SIGNAL_WEIGHTS'), extractConst('PACKAGE_OPERATORS'), extractConst('PACKAGE_COPY_FIELDS'), extractConst('PACKAGE_BOARD_BASES'), extractConst('PACKAGE_FEATURES'), extractConst('PACKAGE_AIRPORTS'), extractConst('JET2_APPROVED_INCLUSION_COPY'),
     'const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"}; const PERSISTED_PASTE_OFFER_KEY="_rawPastedOfferText"; const TRANSIENT_PASTE_OFFER_KEYS=["rawPaste","pasteText","parsedRaw"];',
     extractFunction('getOrderedScreenshotImports'), extractFunction('getPackageOperatorDisplayName'), extractFunction('getScreenshotImportTitle'), extractFunction('getScreenshotImportSummaryLines'), extractFunction('getScreenshotImportReviewedText'), extractFunction('getScreenshotImportOperatorStatus'), extractFunction('hasScreenshotImportMissingOperatorWarning'), extractFunction('renderScreenshotImportReview'), extractFunction('getAvailableScreenshotImportSlots'), extractFunction('getScreenshotCampaignCapacityMessage'),
-    extractFunction('isTrustedJet2DawsonQuote'), extractFunction('getPackageOperatorMatch'), extractFunction('detectPackageOffer'), extractFunction('detectOfferType'), extractFunction('normaliseVisionExtractedText'), extractFunction('normalisePackageOcrText'), extractFunction('titleCasePackageValue'), extractFunction('detectPackageBoardBasis'), extractFunction('extractPackageSharingBasis'), extractFunction('extractPackagePrices'), extractFunction('isUnsafePackageTitleLine'), extractFunction('cleanPackageParsedTitle'), extractFunction('parseJet2DawsonQuote'), extractFunction('parsePackageOfferText'), extractFunction('parseScreenshotTextForActiveBuilder'),
-    extractFunction('normalisePackageOperatorKey'), extractFunction('isPackageOperator'), extractFunction('packageOfferHasGenuineData'), extractFunction('packageDefaultCopyValue'), extractFunction('normalisePackageCopyOverrides'), extractFunction('packageCopyValue'), extractFunction('applyPackageCopyInputOverrides'), extractConst('PACKAGE_EDITOR_FIELD_MAP'), extractFunction('syncPackageCanonicalFields'), extractConst('JET2_APPROVED_INCLUSION_COPY'), extractFunction('isJet2SourceInclusionCopy'), extractFunction('normaliseJet2PackageInclusionCopy'), extractFunction('applyJet2PackageDefaults'), extractFunction('packageNumericValue'), extractFunction('packageCleanNumericString'), extractFunction('normalisePackagePricingFields'),
+    extractFunction('isTrustedJet2DawsonQuote'), extractFunction('getPackageOperatorMatch'), extractFunction('detectPackageOffer'), extractFunction('detectOfferType'), extractFunction('normaliseVisionExtractedText'), extractFunction('normalisePackageOcrText'), extractFunction('titleCasePackageValue'), extractFunction('detectPackageBoardBasis'), extractFunction('extractPackageDepartureAirport'), extractFunction('extractPackageSharingBasis'), extractFunction('extractPackagePrices'), extractFunction('isUnsafePackageTitleLine'), extractFunction('cleanPackageParsedTitle'), extractFunction('parseJet2DawsonQuote'), extractFunction('isJet2SourceInclusionCopy'), extractFunction('normaliseJet2PackageInclusionCopy'), extractFunction('parsePackageOfferText'), extractFunction('parseScreenshotTextForActiveBuilder'),
+    extractFunction('normalisePackageOperatorKey'), extractFunction('isPackageOperator'), extractFunction('packageOfferHasGenuineData'), extractFunction('packageDefaultCopyValue'), extractFunction('normalisePackageCopyOverrides'), extractFunction('packageCopyValue'), extractFunction('applyPackageCopyInputOverrides'), extractConst('PACKAGE_EDITOR_FIELD_MAP'), extractFunction('syncPackageCanonicalFields'), extractFunction('applyJet2PackageDefaults'), extractFunction('packageNumericValue'), extractFunction('packageCleanNumericString'), extractFunction('normalisePackagePricingFields'),
     extractFunction('getBulkPackageImportFallbackOperator'), extractFunction('isUnsafeImportedPackageVisibleValue'), extractFunction('normaliseBulkImportedPackageOffer'), extractFunction('stripTransientPasteOfferFields'), extractFunction('applyParsedOfferToSlot'), extractFunction('loadSelectedScreenshotImports'),
     extractFunction('formatPackageMoney'), extractFunction('packageAirportLine'), extractFunction('packageResortFeeText'), extractFunction('renderPackagePriceBlock'), extractFunction('renderPackageOperatorLogo'), extractFunction('formatPackageOrdinalDate'), extractFunction('packageOfferFromData'), extractFunction('renderPackageCard'), extractFunction('setOfferTypeDetection')
   ].join('\n'), context);
@@ -613,4 +613,35 @@ test('Load Selected Imports route persists Jet2 package classification for opera
   assert.equal(restored.offers[3].sailingFrom || '', '');
   assert.equal(restored.offers[0].name, 'Approved Destination 1');
   assert.equal(restored.offers[1].ship, 'Approved Hotel 2');
+});
+
+test('Jet2 Dawson package import keeps airports and hotels offer-local with blank missing values', () => {
+  const { parsePackageOfferText } = createContext();
+  const fixtures = [
+    { raw: jet2DawsonSunset, hotel: 'Sunset Paradise Resort', destination: 'Lassi, Kefalonia', airport: 'Newcastle' },
+    { raw: jet2WhiteCity, hotel: 'White City Beach Hotel', destination: 'Antalya, Turkey', airport: 'Leeds Bradford' },
+    { raw: jet2Castillo, hotel: 'Servatur Castillo De Sol', destination: 'Puerto Rico, Gran Canaria', airport: 'Leeds Bradford' },
+    { raw: jet2Caribe, hotel: 'Servatur Caribe Apartments', destination: 'Playa De Las Americas, Tenerife', airport: 'Leeds Bradford' }
+  ];
+  const parsed = fixtures.map(item => parsePackageOfferText(item.raw, {}).parsed);
+  parsed.forEach((offer, index) => {
+    assert.equal(offer.name, fixtures[index].destination);
+    assert.equal(offer.ship, fixtures[index].hotel);
+    assert.equal(offer.departureAirport, fixtures[index].airport);
+    assert.equal(offer.sailingFrom, fixtures[index].airport);
+    assert.equal(offer.flightDisplay, `${fixtures[index].airport} Flights`);
+    assert.equal(offer.incl, 'Luggage & Transfers Included');
+    assert.doesNotMatch([offer.name, offer.ship, offer.departureAirport].join(' '), /Your holiday to|Payable To|Flight details|Going out|Coming back|Departs|Arrives|LBA|NCL|\(|\)|Price/i);
+  });
+  assert.equal(parsed[0].departureAirport, 'Newcastle');
+  assert.notEqual(parsed[0].departureAirport, parsed[1].departureAirport);
+
+  const noAirport = parsePackageOfferText(jet2DawsonSunset.replace(/\nGoing out\nNewcastle NCL to Kefalonia EFL[\s\S]*?Coming back\nKefalonia EFL to Newcastle NCL/, '\nGoing out\nComing back'), {}).parsed;
+  assert.equal(noAirport.departureAirport || '', '');
+  assert.equal(noAirport.sailingFrom || '', '');
+
+  const noHotel = parsePackageOfferText(jet2Castillo.replace(/^Servatur Castillo De Sol Our rating\n/m, ''), {}).parsed;
+  assert.equal(noHotel.name, 'Puerto Rico, Gran Canaria');
+  assert.equal(noHotel.ship || '', '');
+  assert.equal(noHotel.departureAirport, 'Leeds Bradford');
 });
