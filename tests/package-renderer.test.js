@@ -409,6 +409,20 @@ test('Jet2 couples derive per-person resort fee from total local fee and party s
   assert.doesNotMatch(out, /Approximately £24 total tourist tax payable locally/);
 });
 
+
+test('Jet2 White City couples render keeps per-person pricing without total label', () => {
+  const { renderPackageCard } = createContext();
+  const out = renderPackageCard({ operator: 'jet2', name: 'Antalya, Turkey', ship: 'White City Beach Hotel', nights: '7', boardlbl: 'All Inclusive', day: '7th', month: 'July 2026', sailingFrom: 'Leeds Bradford', flightDisplay: 'Leeds Bradford Flights', price: '703', leadPrice: '703', totalPrice: '1406', bookingTotal: '1406', priceLabel: '', adults: '2', children: '0' });
+  assert.match(out, /pkg-jet2 pkg-jet2-couples/);
+  assert.match(out, /assets\/package-skins\/jet2\/header-couples\.png/);
+  assert.match(out, /White City Beach Hotel/);
+  assert.match(out, /Antalya, Turkey/);
+  assert.match(out, /Leeds Bradford Flights/);
+  assert.match(out, /£703/);
+  assert.doesNotMatch(out, />Total Price</);
+  assert.doesNotMatch(out, /£1,406|£1406/);
+});
+
 test('Jet2 couples render without fee has a single lower price block and no empty fee line', () => {
   const { renderPackageCard } = createContext();
   const out = renderPackageCard({ operator: 'jet2', name: 'Playa De Las Americas, Tenerife', ship: 'Servatur Caribe Apartments', nights: '7', boardlbl: 'Self Catering', day: '15', month: 'July 2026', sailingFrom: 'Leeds Bradford', price: '499pp', leadPrice: '499pp', adults: '2', children: '0' });

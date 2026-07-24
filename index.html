@@ -9289,10 +9289,26 @@ function parseJet2DawsonQuote(lines,txt,parsed){
   parsed.operatorKey="jet2"; score+=24;
   const holidayIdx=lines.findIndex(line=>/your\s+holiday\s+to/i.test(line));
   if(holidayIdx>=0){
-    const candidates=lines.slice(holidayIdx+1, holidayIdx+14).map(cleanPackageParsedTitle).filter(line=>line&&!isUnsafePackageTitleLine(line));
-    const destinationIndex=candidates.findIndex(line=>/,/.test(line) && !/\b(?:our rating|tripadvisor|reviews?|flight details|holiday summary|payable|departs|arrives)\b/i.test(line));
-    const hotel=destinationIndex>0 ? candidates.slice(0,destinationIndex).find(line=>!/,/.test(line)) : "";
-    const destination=destinationIndex>=0?candidates[destinationIndex]:"";
+    const rejectJet2TitleCandidate=line=>{
+      const value=String(line||"").trim();
+      return !value
+        || /^[^A-Za-z0-9]*plus$/i.test(value)
+        || /^(?:our rating|tripadvisor|tripadvisor traveller rating|based on \d+ reviews?|reviews?|holiday summary|flight details|payable to your travel agent|going out|coming back)$/i.test(value)
+        || /\b(?:our rating|tripadvisor|traveller rating|reviews?|flight details|holiday summary|payable|departs?|arrives?|price per person|hand baggage|bag allowance|coach transfers)\b/i.test(value)
+        || /(?:£|¥|\b(?:\d{1,2}\s*nights?|adults?|children?|child|room with|apartment with|studio|tourist tax|resort fee|total holiday cost)\b)/i.test(value)
+        || !/[A-Za-z]/.test(value);
+    };
+    const titleLines=[];
+    for(const rawLine of lines.slice(holidayIdx+1, holidayIdx+14)){
+      if(/\b(?:holiday summary|flight details|payable to your travel agent)\b/i.test(rawLine)) break;
+      const cleaned=cleanPackageParsedTitle(String(rawLine||"").replace(/^\.*\s*plus\b[\s.,:;-]*/i,"").replace(/[\s.,:;-]*\.*\s*plus$/i,""));
+      if(cleaned&&!isUnsafePackageTitleLine(cleaned)&&!rejectJet2TitleCandidate(cleaned)) titleLines.push(cleaned);
+    }
+    const destinationIndex=titleLines.findIndex(line=>/,/.test(line));
+    const destination=destinationIndex>=0?titleLines[destinationIndex]:"";
+    const hotelCandidates=destinationIndex>0?titleLines.slice(0,destinationIndex).filter(line=>!/,/.test(line)):[];
+    const accommodationTitle=hotelCandidates.find(line=>/\b(?:hotel|resort|apartments?|aparthotel|suites?|villas?)\b/i.test(line));
+    const hotel=accommodationTitle||hotelCandidates[0]||"";
     if(hotel){ parsed.ship=hotel; score+=12; }
     if(destination){
       parsed.sourceLocation=destination;
