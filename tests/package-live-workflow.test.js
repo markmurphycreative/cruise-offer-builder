@@ -514,6 +514,7 @@ test('Load Selected Imports route persists Jet2 package classification for opera
   fields.set('screenshot-load-selected', makeField(''));
   fields.set('screenshot-import-review', makeField(''));
   fields.set('vision-review-panel', makeField(''));
+  fields.set('offer-type-detection', makeField('Offer type not recognised'));
   fields.set('card-output', makeField(''));
   const context = {
     console, window:{}, currentCampaignType:'package', cur:0, offers:[
@@ -536,7 +537,7 @@ test('Load Selected Imports route persists Jet2 package classification for opera
     extractFunction('isTrustedJet2DawsonQuote'), extractFunction('getPackageOperatorMatch'), extractFunction('detectPackageOffer'), extractFunction('detectOfferType'), extractFunction('normaliseVisionExtractedText'), extractFunction('normalisePackageOcrText'), extractFunction('titleCasePackageValue'), extractFunction('detectPackageBoardBasis'), extractFunction('extractPackageSharingBasis'), extractFunction('extractPackagePrices'), extractFunction('isUnsafePackageTitleLine'), extractFunction('cleanPackageParsedTitle'), extractFunction('parseJet2DawsonQuote'), extractFunction('parsePackageOfferText'), extractFunction('parseScreenshotTextForActiveBuilder'),
     extractFunction('normalisePackageOperatorKey'), extractFunction('isPackageOperator'), extractFunction('packageOfferHasGenuineData'), extractFunction('packageDefaultCopyValue'), extractFunction('normalisePackageCopyOverrides'), extractFunction('packageCopyValue'), extractFunction('applyPackageCopyInputOverrides'), extractConst('PACKAGE_EDITOR_FIELD_MAP'), extractFunction('syncPackageCanonicalFields'), extractFunction('applyJet2PackageDefaults'), extractFunction('packageNumericValue'), extractFunction('packageCleanNumericString'), extractFunction('normalisePackagePricingFields'),
     extractFunction('getBulkPackageImportFallbackOperator'), extractFunction('isUnsafeImportedPackageVisibleValue'), extractFunction('normaliseBulkImportedPackageOffer'), extractFunction('stripTransientPasteOfferFields'), extractFunction('applyParsedOfferToSlot'), extractFunction('loadSelectedScreenshotImports'),
-    extractFunction('formatPackageMoney'), extractFunction('packageAirportLine'), extractFunction('packageResortFeeText'), extractFunction('renderPackagePriceBlock'), extractFunction('renderPackageOperatorLogo'), extractFunction('formatPackageOrdinalDate'), extractFunction('packageOfferFromData'), extractFunction('renderPackageCard')
+    extractFunction('formatPackageMoney'), extractFunction('packageAirportLine'), extractFunction('packageResortFeeText'), extractFunction('renderPackagePriceBlock'), extractFunction('renderPackageOperatorLogo'), extractFunction('formatPackageOrdinalDate'), extractFunction('packageOfferFromData'), extractFunction('renderPackageCard'), extractFunction('setOfferTypeDetection')
   ].join('\n'), context);
 
   const offer3 = `Puerto Rico, Gran Canaria\nMorasol Suites\n7 Nights\nSelf Catering\n9th July 2026\nLeeds Bradford Flights\nHand Luggage Included\nCoach Transfers\n£1,030pp\nBased on 2 Adults Sharing`;
@@ -563,10 +564,15 @@ test('Load Selected Imports route persists Jet2 package classification for opera
   assert.equal(context.offers[3].ship, 'Servatur Caribe Apartments');
   assert.equal(context.offers[3].name, 'Playa De Las Americas, Tenerife');
   assert.equal(context.offers[3].sailingFrom || '', '');
+  assert.equal(context.offers[3].departureAirport || '', '');
   assert.equal(context.getScreenshotImportOperatorStatus(context.pendingScreenshotImports[0]), 'Jet2 assigned from campaign');
   assert.equal(context.getScreenshotImportOperatorStatus(context.pendingScreenshotImports[1]), 'Jet2 assigned from campaign');
-  assert.match(context.renderPackageCard(context.offers[2]), /Hand Luggage Included · Coach Transfers/);
-  assert.match(context.renderPackageCard(context.offers[3]), /Hand Luggage Included · Coach Transfers/);
+  assert.doesNotMatch(fields.get('screenshot-import-review').innerHTML, /Operator not detected|Offer type not recognised/);
+  assert.match(fields.get('screenshot-import-review').innerHTML, /High confidence · Jet2 assigned from campaign/);
+  assert.equal(fields.get('offer-type-detection').textContent, 'Detected: Package');
+  assert.doesNotMatch(fields.get('offer-type-detection').textContent, /Offer type not recognised/);
+  assert.match(context.renderPackageCard(context.offers[2]), /Hand Luggage Included ·<wbr> Coach&nbsp;Transfers/);
+  assert.match(context.renderPackageCard(context.offers[3]), /Hand Luggage Included ·<wbr> Coach&nbsp;Transfers/);
 
   const missing3 = context.parsePackageOfferText(`Puerto Rico, Gran Canaria\n7 Nights\nSelf Catering\n9th July 2026\nLeeds Bradford Flights\nHand Luggage Included\nCoach Transfers\n£1,030pp\nBased on 2 Adults Sharing`, {}).parsed;
   assert.equal(missing3.name, 'Puerto Rico, Gran Canaria');
@@ -578,5 +584,13 @@ test('Load Selected Imports route persists Jet2 package classification for opera
   assert.doesNotMatch([missing4.name, missing4.ship].join(' '), /Your Holiday To|Payable To|16:45|£570|Departs|Price Ort|200/);
   const restored = JSON.parse(JSON.stringify({campaignType:context.currentCampaignType, offers:context.offers}));
   assert.equal(restored.offers[2].operator, 'jet2');
+  assert.equal(restored.offers[2].ship, 'Morasol Suites');
+  assert.equal(restored.offers[2].sailingFrom, 'Leeds Bradford');
   assert.equal(restored.offers[3].offerType, 'package');
+  assert.equal(restored.offers[3].operator, 'jet2');
+  assert.equal(restored.offers[3].name, 'Playa De Las Americas, Tenerife');
+  assert.equal(restored.offers[3].ship, 'Servatur Caribe Apartments');
+  assert.equal(restored.offers[3].sailingFrom || '', '');
+  assert.equal(restored.offers[0].name, 'Approved Destination 1');
+  assert.equal(restored.offers[1].ship, 'Approved Hotel 2');
 });

@@ -3411,7 +3411,7 @@ function setVisionReviewText(text,lowConfidence){
   const note=document.getElementById("vision-review-note");
   const cleaned=typeof normaliseVisionExtractedText==="function"?normaliseVisionExtractedText(text):String(text||"");
   if(review) review.value=cleaned;
-  if(typeof detectCruiseOffer==="function") setOfferTypeDetection(cleaned.trim()?detectCruiseOffer(cleaned):null);
+  if(typeof setOfferTypeDetection==="function"){ const detector=(typeof detectOfferType==="function")?detectOfferType:detectCruiseOffer; setOfferTypeDetection(cleaned.trim()?detector(cleaned):null); }
   if(panel) panel.classList.add("active");
   if(note) note.textContent=lowConfidence?"Some text may need reviewing before loading.":"Review extracted text before loading. The existing parser will process this text only after confirmation.";
 }
@@ -3472,7 +3472,9 @@ function getScreenshotImportSummaryLines(item){
 }
 function getScreenshotImportReviewedText(item){ return item ? (item.reviewText!==undefined ? item.reviewText : item.text || "") : ""; }
 function getScreenshotImportOperatorStatus(item){
-  const parsed=(item&&item.result&&item.result.parsed)||{};
+  const loadedIndex=Number(item&&item.loadedOfferIndex);
+  const stored=(Number.isInteger(loadedIndex)&&Array.isArray(offers)&&offers[loadedIndex])?offers[loadedIndex]:null;
+  const parsed=stored||((item&&item.result&&item.result.parsed)||{});
   if(!item||item.status==="error") return "";
   const op=String(parsed.operatorKey||parsed.operator||"").trim();
   if(op && String(parsed._operatorAssignedFromCampaign||"")==="true") return `${op.toLowerCase()==="jet2"?"Jet2":getPackageOperatorDisplayName(op)} assigned from campaign`;
@@ -3480,14 +3482,16 @@ function getScreenshotImportOperatorStatus(item){
   return "";
 }
 function hasScreenshotImportMissingOperatorWarning(item){
-  return getScreenshotImportOperatorStatus(item)==="Operator not detected";
+  const loadedIndex=Number(item&&item.loadedOfferIndex);
+  const parsed=(Number.isInteger(loadedIndex)&&Array.isArray(offers)&&offers[loadedIndex])?offers[loadedIndex]:((item&&item.result&&item.result.parsed)||{});
+  return !String(parsed.operatorKey||parsed.operator||"").trim();
 }
 function syncActiveScreenshotReviewText(){
   const review=document.getElementById("vision-review-text");
   if(!review) return;
   const item=pendingScreenshotImports[activeScreenshotImportIndex];
   review.value=normaliseVisionExtractedText(getScreenshotImportReviewedText(item));
-  if(typeof setOfferTypeDetection==="function") setOfferTypeDetection(review.value.trim()?detectCruiseOffer(review.value):null);
+  if(typeof setOfferTypeDetection==="function"){ const detector=(typeof detectOfferType==="function")?detectOfferType:detectCruiseOffer; setOfferTypeDetection(review.value.trim()?detector(review.value):null); }
 }
 function setActiveScreenshotImport(index){
   const next=Number(index);
@@ -3624,7 +3628,7 @@ function loadSelectedScreenshotImports(){
   for(let i=0;i<loadCount;i++){
     const item=selectedItems[i];
     const loaded=applyParsedOfferToSlot(item.result,slots[i],getScreenshotImportReviewedText(item)||(item.result&&item.result.rawText)||"");
-    if(loaded) item.loadedOfferIndex=slots[i];
+    if(loaded){ item.loadedOfferIndex=slots[i]; const stored=(Array.isArray(offers)&&offers[slots[i]])||{}; if(String(stored.offerType||"").toLowerCase()==="package" && (stored.operator||stored.operatorKey)){ item.confidenceLabel="High confidence"; item.status="ready"; } }
   }
   const firstLoaded=selectedItems.find(item=>Number.isInteger(Number(item.loadedOfferIndex)));
   cur=firstLoaded?Number(firstLoaded.loadedOfferIndex):0;
@@ -3633,6 +3637,7 @@ function loadSelectedScreenshotImports(){
   refreshOfferUi({utm:true,spell:true,autosave:true});
   if(loadCount && typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Screenshot imports loaded");
   renderScreenshotImportReview();
+  if(loadCount && typeof setOfferTypeDetection==="function") setOfferTypeDetection({offerType:"package",isPackage:true,confidence:"high"});
   const remaining=selectedItems.length-loadCount;
   const capacityNote=selectedItems.length>capacity ? ` ${getScreenshotCampaignCapacityMessage()}.` : "";
   setVisionStatus(remaining>0?`Loaded ${loadCount} imported screenshot${loadCount===1?"":"s"}. ${remaining} selected import${remaining===1?"":"s"} left in review because only ${slots.length} empty slot${slots.length===1?" was":"s were"} available.${capacityNote}`:`Loaded ${loadCount} imported screenshot${loadCount===1?"":"s"}.${capacityNote}`,loadCount?"high":"partial");
@@ -3656,8 +3661,8 @@ async function extractOfferTextFromVisionFile(file){
 }
 function handleVisionReviewTextInput(event){
   const value=(event&&event.target?event.target.value:((document.getElementById("vision-review-text")||{}).value||""));
-  if(pendingScreenshotImports[activeScreenshotImportIndex]) pendingScreenshotImports[activeScreenshotImportIndex].reviewText=String(value||"");
-  if(typeof setOfferTypeDetection==="function") setOfferTypeDetection(String(value||"").trim()?detectCruiseOffer(value):null);
+  if(typeof pendingScreenshotImports!=="undefined" && pendingScreenshotImports[activeScreenshotImportIndex]) pendingScreenshotImports[activeScreenshotImportIndex].reviewText=String(value||"");
+  if(typeof setOfferTypeDetection==="function"){ const detector=(typeof detectOfferType==="function")?detectOfferType:detectCruiseOffer; setOfferTypeDetection(String(value||"").trim()?detector(value):null); }
 }
 function loadOfferFromActiveMethod(){
   if(offerImportMethod==="vision"){
@@ -11278,8 +11283,13 @@ function renderPackageCard(d){
   const operatorLogo=renderPackageOperatorLogo(cfg,layout);
   const jet2LogoInBody=model.operator==="jet2"&&jet2Couples?operatorLogo:"";
   const jet2DetailLines=detailTopLines.concat(inclusionLine?[inclusionLine]:[]);
+  const renderDetailLine=(line,isInclusion)=>{
+    const text=escapeHtml(line);
+    const display=isInclusion?text.replace(/\s+·\s+/g," ·<wbr> ").replace(/Coach Transfers/g,"Coach&nbsp;Transfers"):text;
+    return `<span class="pkg-detail-line${isInclusion?" pkg-inclusion":""}">${display}</span>`;
+  };
   const detailsMarkup=model.operator==="jet2"
-    ? [`<div class="pkg-detail-text">${jet2DetailLines.map(line=>`<span class="pkg-detail-line${line===inclusionLine?" pkg-inclusion":""}">${escapeHtml(line)}</span>`).join("")}</div>`, jet2Couples?"":operatorLogo].filter(Boolean).join("")
+    ? [`<div class="pkg-detail-text">${jet2DetailLines.map(line=>renderDetailLine(line,line===inclusionLine)).join("")}</div>`, jet2Couples?"":operatorLogo].filter(Boolean).join("")
     : [detailTopLines.map(escapeHtml).join("<br>"), inclusionLine?`<span class="pkg-inclusion">${escapeHtml(inclusionLine)}</span>`:""].filter(Boolean).join("");
   const skin=cfg.skin||{};
   const headerSrc=(model.operator==="jet2"?(freeChild?skin.headerFamily:skin.headerCouples):skin.header);
