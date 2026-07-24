@@ -344,7 +344,7 @@ test('real screenshot import state path carries Dawson Jet2 structure into activ
   assert.match(visibleText, /£574pp/);
   assert.match(visibleText, /\+£12pp Local Resort Fee/);
   assert.match(visibleText, /£586pp/);
-  assert.doesNotMatch(visibleText, /Total Price/);
+  assert.match(visibleText, /Total Price/);
   assert.doesNotMatch(htmlOutput, /Operator not detected|Our Rating|TripAdvisor|176 Reviews|Hand Luggage Included|Coach Transfers/);
 });
 
@@ -415,7 +415,7 @@ test('live Package editor input IDs update authoritative offer and preview-rende
   assert.equal(context.offers[0].inclusions, 'Luggage, transfers and meals included');
   assert.match(text, /£499pp[\s\S]*\+£15pp Local Resort Fee/);
   assert.match(text, /£514pp/);
-  assert.doesNotMatch(text, /Total Price/);
+  assert.match(text, /Total Price/);
   assert.match(text, /or call into your local store/);
   assert.match(text, /Half Board/);
   fields.get('f-boardlbl').value = 'All Inclusive';

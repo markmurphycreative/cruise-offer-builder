@@ -874,7 +874,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .pc.pkg-jet2 .pkg-pricing--with-fee{height:auto;display:block;}
 .pc.pkg-jet2 .pkg-pricing--with-fee .pkg-lead{margin-bottom:30px;}
 .pc.pkg-jet2.pkg-jet2-couples .pkg-pricing .pkg-lead{position:absolute;right:0;top:116px;margin:0;width:500px;}
-.pc.pkg-jet2.pkg-jet2-couples .pkg-pricing .pkg-total{position:absolute;right:0;top:438px;margin:0;width:500px;}
+.pc.pkg-jet2.pkg-jet2-couples .pkg-pricing .pkg-total{position:absolute;right:0;top:450px;margin:0;width:500px;}
 .pc.pkg-jet2.pkg-jet2-couples .pkg-pricing:not(.pkg-pricing--with-fee) .pkg-total{top:466px;}
 .pc.pkg-jet2 .pkg-pricing--with-fee .pkg-fee{margin-top:12px;}
 .pc.pkg-jet2 .pkg-pricing--with-fee .pkg-price-label{margin-top:14px;}
@@ -11101,8 +11101,9 @@ function packageOfferFromData(d){
   const ctaPrimary=packageCopyValue(d,"ctaPrimary",cfgForCta);
   const ctaSecondary=packageCopyValue(d,"ctaSecondary",cfgForCta);
   const leadPrice=packageCleanNumericStringLocal(d.price||d.leadPrice);
-  const resortFeeNumber=packageCleanNumericStringLocal(localFeePerPerson)||packageCleanNumericStringLocal(d.resortFee)||packageCleanNumericStringLocal(localFeeAmount);
-  const resortFee=resortFeeNumber?(resortFeeNumber+"pp"):"";
+  const familyPricing=packageNumericValueLocal(children||0)>0;
+  const resortFeeNumber=(familyPricing&&localFeeType==="total"?packageCleanNumericStringLocal(localFeeAmount):"")||packageCleanNumericStringLocal(localFeePerPerson)||packageCleanNumericStringLocal(d.resortFee)||packageCleanNumericStringLocal(localFeeAmount);
+  const resortFee=resortFeeNumber?(familyPricing&&localFeeType==="total"?resortFeeNumber:(resortFeeNumber+"pp")):"";
   const feePerPerson=packageNumericValueLocal(localFeePerPerson||resortFee);
   const isCouplesSharedPricing=["jet2","tui","easyjet"].includes(operator)&&Number(children||0)<=0;
   const explicitTotal=packageCleanNumericStringLocal(d.totalPrice);
@@ -11146,24 +11147,34 @@ function renderPackagePriceBlock(model,operatorKey){
   const isFamily=Number(model.children||0)>0;
   const leadRaw=String(model.leadPrice||model.totalPrice||"");
   const totalRaw=String(model.totalPrice||model.leadPrice||"");
-  const displayRaw=isFamily ? totalRaw : (leadRaw || totalRaw);
+  const familyBaseRaw=String(model.totalPrice||model.leadPrice||"");
+  const displayRaw=isFamily ? familyBaseRaw : (leadRaw || totalRaw);
   const lead=formatPackageMoney(leadRaw);
   const total=formatPackageMoney(totalRaw);
+  const familyBase=formatPackageMoney(familyBaseRaw);
   const display=formatPackageMoney(displayRaw);
   const fee=packageResortFeeText(model.resortFee,operatorKey,model.resortFeeLabel,model.perPersonSuffix,model);
+  const hasFee=!!fee;
   const hasDistinctTotal=fee && total && lead && total!==lead && !isFamily;
+  const totalPriceLabel=hasFee?"Total Price":(/^Total Price$/i.test(String(model.priceLabel||""))?"":String(model.priceLabel||""));
   const priceMarkup=(amount,showPp,extraClass="")=>`<div class="pkg-price ${extraClass}">${amount}<span class="pkg-pp">${showPp?escapeHtml(model.perPersonSuffix):""}</span></div>`;
+  if(isFamily && hasFee && familyBase){
+    const numericValue=value=>{ const raw=String(value==null?"":value).replace(/,/g,"").trim(); const match=raw.match(/-?\d+(?:\.\d+)?/); return match?Number(match[0]):0; };
+    const feeTotal=numericValue(model.localFeeType==="total"&&model.localFeeAmount?model.localFeeAmount:model.resortFee);
+    const combined=formatPackageMoney(numericValue(familyBaseRaw)+feeTotal);
+    return `<div class="pkg-lead">${priceMarkup(familyBase,false)}<div class="pkg-fee">${fee}</div></div><div class="pkg-total">${priceMarkup(combined,false)}<div class="pkg-price-label">${escapeHtml(totalPriceLabel)}</div>${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
+  }
   if(["jet2","tui","easyjet"].includes(operatorKey) && !isFamily && lead){
     if(fee){
       const combined=formatPackageMoney(model.displayTotalPerPerson||model.totalPrice||leadRaw);
-      return `<div class="pkg-lead">${priceMarkup(lead,true)}<div class="pkg-fee">${fee}</div></div><div class="pkg-total">${combined&&combined!==lead?priceMarkup(combined,true):""}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
+      return `<div class="pkg-lead">${priceMarkup(lead,true)}<div class="pkg-fee">${fee}</div></div><div class="pkg-total">${combined&&combined!==lead?priceMarkup(combined,true):""}${totalPriceLabel?`<div class="pkg-price-label">${escapeHtml(totalPriceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
     }
-    return `<div class="pkg-total">${priceMarkup(lead,true)}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
+    return `<div class="pkg-total">${priceMarkup(lead,true)}${totalPriceLabel?`<div class="pkg-price-label">${escapeHtml(totalPriceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
   }
   if(hasDistinctTotal){
-    return `<div class="pkg-lead">${priceMarkup(lead,true)}<div class="pkg-fee">${fee}</div></div><div class="pkg-total">${priceMarkup(total,/pp|per person/i.test(totalRaw))}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
+    return `<div class="pkg-lead">${priceMarkup(lead,true)}<div class="pkg-fee">${fee}</div></div><div class="pkg-total">${priceMarkup(total,/pp|per person/i.test(totalRaw))}${totalPriceLabel?`<div class="pkg-price-label">${escapeHtml(totalPriceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
   }
-  return `<div class="pkg-total">${priceMarkup(display,!isFamily)}${fee?`<div class="pkg-fee">${fee}</div>`:""}${model.priceLabel?`<div class="pkg-price-label">${escapeHtml(model.priceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
+  return `<div class="pkg-total">${priceMarkup(display,!isFamily)}${fee?`<div class="pkg-fee">${fee}</div>`:""}${totalPriceLabel?`<div class="pkg-price-label">${escapeHtml(totalPriceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
 }
 function renderPackageOperatorLogo(cfg,layout){
   if(!cfg||!cfg.logo) return `<div class="pkg-operator-missing">Operator not detected</div>`;
