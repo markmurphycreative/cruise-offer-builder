@@ -859,7 +859,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .pc .pkg-details{position:absolute;left:var(--pkg-left);top:285px;font-size:36px;line-height:1.35;color:#797979;}
 .pc.pkg-tui .pkg-details{color:#000;}
 .pc.pkg-jet2 .pkg-details{position:static;grid-column:1;grid-row:3;align-self:end;font-size:35px;line-height:1.36;color:#858589;width:560px;height:auto;display:block;}
-.pc.pkg-jet2.pkg-jet2-couples .pkg-details{position:absolute;left:var(--pkg-left);top:299px;width:560px;height:190px;grid-column:auto;grid-row:auto;align-self:auto;overflow:hidden;}
+.pc.pkg-jet2.pkg-jet2-couples .pkg-details{position:absolute;left:var(--pkg-left);top:299px;width:560px;height:238px;grid-column:auto;grid-row:auto;align-self:auto;overflow:visible;}
 .pc.pkg-jet2 .pkg-detail-text{display:block;}
 .pc.pkg-jet2 .pkg-detail-line{display:block;}
 .pc .pkg-inclusion,.pc .pkg-basis-bottom{display:block;}
@@ -3471,9 +3471,16 @@ function getScreenshotImportSummaryLines(item){
   return [p.name,p.ship,p.ports].map(v=>String(v||"").trim()).filter(Boolean).slice(0,2);
 }
 function getScreenshotImportReviewedText(item){ return item ? (item.reviewText!==undefined ? item.reviewText : item.text || "") : ""; }
-function hasScreenshotImportMissingOperatorWarning(item){
+function getScreenshotImportOperatorStatus(item){
   const parsed=(item&&item.result&&item.result.parsed)||{};
-  return item&&item.status!=="error"&&!String(parsed.operatorKey||parsed.operator||"").trim();
+  if(!item||item.status==="error") return "";
+  const op=String(parsed.operatorKey||parsed.operator||"").trim();
+  if(op && String(parsed._operatorAssignedFromCampaign||"")==="true") return `${op.toLowerCase()==="jet2"?"Jet2":getPackageOperatorDisplayName(op)} assigned from campaign`;
+  if(!op) return "Operator not detected";
+  return "";
+}
+function hasScreenshotImportMissingOperatorWarning(item){
+  return getScreenshotImportOperatorStatus(item)==="Operator not detected";
 }
 function syncActiveScreenshotReviewText(){
   const review=document.getElementById("vision-review-text");
@@ -3517,7 +3524,8 @@ function renderScreenshotImportReview(){
   const orderedImports=getOrderedScreenshotImports();
   const summaryHtml='<div class="screenshot-import-summary"><div class="screenshot-import-summary-title">Recognised screenshots</div><div class="screenshot-import-summary-list">'+orderedImports.map(({item,index})=>{
     const lines=getScreenshotImportSummaryLines(item);
-    const warning=hasScreenshotImportMissingOperatorWarning(item)?'<em>Operator not detected</em>':'';
+    const operatorStatus=getScreenshotImportOperatorStatus(item);
+    const warning=operatorStatus?`<em>${escapeHtml(operatorStatus)}</em>`:'';
     return `<div class="screenshot-import-summary-item"><strong>Offer ${index+1}</strong>${lines.map(line=>`<span>${escapeHtml(line)}</span>`).join("") || '<span>No readable summary yet</span>'}${warning}</div>`;
   }).join("")+'</div></div>';
   wrap.innerHTML=summaryHtml+'<div class="screenshot-review-title">Import Review</div>'+orderedImports.map(({item,index})=>{
@@ -3526,7 +3534,8 @@ function renderScreenshotImportReview(){
     const checked=ok&&item.selected!==false?' checked':'';
     const disabled=ok?'':' disabled';
     const active=index===activeScreenshotImportIndex;
-    const warning=hasScreenshotImportMissingOperatorWarning(item)?" · Operator not detected":"";
+    const operatorStatus=getScreenshotImportOperatorStatus(item);
+    const warning=operatorStatus?` · ${operatorStatus}`:"";
     const p=(item&&item.result&&item.result.parsed)||{};
     const reviewDetails=String(p.offerType||"").toLowerCase()==="package" ? `<span class="screenshot-review-details">${[
       ["Operator",getPackageOperatorDisplayName(p.operatorKey||p.operator)],
@@ -8760,7 +8769,7 @@ function applyParsedOfferToSlot(result,index,sourceText){
   const parsed=Object.assign({},result.parsed);
   if(String(parsed.offerType||"").toLowerCase()==="package" && !parsed.operatorKey && !parsed.operator){
     const fallback=getBulkPackageImportFallbackOperator();
-    if(fallback) parsed.operatorKey=fallback;
+    if(fallback){ parsed.operatorKey=fallback; parsed._operatorAssignedFromCampaign="true"; }
   }
   const offer={};
   offers[index]=offer;
@@ -8772,7 +8781,7 @@ function applyParsedOfferToSlot(result,index,sourceText){
     else if(k==='tags' && defaultTopBarUspForOperator(parsed.operatorKey||offer.operator)){ continue; }
     else offer[k]=String(parsed[k]);
   }
-  ["offerType","operator","totalPrice","resortFee","adults","children","freeChildPlace","priceLabel","leadPrice","departureAirport","boardBasis","departurePort","_poaDepartureAirport","flyingFrom","cruiseType","itinerary","flightDisplay","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeeWording","localFeePerPerson","displayTotalPerPerson","roomType","handLuggage","holdLuggage","transfers"].forEach(k=>{
+  ["offerType","operator","_operatorAssignedFromCampaign","totalPrice","resortFee","adults","children","freeChildPlace","priceLabel","leadPrice","departureAirport","boardBasis","departurePort","_poaDepartureAirport","flyingFrom","cruiseType","itinerary","flightDisplay","inclusionsDisplay","localFeeAmount","localFeeType","localFeeApproximate","localFeeWording","localFeePerPerson","displayTotalPerPerson","roomType","handLuggage","holdLuggage","transfers"].forEach(k=>{
     if(parsed[k]!==undefined&&parsed[k]!=="") offer[k]=String(parsed[k]);
   });
   if(parsed.operatorKey) offer.operator=String(parsed.operatorKey);
@@ -9337,6 +9346,7 @@ function isUnsafePackageTitleLine(line){
   const value=String(line||"").trim();
   return !value
     || /^(?:your holiday to|holiday summary|flight details|payable to your travel agent|our rating|tripadvisor|tripadvisor traveller rating|based on \d+ reviews|going out|coming back|departs|arrives|price per person|abta|protected|plus|\.+\s*plus)$/i.test(value)
+    || /^your\s+holiday\s+to\b/i.test(value)
     || /(?:£|¥|\b(?:nights?|adults?|children?|child|hand baggage|bag allowance|coach transfers|room with|apartment with|studio|depart|arrive|tourist tax|resort fee|total holiday cost|flight details|holiday summary|traveller rating|our rating|reviews?)\b)/i.test(value);
 }
 function cleanPackageParsedTitle(line){
@@ -9421,11 +9431,19 @@ function parsePackageOfferText(raw,options){
   if(!parsed.operatorKey && options && options.detection && options.detection.operatorKey) parsed.operatorKey=options.detection.operatorKey;
   if(!parsed.operatorKey && typeof currentCampaignType!=="undefined" && normaliseCampaignType(currentCampaignType)==="package"){
     const selectedOperator=normalisePackageOperatorKey(((document.getElementById("f-operator")||{}).value)||((offers&&offers[cur])||{}).operator||"");
-    if(selectedOperator==="jet2") parsed.operatorKey="jet2";
+    if(selectedOperator==="jet2"){ parsed.operatorKey="jet2"; parsed._operatorAssignedFromCampaign="true"; }
   }
   if(!parsed.ship){
-    const hotelIndex=lines.findIndex(line=>{ const cleaned=cleanTitle(line); return accom.test(cleaned)&&!unsafeLine(cleaned)&&!/resort\s+fee|coach\s+transfers|all inclusive|free child place/i.test(cleaned); });
-    if(hotelIndex>=0){ parsed.ship=cleanTitle(lines[hotelIndex]); score+=10; if(hotelIndex>0){ const previous=cleanTitle(lines[hotelIndex-1]); if(previous && !unsafeLine(previous) && !accom.test(previous)){ parsed.name=previous; score+=10; } } }
+    const safeHotelCandidate=line=>{ const cleaned=cleanTitle(line); return accom.test(cleaned)&&cleaned&&!/^(?:your holiday to|holiday summary|flight details|payable to your travel agent)$/i.test(cleaned)&&!/(?:£|\b(?:departs?|arrives?|price\s+ort|payable|\d{1,2}:\d{2}|\d{1,2}\s*nights?|adults?|children?|child|coach transfers|hand luggage|hand baggage|bag allowance|resort fee|tourist tax|free child place)\b)/i.test(cleaned)&&!/[¢�]/.test(cleaned); };
+    const hotelIndex=lines.findIndex(line=>safeHotelCandidate(line));
+    if(hotelIndex>=0){
+      const rawHotel=cleanTitle(lines[hotelIndex]);
+      const hotelParts=rawHotel.split(/\s*,\s*/).map(part=>part.trim()).filter(Boolean);
+      parsed.ship=hotelParts[0]||rawHotel; score+=10;
+      if(!parsed.name && hotelParts.length>1){ const destinationFromHotelLine=hotelParts.slice(1).join(", "); if(destinationFromHotelLine && !unsafeLine(destinationFromHotelLine) && !accom.test(destinationFromHotelLine)){ parsed.name=destinationFromHotelLine; score+=10; } }
+      if(!parsed.name && hotelIndex>0){ const previous=cleanTitle(lines[hotelIndex-1]); if(previous && !unsafeLine(previous) && !accom.test(previous)){ parsed.name=previous; score+=10; } }
+      if(!parsed.name && hotelIndex+1<lines.length){ const next=cleanTitle(lines[hotelIndex+1]); if(next && !unsafeLine(next) && !accom.test(next) && /,/.test(next)){ parsed.name=next; score+=8; } }
+    }
   }
   if(!parsed.name){
     const destinationLine=lines.map(line=>cleanTitle(line)).find(line=>line && /,\s*[A-Za-z][A-Za-z .'-]+/.test(line) && !accom.test(line) && !unsafeLine(line));
