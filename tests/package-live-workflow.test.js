@@ -85,27 +85,28 @@ The total holiday cost is £1,172 including approximately £24 in tourist tax`;
 const jet2WhiteCity = `Dawson & Sanderson
 Your holiday to...
 White City Beach Hotel
-Konakli, Antalya Area
+Nr Alanya, Antalya Area
 Our rating ++++
 TripAdvisor Traveller Rating
 Based on 1234 Reviews
 Holiday summary
-7 nights from 10 Sep 2026
+7 nights from 7th July 2026
 All Inclusive
 2 Adults
-1 x Double room
+0 x Children
+1 x Standard room with Side Sea View
 2 x 10kg Hand Baggage
 2 x 22kg Bag Allowance
 Coach Transfers
 Flight details
 Going out
-Newcastle NCL to Antalya AYT
+Leeds Bradford LBA to Antalya AYT
 Coming back
-Antalya AYT to Newcastle NCL
+Antalya AYT to Leeds Bradford LBA
 Payable to your travel agent
-£1,398
+£1,406
 Price per person payable to your travel agent
-£699`;
+£703`;
 
 const jet2Castillo = `DAWSON 8 @
 Your holiday to... *%
@@ -115,8 +116,8 @@ Puerto Rico, Gran Canaria
 TripAdvisor Traveller Rating
 Based on 631 Reviews
 Holiday summary Flight details Payable to your travel agent
-7 nights from 15th Jul 2026 Going out
-Self Catering Leeds Bradford LBA to Gran Canaria LPA £998
+7 nights from 9th Jul 2026 Going out
+Self Catering Leeds Bradford LBA to Gran Canaria LPA £1,030
 2 Adults
 1 x Apartment
 2 x 10kg Hand Baggage
@@ -125,7 +126,7 @@ Coach Transfers
 Coming back
 Gran Canaria LPA to Leeds Bradford LBA
 Price per person
-£499`;
+£515`;
 
 const jet2Caribe = `Dawson & Sanderson
 Your holiday to...
@@ -149,9 +150,9 @@ Leeds Bradford LBA to Tenerife TFS
 Coming back
 Tenerife TFS to Leeds Bradford LBA
 Payable to your travel agent
-£998
+£1,140
 Price per person
-£499`;
+£570`;
 
 const realTrelloJet2Ocr = `29/06/2026
 DAWSON 8 @
@@ -218,9 +219,9 @@ test('Dawson & Sanderson Jet2 Sunset quotation is recognised without Jet2 logo a
 test('additional Dawson Jet2 quotations parse hotel and destination without OCR noise', () => {
   const { isTrustedJet2DawsonQuote, detectPackageOffer, parsePackageOfferText } = createContext();
   [
-    [jet2WhiteCity, 'White City Beach Hotel', 'Konakli, Antalya Area', 'Newcastle', '699'],
-    [jet2Castillo, 'Servatur Castillo De Sol', 'Puerto Rico, Gran Canaria', 'Leeds Bradford', '499'],
-    [jet2Caribe, 'Servatur Caribe Apartments', 'Playa De Las Americas, Tenerife', 'Leeds Bradford', '499']
+    [jet2WhiteCity, 'White City Beach Hotel', 'Antalya, Turkey', 'Leeds Bradford', '703'],
+    [jet2Castillo, 'Servatur Castillo De Sol', 'Puerto Rico, Gran Canaria', 'Leeds Bradford', '515'],
+    [jet2Caribe, 'Servatur Caribe Apartments', 'Playa De Las Americas, Tenerife', 'Leeds Bradford', '570']
   ].forEach(([fixture, hotel, destination, airport, price]) => {
     assert.equal(isTrustedJet2DawsonQuote(fixture), true, hotel);
     assert.equal(detectPackageOffer(fixture).operatorKey, 'jet2', hotel);
@@ -228,9 +229,10 @@ test('additional Dawson Jet2 quotations parse hotel and destination without OCR 
     assert.equal(parsed.operatorKey, 'jet2');
     assert.equal(parsed.ship, hotel);
     assert.equal(parsed.name, destination);
-    assert.equal(parsed.destination, destination);
+    if(hotel === 'White City Beach Hotel') assert.equal(parsed.sourceLocation, 'Nr Alanya, Antalya Area');
     assert.equal(parsed.sailingFrom, airport);
     assert.equal(parsed.price, price);
+    assert.notEqual(parsed.price, parsed.bookingTotal || parsed.totalPrice, hotel);
     assert.doesNotMatch([parsed.ship, parsed.name, parsed.destination].join(' '), /Plus|Your holiday to|Our rating|TripAdvisor|Reviews|Holiday summary|Flight details|Payable|\. plus/i);
   });
 });
@@ -330,7 +332,8 @@ test('real screenshot import state path carries Dawson Jet2 structure into activ
   assert.equal((htmlOutput.match(/assets\/operator-logos\/jet2-holidays-logo\.png/g) || []).length, 1);
   assert.match(visibleText, /£574pp/);
   assert.match(visibleText, /\+£12pp Local Resort Fee/);
-  assert.doesNotMatch(visibleText, /£586pp|Total Price/);
+  assert.match(visibleText, /£586pp/);
+  assert.doesNotMatch(visibleText, /Total Price/);
   assert.doesNotMatch(htmlOutput, /Operator not detected|Our Rating|TripAdvisor|176 Reviews|Hand Luggage Included|Coach Transfers/);
 });
 
@@ -379,7 +382,7 @@ test('live Package editor input IDs update authoritative offer and preview-rende
   assert.equal(context.offers[0].departureAirport, 'Newcastle');
   assert.match(fields.get('card-output').innerHTML, /assets\/operator-logos\/jet2-holidays-logo\.png/);
   assert.match(fields.get('card-output').innerHTML.replace(/<span class="pkg-pp">pp<\/span>/g, 'pp').replace(/<[^>]+>/g, ''), /£574pp[\s\S]*\+£12pp Local Resort Fee/);
-  assert.doesNotMatch(fields.get('card-output').innerHTML.replace(/<span class="pkg-pp">pp<\/span>/g, 'pp').replace(/<[^>]+>/g, ''), /£586pp/);
+  assert.match(fields.get('card-output').innerHTML.replace(/<span class="pkg-pp">pp<\/span>/g, 'pp').replace(/<[^>]+>/g, ''), /£586pp/);
 
   fields.get('f-price').value = '499';
   fields.get('f-totalPrice').value = '511';
@@ -400,7 +403,8 @@ test('live Package editor input IDs update authoritative offer and preview-rende
   assert.equal(context.offers[0].departureAirport, 'Manchester');
   assert.equal(context.offers[0].inclusions, 'Luggage, transfers and meals included');
   assert.match(text, /£499pp[\s\S]*\+£15pp Local Resort Fee/);
-  assert.doesNotMatch(text, /£514pp|Total Price/);
+  assert.match(text, /£514pp/);
+  assert.doesNotMatch(text, /Total Price/);
   assert.match(text, /or call into your local store/);
   assert.match(text, /Half Board/);
   fields.get('f-boardlbl').value = 'All Inclusive';
