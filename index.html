@@ -1147,7 +1147,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
         <div class="fg2">
           <div class="field" data-field="price"><label>Lead / Total Price (£)</label><input id="f-price" placeholder="799" oninput="up()"></div>
           <div class="field" data-field="totalPrice"><label>Total Price (£, Package optional)</label><input id="f-totalPrice" placeholder="656" oninput="up()"></div>
-          <div class="field" data-field="resortFee"><label>Resort Fee (£, Package optional)</label><input id="f-resortFee" placeholder="10pp" oninput="up()"></div>
+          <div class="field" data-field="resortFee"><label>Resort Fee (£, Package optional)</label><input id="f-resortFee" placeholder="10pp" oninput="updateResortFee()"></div>
           <div class="field" data-field="priceLabel"><label>Price Label</label><input id="f-priceLabel" spellcheck="true" placeholder="Total Price" oninput="up()"></div>
           <div class="field" data-field="basis"><label>Price Basis</label><input id="f-basis" spellcheck="true" placeholder="Based on 2 Adults Sharing" oninput="up()"></div>
           <div class="field" data-field="packagePerPersonSuffix"><label>Per Person Suffix</label><input id="f-packagePerPersonSuffix" spellcheck="true" placeholder="pp" oninput="up()"></div>
@@ -12498,6 +12498,28 @@ function up(){
   try { if(viewMode === 'all') updateAllPreviewCard(cur); else renderPreviewMode(true); } catch(e) { try { renderVisibleCard(); } catch(_e){} }
   queueAutosave();
 }
+
+// Resort-fee input has one authoritative render route.  In particular it does
+// not go through the decorated, general-purpose `up()` function: that function
+// is also wrapped by late application modules and historically left unrelated
+// preview work queued after the price had already been reconciled.
+function updateResortFee(){
+  try { commitVisibleFields(); } catch(e){}
+  try { genUtm(); } catch(e){}
+  try { genStandardUtms(); } catch(e){}
+  try { updateAllStatus(); } catch(e){}
+  try { checkPortsWarn(); } catch(e){}
+  try { runSpellQA(); } catch(e){}
+  try { updateExportFilenames(); } catch(e){}
+  if(viewMode === 'all'){
+    // End the preview path here.  No generic render, fit, or responsive request
+    // is made before or after this targeted reconciliation.
+    updateAllPreviewCard(cur, 'resort-fee');
+  }else{
+    renderPreviewMode(true);
+  }
+  queueAutosave();
+}
 function rv(skipSave){
   if(viewMode === 'single'){
     if(!skipSave){ try { commitVisibleFields(); } catch(e){} }
@@ -12558,6 +12580,14 @@ let previewWrapResizeObserver = null;
 let toolbarResizeObserver = null;
 const allPreviewCardMarkupCache = new WeakMap();
 const previewZoomByMode = {single:32, all:32, email:32};
+const previewRenderDiagnostics = {
+  fullRenderRequests:0,
+  fullRenderExecutions:0,
+  singleRenderExecutions:0,
+  allPreviewContentUpdates:0,
+  allPreviewLayoutApplications:0
+};
+if(typeof window !== 'undefined') window.__cobPreviewDiagnostics = previewRenderDiagnostics;
 function normalisePreviewMode(v){
   return ['single','email','all'].includes(v) ? v : 'single';
 }
@@ -12732,6 +12762,7 @@ function applyAllPreviewLayout(stage, canvas, metrics, pane){
   stage.dataset.workspaceHeight = String(size.h);
   stage.dataset.baseScale = String(fitScale);
   stage.dataset.layoutApplications = String((Number(stage.dataset.layoutApplications)||0) + 1);
+  if(typeof previewRenderDiagnostics !== 'undefined') previewRenderDiagnostics.allPreviewLayoutApplications += 1;
   return {scale, width:Math.floor(metrics.canvasWidth * scale), height:Math.floor(metrics.canvasHeight * scale), applied:true};
 }
 function layoutCurrentAllPreview(){
@@ -12827,6 +12858,7 @@ function updateAllPreviewCard(index){
   // Price-only updates cannot affect hero/visit content and deliberately avoid
   // re-running card-wide enhancement and measurement hooks.
   if(priceOnly){
+    if(typeof previewRenderDiagnostics !== 'undefined') previewRenderDiagnostics.allPreviewContentUpdates += 1;
     card.dataset.contentRevision = String((Number(card.dataset.contentRevision)||0) + 1);
     return true;
   }
@@ -12834,6 +12866,7 @@ function updateAllPreviewCard(index){
   enhanceClickableHeroImagesAndPlaceholders(card, index);
   enhanceHeroDropTarget(card, index);
   scheduleHeroCropPositions(card);
+  if(typeof previewRenderDiagnostics !== 'undefined') previewRenderDiagnostics.allPreviewContentUpdates += 1;
   card.dataset.contentRevision = String((Number(card.dataset.contentRevision)||0) + 1);
   return true;
 }
@@ -12943,6 +12976,7 @@ function renderEmptyPreviewIfNeeded(){
 }
 
 function renderPreviewMode(skipSave){
+  previewRenderDiagnostics.fullRenderRequests += 1;
   if(typeof syncOffersAliasForCampaign==="function") syncOffersAliasForCampaign(currentCampaignType);
   const perfStart=(typeof cobPerfNow==="function"?cobPerfNow():Date.now());
   cobTraceOfferSnapshot("renderPreviewMode", (offers && offers[cur]) || {}, "unknown");
@@ -13007,6 +13041,7 @@ function renderPreviewMode(skipSave){
       if(typeof cobPerfRecord==="function") cobPerfRecord("preview rendering: all 4 content reconcile", perfStart, {offers:loadedPreviewOffers.length});
       return;
     }
+    previewRenderDiagnostics.fullRenderExecutions += 1;
     const metrics = getAllPreviewGridMetrics(loadedPreviewOffers.length, fixedCardHeight);
     const stage = document.createElement('div');
     stage.className = 'all-preview-stage';
@@ -13064,6 +13099,7 @@ function renderPreviewMode(skipSave){
   }
 
   // Single view renders from visible fields so the active tab preview always matches the editor.
+  previewRenderDiagnostics.singleRenderExecutions += 1;
   renderVisibleCard();
   if(typeof cobPerfRecord==="function") cobPerfRecord("preview rendering: single view", perfStart, {offer:cur});
 }
@@ -13937,7 +13973,12 @@ async function initBuilderApp(){
       refreshOfferUi({utm:true,spell:true,autosave:false});
       if(!savedSessionAvailable) applyNewCampaignSidebarDefaults();
     }
-    window.addEventListener("resize",rv);
+    // The legacy resize callback called `rv`, which is a content renderer.  A
+    // viewport resize (including the delayed resize emitted by an on-screen
+    // keyboard after editing a numeric field) could therefore clear and rebuild
+    // the preview after the input handler had completed its in-place update.
+    // The single resize listener installed with the preview layout module below
+    // is the sole resize authority and measures only the stable workspace.
     ensureAutosaveInterval();
     window.addEventListener("beforeunload",flushAutosaveBeforeUnload);
     rv();

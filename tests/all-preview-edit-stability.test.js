@@ -67,12 +67,14 @@ test('All 4 fit ignores duplicate workspace measurements but applies real resize
 
 test('visible resort-fee input uses atomic price-region reconciliation in the mounted All 4 card', () => {
   const field = html.match(/<input id="f-resortFee"[^>]+>/)?.[0] || '';
-  assert.match(field, /oninput="up\(\)"/, 'the real visible resort-fee field must use the live editor route');
+  assert.match(field, /oninput="updateResortFee\(\)"/, 'the real visible resort-fee field must use its authoritative content-only route');
 
   const update = extractLastFunction('updateAllPreviewCard');
   const reconcile = extractLastFunction('reconcileAllPreviewPriceRegion');
-  const up = extractLastFunction('up');
-  assert.match(up, /viewMode === 'all'\) updateAllPreviewCard\(cur\)/);
+  const resortFeeUpdate = extractLastFunction('updateResortFee');
+  assert.match(resortFeeUpdate, /viewMode === 'all'/);
+  assert.match(resortFeeUpdate, /updateAllPreviewCard\(cur, 'resort-fee'\)/);
+  assert.doesNotMatch(resortFeeUpdate, /\bup\(|schedulePreviewFitLayout|applyAllPreviewLayout|renderVisibleCard/);
   assert.match(reconcile, /currentRoot\.querySelector\('\.pkg-pricing'\)/);
   assert.match(reconcile, /withoutPrice\(previousRoot\) !== withoutPrice\(nextRoot\)/,
     'only a price-only markup change may take the targeted route');
@@ -82,6 +84,34 @@ test('visible resort-fee input uses atomic price-region reconciliation in the mo
   assert.match(update, /if\(!priceOnly\) card\.innerHTML = nextMarkup/,
     'non-price edits retain the existing card-content update behaviour');
   assert.doesNotMatch(update, /applyAllPreviewLayout|schedulePreviewFitLayout|renderPreviewMode|renderVisibleCard/);
+});
+
+test('resort-fee delayed lifecycle has no general render or resize-render route', async () => {
+  const resortFeeUpdate = extractLastFunction('updateResortFee');
+  assert.match(resortFeeUpdate, /commitVisibleFields\(\)/, 'the visible value is synchronised first');
+  assert.match(resortFeeUpdate, /updateAllPreviewCard/, 'the selected mounted card is reconciled');
+  assert.match(resortFeeUpdate, /queueAutosave\(\)/, 'persistence remains scheduled after reconciliation');
+  assert.doesNotMatch(resortFeeUpdate, /renderPreviewMode\(true\)[\s\S]*viewMode === 'all'/,
+    'the All 4 branch must not fall through to the general renderer');
+
+  assert.doesNotMatch(script, /window\.addEventListener\(["']resize["'],\s*rv\s*\)/,
+    'resize must never retain a captured legacy content renderer');
+  const stableResize = script.match(/window\.addEventListener\('resize', function\(\)\{([^}]+)\}\);/)?.[1] || '';
+  assert.match(stableResize, /schedulePreviewFitLayout\(\)/);
+  assert.doesNotMatch(stableResize, /\brv\(|renderPreviewMode|renderVisibleCard/);
+
+  // Let the same classes of queued work used by autosave/history/preview layout
+  // drain; none is permitted to manufacture a second render route.
+  await Promise.resolve();
+  await new Promise(resolve => setImmediate(resolve));
+});
+
+test('preview diagnostics distinguish content reconciliation from shell rendering', () => {
+  assert.match(script, /window\.__cobPreviewDiagnostics = previewRenderDiagnostics/);
+  assert.match(extractLastFunction('updateAllPreviewCard'), /allPreviewContentUpdates \+= 1/);
+  assert.match(extractLastFunction('renderPreviewMode'), /fullRenderRequests \+= 1/);
+  assert.match(extractLastFunction('renderPreviewMode'), /fullRenderExecutions \+= 1/);
+  assert.match(extractLastFunction('applyAllPreviewLayout'), /allPreviewLayoutApplications \+= 1/);
 });
 
 test('legacy full-render requests reconcile into the mounted All 4 shell', () => {
