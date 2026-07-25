@@ -2818,7 +2818,7 @@ function ctaSettingsChanged(){
   const phoneEl=document.getElementById('cta-phone');
   if(phoneEl && phoneEl.value !== ctaSettings.phone) phoneEl.value=ctaSettings.phone;
   syncCtaLinkOutput();
-  try { renderPreviewMode(true); } catch(e){}
+  try { if(viewMode === 'all') updateAllPreviewCards(); else renderPreviewMode(true); } catch(e){}
   try { updateAllStatus(); } catch(e){}
   if(typeof queueAutosave==="function") queueAutosave({immediate:true});
   if(typeof syncDetachedSummaryWindow==="function") syncDetachedSummaryWindow();
@@ -12466,6 +12466,7 @@ function initOfferTabDragDrop(){
 
 function sv(i){
   const perfStart=(typeof cobPerfNow==="function"?cobPerfNow():Date.now());
+  const previous = cur;
   const next = Number(i) || 0;
   const switched = next !== cur;
   try { commitVisibleFields(); } catch(e) { console.warn('Could not save current offer before tab switch', e); }
@@ -12480,7 +12481,8 @@ function sv(i){
   try { updateExportFilenames(); } catch(e){}
   try { updateMoveOfferButtons(); } catch(e){}
   try { runSpellQA(); } catch(e){}
-  renderPreviewMode(true);
+  if(viewMode === 'all' && switched) updateAllPreviewCard(previous);
+  else if(viewMode !== 'all') renderPreviewMode(true);
   queueAutosave();
   if(typeof cobPerfRecord==="function") cobPerfRecord("campaign switching", perfStart, {from: switched ? 'different' : 'same', to: cur});
 }
@@ -12492,9 +12494,8 @@ function up(){
   try { checkPortsWarn(); } catch(e){}
   try { runSpellQA(); } catch(e){}
   try { updateExportFilenames(); } catch(e){}
-  // Refresh must respect the active preview mode.
-  // Single updates one card, Email updates the vertical stack, All 4 updates the grid.
-  try { renderPreviewMode(true); } catch(e) { try { renderVisibleCard(); } catch(_e){} }
+  // All 4 keeps its layout nodes and fit transform intact during ordinary edits.
+  try { if(viewMode === 'all') updateAllPreviewCard(cur); else renderPreviewMode(true); } catch(e) { try { renderVisibleCard(); } catch(_e){} }
   queueAutosave();
 }
 function rv(skipSave){
@@ -12549,6 +12550,7 @@ const SINGLE_PREVIEW_TARGET_SCALE = 0.336;
 const EMAIL_PREVIEW_SCALE = 0.75;
 const ALL_PREVIEW_CARD_GAP = 64;
 const PREVIEW_FIT_MARGIN = 12;
+const PREVIEW_LAYOUT_TOLERANCE = 0.25;
 let pendingPreviewFrame = null;
 let pendingAllPreviewLayoutFrame = null;
 let previewRenderGeneration = 0;
@@ -12677,10 +12679,10 @@ function getElementVerticalPadding(el){
   const cs = window.getComputedStyle(el);
   return (parseFloat(cs.paddingTop)||0) + (parseFloat(cs.paddingBottom)||0);
 }
-function getAllPreviewGridMetrics(offerCount){
+function getAllPreviewGridMetrics(offerCount, sourceCardHeight){
   const count = Math.max(0, Math.min(4, Number(offerCount)||0));
   const cardWidth = 1200;
-  const cardHeight = 1712;
+  const cardHeight = Number(sourceCardHeight) || 1712;
   const gap = ALL_PREVIEW_CARD_GAP;
   const padding = 64;
   const columns = count <= 1 ? 1 : 2;
@@ -12707,6 +12709,13 @@ function applyAllPreviewLayout(stage, canvas, metrics, pane){
   // Zoom is a mode-local adjustment to the freshly measured fit, never a base
   // scale carried over from another view. Positive zoom is contained by the pane.
   const scale = Math.min(fitScale, fitScale * getPreviewZoomMultiplier(zoomPct));
+  const previousWidth = Number(stage.dataset.workspaceWidth);
+  const previousHeight = Number(stage.dataset.workspaceHeight);
+  const previousScale = Number(canvas.dataset.scale);
+  const workspaceUnchanged = Number.isFinite(previousWidth) && Number.isFinite(previousHeight)
+    && Math.abs(previousWidth - size.w) <= PREVIEW_LAYOUT_TOLERANCE
+    && Math.abs(previousHeight - size.h) <= PREVIEW_LAYOUT_TOLERANCE;
+  if(workspaceUnchanged && Number.isFinite(previousScale) && Math.abs(previousScale - scale) <= 0.0001) return {scale:previousScale, width:stage.offsetWidth, height:stage.offsetHeight, applied:false};
   stage.style.width = Math.floor(metrics.canvasWidth * scale) + 'px';
   stage.style.height = Math.floor(metrics.canvasHeight * scale) + 'px';
   stage.style.margin = 'auto';
@@ -12718,14 +12727,18 @@ function applyAllPreviewLayout(stage, canvas, metrics, pane){
   canvas.dataset.scale = String(scale);
   canvas.dataset.canvasWidth = String(metrics.canvasWidth);
   canvas.dataset.canvasHeight = String(metrics.canvasHeight);
-  return {scale, width:Math.floor(metrics.canvasWidth * scale), height:Math.floor(metrics.canvasHeight * scale)};
+  stage.dataset.workspaceWidth = String(size.w);
+  stage.dataset.workspaceHeight = String(size.h);
+  stage.dataset.baseScale = String(fitScale);
+  stage.dataset.layoutApplications = String((Number(stage.dataset.layoutApplications)||0) + 1);
+  return {scale, width:Math.floor(metrics.canvasWidth * scale), height:Math.floor(metrics.canvasHeight * scale), applied:true};
 }
 function layoutCurrentAllPreview(){
   if(viewMode !== 'all') return;
   const stage = document.querySelector('.all-preview-stage');
   const canvas = stage && stage.querySelector('.all-preview-canvas');
   if(!stage || !canvas) return;
-  const metrics = getAllPreviewGridMetrics(Number(stage.dataset.offerCount || 0));
+  const metrics = getAllPreviewGridMetrics(Number(stage.dataset.offerCount || 0), Number(stage.dataset.cardHeight));
   metrics.canvasHeight = Number(stage.dataset.canvasHeight) || metrics.canvasHeight;
   applyAllPreviewLayout(stage, canvas, metrics);
 }
@@ -12754,6 +12767,32 @@ function schedulePreviewFitLayout(){
     if(viewMode === 'all') layoutCurrentAllPreview();
     else if(viewMode === 'single') layoutCurrentSinglePreview();
   });
+}
+
+// Live editor changes replace only the active card's contents.  The stable stage,
+// canvas and fixed-size card wrapper remain mounted, so content rendering cannot
+// feed temporary dimensions back into the All 4 fit calculation.
+function updateAllPreviewCard(index){
+  if(viewMode !== 'all') return false;
+  const card = document.querySelector('.all-preview-card[data-offer-index="' + Number(index) + '"]');
+  if(!card) return false;
+  const d = offers[index] || {};
+  const cta = getCtaSettingsFromUI();
+  card.innerHTML = cta.enabled ? renderOfferWithOptionalCtaHTML(d, cta) : bc(d);
+  adjustVisitSectionHeights(card);
+  enhanceClickableHeroImagesAndPlaceholders(card, index);
+  enhanceHeroDropTarget(card, index);
+  scheduleHeroCropPositions(card);
+  card.dataset.contentRevision = String((Number(card.dataset.contentRevision)||0) + 1);
+  return true;
+}
+function updateAllPreviewCards(){
+  if(viewMode !== 'all') return false;
+  let updated = false;
+  document.querySelectorAll('.all-preview-card[data-offer-index]').forEach(function(card){
+    updated = updateAllPreviewCard(Number(card.dataset.offerIndex)) || updated;
+  });
+  return updated;
 }
 
 function setScalerBox(width, renderedHeight, scale){
@@ -12880,10 +12919,12 @@ function renderPreviewMode(skipSave){
     updatePreviewTitle();
 
     const loadedPreviewOffers = getLoadedPreviewOffers();
-    const metrics = getAllPreviewGridMetrics(loadedPreviewOffers.length);
+    const fixedCardHeight = loadedPreviewOffers.length && loadedPreviewOffers.every(function(item){ return (item.data.offerType || currentCampaignType) === 'package'; }) ? 885 : 1712;
+    const metrics = getAllPreviewGridMetrics(loadedPreviewOffers.length, fixedCardHeight);
     const stage = document.createElement('div');
     stage.className = 'all-preview-stage';
     stage.dataset.offerCount = String(loadedPreviewOffers.length);
+    stage.dataset.cardHeight = String(metrics.cardHeight);
     const canvas = document.createElement('div');
     canvas.className = 'all-preview-canvas';
     const grid = document.createElement('div');
@@ -12898,7 +12939,8 @@ function renderPreviewMode(skipSave){
       const index = item.index;
       const c = document.createElement('div');
       c.className = 'all-preview-card' + ((typeof isOfferLocked==='function' && isOfferLocked(index)) ? ' offer-locked' : '');
-      c.style.cssText = 'width:' + metrics.cardWidth + 'px;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.22);overflow:hidden;' + (loadedPreviewOffers.length === 3 && loadedIndex === 2 ? 'grid-column:1 / -1;justify-self:center;' : '');
+      c.dataset.offerIndex = String(index);
+      c.style.cssText = 'width:' + metrics.cardWidth + 'px;height:' + metrics.cardHeight + 'px;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.22);overflow:hidden;' + (loadedPreviewOffers.length === 3 && loadedIndex === 2 ? 'grid-column:1 / -1;justify-self:center;' : '');
       c.setAttribute('role', 'button');
       c.setAttribute('tabindex', '0');
       c.setAttribute('title', (typeof isOfferLocked==='function' && isOfferLocked(index) ? 'Locked — ' : '') + 'Edit Offer ' + (index + 1));
@@ -12926,13 +12968,9 @@ function renderPreviewMode(skipSave){
     scaler.style.height = '100%';
     scaler.style.transform = 'none';
     scaler.style.transformOrigin = 'center center';
-    // Let the rendered cards define the row tracks. In particular, package cards are
-    // shorter than cruise cards; imposing the cruise canvas height here stretched the
-    // two tracks and distributed that spare height between the package rows.
-    const naturalHeight = grid.scrollHeight || grid.offsetHeight || metrics.canvasHeight;
-    stage.dataset.canvasHeight = String(naturalHeight);
-    applyAllPreviewLayout(stage, canvas, Object.assign({}, metrics, {canvasHeight:naturalHeight}));
-    schedulePreviewFitLayout();
+    // Fit from fixed source geometry only; never measure freshly rendered content.
+    stage.dataset.canvasHeight = String(metrics.canvasHeight);
+    applyAllPreviewLayout(stage, canvas, metrics);
     if(typeof cobPerfRecord==="function") cobPerfRecord("preview rendering: all 4 view", perfStart, {offers:loadedPreviewOffers.length});
     return;
   }
