@@ -22,10 +22,15 @@ function extractFunction(name){
 }
 
 const layoutSource = [
-  'const ALL_PREVIEW_MAX_SCALE = 0.68;',
+  'let zoomPct = 32;',
+  'const SINGLE_PREVIEW_TARGET_SCALE = 0.336;',
   'const ALL_PREVIEW_CARD_GAP = 64;',
+  'function normalisePreviewZoomValue(value){ return Number(value); }',
+  'function getDefaultPreviewZoom(){ return 32; }',
   extractFunction('getAllPreviewGridMetrics'),
   extractFunction('calculateAllPreviewScale'),
+  extractFunction('getPreviewZoomMultiplier'),
+  extractFunction('calculateSinglePreviewScale'),
   extractFunction('applyAllPreviewLayout'),
   extractFunction('getToolbarResponsiveState'),
   extractFunction('getToolbarOverflowActions')
@@ -94,6 +99,20 @@ test('All 4 scale is constrained by pane width, pane height and max scale indepe
   assert.equal(ctx.calculateAllPreviewScale(metrics.canvasWidth / 2, metrics.canvasHeight * 2, metrics.canvasWidth, metrics.canvasHeight, 0.68), 0.5);
   assert.equal(ctx.calculateAllPreviewScale(metrics.canvasWidth * 2, metrics.canvasHeight / 4, metrics.canvasWidth, metrics.canvasHeight, 0.68), 0.25);
   assert.doesNotMatch(extractFunction('getAllPreviewGridMetrics') + extractFunction('applyAllPreviewLayout'), /\bcur\b/);
+});
+
+test('Single targets a forty-percent increase over the former 0.24 scale and contains at smaller panes', () => {
+  const ctx = createContext();
+  assert.equal(ctx.calculateSinglePreviewScale(1600, 1200, 1200, 885, 32), 0.336);
+  assert.equal(ctx.calculateSinglePreviewScale(300, 1200, 1200, 885, 32), 0.25);
+  assert.equal(ctx.calculateSinglePreviewScale(1600, 177, 1200, 885, 32), 0.2);
+});
+
+test('mode layouts use measured pane dimensions and independent zoom values', () => {
+  assert.match(html, /const previewZoomByMode = \{single:32, all:32, email:32\};/);
+  assert.match(html, /previewZoomByMode\[normalisePreviewMode\(previousViewMode\)\][\s\S]*?zoomPct = previewZoomByMode\[nextViewMode\]/);
+  assert.match(extractFunction('layoutCurrentSinglePreview'), /getPreviewPaneSize\(\)[\s\S]*?calculateSinglePreviewScale/);
+  assert.match(html, /new ResizeObserver\(function\(\)\{ schedulePreviewFitLayout\(\); \}\)/);
 });
 
 test('toolbar responsive states expose the correct overflow actions without duplicating view modes', () => {

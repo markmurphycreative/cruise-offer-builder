@@ -82,31 +82,30 @@ test('Offer 1–4 selector reuses the sliding segmented-control pill while retai
   assert.match(html, /function handleEmptyOfferStateKeydown\(event\)\{[\s\S]*?event\.key!=="Enter"&&event\.key!==" "[\s\S]*?event\.preventDefault\(\);[\s\S]*?openCampaignImportFromEmptyState\(\);/);
 });
 
-test('Single, Email and All 4 previews share the same zoom scaling controls', () => {
-  assert.match(html, /const SINGLE_PREVIEW_SCALE = 0\.75;/);
+test('Single, Email and All 4 previews use mode-appropriate zoom scaling controls', () => {
+  assert.match(html, /const SINGLE_PREVIEW_TARGET_SCALE = 0\.336;/);
   assert.match(html, /const EMAIL_PREVIEW_SCALE = 0\.75;/);
-  assert.match(html, /const scale = \(zoomPct \/ 100\) \* SINGLE_PREVIEW_SCALE;/);
-  assert.match(html, /setScalerBox\(1200, out\.offsetHeight \|\| stackWrap\.offsetHeight, baseScale \* EMAIL_PREVIEW_SCALE\);/);
-  assert.match(html, /const ALL_PREVIEW_MAX_SCALE = 0\.68;/);
-  assert.match(html, /calculateAllPreviewScale\(size\.w, size\.h, metrics\.canvasWidth, metrics\.canvasHeight, ALL_PREVIEW_MAX_SCALE\)/);
+  assert.match(html, /calculateSinglePreviewScale\(pane\.w, pane\.h, 1200, naturalHeight, zoomPct\)/);
+  assert.match(html, /baseScale \* EMAIL_PREVIEW_SCALE/);
+  assert.match(html, /const fitScale = calculateAllPreviewScale\(size\.w, size\.h, metrics\.canvasWidth, metrics\.canvasHeight\)/);
 });
 
 test('preview canvas uses a slightly darker warm neutral background across modes', () => {
   assert.match(html, /\.preview-wrap\{[^}]*background:#dedad2;[^}]*\}/);
 });
 
-test('preview layout retains the stable shared canvas treatment without Single-only overrides', () => {
-  assert.match(html, /\.preview-wrap\{[^}]*justify-content:center;[^}]*align-items:center;[^}]*background:#dedad2;[^}]*\}/);
-  assert.match(html, /\.preview-scaler\{margin-block:auto;transform-origin:top center;will-change:transform;\}/);
+test('preview layout centres the measured mode-specific canvases', () => {
+  assert.match(html, /\.preview-wrap\{[^}]*justify-content:center;[^}]*background:#dedad2;[^}]*\}/);
+  assert.match(html, /\.preview-scaler\{margin-block:auto;margin-inline:auto;transform-origin:top left;will-change:transform;/);
   assert.doesNotMatch(html, /single-preview/);
   assert.doesNotMatch(html, /setSinglePreviewCanvasHeight/);
   assert.doesNotMatch(html, /setPreviewWrapMode/);
-  assert.match(html, /setScalerBox\(1200, out\.offsetHeight, scale\);/);
+  assert.match(html, /function layoutCurrentSinglePreview\(\)[\s\S]*?setScalerBox\(1200, height, scale\);/);
 });
 
 test('shared preview scaler retains stable dimensions for Email and All 4 layouts', () => {
-  assert.match(html, /function setScalerBox\(width, renderedHeight, scale\)\{[\s\S]*?scaler\.style\.width = Math\.ceil\(width \* scale\) \+ 'px';[\s\S]*?scaler\.style\.transform = 'none';[\s\S]*?out\.style\.width = width \+ 'px'; out\.style\.transform = 'scale\(' \+ scale \+ '\)';/);
-  assert.match(html, /setScalerBox\(1200, out\.offsetHeight \|\| stackWrap\.offsetHeight, baseScale \* EMAIL_PREVIEW_SCALE\);/);
+  assert.match(html, /function setScalerBox\(width, renderedHeight, scale\)\{[\s\S]*?scaler\.style\.width = Math\.ceil\(width \* scale\) \+ 'px';[\s\S]*?scaler\.style\.transform = 'none';[\s\S]*?out\.style\.width = width \+ 'px';[\s\S]*?out\.style\.transform = 'scale\(' \+ scale \+ '\)';/);
+  assert.match(html, /schedulePreviewBoundsLayout\(renderGeneration, 1200, baseScale \* EMAIL_PREVIEW_SCALE, stackWrap\);/);
   assert.match(html, /applyAllPreviewLayout\(stage, canvas, Object\.assign\(\{\}, metrics, \{canvasHeight:naturalHeight\}\)\);/);
 });
 

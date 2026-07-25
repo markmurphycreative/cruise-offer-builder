@@ -11659,7 +11659,12 @@ function normalisePreviewZoomSliderValue(val){
   const whole=Number.isFinite(parsed) ? parsed : 0;
   return Math.min(bounds.max, Math.max(bounds.min, whole));
 }
-function setZoom(val){ zoomPct=normalisePreviewZoomValue(val); updatePreviewZoomControls(); rv(); }
+function setZoom(val){
+  zoomPct=normalisePreviewZoomValue(val);
+  if(typeof previewZoomByMode !== 'undefined') previewZoomByMode[normalisePreviewMode(viewMode)]=zoomPct;
+  updatePreviewZoomControls();
+  rv();
+}
 function setZoomFromSlider(val){ setZoom(previewZoomFromRelativeValue(normalisePreviewZoomSliderValue(val))); }
 function beginZoomInputEdit(){
   const label=document.getElementById("zoom-val");
@@ -12265,14 +12270,17 @@ function renderVisibleCard(){
   if(!scaler || !out) return;
   const renderGeneration = ++previewRenderGeneration;
   if(renderEmptyPreviewIfNeeded()) return;
-  const scale = (zoomPct / 100) * SINGLE_PREVIEW_SCALE;
   updatePreviewTitle();
+  out.style.display=''; out.style.height=''; out.style.alignItems=''; out.style.justifyContent='';
   out.innerHTML = renderOfferWithOptionalCtaHTML(visibleFieldsToData(), getCtaSettingsFromUI());
   adjustVisitSectionHeights(out);
   bindSinglePreviewHeroPickerTargets(out, cur);
   enhanceClickableHeroImagesAndPlaceholders(out, cur);
   enhanceHeroDropTarget(out, cur);
   scheduleHeroCropPositions(out);
+  const naturalHeight = out.scrollHeight || out.offsetHeight || 1;
+  const pane = getPreviewPaneSize();
+  const scale = calculateSinglePreviewScale(pane.w, pane.h, 1200, naturalHeight, zoomPct);
   setScalerBox(1200, 1, scale);
   schedulePreviewBoundsLayout(renderGeneration, 1200, scale, out);
 }
@@ -12535,15 +12543,18 @@ processSheetCSV = function(csv,status){
 // Email: full-width stacked preview, no horizontal clipping.
 // All 4: 2x2 grid, auto-scaled to fit the preview pane without scrolling.
 // ═══════════════════════════════════════════════════════
-const SINGLE_PREVIEW_SCALE = 0.75;
+// Single used to render at 0.32 * 0.75 = 0.24.  The mode target is 40% larger,
+// while the measured pane remains the final authority at smaller sizes.
+const SINGLE_PREVIEW_TARGET_SCALE = 0.336;
 const EMAIL_PREVIEW_SCALE = 0.75;
-const ALL_PREVIEW_MAX_SCALE = 0.68;
 const ALL_PREVIEW_CARD_GAP = 64;
+const PREVIEW_FIT_MARGIN = 12;
 let pendingPreviewFrame = null;
 let pendingAllPreviewLayoutFrame = null;
 let previewRenderGeneration = 0;
 let previewWrapResizeObserver = null;
 let toolbarResizeObserver = null;
+const previewZoomByMode = {single:32, all:32, email:32};
 function normalisePreviewMode(v){
   return ['single','email','all'].includes(v) ? v : 'single';
 }
@@ -12607,7 +12618,9 @@ function setView(v){
   const perfStart=(typeof cobPerfNow==="function"?cobPerfNow():Date.now());
   const previousViewMode=viewMode;
   const nextViewMode = normalisePreviewMode(v);
+  previewZoomByMode[normalisePreviewMode(previousViewMode)] = normalisePreviewZoomValue(zoomPct);
   viewMode = nextViewMode;
+  zoomPct = previewZoomByMode[nextViewMode];
   syncViewSelector();
   try { loadOfferToEditor(cur); } catch(e) { try { load(cur); } catch(_e){} }
   try { runSpellQA(); } catch(e){}
@@ -12650,8 +12663,8 @@ function getPreviewPaneSize(){
   const padX = wrap ? getElementHorizontalPadding(wrap) : 40;
   const padY = wrap ? getElementVerticalPadding(wrap) : 40;
   return {
-    w: wrap ? Math.max(1, wrap.clientWidth - padX) : 1000,
-    h: wrap ? Math.max(1, wrap.clientHeight - padY) : 700
+    w: wrap ? Math.max(1, wrap.clientWidth - padX - (PREVIEW_FIT_MARGIN * 2)) : 1000,
+    h: wrap ? Math.max(1, wrap.clientHeight - padY - (PREVIEW_FIT_MARGIN * 2)) : 700
   };
 }
 function getElementHorizontalPadding(el){
@@ -12677,12 +12690,23 @@ function getAllPreviewGridMetrics(offerCount){
 function calculateAllPreviewScale(paneWidth, paneHeight, canvasWidth, canvasHeight, maxScale){
   const scaleByWidth = paneWidth / canvasWidth;
   const scaleByHeight = paneHeight / canvasHeight;
-  return Math.max(0.08, Math.min(scaleByWidth, scaleByHeight, maxScale || ALL_PREVIEW_MAX_SCALE));
+  const fitScale = Math.min(scaleByWidth, scaleByHeight);
+  return Math.max(0.08, Math.min(fitScale, Number.isFinite(maxScale) ? maxScale : fitScale));
+}
+function getPreviewZoomMultiplier(value){
+  return normalisePreviewZoomValue(value) / getDefaultPreviewZoom();
+}
+function calculateSinglePreviewScale(paneWidth, paneHeight, cardWidth, cardHeight, zoomValue){
+  const fitScale = Math.min(paneWidth / cardWidth, paneHeight / Math.max(1, cardHeight));
+  return Math.max(0.08, Math.min(SINGLE_PREVIEW_TARGET_SCALE * getPreviewZoomMultiplier(zoomValue), fitScale));
 }
 function applyAllPreviewLayout(stage, canvas, metrics, pane){
   if(!stage || !canvas || !metrics) return null;
   const size = pane || getPreviewPaneSize();
-  const scale = calculateAllPreviewScale(size.w, size.h, metrics.canvasWidth, metrics.canvasHeight, ALL_PREVIEW_MAX_SCALE);
+  const fitScale = calculateAllPreviewScale(size.w, size.h, metrics.canvasWidth, metrics.canvasHeight);
+  // Zoom is a mode-local adjustment to the freshly measured fit, never a base
+  // scale carried over from another view. Positive zoom is contained by the pane.
+  const scale = Math.min(fitScale, fitScale * getPreviewZoomMultiplier(zoomPct));
   stage.style.width = Math.floor(metrics.canvasWidth * scale) + 'px';
   stage.style.height = Math.floor(metrics.canvasHeight * scale) + 'px';
   stage.style.margin = 'auto';
@@ -12713,6 +12737,25 @@ function scheduleAllPreviewLayout(){
   });
 }
 
+function layoutCurrentSinglePreview(){
+  if(viewMode !== 'single') return;
+  const scaler = document.getElementById('preview-scaler');
+  const out = document.getElementById('card-output');
+  if(!scaler || !out || !out.firstElementChild) return;
+  const height = Number(scaler.dataset.contentHeight) || out.scrollHeight || out.offsetHeight || 1;
+  const pane = getPreviewPaneSize();
+  const scale = calculateSinglePreviewScale(pane.w, pane.h, 1200, height, zoomPct);
+  setScalerBox(1200, height, scale);
+}
+function schedulePreviewFitLayout(){
+  if(pendingAllPreviewLayoutFrame) return;
+  pendingAllPreviewLayoutFrame = requestAnimationFrame(function(){
+    pendingAllPreviewLayoutFrame = null;
+    if(viewMode === 'all') layoutCurrentAllPreview();
+    else if(viewMode === 'single') layoutCurrentSinglePreview();
+  });
+}
+
 function setScalerBox(width, renderedHeight, scale){
   const scaler = document.getElementById('preview-scaler');
   if(!scaler) return;
@@ -12722,6 +12765,9 @@ function setScalerBox(width, renderedHeight, scale){
   scaler.style.transform = 'none';
   scaler.style.transformOrigin = 'top left';
   scaler.style.height = Math.ceil(renderedHeight * scale) + 'px';
+  scaler.dataset.contentWidth = String(width);
+  scaler.dataset.contentHeight = String(renderedHeight);
+  scaler.dataset.scale = String(scale);
   const out = document.getElementById('card-output');
   if(out){
     out.style.width = width + 'px';
@@ -12735,7 +12781,11 @@ function schedulePreviewBoundsLayout(generation, width, scale, measureTarget){
     if(generation !== previewRenderGeneration) return;
     const target = measureTarget || document.getElementById('card-output');
     const height = target ? Math.max(target.scrollHeight||0,target.offsetHeight||0,target.getBoundingClientRect ? target.getBoundingClientRect().height / Math.max(scale,0.001) : 0) : 0;
-    setScalerBox(width, height || 1, scale);
+    const renderedHeight = height || 1;
+    const fittedScale = viewMode === 'single'
+      ? calculateSinglePreviewScale(getPreviewPaneSize().w, getPreviewPaneSize().h, width, renderedHeight, zoomPct)
+      : scale;
+    setScalerBox(width, renderedHeight, fittedScale);
   });
 }
 
@@ -12817,6 +12867,7 @@ function renderPreviewMode(skipSave){
     });
 
     out.innerHTML = '';
+    out.style.display=''; out.style.height=''; out.style.alignItems=''; out.style.justifyContent='';
     out.style.width=''; out.style.transform=''; out.style.transformOrigin='';
     out.appendChild(stackWrap);
     setScalerBox(1200, 1, baseScale * EMAIL_PREVIEW_SCALE);
@@ -12866,7 +12917,8 @@ function renderPreviewMode(skipSave){
     canvas.appendChild(grid);
     stage.appendChild(canvas);
     out.innerHTML = '';
-    out.style.width=''; out.style.transform=''; out.style.transformOrigin='';
+    out.style.width='100%'; out.style.height='100%'; out.style.transform=''; out.style.transformOrigin='';
+    out.style.display='flex'; out.style.alignItems='center'; out.style.justifyContent='center';
     out.appendChild(stage);
     scaler.style.width = '100%';
     scaler.style.marginLeft = '';
@@ -12880,7 +12932,7 @@ function renderPreviewMode(skipSave){
     const naturalHeight = grid.scrollHeight || grid.offsetHeight || metrics.canvasHeight;
     stage.dataset.canvasHeight = String(naturalHeight);
     applyAllPreviewLayout(stage, canvas, Object.assign({}, metrics, {canvasHeight:naturalHeight}));
-    scheduleAllPreviewLayout();
+    schedulePreviewFitLayout();
     if(typeof cobPerfRecord==="function") cobPerfRecord("preview rendering: all 4 view", perfStart, {offers:loadedPreviewOffers.length});
     return;
   }
@@ -14117,9 +14169,9 @@ function handleKeyboardShortcut(event){
 document.addEventListener('keydown',handleKeyboardShortcut);
 document.addEventListener('change',releaseSelectShortcutFocus);
 
-window.addEventListener('resize', function(){ queueSegmentedPillSync(); scheduleAllPreviewLayout(); updateToolbarResponsiveState(); });
+window.addEventListener('resize', function(){ queueSegmentedPillSync(); schedulePreviewFitLayout(); updateToolbarResponsiveState(); });
 if(window.ResizeObserver){
-  previewWrapResizeObserver = new ResizeObserver(function(){ scheduleAllPreviewLayout(); });
+  previewWrapResizeObserver = new ResizeObserver(function(){ schedulePreviewFitLayout(); });
   const previewWrap = document.querySelector('.preview-wrap');
   if(previewWrap) previewWrapResizeObserver.observe(previewWrap);
   toolbarResizeObserver = new ResizeObserver(updateToolbarResponsiveState);
@@ -14141,7 +14193,7 @@ document.addEventListener('click', function(event){
 document.addEventListener('keydown', function(event){
   if(event.key === 'Escape') closeToolbarOverflowMenu(true);
 });
-requestAnimationFrame(function(){ queueSegmentedPillSync(); updateToolbarResponsiveState(); scheduleAllPreviewLayout(); });
+requestAnimationFrame(function(){ queueSegmentedPillSync(); updateToolbarResponsiveState(); schedulePreviewFitLayout(); });
 
 </script>
 
