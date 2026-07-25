@@ -727,7 +727,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .preview-scaler.empty-preview{display:flex;align-items:center;justify-content:center;}
 .all-preview-stage{display:block;margin:auto;position:relative;flex:0 0 auto;overflow:visible;}
 .all-preview-canvas{display:block;transform-origin:top left;will-change:transform;}
-.all-preview-grid{display:grid;background:transparent;align-items:start;justify-content:center;box-sizing:border-box;}
+.all-preview-grid{display:grid;background:transparent;align-items:start;align-content:start;justify-content:center;box-sizing:border-box;}
 .toolbar-overflow-wrap{position:relative;display:none;flex:0 0 auto;}
 .toolbar-overflow-button{display:inline-flex;align-items:center;justify-content:center;min-width:22px;padding:4px 0 5px;border:0;background:transparent;color:var(--text-inverse);font-size:13px;font-weight:300;line-height:1;letter-spacing:.04em;cursor:default;}
 .toolbar-overflow-button:hover,.toolbar-overflow-button[aria-expanded="true"]{color:var(--gold);}
@@ -12840,7 +12840,6 @@ function renderPreviewMode(skipSave){
     grid.style.gap = metrics.gap + 'px';
     grid.style.padding = metrics.padding + 'px';
     grid.style.width = metrics.canvasWidth + 'px';
-    grid.style.minHeight = metrics.canvasHeight + 'px';
 
     loadedPreviewOffers.forEach(function(item, loadedIndex){
       const d = item.data;
@@ -12874,7 +12873,10 @@ function renderPreviewMode(skipSave){
     scaler.style.height = '100%';
     scaler.style.transform = 'none';
     scaler.style.transformOrigin = 'center center';
-    const naturalHeight = Math.max(metrics.canvasHeight, grid.scrollHeight || grid.offsetHeight || metrics.canvasHeight);
+    // Let the rendered cards define the row tracks. In particular, package cards are
+    // shorter than cruise cards; imposing the cruise canvas height here stretched the
+    // two tracks and distributed that spare height between the package rows.
+    const naturalHeight = grid.scrollHeight || grid.offsetHeight || metrics.canvasHeight;
     stage.dataset.canvasHeight = String(naturalHeight);
     applyAllPreviewLayout(stage, canvas, Object.assign({}, metrics, {canvasHeight:naturalHeight}));
     scheduleAllPreviewLayout();

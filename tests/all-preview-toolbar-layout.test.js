@@ -62,6 +62,28 @@ test('All 4 metrics centre one, two and three offers with predictable rows and c
   assert.deepEqual({ columns: ctx.getAllPreviewGridMetrics(3).columns, rows: ctx.getAllPreviewGridMetrics(3).rows }, { columns: 2, rows: 2 });
 });
 
+test('All 4 uses one gutter in both directions without stretching intrinsically sized rows', () => {
+  const ctx = createContext();
+  const metrics = ctx.getAllPreviewGridMetrics(4);
+  const jet2Card = { width: metrics.cardWidth, height: 885 };
+  const positions = [
+    { x: metrics.padding, y: metrics.padding },
+    { x: metrics.padding + jet2Card.width + metrics.gap, y: metrics.padding },
+    { x: metrics.padding, y: metrics.padding + jet2Card.height + metrics.gap },
+    { x: metrics.padding + jet2Card.width + metrics.gap, y: metrics.padding + jet2Card.height + metrics.gap }
+  ];
+
+  assert.equal(positions[1].x - positions[0].x - jet2Card.width, metrics.gap);
+  assert.equal(positions[2].y - positions[0].y - jet2Card.height, metrics.gap);
+  assert.equal(positions[3].x - positions[2].x - jet2Card.width, metrics.gap);
+  assert.deepEqual(positions.slice(0, 2).map(({ y }) => y), [metrics.padding, metrics.padding]);
+  assert.deepEqual(positions.slice(2).map(({ y }) => y), [metrics.padding + jet2Card.height + metrics.gap, metrics.padding + jet2Card.height + metrics.gap]);
+  assert.match(html, /\.all-preview-grid\{[^}]*align-items:start;align-content:start;/);
+  assert.match(html, /grid\.style\.gap = metrics\.gap \+ 'px';/);
+  assert.doesNotMatch(html, /grid\.style\.minHeight = metrics\.canvasHeight/);
+  assert.match(html, /const naturalHeight = grid\.scrollHeight \|\| grid\.offsetHeight \|\| metrics\.canvasHeight;/);
+});
+
 test('All 4 scale is constrained by pane width, pane height and max scale independent of cur', () => {
   const ctx = createContext();
   const metrics = ctx.getAllPreviewGridMetrics(4);
