@@ -814,6 +814,8 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .summary-offer-head{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
 .summary-offer-logo-wrap{width:70px;height:40px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;padding:3px 4px;box-sizing:border-box;border-radius:0;background:var(--chrome);}
 .summary-offer-logo{display:block;max-width:62px;max-height:32px;width:auto;height:auto;object-fit:contain;object-position:center;}
+.summary-offer-logo-wrap--jet2{width:min(132px,32vw);height:72px;padding:4px;background:transparent;}
+.summary-offer-logo--jet2{max-width:124px;max-height:64px;}
 .summary-offer-logo[src="assets/operator-logos/po-cruises-logo.png"]{transform:translateY(2px);}
 .summary-offer-title{font-size:11px;font-weight:400;color:var(--navy);letter-spacing:.04em;}
 .summary-list{display:grid;gap:3px;font-size:10px;}
@@ -11858,10 +11860,13 @@ function getSummaryOperatorLogoHtml(o){
   const resolvedOffer={...o,operator:operatorKey};
   if(!hasOperatorLogo(resolvedOffer)) return "";
   const op=OPERATOR_HEADERS[operatorKey]||{};
-  const src=o._logoCustom||op.pngData||op.svgData;
+  const isJet2=operatorKey==="jet2";
+  const src=isJet2?op.pngData:(o._logoCustom||op.pngData||op.svgData);
   if(!src) return "";
   const alt=op.name?`${op.name} logo`:"Operator logo";
-  return `<span class="summary-offer-logo-wrap"><img class="summary-offer-logo" src="${summaryHtml(src)}" alt="${summaryHtml(alt)}" onerror="this.parentElement.remove()"></span>`;
+  const variantClass=isJet2?" summary-offer-logo-wrap--jet2":"";
+  const imageVariantClass=isJet2?" summary-offer-logo--jet2":"";
+  return `<span class="summary-offer-logo-wrap${variantClass}"><img class="summary-offer-logo${imageVariantClass}" src="${summaryHtml(src)}" alt="${summaryHtml(alt)}" onerror="this.parentElement.remove()"></span>`;
 }
 function getSummaryOfferDetails(o,i){
   const op=OPERATOR_HEADERS[o.operator];
@@ -11912,6 +11917,7 @@ function getDetachedSummaryWindowHtml(initialSummaryHtml){
 .detached-summary-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
 .summary-body{background:var(--surface);padding:14px 16px 16px;overflow-y:auto;display:grid;gap:8px;}
 .summary-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:6px;}.summary-chip{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:10px;line-height:1.35;}.summary-health{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:6px;padding:7px 9px;font-size:10px;line-height:1.45;}.summary-health strong{color:var(--navy);font-weight:400;}.summary-grid{display:grid;gap:6px;}.summary-offer-card{border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--surface-raised);}.summary-offer-head{display:flex;align-items:center;gap:10px;margin-bottom:4px;}.summary-offer-logo-wrap{width:70px;height:40px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;padding:3px 4px;box-sizing:border-box;border-radius:0;background:var(--chrome);}.summary-offer-logo{display:block;max-width:62px;max-height:32px;width:auto;height:auto;object-fit:contain;object-position:center;}.summary-offer-logo[src="assets/operator-logos/po-cruises-logo.png"]{transform:translateY(2px);}.summary-offer-title{font-size:11px;font-weight:400;color:var(--navy);letter-spacing:.04em;}.summary-list{display:grid;gap:3px;font-size:10px;}.summary-list div{display:flex;justify-content:space-between;gap:8px;}.summary-list strong{color:var(--muted);font-weight:700;}.summary-list span{text-align:right;}.sum-ok{color:var(--green);font-weight:700;}.sum-warn{color:var(--amber);font-weight:700;}.sum-bad{color:#b42318;font-weight:700;}
+.summary-offer-logo-wrap--jet2{width:min(132px,32vw);height:72px;padding:4px;background:transparent;}.summary-offer-logo--jet2{max-width:124px;max-height:64px;}
 .summary-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;font-size:10px;font-weight:400;letter-spacing:.04em;border-radius:var(--radius);border:1px solid rgba(255,255,255,.35);background:var(--surface);color:var(--navy);text-transform:uppercase;cursor:pointer;}.summary-btn.primary{background:var(--gold);border-color:var(--gold);color:var(--text-inverse);}
 .detached-summary-note{padding:8px 16px;background:var(--surface);border-top:1px solid var(--border);font-size:10px;color:var(--muted);}
 </style></head><body><div class="detached-summary-shell"><header class="detached-summary-head"><h1>Campaign Summary</h1><div class="detached-summary-actions"><button class="summary-btn primary" type="button" onclick="refreshSummary()">Refresh</button><button class="summary-btn" type="button" onclick="copyAllUtmsFromOpener()">Copy All Links</button></div></header><main class="summary-body" id="detached-summary-content">${summaryHtml}</main><div class="detached-summary-note">Read-only detached summary. Use Refresh to pull the latest em data.</div></div><script>
