@@ -40,10 +40,11 @@ test('real All 4 editor update route changes Jet2 price without rewriting layout
     bc(data){ return `Offer 1 £${574 + Number(String(data.resortFee).replace(/\D/g,''))}pp`; },
     renderOfferWithOptionalCtaHTML(data){ return this.bc(data); },
     adjustVisitSectionHeights(){}, enhanceClickableHeroImagesAndPlaceholders(){}, enhanceHeroDropTarget(){}, scheduleHeroCropPositions(){},
+    allPreviewCardMarkupCache:{ get(){ return null; }, set(){} },
     commitVisibleFields(){ context.offers[0].resortFee='15'; }, genUtm(){}, genStandardUtms(){}, updateAllStatus(){}, checkPortsWarn(){}, runSpellQA(){}, updateExportFilenames(){}, queueAutosave(){}, renderPreviewMode(){ throw new Error('All 4 must not fully rerender'); }, renderVisibleCard(){}
   };
   vm.createContext(context);
-  vm.runInContext(`${extractLastFunction('updateAllPreviewCard')}\n${extractLastFunction('up')}`, context);
+  vm.runInContext(`${extractLastFunction('reconcileAllPreviewPriceRegion')}\n${extractLastFunction('updateAllPreviewCard')}\n${extractLastFunction('up')}`, context);
 
   vm.runInContext('up()', context);
   assert.match(cards[0].innerHTML, /£589pp/);
@@ -59,9 +60,28 @@ test('real All 4 editor update route changes Jet2 price without rewriting layout
 test('All 4 fit ignores duplicate workspace measurements but applies real resizes', () => {
   assert.match(extractLastFunction('applyAllPreviewLayout'), /workspaceUnchanged/);
   assert.match(extractLastFunction('applyAllPreviewLayout'), /PREVIEW_LAYOUT_TOLERANCE/);
-  assert.match(extractLastFunction('updateAllPreviewCard'), /card\.innerHTML/);
+  assert.match(extractLastFunction('updateAllPreviewCard'), /reconcileAllPreviewPriceRegion\(card, nextMarkup\)/);
   assert.doesNotMatch(extractLastFunction('updateAllPreviewCard'), /applyAllPreviewLayout|schedulePreviewFitLayout|style\.transform/);
   assert.match(extractLastFunction('up'), /viewMode === 'all'\) updateAllPreviewCard\(cur\)/);
+});
+
+test('visible resort-fee input uses atomic price-region reconciliation in the mounted All 4 card', () => {
+  const field = html.match(/<input id="f-resortFee"[^>]+>/)?.[0] || '';
+  assert.match(field, /oninput="up\(\)"/, 'the real visible resort-fee field must use the live editor route');
+
+  const update = extractLastFunction('updateAllPreviewCard');
+  const reconcile = extractLastFunction('reconcileAllPreviewPriceRegion');
+  const up = extractLastFunction('up');
+  assert.match(up, /viewMode === 'all'\) updateAllPreviewCard\(cur\)/);
+  assert.match(reconcile, /currentRoot\.querySelector\('\.pkg-pricing'\)/);
+  assert.match(reconcile, /withoutPrice\(previousRoot\) !== withoutPrice\(nextRoot\)/,
+    'only a price-only markup change may take the targeted route');
+  assert.match(reconcile, /currentPrice\.replaceChildren/,
+    'the complete next price structure must be committed synchronously inside the existing wrapper');
+  assert.doesNotMatch(reconcile, /card\.innerHTML|card\.replace|applyAllPreviewLayout|schedulePreviewFitLayout|renderPreviewMode/);
+  assert.match(update, /if\(!priceOnly\) card\.innerHTML = nextMarkup/,
+    'non-price edits retain the existing card-content update behaviour');
+  assert.doesNotMatch(update, /applyAllPreviewLayout|schedulePreviewFitLayout|renderPreviewMode|renderVisibleCard/);
 });
 
 test('legacy full-render requests reconcile into the mounted All 4 shell', () => {
