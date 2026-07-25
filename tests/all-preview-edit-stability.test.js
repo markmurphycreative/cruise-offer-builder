@@ -63,3 +63,18 @@ test('All 4 fit ignores duplicate workspace measurements but applies real resize
   assert.doesNotMatch(extractLastFunction('updateAllPreviewCard'), /applyAllPreviewLayout|schedulePreviewFitLayout|style\.transform/);
   assert.match(extractLastFunction('up'), /viewMode === 'all'\) updateAllPreviewCard\(cur\)/);
 });
+
+test('legacy full-render requests reconcile into the mounted All 4 shell', () => {
+  const source = extractLastFunction('reconcileMountedAllPreview');
+  assert.match(source, /stage\.isConnected/);
+  assert.match(source, /slots\.length !== expected\.length/);
+  assert.match(source, /slot\.dataset\.offerIndex !== expected\[i\]/);
+  assert.match(source, /updateAllPreviewCards\(\)/);
+  assert.doesNotMatch(source, /innerHTML\s*=|replaceChildren|appendChild|style\.transform|applyAllPreviewLayout/);
+
+  const render = extractLastFunction('renderPreviewMode');
+  const reconcileAt = render.indexOf('reconcileMountedAllPreview(loadedPreviewOffers, fixedCardHeight)');
+  const clearAt = render.indexOf("out.innerHTML = ''", reconcileAt);
+  assert.ok(reconcileAt > -1, 'All 4 render path must attempt an in-place reconcile');
+  assert.ok(clearAt > reconcileAt, 'shell replacement must only occur after reconcile rejects an incompatible shell');
+});
