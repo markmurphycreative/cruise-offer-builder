@@ -12556,6 +12556,7 @@ let pendingAllPreviewLayoutFrame = null;
 let previewRenderGeneration = 0;
 let previewWrapResizeObserver = null;
 let toolbarResizeObserver = null;
+const allPreviewCardMarkupCache = new WeakMap();
 const previewZoomByMode = {single:32, all:32, email:32};
 function normalisePreviewMode(v){
   return ['single','email','all'].includes(v) ? v : 'single';
@@ -12769,16 +12770,66 @@ function schedulePreviewFitLayout(){
   });
 }
 
-// Live editor changes replace only the active card's contents.  The stable stage,
-// canvas and fixed-size card wrapper remain mounted, so content rendering cannot
-// feed temporary dimensions back into the All 4 fit calculation.
+// Resort-fee edits change the Jet2 price markup from one column to two.  Reconcile
+// that conditional markup inside the already-mounted pricing wrapper.  Comparing
+// copies with the price region removed ensures ordinary card edits still take the
+// normal card-content path, while the empty/zero/positive fee transitions never
+// detach the card (or anything above it).
+function reconcileAllPreviewPriceRegion(card, nextMarkup){
+  if(!card || !card.firstElementChild || !document.createElement) return false;
+  const previousMarkup = allPreviewCardMarkupCache.get(card);
+  if(!previousMarkup) return false;
+  const previousHost = document.createElement('div');
+  previousHost.innerHTML = previousMarkup;
+  const nextHost = document.createElement('div');
+  nextHost.innerHTML = nextMarkup;
+  const currentRoot = card.firstElementChild;
+  const previousRoot = previousHost.firstElementChild;
+  const nextRoot = nextHost.firstElementChild;
+  if(!currentRoot || !previousRoot || !nextRoot || !currentRoot.matches('.pc') || !nextRoot.matches('.pc')) return false;
+  const currentPrice = currentRoot.querySelector('.pkg-pricing');
+  const nextPrice = nextRoot.querySelector('.pkg-pricing');
+  if(!currentPrice || !nextPrice) return false;
+
+  const withoutPrice = function(root){
+    const copy = root.cloneNode(true);
+    const price = copy.querySelector('.pkg-pricing');
+    if(!price) return '';
+    const marker = document.createElement('div');
+    marker.className = 'pkg-pricing';
+    price.replaceWith(marker);
+    return copy.outerHTML;
+  };
+  // Compare the two renderer outputs, not the live card: hero enhancement may
+  // legitimately have added crop styles or accessibility state to the latter.
+  if(withoutPrice(previousRoot) !== withoutPrice(nextRoot)) return false;
+
+  // Both mutations happen in the input event's single synchronous task, so the
+  // browser can only paint the complete old or complete new price treatment.
+  currentPrice.className = nextPrice.className;
+  currentPrice.replaceChildren.apply(currentPrice, Array.from(nextPrice.childNodes));
+  return true;
+}
+
+// Live editor changes preserve the active card node as well as the stable stage,
+// canvas and fixed-size card-slot wrapper, so content rendering cannot feed
+// temporary dimensions back into the All 4 fit calculation.
 function updateAllPreviewCard(index){
   if(viewMode !== 'all') return false;
   const card = document.querySelector('.all-preview-card[data-offer-index="' + Number(index) + '"]');
   if(!card) return false;
   const d = offers[index] || {};
   const cta = getCtaSettingsFromUI();
-  card.innerHTML = cta.enabled ? renderOfferWithOptionalCtaHTML(d, cta) : bc(d);
+  const nextMarkup = cta.enabled ? renderOfferWithOptionalCtaHTML(d, cta) : bc(d);
+  const priceOnly = reconcileAllPreviewPriceRegion(card, nextMarkup);
+  if(!priceOnly) card.innerHTML = nextMarkup;
+  allPreviewCardMarkupCache.set(card, nextMarkup);
+  // Price-only updates cannot affect hero/visit content and deliberately avoid
+  // re-running card-wide enhancement and measurement hooks.
+  if(priceOnly){
+    card.dataset.contentRevision = String((Number(card.dataset.contentRevision)||0) + 1);
+    return true;
+  }
   adjustVisitSectionHeights(card);
   enhanceClickableHeroImagesAndPlaceholders(card, index);
   enhanceHeroDropTarget(card, index);
@@ -12985,6 +13036,7 @@ function renderPreviewMode(skipSave){
       c.addEventListener('keydown', function(event){ handleAllPreviewCardKeydown(event, index); });
       if(currentCtaSettings.enabled) c.innerHTML = renderOfferWithOptionalCtaHTML(d || {}, currentCtaSettings);
       else c.innerHTML = bc(d || {});
+      allPreviewCardMarkupCache.set(c, c.innerHTML);
       adjustVisitSectionHeights(c);
       enhanceClickableHeroImagesAndPlaceholders(c, index);
       enhanceHeroDropTarget(c, index);
