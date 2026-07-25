@@ -23,6 +23,7 @@ function extractFunction(name){
 
 const layoutSource = [
   'const ALL_PREVIEW_MAX_SCALE = 0.68;',
+  'const ALL_PREVIEW_CARD_GAP = 64;',
   extractFunction('getAllPreviewGridMetrics'),
   extractFunction('calculateAllPreviewScale'),
   extractFunction('applyAllPreviewLayout'),
@@ -79,7 +80,9 @@ test('All 4 uses one gutter in both directions without stretching intrinsically 
   assert.deepEqual(positions.slice(0, 2).map(({ y }) => y), [metrics.padding, metrics.padding]);
   assert.deepEqual(positions.slice(2).map(({ y }) => y), [metrics.padding + jet2Card.height + metrics.gap, metrics.padding + jet2Card.height + metrics.gap]);
   assert.match(html, /\.all-preview-grid\{[^}]*align-items:start;align-content:start;/);
-  assert.match(html, /grid\.style\.gap = metrics\.gap \+ 'px';/);
+  assert.match(html, /\.all-preview-grid\{[^}]*gap:var\(--all-preview-card-gap\);/);
+  assert.match(html, /grid\.style\.setProperty\('--all-preview-card-gap', metrics\.gap \+ 'px'\);/);
+  assert.doesNotMatch(html, /grid\.style\.(?:rowGap|columnGap)/);
   assert.doesNotMatch(html, /grid\.style\.minHeight = metrics\.canvasHeight/);
   assert.match(html, /const naturalHeight = grid\.scrollHeight \|\| grid\.offsetHeight \|\| metrics\.canvasHeight;/);
 });
