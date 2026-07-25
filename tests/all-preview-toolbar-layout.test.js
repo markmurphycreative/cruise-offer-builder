@@ -25,6 +25,7 @@ const layoutSource = [
   'let zoomPct = 32;',
   'const SINGLE_PREVIEW_TARGET_SCALE = 0.336;',
   'const ALL_PREVIEW_CARD_GAP = 64;',
+  'const PREVIEW_LAYOUT_TOLERANCE = 0.25;',
   'function normalisePreviewZoomValue(value){ return Number(value); }',
   'function getDefaultPreviewZoom(){ return 32; }',
   extractFunction('getAllPreviewGridMetrics'),
@@ -59,6 +60,18 @@ test('All 4 stage dimensions equal scaled canvas dimensions with top-left canvas
   assert.equal(canvas.style.height, `${metrics.canvasHeight}px`);
   assert.equal(canvas.style.transform, `scale(${result.scale})`);
   assert.equal(canvas.style.transformOrigin, 'top left');
+  assert.equal(stage.dataset.layoutApplications, '1');
+
+  const transform = canvas.style.transform;
+  const duplicate = ctx.applyAllPreviewLayout(stage, canvas, metrics, { w: 1200.1, h: 900.1 });
+  assert.equal(duplicate.applied, false, 'subpixel observer noise must not rewrite layout');
+  assert.equal(stage.dataset.layoutApplications, '1');
+  assert.equal(canvas.style.transform, transform);
+
+  const resized = ctx.applyAllPreviewLayout(stage, canvas, metrics, { w: 1000, h: 700 });
+  assert.equal(resized.applied, true, 'a genuine workspace resize must refit');
+  assert.equal(stage.dataset.layoutApplications, '2');
+  assert.notEqual(canvas.style.transform, transform);
 });
 
 test('All 4 metrics centre one, two and three offers with predictable rows and columns', () => {
@@ -68,9 +81,9 @@ test('All 4 metrics centre one, two and three offers with predictable rows and c
   assert.deepEqual({ columns: ctx.getAllPreviewGridMetrics(3).columns, rows: ctx.getAllPreviewGridMetrics(3).rows }, { columns: 2, rows: 2 });
 });
 
-test('All 4 uses one gutter in both directions without stretching intrinsically sized rows', () => {
+test('All 4 uses one gutter in both directions from fixed source geometry', () => {
   const ctx = createContext();
-  const metrics = ctx.getAllPreviewGridMetrics(4);
+  const metrics = ctx.getAllPreviewGridMetrics(4, 885);
   const jet2Card = { width: metrics.cardWidth, height: 885 };
   const positions = [
     { x: metrics.padding, y: metrics.padding },
@@ -89,7 +102,9 @@ test('All 4 uses one gutter in both directions without stretching intrinsically 
   assert.match(html, /grid\.style\.setProperty\('--all-preview-card-gap', metrics\.gap \+ 'px'\);/);
   assert.doesNotMatch(html, /grid\.style\.(?:rowGap|columnGap)/);
   assert.doesNotMatch(html, /grid\.style\.minHeight = metrics\.canvasHeight/);
-  assert.match(html, /const naturalHeight = grid\.scrollHeight \|\| grid\.offsetHeight \|\| metrics\.canvasHeight;/);
+  assert.match(html, /const fixedCardHeight = loadedPreviewOffers\.length/);
+  assert.match(html, /stage\.dataset\.canvasHeight = String\(metrics\.canvasHeight\);/);
+  assert.doesNotMatch(html, /const naturalHeight = grid\.scrollHeight/);
 });
 
 test('All 4 scale is constrained by pane width, pane height and max scale independent of cur', () => {

@@ -106,7 +106,7 @@ test('preview layout centres the measured mode-specific canvases', () => {
 test('shared preview scaler retains stable dimensions for Email and All 4 layouts', () => {
   assert.match(html, /function setScalerBox\(width, renderedHeight, scale\)\{[\s\S]*?scaler\.style\.width = Math\.ceil\(width \* scale\) \+ 'px';[\s\S]*?scaler\.style\.transform = 'none';[\s\S]*?out\.style\.width = width \+ 'px';[\s\S]*?out\.style\.transform = 'scale\(' \+ scale \+ '\)';/);
   assert.match(html, /schedulePreviewBoundsLayout\(renderGeneration, 1200, baseScale \* EMAIL_PREVIEW_SCALE, stackWrap\);/);
-  assert.match(html, /applyAllPreviewLayout\(stage, canvas, Object\.assign\(\{\}, metrics, \{canvasHeight:naturalHeight\}\)\);/);
+  assert.match(html, /stage\.dataset\.canvasHeight = String\(metrics\.canvasHeight\);[\s\S]*?applyAllPreviewLayout\(stage, canvas, metrics\);/);
 });
 
 test('All 4 preview treats the card grid as one top-left scaled canvas inside a visible stage', () => {
