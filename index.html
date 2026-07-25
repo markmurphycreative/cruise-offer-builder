@@ -2648,6 +2648,7 @@ function applyCampaignContext(type=currentCampaignType){
   document.querySelectorAll("[data-campaign-label]").forEach(el=>{ el.textContent=label; });
   const field=document.getElementById("g-campaign-type");
   if(field) field.value=label;
+  if(typeof refreshCampaignDescriptionForType==="function") refreshCampaignDescriptionForType(currentCampaignType);
   syncOperatorDropdownForCampaign(currentCampaignType);
   if(typeof syncPackageOfferDetailsFields==="function") syncPackageOfferDetailsFields(currentCampaignType);
   if(typeof updateImportBuilderMenu==="function") updateImportBuilderMenu(currentCampaignType);
@@ -6078,6 +6079,22 @@ const CAMPAIGN_PRESETS_KEY = "campaignPresetsV1";
 
 const DEFAULT_CAMPAIGN_OWNER = "Mark";
 const DEFAULT_CAMPAIGN_DESCRIPTION = "Cruise Worldwide Mixed";
+function getDefaultCampaignDescription(type=currentCampaignType){
+  return `${getCampaignTypeLabel(type)} Worldwide Mixed`;
+}
+function normaliseCampaignDescriptionForType(value,type=currentCampaignType){
+  const label=getCampaignTypeLabel(type);
+  const description=String(value||"").trim();
+  if(!description) return getDefaultCampaignDescription(type);
+  return /^(?:Cruise|Package)\b/i.test(description) ? description.replace(/^(?:Cruise|Package)\b/i,label) : description;
+}
+function refreshCampaignDescriptionForType(type=currentCampaignType){
+  const description=document.getElementById("g-description");
+  if(!description) return getDefaultCampaignDescription(type);
+  const next=normaliseCampaignDescriptionForType(description.value,type);
+  if(description.value!==next) description.value=next;
+  return next;
+}
 const CAMPAIGN_NAME_SOURCE_PRIORITY = {generated:0,sheet:1,csv:2,manual:3,saved:4};
 let campaignNameSource = "generated";
 let autoCampaignNameEnabled = true;
@@ -6260,7 +6277,7 @@ function initialiseCampaignNamingDefaults(now=new Date()){
   const descEl=document.getElementById("g-description");
   const ownerEl=document.getElementById("g-owner");
   if(dateEl && !String(dateEl.value||"").trim()) dateEl.value=formatCampaignDate(now);
-  if(descEl && !String(descEl.value||"").trim()) descEl.value=DEFAULT_CAMPAIGN_DESCRIPTION;
+  if(descEl) descEl.value=normaliseCampaignDescriptionForType(descEl.value,currentCampaignType);
   if(ownerEl && !String(ownerEl.value||"").trim()) ownerEl.value=DEFAULT_CAMPAIGN_OWNER;
   setAutoCampaignNameState(true);
   campaignNameSource="generated";
@@ -6273,7 +6290,7 @@ function restoreCampaignNamingSnapshot(c={}){
   const owner=document.getElementById("g-owner");
   const description=document.getElementById("g-description");
   if(owner) owner.value=c.owner==null ? DEFAULT_CAMPAIGN_OWNER : c.owner;
-  if(description) description.value=c.description==null ? DEFAULT_CAMPAIGN_DESCRIPTION : c.description;
+  if(description) description.value=normaliseCampaignDescriptionForType(c.description,currentCampaignType);
   setAutoCampaignNameState(c.autoCampaignName==null ? false : !!c.autoCampaignName);
   campaignNameSource="saved";
 }
@@ -9360,12 +9377,32 @@ function extractPackageSharingBasis(text){
 function extractPackagePrices(text){
   const out={leadPrice:"",resortFee:"",totalPrice:"",priceBasis:""};
   const source=normalisePackageOcrText(text);
-  const fee=source.match(/\+?\s*£\s*([\d,]+)\s*pp?\s*(?:local\s+)?resort\s+fee/i);
-  if(fee) out.resortFee=fee[1].replace(/,/g,"")+"pp";
-  const prices=[...source.matchAll(/£\s*([\d,]+)\s*(pp|per person)?/gi)].map(m=>({value:m[1].replace(/,/g,""), pp:m[2]||"", index:m.index||0})).filter(p=>!(out.resortFee&&p.value===out.resortFee.replace(/\D/g,"")));
-  if(fee&&prices.length>=2){ out.leadPrice=prices[0].value+(prices[0].pp||"pp"); out.totalPrice=prices[prices.length-1].value+(prices[prices.length-1].pp||"pp"); }
-  else if(prices.length){ const nearTotal=prices.find(p=>/total\s+price/i.test(source.slice(p.index,p.index+80)))||prices[prices.length-1]; out.totalPrice=nearTotal.value+(nearTotal.pp||(/\bpp\b|per person/i.test(source)?"pp":"")); }
-  if(out.totalPrice||out.leadPrice) out.priceBasis=/\bpp\b|per person/i.test(source)?"per person":"";
+  const lines=source.split(/\n+/).map(line=>line.trim()).filter(Boolean);
+  const candidates=[];
+  const unwanted=/\b(?:deposit|balance due|saving|save|monthly|per month|resort fee|tourist tax|local fee|previous price|was)\b/i;
+  const totalLabel=/\b(?:total(?: holiday| booking)?(?: cost| price)?|payable to your travel agent)\b/i;
+  const ppLabel=/\b(?:pp|p\.p\.|per[ -]?person|price per person)\b/i;
+  lines.forEach((line,lineIndex)=>{
+    const previous=lines[lineIndex-1]||"";
+    const next=lines[lineIndex+1]||"";
+    for(const match of line.matchAll(/£\s*([0-9]+(?:,[0-9][0-9][0-9])*)(?:\.[0-9][0-9])?\s*(pp|p\.p\.|per[ -]?person)?/gi)){
+      const ownSuffix=!!match[2];
+      const context=`${previous} ${line} ${next}`;
+      const isFee=unwanted.test(line)||(!ownSuffix&&unwanted.test(previous));
+      const isTotal=totalLabel.test(line)||(!ownSuffix&&totalLabel.test(previous))||totalLabel.test(next);
+      const isPerPerson=!isFee&&!isTotal&&(ownSuffix||ppLabel.test(line)||ppLabel.test(previous));
+      candidates.push({value:match[1].replace(/,/g,""),ownSuffix,isFee,isTotal,isPerPerson,context});
+    }
+  });
+  const fee=candidates.find(candidate=>candidate.isFee&&/resort fee|local fee/i.test(candidate.context));
+  if(fee) out.resortFee=fee.value+"pp";
+  const perPerson=candidates.find(candidate=>candidate.isPerPerson);
+  const total=candidates.filter(candidate=>candidate.isTotal&&!candidate.isFee).sort((a,b)=>Number(b.value)-Number(a.value))[0];
+  if(perPerson) out.leadPrice=perPerson.value+"pp";
+  if(total) out.totalPrice=total.value+(total.ownSuffix?"pp":"");
+  else if(perPerson) out.totalPrice=out.leadPrice;
+  else { const fallback=candidates.find(candidate=>!candidate.isFee); if(fallback) out.totalPrice=fallback.value+(fallback.ownSuffix?"pp":""); }
+  if(out.leadPrice) out.priceBasis="per person";
   return out;
 }
 function isUnsafePackageTitleLine(line){
@@ -9502,9 +9539,10 @@ function parseJet2DawsonQuote(lines,txt,parsed){
   if(/coach\s+transfers/i.test(txt)){ parsed.transfers="Coach transfers included"; incl.push(parsed.transfers); }
   if(incl.length){ parsed.incl="Luggage & Transfers Included"; parsed.inclusionsDisplay="Luggage & Transfers Included"; score+=8; }
   const room=lines.find(line=>/(?:^|[^A-Za-z0-9])\d+\s*x\s+/i.test(line)&&/\b(?:room|studio|apartment|suite|villa)\b/i.test(line)); if(room) parsed.roomType=room.replace(/^.*?\b\d+\s*[x×]\s*/i,"").replace(/[^A-Za-z0-9 '&/-].*$/g,"").trim();
-  const totalMatches=[...txt.matchAll(/payable\s+to\s+your\s+travel\s*\n?\s*agent[\s\S]{0,120}?£\s*([\d,]+)/gi)].map(m=>m[1]);
-  const total=totalMatches.sort((a,b)=>Number(String(b).replace(/,/g,""))-Number(String(a).replace(/,/g,"")))[0];
-  let pp=(txt.match(/price\s+per\s+person[\s\S]{0,160}?£\s*([\d,]+)/i)||[])[1];
+  const selectedPrices=extractPackagePrices(txt);
+  const labelledTotals=[...txt.matchAll(/payable\s+to\s+your\s+travel\s*\n?\s*agent[\s\S]{0,120}?£\s*([\d,]+)/gi)].map(match=>match[1].replace(/,/g,""));
+  const total=labelledTotals.sort((a,b)=>Number(b)-Number(a))[0]||String(selectedPrices.totalPrice||"").replace(/pp$/i,"");
+  let pp=String(selectedPrices.leadPrice||"").replace(/pp$/i,"");
   if(!pp){ const comingBack=txt.match(/coming\s+back\s+£\s*(\d{3,4})/i); if(comingBack) pp=comingBack[1]; }
   if(total){ parsed.totalPrice=total.replace(/,/g,""); parsed.bookingTotal=parsed.totalPrice; score+=10; }
   if(pp){ parsed.price=pp.replace(/,/g,""); parsed.leadPrice=parsed.price; parsed.pricePerPerson=parsed.price; score+=10; }
@@ -11876,7 +11914,7 @@ function getSummaryOfferDetails(o,i){
   return [
     ["Operator",op?op.name:"Missing"],
     ["Ship",summaryDisplay(o.ship)],
-    ["Price",o.price?`£${o.price}pp`:"Missing"],
+    ["Price",o.price?`£${String(o.price).replace(/\s*(?:pp|p\.p\.|per[ -]?person)\s*$/i,"")}pp`:"Missing"],
     ["Date",summaryDisplay([o.day,o.month].filter(Boolean).join(" "))],
     ["Duration",o.nights?`${o.nights} nights`:"Missing"],
     ["Board",summaryDisplay(board)],
@@ -11891,6 +11929,8 @@ function getSummaryOfferDetails(o,i){
   ];
 }
 function getCampaignSummaryHtml(){
+  const description=typeof refreshCampaignDescriptionForType==="function"?refreshCampaignDescriptionForType(currentCampaignType):summaryDisplay((document.getElementById("g-description")||{}).value);
+  const campaignType=getCampaignTypeLabel(currentCampaignType);
   const name=summaryHtml(document.getElementById("g-campaign").value,"(unnamed)");
   const date=summaryHtml(document.getElementById("g-date").value,"(TBC)");
   const lockedSummary=(typeof lockedOffers!=="undefined"&&Array.isArray(lockedOffers)?lockedOffers:[]).map((locked,index)=>locked?`Offer ${index+1}`:"").filter(Boolean).join(", ") || "None";
@@ -11899,7 +11939,7 @@ function getCampaignSummaryHtml(){
     const rows=getSummaryOfferDetails(o,i).map(([label,value,statusClass])=>`<div><strong>${label}</strong><span${statusClass?` class="${statusClass}"`:""}>${summaryHtml(value)}</span></div>`).join("");
     return `<div class="summary-offer-card"><div class="summary-offer-head">${getSummaryOperatorLogoHtml(o)}<div class="summary-offer-title">Offer ${i+1} — ${summaryHtml(o.name,"Unnamed offer")}</div></div><div class="summary-list">${rows}</div></div>`;
   }).join("");
-  return `<div class="summary-health"><strong>Campaign Readiness</strong><br>${getCampaignHealthReviewHtml()}</div><div class="summary-meta"><div class="summary-chip"><strong>Campaign</strong><br>${name}</div><div class="summary-chip"><strong>Send date</strong><br>${date}</div><div class="summary-chip"><strong>Export pack hints</strong><br>offer-cards/, utms/all-utms.csv, summary/campaign-summary.txt, summary/utm_lookup.csv</div><div class="summary-chip"><strong>Locked cards</strong><br>${summaryHtml(lockedSummary)}</div></div><div class="summary-grid">${offerCards}</div>`;
+  return `<div class="summary-health"><strong>Campaign Readiness</strong><br>${getCampaignHealthReviewHtml()}</div><div class="summary-meta"><div class="summary-chip"><strong>Campaign</strong><br>${name}</div><div class="summary-chip"><strong>Campaign Type</strong><br>${summaryHtml(campaignType)}</div><div class="summary-chip"><strong>Campaign Description</strong><br>${summaryHtml(description)}</div><div class="summary-chip"><strong>Send date</strong><br>${date}</div><div class="summary-chip"><strong>Export pack hints</strong><br>offer-cards/, utms/all-utms.csv, summary/campaign-summary.txt, summary/utm_lookup.csv</div><div class="summary-chip"><strong>Locked cards</strong><br>${summaryHtml(lockedSummary)}</div></div><div class="summary-grid">${offerCards}</div>`;
 }
 function renderCampaignSummaryInto(targetId){
   const content=document.getElementById(targetId);

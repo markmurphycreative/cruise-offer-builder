@@ -41,6 +41,27 @@ test('Package parser separates lead price, resort fee and total price', () => {
   assert.equal(result.parsed.totalPrice, '656pp');
 });
 
+test('package prices stay isolated and explicit per-person candidates outrank totals and fees', () => {
+  const { parsePackageOfferText, extractPackagePrices } = createContext();
+  const fixtures = [
+    ['Turgay Hotel', `Turgay Hotel\nAntalya, Turkey\n7 Nights\n2 Adults\n<span aria-hidden="true">£5</span>\n<span aria-hidden="true">£683</span>\n£583pp\n£683 previous price`, '583'],
+    ['White City Beach', `White City Beach Hotel\nAntalya, Turkey\n7 Nights\n2 Adults\n£843 per person\n£843pp mobile`, '843'],
+    ['Servatur Waikiki', `Servatur Waikiki\nGran Canaria, Spain\n7 Nights\n2 Adults\nTotal holiday price £1,102\nPrice per person\n£550\nApproximately £24 tourist tax payable locally\n£550pp accessibility`, '550'],
+    ['Thanos Hotel', `Thanos Hotel\nPaphos, Cyprus\n7 Nights\n2 Adults\n£5\n£683\nPrice per person £583\nWas £725`, '583']
+  ];
+  fixtures.forEach(([hotel, markup, expected]) => {
+    const prices = extractPackagePrices(markup);
+    assert.equal(prices.leadPrice, `${expected}pp`, hotel);
+    assert.notEqual(prices.leadPrice, '5683pp', hotel);
+    const parsed = parsePackageOfferText(markup, {}).parsed;
+    assert.equal(String(parsed.price).replace(/pp$/i, ''), expected, `${hotel} shared offer price`);
+  });
+  const servatur = extractPackagePrices(fixtures[2][1]);
+  assert.equal(servatur.leadPrice, '550pp');
+  assert.equal(servatur.totalPrice, '1102');
+  assert.equal(servatur.resortFee, '');
+});
+
 test('Jet2 and easyJet variants detect operators and family/free-child evidence', () => {
   const { detectPackageOffer, parsePackageOfferText } = createContext();
   const jet2 = `Costa Adeje, Tenerife\nSunset Bay Club\n7 Nights\nSelf Catering\nLeeds Bradford Flights\nLuggage Included\nFree Child Place\n£499pp\nTotal Price\nBased on 2 Adults & 1 Child Sharing\nJet2 Holidays`;

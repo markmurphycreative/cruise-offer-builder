@@ -28,6 +28,33 @@ test('campaign summary opens read-only and consumes existing status output', () 
   assert.match(renderer, /Offer \$\{i\+1\} — Empty/);
 });
 
+test('campaign descriptions follow the active campaign type across restore, switching and summary rendering', () => {
+  const context = { currentCampaignType: 'cruise' };
+  context.getCampaignTypeLabel = type => type === 'package' ? 'Package' : 'Cruise';
+  vm.createContext(context);
+  vm.runInContext([
+    extractFunction('getDefaultCampaignDescription'),
+    extractFunction('normaliseCampaignDescriptionForType')
+  ].join('\n'), context);
+  assert.equal(context.normaliseCampaignDescriptionForType('Cruise Worldwide Mixed', 'package'), 'Package Worldwide Mixed');
+  assert.equal(context.normaliseCampaignDescriptionForType('Package Worldwide Mixed', 'cruise'), 'Cruise Worldwide Mixed');
+  assert.equal(context.normaliseCampaignDescriptionForType('', 'package'), 'Package Worldwide Mixed');
+  assert.match(extractFunction('applyCampaignContext'), /refreshCampaignDescriptionForType\(currentCampaignType\)/);
+  assert.match(html, /function restoreCampaignNamingSnapshot[\s\S]*?normaliseCampaignDescriptionForType\(c\.description,currentCampaignType\)/);
+  const summary = extractFunction('getCampaignSummaryHtml');
+  assert.match(summary, /refreshCampaignDescriptionForType\(currentCampaignType\)/);
+  assert.match(summary, /<strong>Campaign Type<\/strong>/);
+  assert.match(summary, /<strong>Campaign Description<\/strong>/);
+});
+
+test('summary normalises a package stored price once for modal and detached shared output', () => {
+  const details = extractFunction('getSummaryOfferDetails');
+  assert.match(details, /String\(o\.price\)\.replace/);
+  assert.match(details, /per\[ -\]\?person/);
+  assert.match(extractFunction('openSummary'), /getCampaignSummaryHtml\(\)/);
+  assert.match(extractFunction('openDetachedSummaryWindow'), /getDetachedSummaryWindowHtml\(getCampaignSummaryHtml\(\)\)/);
+});
+
 test('campaign summary offer headers reuse available operator logos without changing no-logo fallbacks', () => {
   const logo = extractFunction('getSummaryOperatorLogoHtml');
   const renderer = extractFunction('getCampaignSummaryHtml');
