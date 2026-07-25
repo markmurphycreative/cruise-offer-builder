@@ -727,7 +727,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .preview-scaler.empty-preview{display:flex;align-items:center;justify-content:center;}
 .all-preview-stage{display:block;margin:auto;position:relative;flex:0 0 auto;overflow:visible;}
 .all-preview-canvas{display:block;transform-origin:top left;will-change:transform;}
-.all-preview-grid{display:grid;background:transparent;align-items:start;align-content:start;justify-content:center;box-sizing:border-box;}
+.all-preview-grid{display:grid;gap:var(--all-preview-card-gap);background:transparent;align-items:start;align-content:start;justify-content:center;box-sizing:border-box;}
 .toolbar-overflow-wrap{position:relative;display:none;flex:0 0 auto;}
 .toolbar-overflow-button{display:inline-flex;align-items:center;justify-content:center;min-width:22px;padding:4px 0 5px;border:0;background:transparent;color:var(--text-inverse);font-size:13px;font-weight:300;line-height:1;letter-spacing:.04em;cursor:default;}
 .toolbar-overflow-button:hover,.toolbar-overflow-button[aria-expanded="true"]{color:var(--gold);}
@@ -12538,6 +12538,7 @@ processSheetCSV = function(csv,status){
 const SINGLE_PREVIEW_SCALE = 0.75;
 const EMAIL_PREVIEW_SCALE = 0.75;
 const ALL_PREVIEW_MAX_SCALE = 0.68;
+const ALL_PREVIEW_CARD_GAP = 64;
 let pendingPreviewFrame = null;
 let pendingAllPreviewLayoutFrame = null;
 let previewRenderGeneration = 0;
@@ -12667,7 +12668,7 @@ function getAllPreviewGridMetrics(offerCount){
   const count = Math.max(0, Math.min(4, Number(offerCount)||0));
   const cardWidth = 1200;
   const cardHeight = 1712;
-  const gap = 64;
+  const gap = ALL_PREVIEW_CARD_GAP;
   const padding = 64;
   const columns = count <= 1 ? 1 : 2;
   const rows = count <= 0 ? 1 : Math.ceil(count / columns);
@@ -12837,7 +12838,7 @@ function renderPreviewMode(skipSave){
     const grid = document.createElement('div');
     grid.className = 'all-preview-grid';
     grid.style.gridTemplateColumns = Array(metrics.columns).fill(metrics.cardWidth + 'px').join(' ');
-    grid.style.gap = metrics.gap + 'px';
+    grid.style.setProperty('--all-preview-card-gap', metrics.gap + 'px');
     grid.style.padding = metrics.padding + 'px';
     grid.style.width = metrics.canvasWidth + 'px';
 
