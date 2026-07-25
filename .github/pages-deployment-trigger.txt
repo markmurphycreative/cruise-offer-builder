@@ -1,0 +1,3 @@
+GitHub Pages deployment trigger.
+
+This file exists only to create a fresh Pages workflow event after runs #848 and #849 became stuck during the GitHub Actions incident.
