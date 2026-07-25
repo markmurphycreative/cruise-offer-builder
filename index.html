@@ -12795,6 +12795,35 @@ function updateAllPreviewCards(){
   return updated;
 }
 
+// A render request is not necessarily a layout request.  A number of editor
+// controls pre-date the targeted `up()` route and still ask for a preview
+// render.  In All 4 that request must be reconciled into the mounted slots;
+// clearing #card-output would expose the grid's default/narrow state for a
+// frame and would also make ResizeObserver fit the replacement shell.
+function reconcileMountedAllPreview(loadedPreviewOffers, fixedCardHeight){
+  if(viewMode !== 'all') return false;
+  const out = document.getElementById('card-output');
+  const stage = out && out.querySelector('.all-preview-stage');
+  const canvas = stage && stage.querySelector('.all-preview-canvas');
+  const grid = canvas && canvas.querySelector('.all-preview-grid');
+  if(!stage || !canvas || !grid || !stage.isConnected) return false;
+  const slots = Array.from(grid.querySelectorAll('.all-preview-card[data-offer-index]'));
+  const expected = loadedPreviewOffers.map(function(item){ return String(item.index); });
+  if(Number(stage.dataset.cardHeight) !== Number(fixedCardHeight) ||
+     slots.length !== expected.length ||
+     slots.some(function(slot, i){ return slot.dataset.offerIndex !== expected[i]; })) return false;
+
+  updateAllPreviewCards();
+  slots.forEach(function(slot){
+    const index = Number(slot.dataset.offerIndex);
+    const locked = typeof isOfferLocked === 'function' && isOfferLocked(index);
+    slot.classList.toggle('offer-locked', locked);
+    slot.setAttribute('title', (locked ? 'Locked — ' : '') + 'Edit Offer ' + (index + 1));
+    slot.setAttribute('aria-label', (locked ? 'Locked offer. ' : '') + 'Edit Offer ' + (index + 1));
+  });
+  return true;
+}
+
 function setScalerBox(width, renderedHeight, scale){
   const scaler = document.getElementById('preview-scaler');
   if(!scaler) return;
@@ -12920,6 +12949,13 @@ function renderPreviewMode(skipSave){
 
     const loadedPreviewOffers = getLoadedPreviewOffers();
     const fixedCardHeight = loadedPreviewOffers.length && loadedPreviewOffers.every(function(item){ return (item.data.offerType || currentCampaignType) === 'package'; }) ? 885 : 1712;
+    // Content-only render requests reuse the complete live shell.  Full shell
+    // construction is reserved for entering the mode or a structural change
+    // (offer slots/source card geometry), when no compatible shell exists.
+    if(reconcileMountedAllPreview(loadedPreviewOffers, fixedCardHeight)){
+      if(typeof cobPerfRecord==="function") cobPerfRecord("preview rendering: all 4 content reconcile", perfStart, {offers:loadedPreviewOffers.length});
+      return;
+    }
     const metrics = getAllPreviewGridMetrics(loadedPreviewOffers.length, fixedCardHeight);
     const stage = document.createElement('div');
     stage.className = 'all-preview-stage';
