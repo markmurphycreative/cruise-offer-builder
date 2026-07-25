@@ -124,7 +124,7 @@ test('legacy full-render requests reconcile into the mounted All 4 shell', () =>
 
   const render = extractLastFunction('renderPreviewMode');
   const reconcileAt = render.indexOf('reconcileMountedAllPreview(loadedPreviewOffers, fixedCardHeight)');
-  const clearAt = render.indexOf("out.innerHTML = ''", reconcileAt);
+  const clearAt = render.indexOf('out.replaceChildren(stage)', reconcileAt);
   assert.ok(reconcileAt > -1, 'All 4 render path must attempt an in-place reconcile');
-  assert.ok(clearAt > reconcileAt, 'shell replacement must only occur after reconcile rejects an incompatible shell');
+  assert.ok(clearAt > reconcileAt, 'atomic shell replacement must only occur after reconcile rejects an incompatible shell');
 });

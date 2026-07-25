@@ -12585,7 +12585,8 @@ const previewRenderDiagnostics = {
   fullRenderExecutions:0,
   singleRenderExecutions:0,
   allPreviewContentUpdates:0,
-  allPreviewLayoutApplications:0
+  allPreviewLayoutApplications:0,
+  allPreviewEntryFits:0
 };
 if(typeof window !== 'undefined') window.__cobPreviewDiagnostics = previewRenderDiagnostics;
 function normalisePreviewMode(v){
@@ -12654,6 +12655,12 @@ function setView(v){
   previewZoomByMode[normalisePreviewMode(previousViewMode)] = normalisePreviewZoomValue(zoomPct);
   viewMode = nextViewMode;
   zoomPct = previewZoomByMode[nextViewMode];
+  // A fit queued by the mode we are leaving must not become an All 4 entry
+  // fit.  All 4 is prepared synchronously below from one workspace snapshot.
+  if(nextViewMode === 'all' && pendingAllPreviewLayoutFrame){
+    cancelAnimationFrame(pendingAllPreviewLayoutFrame);
+    pendingAllPreviewLayoutFrame = null;
+  }
   syncViewSelector();
   try { loadOfferToEditor(cur); } catch(e) { try { load(cur); } catch(_e){} }
   try { runSpellQA(); } catch(e){}
@@ -12764,6 +12771,16 @@ function applyAllPreviewLayout(stage, canvas, metrics, pane){
   stage.dataset.layoutApplications = String((Number(stage.dataset.layoutApplications)||0) + 1);
   if(typeof previewRenderDiagnostics !== 'undefined') previewRenderDiagnostics.allPreviewLayoutApplications += 1;
   return {scale, width:Math.floor(metrics.canvasWidth * scale), height:Math.floor(metrics.canvasHeight * scale), applied:true};
+}
+function prepareAllPreviewLayout(stage, canvas, metrics, pane){
+  // This function deliberately accepts a detached shell.  Its geometry comes
+  // exclusively from fixed card metrics and the stable outer workspace, so it
+  // does not need a connected (and therefore paintable) grid to calculate fit.
+  const result = applyAllPreviewLayout(stage, canvas, metrics, pane);
+  stage.dataset.canvasHeight = String(metrics.canvasHeight);
+  stage.dataset.entryPrepared = 'true';
+  if(typeof previewRenderDiagnostics !== 'undefined') previewRenderDiagnostics.allPreviewEntryFits += 1;
+  return result;
 }
 function layoutCurrentAllPreview(){
   if(viewMode !== 'all') return;
@@ -13043,6 +13060,9 @@ function renderPreviewMode(skipSave){
     }
     previewRenderDiagnostics.fullRenderExecutions += 1;
     const metrics = getAllPreviewGridMetrics(loadedPreviewOffers.length, fixedCardHeight);
+    // Snapshot the stable outer workspace before changing any dimensions left
+    // behind by Single or Email.  This is the sole authoritative entry fit.
+    const entryPane = getPreviewPaneSize();
     const stage = document.createElement('div');
     stage.className = 'all-preview-stage';
     stage.dataset.offerCount = String(loadedPreviewOffers.length);
@@ -13081,19 +13101,22 @@ function renderPreviewMode(skipSave){
 
     canvas.appendChild(grid);
     stage.appendChild(canvas);
-    out.innerHTML = '';
+    // Complete scale, transform, stage box and centring metadata while the
+    // shell is detached.  No scale-1 or previous-mode state can be painted.
+    prepareAllPreviewLayout(stage, canvas, metrics, entryPane);
+
     out.style.width='100%'; out.style.height='100%'; out.style.transform=''; out.style.transformOrigin='';
     out.style.display='flex'; out.style.alignItems='center'; out.style.justifyContent='center';
-    out.appendChild(stage);
     scaler.style.width = '100%';
     scaler.style.marginLeft = '';
     scaler.style.marginRight = '';
     scaler.style.height = '100%';
     scaler.style.transform = 'none';
     scaler.style.transformOrigin = 'center center';
-    // Fit from fixed source geometry only; never measure freshly rendered content.
-    stage.dataset.canvasHeight = String(metrics.canvasHeight);
-    applyAllPreviewLayout(stage, canvas, metrics);
+    // The only connected mutation is the atomic swap of the fully prepared
+    // shell.  A ResizeObserver pass sees identical workspace metadata and is a
+    // no-op rather than a second visible correction.
+    out.replaceChildren(stage);
     if(typeof cobPerfRecord==="function") cobPerfRecord("preview rendering: all 4 view", perfStart, {offers:loadedPreviewOffers.length});
     return;
   }
