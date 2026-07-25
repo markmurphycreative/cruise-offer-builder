@@ -34,11 +34,21 @@ test('campaign summary offer headers reuse available operator logos without chan
   assert.match(logo, /hasOperatorLogo\(resolvedOffer\)/);
   assert.match(logo, /detectOperatorKey\(o\.operator\)\|\|o\.operator/);
   assert.match(logo, /o\._logoCustom\|\|op\.pngData\|\|op\.svgData/);
-  assert.match(logo, /class="summary-offer-logo-wrap"/);
-  assert.match(logo, /class="summary-offer-logo"/);
+  assert.match(logo, /class="summary-offer-logo-wrap\$\{variantClass\}"/);
+  assert.match(logo, /class="summary-offer-logo\$\{imageVariantClass\}"/);
   assert.match(logo, /onerror="this\.parentElement\.remove\(\)"/);
   assert.match(renderer, /\$\{getSummaryOperatorLogoHtml\(o\)\}/);
   assert.match(renderer, /Offer \$\{i\+1\} — Empty/);
+});
+
+test('Jet2holidays summary logos use the transparent asset at a responsive doubled size', () => {
+  const logo = renderSummaryLogo('Jet2holidays');
+  assert.match(logo, /class="summary-offer-logo-wrap summary-offer-logo-wrap--jet2"/);
+  assert.match(logo, /class="summary-offer-logo summary-offer-logo--jet2"/);
+  assert.match(logo, /src="assets\/operator-logos\/jet2-holidays-logo\.png"/);
+  assert.match(html, /\.summary-offer-logo-wrap--jet2\{width:min\(132px,32vw\);height:72px;padding:4px;background:transparent;\}/);
+  assert.match(html, /\.summary-offer-logo--jet2\{max-width:124px;max-height:64px;\}/);
+  assert.equal((html.match(/\.summary-offer-logo-wrap--jet2\{/g) || []).length, 2, 'Expected modal and detached summary styles');
 });
 
 test('campaign summary offer headings are title case and visually aligned with builder hierarchy', () => {
