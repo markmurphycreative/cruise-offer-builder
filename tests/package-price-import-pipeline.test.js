@@ -8,7 +8,7 @@ function fn(name){const start=html.indexOf(`function ${name}(`);assert.notEqual(
 function cn(name){const m=html.match(new RegExp(`const\\s+${name}\\s*=`));assert.ok(m,name);return html.slice(m.index,html.indexOf(';',m.index)+1);}
 function harness(){
  const c={console,currentCampaignType:'package',offers:[{},{},{},{}],cur:0,document:{getElementById(){return null;}},clearHeroImageDataFromOffer(){},applyAutoSailingFromToOffer(){},applyOperatorTopBarUspDefault(){},stripTransientPasteOfferFields(){},defaultTopBarUspForOperator(){return ''},normaliseCampaignType:v=>v||'package',clampParseConfidenceScore:v=>Math.max(0,Math.min(100,Number(v)||0))};vm.createContext(c);
- vm.runInContext(['function escapeRegExp(value){return String(value||"").replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\$&")}',cn('PACKAGE_OFFER_DETECTION_THRESHOLD'),cn('PACKAGE_OFFER_SIGNAL_WEIGHTS'),cn('PACKAGE_OPERATORS'),cn('PACKAGE_COPY_FIELDS'),cn('PACKAGE_BOARD_BASES'),cn('JET2_APPROVED_INCLUSION_COPY'),'const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};',fn('getActiveRenderCampaignType'),fn('normalisePackageOperatorKey'),fn('isPackageOperator'),fn('isTrustedJet2DawsonQuote'),fn('getPackageOperatorMatch'),fn('detectPackageOffer'),fn('normalisePackageOcrText'),fn('titleCasePackageValue'),fn('detectPackageBoardBasis'),fn('extractPackageDepartureAirport'),fn('extractPackageSharingBasis'),fn('extractPackagePrices'),fn('isUnsafePackageTitleLine'),fn('cleanPackageParsedTitle'),fn('sanitisePackageHotelCandidate'),fn('extractHolidaySummaryAccommodation'),fn('extractStructuredPackageAccommodation'),fn('extractHolidayToAccommodation'),fn('extractPriorityPackageHotel'),fn('parseJet2DawsonQuote'),fn('isJet2SourceInclusionCopy'),fn('normaliseJet2PackageInclusionCopy'),fn('parsePackageOfferText'),fn('packageNumericValue'),fn('packageCleanNumericString'),fn('applyJet2PackageDefaults'),fn('normalisePackagePricingFields'),fn('getBulkPackageImportFallbackOperator'),fn('isUnsafeImportedPackageVisibleValue'),fn('normaliseBulkImportedPackageOffer'),fn('applyParsedOfferToSlot')].join('\n'),c);return c;
+ vm.runInContext(['function escapeRegExp(value){return String(value||"").replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\$&")}',cn('PACKAGE_OFFER_DETECTION_THRESHOLD'),cn('PACKAGE_OFFER_SIGNAL_WEIGHTS'),cn('PACKAGE_OPERATORS'),cn('PACKAGE_COPY_FIELDS'),cn('PACKAGE_BOARD_BASES'),cn('JET2_APPROVED_INCLUSION_COPY'),'const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};',fn('getActiveRenderCampaignType'),fn('normalisePackageOperatorKey'),fn('isPackageOperator'),fn('isTrustedJet2DawsonQuote'),fn('getPackageOperatorMatch'),fn('detectPackageOffer'),fn('normalisePackageOcrText'),fn('titleCasePackageValue'),fn('normaliseJet2PackageDestination'),fn('detectPackageBoardBasis'),fn('extractPackageDepartureAirport'),fn('extractPackageSharingBasis'),fn('extractPackagePrices'),fn('isUnsafePackageTitleLine'),fn('cleanPackageParsedTitle'),fn('sanitisePackageHotelCandidate'),fn('extractHolidaySummaryAccommodation'),fn('extractStructuredPackageAccommodation'),fn('extractHolidayToAccommodation'),fn('extractPriorityPackageHotel'),fn('parseJet2DawsonQuote'),fn('isJet2SourceInclusionCopy'),fn('normaliseJet2PackageInclusionCopy'),fn('parsePackageOfferText'),fn('packageNumericValue'),fn('packageCleanNumericString'),fn('applyJet2PackageDefaults'),fn('normalisePackagePricingFields'),fn('getBulkPackageImportFallbackOperator'),fn('isUnsafeImportedPackageVisibleValue'),fn('normaliseBulkImportedPackageOffer'),fn('applyParsedOfferToSlot')].join('\n'),c);return c;
 }
 const fixtures=[
  ['Turgay',`Turgay Hotel\nAntalya, Turkey\n7 Nights\nAll Inclusive\n2 Adults\n<span aria-hidden="true">£5</span><span aria-hidden="true">£683</span>\nPrice per person £583\nWas £683`,583,0,0,583],
@@ -46,4 +46,17 @@ test('price candidates remain isolated across nodes and an already-pp fee is not
  const p=c.parsePackageOfferText(raw,{}).parsed;
  assert.equal(p.basePricePerPerson,'583');assert.equal(p.feePerPerson,'12');assert.equal(p.feeTotal,'');assert.equal(p.finalPricePerPerson,'595');
  assert.ok(c.extractPackagePrices(raw).candidates.every(x=>x.value!=='5683'));
+});
+
+test('Jet2 current pp prices outrank booking totals and fees, and Icmeler is canonical',()=>{
+ const c=harness();
+ const raw=`Jet2holidays\nYour holiday to...\nTurgay Apartments\nIcmeler, Dalaman Area\n7 Nights\n2 Adults\nCurrent price per person £583\nTotal booking price £1,166`;
+ const parsed=c.parsePackageOfferText(raw,{}).parsed;
+ assert.equal(parsed.name,'Icmeler, Turkey');
+ assert.equal(parsed.basePricePerPerson,'583');
+ assert.equal(parsed.resortFee||'','');
+
+ const feeFirst=c.extractPackagePrices(`Local tourist tax £1pp\nCurrent price per person £550\nTotal booking price £1,100`);
+ assert.equal(feeFirst.basePricePerPerson,'550');
+ assert.equal(feeFirst.feePerPerson,'1');
 });
