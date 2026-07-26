@@ -10,11 +10,10 @@ function extract(pattern, label) {
   return match[0];
 }
 
-test('Offer selector, Reorder Cards and scrolling section stack share the sidebar content edges', () => {
+test('Offer selector, Arrange Cards and scrolling section stack share the sidebar content edges', () => {
   assert.match(html, /\.sidebar\{--sidebar-content-inset:9px;--sidebar-scrollbar-width:3px;--sidebar-content-right-inset:calc\(var\(--sidebar-content-inset\) \+ var\(--sidebar-scrollbar-width\)\);/);
   assert.match(html, /\.offer-tabs\{[^}]*margin:0 var\(--sidebar-content-right-inset\) 0 var\(--sidebar-content-inset\);[^}]*border:1px solid var\(--border\);/);
-  assert.match(html, /\.section\{[^}]*margin-bottom:0;[^}]*border:0;[^}]*border-bottom:1px solid rgba\(216,213,206,\.82\);[^}]*border-radius:0;/);
-  assert.match(html, /\.reorder-group\{[^}]*margin:2px var\(--sidebar-content-right-inset\) 1px var\(--sidebar-content-inset\);[^}]*border:1px solid var\(--border\);[^}]*background:#fafaf8;/);
+  assert.match(html, /\.reorder-group\{[^}]*margin:2px var\(--sidebar-content-right-inset\) 1px var\(--sidebar-content-inset\);[^}]*border:1px solid var\(--border\);[^}]*background:var\(--surface-subtle\);/);
   assert.match(html, /\.sb-body\{[^}]*scrollbar-gutter:stable;[^}]*padding:1px var\(--sidebar-content-inset\) 4px;/);
   assert.match(html, /\.sb-body::-webkit-scrollbar\{width:var\(--sidebar-scrollbar-width\);/);
   assert.match(html, /<div class="sidebar-section-label offer-status-label">Offer Status<\/div>/);
@@ -33,19 +32,19 @@ test('Offer selector, Reorder Cards and scrolling section stack share the sideba
   assert.deepEqual([...order].sort((a, b) => a - b), order);
 });
 
-test('Reorder Cards is a persistent compact quick control instead of an accordion section', () => {
-  const reorderGroup = extract(/<div class="reorder-group" aria-label="Reorder Cards quick controls">[\s\S]*?\n  <\/div>/, 'Reorder Cards quick control');
-  assert.match(reorderGroup, /<div class="reorder-title"><svg class="section-icon"[^>]*>[\s\S]*?<path d="M8 6h13"><\/path>[\s\S]*?<\/svg><span>Reorder Cards<\/span><\/div>/);
+test('Arrange Cards is a persistent modal trigger instead of an accordion section', () => {
+  const reorderGroup = extract(/<div class="reorder-group" role="button"[^>]*aria-label="Arrange Cards"[^>]*>[\s\S]*?\n  <\/div>/, 'Arrange Cards quick control');
+  assert.match(reorderGroup, /<div class="reorder-title"><svg class="section-icon"[^>]*>[\s\S]*?<path d="M8 6h13"><\/path>[\s\S]*?<\/svg><span>Arrange Cards<\/span><\/div>/);
   assert.match(reorderGroup, /<div class="reorder-actions"/);
   assert.doesNotMatch(reorderGroup, /section-hdr|section-body|section-toggle|toggleSec|data-section-key="reorder-cards"/);
   assert.match(html, /<div class="offer-context-label empty-hidden" id="active-offer-label"[\s\S]*?<!-- ── REORDER CARDS ── -->[\s\S]*?<div class="sb-body">/);
   assert.match(html, /\.reorder-title\{[^}]*font-size:10px;[^}]*text-transform:none;[^}]*color:var\(--navy\);/);
 });
 
-test('Reorder Cards presents compact accessible chevron controls without changing handlers', () => {
-  const reorderGroup = extract(/<div class="reorder-group" aria-label="Reorder Cards quick controls">[\s\S]*?\n  <\/div>/, 'Reorder Cards quick control');
-  assert.match(reorderGroup, /id="move-left-btn" onclick="moveOfferLeft\(\)" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"><\/polyline><\/svg><\/button>/);
-  assert.match(reorderGroup, /id="move-right-btn" onclick="moveOfferRight\(\)" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"><\/polyline><\/svg><\/button>/);
+test('Arrange Cards retains compact step controls alongside its modal trigger', () => {
+  const reorderGroup = extract(/<div class="reorder-group" role="button"[^>]*aria-label="Arrange Cards"[^>]*>[\s\S]*?\n  <\/div>/, 'Arrange Cards quick control');
+  assert.match(reorderGroup, /id="move-left-btn" onclick="event.stopPropagation\(\);moveOfferLeft\(\)" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"><\/polyline><\/svg><\/button>/);
+  assert.match(reorderGroup, /id="move-right-btn" onclick="event.stopPropagation\(\);moveOfferRight\(\)" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"><\/polyline><\/svg><\/button>/);
   assert.doesNotMatch(reorderGroup, /[◀▶]/);
   assert.doesNotMatch(reorderGroup, /Move Left|Move Right/);
 });
@@ -69,5 +68,19 @@ test('reorder logic, drag and drop refresh, and autosave path remain wired throu
   assert.match(html, /function moveOfferRight\(\)\{ moveOfferByStep\(1\); \}/);
   assert.match(html, /function moveOfferByStep\(step\)\{[\s\S]*?moveOfferState\(fromIdx, toIdx\);[\s\S]*?refreshAfterOfferReorder\(\);/);
   assert.match(html, /tab\.addEventListener\('drop',[\s\S]*?moveOfferState\(dragFrom, idx\);[\s\S]*?refreshAfterOfferReorder\(\);/);
-  assert.match(html, /function refreshAfterOfferReorder\(\)\{[\s\S]*?queueAutosave\(\);\s*\}/);
+  assert.match(html, /function refreshAfterOfferReorder\(\)\{[\s\S]*?queueAutosave\(\{immediate:true\}\);/);
+});
+
+test('visible Arrange Cards control opens one transactional drag-and-drop modal', () => {
+  assert.match(html, /class="reorder-group"[^>]*aria-haspopup="dialog"[^>]*onclick="openArrangeCardsModal\(\)"/);
+  assert.equal((html.match(/id="arrange-cards-modal"/g) || []).length, 1);
+  assert.match(html, /id="arrange-cards-modal"[\s\S]*?id="arrange-cards-list"[\s\S]*?closeArrangeCardsModal\(\)">Cancel[\s\S]*?confirmArrangeCards\(\)">Confirm Order/);
+  assert.match(html, /function openArrangeCardsModal\(\)\{[\s\S]*?modal\.classList\.contains\("active"\)[\s\S]*?arrangeCardsDraft=offers\.map[\s\S]*?modal\.classList\.add\("active"\)/);
+  assert.match(html, /function renderArrangeCardsList\(\)\{[\s\S]*?draggable="true"[\s\S]*?addEventListener\("drop"[\s\S]*?arrangeCardsDraft\.splice/);
+});
+
+test('confirm applies the draft order through the established full refresh while cancel discards it', () => {
+  assert.match(html, /function closeArrangeCardsModal\(\)\{[\s\S]*?classList\.remove\("active"\)[\s\S]*?arrangeCardsDraft=null/);
+  assert.match(html, /function confirmArrangeCards\(\)\{[\s\S]*?offers\.splice\(0,offers\.length,\.\.\.order\.map[\s\S]*?lockedOffers\.splice[\s\S]*?cur=Math\.max[\s\S]*?closeArrangeCardsModal\(\);[\s\S]*?refreshAfterOfferReorder\(\);/);
+  assert.match(html, /function refreshAfterOfferReorder\(\)\{[\s\S]*?syncOfferSelector\(\)[\s\S]*?genAllUtms\(true\)[\s\S]*?updateExportFilenames\(\)[\s\S]*?renderPreviewMode\(true\)[\s\S]*?recordCampaignHistoryAfterAsyncChange[\s\S]*?queueAutosave/);
 });

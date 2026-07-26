@@ -174,6 +174,20 @@ input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.58;
 .reorder-btn.abtn:active:not(:disabled){transform:translateY(1px);}
 .reorder-btn.abtn:disabled{opacity:.32;cursor:default;}
 .reorder-btn .section-icon{width:12px;height:12px;stroke-width:2;}
+.reorder-group{cursor:pointer;}
+.arrange-modal{max-width:520px;padding:0;overflow:hidden;}
+.arrange-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--chrome);border-bottom:3px solid var(--gold);}
+.arrange-head h2{margin:0;color:var(--text-inverse);}
+.arrange-head .modal-close{position:static;color:var(--text-inverse);}
+.arrange-body{padding:14px 16px;background:var(--surface-subtle);}
+.arrange-help{margin:0 0 10px;font-size:10px;color:var(--muted);}
+.arrange-list{display:grid;gap:6px;}
+.arrange-card{display:flex;align-items:center;gap:9px;padding:9px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--navy);cursor:grab;}
+.arrange-card.dragging{opacity:.45;}
+.arrange-card.drag-over{border-color:var(--green);box-shadow:0 0 0 1px var(--green);}
+.arrange-handle{font-size:15px;color:var(--muted);}
+.arrange-number{font-size:10px;font-weight:700;min-width:48px;}
+.arrange-label{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .hero-hint{font-size:9px;color:var(--muted);margin:5px 0 2px;}
 .hero-source-block{margin-top:6px;padding-top:6px;border-top:1px solid var(--border);}
 .hero-dropzone{padding:10px;min-height:92px;display:block;text-align:center;}
@@ -1053,9 +1067,9 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
   <div class="offer-context-label empty-hidden" id="active-offer-label" aria-live="polite">Editing Offer 1 of 4</div>
 
   <!-- ── REORDER CARDS ── -->
-  <div class="reorder-group" aria-label="Arrange Cards controls">
+  <div class="reorder-group" role="button" tabindex="0" aria-label="Arrange Cards" aria-haspopup="dialog" onclick="openArrangeCardsModal()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openArrangeCardsModal();}">
     <div class="reorder-title"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="m3 6 1 1 2-2"></path><path d="m3 12 1 1 2-2"></path><path d="m3 18 1 1 2-2"></path></svg><span>Arrange Cards</span></div>
-    <div class="reorder-actions" aria-label="Move selected card"><button class="abtn reorder-btn" id="move-left-btn" onclick="moveOfferLeft()" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button><button class="abtn reorder-btn" id="move-right-btn" onclick="moveOfferRight()" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button></div>
+    <div class="reorder-actions" aria-label="Move selected card"><button class="abtn reorder-btn" id="move-left-btn" onclick="event.stopPropagation();moveOfferLeft()" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button><button class="abtn reorder-btn" id="move-right-btn" onclick="event.stopPropagation();moveOfferRight()" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button></div>
   </div>
 
   <div class="sb-body">
@@ -1571,6 +1585,23 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 <div id="export-render-area"></div>
 
 
+
+<div class="modal-overlay" id="arrange-cards-modal" onclick="if(event.target===this) closeArrangeCardsModal()">
+  <div class="modal arrange-modal" role="dialog" aria-modal="true" aria-labelledby="arrange-cards-title">
+    <div class="arrange-head">
+      <h2 id="arrange-cards-title">Arrange Cards</h2>
+      <button class="modal-close" type="button" aria-label="Close Arrange Cards" onclick="closeArrangeCardsModal()">×</button>
+    </div>
+    <div class="arrange-body">
+      <p class="arrange-help">Drag cards into the order they should appear throughout this campaign.</p>
+      <div class="arrange-list" id="arrange-cards-list"></div>
+    </div>
+    <div class="summary-actions modal-footer-actions">
+      <button class="summary-btn" type="button" onclick="closeArrangeCardsModal()">Cancel</button>
+      <button class="summary-btn primary" type="button" onclick="confirmArrangeCards()">Confirm Order</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="manage-campaigns-modal" onclick="if(event.target===this) closeManageCampaignsModal()">
   <div class="manage-campaigns-modal" role="dialog" aria-modal="true" aria-labelledby="manage-campaigns-title">
@@ -12414,6 +12445,60 @@ function renderVisibleCard(){
   setScalerBox(1200, 1, scale);
   schedulePreviewBoundsLayout(renderGeneration, 1200, scale, out);
 }
+let arrangeCardsDraft=null;
+let arrangeCardsDragFrom=-1;
+function getArrangeCardLabel(offer, index){
+  const parts=[offer&&offer.name, offer&&offer.ship, offer&&offer.operator].filter(Boolean);
+  return parts.join(" — ") || `Offer ${index + 1}`;
+}
+function renderArrangeCardsList(){
+  const list=document.getElementById("arrange-cards-list");
+  if(!list||!Array.isArray(arrangeCardsDraft)) return;
+  list.innerHTML=arrangeCardsDraft.map(function(originalIndex, position){
+    return `<div class="arrange-card" draggable="true" data-arrange-position="${position}"><span class="arrange-handle" aria-hidden="true">☰</span><span class="arrange-number">Offer ${position + 1}</span><span class="arrange-label">${escapeHtml(getArrangeCardLabel(offers[originalIndex], originalIndex))}</span></div>`;
+  }).join("");
+  list.querySelectorAll(".arrange-card").forEach(function(card){
+    card.addEventListener("dragstart",function(e){ arrangeCardsDragFrom=Number(card.dataset.arrangePosition); card.classList.add("dragging"); if(e.dataTransfer){ e.dataTransfer.effectAllowed="move"; e.dataTransfer.setData("text/plain",String(arrangeCardsDragFrom)); } });
+    card.addEventListener("dragover",function(e){ const to=Number(card.dataset.arrangePosition); if(arrangeCardsDragFrom<0||to===arrangeCardsDragFrom) return; e.preventDefault(); card.classList.add("drag-over"); });
+    card.addEventListener("dragleave",function(){ card.classList.remove("drag-over"); });
+    card.addEventListener("drop",function(e){
+      e.preventDefault();
+      const to=Number(card.dataset.arrangePosition);
+      if(arrangeCardsDragFrom>=0&&to!==arrangeCardsDragFrom){ const moved=arrangeCardsDraft.splice(arrangeCardsDragFrom,1)[0]; arrangeCardsDraft.splice(to,0,moved); }
+      arrangeCardsDragFrom=-1;
+      renderArrangeCardsList();
+    });
+    card.addEventListener("dragend",function(){ arrangeCardsDragFrom=-1; list.querySelectorAll(".arrange-card").forEach(item=>item.classList.remove("dragging","drag-over")); });
+  });
+}
+function openArrangeCardsModal(){
+  const modal=document.getElementById("arrange-cards-modal");
+  if(!modal||modal.classList.contains("active")) return;
+  try { commitVisibleFields(); } catch(_e){}
+  arrangeCardsDraft=offers.map(function(_offer,index){ return index; });
+  renderArrangeCardsList();
+  modal.classList.add("active");
+}
+function closeArrangeCardsModal(){
+  const modal=document.getElementById("arrange-cards-modal");
+  if(modal) modal.classList.remove("active");
+  arrangeCardsDraft=null;
+  arrangeCardsDragFrom=-1;
+}
+function confirmArrangeCards(){
+  if(!Array.isArray(arrangeCardsDraft)) return;
+  const order=arrangeCardsDraft.slice();
+  const oldOffers=offers.slice();
+  const oldLocks=lockedOffers.slice();
+  const oldCur=cur;
+  offers.splice(0,offers.length,...order.map(index=>oldOffers[index]));
+  lockedOffers.splice(0,lockedOffers.length,...order.map(index=>oldLocks[index]));
+  cur=Math.max(0,order.indexOf(oldCur));
+  if(Array.isArray(pendingScreenshotImports)) pendingScreenshotImports.forEach(function(item){ if(item&&Number.isInteger(Number(item.loadedOfferIndex))) item.loadedOfferIndex=order.indexOf(Number(item.loadedOfferIndex)); });
+  closeArrangeCardsModal();
+  refreshAfterOfferReorder();
+}
+
 function moveOfferState(fromIdx, toIdx){
   fromIdx = Number(fromIdx);
   toIdx = Number(toIdx);
@@ -14432,6 +14517,7 @@ function closeActiveBuilderModal(modal){
   const activeModal=modal || getActiveBuilderModal();
   if(!activeModal) return false;
   if(activeModal.id === 'shortcuts-modal') closeShortcutsModal();
+  else if(activeModal.id === 'arrange-cards-modal') closeArrangeCardsModal();
   else if(activeModal.id === 'manage-campaigns-modal') closeManageCampaignsModal();
   else if(activeModal.id === 'summary-modal') closeModal('summary-modal');
   else activeModal.classList.remove('active');
