@@ -32,8 +32,8 @@ test('Offer selector, Arrange Cards and scrolling section stack share the sideba
   assert.deepEqual([...order].sort((a, b) => a - b), order);
 });
 
-test('Arrange Cards is a persistent modal trigger instead of an accordion section', () => {
-  const reorderGroup = extract(/<div class="reorder-group" role="button"[^>]*aria-label="Arrange Cards"[^>]*>[\s\S]*?\n  <\/div>/, 'Arrange Cards quick control');
+test('Arrange Cards restores the persistent compact control instead of a modal trigger', () => {
+  const reorderGroup = extract(/<div class="reorder-group" aria-label="Arrange Cards controls">[\s\S]*?\n  <\/div>/, 'Arrange Cards quick control');
   assert.match(reorderGroup, /<div class="reorder-title"><svg class="section-icon"[^>]*>[\s\S]*?<path d="M8 6h13"><\/path>[\s\S]*?<\/svg><span>Arrange Cards<\/span><\/div>/);
   assert.match(reorderGroup, /<div class="reorder-actions"/);
   assert.doesNotMatch(reorderGroup, /section-hdr|section-body|section-toggle|toggleSec|data-section-key="reorder-cards"/);
@@ -41,10 +41,10 @@ test('Arrange Cards is a persistent modal trigger instead of an accordion sectio
   assert.match(html, /\.reorder-title\{[^}]*font-size:10px;[^}]*text-transform:none;[^}]*color:var\(--navy\);/);
 });
 
-test('Arrange Cards retains compact step controls alongside its modal trigger', () => {
-  const reorderGroup = extract(/<div class="reorder-group" role="button"[^>]*aria-label="Arrange Cards"[^>]*>[\s\S]*?\n  <\/div>/, 'Arrange Cards quick control');
-  assert.match(reorderGroup, /id="move-left-btn" onclick="event.stopPropagation\(\);moveOfferLeft\(\)" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"><\/polyline><\/svg><\/button>/);
-  assert.match(reorderGroup, /id="move-right-btn" onclick="event.stopPropagation\(\);moveOfferRight\(\)" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"><\/polyline><\/svg><\/button>/);
+test('Arrange Cards retains its original compact instant step controls', () => {
+  const reorderGroup = extract(/<div class="reorder-group" aria-label="Arrange Cards controls">[\s\S]*?\n  <\/div>/, 'Arrange Cards quick control');
+  assert.match(reorderGroup, /id="move-left-btn" onclick="moveOfferLeft\(\)" aria-label="Move card left" title="Move card left"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"><\/polyline><\/svg><\/button>/);
+  assert.match(reorderGroup, /id="move-right-btn" onclick="moveOfferRight\(\)" aria-label="Move card right" title="Move card right"><svg class="section-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"><\/polyline><\/svg><\/button>/);
   assert.doesNotMatch(reorderGroup, /[◀▶]/);
   assert.doesNotMatch(reorderGroup, /Move Left|Move Right/);
 });
@@ -66,21 +66,18 @@ test('chevron controls retain shared sidebar button treatment and outlined icon 
 test('reorder logic, drag and drop refresh, and autosave path remain wired through existing functions', () => {
   assert.match(html, /function moveOfferLeft\(\)\{ moveOfferByStep\(-1\); \}/);
   assert.match(html, /function moveOfferRight\(\)\{ moveOfferByStep\(1\); \}/);
-  assert.match(html, /function moveOfferByStep\(step\)\{[\s\S]*?moveOfferState\(fromIdx, toIdx\);[\s\S]*?refreshAfterOfferReorder\(\);/);
-  assert.match(html, /tab\.addEventListener\('drop',[\s\S]*?moveOfferState\(dragFrom, idx\);[\s\S]*?refreshAfterOfferReorder\(\);/);
+  assert.match(html, /function moveOfferByStep\(step\)\{[\s\S]*?moveOfferState\(fromIdx, toIdx\);/);
+  assert.match(html, /tab\.addEventListener\('drop',[\s\S]*?moveOfferState\(dragFrom, idx\);/);
   assert.match(html, /function refreshAfterOfferReorder\(\)\{[\s\S]*?queueAutosave\(\{immediate:true\}\);/);
 });
 
-test('visible Arrange Cards control opens one transactional drag-and-drop modal', () => {
-  assert.match(html, /class="reorder-group"[^>]*aria-haspopup="dialog"[^>]*onclick="openArrangeCardsModal\(\)"/);
-  assert.equal((html.match(/id="arrange-cards-modal"/g) || []).length, 1);
-  assert.match(html, /id="arrange-cards-modal"[\s\S]*?id="arrange-cards-list"[\s\S]*?closeArrangeCardsModal\(\)">Cancel[\s\S]*?confirmArrangeCards\(\)">Confirm Order/);
-  assert.match(html, /function openArrangeCardsModal\(\)\{[\s\S]*?modal\.classList\.contains\("active"\)[\s\S]*?arrangeCardsDraft=offers\.map[\s\S]*?modal\.classList\.add\("active"\)/);
-  assert.match(html, /function renderArrangeCardsList\(\)\{[\s\S]*?draggable="true"[\s\S]*?addEventListener\("drop"[\s\S]*?arrangeCardsDraft\.splice/);
+test('replacement confirmation modal is removed so the established instant workflow remains primary', () => {
+  assert.doesNotMatch(html, /id="arrange-cards-modal"|openArrangeCardsModal|confirmArrangeCards|Confirm Order/);
+  assert.match(html, /function moveOfferState\(fromIdx, toIdx\)\{[\s\S]*?offers\.splice\(fromIdx, 1\)[\s\S]*?lockedOffers\.splice\(fromIdx, 1\)[\s\S]*?(?:if\(typeof refreshAfterOfferReorder==="function"\) )?refreshAfterOfferReorder\(\);/);
 });
 
-test('confirm applies the draft order through the established full refresh while cancel discards it', () => {
-  assert.match(html, /function closeArrangeCardsModal\(\)\{[\s\S]*?classList\.remove\("active"\)[\s\S]*?arrangeCardsDraft=null/);
-  assert.match(html, /function confirmArrangeCards\(\)\{[\s\S]*?offers\.splice\(0,offers\.length,\.\.\.order\.map[\s\S]*?lockedOffers\.splice[\s\S]*?cur=Math\.max[\s\S]*?closeArrangeCardsModal\(\);[\s\S]*?refreshAfterOfferReorder\(\);/);
-  assert.match(html, /function refreshAfterOfferReorder\(\)\{[\s\S]*?syncOfferSelector\(\)[\s\S]*?genAllUtms\(true\)[\s\S]*?updateExportFilenames\(\)[\s\S]*?renderPreviewMode\(true\)[\s\S]*?recordCampaignHistoryAfterAsyncChange[\s\S]*?queueAutosave/);
+test('authoritative reorder refreshes all tracking and persistence dependencies only after state moves', () => {
+  assert.match(html, /function refreshAfterOfferReorder\(\)\{[\s\S]*?syncOfferSelector\(\)[\s\S]*?genUtm\(\)[\s\S]*?genAllUtms\(true\)[\s\S]*?genStandardUtms\(\)[\s\S]*?updateAllStatus\(\)[\s\S]*?updateExportFilenames\(\)[\s\S]*?renderPreviewMode\(true\)[\s\S]*?recordCampaignHistoryAfterAsyncChange[\s\S]*?queueAutosave\(\{immediate:true\}\)/);
+  assert.doesNotMatch(html, /moveOfferState\(fromIdx, toIdx\);\s*refreshAfterOfferReorder/);
+  assert.doesNotMatch(html, /moveOfferState\(dragFrom, idx\);\s*refreshAfterOfferReorder/);
 });
