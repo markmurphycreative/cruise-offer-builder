@@ -20,9 +20,10 @@ test('Import Review active row and checkbox selection remain independent', () =>
 
 test('Import Review loading reparses each selected item from its own latest reviewed text', () => {
   assert.match(html, /pendingScreenshotImports\[activeScreenshotImportIndex\]\.reviewText=normaliseVisionExtractedText\(review\.value\|\|""\);/);
-  assert.match(html, /selectedItems=pendingScreenshotImports\.filter\(item=>item&&item\.selected!==false&&item\.result&&item\.result\.parsed\)/);
+  assert.match(html, /selectedItems=pendingScreenshotImports\.filter\(item=>item&&item\.selected!==false&&item\.status!=="error"/);
   assert.match(html, /selectedItems\.forEach\(item=>\{ item\.reviewText=normaliseVisionExtractedText\(getScreenshotImportReviewedText\(item\)\); item\.result=parseScreenshotTextForActiveBuilder\(item\.reviewText\); \}\);/);
-  assert.match(html, /applyParsedOfferToSlot\(item\.result,slots\[i\],getScreenshotImportReviewedText\(item\)\|\|\(item\.result&&item\.result\.rawText\)\|\|""\);/);
+  assert.match(html, /offers=workingOffers;[\s\S]*?\.every\(\(item,index\)=>applyParsedOfferToSlot\(item\.result,slots\[index\]/);
+  assert.match(html, /selectedItems\.forEach\(item=>\{ item\.result=null; \}\);/);
 });
 
 test('Missing operator imports warn without fabricating visible card copy', () => {

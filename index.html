@@ -3673,11 +3673,15 @@ function getScreenshotCampaignCapacityMessage(){
 function loadSelectedScreenshotImports(){
   const review=document.getElementById("vision-review-text");
   if(review&&pendingScreenshotImports[activeScreenshotImportIndex]) pendingScreenshotImports[activeScreenshotImportIndex].reviewText=normaliseVisionExtractedText(review.value||"");
-  const selectedItems=pendingScreenshotImports.filter(item=>item&&item.selected!==false&&item.result&&item.result.parsed);
+  const selectedItems=pendingScreenshotImports.filter(item=>item&&item.selected!==false&&item.status!=="error"&&String(getScreenshotImportReviewedText(item)||"").trim());
   selectedItems.sort((a,b)=>((Number.isFinite(a.uploadOrder)?a.uploadOrder:pendingScreenshotImports.indexOf(a))-(Number.isFinite(b.uploadOrder)?b.uploadOrder:pendingScreenshotImports.indexOf(b))));
   if(!selectedItems.length){ setVisionStatus("Select at least one readable imported screenshot to load.","partial"); return; }
   selectedItems.forEach(item=>{ item.reviewText=normaliseVisionExtractedText(getScreenshotImportReviewedText(item)); item.result=parseScreenshotTextForActiveBuilder(item.reviewText); });
-  if(!selectedItems.length){ setVisionStatus("Select at least one readable imported screenshot to load.","partial"); return; }
+  if(selectedItems.some(item=>!item.result||!item.result.parsed)){
+    selectedItems.forEach(item=>{ item.result=null; });
+    setVisionStatus("Import failed. Existing offers were left unchanged.","partial");
+    return false;
+  }
   const slots=getAvailableScreenshotImportSlots();
   const capacity=Array.isArray(offers)?offers.length:4;
   if(!slots.length){
@@ -3685,10 +3689,27 @@ function loadSelectedScreenshotImports(){
     return;
   }
   const loadCount=Math.min(selectedItems.length,slots.length);
+  const authoritativeOffers=offers;
+  const authoritativeHeroLocks=typeof lockedHeroImages!=="undefined"&&Array.isArray(lockedHeroImages)?lockedHeroImages.slice():null;
+  const workingOffers=authoritativeOffers.map(offer=>Object.assign({},offer||{}));
+  let applied=false;
+  try{
+    offers=workingOffers;
+    applied=selectedItems.slice(0,loadCount).every((item,index)=>applyParsedOfferToSlot(item.result,slots[index],getScreenshotImportReviewedText(item)||(item.result&&item.result.rawText)||""));
+  }catch(error){ applied=false; }
+  if(!applied){
+    offers=authoritativeOffers;
+    if(authoritativeHeroLocks&&typeof lockedHeroImages!=="undefined") lockedHeroImages=authoritativeHeroLocks;
+    selectedItems.forEach(item=>{ item.result=null; delete item.loadedOfferIndex; });
+    setVisionStatus("Import failed. Existing offers were left unchanged.","partial");
+    return false;
+  }
+  publishImportedOfferCollection(workingOffers);
   for(let i=0;i<loadCount;i++){
     const item=selectedItems[i];
-    const loaded=applyParsedOfferToSlot(item.result,slots[i],getScreenshotImportReviewedText(item)||(item.result&&item.result.rawText)||"");
-    if(loaded){ item.loadedOfferIndex=slots[i]; const stored=(Array.isArray(offers)&&offers[slots[i]])||{}; if(String(stored.offerType||"").toLowerCase()==="package" && (stored.operator||stored.operatorKey)){ item.confidenceLabel="High confidence"; item.status="ready"; } }
+    item.loadedOfferIndex=slots[i];
+    const stored=offers[slots[i]]||{};
+    if(String(stored.offerType||"").toLowerCase()==="package" && (stored.operator||stored.operatorKey)){ item.confidenceLabel="High confidence"; item.status="ready"; }
   }
   const firstLoaded=selectedItems.find(item=>Number.isInteger(Number(item.loadedOfferIndex)));
   cur=firstLoaded?Number(firstLoaded.loadedOfferIndex):0;
@@ -3701,6 +3722,7 @@ function loadSelectedScreenshotImports(){
   const remaining=selectedItems.length-loadCount;
   const capacityNote=selectedItems.length>capacity ? ` ${getScreenshotCampaignCapacityMessage()}.` : "";
   setVisionStatus(remaining>0?`Loaded ${loadCount} imported screenshot${loadCount===1?"":"s"}. ${remaining} selected import${remaining===1?"":"s"} left in review because only ${slots.length} empty slot${slots.length===1?" was":"s were"} available.${capacityNote}`:`Loaded ${loadCount} imported screenshot${loadCount===1?"":"s"}.${capacityNote}`,loadCount?"high":"partial");
+  selectedItems.forEach(item=>{ item.result=null; });
 }
 
 async function extractOfferTextFromVisionFile(file){
@@ -8767,32 +8789,19 @@ function resetMultiOfferState(){
 }
 function resetMultiImportedOffersFromEmptyPaste(){
   setMultiOfferStatus("","");
-  const indexes=(activeMultiOfferImportIndexes||[]).filter(index=>Number.isInteger(index)&&index>=0&&index<4);
   activeMultiOfferImportIndexes=[];
-  if(!indexes.length) return false;
-  indexes.forEach(index=>{ offers[index]={}; });
-  if(!isOfferLoaded(offers[cur])){
-    const next=(offers||[]).slice(0,4).findIndex(isOfferLoaded);
-    cur=next>=0?next:0;
-  }
-  try{ document.querySelectorAll(".otab").forEach((t,idx)=>t.classList.toggle("active",idx===cur)); }catch(e){}
-  if(typeof resetPoaSuggestionState==="function") resetPoaSuggestionState();
-  if(typeof clearOfferIntelligencePanel==="function") clearOfferIntelligencePanel();
-  try{ cancelParsedOffer(); }catch(e){}
-  refreshOfferWorkspaceAfterEmptyPaste();
-  if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Multi offer import cleared");
-  return true;
+  // The textarea is draft state. Clearing it must never undo a previously
+  // committed import (or otherwise mutate the campaign model).
+  return false;
 }
 function handleMultiOfferInput(event){
   const raw=(document.getElementById("multi-offer-paste")||{}).value||"";
   if(!raw.trim()) resetMultiImportedOffersFromEmptyPaste();
 }
 function handleMultiOfferKeydown(event){
-  if(!event || event.defaultPrevented || event.shiftKey) return;
-  if(event.key !== "Enter" && event.key !== "Return") return;
-  if(event.target && event.target.id !== "multi-offer-paste") return;
-  event.preventDefault();
-  loadAllOffers();
+  // Deliberately inert: Load Offers is the sole import/replace entry point.
+  // In particular, Enter edits the draft rather than committing it.
+  return false;
 }
 function getParsedOfferMissingCount(parsed){
   const p=parsed||{};
@@ -8943,6 +8952,18 @@ function applyParsedOfferToSlot(result,index,sourceText){
   offer[(typeof PERSISTED_PASTE_OFFER_KEY!=="undefined"?PERSISTED_PASTE_OFFER_KEY:"_rawPastedOfferText")]=String(sourceText||(result&&result.rawText)||"");
   return Object.keys(parsed).some(key=>parsed[key]!==undefined&&parsed[key]!=="");
 }
+function publishImportedOfferCollection(collection){
+  const campaignType=normaliseCampaignType(typeof currentCampaignType!=="undefined"?currentCampaignType:"cruise");
+  offers=collection;
+  if(campaignType==="package"){
+    if(typeof packageOffers!=="undefined") packageOffers=collection;
+    if(typeof campaignModel!=="undefined"&&campaignModel) campaignModel.packageOffers=collection;
+  }else{
+    if(typeof cruiseOffers!=="undefined") cruiseOffers=collection;
+    if(typeof campaignModel!=="undefined"&&campaignModel) campaignModel.cruiseOffers=collection;
+  }
+  return offers;
+}
 function loadAllOffers(){ return performMultiOfferImport(false); }
 function cancelMultiOfferReplace(){ setMultiOfferStatus("Import cancelled","low"); }
 
@@ -9063,8 +9084,6 @@ function performMultiOfferImport(replaceConfirmed){
     setMultiOfferStatus(`Replace existing offers?<br><button class="abtn btn-compact" type="button" onclick="cancelMultiOfferReplace()">Cancel</button> <button class="abtn btn-compact" type="button" onclick="performMultiOfferImport(true)">Replace All</button>`,"partial");
     return;
   }
-  while(offers.length<4) offers.push({});
-  if(existing&&!hasMarkedTargets){ for(let i=0;i<4;i+=1) offers[i]={}; }
   const selected=importBlocks.slice(0,4);
   const activeEditorIndex=cur;
   const parsedResults=selected.map((item,index)=>{
@@ -9085,10 +9104,36 @@ function performMultiOfferImport(replaceConfirmed){
       parsedTitle: result?.parsed?.name || ""
     });
     return {result,targetIndex,block:blockText};
-  }).filter(item=>item.result);
+  });
+  if(parsedResults.some(item=>!item.result||!item.result.parsed)){
+    activeMultiOfferImportIndexes=[];
+    setMultiOfferStatus("Import failed. Existing offers were left unchanged.","low");
+    return false;
+  }
   const results=parsedResults.map(item=>item.result);
-  activeMultiOfferImportIndexes=parsedResults.map(item=>item.targetIndex);
-  parsedResults.forEach(item=>applyParsedOfferToSlot(item.result,item.targetIndex,item.block));
+  // Build the complete replacement away from the authoritative collection.
+  // applyParsedOfferToSlot has legacy global dependencies, so temporarily aim
+  // it at a detached working copy and publish that copy only after every item
+  // succeeds. A parse/apply failure therefore cannot partially clear offers.
+  const authoritativeOffers=offers;
+  const authoritativeHeroLocks=typeof lockedHeroImages!=="undefined"&&Array.isArray(lockedHeroImages)?lockedHeroImages.slice():null;
+  const workingOffers=authoritativeOffers.map(offer=>Object.assign({},offer||{}));
+  while(workingOffers.length<4) workingOffers.push({});
+  if(existing&&!hasMarkedTargets){ for(let i=0;i<4;i+=1) workingOffers[i]={}; }
+  let applied=false;
+  try{
+    offers=workingOffers;
+    applied=parsedResults.every(item=>applyParsedOfferToSlot(item.result,item.targetIndex,item.block));
+  }catch(error){ applied=false; }
+  if(!applied){
+    offers=authoritativeOffers;
+    if(authoritativeHeroLocks&&typeof lockedHeroImages!=="undefined") lockedHeroImages=authoritativeHeroLocks;
+    activeMultiOfferImportIndexes=[];
+    setMultiOfferStatus("Import failed. Existing offers were left unchanged.","low");
+    return false;
+  }
+  publishImportedOfferCollection(workingOffers);
+  activeMultiOfferImportIndexes=[];
   cur=Number.isInteger(activeEditorIndex)&&activeEditorIndex>=0&&activeEditorIndex<4?activeEditorIndex:0;
   try{ updateAllStatus(); }catch(e){}
   try{ loadOfferToEditor(cur); }catch(e){ try{ load(cur); }catch(_e){} }
