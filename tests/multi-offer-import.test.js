@@ -64,6 +64,7 @@ function createImportContext(field, result, parsedBlocks) {
     offers: [{}, {}, {}, {}],
     cur: 0,
     activeMultiOfferImportIndexes: [],
+    normaliseCampaignType(type) { return type === 'package' ? 'package' : 'cruise'; },
     PARSE_FIELD_MAP: { operatorKey: 'f-operator', name: 'f-name' },
     OPERATOR_HEADERS: harness.OPERATOR_HEADERS,
     OPERATOR_ALIASES: harness.OPERATOR_ALIASES,
@@ -109,6 +110,7 @@ function runImportFunctions(context) {
     extractFunction('clampParseConfidenceScore'),
     extractFunction('getMultiOfferImportQualityResult'),
     extractFunction('applyParsedOfferToSlot'),
+    extractFunction('publishImportedOfferCollection'),
     extractFunction('performMultiOfferImport')
   ].join('\n'), context);
 }
@@ -444,7 +446,7 @@ test('Multi Offer Import UI and parser reuse hooks are present', () => {
   assert.match(extractFunction('performMultiOfferImport'), /Replace existing offers\?/);
 });
 
-test('Multi Offer Import textarea Enter submits through Load All Offers', () => {
+test('Multi Offer Import textarea Enter remains inert until Load Offers is clicked', () => {
   const context = {
     calls: 0,
     loadAllOffers() { context.calls += 1; }
@@ -458,8 +460,8 @@ test('Multi Offer Import textarea Enter submits through Load All Offers', () => 
     preventDefault() { prevented = true; }
   });
 
-  assert.equal(prevented, true);
-  assert.equal(context.calls, 1);
+  assert.equal(prevented, false);
+  assert.equal(context.calls, 0);
 });
 
 test('Multi Offer Import textarea Shift Enter keeps native newline behaviour', () => {
@@ -481,7 +483,7 @@ test('Multi Offer Import textarea Shift Enter keeps native newline behaviour', (
   assert.equal(context.calls, 0);
 });
 
-test('Multi Offer Import manual clear removes stale result rows and imported offers', () => {
+test('Multi Offer Import manual clear removes draft results but preserves committed offers', () => {
   const result = { innerHTML: 'Offer 1 Loaded', className: 'parse-result high' };
   const field = { value: '' };
   const calls = [];
@@ -520,11 +522,31 @@ test('Multi Offer Import manual clear removes stale result rows and imported off
 
   assert.equal(result.innerHTML, '');
   assert.equal(result.className, 'parse-result ');
-  assert.deepEqual(JSON.parse(JSON.stringify(context.offers)), [{}, {}, { name: 'Sheet offer' }, {}]);
-  assert.equal(context.cur, 2);
+  assert.deepEqual(JSON.parse(JSON.stringify(context.offers)), [{ name: 'Imported 1' }, { name: 'Imported 2' }, { name: 'Sheet offer' }, {}]);
+  assert.equal(context.cur, 0);
   assert.deepEqual(JSON.parse(JSON.stringify(context.activeMultiOfferImportIndexes)), []);
-  assert.ok(calls.some(call => call[0] === 'updateAllStatus'));
-  assert.ok(calls.some(call => call[0] === 'history' && call[1] === 'Multi offer import cleared'));
+  assert.equal(calls.length, 0);
+});
+
+test('Multi Offer Import parse failure leaves the authoritative campaign byte-for-byte unchanged', () => {
+  const field = { value: 'Offer 1\nReplacement one\n\nOffer 2\nReplacement two' };
+  const result = { innerHTML: '', className: '' };
+  const parseCalls = [];
+  const context = createImportContext(field, result, parseCalls);
+  context.console = { log() {}, debug() {} };
+  context.offers = [
+    { operator: 'ambassador', name: 'Coastal Gems of Sweden & Denmark' },
+    { operator: 'marella', name: 'Autumn Escape 2' },
+    { operator: 'celebrity', name: 'Canaries & Portugal' },
+    { operator: 'fred-olsen', name: 'Flavours of France & Northern Spain' }
+  ];
+  const before = JSON.stringify(context.offers);
+  context.parseOfferText = block => /Replacement two/.test(block) ? null : { parsed: { name: 'Replacement one' }, confidence: 'high', score: 100 };
+  runImportFunctions(context);
+
+  assert.equal(context.performMultiOfferImport(true), false);
+  assert.equal(JSON.stringify(context.offers), before);
+  assert.match(result.innerHTML, /left unchanged/);
 });
 
 test('Multi Offer Import result rows are clickable navigation shortcuts without buttons', () => {
@@ -623,6 +645,7 @@ Norwegian Fjords` };
     offers: [{}, {}, {}, {}],
     cur: 0,
     activeMultiOfferImportIndexes: [],
+    normaliseCampaignType(type) { return type === 'package' ? 'package' : 'cruise'; },
     PARSE_FIELD_MAP: { operatorKey: 'f-operator', name: 'f-name' },
     OPERATOR_HEADERS: createHarness().OPERATOR_HEADERS,
     OPERATOR_ALIASES: createHarness().OPERATOR_ALIASES,
@@ -664,6 +687,7 @@ Norwegian Fjords` };
     extractFunction('clampParseConfidenceScore'),
     extractFunction('getMultiOfferImportQualityResult'),
     extractFunction('applyParsedOfferToSlot'),
+    extractFunction('publishImportedOfferCollection'),
     extractFunction('performMultiOfferImport')
   ].join('\n'), context);
 
@@ -788,7 +812,7 @@ Explorer` };
   assert.equal(context.offers[1].name, 'Existing 2');
   assert.equal(context.offers[2].operator, 'marellacruises');
   assert.equal(context.offers[3].name, 'Existing 4');
-  assert.equal(JSON.stringify(context.activeMultiOfferImportIndexes), JSON.stringify([2]));
+  assert.equal(JSON.stringify(context.activeMultiOfferImportIndexes), JSON.stringify([]));
   assert.equal(context.cur, 0);
 });
 
@@ -807,7 +831,7 @@ Queen Anne` };
   assert.equal(context.offers[1].name, 'Existing 2');
   assert.equal(context.offers[2].name, 'Existing 3');
   assert.equal(context.offers[3].operator, 'cunard');
-  assert.equal(JSON.stringify(context.activeMultiOfferImportIndexes), JSON.stringify([3]));
+  assert.equal(JSON.stringify(context.activeMultiOfferImportIndexes), JSON.stringify([]));
 });
 
 test('marked Offer 2 plus Offer 4 imports into Cards 2 and 4 only', () => {
@@ -829,7 +853,7 @@ Queen Anne` };
   assert.equal(context.offers[1].operator, 'royalcaribbean');
   assert.equal(context.offers[2].name, 'Existing 3');
   assert.equal(context.offers[3].operator, 'cunard');
-  assert.equal(JSON.stringify(context.activeMultiOfferImportIndexes), JSON.stringify([1, 3]));
+  assert.equal(JSON.stringify(context.activeMultiOfferImportIndexes), JSON.stringify([]));
 });
 
 test('getMultiOfferImportBlocks preserves full marked Offer 1-4 targets', () => {
@@ -869,7 +893,7 @@ Fjords` };
   context.performMultiOfferImport(false);
   assert.equal(context.offers[0].operator, 'marellacruises');
   assert.equal(context.offers[1].operator, 'cunard');
-  assert.equal(JSON.stringify(context.activeMultiOfferImportIndexes), JSON.stringify([0, 1]));
+  assert.equal(JSON.stringify(context.activeMultiOfferImportIndexes), JSON.stringify([]));
 });
 
 test('splitMultiOfferImport splits four complete stacked offers without explicit markers', () => {
