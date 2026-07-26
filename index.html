@@ -6871,6 +6871,8 @@ function resetBuilderToBlankSession(type=currentCampaignType, options={}){
     cur = 0;
     viewMode = "all";
     zoomPct = 32;
+    if(typeof previewZoomByMode!=="undefined") Object.keys(previewZoomByMode).forEach(function(mode){ previewZoomByMode[mode]=32; });
+    if(typeof previewScrollByMode!=="undefined") Object.keys(previewScrollByMode).forEach(function(mode){ previewScrollByMode[mode]={left:0,top:0}; });
     ["g-campaign","g-date","g-description","g-owner","g-airport","g-terms"].forEach(id=>{
       const el=document.getElementById(id);
       if(el) el.value="";
@@ -9728,6 +9730,9 @@ function parseOfferText(raw,options){
     const shipLineIndex=parsed.ship?lines.findIndex(line=>line===parsed.ship):-1;
     title=lines.find((l,index)=>!/^offer\s*(?:1|2|3|4|one|two|three|four)\b/i.test(l)&&!Object.values(OPERATOR_ALIASES).flat().some(r=>r.test(l))&&!(itineraryLines||[]).includes(l)&&!(typeof isRecognisedPortTitleLine==="function"&&isRecognisedPortTitleLine(l))&&(shipLineIndex<0||index<shipLineIndex)&&!(/[£]|\bfrom\b|\b(\d{1,2}\s*(?:nights?|nts?))\b|\b(?:full board|half board|all inclusive|self catering|inside|outside|balcony|suite|based on|sharing|solo traveller|solo traveler|single occupancy|sole occupancy|single traveller|single traveler)\b/i.test(l))&&l.length>8&&l!==parsed.ship);
   }
+  // A date has its own structured fields and can never be promoted into the
+  // card title, even when it is the only otherwise title-like source line.
+  if(title&&/^(?:\d{1,2}(?:st|nd|rd|th)?\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|january|february|march|april|june|july|august|september|october|november|december)\s+\d{2,4}|\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4})$/i.test(String(title).trim())) title="";
   if(title){parsed.name=stripOfferHeadingPrefix(title.replace(/^[-•\s]+/,'')).trim();score+=8;}
   const portExclusions=[parsed.name,parsed.ship,parsed.price,parsed.basis,parsed.boardlbl,parsed.incl].filter(Boolean);
   const destinationLines=cleanDestinationOnlyLines(lines); const standalonePortLines=getStandalonePortLines(destinationLines,{exclude:portExclusions}); const portLines=(itineraryLines&&cleanDestinationOnlyLines(itineraryLines))||(standalonePortLines.length?standalonePortLines:null)||destinationLines.filter(l=>/[•·,]|\s+-\s+/.test(l)&&/(?:[A-Za-z]{3,}\s*){2,}/.test(l)&&!/from|£|nights?|nts?|included|flights?/i.test(l)); const ports=removeDuplicateReturnEmbarkationPortsString(cleanParsedPorts(portLines,{exclude:portExclusions})); if(ports){parsed.ports=ports;score+=8;}
@@ -12705,6 +12710,15 @@ let previewWrapResizeObserver = null;
 let toolbarResizeObserver = null;
 const allPreviewCardMarkupCache = new WeakMap();
 const previewZoomByMode = {single:32, all:32, email:32};
+// Viewport state belongs to the preview mode, not to the shared scrolling
+// element.  Keeping it beside the mode-local zoom prevents a long Email or a
+// manually panned Single preview from moving All 4 away from its fitted origin.
+const previewScrollByMode = {
+  single:{left:0,top:0},
+  all:{left:0,top:0},
+  email:{left:0,top:0}
+};
+let restoringPreviewScroll = false;
 const previewRenderDiagnostics = {
   fullRenderRequests:0,
   fullRenderExecutions:0,
@@ -12716,6 +12730,23 @@ const previewRenderDiagnostics = {
 if(typeof window !== 'undefined') window.__cobPreviewDiagnostics = previewRenderDiagnostics;
 function normalisePreviewMode(v){
   return ['single','email','all'].includes(v) ? v : 'single';
+}
+
+function capturePreviewScroll(mode){
+  const wrap=document.querySelector('.preview-wrap');
+  if(!wrap || restoringPreviewScroll) return;
+  previewScrollByMode[normalisePreviewMode(mode)]={left:wrap.scrollLeft||0,top:wrap.scrollTop||0};
+}
+function restorePreviewScroll(mode){
+  const wrap=document.querySelector('.preview-wrap');
+  if(!wrap) return;
+  const saved=previewScrollByMode[normalisePreviewMode(mode)]||{left:0,top:0};
+  restoringPreviewScroll=true;
+  wrap.scrollTo({left:saved.left||0,top:saved.top||0,behavior:'auto'});
+  requestAnimationFrame(function(){
+    wrap.scrollTo({left:saved.left||0,top:saved.top||0,behavior:'auto'});
+    restoringPreviewScroll=false;
+  });
 }
 
 function updateSegmentedPill(pill, activeButton){
@@ -12777,6 +12808,10 @@ function setView(v){
   const perfStart=(typeof cobPerfNow==="function"?cobPerfNow():Date.now());
   const previousViewMode=viewMode;
   const nextViewMode = normalisePreviewMode(v);
+  // Commit the editor before any mode render. Preview modes consume only the
+  // structured offer model; they never recover content from rendered DOM.
+  try { commitVisibleFields(); } catch(e) { console.warn('Could not save current offer before view switch', e); }
+  capturePreviewScroll(previousViewMode);
   previewZoomByMode[normalisePreviewMode(previousViewMode)] = normalisePreviewZoomValue(zoomPct);
   viewMode = nextViewMode;
   zoomPct = previewZoomByMode[nextViewMode];
@@ -12790,6 +12825,7 @@ function setView(v){
   try { loadOfferToEditor(cur); } catch(e) { try { load(cur); } catch(_e){} }
   try { runSpellQA(); } catch(e){}
   renderPreviewMode(true);
+  restorePreviewScroll(nextViewMode);
   queueAutosave();
   if(typeof cobPerfRecord==="function") cobPerfRecord("preview rendering: view switch", perfStart, {from:previousViewMode,to:viewMode});
 }
@@ -12797,8 +12833,11 @@ function setView(v){
 function editOfferFromAllPreview(index){
   const next = Number(index);
   if(!Number.isInteger(next) || next < 0 || next > 3) return;
+  if(typeof capturePreviewScroll==='function') capturePreviewScroll('all');
+  if(typeof previewZoomByMode!=='undefined') previewZoomByMode.all=normalisePreviewZoomValue(zoomPct);
   cur = next;
   viewMode = 'single';
+  if(typeof previewZoomByMode!=='undefined') zoomPct=previewZoomByMode.single;
   try { resetPasteOfferState(); } catch(e){}
   syncOfferSelector();
   syncViewSelector();
@@ -12811,6 +12850,7 @@ function editOfferFromAllPreview(index){
   try { updateMoveOfferButtons(); } catch(e){}
   try { runSpellQA(); } catch(e){}
   renderPreviewMode(true);
+  if(typeof restorePreviewScroll==='function') restorePreviewScroll('single');
   queueAutosave();
 }
 
@@ -14483,6 +14523,11 @@ function handleKeyboardShortcut(event){
 }
 document.addEventListener('keydown',handleKeyboardShortcut);
 document.addEventListener('change',releaseSelectShortcutFocus);
+
+const previewScrollElement=document.querySelector('.preview-wrap');
+if(previewScrollElement){
+  previewScrollElement.addEventListener('scroll',function(){ capturePreviewScroll(viewMode); },{passive:true});
+}
 
 window.addEventListener('resize', function(){ queueSegmentedPillSync(); schedulePreviewFitLayout(); updateToolbarResponsiveState(); });
 if(window.ResizeObserver){
