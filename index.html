@@ -8781,6 +8781,11 @@ function normaliseBulkImportedPackageOffer(offer,parsed,sourceText){
   const fallback=getBulkPackageImportFallbackOperator();
   offer.operator=normalisePackageOperatorKey(offer.operator||offer.operatorKey||parsed&&parsed.operatorKey||parsed&&parsed.operator||fallback||"");
   if(!offer.operator && fallback) offer.operator=fallback;
+  if(offer.operator==="jet2"){
+    const rawDestination=offer.destination||offer.name||"";
+    const destination=typeof normaliseJet2PackageDestination==="function"?normaliseJet2PackageDestination(rawDestination):rawDestination;
+    if(destination){ offer.name=destination; offer.destination=destination; }
+  }
   ["name","ship","destination","hotel","accommodation","departureAirport","sailingFrom","flightDisplay","inclusions","inclusionsDisplay","incl","board","boardlbl","boardBasis","day","month","nights","price","leadPrice","basis","roomType"].forEach(key=>{
     if(offer[key]!==undefined && isUnsafeImportedPackageVisibleValue(offer[key])) offer[key]="";
   });
@@ -9361,6 +9366,13 @@ function normalisePackageOcrText(raw){
 function titleCasePackageValue(value){
   return String(value||"").toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()).replace(/\bAnd\b/g,"and").replace(/\bOf\b/g,"of");
 }
+function normaliseJet2PackageDestination(value){
+  const destination=String(value||"").trim();
+  // Jet2 describes Icmeler as part of its flight-region taxonomy.  That label is
+  // useful for search, but it is not the customer-facing resort/country value.
+  if(/^Icmeler(?:\s*,\s*(?:Dalaman(?:\s+Area)?|Turkey))?$/i.test(destination)) return "Icmeler, Turkey";
+  return destination;
+}
 function detectPackageBoardBasis(text){
   const boards=PACKAGE_BOARD_BASES||[];
   for(const board of boards){
@@ -9405,10 +9417,15 @@ function extractPackagePrices(text){
       const ownContextHasFee=unwanted.test(context);
       const previousIsLabelOnly=!/[£$€]\s*\d/.test(previous);
       const isFee=ownContextHasFee||(!ownSuffix&&previousIsLabelOnly&&unwanted.test(previous));
-      const isTotal=totalLabel.test(context)||(!ownSuffix&&previousIsLabelOnly&&totalLabel.test(previous))||totalLabel.test(next);
       const ownContextHasPp=ppLabel.test(context);
+      const lineIsMoneyOnly=line.replace(match[0],"").trim()==="";
+      // A label on an adjacent line belongs to this amount only when the amount is
+      // actually isolated.  In particular, never let a following booking-total
+      // label reclassify an explicit "price per person" amount.
+      const isTotal=!ownContextHasPp&&(totalLabel.test(context)||(lineIsMoneyOnly&&previousIsLabelOnly&&totalLabel.test(previous))||(lineIsMoneyOnly&&totalLabel.test(next)));
       const isPerPerson=!isFee&&!isTotal&&(ownSuffix||ownContextHasPp||ppLabel.test(previous));
-      candidates.push({value:match[1].replace(/,/g,""),ownSuffix,ownContextHasPp,ownContextHasFee,isFee,isTotal,isPerPerson,context:neighbouringLabel,lineIndex,matchIndex});
+      const isExplicitCurrentPrice=/\b(?:current|now|today(?:'s)?|price)\b[\s\S]*\b(?:pp|per[ -]?person)\b|\bprice\s+per[ -]?person\b/i.test(context);
+      candidates.push({value:match[1].replace(/,/g,""),ownSuffix,ownContextHasPp,ownContextHasFee,isFee,isTotal,isPerPerson,isExplicitCurrentPrice,context:neighbouringLabel,lineIndex,matchIndex});
     });
   });
   const fee=candidates.find(candidate=>candidate.ownContextHasFee&&/resort fee|local fee|tourist tax/i.test(candidate.context))||candidates.find(candidate=>candidate.isFee&&/resort fee|local fee|tourist tax/i.test(candidate.context));
@@ -9417,14 +9434,14 @@ function extractPackagePrices(text){
     if(feeIsPerPerson){ out.feePerPerson=fee.value; out.resortFee=fee.value+"pp"; }
     else out.feeTotal=fee.value;
   }
-  const perPerson=candidates.find(candidate=>candidate.isPerPerson&&candidate.ownSuffix)||candidates.find(candidate=>candidate.isPerPerson&&candidate.ownContextHasPp)||candidates.find(candidate=>candidate.isPerPerson);
+  const perPerson=candidates.find(candidate=>candidate.isPerPerson&&candidate.isExplicitCurrentPrice)||candidates.find(candidate=>candidate.isPerPerson&&candidate.ownContextHasPp)||candidates.find(candidate=>candidate.isPerPerson&&candidate.ownSuffix)||candidates.find(candidate=>candidate.isPerPerson);
   const total=candidates.filter(candidate=>candidate.isTotal&&!candidate.isFee).sort((a,b)=>Number(b.value)-Number(a.value))[0];
   if(perPerson){ out.leadPrice=perPerson.value+"pp"; out.basePricePerPerson=perPerson.value; }
   if(total) out.totalPrice=total.value+(total.ownSuffix?"pp":"");
   else if(perPerson) out.totalPrice=out.leadPrice;
   else { const fallback=candidates.find(candidate=>!candidate.isFee); if(fallback) out.totalPrice=fallback.value+(fallback.ownSuffix?"pp":""); }
   if(out.leadPrice) out.priceBasis="per person";
-  out.candidates=candidates.map(({value,ownSuffix,ownContextHasPp,ownContextHasFee,isFee,isTotal,isPerPerson,lineIndex,matchIndex})=>({value,ownSuffix,ownContextHasPp,ownContextHasFee,isFee,isTotal,isPerPerson,lineIndex,matchIndex}));
+  out.candidates=candidates.map(({value,ownSuffix,ownContextHasPp,ownContextHasFee,isFee,isTotal,isPerPerson,isExplicitCurrentPrice,lineIndex,matchIndex})=>({value,ownSuffix,ownContextHasPp,ownContextHasFee,isFee,isTotal,isPerPerson,isExplicitCurrentPrice,lineIndex,matchIndex}));
   return out;
 }
 function isUnsafePackageTitleLine(line){
@@ -9543,7 +9560,7 @@ function parseJet2DawsonQuote(lines,txt,parsed){
     if(destination){
       parsed.sourceLocation=destination;
       parsed.destinationRaw=destination;
-      parsed.name=/\bAntalya\s+Area\b/i.test(destination)?"Antalya, Turkey":destination;
+      parsed.name=/\bAntalya\s+Area\b/i.test(destination)?"Antalya, Turkey":(typeof normaliseJet2PackageDestination==="function"?normaliseJet2PackageDestination(destination):destination);
       score+=12;
     }
   }
@@ -9652,6 +9669,9 @@ function parsePackageOfferText(raw,options){
   parsed.feePerPerson=feePerPerson;
   parsed.passengerCount=passengerCount?String(passengerCount):"";
   parsed.finalPricePerPerson=parsed.basePricePerPerson?String(Number(parsed.basePricePerPerson)+(Number(feePerPerson)||0)):"";
+  if(parsedPackageOperatorKey==="jet2" && parsed.name){
+    parsed.name=typeof normaliseJet2PackageDestination==="function"?normaliseJet2PackageDestination(parsed.name):(/^Icmeler\s*,\s*Dalaman(?:\s+Area)?$/i.test(parsed.name)?"Icmeler, Turkey":parsed.name);
+  }
   if(/free\s+child\s+place/i.test(txt)){ parsed.freeChildPlace="true"; parsed.tags="Free Child Place"; score+=4; }
   if(parsed.children && Number(parsed.children)>0){ parsed.templateVariant=parsed.freeChildPlace?"family-free-child":"family"; } else parsed.templateVariant="couples";
   const confidence=score>=62?'high':score>=35?'partial':'low';
