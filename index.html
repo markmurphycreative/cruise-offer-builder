@@ -9376,7 +9376,13 @@ function extractPackageSharingBasis(text){
 }
 function extractPackagePrices(text){
   const out={leadPrice:"",resortFee:"",totalPrice:"",priceBasis:""};
-  const source=normalisePackageOcrText(text);
+  // Pasted booking pages frequently put each visual price in its own element. Preserve
+  // those boundaries instead of flattening the markup into one run of digits/labels.
+  const source=normalisePackageOcrText(text)
+    .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi,"")
+    .replace(/<[^>]+\b(?:aria-hidden\s*=\s*["']?true|hidden)(?:\s|=|>|[^>])*?>[\s\S]*?<\/[^>]+>/gi,"")
+    .replace(/<br\s*\/?>|<\/[^>]+>/gi,"\n")
+    .replace(/<[^>]+>/g,"");
   const lines=source.split(/\n+/).map(line=>line.trim()).filter(Boolean);
   const candidates=[];
   const unwanted=/\b(?:deposit|balance due|saving|save|monthly|per month|resort fee|tourist tax|local fee|previous price|was)\b/i;
@@ -9385,14 +9391,20 @@ function extractPackagePrices(text){
   lines.forEach((line,lineIndex)=>{
     const previous=lines[lineIndex-1]||"";
     const next=lines[lineIndex+1]||"";
-    for(const match of line.matchAll(/£\s*([0-9]+(?:,[0-9][0-9][0-9])*)(?:\.[0-9][0-9])?\s*(pp|p\.p\.|per[ -]?person)?/gi)){
+    const matches=[...line.matchAll(/£\s*([0-9]+(?:,[0-9][0-9][0-9])*)(?:\.[0-9][0-9])?\s*(pp|p\.p\.|per[ -]?person)?/gi)];
+    matches.forEach((match,matchIndex)=>{
       const ownSuffix=!!match[2];
-      const context=`${previous} ${line} ${next}`;
-      const isFee=unwanted.test(line)||(!ownSuffix&&unwanted.test(previous));
-      const isTotal=totalLabel.test(line)||(!ownSuffix&&totalLabel.test(previous))||totalLabel.test(next);
-      const isPerPerson=!isFee&&!isTotal&&(ownSuffix||ppLabel.test(line)||ppLabel.test(previous));
-      candidates.push({value:match[1].replace(/,/g,""),ownSuffix,isFee,isTotal,isPerPerson,context});
-    }
+      const priorMatch=matches[matchIndex-1];
+      const followingMatch=matches[matchIndex+1];
+      const localPrefix=line.slice(priorMatch ? priorMatch.index+priorMatch[0].length : 0,match.index);
+      const localSuffix=line.slice(match.index+match[0].length,followingMatch ? followingMatch.index : line.length);
+      const context=`${localPrefix} ${match[0]} ${localSuffix}`;
+      const neighbouringLabel=`${previous} ${context} ${next}`;
+      const isFee=unwanted.test(context)||(!ownSuffix&&unwanted.test(previous));
+      const isTotal=totalLabel.test(context)||(!ownSuffix&&totalLabel.test(previous))||totalLabel.test(next);
+      const isPerPerson=!isFee&&!isTotal&&(ownSuffix||ppLabel.test(context)||ppLabel.test(previous));
+      candidates.push({value:match[1].replace(/,/g,""),ownSuffix,isFee,isTotal,isPerPerson,context:neighbouringLabel});
+    });
   });
   const fee=candidates.find(candidate=>candidate.isFee&&/resort fee|local fee/i.test(candidate.context));
   if(fee) out.resortFee=fee.value+"pp";
@@ -9605,7 +9617,18 @@ function parsePackageOfferText(raw,options){
   if(incl.length&&!parsed.incl){ parsed.incl=incl.join(" · "); parsed.inclusions=parsed.incl; parsed.inclusionsDisplay=parsed.incl; score+=6; }
   const parsedPackageOperatorKey=(typeof normalisePackageOperatorKey==="function"?normalisePackageOperatorKey(parsed.operatorKey||parsed.operator||""):String(parsed.operatorKey||parsed.operator||"").toLowerCase()); if(parsedPackageOperatorKey==="jet2" && typeof normaliseJet2PackageInclusionCopy==="function") normaliseJet2PackageInclusionCopy(parsed,true);
   const sharing=extractPackageSharingBasis(txt); if(sharing&&!parsed.basis){ parsed.basis=sharing; const m=sharing.match(/(\d+) Adults?(?: & (\d+) Child(?:ren)?)?/); if(m){ parsed.adults=m[1]; if(m[2]) parsed.children=m[2]; } score+=6; }
-  const prices=extractPackagePrices(txt); if(prices.totalPrice&&!parsed.totalPrice){ parsed.totalPrice=prices.totalPrice; parsed.price=prices.leadPrice||prices.totalPrice; parsed.priceLabel="Total Price"; score+=10; } if(prices.leadPrice&&!parsed.leadPrice) parsed.leadPrice=prices.leadPrice; if(prices.resortFee&&!parsed.resortFee) parsed.resortFee=prices.resortFee;
+  const prices=extractPackagePrices(txt);
+  if(prices.totalPrice&&!parsed.totalPrice){ parsed.totalPrice=prices.totalPrice; parsed.priceLabel="Total Price"; score+=10; }
+  if(prices.leadPrice&&!parsed.price){
+    parsed.price=prices.leadPrice;
+    parsed.leadPrice=prices.leadPrice;
+    parsed.pricePerPerson=String(prices.leadPrice).replace(/pp$/i,"");
+  }else if(!parsed.price&&prices.totalPrice&&parsed.adults&&Number(parsed.adults)>0&&!/pp$/i.test(prices.totalPrice)){
+    const calculated=Math.round(Number(String(prices.totalPrice).replace(/,/g,""))/Number(parsed.adults));
+    if(calculated){ parsed.price=String(calculated); parsed.leadPrice=parsed.price; parsed.pricePerPerson=parsed.price; }
+  }else if(!parsed.price&&prices.totalPrice){ parsed.price=prices.totalPrice; }
+  if(prices.leadPrice&&!parsed.leadPrice) parsed.leadPrice=prices.leadPrice;
+  if(prices.resortFee&&!parsed.resortFee) parsed.resortFee=prices.resortFee;
   if(/free\s+child\s+place/i.test(txt)){ parsed.freeChildPlace="true"; parsed.tags="Free Child Place"; score+=4; }
   if(parsed.children && Number(parsed.children)>0){ parsed.templateVariant=parsed.freeChildPlace?"family-free-child":"family"; } else parsed.templateVariant="couples";
   const confidence=score>=62?'high':score>=35?'partial':'low';
