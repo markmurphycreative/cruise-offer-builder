@@ -1190,7 +1190,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
         <div class="field"><label>Operator Landing Page</label><input id="f-url" placeholder="https://dawsonandsanderson.co.uk/cruises" oninput="genUtm()"></div>
         <div class="utm-out" id="utm-out" aria-hidden="true"></div>
         <div id="utm-current-card" class="generated-utm-panel utm-current-card">
-          <div class="generated-utm-title"><strong id="utm-panel-title">Tracking Links</strong></div>
+          <div class="generated-utm-title"><strong id="utm-panel-title">Generated UTMs</strong></div>
           <div id="utm-generated-list" class="generated-utm-list" role="list" aria-live="polite">
             <div id="utm-visible-output" class="generated-utm-empty empty-state" role="status"><strong>No tracking links yet.</strong>Add offer details and a landing page to create tracking links.</div>
           </div>
@@ -6941,7 +6941,10 @@ function resetBuilderToBlankSession(type=currentCampaignType, options={}){
       if(el) el.value="";
     });
     ["raw-paste","multi-offer-paste","sheets-url","f-utm-content","vision-review-text"].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
-    ["parse-result","multi-offer-result","sheets-status","utm-out","utm-visible-output","utm-generated-list","utm-panel-title","utm-current-card","copy-qa-checklist","screenshot-import-review","ai-campaign-context-preview"].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=""; });
+    // Clear transient output only. The generated UTM panel is permanent shared
+    // UI for Cruise and Package campaigns; clearing its structural containers
+    // removes the renderer's list and title nodes for the rest of the session.
+    ["parse-result","multi-offer-result","sheets-status","utm-out","copy-qa-checklist","screenshot-import-review","ai-campaign-context-preview"].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=""; });
     const reviewPanel=document.getElementById("vision-review-panel"); if(reviewPanel) reviewPanel.classList.remove("active");
     const loadSelected=document.getElementById("screenshot-load-selected"); if(loadSelected) loadSelected.hidden=true;
     applySafeGlobalDefaults();
@@ -13657,7 +13660,7 @@ function renderGeneratedUtmCards(results){
   }
   const campaignRows = buildCampaignUtmRows(results);
   const standardRows = typeof buildAllStandardUtmRows === "function" ? buildAllStandardUtmRows() : [];
-  list.innerHTML = `<div class="utm-btn-row std-utm-actions"><button class="abtn btn-compact" type="button" onclick="copyAllUtms()">Copy All Links</button></div>` + valid.map(item => {
+  list.innerHTML = `<div class="utm-btn-row std-utm-actions"><button class="abtn btn-compact" type="button" onclick="copyAllUtms()">Copy All UTMs</button></div>` + valid.map(item => {
     const parts = getUtmContextParts(item.index);
     const isCurrent = item.index === cur;
     const accent = parts.accent;

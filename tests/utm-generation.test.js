@@ -213,6 +213,44 @@ test('UTM Link is the only UTM section and contains the consolidated Copy All co
   assert.doesNotMatch(html, />Generate All UTMs<\/button>/);
 });
 
+test('campaign reset preserves the shared detailed Tracking Links renderer', () => {
+  const resetStart = html.indexOf('function resetBuilderToBlankSession(type=currentCampaignType, options={}){');
+  const resetEnd = html.indexOf('\nfunction ', resetStart + 1);
+  assert.ok(resetStart >= 0 && resetEnd > resetStart, 'Could not locate new-campaign reset');
+  const reset = html.slice(resetStart, resetEnd);
+  const clearedIds = reset.match(/\[[^\]]+\]\.forEach\(id=>\{ const el=document\.getElementById\(id\); if\(el\) el\.innerHTML=""; \}\);/g) || [];
+  assert.ok(clearedIds.length > 0, 'Expected transient output clearing');
+  assert.doesNotMatch(clearedIds.join('\n'), /utm-generated-list/);
+  assert.doesNotMatch(clearedIds.join('\n'), /utm-current-card/);
+  assert.match(reset, /load\(0\);[\s\S]*?refreshAfterRestore\(\);/);
+});
+
+test('four-offer Package campaigns use the shared renderer and regenerate every position after reorder', () => {
+  const offers = [
+    { campaignType: 'package', offerType: 'package', operator: 'jet2', name: 'Majorca Family Escape' },
+    { campaignType: 'package', offerType: 'package', operator: 'jet2', name: 'Tenerife Beach Break' },
+    { campaignType: 'package', offerType: 'package', operator: 'jet2', name: 'Lanzarote Sunshine' },
+    { campaignType: 'package', offerType: 'package', operator: 'jet2', name: 'Costa del Sol' }
+  ];
+  const { context, elements } = createUtmHarness({ offers });
+
+  context.genAllUtms(true);
+  const moved = context.offers.splice(3, 1)[0];
+  context.offers.splice(0, 0, moved);
+  context.cur = 1;
+  elements['f-operator'].value = 'jet2';
+  elements['f-name'].value = 'Majorca Family Escape';
+  const regenerated = context.genAllUtms(true);
+
+  assert.match(regenerated, /utm_content=160526_jet2holidays_costa_del_sol_card1/);
+  assert.match(regenerated, /utm_content=160526_jet2holidays_majorca_family_escape_card2/);
+  assert.match(regenerated, /utm_content=160526_jet2holidays_tenerife_beach_break_card3/);
+  assert.match(regenerated, /utm_content=160526_jet2holidays_lanzarote_sunshine_card4/);
+  assert.match(elements['utm-generated-list'].innerHTML, /Copy All UTMs/);
+  assert.equal(context.offers[0].url, context.OPERATOR_CONFIG.jet2.url);
+  assert.equal(new Set(context.offers.map(offer => offer._utm)).size, 4);
+});
+
 test('Generate Current UTM resolves every Norwegian alias to the norwegian UTM slug', () => {
   for (const operator of ['ncl', 'NCL', 'Norwegian Cruise Line', 'Norwegian']) {
     const { context } = createUtmHarness({
