@@ -62,6 +62,27 @@ test('package prices stay isolated and explicit per-person candidates outrank to
   assert.equal(servatur.resortFee, '');
 });
 
+test('single-line responsive markup keeps current, previous, total and fee price nodes isolated', () => {
+  const { parsePackageOfferText, extractPackagePrices } = createContext();
+  const markup = `<section><h2>Servatur Waikiki</h2><p>2 Adults</p><div class="desktop-total">Total holiday price <b>£1,102</b></div><div class="price"><span>Price per person</span><strong>£550</strong></div><span class="tax">Approximately £24 tourist tax payable locally</span><span class="previous">Was £725</span><span class="mobile">£550pp</span><span aria-hidden="true">£5</span><span aria-hidden="true">£683</span><span class="sr-only">£550 per person</span></section>`;
+  const prices = extractPackagePrices(markup);
+  assert.equal(prices.leadPrice, '550pp');
+  assert.equal(prices.totalPrice, '1102');
+  assert.equal(prices.resortFee, '');
+  const parsed = parsePackageOfferText(markup, {}).parsed;
+  assert.equal(parsed.price, '550pp');
+  assert.equal(parsed.pricePerPerson, '550');
+  assert.notEqual(parsed.price, '5683pp');
+});
+
+test('an unambiguous package total is divided only when no explicit per-person price exists', () => {
+  const { parsePackageOfferText } = createContext();
+  const parsed = parsePackageOfferText(`Hotel Example\n7 Nights\nBased on 2 Adults Sharing\nTotal holiday price £1,100`, {}).parsed;
+  assert.equal(parsed.totalPrice, '1100');
+  assert.equal(parsed.price, '550');
+  assert.equal(parsed.pricePerPerson, '550');
+});
+
 test('Jet2 and easyJet variants detect operators and family/free-child evidence', () => {
   const { detectPackageOffer, parsePackageOfferText } = createContext();
   const jet2 = `Costa Adeje, Tenerife\nSunset Bay Club\n7 Nights\nSelf Catering\nLeeds Bradford Flights\nLuggage Included\nFree Child Place\n£499pp\nTotal Price\nBased on 2 Adults & 1 Child Sharing\nJet2 Holidays`;
