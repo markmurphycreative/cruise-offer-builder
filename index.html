@@ -13018,6 +13018,15 @@ function getElementVerticalPadding(el){
   const cs = window.getComputedStyle(el);
   return (parseFloat(cs.paddingTop)||0) + (parseFloat(cs.paddingBottom)||0);
 }
+function getAllPreviewCardGeometry(campaignType){
+  const type = normaliseCampaignType(campaignType);
+  // Package artwork has a deliberately fixed export frame. Cruise artwork is
+  // content-height artwork, so its native height is resolved from the complete
+  // rendered card before the outer 2x2 canvas is fitted.
+  return type === 'package'
+    ? {campaignType:type, width:1200, height:885, fixedHeight:true}
+    : {campaignType:type, width:1200, height:null, fixedHeight:false};
+}
 function getAllPreviewGridMetrics(offerCount, sourceCardHeight){
   const count = Math.max(0, Math.min(4, Number(offerCount)||0));
   const cardWidth = 1200;
@@ -13027,6 +13036,21 @@ function getAllPreviewGridMetrics(offerCount, sourceCardHeight){
   const columns = count <= 1 ? 1 : 2;
   const rows = count <= 0 ? 1 : Math.ceil(count / columns);
   return {cardWidth, cardHeight, gap, padding, columns, rows, canvasWidth:(cardWidth * columns) + (gap * (columns - 1)) + (padding * 2), canvasHeight:(cardHeight * rows) + (gap * (rows - 1)) + (padding * 2)};
+}
+function measureAllPreviewCardHeight(cards, geometry){
+  if(geometry.fixedHeight) return geometry.height;
+  const measurementHost = document.createElement('div');
+  measurementHost.setAttribute('aria-hidden', 'true');
+  measurementHost.style.cssText = 'position:fixed;left:-100000px;top:0;width:' + geometry.width + 'px;visibility:hidden;pointer-events:none;';
+  cards.forEach(function(card){ measurementHost.appendChild(card); });
+  document.body.appendChild(measurementHost);
+  cards.forEach(function(card){ adjustVisitSectionHeights(card); });
+  const height = cards.reduce(function(maxHeight, card){
+    const nativeCard = card.firstElementChild;
+    return Math.max(maxHeight, card.scrollHeight || 0, nativeCard ? nativeCard.scrollHeight || nativeCard.offsetHeight || 0 : 0);
+  }, 0);
+  measurementHost.remove();
+  return Math.max(1, Math.ceil(height));
 }
 function calculateAllPreviewScale(paneWidth, paneHeight, canvasWidth, canvasHeight, maxScale){
   const scaleByWidth = paneWidth / canvasWidth;
@@ -13351,7 +13375,8 @@ function renderPreviewMode(skipSave){
     updatePreviewTitle();
 
     const loadedPreviewOffers = getLoadedPreviewOffers();
-    const fixedCardHeight = loadedPreviewOffers.length && loadedPreviewOffers.every(function(item){ return (item.data.offerType || currentCampaignType) === 'package'; }) ? 885 : 1712;
+    const cardGeometry = getAllPreviewCardGeometry(currentCampaignType);
+    const fixedCardHeight = cardGeometry.height;
     // Content-only render requests reuse the complete live shell.  Full shell
     // construction is reserved for entering the mode or a structural change
     // (offer slots/source card geometry), when no compatible shell exists.
@@ -13360,10 +13385,31 @@ function renderPreviewMode(skipSave){
       return;
     }
     previewRenderDiagnostics.fullRenderExecutions += 1;
-    const metrics = getAllPreviewGridMetrics(loadedPreviewOffers.length, fixedCardHeight);
+    // Capture the available viewport before native card measurement temporarily
+    // connects the hidden measurement host.
+    const entryPane = getPreviewPaneSize();
+    const cards = loadedPreviewOffers.map(function(item, loadedIndex){
+      const d = item.data;
+      const index = item.index;
+      const c = document.createElement('div');
+      c.className = 'all-preview-card' + ((typeof isOfferLocked==='function' && isOfferLocked(index)) ? ' offer-locked' : '');
+      c.dataset.offerIndex = String(index);
+      c.style.cssText = 'width:' + cardGeometry.width + 'px;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.22);' + (cardGeometry.fixedHeight ? 'height:' + cardGeometry.height + 'px;overflow:hidden;' : 'height:auto;overflow:visible;') + (loadedPreviewOffers.length === 3 && loadedIndex === 2 ? 'grid-column:1 / -1;justify-self:center;' : '');
+      c.setAttribute('role', 'button');
+      c.setAttribute('tabindex', '0');
+      c.setAttribute('title', (typeof isOfferLocked==='function' && isOfferLocked(index) ? 'Locked — ' : '') + 'Edit Offer ' + (index + 1));
+      c.setAttribute('aria-label', (typeof isOfferLocked==='function' && isOfferLocked(index) ? 'Locked offer. ' : '') + 'Edit Offer ' + (index + 1));
+      c.addEventListener('click', function(){ editOfferFromAllPreview(index); });
+      c.addEventListener('keydown', function(event){ handleAllPreviewCardKeydown(event, index); });
+      if(currentCtaSettings.enabled) c.innerHTML = renderOfferWithOptionalCtaHTML(d || {}, currentCtaSettings);
+      else c.innerHTML = bc(d || {});
+      allPreviewCardMarkupCache.set(c, c.innerHTML);
+      return c;
+    });
+    const nativeCardHeight = measureAllPreviewCardHeight(cards, cardGeometry);
+    const metrics = getAllPreviewGridMetrics(loadedPreviewOffers.length, nativeCardHeight);
     // Snapshot the stable outer workspace before changing any dimensions left
     // behind by Single or Email.  This is the sole authoritative entry fit.
-    const entryPane = getPreviewPaneSize();
     const stage = document.createElement('div');
     stage.className = 'all-preview-stage';
     stage.dataset.offerCount = String(loadedPreviewOffers.length);
@@ -13377,23 +13423,10 @@ function renderPreviewMode(skipSave){
     grid.style.padding = metrics.padding + 'px';
     grid.style.width = metrics.canvasWidth + 'px';
 
-    loadedPreviewOffers.forEach(function(item, loadedIndex){
-      const d = item.data;
-      const index = item.index;
-      const c = document.createElement('div');
-      c.className = 'all-preview-card' + ((typeof isOfferLocked==='function' && isOfferLocked(index)) ? ' offer-locked' : '');
-      c.dataset.offerIndex = String(index);
-      c.style.cssText = 'width:' + metrics.cardWidth + 'px;height:' + metrics.cardHeight + 'px;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.22);overflow:hidden;' + (loadedPreviewOffers.length === 3 && loadedIndex === 2 ? 'grid-column:1 / -1;justify-self:center;' : '');
-      c.setAttribute('role', 'button');
-      c.setAttribute('tabindex', '0');
-      c.setAttribute('title', (typeof isOfferLocked==='function' && isOfferLocked(index) ? 'Locked — ' : '') + 'Edit Offer ' + (index + 1));
-      c.setAttribute('aria-label', (typeof isOfferLocked==='function' && isOfferLocked(index) ? 'Locked offer. ' : '') + 'Edit Offer ' + (index + 1));
-      c.addEventListener('click', function(){ editOfferFromAllPreview(index); });
-      c.addEventListener('keydown', function(event){ handleAllPreviewCardKeydown(event, index); });
-      if(currentCtaSettings.enabled) c.innerHTML = renderOfferWithOptionalCtaHTML(d || {}, currentCtaSettings);
-      else c.innerHTML = bc(d || {});
-      allPreviewCardMarkupCache.set(c, c.innerHTML);
-      adjustVisitSectionHeights(c);
+    cards.forEach(function(c){
+      const index = Number(c.dataset.offerIndex);
+      c.style.width = metrics.cardWidth + 'px';
+      if(cardGeometry.fixedHeight) c.style.height = metrics.cardHeight + 'px';
       enhanceClickableHeroImagesAndPlaceholders(c, index);
       enhanceHeroDropTarget(c, index);
       grid.appendChild(c);

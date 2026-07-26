@@ -28,6 +28,8 @@ const layoutSource = [
   'const PREVIEW_LAYOUT_TOLERANCE = 0.25;',
   'function normalisePreviewZoomValue(value){ return Number(value); }',
   'function getDefaultPreviewZoom(){ return 32; }',
+  'function normaliseCampaignType(value){ return value === "package" ? "package" : "cruise"; }',
+  extractFunction('getAllPreviewCardGeometry'),
   extractFunction('getAllPreviewGridMetrics'),
   extractFunction('calculateAllPreviewScale'),
   extractFunction('getPreviewZoomMultiplier'),
@@ -102,9 +104,18 @@ test('All 4 uses one gutter in both directions from fixed source geometry', () =
   assert.match(html, /grid\.style\.setProperty\('--all-preview-card-gap', metrics\.gap \+ 'px'\);/);
   assert.doesNotMatch(html, /grid\.style\.(?:rowGap|columnGap)/);
   assert.doesNotMatch(html, /grid\.style\.minHeight = metrics\.canvasHeight/);
-  assert.match(html, /const fixedCardHeight = loadedPreviewOffers\.length/);
+  assert.match(html, /const cardGeometry = getAllPreviewCardGeometry\(currentCampaignType\)/);
   assert.match(html, /stage\.dataset\.canvasHeight = String\(metrics\.canvasHeight\);/);
   assert.doesNotMatch(html, /const naturalHeight = grid\.scrollHeight/);
+});
+
+test('All 4 selects campaign-specific native geometry and never clips Cruise wrappers', () => {
+  const ctx = createContext();
+  assert.deepEqual({...ctx.getAllPreviewCardGeometry('package')}, {campaignType:'package', width:1200, height:885, fixedHeight:true});
+  assert.deepEqual({...ctx.getAllPreviewCardGeometry('cruise')}, {campaignType:'cruise', width:1200, height:null, fixedHeight:false});
+  const render = extractFunction('renderPreviewMode');
+  assert.match(render, /cardGeometry\.fixedHeight \? 'height:' \+ cardGeometry\.height \+ 'px;overflow:hidden;' : 'height:auto;overflow:visible;'/);
+  assert.ok(render.indexOf('measureAllPreviewCardHeight(cards, cardGeometry)') < render.indexOf('prepareAllPreviewLayout(stage, canvas, metrics, entryPane)'), 'native Cruise height must be measured before fitting the finished canvas');
 });
 
 test('All 4 scale is constrained by pane width, pane height and max scale independent of cur', () => {

@@ -73,7 +73,7 @@ test('All 4 rendered cards expose click, keyboard, and accessible edit affordanc
   assert.match(html, /\.all-preview-card\{[^}]*cursor:default;[^}]*transition:transform \.18s ease,box-shadow \.18s ease,outline-color \.18s ease;/);
   assert.match(html, /\.all-preview-card:hover,\.all-preview-card:focus-visible\{[^}]*transform:translateY\(-4px\);[^}]*outline:2px solid rgba\(158,147,108,\.42\);/);
   const renderer = extractFunction('renderPreviewMode');
-  assert.match(renderer, /loadedPreviewOffers\.forEach\(function\(item, loadedIndex\)\{/);
+  assert.match(renderer, /loadedPreviewOffers\.map\(function\(item, loadedIndex\)\{/);
   assert.match(renderer, /const d = item\.data;[\s\S]*?const index = item\.index;/);
   assert.match(renderer, /c\.className = 'all-preview-card'/);
   assert.match(renderer, /c\.setAttribute\('role', 'button'\);/);

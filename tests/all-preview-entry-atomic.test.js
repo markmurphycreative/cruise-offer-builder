@@ -17,18 +17,20 @@ function extractLastFunction(name){
   throw new Error(`Could not extract ${name}`);
 }
 
-test('All 4 entry prepares the fixed 2x2 shell before its atomic connected commit', () => {
+test('All 4 entry measures complete native cards before preparing its atomic 2x2 commit', () => {
   const render = extractLastFunction('renderPreviewMode');
   const paneAt = render.indexOf('const entryPane = getPreviewPaneSize()');
+  const cardsAt = render.indexOf('loadedPreviewOffers.map');
+  const measureAt = render.indexOf('measureAllPreviewCardHeight(cards, cardGeometry)');
   const columnsAt = render.indexOf("grid.style.gridTemplateColumns = Array(metrics.columns)");
-  const cardsAt = render.indexOf('loadedPreviewOffers.forEach');
   const prepareAt = render.indexOf('prepareAllPreviewLayout(stage, canvas, metrics, entryPane)');
   const commitAt = render.indexOf('out.replaceChildren(stage)');
 
   assert.ok(paneAt > -1, 'the stable workspace is measured on entry');
-  assert.ok(columnsAt > paneAt, 'final grid columns are assigned after the workspace snapshot');
-  assert.ok(cardsAt > columnsAt, 'all card slots are inserted into the detached grid');
-  assert.ok(prepareAt > cardsAt, 'the detached shell receives its final fit after all cards exist');
+  assert.ok(cardsAt > paneAt, 'complete cards are built after the workspace snapshot');
+  assert.ok(measureAt > cardsAt, 'native card height is resolved from complete cards');
+  assert.ok(columnsAt > measureAt, 'final grid columns are assigned from measured native geometry');
+  assert.ok(prepareAt > columnsAt, 'the detached shell receives its final fit after all cards exist');
   assert.ok(commitAt > prepareAt, 'the fully prepared shell is committed atomically');
   assert.doesNotMatch(render.slice(prepareAt, commitAt), /requestAnimationFrame|scheduleAllPreviewLayout|schedulePreviewFitLayout/);
   assert.doesNotMatch(render, /out\.(?:appendChild\(stage\)|innerHTML\s*=\s*''[\s\S]*appendChild\(stage\))/,
