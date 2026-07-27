@@ -6,7 +6,7 @@ const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
 test('Import Review stores active OCR text per screenshot instead of concatenating results', () => {
   assert.match(html, /let pendingScreenshotImports=\[\];\s*let activeScreenshotImportIndex=0;/);
-  assert.match(html, /intendedOfferId:createPackageOfferId\(\),intendedSlot:i[\s\S]*?fileName:file\.name,text,reviewText:text,result:parsedResult,draft,validationStatus:/);
+  assert.match(html, /const importItem=\{importId:createScreenshotImportId\(\),intendedOfferId:createPackageOfferId\(\),intendedSlot:i[\s\S]*?fileName:file\.name[\s\S]*?Object\.assign\(importItem,\{text,reviewText:text,result:parsedResult,draft,validationStatus:/);
   assert.doesNotMatch(html, /sourceImage:file/);
   assert.match(html, /function setActiveScreenshotImport\(index\)\{[\s\S]*?activeScreenshotImportIndex=next;[\s\S]*?syncActiveScreenshotReviewText\(\);[\s\S]*?renderScreenshotImportReview\(\);/);
   assert.match(html, /function syncActiveScreenshotReviewText\(\)\{[\s\S]*?review\.value=normaliseVisionExtractedText\(getScreenshotImportReviewedText\(item\)\);/);
@@ -16,7 +16,7 @@ test('Import Review stores active OCR text per screenshot instead of concatenati
 test('Import Review active row and checkbox selection remain independent', () => {
   assert.match(html, /\.screenshot-review-item\.active\{[^}]*border-color:rgba\(158,147,108,\.58\);[^}]*box-shadow:inset 3px 0 0 rgba\(158,147,108,\.72\);/);
   assert.match(html, /onclick="setActiveScreenshotImport\(\$\{index\}\)"/);
-  assert.match(html, /onclick="event\.stopPropagation\(\)" onchange="pendingScreenshotImports\[\$\{index\}\]\.selected=this\.checked"/);
+  assert.match(html, /onclick="event\.stopPropagation\(\)" onchange="pendingScreenshotImports\[\$\{index\}\]\.selected=this\.checked;updatePackageImportDiagnosticReviewState/);
 });
 
 test('Import Review updates structured drafts while editing and commits those drafts without reparsing', () => {

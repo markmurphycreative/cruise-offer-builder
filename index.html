@@ -272,7 +272,11 @@ input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.58;
 .screenshot-import-summary-item span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .screenshot-import-summary-item em{display:block;font-style:normal;color:var(--gold);margin-top:2px;}
 .screenshot-review-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);}
-.screenshot-review-item{display:grid;grid-template-columns:auto auto 1fr;gap:6px;align-items:center;padding:5px 6px;border:1px solid var(--border);border-radius:var(--ui-radius);background:var(--surface);font-size:9px;color:var(--text);cursor:default;transition:border-color .18s ease,background-color .18s ease,box-shadow .18s ease;}
+.screenshot-review-heading{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.screenshot-diagnostic-btn{padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface-subtle);color:var(--muted);font-size:8px;line-height:1.4;cursor:pointer;white-space:nowrap;}
+.screenshot-diagnostic-btn:hover{color:var(--navy);border-color:var(--gold);}
+.screenshot-review-actions{display:flex;align-items:center;justify-content:flex-end;}
+.screenshot-review-item{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:6px;align-items:center;padding:5px 6px;border:1px solid var(--border);border-radius:var(--ui-radius);background:var(--surface);font-size:9px;color:var(--text);cursor:default;transition:border-color .18s ease,background-color .18s ease,box-shadow .18s ease;}
 .screenshot-review-item.active{border-color:rgba(158,147,108,.58);background:#fbfaf6;box-shadow:inset 3px 0 0 rgba(158,147,108,.72);}
 .screenshot-review-item.error{color:var(--red);background:#fff6f5;}
 .screenshot-review-item strong{display:block;font-size:10px;font-weight:600;color:inherit;}
@@ -3472,14 +3476,73 @@ function normaliseVisionExtractedText(text){
 let pendingScreenshotImports=[];
 let activeScreenshotImportIndex=0;
 let screenshotImportIdSequence=0;
+const PACKAGE_IMPORT_DIAGNOSTIC_SCHEMA_VERSION="1.0";
 function createScreenshotImportId(){ screenshotImportIdSequence+=1; return `screenshot-${Date.now().toString(36)}-${screenshotImportIdSequence}`; }
+function snapshotPackageImportDiagnosticValue(value){
+  const seen=new WeakSet();
+  const secretKey=/^(?:authorization|cookie|set-cookie|api[-_]?key|access[-_]?token|auth[-_]?token|password|secret|credentials?|headers?)$/i;
+  const binaryKey=/(?:image|base64|blob|objecturl|object_url|dataurl|data_url|sourceimage|file)$/i;
+  const visit=(input,key)=>{
+    if(secretKey.test(String(key||""))) return "[REDACTED SECRET]";
+    if(binaryKey.test(String(key||"")) && (typeof input!=="string" || /^(?:data:|blob:)/i.test(input)||(typeof Blob!=="undefined"&&input instanceof Blob))) return "[EXCLUDED BINARY OR TEMPORARY URL]";
+    if(typeof input==="string") return /^(?:data:image\/|blob:)/i.test(input)?"[EXCLUDED BINARY OR TEMPORARY URL]":input;
+    if(input===null||typeof input==="number"||typeof input==="boolean") return input;
+    if(input===undefined) return "[undefined]";
+    if(typeof input==="bigint") return `${input}n`;
+    if(typeof input==="function"||typeof input==="symbol") return `[unsupported ${typeof input}]`;
+    if(typeof File!=="undefined"&&input instanceof File) return "[EXCLUDED FILE]";
+    if(typeof Blob!=="undefined"&&input instanceof Blob) return "[EXCLUDED BLOB]";
+    if(typeof input==="object"){
+      if(seen.has(input)) return "[circular]";
+      seen.add(input);
+      if(Array.isArray(input)) return input.map((entry,index)=>visit(entry,index));
+      const output={}; Object.keys(input).sort().forEach(childKey=>{ output[childKey]=visit(input[childKey],childKey); }); return output;
+    }
+    return String(input);
+  };
+  return visit(value,"");
+}
+function getPackageFingerprintDiagnostic(text){
+  const source=String(text||"");
+  const signals={dawsonIdentity:/\bdawson\b[\s\S]{0,160}(?:sanderson|8\s*@|abta\s*no?\.?)/i.test(source),holidayTo:/\byour\s+holiday\s+to/i.test(source),holidaySummary:/\bholiday\s+summary\b/i.test(source),flightDetails:/\bflight\s+details\b/i.test(source),payableToAgent:/\bpayable\s+to\s+your\s+travel\s*(?:\n|\s)+\s*agent\b/i.test(source),handBaggage:/hand\s+baggage/i.test(source),bagAllowance:/bag\s+allowance/i.test(source),coachTransfers:/coach\s+transfers?/i.test(source),passengers:/\b\d+\s*x?\s*adults?\b/i.test(source),board:/\b(?:bed\s*(?:&|and)\s*breakfast|self\s+catering|half\s+board|all\s+inclusive)\b/i.test(source),price:/(?:£|¥)\s*\d[\d\s,]{1,8}|\bprice\s+per\s+person\b/i.test(source),cruiseContradiction:/\b(?:cruise\s+only|itinerary|cabin|stateroom|sailing\s+from)\b/i.test(source)&&!/(holiday summary|flight details)/i.test(source)};
+  return {matched:isTrustedJet2DawsonQuote(source),positiveSignals:Object.keys(signals).filter(key=>signals[key]&&key!=="cruiseContradiction"),missingSignals:Object.keys(signals).filter(key=>!signals[key]&&key!=="cruiseContradiction"),negativeSignals:signals.cruiseContradiction?["cruiseContradiction"]:[],signals};
+}
+function buildPackageImportDiagnostic(item,recognitionResult,parsedResult,detection,file,analysisTimestamp){
+  const parsed=(parsedResult&&parsedResult.parsed)||null;
+  const rawText=recognitionResult&&recognitionResult.data?recognitionResult.data.text:null;
+  const evidence=(detection&&detection.operatorEvidence)||[];
+  const normalisationInput=parsed&&(parsed.operatorKey||parsed.operator);
+  const normalisationOutput=typeof normalisePackageOperatorKey==="function"?normalisePackageOperatorKey(normalisationInput||""):String(normalisationInput||"");
+  const validationError=getPackageScreenshotValidationError(parsed);
+  const candidates=(parsed&&Array.isArray(parsed._priceCandidates)?parsed._priceCandidates:[]).map(candidate=>Object.assign({},candidate,{selectedAsBase:candidate.id===(parsed._basePriceCandidateId||""),selectedAsFee:candidate.id===(parsed._feeCandidateId||""),reusedByAnotherRole:!!(parsed._basePriceCandidateId&&parsed._basePriceCandidateId===parsed._feeCandidateId&&candidate.id===parsed._basePriceCandidateId),finalAssignedRole:candidate.id===parsed._basePriceCandidateId?"base-price-per-person":(candidate.id===parsed._feeCandidateId?"fee-per-person":"unused"),rejectionReason:(candidate.id===parsed._basePriceCandidateId||candidate.id===parsed._feeCandidateId)?null:`Not selected by production price precedence (classified ${candidate.role})`}));
+  return snapshotPackageImportDiagnosticValue({schemaVersion:PACKAGE_IMPORT_DIAGNOSTIC_SCHEMA_VERSION,application:{version:typeof APP_VERSION!=="undefined"?APP_VERSION:null,commitIdentifier:null},inputIdentity:{reviewResultId:item.importId,intendedOfferId:item.intendedOfferId||null,destinationSlot:item.intendedSlot??null,originalFilename:file&&file.name||item.fileName||null,fileType:file&&file.type||null,dimensions:null,campaignType:"package",analysisTimestamp},rawAnalysisResult:{recognitionResponse:recognitionResult,rawExtractedText:rawText,normalisedExtractedText:item.text,parsedResponseBeforePackageNormalisation:parsedResult,analyserOperatorFields:recognitionResult&&recognitionResult.data?{operator:recognitionResult.data.operator,operatorKey:recognitionResult.data.operatorKey,brand:recognitionResult.data.brand,supplier:recognitionResult.data.supplier}:null,parserWarnings:validationError?[validationError]:[]},operatorPipeline:{rawOperatorText:rawText,collectedEvidence:evidence,explicitOperatorCandidate:detection&&detection.operatorKey,quotationLayoutFingerprint:getPackageFingerprintDiagnostic(item.text),operatorBeforeNormalisation:normalisationInput,normalisationInput,normalisationOutput,canonicalOperatorWrittenToReviewDraft:parsed&&(parsed.operatorKey||parsed.operator),lossOrRejectionPoint:normalisationOutput?null:(evidence.length?"Evidence did not produce a canonical Package operator":"No recognised operator evidence"),validation:{rule:"Package operator is required",triggered:validationError==="Package operator is required"},finalSelectionEligibility:!validationError},monetaryCandidates:candidates,priceDecisionTrace:{baseCandidatesConsidered:candidates.filter(candidate=>candidate.isPerPerson),selectedBaseCandidateId:parsed&&parsed._basePriceCandidateId,feeCandidatesConsidered:candidates.filter(candidate=>candidate.isFee),selectedFeeCandidateId:parsed&&parsed._feeCandidateId,explicitFinalPriceCandidate:candidates.find(candidate=>candidate.role==="final")||null,explicitPassengerTotalCandidate:candidates.find(candidate=>candidate.isTotal)||null,passengerCount:parsed&&parsed.passengerCount,basePriceWrittenToReviewDraft:parsed&&parsed.basePricePerPerson,feeWrittenToReviewDraft:parsed&&parsed.feePerPerson,calculatedFinalPricePerPerson:parsed&&parsed.finalPricePerPerson,calculatedTotal:parsed&&parsed.finalTotal,fallbacks:[],overwritesOrRecalculations:[],priceValidation:{valid:!validationError||!/price|fee|total|candidate/i.test(validationError),error:validationError||null}},structuredImportReviewState:{originalParsedDraft:parsed,currentReviewedDraft:parsed,userCorrections:null,validationStatus:validationError?"invalid":"valid",validationErrors:validationError?[validationError]:[],selectionState:!validationError,selectionEligibility:!validationError}});
+}
+function updatePackageImportDiagnosticReviewState(item){
+  if(!item||!item.diagnostic) return;
+  const validationError=item.validationError||getPackageScreenshotValidationError(item.draft);
+  item.diagnostic.structuredImportReviewState.currentReviewedDraft=snapshotPackageImportDiagnosticValue(item.draft);
+  item.diagnostic.structuredImportReviewState.userCorrections=item.reviewText===item.text?null:{originalText:item.text,currentText:item.reviewText};
+  item.diagnostic.structuredImportReviewState.validationStatus=validationError?"invalid":"valid";
+  item.diagnostic.structuredImportReviewState.validationErrors=validationError?[validationError]:[];
+  item.diagnostic.structuredImportReviewState.selectionState=item.selected!==false;
+  item.diagnostic.structuredImportReviewState.selectionEligibility=!validationError;
+}
+async function copyPackageImportDiagnostic(index,all){
+  const ordered=all?getOrderedScreenshotImports().map(entry=>entry.item):[pendingScreenshotImports[Number(index)]];
+  const available=ordered.filter(item=>item&&item.diagnostic); available.forEach(updatePackageImportDiagnosticReviewState);
+  const documentValue=all?{schemaVersion:PACKAGE_IMPORT_DIAGNOSTIC_SCHEMA_VERSION,applicationVersion:typeof APP_VERSION!=="undefined"?APP_VERSION:null,entries:available.map(item=>item.diagnostic)}:available[0]&&available[0].diagnostic;
+  if(!documentValue) return;
+  const json=JSON.stringify(documentValue,null,2);
+  try{ if(!navigator.clipboard||!navigator.clipboard.writeText) throw new Error("Clipboard unavailable"); await navigator.clipboard.writeText(json); setVisionStatus(all?"All diagnostics copied":"Diagnostics copied","high"); }
+  catch(error){ window.prompt("Clipboard access failed. Select and copy the diagnostic JSON:",json); setVisionStatus("Select and copy the diagnostic JSON shown.","partial"); }
+}
 function parseScreenshotTextForActiveBuilder(text){
   const builder=normaliseCampaignType(typeof currentCampaignType!=="undefined"?currentCampaignType:"cruise");
   const raw=normaliseVisionExtractedText(text);
   if(builder==="package" && typeof parsePackageOfferText==="function"){
     const detection=typeof detectPackageOffer==="function"?detectPackageOffer(raw):{};
     const result=parsePackageOfferText(raw,{renderIntelligence:false,isolated:true,detection:Object.assign({offerType:"package",isPackage:true},detection)});
-    if(result&&result.parsed){ result.campaignType="package"; result.parsed.campaignType="package"; result.parsed.offerType="package"; result.operatorEvidence=(detection&&detection.operatorEvidence)||[]; }
+    if(result&&result.parsed){ result.campaignType="package"; result.parsed.campaignType="package"; result.parsed.offerType="package"; result.operatorEvidence=(detection&&detection.operatorEvidence)||[]; result.detection=detection; }
     return result;
   }
   // Cruise screenshot recognition is deliberately not a fallback. Package
@@ -3515,6 +3578,7 @@ function updateScreenshotImportDraft(item,reviewText){
   item.validationError=getPackageScreenshotValidationError(item.draft);
   item.validationStatus=item.validationError?"invalid":"valid";
   if(!item.validationError) item.result=Object.assign({},result,{parsed:item.draft});
+  updatePackageImportDiagnosticReviewState(item);
   return !item.validationError;
 }
 function getScreenshotImportOperatorStatus(item){
@@ -3578,7 +3642,7 @@ function renderScreenshotImportReview(){
     const warning=operatorStatus?`<em>${escapeHtml(operatorStatus)}</em>`:'';
     return `<div class="screenshot-import-summary-item"><strong>Offer ${index+1}</strong>${lines.map(line=>`<span>${escapeHtml(line)}</span>`).join("") || '<span>No readable summary yet</span>'}${warning}</div>`;
   }).join("")+'</div></div>';
-  wrap.innerHTML=summaryHtml+'<div class="screenshot-review-title">Import Review</div>'+orderedImports.map(({item,index})=>{
+  wrap.innerHTML=summaryHtml+'<div class="screenshot-review-heading"><div class="screenshot-review-title">Import Review</div><button class="screenshot-diagnostic-btn" type="button" onclick="event.stopPropagation();copyPackageImportDiagnostic(0,true)">Copy all diagnostics</button></div>'+orderedImports.map(({item,index})=>{
     const ok=item.status!=="error";
     const confidence=item.confidenceLabel||"Low confidence";
     const checked=ok&&item.selected!==false?' checked':'';
@@ -3610,7 +3674,7 @@ function renderScreenshotImportReview(){
       ["Displayed total per person",formatPackageMoney(p.displayTotalPerPerson)],
       ["Free Child Place",String(p.freeChildPlace)==="true"?"Yes":"No"]
     ].filter(row=>String(row[1]||"").trim()).map(row=>`${escapeHtml(row[0])}: ${escapeHtml(row[1])}`).join("<br>")}</span>` : "";
-    return `<label class="screenshot-review-item ${ok?'':'error'}${active?' active':''}" onclick="setActiveScreenshotImport(${index})"><input type="checkbox" data-screenshot-import-index="${index}"${checked}${disabled} onclick="event.stopPropagation()" onchange="pendingScreenshotImports[${index}].selected=this.checked"><span class="screenshot-review-mark">${ok?'✓':'!'}</span><span><strong>${escapeHtml(getScreenshotImportTitle(item))}</strong><em>${escapeHtml((ok?confidence:(item.error||item.validationError||"Could not read this screenshot. Try again or use a clearer image."))+warning)}</em>${reviewDetails}</span></label>`;
+    return `<label class="screenshot-review-item ${ok?'':'error'}${active?' active':''}" onclick="setActiveScreenshotImport(${index})"><input type="checkbox" data-screenshot-import-index="${index}"${checked}${disabled} onclick="event.stopPropagation()" onchange="pendingScreenshotImports[${index}].selected=this.checked;updatePackageImportDiagnosticReviewState(pendingScreenshotImports[${index}])"><span class="screenshot-review-mark">${ok?'✓':'!'}</span><span><strong>${escapeHtml(getScreenshotImportTitle(item))}</strong><em>${escapeHtml((ok?confidence:(item.error||item.validationError||"Could not read this screenshot. Try again or use a clearer image."))+warning)}</em>${reviewDetails}</span><span class="screenshot-review-actions"><button class="screenshot-diagnostic-btn" type="button"${item.diagnostic?'':' disabled'} onclick="event.preventDefault();event.stopPropagation();copyPackageImportDiagnostic(${index},false)">Copy diagnostics</button></span></label>`;
   }).join("");
   if(loadBtn) loadBtn.hidden=false;
 }
@@ -3624,6 +3688,8 @@ async function extractOfferTextFromVisionFiles(files){
   setVisionStatus(`Analysing ${accepted.length} screenshot${accepted.length===1?"":"s"}…`,"");
   for(let i=0;i<accepted.length;i++){
     const file=accepted[i];
+    const analysisTimestamp=new Date().toISOString();
+    const importItem={importId:createScreenshotImportId(),intendedOfferId:createPackageOfferId(),intendedSlot:i,uploadOrder:i,fileName:file.name,fileType:file.type||null,text:"",reviewText:"",result:null,draft:null,validationStatus:"incomplete",validationError:"",confidence:0,confidenceLabel:"Low confidence",status:"analysing",selected:false};
     try{
       const engine=await loadTesseractVisionEngine();
       const result=await engine.recognize(file,"eng",{logger:m=>{ if(m&&m.status) setVisionStatus(`Screenshot ${i+1}/${accepted.length}: ${m.status}${m.progress?" "+Math.round(m.progress*100)+"%":""}`); }});
@@ -3633,9 +3699,13 @@ async function extractOfferTextFromVisionFiles(files){
       const parsedResult=parseScreenshotTextForActiveBuilder(text);
       const draft=parsedResult&&parsedResult.parsed?cloneScreenshotImportDraft(parsedResult.parsed):null;
       const validationError=getPackageScreenshotValidationError(draft);
-      pendingScreenshotImports.push({importId:createScreenshotImportId(),intendedOfferId:createPackageOfferId(),intendedSlot:i,uploadOrder:i,fileName:file.name,text,reviewText:text,result:parsedResult,draft,validationStatus:validationError?"invalid":"valid",validationError,confidence,confidenceLabel:confidence>=70?"High confidence":"Medium confidence",status:validationError?"error":"ready",selected:!validationError});
+      Object.assign(importItem,{text,reviewText:text,result:parsedResult,draft,validationStatus:validationError?"invalid":"valid",validationError,confidence,confidenceLabel:confidence>=70?"High confidence":"Medium confidence",status:validationError?"error":"ready",selected:!validationError});
+      importItem.diagnostic=buildPackageImportDiagnostic(importItem,result,parsedResult,parsedResult&&parsedResult.detection,file,analysisTimestamp);
+      pendingScreenshotImports.push(importItem);
     }catch(err){
-      pendingScreenshotImports.push({importId:createScreenshotImportId(),uploadOrder:i,fileName:file.name,text:"",reviewText:"",result:null,confidence:0,confidenceLabel:"Low confidence",status:"error",selected:false,error:"Could not read this screenshot. Try again or use a clearer image."});
+      Object.assign(importItem,{status:"error",validationStatus:"invalid",error:"Could not read this screenshot. Try again or use a clearer image."});
+      importItem.diagnostic=buildPackageImportDiagnostic(importItem,null,null,null,file,analysisTimestamp);
+      pendingScreenshotImports.push(importItem);
     }
     renderScreenshotImportReview();
   }
@@ -9657,7 +9727,7 @@ function extractPackagePrices(text){
       const feeIsPerPersonLabel=/\b(?:resort fee|local fee|tourist tax)\b[^£\n]*\b(?:pp|per[ -]?person)\b|\b(?:pp|per[ -]?person)\b[^£\n]*\b(?:resort fee|local fee|tourist tax)\b/i.test(context)
         || (lineIsMoneyOnly&&((unwanted.test(previous)&&ppLabel.test(previous))||(unwanted.test(next)&&ppLabel.test(next))));
       const role=isFee?"fee":isTotal?"total":isPerPerson?"base-per-person":"unclassified";
-      candidates.push({id:`${lineIndex}:${matchIndex}`,value:match[1].replace(/,/g,""),ownSuffix,ownContextHasPp,ownContextHasFee,isFee,isTotal,isPerPerson,isExplicitCurrentPrice,feeIsPerPersonLabel,role,context:neighbouringLabel,lineIndex,matchIndex});
+      candidates.push({id:`${lineIndex}:${matchIndex}`,originalRecognisedToken:match[0],value:match[1].replace(/,/g,""),normalisedNumericValue:Number(match[1].replace(/,/g,"")),currency:"GBP",sourceLine:line,previousLine:previous,nextLine:next,sourceField:"normalised OCR text",parserPath:`lines[${lineIndex}].money[${matchIndex}]`,position:match.index,contextLabels:[isFee?"fee":null,isTotal?"total":null,isPerPerson?"per-person":null,isExplicitCurrentPrice?"explicit-current-price":null].filter(Boolean),initialProposedRole:role,ownSuffix,ownContextHasPp,ownContextHasFee,isFee,isTotal,isPerPerson,isExplicitCurrentPrice,feeIsPerPersonLabel,role,context:neighbouringLabel,lineIndex,matchIndex});
     });
   });
   const fee=candidates.find(candidate=>candidate.ownContextHasFee&&/resort fee|local fee|tourist tax/i.test(candidate.context))||candidates.find(candidate=>candidate.isFee&&/resort fee|local fee|tourist tax/i.test(candidate.context));
@@ -9675,7 +9745,7 @@ function extractPackagePrices(text){
   if(out.leadPrice) out.priceBasis="per person";
   out.baseCandidateId=perPerson?perPerson.id:"";
   out.feeCandidateId=fee?fee.id:"";
-  out.candidates=candidates.map(({id,value,ownSuffix,ownContextHasPp,ownContextHasFee,isFee,isTotal,isPerPerson,isExplicitCurrentPrice,feeIsPerPersonLabel,role,context,lineIndex,matchIndex})=>({id,value,ownSuffix,ownContextHasPp,ownContextHasFee,isFee,isTotal,isPerPerson,isExplicitCurrentPrice,feeIsPerPersonLabel,role,context,lineIndex,matchIndex}));
+  out.candidates=candidates.map(candidate=>Object.assign({},candidate));
   return out;
 }
 function isUnsafePackageTitleLine(line){
