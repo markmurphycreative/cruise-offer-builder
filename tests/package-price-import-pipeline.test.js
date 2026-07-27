@@ -8,7 +8,7 @@ function fn(name){const start=html.indexOf(`function ${name}(`);assert.notEqual(
 function cn(name){const m=html.match(new RegExp(`const\\s+${name}\\s*=`));assert.ok(m,name);return html.slice(m.index,html.indexOf(';',m.index)+1);}
 function harness(){
  const c={console,currentCampaignType:'package',offers:[{},{},{},{}],cur:0,document:{getElementById(){return null;}},clearHeroImageDataFromOffer(){},applyAutoSailingFromToOffer(){},applyOperatorTopBarUspDefault(){},stripTransientPasteOfferFields(){},defaultTopBarUspForOperator(){return ''},normaliseCampaignType:v=>v||'package',clampParseConfidenceScore:v=>Math.max(0,Math.min(100,Number(v)||0))};vm.createContext(c);
- vm.runInContext(['function escapeRegExp(value){return String(value||"").replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\$&")}',cn('PACKAGE_OFFER_DETECTION_THRESHOLD'),cn('PACKAGE_OFFER_SIGNAL_WEIGHTS'),cn('PACKAGE_OPERATORS'),cn('PACKAGE_COPY_FIELDS'),cn('PACKAGE_BOARD_BASES'),cn('JET2_APPROVED_INCLUSION_COPY'),'const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};',fn('getActiveRenderCampaignType'),fn('normalisePackageOperatorKey'),fn('isPackageOperator'),fn('isTrustedJet2DawsonQuote'),fn('collectPackageOperatorEvidence'),fn('getPackageOperatorMatch'),fn('detectPackageOffer'),fn('normalisePackageOcrText'),fn('titleCasePackageValue'),fn('normaliseJet2PackageDestination'),fn('detectPackageBoardBasis'),fn('extractPackageDepartureAirport'),fn('extractPackageSharingBasis'),fn('extractPackagePrices'),fn('isUnsafePackageTitleLine'),fn('cleanPackageParsedTitle'),fn('sanitisePackageHotelCandidate'),fn('extractHolidaySummaryAccommodation'),fn('extractStructuredPackageAccommodation'),fn('extractHolidayToAccommodation'),fn('extractPriorityPackageHotel'),fn('parseJet2DawsonQuote'),fn('isJet2SourceInclusionCopy'),fn('normaliseJet2PackageInclusionCopy'),fn('parsePackageOfferText'),fn('canApplyParsedPackageOffer'),fn('getPackageScreenshotValidationError'),fn('validatePackageScreenshotParse'),fn('packageNumericValue'),fn('packageCleanNumericString'),fn('applyJet2PackageDefaults'),fn('normalisePackagePricingFields'),fn('getBulkPackageImportFallbackOperator'),fn('isUnsafeImportedPackageVisibleValue'),fn('normaliseBulkImportedPackageOffer'),fn('applyParsedOfferToSlot')].join('\n'),c);return c;
+ vm.runInContext(['function escapeRegExp(value){return String(value||"").replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\$&")}',cn('PACKAGE_OFFER_DETECTION_THRESHOLD'),cn('PACKAGE_OFFER_SIGNAL_WEIGHTS'),cn('PACKAGE_OPERATORS'),cn('PACKAGE_COPY_FIELDS'),cn('PACKAGE_BOARD_BASES'),cn('JET2_APPROVED_INCLUSION_COPY'),'const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};',fn('getActiveRenderCampaignType'),fn('normalisePackageOperatorKey'),fn('isPackageOperator'),fn('hasDawsonIdentity'),fn('isTrustedJet2DawsonQuote'),fn('collectPackageOperatorEvidence'),fn('getPackageOperatorMatch'),fn('detectPackageOffer'),fn('normalisePackageOcrText'),fn('titleCasePackageValue'),fn('normaliseJet2PackageDestination'),fn('detectPackageBoardBasis'),fn('extractPackageDepartureAirport'),fn('extractPackageSharingBasis'),fn('normalisePackageMonetaryToken'),fn('extractPackagePrices'),fn('isUnsafePackageTitleLine'),fn('cleanPackageParsedTitle'),fn('sanitisePackageHotelCandidate'),fn('extractHolidaySummaryAccommodation'),fn('extractStructuredPackageAccommodation'),fn('extractHolidayToAccommodation'),fn('extractPriorityPackageHotel'),fn('parseJet2DawsonQuote'),fn('isJet2SourceInclusionCopy'),fn('normaliseJet2PackageInclusionCopy'),fn('parsePackageOfferText'),fn('canApplyParsedPackageOffer'),fn('getPackageScreenshotValidationError'),fn('validatePackageScreenshotParse'),fn('packageNumericValue'),fn('packageCleanNumericString'),fn('applyJet2PackageDefaults'),fn('normalisePackagePricingFields'),fn('getBulkPackageImportFallbackOperator'),fn('isUnsafeImportedPackageVisibleValue'),fn('normaliseBulkImportedPackageOffer'),fn('applyParsedOfferToSlot')].join('\n'),c);return c;
 }
 const fixtures=[
  ['Turgay',`Turgay Hotel\nAntalya, Turkey\n7 Nights\nAll Inclusive\n2 Adults\n<span aria-hidden="true">£5</span><span aria-hidden="true">£683</span>\nPrice per person £583\nWas £683`,583,0,0,583],
@@ -64,12 +64,12 @@ test('Jet2 current pp prices outrank booking totals and fees, and Icmeler is can
 test('fresh Test Offers 2 OCR evidence selects Jet2 parser and commits canonical prices by stable ID',()=>{
  const c=harness();
  const screenshots=[
-  `J e t 2 . c o m\nYour holiday to...\nServatur Caribe Apartments\nPlaya de las Americas, Tenerife\n7 Nights\nSelf Catering\n2 Adults\nPrice per person £285\nPayable to your travel agent £570`,
-  `Je t2-hol idays\nYour holiday to...\nServatur Castillo De Sol\nPuerto Rico, Gran Canaria\n7 Nights\nSelf Catering\n2 Adults\nPrice per person £550\nPayable to your travel agent £1,100\nThe total holiday cost is £1,102 including approximately £2 in tourist tax`,
+  `ABTA No. Y1256\nYour holiday to...\nServatur Caribe Apartments\nPlaya de las Americas, Tenerife\nHoliday summary\n7 Nights\nSelf Catering\n2 Adults\nHand Baggage\nFlight details\nPrice per person £285\nPayable to your travel agent £570`,
+  `ABTA No. Y1256\nYour holiday to...\nServatur Castillo De Sol\nPuerto Rico, Gran Canaria\nHoliday summary\n7 Nights\nSelf Catering\n2 Adults\n2 x 22kg Bag Allowance\nCoach Transfers\nFlight details\nPayable to your travel agent £1 028\nPrice per person £51 4\nThe total holiday cost is £1,030 including approximately £2 in tourist tax`,
   `Jet2holidays\nWhite City Beach Hotel\nNr Alanya, Antalya Area\n7 Nights\nAll Inclusive\n2 Adults\nPrice per person £703`,
   `Jet2 Holidays\nSunset Paradise Resort\nLassi, Kefalonia\n7 Nights\nSelf Catering\n2 Adults\nPrice per person £574\nThe total holiday cost is £1,172 including approximately £24 in tourist tax`
  ];
- const expected=[[285,0,285,570],[550,1,551,1102],[703,0,703,1406],[574,12,586,1172]];
+ const expected=[[285,0,285,570],[514,1,515,1030],[703,0,703,1406],[574,12,586,1172]];
  screenshots.forEach((raw,index)=>{
    const detection=c.detectPackageOffer(raw);
    assert.equal(detection.operatorKey,'jet2',`screenshot ${index+1} evidence`);
@@ -88,13 +88,36 @@ test('fresh Test Offers 2 OCR evidence selects Jet2 parser and commits canonical
  assert.equal(c.getPackageOperatorMatch('ordinary package with no supplier'),'');
 });
 
+test('verified Dawson ABTA evidence only completes the existing compound Jet2 fingerprint',()=>{
+ const c=harness();
+ for(const variation of ['Y1256','Y 1256','Y-1256','Y.1256','ABTA Y1256','ABTA No Y1256','abta no. y1256']) assert.equal(c.hasDawsonIdentity(variation),true,variation);
+ assert.equal(c.getPackageOperatorMatch('ABTA No. Y1256'),'', 'identity alone is not an operator');
+ assert.equal(c.getPackageOperatorMatch('ABTA No. Y1256\nOrdinary Dawson quotation\n7 Nights\n2 Adults\n£600'),'');
+ assert.equal(c.getPackageOperatorMatch('TUI Holidays\nABTA No. Y1256'),'tui');
+ assert.equal(c.getPackageOperatorMatch('easyJet Holidays\nABTA No. Y1256'),'easyjet');
+ assert.equal(c.getPackageOperatorMatch('Cruise only itinerary cabin\nABTA No. Y1256'),'');
+});
+
+test('genuine OCR-spaced Gran Canaria monetary candidates normalise and reconcile without role reuse',()=>{
+ const c=harness();
+ assert.deepEqual(['£1 028','£51 4','£2','£1,030'].map(c.normalisePackageMonetaryToken),[1028,514,2,1030]);
+ const raw=`Jet2holidays\nServatur Castillo De Sol\nPuerto Rico, Gran Canaria\n7 Nights\nSelf Catering\n2 Adults\nPayable to your travel agent £1 028\nPrice per person £51 4\nThe total holiday cost is £1,030 including approximately £2 in tourist tax`;
+ const parsed=c.parsePackageOfferText(raw,{isolated:true,detection:c.detectPackageOffer(raw)}).parsed;
+ assert.deepEqual([parsed.basePricePerPerson,parsed.baseTotal,parsed.feeTotal,parsed.feePerPerson,parsed.finalPricePerPerson,parsed.finalTotal],['514','1028','2','1','515','1030']);
+ assert.notEqual(parsed._basePriceCandidateId,parsed._feeCandidateId);
+ assert.ok(parsed._priceCandidates.some(x=>x.originalRecognisedToken.trim()==='£1 028'&&x.normalisedNumericValue===1028));
+ assert.ok(parsed._priceCandidates.some(x=>x.originalRecognisedToken.trim()==='£51 4'&&x.normalisedNumericValue===514));
+ assert.equal(parsed._priceCandidates.some(x=>x.value==='1'&&x.originalRecognisedToken.includes('1 028')),false);
+ assert.equal(c.getPackageScreenshotValidationError(parsed),'');
+});
+
 test('original narrow Dawson quotations retain Jet2 when OCR drops wordmark, rating and route columns',()=>{
  const c=harness();
  const screenshots=[
   `Dawson & Sanderson\nYour holiday to...\nServatur Caribe Apartments\nPlaya de las Americas, Tenerife\nHoliday summary\n7 nights from 15th July 2026\nSelf Catering\n2 Adults\nFlight details\nPayable to your travel agent\n£570\nPrice per person £285`,
-  `DAWSON 8 @\nYour holiday to...\nServatur Castillo De Sol\nPuerto Rico, Gran Canaria\nHoliday summary\n7 nights from 9th July 2026\nSelf Catering\n2 Adults\n2 x 22kg Bag Allowance\nCoach Transfers\nFlight details\nPayable to your travel agent\n£1,100\nPrice per person £550\nThe total holiday cost is £1,102 including approximately £2 in tourist tax`
+  `DAWSON 8 @\nYour holiday to...\nServatur Castillo De Sol\nPuerto Rico, Gran Canaria\nHoliday summary\n7 nights from 9th July 2026\nSelf Catering\n2 Adults\n2 x 22kg Bag Allowance\nCoach Transfers\nFlight details\nPayable to your travel agent\n£1 028\nPrice per person £51 4\nThe total holiday cost is £1,030 including approximately £2 in tourist tax`
  ];
- const expected=[[285,0,285,570],[550,1,551,1102]];
+ const expected=[[285,0,285,570],[514,1,515,1030]];
  screenshots.forEach((raw,index)=>{
    const evidence=c.collectPackageOperatorEvidence(raw);
    assert.deepEqual(JSON.parse(JSON.stringify(evidence)),[{operator:'jet2',type:'trusted-layout',value:'Dawson & Sanderson Jet2 quotation'}]);
