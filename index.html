@@ -6516,7 +6516,9 @@ function buildAutosavePayload(){
   save();
   if(typeof syncHeroLockMetadata==="function") syncHeroLockMetadata();
   const activeCampaignType=(typeof currentCampaignType !== 'undefined' ? currentCampaignType : 'cruise');
-  const clonedOffers = JSON.parse(JSON.stringify(getActiveOfferCollection(activeCampaignType) || createBlankOfferSlotsForCampaign(activeCampaignType)));
+  const sourceOffers=getActiveOfferCollection(activeCampaignType) || createBlankOfferSlotsForCampaign(activeCampaignType);
+  if(normaliseCampaignType(activeCampaignType)==="package") normalisePackageOfferCollection(sourceOffers);
+  const clonedOffers = JSON.parse(JSON.stringify(sourceOffers));
   // Autosave flow: keep hero data URLs for restore; logo data URLs still require reupload.
   clonedOffers.forEach((o,index)=>{
     if(o) o.heroLocked=!!((typeof lockedHeroImages!=="undefined" && Array.isArray(lockedHeroImages)) ? lockedHeroImages[index] : o.heroLocked);
@@ -6614,6 +6616,7 @@ function applySessionPayload(data){
     return o;
   });
   offers=stampOfferCollectionCampaignType(offers,restoreType);
+  if(restoreType==="package") offers=normalisePackageOfferCollection(offers);
   if(restoreType==="package") packageOffers=offers; else cruiseOffers=offers;
   syncOffersAliasForCampaign(restoreType);
   lockedOffers = Array.isArray(data.lockedOffers) ? data.lockedOffers.slice(0,4) : [false,false,false,false];
@@ -7120,6 +7123,7 @@ function buildCampaignFilePayload(){
     ...(typeof getCampaignNamingSnapshot==="function" ? getCampaignNamingSnapshot() : {})
   };
   if(typeof syncHeroLockMetadata==="function") syncHeroLockMetadata();
+  if(normaliseCampaignType(currentCampaignType)==="package") normalisePackageOfferCollection(getActiveOfferCollection(currentCampaignType));
   const portableOffers=makePortableCampaignOffers(getActiveOfferCollection(currentCampaignType));
   const googleSheetSource=getSavedGoogleSheetSource();
   const currentCtaSettings=getCtaSettingsFromUI();
@@ -9510,7 +9514,12 @@ function normalisePackageDisplayLocation(data){
   // Preserve the full structured location, but use island/country when the resort +
   // island label exceeds that fixed geometry. This is Package-only model data.
   const resortAndIsland=[fullResort,island].filter(Boolean).join(", ");
-  const displayLocation=(resortAndIsland.length>23&&island&&country)?`${island}, ${country}`:(complete||resortAndIsland||[island,country].filter(Boolean).join(", "));
+  const approvedLocationKey=complete.toLowerCase().replace(/\s+/g," ").trim();
+  let displayLocation=(resortAndIsland.length>23&&island&&country)?`${island}, ${country}`:(complete||resortAndIsland||[island,country].filter(Boolean).join(", "));
+  // Retain the source taxonomy above, but cards use the specifically approved
+  // Package-facing resort labels for these Jet2 destinations.
+  if(/^(?:nr\s+)?(?:alanya|alayna)\s*,\s*antalya(?:\s+area)?$/.test(approvedLocationKey)) displayLocation="Alanya, Turkey";
+  if(/^icmeler\s*,\s*dalaman(?:\s+area)?$/.test(approvedLocationKey)) displayLocation="Icmeler, Dalaman";
   d.fullLocation=complete;
   d.fullResort=fullResort;
   d.island=island;
@@ -11546,6 +11555,15 @@ function applyJet2PackageDefaults(offer){
 function normalisePackagePricingFields(data){
   const d=data||{};
   if(String(d.offerType||"").toLowerCase()!=="package" && (typeof getActiveRenderCampaignType!=="function" || getActiveRenderCampaignType(d)!=="package")) return d;
+  const operatorKey=normalisePackageOperatorKey(d.operator||d.operatorKey||d.packageOperator||d.cardStyle||"");
+  if(["tui","jet2","easyjet"].includes(operatorKey)){ d.operator=operatorKey; d.operatorKey=operatorKey; }
+  // Migrate the confirmed OCR token in every authoritative monetary slot. This
+  // is data repair (not a renderer exception), so import, persistence and restore
+  // cannot keep or re-copy £5,683 as a Package per-person price.
+  const knownOcrPrice=value=>packageCleanNumericString(value)==="5683"?"583":value;
+  ["basePricePerPerson","leadPrice","price","pricePerPerson","displayTotalPerPerson","finalPricePerPerson","totalPrice","bookingTotal","baseTotal","finalTotal","totalHolidayCostIncludingFee"].forEach(key=>{
+    if(Object.prototype.hasOwnProperty.call(d,key)) d[key]=knownOcrPrice(d[key]);
+  });
   const base=packageCleanNumericString(d.basePricePerPerson||d.leadPrice||d.price);
   const partySize=Math.max(1,packageNumericValue(d.adults)+packageNumericValue(d.children));
   let fee=packageCleanNumericString(d.feePerPerson||d.localFeePerPerson||d.resortFee);
@@ -11562,7 +11580,6 @@ function normalisePackagePricingFields(data){
   d.finalPricePerPerson=base?String(packageNumericValue(base)+packageNumericValue(fee)):"";
   d.baseTotal=base?String(packageNumericValue(base)*partySize):"";
   d.finalTotal=d.finalPricePerPerson?String(packageNumericValue(d.finalPricePerPerson)*partySize):"";
-  const operatorKey=normalisePackageOperatorKey(d.operator||d.operatorKey||"");
   const isCouplesSharedPricing=["jet2","tui","easyjet"].includes(operatorKey) && Number(d.children||0)<=0;
   if(d.totalPrice!==undefined) d.bookingTotal=packageCleanNumericString(d.totalPrice)||String(d.totalPrice||"");
   if(base && fee && isCouplesSharedPricing){
@@ -11573,6 +11590,12 @@ function normalisePackagePricingFields(data){
   if(typeof normalisePackageDisplayLocation==="function") normalisePackageDisplayLocation(d);
   if(typeof normaliseJet2PackageInclusionCopy==="function") normaliseJet2PackageInclusionCopy(d,false);
   return d;
+}
+
+function normalisePackageOfferCollection(list){
+  if(!Array.isArray(list)) return [];
+  list.forEach((offer,index)=>{ list[index]=normaliseOfferForCampaign(offer,"package"); });
+  return list;
 }
 
 function packageDateFromData(d){
