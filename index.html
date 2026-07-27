@@ -8489,6 +8489,19 @@ function isTrustedJet2DawsonQuote(text){
     && /\bflight\s+details\b/i.test(source)
     && /\bpayable\s+to\s+your\s+travel\s*(?:\n|\s)+\s*agent\b/i.test(source)
     && /\b(?:hand\s+baggage|bag\s+allowance|coach\s+transfers?)\b/i.test(source);
+  // Some narrow mobile captures lose the inclusions column as well as the
+  // supplier wordmark.  The remaining quotation chrome is still conclusive
+  // when all four supplier headings survive alongside commercial package
+  // evidence.  Keep this stricter than the original fingerprint so Dawson
+  // branding, or a generic package itinerary, cannot identify an operator.
+  const hasNarrowQuotationFingerprint=hasDawsonIdentity
+    && /\byour\s+holiday\s+to\.{0,3}/i.test(source)
+    && /\bholiday\s+summary\b/i.test(source)
+    && /\bflight\s+details\b/i.test(source)
+    && /\bpayable\s+to\s+your\s+travel\s*(?:\n|\s)+\s*agent\b/i.test(source)
+    && /\b\d+\s*x?\s*adults?\b/i.test(source)
+    && /\b(?:bed\s*(?:&|and)\s*breakfast|self\s+catering|half\s+board|all\s+inclusive)\b/i.test(source)
+    && (/(?:£|¥)\s*\d[\d\s,]{1,8}/.test(source)||/\bprice\s+per\s+person\b/i.test(source));
   let score=0; const has=[];
   const add=(key,weight)=>{ if(!has.includes(key)){ has.push(key); score+=weight; } };
   if(hasDawsonIdentity) add("dawsonIdentity",10);
@@ -8509,7 +8522,7 @@ function isTrustedJet2DawsonQuote(text){
   if(inclusionSignals>=2) add("inclusions",12);
   if(/price\s+per\s+person/i.test(source)||/(?:£|¥)\s*\d[\d\s,]{1,8}/.test(source)) add("price",8);
   const contradiction=/\b(?:cruise\s+only|itinerary|cabin|stateroom|sailing\s+from)\b/i.test(compact)&&!/(holiday summary|flight details)/i.test(compact);
-  return !contradiction && (hasOriginalQuotationFingerprint || (score>=68 && has.includes("sections") && has.includes("identityArea") && has.includes("routes") && has.includes("inclusions") && (has.includes("price")||has.includes("pax"))));
+  return !contradiction && (hasOriginalQuotationFingerprint || hasNarrowQuotationFingerprint || (score>=68 && has.includes("sections") && has.includes("identityArea") && has.includes("routes") && has.includes("inclusions") && (has.includes("price")||has.includes("pax"))));
 }
 function collectPackageOperatorEvidence(text,metadata){
   const source=[String(text||""),metadata&&metadata.operator,metadata&&metadata.operatorKey,metadata&&metadata.supplier,metadata&&metadata.brand]
@@ -9627,21 +9640,29 @@ function extractPackagePrices(text){
       const neighbouringLabel=`${previous} ${context} ${next}`;
       const ownContextHasFee=unwanted.test(context);
       const previousIsLabelOnly=!/[£$€]\s*\d/.test(previous);
-      const isFee=ownContextHasFee||(!ownSuffix&&previousIsLabelOnly&&unwanted.test(previous));
+      const nextIsLabelOnly=!/[£$€]\s*\d/.test(next);
+      // OCR commonly places the amount before its visual label.  Previously a
+      // `Price per person` line, `£1`, `resort fee` sequence made the same £1
+      // token both the base and fee.  Classify both adjacent label directions
+      // before considering any per-person role.
+      const isFee=ownContextHasFee||(!ownSuffix&&previousIsLabelOnly&&unwanted.test(previous))||(!ownSuffix&&nextIsLabelOnly&&unwanted.test(next));
       const ownContextHasPp=ppLabel.test(context);
       const lineIsMoneyOnly=line.replace(match[0],"").trim()==="";
       // A label on an adjacent line belongs to this amount only when the amount is
       // actually isolated.  In particular, never let a following booking-total
       // label reclassify an explicit "price per person" amount.
       const isTotal=!ownContextHasPp&&(totalLabel.test(context)||(lineIsMoneyOnly&&previousIsLabelOnly&&totalLabel.test(previous))||(lineIsMoneyOnly&&totalLabel.test(next)));
-      const isPerPerson=!isFee&&!isTotal&&(ownSuffix||ownContextHasPp||ppLabel.test(previous));
+      const isPerPerson=!isFee&&!isTotal&&(ownSuffix||ownContextHasPp||ppLabel.test(previous)||(lineIsMoneyOnly&&nextIsLabelOnly&&ppLabel.test(next)));
       const isExplicitCurrentPrice=/\b(?:current|now|today(?:'s)?|price)\b[\s\S]*\b(?:pp|per[ -]?person)\b|\bprice\s+per[ -]?person\b/i.test(context);
-      candidates.push({value:match[1].replace(/,/g,""),ownSuffix,ownContextHasPp,ownContextHasFee,isFee,isTotal,isPerPerson,isExplicitCurrentPrice,context:neighbouringLabel,lineIndex,matchIndex});
+      const feeIsPerPersonLabel=/\b(?:resort fee|local fee|tourist tax)\b[^£\n]*\b(?:pp|per[ -]?person)\b|\b(?:pp|per[ -]?person)\b[^£\n]*\b(?:resort fee|local fee|tourist tax)\b/i.test(context)
+        || (lineIsMoneyOnly&&((unwanted.test(previous)&&ppLabel.test(previous))||(unwanted.test(next)&&ppLabel.test(next))));
+      const role=isFee?"fee":isTotal?"total":isPerPerson?"base-per-person":"unclassified";
+      candidates.push({id:`${lineIndex}:${matchIndex}`,value:match[1].replace(/,/g,""),ownSuffix,ownContextHasPp,ownContextHasFee,isFee,isTotal,isPerPerson,isExplicitCurrentPrice,feeIsPerPersonLabel,role,context:neighbouringLabel,lineIndex,matchIndex});
     });
   });
   const fee=candidates.find(candidate=>candidate.ownContextHasFee&&/resort fee|local fee|tourist tax/i.test(candidate.context))||candidates.find(candidate=>candidate.isFee&&/resort fee|local fee|tourist tax/i.test(candidate.context));
   if(fee){
-    const feeIsPerPerson=fee.ownSuffix||fee.ownContextHasPp;
+    const feeIsPerPerson=fee.ownSuffix||fee.ownContextHasPp||fee.feeIsPerPersonLabel;
     if(feeIsPerPerson){ out.feePerPerson=fee.value; out.resortFee=fee.value+"pp"; }
     else out.feeTotal=fee.value;
   }
@@ -9652,7 +9673,9 @@ function extractPackagePrices(text){
   else if(perPerson) out.totalPrice=out.leadPrice;
   else { const fallback=candidates.find(candidate=>!candidate.isFee); if(fallback) out.totalPrice=fallback.value+(fallback.ownSuffix?"pp":""); }
   if(out.leadPrice) out.priceBasis="per person";
-  out.candidates=candidates.map(({value,ownSuffix,ownContextHasPp,ownContextHasFee,isFee,isTotal,isPerPerson,isExplicitCurrentPrice,lineIndex,matchIndex})=>({value,ownSuffix,ownContextHasPp,ownContextHasFee,isFee,isTotal,isPerPerson,isExplicitCurrentPrice,lineIndex,matchIndex}));
+  out.baseCandidateId=perPerson?perPerson.id:"";
+  out.feeCandidateId=fee?fee.id:"";
+  out.candidates=candidates.map(({id,value,ownSuffix,ownContextHasPp,ownContextHasFee,isFee,isTotal,isPerPerson,isExplicitCurrentPrice,feeIsPerPersonLabel,role,context,lineIndex,matchIndex})=>({id,value,ownSuffix,ownContextHasPp,ownContextHasFee,isFee,isTotal,isPerPerson,isExplicitCurrentPrice,feeIsPerPersonLabel,role,context,lineIndex,matchIndex}));
   return out;
 }
 function isUnsafePackageTitleLine(line){
@@ -9858,6 +9881,9 @@ function parsePackageOfferText(raw,options){
   const sharing=extractPackageSharingBasis(txt); if(sharing&&!parsed.basis){ parsed.basis=sharing; const m=sharing.match(/(\d+) Adults?(?: & (\d+) Child(?:ren)?)?/); if(m){ parsed.adults=m[1]; if(m[2]) parsed.children=m[2]; } score+=6; }
   if(!parsed.adults){ const adults=(txt.match(/\b(\d+)\s*(?:x\s*)?adults?\b/i)||[])[1]; const children=(txt.match(/\b(\d+)\s*(?:x\s*)?child(?:ren)?\b/i)||[])[1]; if(adults){ parsed.adults=adults; parsed.children=children||"0"; parsed.basis=`Based on ${adults} Adult${Number(adults)===1?"":"s"}${children?` & ${children} Child${Number(children)===1?"":"ren"}`:""} Sharing`; score+=4; } }
   const prices=extractPackagePrices(txt);
+  parsed._priceCandidates=prices.candidates;
+  parsed._basePriceCandidateId=prices.baseCandidateId||"";
+  parsed._feeCandidateId=prices.feeCandidateId||"";
   if(prices.totalPrice&&!parsed.totalPrice){ parsed.totalPrice=prices.totalPrice; parsed.priceLabel="Total Price"; score+=10; }
   if(prices.leadPrice&&!parsed.price){
     parsed.price=prices.leadPrice;
@@ -9924,6 +9950,10 @@ function getPackageScreenshotValidationError(parsed){
   if(!Number.isInteger(passengers)||passengers<=0) return "Passenger count must be a positive whole number";
   if(!Number.isFinite(finalPerPerson)||finalPerPerson!==base+fee) return "Final price per person must equal base price plus fee";
   if(!Number.isFinite(finalTotal)||finalTotal!==finalPerPerson*passengers) return "Final total must equal final price per person multiplied by passenger count";
+  if(parsed._basePriceCandidateId&&parsed._feeCandidateId&&parsed._basePriceCandidateId===parsed._feeCandidateId) return "Base price and fee must come from distinct price evidence";
+  const candidates=Array.isArray(parsed._priceCandidates)?parsed._priceCandidates:[];
+  const largerUnclassified=candidates.some(candidate=>candidate.role==="unclassified"&&Number(candidate.value)>base);
+  if(base+fee<50&&largerUnclassified) return "Package base price conflicts with a larger unclassified monetary value";
   return "";
 }
 function validatePackageScreenshotParse(result){

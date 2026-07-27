@@ -64,12 +64,12 @@ test('Jet2 current pp prices outrank booking totals and fees, and Icmeler is can
 test('fresh Test Offers 2 OCR evidence selects Jet2 parser and commits canonical prices by stable ID',()=>{
  const c=harness();
  const screenshots=[
-  `J e t 2 . c o m\nYour holiday to...\nServatur Caribe Apartments\nPlaya de las Americas, Tenerife\n7 Nights\nSelf Catering\n2 Adults\nPrice per person £574\nPayable to your travel agent £1,148\nThe total holiday cost is £1,172 including approximately £24 in tourist tax`,
+  `J e t 2 . c o m\nYour holiday to...\nServatur Caribe Apartments\nPlaya de las Americas, Tenerife\n7 Nights\nSelf Catering\n2 Adults\nPrice per person £285\nPayable to your travel agent £570`,
   `Je t2-hol idays\nYour holiday to...\nServatur Castillo De Sol\nPuerto Rico, Gran Canaria\n7 Nights\nSelf Catering\n2 Adults\nPrice per person £550\nPayable to your travel agent £1,100\nThe total holiday cost is £1,102 including approximately £2 in tourist tax`,
   `Jet2holidays\nWhite City Beach Hotel\nNr Alanya, Antalya Area\n7 Nights\nAll Inclusive\n2 Adults\nPrice per person £703`,
-  `Jet2 Holidays\nTurgay Apartments\nIcmeler, Dalaman Area\n7 Nights\nSelf Catering\n2 Adults\nPrice per person £583`
+  `Jet2 Holidays\nSunset Paradise Resort\nLassi, Kefalonia\n7 Nights\nSelf Catering\n2 Adults\nPrice per person £574\nThe total holiday cost is £1,172 including approximately £24 in tourist tax`
  ];
- const expected=[[574,12,586,1172],[550,1,551,1102],[703,0,703,1406],[583,0,583,1166]];
+ const expected=[[285,0,285,570],[550,1,551,1102],[703,0,703,1406],[574,12,586,1172]];
  screenshots.forEach((raw,index)=>{
    const detection=c.detectPackageOffer(raw);
    assert.equal(detection.operatorKey,'jet2',`screenshot ${index+1} evidence`);
@@ -91,10 +91,10 @@ test('fresh Test Offers 2 OCR evidence selects Jet2 parser and commits canonical
 test('original narrow Dawson quotations retain Jet2 when OCR drops wordmark, rating and route columns',()=>{
  const c=harness();
  const screenshots=[
-  `Dawson & Sanderson\nYour holiday to...\nServatur Caribe Apartments\nPlaya de las Americas, Tenerife\nHoliday summary\n7 nights from 15th July 2026\nSelf Catering\n2 Adults\n2 x 10kg Hand Baggage\nCoach Transfers\nFlight details\nPayable to your travel agent\n£1,148\nPrice per person £574\nThe total holiday cost is £1,172 including approximately £24 in tourist tax`,
+  `Dawson & Sanderson\nYour holiday to...\nServatur Caribe Apartments\nPlaya de las Americas, Tenerife\nHoliday summary\n7 nights from 15th July 2026\nSelf Catering\n2 Adults\nFlight details\nPayable to your travel agent\n£570\nPrice per person £285`,
   `DAWSON 8 @\nYour holiday to...\nServatur Castillo De Sol\nPuerto Rico, Gran Canaria\nHoliday summary\n7 nights from 9th July 2026\nSelf Catering\n2 Adults\n2 x 22kg Bag Allowance\nCoach Transfers\nFlight details\nPayable to your travel agent\n£1,100\nPrice per person £550\nThe total holiday cost is £1,102 including approximately £2 in tourist tax`
  ];
- const expected=[[574,12,586,1172],[550,1,551,1102]];
+ const expected=[[285,0,285,570],[550,1,551,1102]];
  screenshots.forEach((raw,index)=>{
    const evidence=c.collectPackageOperatorEvidence(raw);
    assert.deepEqual(JSON.parse(JSON.stringify(evidence)),[{operator:'jet2',type:'trusted-layout',value:'Dawson & Sanderson Jet2 quotation'}]);
@@ -109,6 +109,21 @@ test('original narrow Dawson quotations retain Jet2 when OCR drops wordmark, rat
      Number(result.parsed.finalPricePerPerson),Number(result.parsed.finalTotal)
    ],expected[index]);
  });
+});
+
+test('Gran Canaria OCR cannot reuse a following-labelled fee as its base price',()=>{
+ const c=harness();
+ const raw=`Jet2holidays\nServatur Castillo De Sol\nPuerto Rico, Gran Canaria\n7 Nights\nSelf Catering\n2 Adults\nPrice per person £550\n£1\nResort fee per person`;
+ const extracted=c.extractPackagePrices(raw);
+ assert.equal(extracted.basePricePerPerson,'550');
+ assert.equal(extracted.feePerPerson,'1');
+ assert.notEqual(extracted.baseCandidateId,extracted.feeCandidateId);
+ const result=c.parsePackageOfferText(raw,{isolated:true,detection:c.detectPackageOffer(raw)});
+ assert.deepEqual([Number(result.parsed.basePricePerPerson),Number(result.parsed.feePerPerson),Number(result.parsed.finalPricePerPerson),Number(result.parsed.finalTotal)],[550,1,551,1102]);
+ assert.equal(c.getPackageScreenshotValidationError(result.parsed),'');
+ const corrupt=structuredClone(result.parsed);
+ Object.assign(corrupt,{basePricePerPerson:'1',finalPricePerPerson:'2',finalTotal:'4',_basePriceCandidateId:corrupt._feeCandidateId});
+ assert.match(c.getPackageScreenshotValidationError(corrupt),/distinct price evidence/);
 });
 
 test('unresolved screenshot parse is inert and cannot replace a committed stable offer',()=>{
