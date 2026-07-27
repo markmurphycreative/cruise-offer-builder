@@ -22,8 +22,8 @@ test('Import Review loading reparses each selected item from its own latest revi
   assert.match(html, /pendingScreenshotImports\[activeScreenshotImportIndex\]\.reviewText=normaliseVisionExtractedText\(review\.value\|\|""\);/);
   assert.match(html, /selectedItems=pendingScreenshotImports\.filter\(item=>item&&item\.selected!==false&&item\.status!=="error"/);
   assert.match(html, /selectedItems\.forEach\(item=>\{ item\.reviewText=normaliseVisionExtractedText\(getScreenshotImportReviewedText\(item\)\); item\.result=parseScreenshotTextForActiveBuilder\(item\.reviewText\); \}\);/);
-  assert.match(html, /offers=workingOffers;[\s\S]*?\.every\(\(item,index\)=>applyParsedOfferToSlot\(item\.result,slots\[index\]/);
-  assert.match(html, /selectedItems\.forEach\(item=>\{ item\.result=null; \}\);/);
+  assert.match(html, /bindings\.every\(binding=>\{[\s\S]*?findIndex\(offer=>offer&&offer\.offerId===binding\.offerId\)[\s\S]*?applyParsedOfferToSlot\(binding\.item\.result,targetIndex/);
+  assert.match(html, /validatedItems\.forEach\(item=>\{ item\.result=null; \}\);/);
 });
 
 test('Missing operator imports warn without fabricating visible card copy', () => {

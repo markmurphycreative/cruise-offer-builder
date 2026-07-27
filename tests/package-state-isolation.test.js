@@ -34,7 +34,7 @@ test('authoritative Package model has isolated Package slots, metadata, active i
 
 test('blank Package offers are created by a factory and exclude ghost-offer fields', () => {
   const fn = extractFunction('createBlankPackageOffer');
-  assert.match(fn, /return \{offerType:"package",packageCopyOverrides:\{\}\};/);
+  assert.match(fn, /return \{offerType:"package",offerId:createPackageOfferId\(\),packageCopyOverrides:\{\}\};/);
   for (const field of ['destination','hotel','date','airport','price','resortFee','operator','ship','ports','cabin','tags','theme_tags']) {
     assert.doesNotMatch(fn, new RegExp(`\\b${field}\\b`));
   }
