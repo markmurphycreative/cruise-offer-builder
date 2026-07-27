@@ -15,10 +15,10 @@ const package1=[
  {offerId:'p1-4',ship:'Turgay Apartments',name:'Icmeler, Dalaman Area',operator:'jet2',basePricePerPerson:'583',adults:'2',children:'0'}
 ];
 const package2=[
- {offerId:'p2-1',ship:'Servatur Caribe Apartments',name:'Playa de las Americas, Tenerife',operator:'jet2',basePricePerPerson:'574',feePerPerson:'12',adults:'2',children:'0',incl:'Hand Luggage Included · Coach Transfers'},
+ {offerId:'p2-1',ship:'Servatur Caribe Apartments',name:'Playa de las Americas, Tenerife',operator:'jet2',basePricePerPerson:'285',feePerPerson:'0',adults:'2',children:'0',incl:'Hand Luggage Included · Coach Transfers'},
  {offerId:'p2-2',ship:'Servatur Castillo De Sol',name:'Puerto Rico, Gran Canaria',operator:'jet2',basePricePerPerson:'550',feePerPerson:'1',adults:'2',children:'0',incl:'Hand Luggage Included · Return Coach Transfers'},
  {offerId:'p2-3',ship:'White City Beach Hotel',name:'Nr Alayna, Antalya Area',operator:'jet2',basePricePerPerson:'703',adults:'2',children:'0',incl:'Luggage & Transfers Included'},
- {offerId:'p2-4',ship:'Turgay Apartments',name:'Icmeler, Dalaman Area',operator:'jet2',basePricePerPerson:'583',adults:'2',children:'0',incl:'Luggage & Transfers Included'}
+ {offerId:'p2-4',ship:'Sunset Paradise Resort',name:'Lassi, Kefalonia',operator:'jet2',basePricePerPerson:'574',feePerPerson:'12',adults:'2',children:'0',incl:'Luggage & Transfers Included'}
 ];
 function normaliseCampaign(c,offers){return offers.map(source=>c.normalisePackagePricingFields(structuredClone(source)));}
 
@@ -37,9 +37,9 @@ test('Test Package 1 prices and headers remain attached to independent stable of
 test('Test Package 2 preserves full resort separately, shortens only display location, and removes Coach',()=>{
  const c=harness(); const offers=normaliseCampaign(c,package2);
  assert.deepEqual(offers.slice(0,2).map(o=>[o.offerId,o.ship,Number(o.basePricePerPerson),Number(o.finalPricePerPerson),Number(o.finalTotal)]),[
-  ['p2-1','Servatur Caribe Apartments',574,586,1172],['p2-2','Servatur Castillo De Sol',550,551,1102]
+  ['p2-1','Servatur Caribe Apartments',285,285,570],['p2-2','Servatur Castillo De Sol',550,551,1102]
  ]);
- assert.deepEqual(offers.map(o=>o.displayLocation),['Tenerife, Spain','Gran Canaria, Spain','Alanya, Turkey','Icmeler, Dalaman']);
+ assert.deepEqual(offers.map(o=>o.displayLocation),['Tenerife, Spain','Gran Canaria, Spain','Alanya, Turkey','Lassi, Kefalonia']);
  assert.deepEqual(offers.slice(0,2).map(o=>[o.fullResort,o.island,o.country]),[['Playa de las Americas','Tenerife','Spain'],['Puerto Rico','Gran Canaria','Spain']]);
  assert.equal(JSON.stringify(offers).match(/coach/gi),null);
  const restored=JSON.parse(JSON.stringify([offers[3],offers[0],offers[1],offers[2]]));
