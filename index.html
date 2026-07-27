@@ -8476,9 +8476,22 @@ function detectCruiseOffer(text){
 function isTrustedJet2DawsonQuote(text){
   const source=String(text||"");
   const compact=source.replace(/\s+/g," ");
+  // Preserve the original quotation fingerprint used before the scored OCR
+  // classifier was introduced.  Tesseract does not consistently return the
+  // Jet2 wordmark (or the route/rating columns) from the narrow quotation
+  // screenshots, but it does return this supplier-specific set of headings.
+  // Requiring the old fingerprint as a whole keeps this evidence offer-local
+  // and avoids treating Dawson branding by itself as Jet2 evidence.
+  const hasDawsonIdentity=/\bdawson\b[\s\S]{0,160}(?:sanderson|8\s*@|abta\s*no?\.?)/i.test(source);
+  const hasOriginalQuotationFingerprint=hasDawsonIdentity
+    && /\byour\s+holiday\s+to\.{0,3}/i.test(source)
+    && /\bholiday\s+summary\b/i.test(source)
+    && /\bflight\s+details\b/i.test(source)
+    && /\bpayable\s+to\s+your\s+travel\s*(?:\n|\s)+\s*agent\b/i.test(source)
+    && /\b(?:hand\s+baggage|bag\s+allowance|coach\s+transfers?)\b/i.test(source);
   let score=0; const has=[];
   const add=(key,weight)=>{ if(!has.includes(key)){ has.push(key); score+=weight; } };
-  if(/\bdawson\b[\s\S]{0,160}(?:sanderson|8\s*@|abta\s*no?\.?)/i.test(source)) add("dawsonIdentity",10);
+  if(hasDawsonIdentity) add("dawsonIdentity",10);
   if(/\byour\s+holiday\s+to/i.test(source)) add("holidayTo",10);
   if(/\b(?:hotel|resort|apartments?|suites?)\b[\s\S]{0,80}\bour\s+rating\b/i.test(source)||/\bour\s+rating\b[\s\S]{0,120}\btripadvisor\b/i.test(source)) add("identityArea",10);
   if(/\btripadvisor\s+traveller\s+rating\b/i.test(source)||/\bbased\s+on\s+\d+\s+reviews\b/i.test(source)) add("reviews",6);
@@ -8496,7 +8509,7 @@ function isTrustedJet2DawsonQuote(text){
   if(inclusionSignals>=2) add("inclusions",12);
   if(/price\s+per\s+person/i.test(source)||/(?:£|¥)\s*\d[\d\s,]{1,8}/.test(source)) add("price",8);
   const contradiction=/\b(?:cruise\s+only|itinerary|cabin|stateroom|sailing\s+from)\b/i.test(compact)&&!/(holiday summary|flight details)/i.test(compact);
-  return !contradiction && score>=68 && has.includes("sections") && has.includes("identityArea") && has.includes("routes") && has.includes("inclusions") && (has.includes("price")||has.includes("pax"));
+  return !contradiction && (hasOriginalQuotationFingerprint || (score>=68 && has.includes("sections") && has.includes("identityArea") && has.includes("routes") && has.includes("inclusions") && (has.includes("price")||has.includes("pax"))));
 }
 function collectPackageOperatorEvidence(text,metadata){
   const source=[String(text||""),metadata&&metadata.operator,metadata&&metadata.operatorKey,metadata&&metadata.supplier,metadata&&metadata.brand]

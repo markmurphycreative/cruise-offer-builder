@@ -8,7 +8,7 @@ function fn(name){const start=html.indexOf(`function ${name}(`);assert.notEqual(
 function cn(name){const m=html.match(new RegExp(`const\\s+${name}\\s*=`));assert.ok(m,name);return html.slice(m.index,html.indexOf(';',m.index)+1);}
 function harness(){
  const c={console,currentCampaignType:'package',offers:[{},{},{},{}],cur:0,document:{getElementById(){return null;}},clearHeroImageDataFromOffer(){},applyAutoSailingFromToOffer(){},applyOperatorTopBarUspDefault(){},stripTransientPasteOfferFields(){},defaultTopBarUspForOperator(){return ''},normaliseCampaignType:v=>v||'package',clampParseConfidenceScore:v=>Math.max(0,Math.min(100,Number(v)||0))};vm.createContext(c);
- vm.runInContext(['function escapeRegExp(value){return String(value||"").replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\$&")}',cn('PACKAGE_OFFER_DETECTION_THRESHOLD'),cn('PACKAGE_OFFER_SIGNAL_WEIGHTS'),cn('PACKAGE_OPERATORS'),cn('PACKAGE_COPY_FIELDS'),cn('PACKAGE_BOARD_BASES'),cn('JET2_APPROVED_INCLUSION_COPY'),'const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};',fn('getActiveRenderCampaignType'),fn('normalisePackageOperatorKey'),fn('isPackageOperator'),fn('isTrustedJet2DawsonQuote'),fn('collectPackageOperatorEvidence'),fn('getPackageOperatorMatch'),fn('detectPackageOffer'),fn('normalisePackageOcrText'),fn('titleCasePackageValue'),fn('normaliseJet2PackageDestination'),fn('detectPackageBoardBasis'),fn('extractPackageDepartureAirport'),fn('extractPackageSharingBasis'),fn('extractPackagePrices'),fn('isUnsafePackageTitleLine'),fn('cleanPackageParsedTitle'),fn('sanitisePackageHotelCandidate'),fn('extractHolidaySummaryAccommodation'),fn('extractStructuredPackageAccommodation'),fn('extractHolidayToAccommodation'),fn('extractPriorityPackageHotel'),fn('parseJet2DawsonQuote'),fn('isJet2SourceInclusionCopy'),fn('normaliseJet2PackageInclusionCopy'),fn('parsePackageOfferText'),fn('canApplyParsedPackageOffer'),fn('validatePackageScreenshotParse'),fn('packageNumericValue'),fn('packageCleanNumericString'),fn('applyJet2PackageDefaults'),fn('normalisePackagePricingFields'),fn('getBulkPackageImportFallbackOperator'),fn('isUnsafeImportedPackageVisibleValue'),fn('normaliseBulkImportedPackageOffer'),fn('applyParsedOfferToSlot')].join('\n'),c);return c;
+ vm.runInContext(['function escapeRegExp(value){return String(value||"").replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\$&")}',cn('PACKAGE_OFFER_DETECTION_THRESHOLD'),cn('PACKAGE_OFFER_SIGNAL_WEIGHTS'),cn('PACKAGE_OPERATORS'),cn('PACKAGE_COPY_FIELDS'),cn('PACKAGE_BOARD_BASES'),cn('JET2_APPROVED_INCLUSION_COPY'),'const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};',fn('getActiveRenderCampaignType'),fn('normalisePackageOperatorKey'),fn('isPackageOperator'),fn('isTrustedJet2DawsonQuote'),fn('collectPackageOperatorEvidence'),fn('getPackageOperatorMatch'),fn('detectPackageOffer'),fn('normalisePackageOcrText'),fn('titleCasePackageValue'),fn('normaliseJet2PackageDestination'),fn('detectPackageBoardBasis'),fn('extractPackageDepartureAirport'),fn('extractPackageSharingBasis'),fn('extractPackagePrices'),fn('isUnsafePackageTitleLine'),fn('cleanPackageParsedTitle'),fn('sanitisePackageHotelCandidate'),fn('extractHolidaySummaryAccommodation'),fn('extractStructuredPackageAccommodation'),fn('extractHolidayToAccommodation'),fn('extractPriorityPackageHotel'),fn('parseJet2DawsonQuote'),fn('isJet2SourceInclusionCopy'),fn('normaliseJet2PackageInclusionCopy'),fn('parsePackageOfferText'),fn('canApplyParsedPackageOffer'),fn('getPackageScreenshotValidationError'),fn('validatePackageScreenshotParse'),fn('packageNumericValue'),fn('packageCleanNumericString'),fn('applyJet2PackageDefaults'),fn('normalisePackagePricingFields'),fn('getBulkPackageImportFallbackOperator'),fn('isUnsafeImportedPackageVisibleValue'),fn('normaliseBulkImportedPackageOffer'),fn('applyParsedOfferToSlot')].join('\n'),c);return c;
 }
 const fixtures=[
  ['Turgay',`Turgay Hotel\nAntalya, Turkey\n7 Nights\nAll Inclusive\n2 Adults\n<span aria-hidden="true">£5</span><span aria-hidden="true">£683</span>\nPrice per person £583\nWas £683`,583,0,0,583],
@@ -86,6 +86,29 @@ test('fresh Test Offers 2 OCR evidence selects Jet2 parser and commits canonical
  assert.equal(c.getPackageOperatorMatch('TUI Holidays package'),'tui');
  assert.equal(c.getPackageOperatorMatch('easyJet holidays package'),'easyjet');
  assert.equal(c.getPackageOperatorMatch('ordinary package with no supplier'),'');
+});
+
+test('original narrow Dawson quotations retain Jet2 when OCR drops wordmark, rating and route columns',()=>{
+ const c=harness();
+ const screenshots=[
+  `Dawson & Sanderson\nYour holiday to...\nServatur Caribe Apartments\nPlaya de las Americas, Tenerife\nHoliday summary\n7 nights from 15th July 2026\nSelf Catering\n2 Adults\n2 x 10kg Hand Baggage\nCoach Transfers\nFlight details\nPayable to your travel agent\n£1,148\nPrice per person £574\nThe total holiday cost is £1,172 including approximately £24 in tourist tax`,
+  `DAWSON 8 @\nYour holiday to...\nServatur Castillo De Sol\nPuerto Rico, Gran Canaria\nHoliday summary\n7 nights from 9th July 2026\nSelf Catering\n2 Adults\n2 x 22kg Bag Allowance\nCoach Transfers\nFlight details\nPayable to your travel agent\n£1,100\nPrice per person £550\nThe total holiday cost is £1,102 including approximately £2 in tourist tax`
+ ];
+ const expected=[[574,12,586,1172],[550,1,551,1102]];
+ screenshots.forEach((raw,index)=>{
+   const evidence=c.collectPackageOperatorEvidence(raw);
+   assert.deepEqual(JSON.parse(JSON.stringify(evidence)),[{operator:'jet2',type:'trusted-layout',value:'Dawson & Sanderson Jet2 quotation'}]);
+   const detection=c.detectPackageOffer(raw);
+   assert.equal(detection.operatorKey,'jet2');
+   const result=c.parsePackageOfferText(raw,{isolated:true,detection});
+   assert.equal(result.parsed.operatorKey,'jet2');
+   assert.equal(c.getPackageScreenshotValidationError(result.parsed),'');
+   assert.equal(c.validatePackageScreenshotParse(result),true);
+   assert.deepEqual([
+     Number(result.parsed.basePricePerPerson),Number(result.parsed.feePerPerson),
+     Number(result.parsed.finalPricePerPerson),Number(result.parsed.finalTotal)
+   ],expected[index]);
+ });
 });
 
 test('unresolved screenshot parse is inert and cannot replace a committed stable offer',()=>{
