@@ -8,7 +8,7 @@ function fn(name){const start=html.indexOf(`function ${name}(`);assert.notEqual(
 function cn(name){const m=html.match(new RegExp(`const\\s+${name}\\s*=`));assert.ok(m,name);return html.slice(m.index,html.indexOf(';',m.index)+1);}
 function harness(){
  const c={console,currentCampaignType:'package',offers:[{},{},{},{}],cur:0,document:{getElementById(){return null;}},clearHeroImageDataFromOffer(){},applyAutoSailingFromToOffer(){},applyOperatorTopBarUspDefault(){},stripTransientPasteOfferFields(){},defaultTopBarUspForOperator(){return ''},normaliseCampaignType:v=>v||'package',clampParseConfidenceScore:v=>Math.max(0,Math.min(100,Number(v)||0))};vm.createContext(c);
- vm.runInContext(['function escapeRegExp(value){return String(value||"").replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\$&")}',cn('PACKAGE_OFFER_DETECTION_THRESHOLD'),cn('PACKAGE_OFFER_SIGNAL_WEIGHTS'),cn('PACKAGE_OPERATORS'),cn('PACKAGE_COPY_FIELDS'),cn('PACKAGE_BOARD_BASES'),cn('JET2_APPROVED_INCLUSION_COPY'),'const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};',fn('getActiveRenderCampaignType'),fn('normalisePackageOperatorKey'),fn('isPackageOperator'),fn('isTrustedJet2DawsonQuote'),fn('getPackageOperatorMatch'),fn('detectPackageOffer'),fn('normalisePackageOcrText'),fn('titleCasePackageValue'),fn('normaliseJet2PackageDestination'),fn('detectPackageBoardBasis'),fn('extractPackageDepartureAirport'),fn('extractPackageSharingBasis'),fn('extractPackagePrices'),fn('isUnsafePackageTitleLine'),fn('cleanPackageParsedTitle'),fn('sanitisePackageHotelCandidate'),fn('extractHolidaySummaryAccommodation'),fn('extractStructuredPackageAccommodation'),fn('extractHolidayToAccommodation'),fn('extractPriorityPackageHotel'),fn('parseJet2DawsonQuote'),fn('isJet2SourceInclusionCopy'),fn('normaliseJet2PackageInclusionCopy'),fn('parsePackageOfferText'),fn('packageNumericValue'),fn('packageCleanNumericString'),fn('applyJet2PackageDefaults'),fn('normalisePackagePricingFields'),fn('getBulkPackageImportFallbackOperator'),fn('isUnsafeImportedPackageVisibleValue'),fn('normaliseBulkImportedPackageOffer'),fn('applyParsedOfferToSlot')].join('\n'),c);return c;
+ vm.runInContext(['function escapeRegExp(value){return String(value||"").replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\$&")}',cn('PACKAGE_OFFER_DETECTION_THRESHOLD'),cn('PACKAGE_OFFER_SIGNAL_WEIGHTS'),cn('PACKAGE_OPERATORS'),cn('PACKAGE_COPY_FIELDS'),cn('PACKAGE_BOARD_BASES'),cn('JET2_APPROVED_INCLUSION_COPY'),'const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};',fn('getActiveRenderCampaignType'),fn('normalisePackageOperatorKey'),fn('isPackageOperator'),fn('isTrustedJet2DawsonQuote'),fn('collectPackageOperatorEvidence'),fn('getPackageOperatorMatch'),fn('detectPackageOffer'),fn('normalisePackageOcrText'),fn('titleCasePackageValue'),fn('normaliseJet2PackageDestination'),fn('detectPackageBoardBasis'),fn('extractPackageDepartureAirport'),fn('extractPackageSharingBasis'),fn('extractPackagePrices'),fn('isUnsafePackageTitleLine'),fn('cleanPackageParsedTitle'),fn('sanitisePackageHotelCandidate'),fn('extractHolidaySummaryAccommodation'),fn('extractStructuredPackageAccommodation'),fn('extractHolidayToAccommodation'),fn('extractPriorityPackageHotel'),fn('parseJet2DawsonQuote'),fn('isJet2SourceInclusionCopy'),fn('normaliseJet2PackageInclusionCopy'),fn('parsePackageOfferText'),fn('canApplyParsedPackageOffer'),fn('validatePackageScreenshotParse'),fn('packageNumericValue'),fn('packageCleanNumericString'),fn('applyJet2PackageDefaults'),fn('normalisePackagePricingFields'),fn('getBulkPackageImportFallbackOperator'),fn('isUnsafeImportedPackageVisibleValue'),fn('normaliseBulkImportedPackageOffer'),fn('applyParsedOfferToSlot')].join('\n'),c);return c;
 }
 const fixtures=[
  ['Turgay',`Turgay Hotel\nAntalya, Turkey\n7 Nights\nAll Inclusive\n2 Adults\n<span aria-hidden="true">£5</span><span aria-hidden="true">£683</span>\nPrice per person £583\nWas £683`,583,0,0,583],
@@ -59,4 +59,40 @@ test('Jet2 current pp prices outrank booking totals and fees, and Icmeler is can
  const feeFirst=c.extractPackagePrices(`Local tourist tax £1pp\nCurrent price per person £550\nTotal booking price £1,100`);
  assert.equal(feeFirst.basePricePerPerson,'550');
  assert.equal(feeFirst.feePerPerson,'1');
+});
+
+test('fresh Test Offers 2 OCR evidence selects Jet2 parser and commits canonical prices by stable ID',()=>{
+ const c=harness();
+ const screenshots=[
+  `J e t 2 . c o m\nYour holiday to...\nServatur Caribe Apartments\nPlaya de las Americas, Tenerife\n7 Nights\nSelf Catering\n2 Adults\nPrice per person £574\nPayable to your travel agent £1,148\nThe total holiday cost is £1,172 including approximately £24 in tourist tax`,
+  `Je t2-hol idays\nYour holiday to...\nServatur Castillo De Sol\nPuerto Rico, Gran Canaria\n7 Nights\nSelf Catering\n2 Adults\nPrice per person £550\nPayable to your travel agent £1,100\nThe total holiday cost is £1,102 including approximately £2 in tourist tax`,
+  `Jet2holidays\nWhite City Beach Hotel\nNr Alanya, Antalya Area\n7 Nights\nAll Inclusive\n2 Adults\nPrice per person £703`,
+  `Jet2 Holidays\nTurgay Apartments\nIcmeler, Dalaman Area\n7 Nights\nSelf Catering\n2 Adults\nPrice per person £583`
+ ];
+ const expected=[[574,12,586,1172],[550,1,551,1102],[703,0,703,1406],[583,0,583,1166]];
+ screenshots.forEach((raw,index)=>{
+   const detection=c.detectPackageOffer(raw);
+   assert.equal(detection.operatorKey,'jet2',`screenshot ${index+1} evidence`);
+   assert.ok(detection.operatorEvidence.some(item=>item.operator==='jet2'));
+   const result=c.parsePackageOfferText(raw,{isolated:true,detection});
+   result.operatorEvidence=detection.operatorEvidence;
+   result.parsed.offerId=`stable-${index+1}`;
+   assert.equal(c.validatePackageScreenshotParse(result),true);
+   assert.equal(c.applyParsedOfferToSlot(result,index,raw),true);
+   const o=c.offers[index];
+   assert.deepEqual([Number(o.basePricePerPerson),Number(o.feePerPerson||0),Number(o.finalPricePerPerson),Number(o.finalTotal)],expected[index]);
+   assert.deepEqual([o.offerId,o.operator,o.operatorKey,o.packageOperator,o.rendererId,o.cardType],[`stable-${index+1}`,'jet2','jet2','Jet2','jet2-package','jet2-package']);
+ });
+ assert.equal(c.getPackageOperatorMatch('TUI Holidays package'),'tui');
+ assert.equal(c.getPackageOperatorMatch('easyJet holidays package'),'easyjet');
+ assert.equal(c.getPackageOperatorMatch('ordinary package with no supplier'),'');
+});
+
+test('unresolved screenshot parse is inert and cannot replace a committed stable offer',()=>{
+ const c=harness();
+ c.offers[0]={offerId:'stable-existing',offerType:'package',operator:'tui',name:'Existing',ship:'Existing Hotel',nights:'7',basePricePerPerson:'600'};
+ const before=JSON.stringify(c.offers[0]);
+ const result=c.parsePackageOfferText(`Unknown Hotel\nTenerife, Spain\n7 Nights\n2 Adults\nPrice per person £285`,{isolated:true,detection:c.detectPackageOffer('')});
+ assert.equal(c.validatePackageScreenshotParse(result),false);
+ assert.equal(JSON.stringify(c.offers[0]),before);
 });
