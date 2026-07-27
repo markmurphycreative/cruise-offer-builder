@@ -2606,7 +2606,9 @@ function stampOfferCollectionCampaignType(list,type=currentCampaignType){
 }
 function normaliseOfferForCampaign(offer,type=currentCampaignType){
   const campaignType=normaliseCampaignType(type);
-  const normalised=stampOfferCampaignType(stripTransientPasteOfferFields(offer||{}),campaignType);
+  const source=offer&&typeof offer==="object"?offer:{};
+  const migrated=campaignType==="package"&&typeof migrateLegacyPackageOffer==="function" ? migrateLegacyPackageOffer(source) : source;
+  const normalised=stampOfferCampaignType(stripTransientPasteOfferFields(migrated),campaignType);
   if(campaignType==="package"){
     normalisePackagePricingFields(normalised);
     syncPackageCanonicalFields(normalised);
@@ -6516,8 +6518,13 @@ function buildAutosavePayload(){
   save();
   if(typeof syncHeroLockMetadata==="function") syncHeroLockMetadata();
   const activeCampaignType=(typeof currentCampaignType !== 'undefined' ? currentCampaignType : 'cruise');
-  const sourceOffers=getActiveOfferCollection(activeCampaignType) || createBlankOfferSlotsForCampaign(activeCampaignType);
-  if(normaliseCampaignType(activeCampaignType)==="package") normalisePackageOfferCollection(sourceOffers);
+  let sourceOffers=getActiveOfferCollection(activeCampaignType) || createBlankOfferSlotsForCampaign(activeCampaignType);
+  if(normaliseCampaignType(activeCampaignType)==="package"){
+    sourceOffers=normalisePackageOfferCollection(sourceOffers);
+    packageOffers=sourceOffers;
+    offers=sourceOffers;
+    if(campaignModel) campaignModel.packageOffers=sourceOffers;
+  }
   const clonedOffers = JSON.parse(JSON.stringify(sourceOffers));
   // Autosave flow: keep hero data URLs for restore; logo data URLs still require reupload.
   clonedOffers.forEach((o,index)=>{
@@ -6589,7 +6596,7 @@ function restoreSavedSessionOnStartup(){
   const saved=readSavedSession();
   if(!(saved && Array.isArray(saved.offers))) return false;
   const hasRefs=saved.offers.some(o=>o&&(o._imgAssetId||o._itineraryImgAssetId));
-  const restorePayload=payload=>{ applySessionPayload(payload); if(typeof migrateLegacyEmbeddedHeroAssets==="function") migrateLegacyEmbeddedHeroAssets(payload); autosaveLastSavedAt=payload.savedAt || autosaveLastSavedAt; syncAutosaveStatus(); const partial=sessionHasMissingHeroImages(payload); showSessionFeedback(partial ? "Session restored, but hero images need re-uploading" : "Previous session restored", partial); if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Session restore"); if(typeof resetCampaignHistoryBaseline==="function") resetCampaignHistoryBaseline(); if(typeof markBuilderStateClean==="function") markBuilderStateClean(); return true; };
+  const restorePayload=payload=>{ const packageRestore=normaliseCampaignType((payload.campaign&&payload.campaign.campaignType)||payload.campaignType)==="package"; const needsPackageMigration=packageRestore&&payload.offers.some(offer=>Number(offer&&offer.packageSchemaVersion)!==PACKAGE_OFFER_SCHEMA_VERSION); applySessionPayload(payload); if(typeof migrateLegacyEmbeddedHeroAssets==="function") migrateLegacyEmbeddedHeroAssets(payload); autosaveLastSavedAt=payload.savedAt || autosaveLastSavedAt; syncAutosaveStatus(); const partial=sessionHasMissingHeroImages(payload); showSessionFeedback(partial ? "Session restored, but hero images need re-uploading" : "Previous session restored", partial); if(needsPackageMigration&&typeof saveSessionNow==="function") saveSessionNow(); if(typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Session restore"); if(typeof resetCampaignHistoryBaseline==="function") resetCampaignHistoryBaseline(); if(typeof markBuilderStateClean==="function") markBuilderStateClean(); return true; };
   if(hasRefs) return hydrateHeroAssetsFromIndexedDb(saved).then(restorePayload);
   return restorePayload(saved);
 }
@@ -7123,7 +7130,11 @@ function buildCampaignFilePayload(){
     ...(typeof getCampaignNamingSnapshot==="function" ? getCampaignNamingSnapshot() : {})
   };
   if(typeof syncHeroLockMetadata==="function") syncHeroLockMetadata();
-  if(normaliseCampaignType(currentCampaignType)==="package") normalisePackageOfferCollection(getActiveOfferCollection(currentCampaignType));
+  if(normaliseCampaignType(currentCampaignType)==="package"){
+    packageOffers=normalisePackageOfferCollection(getActiveOfferCollection(currentCampaignType));
+    offers=packageOffers;
+    if(campaignModel) campaignModel.packageOffers=packageOffers;
+  }
   const portableOffers=makePortableCampaignOffers(getActiveOfferCollection(currentCampaignType));
   const googleSheetSource=getSavedGoogleSheetSource();
   const currentCtaSettings=getCtaSettingsFromUI();
@@ -11581,7 +11592,7 @@ function normalisePackagePricingFields(data){
   d.baseTotal=base?String(packageNumericValue(base)*partySize):"";
   d.finalTotal=d.finalPricePerPerson?String(packageNumericValue(d.finalPricePerPerson)*partySize):"";
   const isCouplesSharedPricing=["jet2","tui","easyjet"].includes(operatorKey) && Number(d.children||0)<=0;
-  if(d.totalPrice!==undefined) d.bookingTotal=packageCleanNumericString(d.totalPrice)||String(d.totalPrice||"");
+  if(d.totalPrice!==undefined) d.bookingTotal=d.finalTotal||packageCleanNumericString(d.totalPrice)||String(d.totalPrice||"");
   if(base && fee && isCouplesSharedPricing){
     d.displayTotalPerPerson=d.finalPricePerPerson;
     d.totalPrice=base;
@@ -11592,9 +11603,87 @@ function normalisePackagePricingFields(data){
   return d;
 }
 
+const PACKAGE_OFFER_SCHEMA_VERSION = 2;
+function getLegacyPackageSourceEvidence(offer){
+  if(!offer) return "";
+  const metadata=[offer.packageImportMetadata,offer._packageImportMetadata,offer.importMetadata,offer.sourceMetadata]
+    .filter(value=>value&&typeof value==="object")
+    .map(value=>{ try{ return JSON.stringify(value); }catch(_e){ return ""; } });
+  return [offer[PERSISTED_PASTE_OFFER_KEY],offer.sourceText,offer.sourceOfferText,...metadata].filter(Boolean).join("\n");
+}
+function getLegacyPackageOperatorEvidence(offer,sourceText){
+  const stored=[offer&&offer.operator,offer&&offer.operatorKey,offer&&offer.packageOperator,offer&&offer.cardType,offer&&offer.cardStyle,offer&&offer.rendererId];
+  for(const value of stored){
+    const key=normalisePackageOperatorKey(value);
+    if(isPackageOperator(key)) return key;
+  }
+  const source=String(sourceText||"");
+  if(typeof getPackageOperatorMatch==="function"){
+    const matched=normalisePackageOperatorKey(getPackageOperatorMatch(source));
+    if(isPackageOperator(matched)) return matched;
+  }
+  if(/\bjet\s*2(?:holidays)?\b/i.test(source)) return "jet2";
+  if(/\beasyjet\s+holidays\b/i.test(source)) return "easyjet";
+  if(/\btui(?:\s+holidays)?\b/i.test(source)) return "tui";
+  return "";
+}
+function getLegacyPackageParsedSource(offer,sourceText){
+  const metadata=[offer&&offer.packageImportMetadata,offer&&offer._packageImportMetadata,offer&&offer.importMetadata,offer&&offer.sourceMetadata]
+    .find(value=>value&&typeof value==="object"&&(value.parsed||value.basePricePerPerson));
+  if(metadata) return metadata.parsed||metadata;
+  if(sourceText&&typeof parsePackageOfferText==="function"){
+    const result=parsePackageOfferText(sourceText,{isolated:true,renderIntelligence:false});
+    return result&&result.parsed||null;
+  }
+  return null;
+}
+function migrateLegacyPackageOffer(offer){
+  const migrated=Object.assign({},offer||{});
+  migrated.offerType="package";
+  migrated.campaignType="package";
+  if(!migrated.offerId) migrated.offerId=typeof createPackageOfferId==="function"?createPackageOfferId():`package-offer-${Date.now().toString(36)}`;
+  const sourceText=getLegacyPackageSourceEvidence(migrated);
+  const operator=getLegacyPackageOperatorEvidence(migrated,sourceText);
+  if(operator){
+    migrated.operator=operator;
+    migrated.operatorKey=operator;
+    migrated.cardType=`${operator}-package`;
+    migrated.rendererId=`${operator}-package`;
+  }else{
+    delete migrated.operatorKey;
+    if(!isPackageOperator(migrated.operator)) migrated.operator="";
+  }
+  // Only source-backed import data may replace legacy price fields. A missing
+  // operator alone is never enough to infer Jet2 or to alter monetary values.
+  const parsed=operator&&sourceText?getLegacyPackageParsedSource(migrated,sourceText):null;
+  const sourceBase=packageCleanNumericString(parsed&&(parsed.basePricePerPerson||parsed.leadPrice||parsed.price));
+  if(sourceBase){
+    const passengers=Math.max(1,packageNumericValue(parsed.passengerCount||parsed.adults||migrated.passengerCount||migrated.adults)+packageNumericValue(parsed.children||migrated.children));
+    let sourceFee=packageCleanNumericString(parsed.feePerPerson||parsed.localFeePerPerson||parsed.resortFee);
+    if(!sourceFee&&String(parsed.localFeeType||"").toLowerCase()==="total"&&parsed.localFeeAmount) sourceFee=String(packageNumericValue(parsed.localFeeAmount)/passengers);
+    migrated.basePricePerPerson=sourceBase;
+    migrated.leadPrice=sourceBase;
+    migrated.price=sourceBase;
+    migrated.feePerPerson=sourceFee;
+    migrated.localFeePerPerson=sourceFee;
+    migrated.resortFee=sourceFee?sourceFee+"pp":"";
+    migrated.passengerCount=String(passengers);
+    migrated.finalPricePerPerson=String(packageNumericValue(sourceBase)+packageNumericValue(sourceFee));
+    migrated.finalTotal=String(packageNumericValue(migrated.finalPricePerPerson)*passengers);
+    migrated.displayTotalPerPerson=migrated.finalPricePerPerson;
+    // These legacy totals previously won during editor restoration.
+    migrated.totalPrice=sourceBase;
+    migrated.bookingTotal=migrated.finalTotal;
+    migrated.totalHolidayCostIncludingFee=migrated.finalTotal;
+  }
+  migrated.packageSchemaVersion=PACKAGE_OFFER_SCHEMA_VERSION;
+  return migrated;
+}
+
 function normalisePackageOfferCollection(list){
   if(!Array.isArray(list)) return [];
-  list.forEach((offer,index)=>{ list[index]=normaliseOfferForCampaign(offer,"package"); });
+  const migrated=list.map(offer=>normaliseOfferForCampaign(offer,"package"));
+  list.splice(0,list.length,...migrated);
   return list;
 }
 
@@ -11700,7 +11789,7 @@ function renderPackagePriceBlock(model,operatorKey){
   return `<div class="pkg-total">${priceMarkup(display,!isFamily)}${fee?`<div class="pkg-fee">${fee}</div>`:""}${totalPriceLabel?`<div class="pkg-price-label">${escapeHtml(totalPriceLabel)}</div>`:""}${model.basis?`<div class="pkg-basis pkg-basis-bottom">${escapeHtml(model.basis)}</div>`:""}</div>`;
 }
 function renderPackageOperatorLogo(cfg,layout){
-  if(!cfg||!cfg.logo) return `<div class="pkg-operator-missing">Operator not detected</div>`;
+  if(!cfg||!cfg.logo) return "";
   return `<img class="pkg-operator-logo pkg-operator-logo--${layout}" src="${cfg.logo}" alt="" role="presentation" aria-hidden="true">`;
 }
 function renderPackageCard(d){

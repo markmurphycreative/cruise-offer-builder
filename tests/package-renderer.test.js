@@ -453,10 +453,10 @@ test('Jet2 family render total price only and free child place controls family h
   assert.match(freeChild, /assets\/package-skins\/jet2\/header-family\.png/);
 });
 
-test('Unknown package operator renders neutral state instead of falling back to TUI', () => {
+test('Unknown package operator renders neutral state without contaminating card output', () => {
   const { renderPackageCard } = createContext();
   const out = renderPackageCard({ operator: '', name: 'Unknown', ship: 'Unknown Hotel', price: '100' });
-  assert.match(out, /Operator not detected/);
+  assert.doesNotMatch(out, /Operator not detected/);
   assert.doesNotMatch(out, /assets\/operator-logos\/tui-logo\.png/);
 });
 
