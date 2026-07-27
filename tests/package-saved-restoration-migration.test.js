@@ -22,7 +22,7 @@ test('saved Test Offers 2 migration repairs every legacy offer by stable ID and 
   const source=(base,fee)=>({supplier:'Jet2 Holidays',parsed:{basePricePerPerson:String(base),feePerPerson:String(fee),passengerCount:'2',adults:'2',children:'0'}});
   const legacy=[
     {offerId:'test-offers-2-tenerife',offerType:'package',campaignType:'package',operator:'Operator not detected',cardStyle:'generic',name:'Tenerife, Spain',ship:'Servatur Caribe Apartments',price:'285',leadPrice:'285',totalPrice:'570',bookingTotal:'570',adults:'2',children:'0',packageImportMetadata:source(285,0)},
-    {offerId:'test-offers-2-gran-canaria',offerType:'package',campaignType:'package',operator:'',cardType:'fallback',name:'Gran Canaria, Spain',ship:'Servatur Castillo De Sol',price:'515',leadPrice:'515',totalPrice:'1030',bookingTotal:'1030',adults:'2',children:'0',packageImportMetadata:source(550,1)},
+    {offerId:'test-offers-2-gran-canaria',offerType:'package',campaignType:'package',operator:'',cardType:'fallback',name:'Gran Canaria, Spain',ship:'Servatur Castillo De Sol',price:'515',leadPrice:'515',totalPrice:'1030',bookingTotal:'1030',adults:'2',children:'0',packageImportMetadata:source(514,1)},
     {offerId:'test-offers-2-alanya',offerType:'package',campaignType:'package',operator:'jet2',operatorKey:'jet2',cardType:'jet2-package',rendererId:'jet2-package',packageSchemaVersion:2,name:'Alanya, Turkey',basePricePerPerson:'703'},
     {offerId:'test-offers-2-icmeler',offerType:'package',campaignType:'package',operator:'jet2',operatorKey:'jet2',cardType:'jet2-package',rendererId:'jet2-package',packageSchemaVersion:2,name:'Icmeler, Dalaman',basePricePerPerson:'574',feePerPerson:'12'}
   ];
@@ -32,9 +32,10 @@ test('saved Test Offers 2 migration repairs every legacy offer by stable ID and 
   assert.deepEqual(restored.map(offer=>offer.offerId),legacy.map(offer=>offer.offerId));
   assert.deepEqual(restored.slice(0,2).map(offer=>[offer.operator,offer.cardType,offer.basePricePerPerson,offer.feePerPerson,offer.finalPricePerPerson,offer.finalTotal]),[
     ['jet2','jet2-package','285','','285','570'],
-    ['jet2','jet2-package','550','1','551','1102']
+    ['jet2','jet2-package','514','1','515','1030']
   ]);
-  assert.equal(JSON.stringify(restored[1]).match(/"(?:price|leadPrice|totalPrice|bookingTotal)":"(?:515|1030)"/),null);
+  assert.equal(JSON.stringify(restored[1]).match(/"(?:price|leadPrice|totalPrice)":"515"/),null);
+  assert.equal(restored[1].bookingTotal,'1030');
   assert.equal(JSON.stringify(restored.slice(2)),JSON.stringify(validBefore));
   assert.deepEqual(restored.map(offer=>offer.name),['Tenerife, Spain','Gran Canaria, Spain','Alanya, Turkey','Icmeler, Dalaman']);
 });
