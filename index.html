@@ -3506,6 +3506,17 @@ function getScreenshotImportSummaryLines(item){
   return [p.name,p.ship,p.ports].map(v=>String(v||"").trim()).filter(Boolean).slice(0,2);
 }
 function getScreenshotImportReviewedText(item){ return item ? (item.reviewText!==undefined ? item.reviewText : item.text || "") : ""; }
+function cloneScreenshotImportDraft(parsed){ return parsed ? JSON.parse(JSON.stringify(parsed)) : null; }
+function updateScreenshotImportDraft(item,reviewText){
+  if(!item) return false;
+  item.reviewText=normaliseVisionExtractedText(reviewText);
+  const result=parseScreenshotTextForActiveBuilder(item.reviewText);
+  item.draft=result&&result.parsed?cloneScreenshotImportDraft(result.parsed):null;
+  item.validationError=getPackageScreenshotValidationError(item.draft);
+  item.validationStatus=item.validationError?"invalid":"valid";
+  if(!item.validationError) item.result=Object.assign({},result,{parsed:item.draft});
+  return !item.validationError;
+}
 function getScreenshotImportOperatorStatus(item){
   const loadedIndex=Number(item&&item.loadedOfferIndex);
   const stored=(Number.isInteger(loadedIndex)&&Array.isArray(offers)&&offers[loadedIndex])?offers[loadedIndex]:null;
@@ -3532,7 +3543,7 @@ function setActiveScreenshotImport(index){
   const next=Number(index);
   if(!Number.isInteger(next)||!pendingScreenshotImports[next]) return;
   const review=document.getElementById("vision-review-text");
-  if(review&&pendingScreenshotImports[activeScreenshotImportIndex]) pendingScreenshotImports[activeScreenshotImportIndex].reviewText=String(review.value||"");
+  if(review&&pendingScreenshotImports[activeScreenshotImportIndex]) updateScreenshotImportDraft(pendingScreenshotImports[activeScreenshotImportIndex],review.value||"");
   activeScreenshotImportIndex=next;
   syncActiveScreenshotReviewText();
   const linkedOfferIndex=Number(pendingScreenshotImports[next].loadedOfferIndex);
@@ -3599,7 +3610,7 @@ function renderScreenshotImportReview(){
       ["Displayed total per person",formatPackageMoney(p.displayTotalPerPerson)],
       ["Free Child Place",String(p.freeChildPlace)==="true"?"Yes":"No"]
     ].filter(row=>String(row[1]||"").trim()).map(row=>`${escapeHtml(row[0])}: ${escapeHtml(row[1])}`).join("<br>")}</span>` : "";
-    return `<label class="screenshot-review-item ${ok?'':'error'}${active?' active':''}" onclick="setActiveScreenshotImport(${index})"><input type="checkbox" data-screenshot-import-index="${index}"${checked}${disabled} onclick="event.stopPropagation()" onchange="pendingScreenshotImports[${index}].selected=this.checked"><span class="screenshot-review-mark">${ok?'✓':'!'}</span><span><strong>${escapeHtml(getScreenshotImportTitle(item))}</strong><em>${escapeHtml((ok?confidence:"Couldn't read this screenshot")+warning)}</em>${reviewDetails}</span></label>`;
+    return `<label class="screenshot-review-item ${ok?'':'error'}${active?' active':''}" onclick="setActiveScreenshotImport(${index})"><input type="checkbox" data-screenshot-import-index="${index}"${checked}${disabled} onclick="event.stopPropagation()" onchange="pendingScreenshotImports[${index}].selected=this.checked"><span class="screenshot-review-mark">${ok?'✓':'!'}</span><span><strong>${escapeHtml(getScreenshotImportTitle(item))}</strong><em>${escapeHtml((ok?confidence:(item.error||item.validationError||"Could not read this screenshot. Try again or use a clearer image."))+warning)}</em>${reviewDetails}</span></label>`;
   }).join("");
   if(loadBtn) loadBtn.hidden=false;
 }
@@ -3620,9 +3631,11 @@ async function extractOfferTextFromVisionFiles(files){
       const text=normaliseVisionExtractedText(result&&result.data&&result.data.text);
       if(!text.trim()) throw new Error("empty OCR");
       const parsedResult=parseScreenshotTextForActiveBuilder(text);
-      pendingScreenshotImports.push({importId:createScreenshotImportId(),uploadOrder:i,fileName:file.name,sourceImage:file,text,reviewText:text,result:parsedResult,confidence,confidenceLabel:confidence>=70?"High confidence":"Medium confidence",status:"ready",selected:true});
+      const draft=parsedResult&&parsedResult.parsed?cloneScreenshotImportDraft(parsedResult.parsed):null;
+      const validationError=getPackageScreenshotValidationError(draft);
+      pendingScreenshotImports.push({importId:createScreenshotImportId(),intendedOfferId:createPackageOfferId(),intendedSlot:i,uploadOrder:i,fileName:file.name,text,reviewText:text,result:parsedResult,draft,validationStatus:validationError?"invalid":"valid",validationError,confidence,confidenceLabel:confidence>=70?"High confidence":"Medium confidence",status:validationError?"error":"ready",selected:!validationError});
     }catch(err){
-      pendingScreenshotImports.push({importId:createScreenshotImportId(),uploadOrder:i,fileName:file.name,sourceImage:file,text:"",reviewText:"",result:null,confidence:0,confidenceLabel:"Low confidence",status:"error",selected:false,error:String((err&&err.message)||err||"OCR failed")});
+      pendingScreenshotImports.push({importId:createScreenshotImportId(),uploadOrder:i,fileName:file.name,text:"",reviewText:"",result:null,confidence:0,confidenceLabel:"Low confidence",status:"error",selected:false,error:"Could not read this screenshot. Try again or use a clearer image."});
     }
     renderScreenshotImportReview();
   }
@@ -3646,44 +3659,40 @@ function getScreenshotCampaignCapacityMessage(){
   return `Select up to ${capacity} offer${capacity===1?"":"s"} for this campaign`;
 }
 function loadSelectedScreenshotImports(){
-  const review=document.getElementById("vision-review-text");
-  if(review&&pendingScreenshotImports[activeScreenshotImportIndex]) pendingScreenshotImports[activeScreenshotImportIndex].reviewText=normaliseVisionExtractedText(review.value||"");
   const selectedItems=pendingScreenshotImports.filter(item=>item&&item.selected!==false&&item.status!=="error"&&String(getScreenshotImportReviewedText(item)||"").trim());
   selectedItems.sort((a,b)=>((Number.isFinite(a.uploadOrder)?a.uploadOrder:pendingScreenshotImports.indexOf(a))-(Number.isFinite(b.uploadOrder)?b.uploadOrder:pendingScreenshotImports.indexOf(b))));
   if(!selectedItems.length){ setVisionStatus("Select at least one readable imported screenshot to load.","partial"); return; }
-  selectedItems.forEach(item=>{ item.reviewText=normaliseVisionExtractedText(getScreenshotImportReviewedText(item)); item.result=parseScreenshotTextForActiveBuilder(item.reviewText); });
-  selectedItems.filter(item=>!item.result||!item.result.parsed||!validatePackageScreenshotParse(item.result)).forEach(item=>{ item.status="error"; item.selected=false; item.error=(item.result&&item.result.parsed&&!normalisePackageOperatorKey(item.result.parsed.operatorKey||item.result.parsed.operator))?"Choose a Package operator before loading":"Package validation failed"; });
-  const validatedItems=selectedItems.filter(item=>item.result&&item.result.parsed&&validatePackageScreenshotParse(item.result));
-  if(!validatedItems.length){ setVisionStatus("Import failed. Existing offers were left unchanged.","partial"); renderScreenshotImportReview(); return false; }
-  const slots=getAvailableScreenshotImportSlots();
-  const capacity=Array.isArray(offers)?offers.length:4;
-  if(!slots.length){
-    setVisionStatus("No empty campaign slots available. Remaining imports are still in review.","partial");
-    return;
+  const validationErrors=selectedItems.map(item=>({item,error:getPackageScreenshotValidationError(item.draft)})).filter(entry=>entry.error);
+  if(validationErrors.length){
+    validationErrors.forEach(({item,error})=>{ item.validationStatus="invalid"; item.validationError=error; item.error=error; });
+    setVisionStatus(`Import not loaded: ${validationErrors[0].error}. Existing offers were left unchanged.`,"partial");
+    renderScreenshotImportReview(); return false;
   }
-  const loadCount=Math.min(validatedItems.length,slots.length);
+  const validatedItems=selectedItems;
+  const slots=validatedItems.map(item=>Number(item.intendedSlot));
+  const capacity=Array.isArray(offers)?offers.length:4;
+  const ids=validatedItems.map(item=>String(item.intendedOfferId||""));
+  if(slots.some(slot=>!Number.isInteger(slot)||slot<0||slot>=capacity)||new Set(slots).size!==slots.length||ids.some(id=>!id)||new Set(ids).size!==ids.length){
+    setVisionStatus("Import not loaded: destination offer IDs or slots are invalid. Existing offers were left unchanged.","partial"); return false;
+  }
+  const loadCount=validatedItems.length;
   const authoritativeOffers=offers;
   const authoritativeHeroLocks=typeof lockedHeroImages!=="undefined"&&Array.isArray(lockedHeroImages)?lockedHeroImages.slice():null;
   const workingOffers=authoritativeOffers.map(offer=>Object.assign({},offer||{}));
-  const bindings=validatedItems.slice(0,loadCount).map((item,index)=>{
-    const slot=slots[index];
-    if(!workingOffers[slot].offerId) workingOffers[slot].offerId=createPackageOfferId();
-    return {item,offerId:workingOffers[slot].offerId};
-  });
+  const bindings=validatedItems.map((item,index)=>({item,slot:slots[index],offerId:item.intendedOfferId}));
   let applied=false;
   try{
     offers=workingOffers;
     applied=bindings.every(binding=>{
-      const targetIndex=workingOffers.findIndex(offer=>offer&&offer.offerId===binding.offerId);
-      if(targetIndex<0) return false;
-      binding.item.result.parsed.offerId=binding.offerId;
-      return applyParsedOfferToSlot(binding.item.result,targetIndex,getScreenshotImportReviewedText(binding.item)||(binding.item.result&&binding.item.result.rawText)||"");
+      const draft=cloneScreenshotImportDraft(binding.item.draft);
+      draft.offerId=binding.offerId;
+      const committedResult={campaignType:"package",parsed:draft,rawText:binding.item.reviewText||""};
+      return applyParsedOfferToSlot(committedResult,binding.slot,binding.item.reviewText||"") && offers[binding.slot] && offers[binding.slot].offerId===binding.offerId && !getPackageScreenshotValidationError(offers[binding.slot]);
     });
   }catch(error){ applied=false; }
   if(!applied){
     offers=authoritativeOffers;
     if(authoritativeHeroLocks&&typeof lockedHeroImages!=="undefined") lockedHeroImages=authoritativeHeroLocks;
-    validatedItems.forEach(item=>{ item.result=null; delete item.loadedOfferIndex; });
     setVisionStatus("Import failed. Existing offers were left unchanged.","partial");
     return false;
   }
@@ -3700,12 +3709,13 @@ function loadSelectedScreenshotImports(){
   load(cur);
   refreshOfferUi({utm:true,spell:true,autosave:true});
   if(loadCount && typeof recordCampaignHistoryAfterAsyncChange==="function") recordCampaignHistoryAfterAsyncChange("Screenshot imports loaded");
+  pendingScreenshotImports=pendingScreenshotImports.filter(item=>!validatedItems.includes(item));
+  activeScreenshotImportIndex=0;
   renderScreenshotImportReview();
   if(loadCount && typeof setOfferTypeDetection==="function") setOfferTypeDetection({offerType:"package",isPackage:true,confidence:"high"});
   const remaining=validatedItems.length-loadCount;
   const capacityNote=validatedItems.length>capacity ? ` ${getScreenshotCampaignCapacityMessage()}.` : "";
   setVisionStatus(remaining>0?`Loaded ${loadCount} imported screenshot${loadCount===1?"":"s"}. ${remaining} selected import${remaining===1?"":"s"} left in review because only ${slots.length} empty slot${slots.length===1?" was":"s were"} available.${capacityNote}`:`Loaded ${loadCount} imported screenshot${loadCount===1?"":"s"}.${capacityNote}`,loadCount?"high":"partial");
-  validatedItems.forEach(item=>{ item.result=null; });
 }
 
 async function extractOfferTextFromVisionFile(file){
@@ -3726,7 +3736,7 @@ async function extractOfferTextFromVisionFile(file){
 }
 function handleVisionReviewTextInput(event){
   const value=(event&&event.target?event.target.value:((document.getElementById("vision-review-text")||{}).value||""));
-  if(typeof pendingScreenshotImports!=="undefined" && pendingScreenshotImports[activeScreenshotImportIndex]) pendingScreenshotImports[activeScreenshotImportIndex].reviewText=String(value||"");
+  if(typeof pendingScreenshotImports!=="undefined" && pendingScreenshotImports[activeScreenshotImportIndex]) updateScreenshotImportDraft(pendingScreenshotImports[activeScreenshotImportIndex],value);
   if(typeof setOfferTypeDetection==="function"){ const detector=(typeof detectOfferType==="function")?detectOfferType:detectCruiseOffer; setOfferTypeDetection(String(value||"").trim()?detector(value):null); }
 }
 function loadOfferFromActiveMethod(){
@@ -9883,9 +9893,29 @@ function canApplyParsedPackageOffer(parsed){
   const hasCommercial=!!(parsed.totalPrice||parsed.price||parsed.resortFee||parsed.incl);
   return hasPlace&&hasTiming&&hasCommercial;
 }
+function getPackageScreenshotValidationError(parsed){
+  if(!parsed) return "Structured Package draft is missing";
+  if(String(parsed.offerType||parsed.campaignType||"").toLowerCase()!=="package") return "Campaign type must be Package";
+  if(!(parsed.name||parsed.ship)) return "Destination or accommodation is required";
+  if(!(parsed.nights||(parsed.day&&parsed.month))) return "Duration or departure date is required";
+  const operatorKey=normalisePackageOperatorKey(parsed.operatorKey||parsed.operator||"");
+  if(!isPackageOperator(operatorKey)) return "Package operator is required";
+  const number=value=>Number(String(value==null?"":value).replace(/[^0-9.-]/g,""));
+  const base=number(parsed.basePricePerPerson||parsed.leadPrice||parsed.price);
+  const fee=number(parsed.feePerPerson||parsed.localFeePerPerson||"0");
+  const passengers=number(parsed.passengerCount)||(number(parsed.adults||0)+number(parsed.children||0));
+  const finalPerPerson=number(parsed.finalPricePerPerson);
+  const finalTotal=number(parsed.finalTotal);
+  if(!Number.isFinite(base)||base<=0) return "Base price per person must be greater than zero";
+  if(!Number.isFinite(fee)||fee<0) return "Fee per person must be zero or greater";
+  if(!Number.isInteger(passengers)||passengers<=0) return "Passenger count must be a positive whole number";
+  if(!Number.isFinite(finalPerPerson)||finalPerPerson!==base+fee) return "Final price per person must equal base price plus fee";
+  if(!Number.isFinite(finalTotal)||finalTotal!==finalPerPerson*passengers) return "Final total must equal final price per person multiplied by passenger count";
+  return "";
+}
 function validatePackageScreenshotParse(result){
   const parsed=result&&result.parsed;
-  if(!canApplyParsedPackageOffer(parsed)) return false;
+  if(getPackageScreenshotValidationError(parsed)) return false;
   const operatorKey=normalisePackageOperatorKey(parsed.operatorKey||parsed.operator||"");
   if(!isPackageOperator(operatorKey)) return false;
   const base=Number(String(parsed.basePricePerPerson||parsed.leadPrice||parsed.price||"").replace(/[^0-9.-]/g,""));

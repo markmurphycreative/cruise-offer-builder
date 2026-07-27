@@ -6,7 +6,8 @@ const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
 test('Import Review stores active OCR text per screenshot instead of concatenating results', () => {
   assert.match(html, /let pendingScreenshotImports=\[\];\s*let activeScreenshotImportIndex=0;/);
-  assert.match(html, /sourceImage:file,text,reviewText:text,result:parsedResult,confidence,confidenceLabel:[\s\S]*?status:"ready",selected:true/);
+  assert.match(html, /intendedOfferId:createPackageOfferId\(\),intendedSlot:i[\s\S]*?fileName:file\.name,text,reviewText:text,result:parsedResult,draft,validationStatus:/);
+  assert.doesNotMatch(html, /sourceImage:file/);
   assert.match(html, /function setActiveScreenshotImport\(index\)\{[\s\S]*?activeScreenshotImportIndex=next;[\s\S]*?syncActiveScreenshotReviewText\(\);[\s\S]*?renderScreenshotImportReview\(\);/);
   assert.match(html, /function syncActiveScreenshotReviewText\(\)\{[\s\S]*?review\.value=normaliseVisionExtractedText\(getScreenshotImportReviewedText\(item\)\);/);
   assert.doesNotMatch(html, /pendingScreenshotImports\.map\([^)]*=>[^)]*\.text\)\.join\(/);
@@ -18,12 +19,16 @@ test('Import Review active row and checkbox selection remain independent', () =>
   assert.match(html, /onclick="event\.stopPropagation\(\)" onchange="pendingScreenshotImports\[\$\{index\}\]\.selected=this\.checked"/);
 });
 
-test('Import Review loading reparses each selected item from its own latest reviewed text', () => {
-  assert.match(html, /pendingScreenshotImports\[activeScreenshotImportIndex\]\.reviewText=normaliseVisionExtractedText\(review\.value\|\|""\);/);
+test('Import Review updates structured drafts while editing and commits those drafts without reparsing', () => {
+  assert.match(html, /function handleVisionReviewTextInput\(event\)\{[\s\S]*?updateScreenshotImportDraft\(pendingScreenshotImports\[activeScreenshotImportIndex\],value\)/);
   assert.match(html, /selectedItems=pendingScreenshotImports\.filter\(item=>item&&item\.selected!==false&&item\.status!=="error"/);
-  assert.match(html, /selectedItems\.forEach\(item=>\{ item\.reviewText=normaliseVisionExtractedText\(getScreenshotImportReviewedText\(item\)\); item\.result=parseScreenshotTextForActiveBuilder\(item\.reviewText\); \}\);/);
-  assert.match(html, /bindings\.every\(binding=>\{[\s\S]*?findIndex\(offer=>offer&&offer\.offerId===binding\.offerId\)[\s\S]*?applyParsedOfferToSlot\(binding\.item\.result,targetIndex/);
-  assert.match(html, /validatedItems\.forEach\(item=>\{ item\.result=null; \}\);/);
+  const loadStart=html.indexOf('function loadSelectedScreenshotImports()');
+  const loadEnd=html.indexOf('\nasync function extractOfferTextFromVisionFile',loadStart);
+  const loadBody=html.slice(loadStart,loadEnd);
+  assert.doesNotMatch(loadBody,/parseScreenshotTextForActiveBuilder|sourceImage|recognize\(/);
+  assert.match(loadBody,/const draft=cloneScreenshotImportDraft\(binding\.item\.draft\)/);
+  assert.match(loadBody,/applyParsedOfferToSlot\(committedResult,binding\.slot/);
+  assert.match(loadBody,/pendingScreenshotImports=pendingScreenshotImports\.filter\(item=>!validatedItems\.includes\(item\)\)/);
 });
 
 test('Missing operator imports warn without fabricating visible card copy', () => {
