@@ -208,6 +208,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('buildCardInclusionRenderLines'),
     extractFunction('buildCardInclusionFromComponents'),
     extractFunction('buildCabinCardInclusionSegments'),
+    extractFunction('splitContinuousItineraryDestinations'),
     extractFunction('cleanParsedPorts'),
     extractFunction('escapeRegExp'),
     extractFunction('findKnownOperatorShip'),
@@ -771,6 +772,7 @@ Luggage included.`;
   const result = harness.context.parseOfferText(raw, { renderIntelligence: false });
   assert.equal(result.parsed.boardlbl, 'Full Board');
   assert.equal(result.parsed.resortFee, '$15 per person resort fee payable locally');
+  assert.equal(result.parsed.ports, 'Miami, Florida • Philipsburg, St Maarten • Tortola, British Virgin Islands • St. Croix, US Virgin Islands • San Juan, Puerto Rico • Puerto Plata, Dominican Republic • The Beach Club at Bimini, Bahamas • Miami, Florida');
   assert.match(result.parsed.incl, /1-night pre-cruise stay at a 4\* Miami Beach hotel, Room Only/);
   assert.equal((result.parsed.incl.match(/pre-cruise/gi)||[]).length, 1);
   const stays = harness.context.detectCruiseHotelStays(raw);

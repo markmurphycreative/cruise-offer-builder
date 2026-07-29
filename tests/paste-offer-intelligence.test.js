@@ -83,6 +83,7 @@ function createHarness() {
     extractConst('PARSED_PORT_STATUS_ANNOTATIONS'),
     extractFunction('normaliseParsedPortBracketText'),
     extractFunction('removeParsedPortCountrySuffix'),
+    extractFunction('splitContinuousItineraryDestinations'),
     extractFunction('cleanParsedPorts'),
     extractFunction('getStandalonePortLines'),
     extractFunction('formatAirportName'),
