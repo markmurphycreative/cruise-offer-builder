@@ -250,6 +250,7 @@ function createHarness(offers, cur = 0, { hasParsePreviewModal = true } = {}) {
     extractFunction('extractSourceInclusionLine'),
     extractFunction('detectCabinType'),
     extractFunction('detectTransferStatus'),
+    extractFunction('detectCruiseHotelStays'),
     extractFunction('detectPreCruiseStay'),
     extractFunction('getEnglishOrdinalSuffix'),
     extractFunction('setVisionReviewText'),
@@ -745,6 +746,46 @@ Celebrity Apex
 Full Board
 £999`, { renderIntelligence: false });
   assert.equal(withHotelStay.parsed.nights, '10');
+});
+
+test('Paste Offer workflow automatically applies the Virgin Miami pre-cruise hotel without changing cruise board', () => {
+  const harness = createHarness([{}, {}, {}, {}], 0, { hasParsePreviewModal: false });
+  const raw = `Virgin Voyages
+Eastern Caribbean & Bimini Voyage
+10th January 2027
+10-night cruise
+Brilliant Lady
+Flights included from Manchester
+1 night pre-cruise stay @ 4* Miami Beach hotel, Room Only
+Sailing from Miami
+Inside Cabin
+Full Board (On Cruise)
+£1679 per person based on 2 sharing
+Itinerary
+Miami, Florida - Philipsburg, St Maarten - Tortola, British Virgin Islands -
+St. Croix, US Virgin Islands - San Juan, Puerto Rico -
+Puerto Plata, Dominican Republic - The Beach Club At Bimini, Bahamas -
+Miami, Florida
+Luggage included.`;
+  const result = harness.context.parseOfferText(raw, { renderIntelligence: false });
+  assert.equal(result.parsed.boardlbl, 'Full Board');
+  assert.match(result.parsed.incl, /1-night pre-cruise stay at a 4\* Miami Beach hotel, Room Only/);
+  assert.equal((result.parsed.incl.match(/pre-cruise/gi)||[]).length, 1);
+  const stays = harness.context.detectCruiseHotelStays(raw);
+  assert.equal(stays[0].board, 'Room Only');
+  assert.equal(stays[0].direction, 'pre');
+  const variations = [
+    ['1-night pre-cruise stay at a 4* Miami Beach hotel, Room Only', '1-night pre-cruise stay at a 4* Miami Beach hotel, Room Only'],
+    ['2 nights pre cruise hotel stay', '2-night pre-cruise hotel stay'],
+    ['3-night pre-cruise hotel', '3-night pre-cruise hotel stay'],
+    ['1 night post-cruise stay', '1-night post-cruise stay'],
+    ['2 nights post cruise hotel stay', '2-night post-cruise hotel stay'],
+    ['pre-cruise hotel included', 'pre-cruise hotel stay'],
+    ['post-cruise accommodation included', 'post-cruise accommodation included']
+  ];
+  for(const [wording, expected] of variations){
+    assert.equal(harness.context.detectCruiseHotelStays(wording)[0].text, expected, wording);
+  }
 });
 
 test('PMU: Paste Offer parser removes subject to conditions from parsed output', () => {
