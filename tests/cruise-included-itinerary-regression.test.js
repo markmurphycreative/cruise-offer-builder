@@ -44,6 +44,9 @@ function createInclusionContext() {
     extractFunction('buildCardInclusionComponents'),
     extractFunction('orderCardInclusionComponents'),
     extractFunction('validateCardInclusionLines'),
+    extractFunction('estimateCardInclusionTextWidth'),
+    extractFunction('getCardInclusionMeasureText'),
+    extractFunction('packCardInclusionComponents'),
     extractFunction('groupCardInclusionRenderLines'),
     extractFunction('renderCardInclusionLayout'),
     extractFunction('renderCardInclusion')
@@ -69,6 +72,26 @@ test('Cruise renderer keeps every Included benefit phrase unbroken without chang
   const combined = renderCardInclusion('Manchester Flights · Luggage Included');
   assert.match(combined, /Manchester Flights - <span class="no-break included-phrase">Luggage Included<\/span>/);
   assert.match(html, /\.cc \.cabin-phrase,\.cc \.no-break\{white-space:nowrap;\}/);
+});
+
+test('generated benefit separators exist only between components packed on the same line', () => {
+  const { renderCardInclusionLayout } = createInclusionContext();
+  const wide = { html: true, safeWidth: 2000, measureText: value => value.length * 10 };
+  const narrow = { html: true, safeWidth: 300, measureText: value => value.length * 10 };
+
+  const together = renderCardInclusionLayout('Manchester Flights · Luggage Included', wide);
+  assert.match(together, /Manchester Flights - <span class="no-break included-phrase">Luggage Included<\/span>/);
+
+  const wrapped = renderCardInclusionLayout('Newcastle Flights - Luggage & Transfers Included', narrow);
+  assert.match(wrapped, /Newcastle Flights<\/span><\/span><span class="incl-line">/);
+  assert.doesNotMatch(wrapped.replace(/<[^>]+>/g, '\n'), /(?:^|\n)\s*[-•·]\s*|\s*[-•·]\s*(?:\n|$)/);
+  assert.match(wrapped, /<span class="no-break included-phrase">Luggage &(?:amp;)? Transfers Included<\/span>/);
+
+  const absent = renderCardInclusionLayout('Newcastle Flights - ', wide);
+  assert.doesNotMatch(absent.replace(/<[^>]+>/g, ''), /[-•·]\s*$/);
+  for (const phrase of ['pre-cruise', '10-night cruise']) {
+    assert.match(renderCardInclusionLayout(phrase, wide), new RegExp(phrase));
+  }
 });
 
 test('multiline itinerary splitting treats wrapped and blank-line input as one continuous route', () => {

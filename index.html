@@ -11537,7 +11537,7 @@ function groupCardInclusionRenderLines(components,options){
     editorialLine.push(component);
   });
   if(editorialLine.length) lines.push(editorialLine);
-  return lines;
+  return lines.flatMap(line=>line.length>1?packCardInclusionComponents(line,options):[line]);
 }
 function renderCardInclusionLayout(value,options){
   const html=!!(options&&options.html);
