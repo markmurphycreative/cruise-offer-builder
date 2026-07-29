@@ -9376,7 +9376,7 @@ function normaliseInclusionEditorialText(value,options){
     .replace(/\s+([,.;:!?])/g,"$1")
     .replace(/[.]+$/,"")
     .trim();
-  if(/\b(?:pre|post)[-\s]*cruise\b/i.test(text)&&/\bstay\b/i.test(text)) text=text.replace(/^includes\s+/i,"").replace(/^(\d+)\s+night(s?)\s+((?:pre|post)[-\s]*cruise\s+stay)/i,(m,n,suf,label)=>`${n} Night${suf?"s":""} ${label.replace(/(^|[-\s])([a-z])/g,(_,p,c)=>p+c.toUpperCase()).replace(/\s+/g," ")}`).replace(/\b(at|in)\s+(.+)$/i,(m,prep,place)=>`${prep} ${place.replace(/\b([a-z])/g,c=>c.toUpperCase())}`).trim();
+  if(/^\d+\s+nights?\s/i.test(text)&&/\b(?:pre|post)[-\s]*cruise\b/i.test(text)&&/\bstay\b/i.test(text)) text=text.replace(/^includes\s+/i,"").replace(/^(\d+)\s+night(s?)\s+((?:pre|post)[-\s]*cruise\s+stay)/i,(m,n,suf,label)=>`${n} Night${suf?"s":""} ${label.replace(/(^|[-\s])([a-z])/g,(_,p,c)=>p+c.toUpperCase()).replace(/\s+/g," ")}`).replace(/\b(at|in)\s+(.+)$/i,(m,prep,place)=>`${prep} ${place.replace(/\b([a-z])/g,c=>c.toUpperCase())}`).trim();
   if(/^includes\b/i.test(text)) text=text.replace(/^includes\b/i,"Includes");
   if(/^luggage and one-way hotel transfer$/i.test(text)) text=`Includes ${text.replace(/^luggage/i,"luggage")}`;
   if(options&&options.sentence&&text&&!/[.!?]$/.test(text)) text+=".";
@@ -10146,6 +10146,16 @@ function parseOfferText(raw,options){
     }
     score+=6;
   }
+  const explicitHotelStays=typeof detectCruiseHotelStays==="function"?detectCruiseHotelStays(raw):[];
+  if(explicitHotelStays.length){
+    const existingComponents=buildCardInclusionComponents(parsed.incl||"");
+    const existingStayTypes=new Set(existingComponents.map(component=>component.type));
+    parsed.incl=buildCardInclusionFromComponents([
+      ...existingComponents,
+      ...explicitHotelStays.filter(stay=>!existingStayTypes.has(`${stay.direction}cruise`)).map(stay=>({type:`${stay.direction}cruise`,text:stay.text}))
+    ]);
+    score+=6;
+  }
   applyCruiseDefaultLuggage(parsed,raw,parsed.operatorKey);
   const knownShipMatch=findKnownOperatorShip(txt,parsed.operatorKey); if(knownShipMatch){ if(!parsed.ship){parsed.ship=knownShipMatch.ship;score+=8;} if(!parsed.operatorKey){parsed.operatorKey=knownShipMatch.operatorKey;score+=18;} }
   if(!parsed.ship){const shipLine=lines.find(l=>/\b(cruise|explorer|symphony|arvia|voyager|queen|discovery)\b/i.test(l)); if(shipLine){const m=shipLine.match(/\b([A-Z][\w'.-]+(?:\s+[A-Z][\w'.-]+){0,3})\b/); if(m) parsed.ship=m[1];}}
@@ -10457,9 +10467,11 @@ function getPoaAssistedApplySuggestions(parsed,rawText,inclusions,effectiveOpera
   const titleRecovery=typeof getCruiseTitleRecoverySuggestion==="function"?getCruiseTitleRecoverySuggestion(parsed,rawText):null;
   if(titleRecovery) suggestions.push(titleRecovery);
   const confidenceLabel=getPoaSuggestionConfidenceLabel(parsed,rawText);
-  const card=getPoaCardInclusionSuggestion(inclusions);
+  const appliedHotelStay=/\b(?:pre|post)[-\s]?cruise\b/i.test(String((parsed||{}).incl||""));
+  const remainingInclusions=appliedHotelStay?(inclusions||[]).filter(label=>label!=="Hotel Stay Included"):inclusions;
+  const card=getPoaCardInclusionSuggestion(remainingInclusions);
   if(card) suggestions.push({id:"card-inclusion",title:"Card Inclusion",value:card,confidenceLabel,targetLabel:"Card Inclusion Line",fieldKey:"incl",fieldId:"f-incl"});
-  const usp=getPoaUspStripSuggestion(inclusions);
+  const usp=getPoaUspStripSuggestion(remainingInclusions);
   if(usp) suggestions.push({id:"usp-strip",title:"USP Strip",value:usp,confidenceLabel,targetLabel:"USP Tags",fieldKey:"tags",fieldId:"f-tags"});
   return suggestions;
 }
@@ -10870,9 +10882,49 @@ function detectTransferStatus(text){
   if(!line) return "";
   return /^no\s+transfers?/i.test(line)?"No Transfers":"Included";
 }
+function detectCruiseHotelStays(text){
+  const boardLabels=["All Inclusive","Full Board","Half Board","Bed & Breakfast","Self Catering","Room Only"];
+  const cleanWords=value=>String(value||"").replace(/\s+/g," ").replace(/\s+([,.;])/g,"$1").replace(/[.;]+$/," ").trim();
+  const titleWords=value=>cleanWords(value).replace(/\b([a-z])/gi,(letter,index,source)=>index===0||/\s/.test(source[index-1])?letter.toUpperCase():letter);
+  const stays=[];
+  String(text||"").split(/\r?\n/).forEach(sourceLine=>{
+    const line=cleanWords(sourceLine.replace(/\s*@\s*/g," at "));
+    if(!line) return;
+    const directionMatch=line.match(/\b(pre|post)[-\s]*cruise\b/i);
+    if(!directionMatch||!/(?:\bhotel\b|\baccommodation\b|\bstay\b)/i.test(line)) return;
+    const direction=directionMatch[1].toLowerCase();
+    const nightsMatch=line.match(/\b(\d+)\s*[- ]?\s*nights?\b/i);
+    const nights=nightsMatch?Number(nightsMatch[1]):null;
+    const ratingMatch=line.match(/\b([1-5])\s*(?:\*(?!\w)|star\b)/i);
+    const rating=ratingMatch?`${ratingMatch[1]}*`:"";
+    const board=boardLabels.find(label=>new RegExp(`\\b${label.replace(" & ","\\s*(?:&|and)\\s*").replace(" ","[-\\s]*")}\\b`,"i").test(line))||"";
+    let details="";
+    const detailsMatch=line.match(/\b(?:stay|hotel|accommodation)\b\s*(?:included\b\s*)?(?:(?:at|in)\s+)?(.+)$/i);
+    if(detailsMatch) details=cleanWords(detailsMatch[1]);
+    if(!details&&ratingMatch) details=cleanWords(line.slice(ratingMatch.index));
+    details=details.replace(/^included\b\s*/i,"").replace(/^(?:at|in)\s+/i,"");
+    if(board) details=cleanWords(details.replace(new RegExp(`[,]?\\s*${board.replace(" & ","\\s*(?:&|and)\\s*")}\\s*$`,"i"),""));
+    if(rating) details=cleanWords(details.replace(/\b[1-5]\s*(?:\*(?!\w)|star\b)/i,""));
+    details=details.replace(/^(?:a|the)\s+/i,"");
+    if(/^(?:stay|included)$/i.test(details)) details="";
+    const prefix=nights?`${nights}-night ${direction}-cruise`: `${direction}-cruise`;
+    let display=`${prefix} stay`;
+    if(rating||details){
+      const hotelDescription=[rating,titleWords(details).replace(/\bHotel\b/g,"hotel")].filter(Boolean).join(" ");
+      display+=` at ${rating?"a ":""}${hotelDescription}`;
+    }else if(/\bhotel\b/i.test(line)) display=`${prefix} hotel stay`;
+    else if(/\baccommodation\b/i.test(line)) display=`${prefix} accommodation included`;
+    if(board) display+=`, ${board}`;
+    stays.push({direction,nights,rating,hotel:details,board,text:display,source:sourceLine.trim()});
+  });
+  return stays.filter((stay,index,all)=>all.findIndex(item=>item.direction===stay.direction&&item.text.toLowerCase()===stay.text.toLowerCase())===index);
+}
 function detectPreCruiseStay(text){
   const match=String(text||"").match(/(?:^|\n)\s*(\d+)\s+(nights?)\s+pre[-\s]*cruise\s+stay(?:\s+in\s+([^\n\r]+?))?\s*(?=$|\n)/i);
-  if(!match) return "";
+  if(!match){
+    const explicit=detectCruiseHotelStays(text).find(stay=>stay.direction==="pre");
+    return explicit?explicit.text:"";
+  }
   const count=match[1];
   const nightLabel=Number(count)===1?"Night":"Nights";
   const place=String(match[3]||"").replace(/\s+/g," ").trim();
@@ -11292,7 +11344,7 @@ function normaliseCardInclusionComponent(value){
     .replace(/^\s*(?:[-–—•·,&]+\s*)+|(?:\s*[-–—•·,&]+)+\s*$/g,"")
     .trim();
   if(!text || /^[-–—•·]+$/.test(text)) return "";
-  if(/\b(?:pre|post)[-\s]*cruise\b/i.test(text)&&/\bstay\b/i.test(text)) text=text.replace(/^includes\s+/i,"").replace(/^(\d+)\s+night(s?)\s+((?:pre|post)[-\s]*cruise\s+stay)/i,(m,n,suf,label)=>`${n} Night${suf?"s":""} ${label.replace(/(^|[-\s])([a-z])/g,(_,p,c)=>p+c.toUpperCase()).replace(/\s+/g," ")}`).replace(/\b(at|in)\s+(.+)$/i,(m,prep,place)=>`${prep} ${place.replace(/\b([a-z])/g,c=>c.toUpperCase())}`).trim();
+  if(/^\d+\s+nights?\s/i.test(text)&&/\b(?:pre|post)[-\s]*cruise\b/i.test(text)&&/\bstay\b/i.test(text)) text=text.replace(/^includes\s+/i,"").replace(/^(\d+)\s+night(s?)\s+((?:pre|post)[-\s]*cruise\s+stay)/i,(m,n,suf,label)=>`${n} Night${suf?"s":""} ${label.replace(/(^|[-\s])([a-z])/g,(_,p,c)=>p+c.toUpperCase()).replace(/\s+/g," ")}`).replace(/\b(at|in)\s+(.+)$/i,(m,prep,place)=>`${prep} ${place.replace(/\b([a-z])/g,c=>c.toUpperCase())}`).trim();
   const flightFrom=text.match(/^(?:direct\s+)?flights?\s+(?:included\s+)?(?:direct\s+)?from\s+(.+)$/i)||text.match(/^flying\s+from\s+(.+)$/i);
   if(flightFrom&&flightFrom[1]) return `${normaliseCardInclusionComponent(flightFrom[1].replace(/\s+direct$/i,""))} Flights`;
   const airportFlights=text.match(/^(.+?)\s+flights?(?:\s+included)?$/i);
@@ -11309,6 +11361,8 @@ function classifyCardInclusionComponent(value){
   if(!text) return "";
   if(/\b(?:includes?\s+)?\d+\s*[- ]\s*night(?:s)?\s+pre[-\s]?cruise\b/i.test(text)) return "precruise";
   if(/\b(?:includes?\s+)?\d+\s*[- ]\s*night(?:s)?\s+post[-\s]?cruise\b/i.test(text)) return "postcruise";
+  if(/\bpre[-\s]?cruise\b/i.test(text)&&/\b(?:stay|hotel|accommodation)\b/i.test(text)) return "precruise";
+  if(/\bpost[-\s]?cruise\b/i.test(text)&&/\b(?:stay|hotel|accommodation)\b/i.test(text)) return "postcruise";
   if(CARD_INCLUSION_CABIN_PHRASES.some(phrase=>new RegExp(`^${escapeRegExp(phrase)}$`,"i").test(text))) return "cabin";
   if(!/one-way hotel transfer/i.test(text)&&/\bluggage\b/i.test(text)&&/\btransfers?\b/i.test(text)) return "luggage-transfer";
   if(/\bluggage\b/i.test(text)) return "luggage";
