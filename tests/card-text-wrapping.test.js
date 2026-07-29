@@ -618,3 +618,12 @@ test("card preview preserves every parsed destination without first-N port trunc
   assert.equal(renderedPorts.replace(/<\/span> <span class="port-line">/g, '</span> • <span class="port-line">').replace(/<\/?span[^>]*>/g, '').replaceAll('&nbsp;', ' ').replace(/\s*•\s*/g, ' • ').replace(/\s{2,}/g, ' ').trim(), ports.join(' • '));
   assert.doesNotMatch(renderedPorts, /<br>/);
 });
+
+test('cruise cards keep cabins, structured stays and explicit resort fees in dedicated display rows', () => {
+  assert.match(html, /separateCabin:true/);
+  assert.match(html, /component\.type==="cabin"/);
+  assert.match(html, /stay-hotel-description/);
+  assert.match(html, /\\d\+-night\\s\+\(\?:pre\|post\)-cruise/);
+  assert.match(html, /<div class="pbasis">\$\{basis\}<\/div>\$\{resortFee\?`<div class="resort-fee">/);
+  assert.match(html, /\.cc \.resort-fee\{font-size:34px/);
+});

@@ -761,6 +761,7 @@ Sailing from Miami
 Inside Cabin
 Full Board (On Cruise)
 £1679 per person based on 2 sharing
+$15 per person resort fee payable locally
 Itinerary
 Miami, Florida - Philipsburg, St Maarten - Tortola, British Virgin Islands -
 St. Croix, US Virgin Islands - San Juan, Puerto Rico -
@@ -769,6 +770,7 @@ Miami, Florida
 Luggage included.`;
   const result = harness.context.parseOfferText(raw, { renderIntelligence: false });
   assert.equal(result.parsed.boardlbl, 'Full Board');
+  assert.equal(result.parsed.resortFee, '$15 per person resort fee payable locally');
   assert.match(result.parsed.incl, /1-night pre-cruise stay at a 4\* Miami Beach hotel, Room Only/);
   assert.equal((result.parsed.incl.match(/pre-cruise/gi)||[]).length, 1);
   const stays = harness.context.detectCruiseHotelStays(raw);

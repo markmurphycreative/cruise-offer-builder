@@ -958,6 +958,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
 .cc .pmain{font-size:90px;font-weight:300;color:var(--operator-text,var(--navy));line-height:1.0;}
 .cc .ppp{font-size:40px;font-weight:300;vertical-align:super;}
 .cc .pbasis{font-size:34px;font-weight:300;color:#999;margin-top:4px;line-height:1.2;}
+.cc .resort-fee{font-size:34px;font-weight:300;color:#999;margin-top:4px;line-height:1.2;max-width:1000px;}
 .cc .ibar{width:1200px;display:grid;grid-template-columns:400px 400px 400px;height:297px;background:#000;line-height:0;}
 .cc .icell{height:297px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;position:relative;line-height:normal;}
 .cc .icell::before{content:"";position:absolute;top:-1px;left:0;right:0;height:2px;background:inherit;pointer-events:none;}
@@ -1153,7 +1154,7 @@ input[type="checkbox"]:not(:disabled):focus-visible{box-shadow:0 0 0 2px rgba(15
         <div class="fg2">
           <div class="field" data-field="price"><label>Lead / Total Price (£)</label><input id="f-price" placeholder="799" oninput="up()"></div>
           <div class="field" data-field="totalPrice"><label>Total Price (£, Package optional)</label><input id="f-totalPrice" placeholder="656" oninput="up()"></div>
-          <div class="field" data-field="resortFee"><label>Resort Fee (£, Package optional)</label><input id="f-resortFee" placeholder="10pp" oninput="updateResortFee()"></div>
+          <div class="field" data-field="resortFee"><label>Resort Fee / Local Fee</label><input id="f-resortFee" placeholder="$15 per person resort fee payable locally" oninput="updateResortFee()"></div>
           <div class="field" data-field="priceLabel"><label>Price Label</label><input id="f-priceLabel" spellcheck="true" placeholder="Total Price" oninput="up()"></div>
           <div class="field" data-field="basis"><label>Price Basis</label><input id="f-basis" spellcheck="true" placeholder="Based on 2 Adults Sharing" oninput="up()"></div>
           <div class="field" data-field="packagePerPersonSuffix"><label>Per Person Suffix</label><input id="f-packagePerPersonSuffix" spellcheck="true" placeholder="pp" oninput="up()"></div>
@@ -8131,7 +8132,7 @@ function exportJSON(){
 // ═══════════════════════════════════════════════════════
 function getOrdinal(n){ const s=["th","st","nd","rd"],v=n%100; return s[(v-20)%10]||s[v]||s[0]; }
 let pendingParseResult=null;
-const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};
+const PARSE_FIELD_MAP={operatorKey:"f-operator",tags:"f-tags",name:"f-name",ship:"f-ship",incl:"f-incl",price:"f-price",resortFee:"f-resortFee",basis:"f-basis",board:"f-board",boardlbl:"f-boardlbl",day:"f-day",month:"f-month",nights:"f-nights",ports:"f-ports"};
 const OPERATOR_ALIASES={po:[/\bp\s*&\s*o\b/i,/\bp\s*and\s*o\b/i,/\bp&o\s+cruises\b/i],royal:[/\broyal\b/i,/\brci\b/i,/\broyal\s+caribbean\b/i],marella:[/\bmarella\b/i,/\bmarella\s+cruises\b/i],celebrity:[/\bcelebrity\b/i,/\bcelebrity\s+cruises\b/i],fred:[/\bfred\s+olsen\b/i,/\bfred\.?\s*olsen\b/i],cunard:[/\bcunard\b/i],msc:[/\bmsc\b/i],ncl:[/\bnorwegian\s+cruise\s+line\b/i,/\bncl\b/i],princess:[/\bprincess\b/i],ambassador:[/\bambassador\b/i],virgin:[/\bvirgin\b/i],amawaterways:[/\bama\s*waterways\b/i,/\bamawaterways\b/i],riviera:[/\briviera\s+travel\b/i]};
 const AIRPORT_WORDS=["newcastle","manchester","edinburgh","leeds bradford","glasgow","birmingham","london","heathrow","gatwick","stansted","bristol","belfast"];
 const PASTE_OPERATOR_BOARD_DEFAULTS={po:["FB","Full Board"],celebrity:["FB","Full Board"],fred:["FB","Full Board"],amawaterways:["FB","Full Board"],ambassador:["FB","Full Board"],ncl:["FB","Full Board"],cunard:["FB","Full Board"],marella:["AI","All Inclusive"],princess:["AI","All Inclusive"],msc:["AI","All Inclusive"],virgin:["AI","All Inclusive"],riviera:["AI","All Inclusive"]};
@@ -10078,6 +10079,8 @@ function parseOfferText(raw,options){
   const renderIntelligence=!!(options&&options.renderIntelligence);
   const displayText=value=>(typeof normaliseKnownDisplayText==="function"?normaliseKnownDisplayText(value):String(value||"").replace(/\s*@\s*/g," at ").replace(/\bLaspezia\b/gi,"La Spezia").replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca").replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne").replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing").replace(/[ \t]{2,}/g," ").trim());
   const lines=raw.split(/\n/).map(l=>displayText(l.trim())).filter(Boolean); const txt=lines.join(" \n "); const parsed={}; let score=0;
+  const explicitResortFee=lines.find(line=>/\b(?:resort fee|hotel fee)\b/i.test(line)&&!/^based on\b/i.test(line));
+  if(explicitResortFee){ parsed.resortFee=explicitResortFee.replace(/[ \t]{2,}/g," ").trim(); score+=6; }
   const parsedDeparturePort=(typeof extractParsedSailingDeparturePort==="function") ? extractParsedSailingDeparturePort(lines,raw) : ((txt.match(/\bsailing\s+from\s+([^\n|•;]+)/i)||[])[1]||"").replace(/\s+to\s+.*$/i,"").trim();
   if(parsedDeparturePort){ parsed.departurePort=parsedDeparturePort; parsed.sailingFrom=(typeof getCruiseGatewayDepartureDisplay==="function"?getCruiseGatewayDepartureDisplay(parsedDeparturePort):parsedDeparturePort); score+=8; }
   const earlyShipMatch=findKnownOperatorShip(txt);
@@ -11514,7 +11517,7 @@ function groupCardInclusionRenderLines(components,options){
   let editorialLine=[];
   ordered.forEach(component=>{
     if(!component) return;
-    if(component.type==="precruise"||component.type==="postcruise"){
+    if(((options&&options.separateCabin)&&component.type==="cabin")||component.type==="precruise"||component.type==="postcruise"){
       if(editorialLine.length){ lines.push(editorialLine); editorialLine=[]; }
       lines.push([component]);
       return;
@@ -11531,7 +11534,13 @@ function renderCardInclusionLayout(value,options){
     if(!html) return texts.join(CARD_INCLUSION_SEPARATOR);
     if(!texts.length) return `<span class="incl-line"></span>`;
     const combinedText=texts.join(CARD_INCLUSION_SEPARATOR);
+    const stay=line.length===1&&/^(\d+-night\s+(?:pre|post)-cruise\s+stay\s+at\s+a)\s+(.+)$/i.exec(combinedText);
+    if(stay){
+      return `<span class="incl-line"><span class="incl-component">${escapeCardInclusionHtml(stay[1])}</span></span>`+
+        `<span class="incl-line"><span class="incl-component"><span class="stay-hotel-description">${escapeCardInclusionHtml(stay[2])}</span></span></span>`;
+    }
     let content=escapeCardInclusionHtml(combinedText);
+    if(line.length===1&&line[0].type==="cabin") content=`<span class="cabin-phrase">${content}</span>`;
     if(/\bFREE return taxi transfer from home to port\*$/i.test(combinedText)){
       content=escapeCardInclusionHtml(combinedText).replace(/home to port\*$/i,match=>`<span class="no-break">${match}</span>`);
     }else if(/\bHarbour Rocks Hotel, Sydney\b/i.test(combinedText)){
@@ -11539,7 +11548,7 @@ function renderCardInclusionLayout(value,options){
     }
     return `<span class="incl-line"><span class="incl-component">${content}</span></span>`;
   };
-  const componentLines=groupCardInclusionRenderLines(buildCardInclusionComponents(value),options);
+  const componentLines=groupCardInclusionRenderLines(buildCardInclusionComponents(value),html?Object.assign({},options,{separateCabin:true}):options);
   const lines=componentLines.map(renderLine);
   if(!validateCardInclusionLines(lines.map(line=>String(line).replace(/<[^>]+>/g,"").replace(/&nbsp;/g," ")))) return "";
   return lines.join(html?"":"\n");
@@ -12133,6 +12142,7 @@ function renderCruiseCardHTML(d){
   const priceRaw=(d.price||"").toString().replace(/[^0-9]/g,"");
   const price=priceRaw?Number(priceRaw).toLocaleString("en-GB"):"";
   const basis=displayText(d.basis);
+  const resortFee=displayText(d.resortFee);
   const board=displayText(d.board); const boardlbl=displayText(d.boardlbl);
   const day=d.day||"";
   const month=displayText(d.month); const nights=d.nights||"";
@@ -12153,7 +12163,7 @@ function renderCruiseCardHTML(d){
   const priceHTML=price?`<div class="pfrom">From</div><div class="pmain">£${price}<span class="ppp">pp</span></div>`:`<div class="pfrom"></div><div class="pmain"></div>`;
   const dateHTML=(day||month)?`${day}`:"";
   const nightLabel=nights?"Nights":"";
-  return `<div class="cc"${getOperatorSkinStyle(d)}>${getHeaderHTML(d)}${heroHTML}<div class="isec"><div class="isec-content"><div class="cname">${name}</div><div class="sname">${shipLine}</div><div class="incl">${incl}</div><div class="price-block">${priceHTML}<div class="pbasis">${basis}</div></div></div></div><div class="ibar"><div class="icell gold"><div class="ival">${board}</div><div class="ilbl">${boardlbl}</div></div><div class="icell blk"><div class="ival">${dateHTML}</div><div class="ilbl">${month}</div></div><div class="icell gold"><div class="ival">${nights}</div><div class="ilbl">${nightLabel}</div></div></div>${itineraryImageHTML}<div class="vsec"><div class="visit-inner">${preCruiseHTML}<div class="vtit">You'll Visit</div><div class="vpts">${portsHTML}</div></div></div><div class="tcbar">${terms}</div></div>`;
+  return `<div class="cc"${getOperatorSkinStyle(d)}>${getHeaderHTML(d)}${heroHTML}<div class="isec"><div class="isec-content"><div class="cname">${name}</div><div class="sname">${shipLine}</div><div class="incl">${incl}</div><div class="price-block">${priceHTML}<div class="pbasis">${basis}</div>${resortFee?`<div class="resort-fee">${resortFee}</div>`:""}</div></div></div><div class="ibar"><div class="icell gold"><div class="ival">${board}</div><div class="ilbl">${boardlbl}</div></div><div class="icell blk"><div class="ival">${dateHTML}</div><div class="ilbl">${month}</div></div><div class="icell gold"><div class="ival">${nights}</div><div class="ilbl">${nightLabel}</div></div></div>${itineraryImageHTML}<div class="vsec"><div class="visit-inner">${preCruiseHTML}<div class="vtit">You'll Visit</div><div class="vpts">${portsHTML}</div></div></div><div class="tcbar">${terms}</div></div>`;
 }
 function renderCardHTML(d){
   d=cleanCardFacingOfferData(d);
