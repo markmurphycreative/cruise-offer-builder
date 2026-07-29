@@ -8339,8 +8339,8 @@ function isExcludedParsedPort(item,options){
 function isStandalonePortCandidate(line){
   const value=String(line||"").trim();
   const portWord="[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’()./-]*";
-  const likelyPort=new RegExp(`^${portWord}(?:\\s+(?:\\(?${portWord}|of|and|the|de|del|da|la|las|los)){0,5}$`);
-  const commaAliasPort=new RegExp(`^${portWord}(?:\\s+(?:${portWord}|of|and|the|de|del|da|la|las|los)){0,5},\\s*for\\s+${portWord}(?:\\s+(?:${portWord}|of|and|the|de|del|da|la|las|los)){0,5}$`);
+  const likelyPort=new RegExp(`^${portWord}(?:\\s+(?:\\(?${portWord}|of|at|and|the|de|del|da|la|las|los)){0,7}$`);
+  const commaAliasPort=new RegExp(`^${portWord}(?:\\s+(?:${portWord}|of|at|and|the|de|del|da|la|las|los)){0,7},\\s*for\\s+${portWord}(?:\\s+(?:${portWord}|of|at|and|the|de|del|da|la|las|los)){0,7}$`);
   const reject=/^(?:at sea|sea day|overnight|inside|outside|balcony|suite|full board|half board|all inclusive|self catering|family(?: friendly)?|premium|adults? only|ocean cruise|river cruise|cruise|ship|operator|price|from|ports?|itinerary|you(?:'|’)?ll visit)$/i;
   const candidate=commaAliasPort.test(value)||(value.includes(",")?value.split(",").map(part=>part.trim()).filter(Boolean).every(part=>likelyPort.test(part)&&!reject.test(part)):likelyPort.test(value));
   return candidate&&
@@ -8397,6 +8397,7 @@ function normaliseParsedDestinationDisplay(port){
     .replace(/\s{2,}/g," ")
     .trim();
   if(!value) return "";
+  value=value.replace(/^The Beach Club At Bimini(?=,|$)/i,"The Beach Club at Bimini");
   value=typeof removeParsedPortCountrySuffix==="function" ? removeParsedPortCountrySuffix(value) : value;
   value=typeof normaliseDestinationName==="function" ? normaliseDestinationName(value) : value;
   value=typeof simplifyDestinationCountrySuffix==="function" ? simplifyDestinationCountrySuffix(value) : value;
@@ -8424,11 +8425,22 @@ function buildCabinCardInclusionSegments(options){
 }
 function cleanParsedPorts(lines,options){
   const ignored=/^(?:at sea|(?:\d+\s+)?days?\s+at\s+sea|(?:\d+\s+)?sea\s+days?|overnight port stay|overnight stay|overnight|luggage\s*(?:&|and)\s*transfers?\s+included|flights?\s+included)[, .!]*$/i;
-  return cleanDestinationOnlyLines(lines).flatMap(line=>line.split(/(?:[•·▪◦●]|\s+[-–—]\s+|[-–—]\s*$)/)).map(item=>{
+  return splitContinuousItineraryDestinations(cleanDestinationOnlyLines(lines)).map(item=>{
     const cleaned=item.trim().replace(/^[-–—]\s*/,"");
-    const display=(typeof normaliseKnownDisplayText==="function"?normaliseKnownDisplayText(cleaned):String(cleaned||"").replace(/\s*@\s*/g," at ").replace(/\bLaspezia\b/gi,"La Spezia").replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca").replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne").replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing").replace(/[ \t]{2,}/g," ").trim());
+    const display=(typeof normaliseKnownDisplayText==="function"?normaliseKnownDisplayText(cleaned):String(cleaned||"").replace(/\s*@\s*/g," at ").replace(/\bLaspezia\b/gi,"La Spezia").replace(/\bPalma\s+De\s+Mallorca\b/g,"Palma de Mallorca").replace(/\bPort\s+Of\s+Tyne\b/g,"Port of Tyne").replace(/\bBased\s+On\s+2\s+Adults\s+Sharing\b/g,"Based on 2 Adults Sharing").replace(/[ \t]{2,}/g," ").trim()).replace(/^The Beach Club At Bimini(?=,|$)/i,"The Beach Club at Bimini");
     return typeof removeParsedPortCountrySuffix==="function"?removeParsedPortCountrySuffix(display):display;
   }).filter(item=>item&&!ignored.test(item)&&!isExcludedParsedPort(item,options)&&isStandalonePortCandidate(item)).join(" • ");
+}
+function splitContinuousItineraryDestinations(lines){
+  const sourceLines=Array.isArray(lines)?lines.map(line=>String(line||"").trim()).filter(Boolean):[String(lines||"")];
+  const hasExplicitSeparator=sourceLines.some(line=>/[•·▪◦●]|\s[-–—]\s/.test(line));
+  const itinerary=sourceLines.join(hasExplicitSeparator?" ":" • ");
+  return itinerary
+    .replace(/\s+/g," ")
+    .trim()
+    .split(/\s*(?:[•·▪◦●]|\s[-–—]\s)\s*/)
+    .map(destination=>destination.trim())
+    .filter(Boolean);
 }
 function escapeRegExp(value){ return String(value||"").replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 function findKnownOperatorShip(text,operatorKey){
@@ -9598,7 +9610,7 @@ function parseExactStructuredOfferText(raw,options){
   const firstLabel=lines[itineraryIndex].match(ITINERARY_SECTION_LABEL); if(firstLabel&&firstLabel[1]) itineraryLines.push(firstLabel[1]);
   let inInclusions=false;
   for(let index=itineraryIndex+1;index<lines.length;index+=1){ const line=lines[index]; if(!inInclusions&&isInclusionCopyLine(line)) inInclusions=true; (inInclusions?inclusionLines:itineraryLines).push(line); }
-  const exactPortItems=itineraryLines.flatMap(line=>String(line||"").split(/\s+[-–—]\s+|[-–—]\s*$/)).map(item=>normaliseParsedDestinationDisplay(displayText(item))).filter(port=>port&&!isNonPortExtractionValue(port));
+  const exactPortItems=splitContinuousItineraryDestinations(itineraryLines).map(item=>normaliseParsedDestinationDisplay(displayText(item))).filter(port=>port&&!isNonPortExtractionValue(port));
   const ports=exactPortItems.join(" • "); if(ports){ parsed.ports=ports; score+=8; }
   const sourceInclusion=extractSourceInclusionLine(inclusionLines,{operatorKey:parsed.operatorKey}); if(sourceInclusion){ parsed.incl=sourceInclusion; score+=6; }
   score=Math.min(score,100);
@@ -11419,7 +11431,7 @@ function splitCardInclusionLineComponents(line){
 function normaliseFlightInclusionDisplay(component){
   if(!component||component.type!=="flight") return component;
   const text=normaliseCardInclusionComponent(component.text);
-  if(/^flights?\s+included$/i.test(text)) return null;
+  if(/^flights?\s+included$/i.test(text)) return {...component,text:"Flights Included"};
   const airportIncluded=text.match(/^(.+?)\s+flights?\s+included$/i);
   if(airportIncluded&&airportIncluded[1]) return {...component,text:`${normaliseCardInclusionComponent(airportIncluded[1])} Flights`};
   return component;
@@ -11539,7 +11551,7 @@ function renderCardInclusionLayout(value,options){
       return `<span class="incl-line"><span class="incl-component">${escapeCardInclusionHtml(stay[1])}</span></span>`+
         `<span class="incl-line"><span class="incl-component"><span class="stay-hotel-description">${escapeCardInclusionHtml(stay[2])}</span></span></span>`;
     }
-    let content=escapeCardInclusionHtml(combinedText);
+    let content=escapeCardInclusionHtml(combinedText).replace(/\b((?:(?:[A-Za-z][A-Za-z.'’\-]*\s+){1,3}Flights?|Flights?|Luggage\s+(?:&(?:amp;)?|and)\s+Transfers?|Luggage|Transfers?)\s+Included)\b/gi,match=>`<span class="no-break included-phrase">${match}</span>`);
     if(line.length===1&&line[0].type==="cabin") content=`<span class="cabin-phrase">${content}</span>`;
     if(/\bFREE return taxi transfer from home to port\*$/i.test(combinedText)){
       content=escapeCardInclusionHtml(combinedText).replace(/home to port\*$/i,match=>`<span class="no-break">${match}</span>`);
